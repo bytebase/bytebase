@@ -8,9 +8,6 @@ import type { Duration, FieldMask } from "@bufbuild/protobuf/wkt";
 import type { Webhook_Type } from "./project_service_pb";
 import type { ApprovalTemplate } from "./issue_service_pb";
 import type { Expr } from "../google/type/expr_pb";
-import type { Engine } from "./common_pb";
-import type { ColumnMetadata, TableMetadata } from "./database_service_pb";
-import type { ColumnCatalog, TableCatalog } from "./database_catalog_service_pb";
 
 /**
  * Describes the file v1/setting_service.proto.
@@ -130,10 +127,9 @@ export declare const UpdateSettingRequestSchema: GenMessage<UpdateSettingRequest
  */
 export declare type Setting = Message<"bytebase.v1.Setting"> & {
   /**
-   * The resource name of the setting. Must be one of the following forms:
-   *
-   * - `setting/{setting}`
-   * For example, "settings/bb.branding.logo"
+   * The resource name of the setting.
+   * Format: settings/{setting}
+   * Example: "settings/SEMANTIC_TYPES"
    *
    * @generated from field: string name = 1;
    */
@@ -142,9 +138,9 @@ export declare type Setting = Message<"bytebase.v1.Setting"> & {
   /**
    * The configuration value of the setting.
    *
-   * @generated from field: bytebase.v1.Value value = 2;
+   * @generated from field: bytebase.v1.SettingValue value = 2;
    */
-  value?: Value;
+  value?: SettingValue;
 };
 
 /**
@@ -163,19 +159,9 @@ export enum Setting_SettingName {
   SETTING_NAME_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: AUTH_SECRET = 1;
-   */
-  AUTH_SECRET = 1,
-
-  /**
    * @generated from enum value: BRANDING_LOGO = 2;
    */
   BRANDING_LOGO = 2,
-
-  /**
-   * @generated from enum value: WORKSPACE_ID = 3;
-   */
-  WORKSPACE_ID = 3,
 
   /**
    * @generated from enum value: WORKSPACE_PROFILE = 4;
@@ -186,16 +172,6 @@ export enum Setting_SettingName {
    * @generated from enum value: WORKSPACE_APPROVAL = 5;
    */
   WORKSPACE_APPROVAL = 5,
-
-  /**
-   * @generated from enum value: WORKSPACE_EXTERNAL_APPROVAL = 6;
-   */
-  WORKSPACE_EXTERNAL_APPROVAL = 6,
-
-  /**
-   * @generated from enum value: ENTERPRISE_LICENSE = 7;
-   */
-  ENTERPRISE_LICENSE = 7,
 
   /**
    * @generated from enum value: APP_IM = 8;
@@ -211,11 +187,6 @@ export enum Setting_SettingName {
    * @generated from enum value: AI = 10;
    */
   AI = 10,
-
-  /**
-   * @generated from enum value: SCHEMA_TEMPLATE = 13;
-   */
-  SCHEMA_TEMPLATE = 13,
 
   /**
    * @generated from enum value: DATA_CLASSIFICATION = 14;
@@ -251,13 +222,11 @@ export declare const Setting_SettingNameSchema: GenEnum<Setting_SettingName>;
 /**
  * The data in setting value.
  *
- * @generated from message bytebase.v1.Value
+ * @generated from message bytebase.v1.SettingValue
  */
-export declare type Value = Message<"bytebase.v1.Value"> & {
+export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
   /**
-   * Value is a oneof field for setting value.
-   *
-   * @generated from oneof bytebase.v1.Value.value
+   * @generated from oneof bytebase.v1.SettingValue.value
    */
   value: {
     /**
@@ -269,74 +238,66 @@ export declare type Value = Message<"bytebase.v1.Value"> & {
     case: "stringValue";
   } | {
     /**
-     * @generated from field: bytebase.v1.AppIMSetting app_im_setting_value = 3;
+     * @generated from field: bytebase.v1.AppIMSetting app_im = 3;
      */
     value: AppIMSetting;
-    case: "appImSettingValue";
+    case: "appIm";
   } | {
     /**
-     * reserved 4; // was AgentPluginSetting agent_plugin_setting_value
-     *
-     * @generated from field: bytebase.v1.WorkspaceProfileSetting workspace_profile_setting_value = 5;
+     * @generated from field: bytebase.v1.WorkspaceProfileSetting workspace_profile = 5;
      */
     value: WorkspaceProfileSetting;
-    case: "workspaceProfileSettingValue";
+    case: "workspaceProfile";
   } | {
     /**
-     * @generated from field: bytebase.v1.WorkspaceApprovalSetting workspace_approval_setting_value = 6;
+     * @generated from field: bytebase.v1.WorkspaceApprovalSetting workspace_approval = 6;
      */
     value: WorkspaceApprovalSetting;
-    case: "workspaceApprovalSettingValue";
+    case: "workspaceApproval";
   } | {
     /**
-     * @generated from field: bytebase.v1.SchemaTemplateSetting schema_template_setting_value = 9;
-     */
-    value: SchemaTemplateSetting;
-    case: "schemaTemplateSettingValue";
-  } | {
-    /**
-     * @generated from field: bytebase.v1.DataClassificationSetting data_classification_setting_value = 10;
+     * @generated from field: bytebase.v1.DataClassificationSetting data_classification = 10;
      */
     value: DataClassificationSetting;
-    case: "dataClassificationSettingValue";
+    case: "dataClassification";
   } | {
     /**
-     * @generated from field: bytebase.v1.SemanticTypeSetting semantic_type_setting_value = 11;
+     * @generated from field: bytebase.v1.SemanticTypeSetting semantic_type = 11;
      */
     value: SemanticTypeSetting;
-    case: "semanticTypeSettingValue";
+    case: "semanticType";
   } | {
     /**
-     * @generated from field: bytebase.v1.SCIMSetting scim_setting = 14;
+     * @generated from field: bytebase.v1.SCIMSetting scim = 14;
      */
     value: SCIMSetting;
-    case: "scimSetting";
+    case: "scim";
   } | {
     /**
-     * @generated from field: bytebase.v1.PasswordRestrictionSetting password_restriction_setting = 15;
+     * @generated from field: bytebase.v1.PasswordRestrictionSetting password_restriction = 15;
      */
     value: PasswordRestrictionSetting;
-    case: "passwordRestrictionSetting";
+    case: "passwordRestriction";
   } | {
     /**
-     * @generated from field: bytebase.v1.AISetting ai_setting = 16;
+     * @generated from field: bytebase.v1.AISetting ai = 16;
      */
     value: AISetting;
-    case: "aiSetting";
+    case: "ai";
   } | {
     /**
-     * @generated from field: bytebase.v1.EnvironmentSetting environment_setting = 17;
+     * @generated from field: bytebase.v1.EnvironmentSetting environment = 17;
      */
     value: EnvironmentSetting;
-    case: "environmentSetting";
+    case: "environment";
   } | { case: undefined; value?: undefined };
 };
 
 /**
- * Describes the message bytebase.v1.Value.
- * Use `create(ValueSchema)` to create a new message.
+ * Describes the message bytebase.v1.SettingValue.
+ * Use `create(SettingValueSchema)` to create a new message.
  */
-export declare const ValueSchema: GenMessage<Value>;
+export declare const SettingValueSchema: GenMessage<SettingValue>;
 
 /**
  * @generated from message bytebase.v1.AppIMSetting
@@ -465,6 +426,38 @@ export declare type AppIMSetting_DingTalk = Message<"bytebase.v1.AppIMSetting.Di
 export declare const AppIMSetting_DingTalkSchema: GenMessage<AppIMSetting_DingTalk>;
 
 /**
+ * @generated from message bytebase.v1.AppIMSetting.Teams
+ */
+export declare type AppIMSetting_Teams = Message<"bytebase.v1.AppIMSetting.Teams"> & {
+  /**
+   * Azure AD tenant ID (Directory ID).
+   *
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * Azure AD application (client) ID.
+   *
+   * @generated from field: string client_id = 2;
+   */
+  clientId: string;
+
+  /**
+   * Azure AD client secret.
+   *
+   * @generated from field: string client_secret = 3;
+   */
+  clientSecret: string;
+};
+
+/**
+ * Describes the message bytebase.v1.AppIMSetting.Teams.
+ * Use `create(AppIMSetting_TeamsSchema)` to create a new message.
+ */
+export declare const AppIMSetting_TeamsSchema: GenMessage<AppIMSetting_Teams>;
+
+/**
  * @generated from message bytebase.v1.AppIMSetting.IMSetting
  */
 export declare type AppIMSetting_IMSetting = Message<"bytebase.v1.AppIMSetting.IMSetting"> & {
@@ -506,6 +499,12 @@ export declare type AppIMSetting_IMSetting = Message<"bytebase.v1.AppIMSetting.I
      */
     value: AppIMSetting_DingTalk;
     case: "dingtalk";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.AppIMSetting.Teams teams = 7;
+     */
+    value: AppIMSetting_Teams;
+    case: "teams";
   } | { case: undefined; value?: undefined };
 };
 
@@ -727,7 +726,7 @@ export declare type WorkspaceApprovalSetting_Rule = Message<"bytebase.v1.Workspa
    * request.expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
    * request.role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
    *
-   * When source is DDL/DML, support: statement.*, resource.* (excluding request.*)
+   * When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*)
    * When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name
    * When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name
    * When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
@@ -735,8 +734,6 @@ export declare type WorkspaceApprovalSetting_Rule = Message<"bytebase.v1.Workspa
    * For examples:
    * resource.environment_id == "prod" && statement.affected_rows >= 100
    * resource.table_name.matches("sensitive_.*") && resource.db_engine == "MYSQL"
-   *
-   * Legacy format (deprecated): source == "DDL" && level == "HIGH"
    *
    * @generated from field: google.type.Expr condition = 2;
    */
@@ -764,159 +761,30 @@ export enum WorkspaceApprovalSetting_Rule_Source {
   SOURCE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: DDL = 1;
+   * @generated from enum value: CHANGE_DATABASE = 1;
    */
-  DDL = 1,
+  CHANGE_DATABASE = 1,
 
   /**
-   * @generated from enum value: DML = 2;
+   * @generated from enum value: CREATE_DATABASE = 2;
    */
-  DML = 2,
+  CREATE_DATABASE = 2,
 
   /**
-   * @generated from enum value: CREATE_DATABASE = 3;
+   * @generated from enum value: EXPORT_DATA = 3;
    */
-  CREATE_DATABASE = 3,
+  EXPORT_DATA = 3,
 
   /**
-   * @generated from enum value: EXPORT_DATA = 4;
+   * @generated from enum value: REQUEST_ROLE = 4;
    */
-  EXPORT_DATA = 4,
-
-  /**
-   * @generated from enum value: REQUEST_ROLE = 5;
-   */
-  REQUEST_ROLE = 5,
+  REQUEST_ROLE = 4,
 }
 
 /**
  * Describes the enum bytebase.v1.WorkspaceApprovalSetting.Rule.Source.
  */
 export declare const WorkspaceApprovalSetting_Rule_SourceSchema: GenEnum<WorkspaceApprovalSetting_Rule_Source>;
-
-/**
- * @generated from message bytebase.v1.SchemaTemplateSetting
- */
-export declare type SchemaTemplateSetting = Message<"bytebase.v1.SchemaTemplateSetting"> & {
-  /**
-   * @generated from field: repeated bytebase.v1.SchemaTemplateSetting.FieldTemplate field_templates = 1;
-   */
-  fieldTemplates: SchemaTemplateSetting_FieldTemplate[];
-
-  /**
-   * @generated from field: repeated bytebase.v1.SchemaTemplateSetting.ColumnType column_types = 2;
-   */
-  columnTypes: SchemaTemplateSetting_ColumnType[];
-
-  /**
-   * @generated from field: repeated bytebase.v1.SchemaTemplateSetting.TableTemplate table_templates = 3;
-   */
-  tableTemplates: SchemaTemplateSetting_TableTemplate[];
-};
-
-/**
- * Describes the message bytebase.v1.SchemaTemplateSetting.
- * Use `create(SchemaTemplateSettingSchema)` to create a new message.
- */
-export declare const SchemaTemplateSettingSchema: GenMessage<SchemaTemplateSetting>;
-
-/**
- * @generated from message bytebase.v1.SchemaTemplateSetting.FieldTemplate
- */
-export declare type SchemaTemplateSetting_FieldTemplate = Message<"bytebase.v1.SchemaTemplateSetting.FieldTemplate"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: bytebase.v1.Engine engine = 2;
-   */
-  engine: Engine;
-
-  /**
-   * @generated from field: string category = 3;
-   */
-  category: string;
-
-  /**
-   * @generated from field: bytebase.v1.ColumnMetadata column = 4;
-   */
-  column?: ColumnMetadata;
-
-  /**
-   * @generated from field: bytebase.v1.ColumnCatalog catalog = 5;
-   */
-  catalog?: ColumnCatalog;
-};
-
-/**
- * Describes the message bytebase.v1.SchemaTemplateSetting.FieldTemplate.
- * Use `create(SchemaTemplateSetting_FieldTemplateSchema)` to create a new message.
- */
-export declare const SchemaTemplateSetting_FieldTemplateSchema: GenMessage<SchemaTemplateSetting_FieldTemplate>;
-
-/**
- * @generated from message bytebase.v1.SchemaTemplateSetting.ColumnType
- */
-export declare type SchemaTemplateSetting_ColumnType = Message<"bytebase.v1.SchemaTemplateSetting.ColumnType"> & {
-  /**
-   * @generated from field: bytebase.v1.Engine engine = 1;
-   */
-  engine: Engine;
-
-  /**
-   * @generated from field: bool enabled = 2;
-   */
-  enabled: boolean;
-
-  /**
-   * @generated from field: repeated string types = 3;
-   */
-  types: string[];
-};
-
-/**
- * Describes the message bytebase.v1.SchemaTemplateSetting.ColumnType.
- * Use `create(SchemaTemplateSetting_ColumnTypeSchema)` to create a new message.
- */
-export declare const SchemaTemplateSetting_ColumnTypeSchema: GenMessage<SchemaTemplateSetting_ColumnType>;
-
-/**
- * @generated from message bytebase.v1.SchemaTemplateSetting.TableTemplate
- */
-export declare type SchemaTemplateSetting_TableTemplate = Message<"bytebase.v1.SchemaTemplateSetting.TableTemplate"> & {
-  /**
-   * @generated from field: string id = 1;
-   */
-  id: string;
-
-  /**
-   * @generated from field: bytebase.v1.Engine engine = 2;
-   */
-  engine: Engine;
-
-  /**
-   * @generated from field: string category = 3;
-   */
-  category: string;
-
-  /**
-   * @generated from field: bytebase.v1.TableMetadata table = 4;
-   */
-  table?: TableMetadata;
-
-  /**
-   * @generated from field: bytebase.v1.TableCatalog catalog = 5;
-   */
-  catalog?: TableCatalog;
-};
-
-/**
- * Describes the message bytebase.v1.SchemaTemplateSetting.TableTemplate.
- * Use `create(SchemaTemplateSetting_TableTemplateSchema)` to create a new message.
- */
-export declare const SchemaTemplateSetting_TableTemplateSchema: GenMessage<SchemaTemplateSetting_TableTemplate>;
 
 /**
  * @generated from message bytebase.v1.DataClassificationSetting

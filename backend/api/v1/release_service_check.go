@@ -266,10 +266,6 @@ loop:
 					}
 				}
 
-				changeType := storepb.PlanCheckRunConfig_DDL
-				if file.EnableGhost {
-					changeType = storepb.PlanCheckRunConfig_DDL_GHOST
-				}
 				// Get SQL summary report for the statement and target database.
 				// Including affected rows.
 				summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, statement)
@@ -281,7 +277,7 @@ loop:
 					resp.AffectedRows += summaryReport.AffectedRows
 				}
 				if common.EngineSupportSQLReview(engine) {
-					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, originMetadata, finalMetadata, instance, database, changeType, statement)
+					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, originMetadata, finalMetadata, instance, database, false /* enableSDL */, statement)
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check SQL review"))
 					}
@@ -632,7 +628,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	finalMetadata *model.DatabaseMetadata,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
-	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
+	enableSDL bool,
 	statement string,
 ) (storepb.Advice_Status, []*v1pb.Advice, error) {
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
@@ -673,7 +669,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	context := advisor.Context{
 		Charset:                  dbMetadataProto.CharacterSet,
 		Collation:                dbMetadataProto.Collation,
-		ChangeType:               changeType,
+		EnableSDL:                enableSDL,
 		DBSchema:                 dbMetadataProto,
 		DBType:                   instance.Metadata.GetEngine(),
 		OriginalMetadata:         originMetadata,

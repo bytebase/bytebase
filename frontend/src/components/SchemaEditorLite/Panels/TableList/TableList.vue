@@ -22,21 +22,6 @@
       class="schema-editor-table-list"
     />
   </div>
-
-  <Drawer
-    :show="state.showSchemaTemplateDrawer"
-    @close="state.showSchemaTemplateDrawer = false"
-  >
-    <DrawerContent :title="$t('schema-template.table-template.self')">
-      <div class="w-[calc(100vw-36rem)] min-w-5xl max-w-[calc(100vw-8rem)]">
-        <TableTemplates
-          :engine="engine"
-          :readonly="true"
-          @apply="handleApplyTemplate"
-        />
-      </div>
-    </DrawerContent>
-  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -44,17 +29,15 @@ import { useElementSize } from "@vueuse/core";
 import { pick } from "lodash-es";
 import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
-import { computed, h, reactive, ref } from "vue";
+import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
+import { InlineInput } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { SchemaTemplateSetting_TableTemplate } from "@/types/proto-es/v1/setting_service_pb";
-import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
 import { markUUID } from "../common";
 import { NameCell, OperationCell, SelectionCell } from "./components";
@@ -79,12 +62,6 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-interface LocalState {
-  showFeatureModal: boolean;
-  showSchemaTemplateDrawer: boolean;
-  activeTable?: TableMetadata;
-}
-
 const { t } = useI18n();
 const {
   readonly,
@@ -94,7 +71,6 @@ const {
   removeEditStatus,
   getSchemaStatus,
   getTableStatus,
-  upsertTableCatalog,
   useConsumePendingScrollToTable,
   getAllTablesSelectionState,
   updateAllTablesSelection,
@@ -115,20 +91,12 @@ const tableBodyHeight = computed(() => {
 });
 // Use this to avoid unnecessary initial rendering
 const layoutReady = computed(() => tableHeaderHeight.value > 0);
-const state = reactive<LocalState>({
-  showFeatureModal: false,
-  showSchemaTemplateDrawer: false,
-});
 const filteredTables = computed(() => {
   const keyword = props.searchPattern?.trim();
   if (!keyword) {
     return props.tables;
   }
   return props.tables.filter((table) => table.name.includes(keyword));
-});
-
-const engine = computed(() => {
-  return props.db.instanceResource.engine;
 });
 
 const metadataForTable = (table: TableMetadata) => {
@@ -288,37 +256,6 @@ const handleDropTable = (table: TableMetadata) => {
 
 const handleRestoreTable = (table: TableMetadata) => {
   removeEditStatus(props.db, metadataForTable(table), /* recursive */ false);
-};
-
-const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
-  state.showSchemaTemplateDrawer = false;
-  if (!template.table) {
-    return;
-  }
-  if (template.engine !== engine.value) {
-    return;
-  }
-
-  const table = template.table;
-  /* eslint-disable-next-line vue/no-mutating-props */
-  props.schema.tables.push(table);
-  const metadata = metadataForTable(table);
-
-  upsertTableCatalog(
-    {
-      database: props.db.name,
-      schema: props.schema.name,
-      table: table.name,
-    },
-    (catalog) => Object.assign(catalog, template.catalog)
-  );
-
-  markEditStatus(props.db, metadata, "created");
-  addTab({
-    type: "table",
-    database: props.db,
-    metadata,
-  });
 };
 
 const isDroppedTable = (table: TableMetadata) => {

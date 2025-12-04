@@ -83,7 +83,7 @@ const handleSettingChange = async () => {
       }),
     },
     updateMask: create(FieldMaskSchema, {
-      paths: ["value.workspace_profile_setting_value.maximum_role_expiration"],
+      paths: ["value.workspace_profile.maximum_role_expiration"],
     }),
   });
   Object.assign(state, getInitialState());

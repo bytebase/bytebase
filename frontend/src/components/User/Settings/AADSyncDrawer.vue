@@ -131,11 +131,15 @@ import { BBAttention } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { CopyButton, Drawer, DrawerContent } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { pushNotification, useSettingV1Store } from "@/store";
+import {
+  pushNotification,
+  useActuatorV1Store,
+  useSettingV1Store,
+} from "@/store";
 import {
   SCIMSettingSchema,
   Setting_SettingName,
-  ValueSchema as SettingValueSchema,
+  SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -148,6 +152,7 @@ defineEmits<{
 }>();
 
 const settingV1Store = useSettingV1Store();
+const actuatorStore = useActuatorV1Store();
 const { t } = useI18n();
 const router = useRouter();
 const scimUrlFieldRef = ref<HTMLInputElement | null>(null);
@@ -159,12 +164,7 @@ const hasPermission = computed(() =>
 );
 
 const workspaceId = computed(() => {
-  const setting = settingV1Store.getSettingByName(
-    Setting_SettingName.WORKSPACE_ID
-  );
-  return setting?.value?.value?.case === "stringValue"
-    ? setting.value.value.value
-    : "";
+  return actuatorStore.serverInfo?.workspaceId ?? "";
 });
 
 const externalUrl = computed(() => {
@@ -180,7 +180,7 @@ const scimUrl = computed(() => {
 
 const scimToken = computed(() => {
   const setting = settingV1Store.getSettingByName(Setting_SettingName.SCIM);
-  return setting?.value?.value?.case === "scimSetting"
+  return setting?.value?.value?.case === "scim"
     ? (setting.value.value.value.token ?? "")
     : "";
 });
@@ -210,9 +210,9 @@ const resetToken = () => {
       settingV1Store
         .upsertSetting({
           name: Setting_SettingName.SCIM,
-          value: create(SettingValueSchema, {
+          value: create(SettingSettingValueSchema, {
             value: {
-              case: "scimSetting",
+              case: "scim",
               value: create(SCIMSettingSchema, {
                 token: "",
               }),

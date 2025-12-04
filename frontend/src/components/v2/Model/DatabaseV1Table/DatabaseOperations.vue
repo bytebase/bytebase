@@ -90,14 +90,6 @@
     "
     @cancel="state.showUnassignAlert = false"
   />
-
-  <AddSpecDrawer
-    v-model:show="state.showChangeDatabaseDrawer"
-    :title="$t('database.change-database')"
-    :pre-selected-databases="databases"
-    :project-name="selectedProjectName"
-    :use-legacy-issue-flow="true"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -123,7 +115,7 @@ import { useRouter } from "vue-router";
 import { BBAlert } from "@/bbkit";
 import EditEnvironmentDrawer from "@/components/EditEnvironmentDrawer.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
-import { AddSpecDrawer } from "@/components/Plan";
+import { preCreateIssue } from "@/components/Plan/logic/issue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
@@ -166,7 +158,6 @@ interface LocalState {
   showUnassignAlert: boolean;
   showLabelEditorDrawer: boolean;
   showEditEnvironmentDrawer: boolean;
-  showChangeDatabaseDrawer: boolean;
   transferOutDatabaseType?: "TRANSFER-IN" | "TRANSFER-OUT";
 }
 
@@ -183,7 +174,6 @@ const state = reactive<LocalState>({
   showUnassignAlert: false,
   showLabelEditorDrawer: false,
   showEditEnvironmentDrawer: false,
-  showChangeDatabaseDrawer: false,
   transferOutDatabaseType: undefined,
 });
 
@@ -304,10 +294,7 @@ const showDatabaseDriftedWarningDialog = () => {
 };
 
 const generateMultiDb = async (
-  type:
-    | "bb.issue.database.schema.update"
-    | "bb.issue.database.data.update"
-    | "bb.issue.database.data.export"
+  type: "bb.issue.database.update" | "bb.issue.database.data.export"
 ) => {
   // Check if any database is drifted.
   if (props.databases.some((d) => d.drifted)) {
@@ -434,9 +421,14 @@ const actions = computed((): DatabaseAction[] => {
           disabled:
             !allowChangeDatabase.value ||
             !selectedProjectName.value ||
-            props.databases.length < 1 ||
+            selectedDatabaseNameList.value.length < 1 ||
             selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
-          click: () => (state.showChangeDatabaseDrawer = true),
+          click: () => {
+            preCreateIssue(
+              selectedProjectName.value,
+              selectedDatabaseNameList.value
+            );
+          },
           tooltip: (action) => {
             if (!allowChangeDatabase.value) {
               return t("database.batch-action-permission-denied", {

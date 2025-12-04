@@ -85,14 +85,16 @@ export const isTaskFinished = (task: Task): boolean => {
 export const semanticTaskType = (type: Task_Type) => {
   switch (type) {
     case Task_Type.DATABASE_CREATE:
-      return t("db.create");
+      return t("task.type.database-create");
     case Task_Type.DATABASE_MIGRATE:
-      // Ghost mode is indicated via spec.enableGhost, shown separately as a tag
-      return t("issue.title.change-database");
+      return t("task.type.migrate");
     case Task_Type.DATABASE_SDL:
-      return "SDL";
+      return t("task.type.database-sdl");
     case Task_Type.DATABASE_EXPORT:
-      return t("issue.title.export-data");
+      return t("task.type.database-export");
+    case Task_Type.GENERAL:
+      return t("task.type.general");
+    default:
+      return "";
   }
-  return type.toString();
 };

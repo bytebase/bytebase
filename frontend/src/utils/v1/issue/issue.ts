@@ -59,8 +59,7 @@ export const isDatabaseDataExportIssue = (issue: ComposedIssue): boolean => {
 
 export const generateIssueTitle = (
   type:
-    | "bb.issue.database.schema.update"
-    | "bb.issue.database.data.update"
+    | "bb.issue.database.update"
     | "bb.issue.database.data.export"
     | "bb.issue.grant.request",
   databaseNameList?: string[],
@@ -84,8 +83,7 @@ export const generateIssueTitle = (
   } else {
     if (type.startsWith("bb.issue.database")) {
       parts.push(
-        type === "bb.issue.database.schema.update" ||
-          type === "bb.issue.database.data.update"
+        type === "bb.issue.database.update"
           ? t("issue.title.change-database")
           : t("issue.title.export-data")
       );

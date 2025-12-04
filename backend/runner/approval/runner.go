@@ -275,17 +275,17 @@ func calculateRiskLevelFromCELVars(celVarsList []map[string]any) storepb.RiskLev
 }
 
 // getApprovalTemplate finds the first matching approval template for the given source and CEL variables.
-// After the risk layer removal (3.13), approval rules are directly evaluated with full CEL context.
-// The rules are ordered by priority (HIGH risk rules first, then MODERATE, then LOW, then UNSPECIFIED).
-// First matching rule wins.
+// Uses two-phase matching:
+// Phase 1: Try source-specific rules (filtered by riskSource)
+// Phase 2: Try SOURCE_UNSPECIFIED fallback rules (with limited CEL variables)
 //
 // Parameters:
 // - approvalSetting: workspace approval setting containing rules
 // - riskSource: the approval source enum (DDL, DML, CREATE_DATABASE, EXPORT_DATA, REQUEST_ROLE)
 // - celVarsList: list of CEL variable maps (one per task/component in the issue)
 //
-// For each rule filtered by source, we check if ANY of the celVars maps matches the condition.
-// This preserves the "maximum risk" behavior: if any task matches a high-priority rule, that template is used.
+// For each rule, we check if ANY of the celVars maps matches the condition.
+// First matching rule wins within each phase.
 func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, riskSource storepb.WorkspaceApprovalSetting_Rule_Source, celVarsList []map[string]any) (*storepb.ApprovalTemplate, error) {
 	if len(approvalSetting.Rules) == 0 {
 		return nil, nil
@@ -294,25 +294,43 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 		return nil, nil
 	}
 
-	e, err := cel.NewEnv(common.ApprovalFactors...)
+	// Phase 1: Try source-specific rules
+	template, err := matchRulesForSource(approvalSetting.Rules, riskSource, celVarsList, common.ApprovalFactors)
+	if err != nil {
+		return nil, err
+	}
+	if template != nil {
+		return template, nil
+	}
+
+	// Phase 2: Try SOURCE_UNSPECIFIED fallback rules with limited CEL variables
+	fallbackVars := buildFallbackCELVars(celVarsList)
+	template, err = matchRulesForSource(approvalSetting.Rules, storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, fallbackVars, common.FallbackApprovalFactors)
+	if err != nil {
+		return nil, err
+	}
+	return template, nil
+}
+
+// matchRulesForSource evaluates rules for a specific source type.
+func matchRulesForSource(rules []*storepb.WorkspaceApprovalSetting_Rule, source storepb.WorkspaceApprovalSetting_Rule_Source, celVarsList []map[string]any, celFactors []cel.EnvOption) (*storepb.ApprovalTemplate, error) {
+	e, err := cel.NewEnv(celFactors...)
 	if err != nil {
 		return nil, err
 	}
 
-	// Rules are already ordered by priority (migration ensures this)
-	// First matching rule wins
-	for _, rule := range approvalSetting.Rules {
+	for _, rule := range rules {
 		// Filter by source
-		if rule.Source != riskSource {
+		if rule.Source != source {
 			continue
 		}
 
-		// Empty condition means this rule always matches (fallback rule)
+		// Empty condition means skip (not a catch-all)
 		if rule.Condition == nil || rule.Condition.Expression == "" {
 			continue
 		}
 
-		// Special case: "true" expression always matches (fallback from UNSPECIFIED level)
+		// Special case: "true" expression always matches
 		if rule.Condition.Expression == "true" {
 			return rule.Template, nil
 		}
@@ -344,6 +362,25 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 		}
 	}
 	return nil, nil
+}
+
+// buildFallbackCELVars extracts only the project_id from the first CEL vars map.
+// Fallback rules can only use resource.project_id.
+func buildFallbackCELVars(celVarsList []map[string]any) []map[string]any {
+	if len(celVarsList) == 0 {
+		return nil
+	}
+
+	// Extract project_id from the first vars map
+	firstVars := celVarsList[0]
+	projectID, ok := firstVars[common.CELAttributeResourceProjectID]
+	if !ok {
+		return nil
+	}
+
+	return []map[string]any{
+		{common.CELAttributeResourceProjectID: projectID},
+	}
 }
 
 // buildCELVariablesForIssue builds the CEL variable maps for evaluating approval rules.
@@ -601,7 +638,7 @@ func (r *Runner) buildCELVariablesForGrantRequest(ctx context.Context, issue *st
 
 	// If no specific databases, create one entry per environment
 	if len(factors.Databases) == 0 {
-		environments, err := r.store.GetEnvironmentSetting(ctx)
+		environments, err := r.store.GetEnvironment(ctx)
 		if err != nil {
 			return nil, false, err
 		}
@@ -679,8 +716,7 @@ func getApprovalSourceFromPlan(config *storepb.PlanConfig) storepb.WorkspaceAppr
 		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
 			return storepb.WorkspaceApprovalSetting_Rule_CREATE_DATABASE
 		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-			// All DATABASE_MIGRATE and SDL operations use DDL approval rules
-			return storepb.WorkspaceApprovalSetting_Rule_DDL
+			return storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE
 		case *storepb.PlanConfig_Spec_ExportDataConfig:
 			return storepb.WorkspaceApprovalSetting_Rule_EXPORT_DATA
 		}

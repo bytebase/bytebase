@@ -16,11 +16,6 @@ extend google.protobuf.MethodOptions {
   AuthMethod auth_method = 100002;
   // Whether to audit calls to this method.
   bool audit = 100003;
-  // When a method supports allow_missing and may create resources,
-  // this specifies the additional permission required when allow_missing=true.
-  // Example: UpdateRole with allow_missing requires both bb.roles.update
-  // (from permission) and bb.roles.create (from allow_missing_requires).
-  string allow_missing_requires = 100004;
 }
 
 // Authorization method for RPC calls.

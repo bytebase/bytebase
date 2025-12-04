@@ -105,7 +105,7 @@ func (x *Setting) Equal(y *Setting) bool {
 	return true
 }
 
-func (x *Value) Equal(y *Value) bool {
+func (x *SettingValue) Equal(y *SettingValue) bool {
 	if x == y {
 		return true
 	}
@@ -115,34 +115,31 @@ func (x *Value) Equal(y *Value) bool {
 	if x.GetStringValue() != y.GetStringValue() {
 		return false
 	}
-	if !x.GetAppImSettingValue().Equal(y.GetAppImSettingValue()) {
+	if !x.GetAppIm().Equal(y.GetAppIm()) {
 		return false
 	}
-	if !x.GetWorkspaceProfileSettingValue().Equal(y.GetWorkspaceProfileSettingValue()) {
+	if !x.GetWorkspaceProfile().Equal(y.GetWorkspaceProfile()) {
 		return false
 	}
-	if !x.GetWorkspaceApprovalSettingValue().Equal(y.GetWorkspaceApprovalSettingValue()) {
+	if !x.GetWorkspaceApproval().Equal(y.GetWorkspaceApproval()) {
 		return false
 	}
-	if !x.GetSchemaTemplateSettingValue().Equal(y.GetSchemaTemplateSettingValue()) {
+	if !x.GetDataClassification().Equal(y.GetDataClassification()) {
 		return false
 	}
-	if !x.GetDataClassificationSettingValue().Equal(y.GetDataClassificationSettingValue()) {
+	if !x.GetSemanticType().Equal(y.GetSemanticType()) {
 		return false
 	}
-	if !x.GetSemanticTypeSettingValue().Equal(y.GetSemanticTypeSettingValue()) {
+	if !x.GetScim().Equal(y.GetScim()) {
 		return false
 	}
-	if !x.GetScimSetting().Equal(y.GetScimSetting()) {
+	if !x.GetPasswordRestriction().Equal(y.GetPasswordRestriction()) {
 		return false
 	}
-	if !x.GetPasswordRestrictionSetting().Equal(y.GetPasswordRestrictionSetting()) {
+	if !x.GetAi().Equal(y.GetAi()) {
 		return false
 	}
-	if !x.GetAiSetting().Equal(y.GetAiSetting()) {
-		return false
-	}
-	if !x.GetEnvironmentSetting().Equal(y.GetEnvironmentSetting()) {
+	if !x.GetEnvironment().Equal(y.GetEnvironment()) {
 		return false
 	}
 	return true
@@ -231,6 +228,25 @@ func (x *AppIMSetting_DingTalk) Equal(y *AppIMSetting_DingTalk) bool {
 	return true
 }
 
+func (x *AppIMSetting_Teams) Equal(y *AppIMSetting_Teams) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.TenantId != y.TenantId {
+		return false
+	}
+	if x.ClientId != y.ClientId {
+		return false
+	}
+	if x.ClientSecret != y.ClientSecret {
+		return false
+	}
+	return true
+}
+
 func (x *AppIMSetting_IMSetting) Equal(y *AppIMSetting_IMSetting) bool {
 	if x == y {
 		return true
@@ -254,6 +270,9 @@ func (x *AppIMSetting_IMSetting) Equal(y *AppIMSetting_IMSetting) bool {
 		return false
 	}
 	if !x.GetDingtalk().Equal(y.GetDingtalk()) {
+		return false
+	}
+	if !x.GetTeams().Equal(y.GetTeams()) {
 		return false
 	}
 	return true
@@ -383,114 +402,6 @@ func (x *WorkspaceApprovalSetting) Equal(y *WorkspaceApprovalSetting) bool {
 	}
 	for i := 0; i < len(x.Rules); i++ {
 		if !x.Rules[i].Equal(y.Rules[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *SchemaTemplateSetting_FieldTemplate) Equal(y *SchemaTemplateSetting_FieldTemplate) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Id != y.Id {
-		return false
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	if x.Category != y.Category {
-		return false
-	}
-	if !x.Column.Equal(y.Column) {
-		return false
-	}
-	if !x.Catalog.Equal(y.Catalog) {
-		return false
-	}
-	return true
-}
-
-func (x *SchemaTemplateSetting_ColumnType) Equal(y *SchemaTemplateSetting_ColumnType) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	if x.Enabled != y.Enabled {
-		return false
-	}
-	if len(x.Types) != len(y.Types) {
-		return false
-	}
-	for i := 0; i < len(x.Types); i++ {
-		if x.Types[i] != y.Types[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *SchemaTemplateSetting_TableTemplate) Equal(y *SchemaTemplateSetting_TableTemplate) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Id != y.Id {
-		return false
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	if x.Category != y.Category {
-		return false
-	}
-	if !x.Table.Equal(y.Table) {
-		return false
-	}
-	if !x.Catalog.Equal(y.Catalog) {
-		return false
-	}
-	return true
-}
-
-func (x *SchemaTemplateSetting) Equal(y *SchemaTemplateSetting) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.FieldTemplates) != len(y.FieldTemplates) {
-		return false
-	}
-	for i := 0; i < len(x.FieldTemplates); i++ {
-		if !x.FieldTemplates[i].Equal(y.FieldTemplates[i]) {
-			return false
-		}
-	}
-	if len(x.ColumnTypes) != len(y.ColumnTypes) {
-		return false
-	}
-	for i := 0; i < len(x.ColumnTypes); i++ {
-		if !x.ColumnTypes[i].Equal(y.ColumnTypes[i]) {
-			return false
-		}
-	}
-	if len(x.TableTemplates) != len(y.TableTemplates) {
-		return false
-	}
-	for i := 0; i < len(x.TableTemplates); i++ {
-		if !x.TableTemplates[i].Equal(y.TableTemplates[i]) {
 			return false
 		}
 	}

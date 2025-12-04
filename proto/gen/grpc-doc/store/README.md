@@ -196,8 +196,6 @@
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
     - [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport)
   
-    - [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType)
-  
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
     - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
@@ -269,6 +267,7 @@
     - [AppIMSetting.IMSetting](#bytebase-store-AppIMSetting-IMSetting)
     - [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark)
     - [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack)
+    - [AppIMSetting.Teams](#bytebase-store-AppIMSetting-Teams)
     - [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom)
     - [DataClassificationSetting](#bytebase-store-DataClassificationSetting)
     - [DataClassificationSetting.DataClassificationConfig](#bytebase-store-DataClassificationSetting-DataClassificationConfig)
@@ -280,10 +279,6 @@
     - [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry)
     - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-store-SCIMSetting)
-    - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
-    - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
-    - [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate)
-    - [SchemaTemplateSetting.TableTemplate](#bytebase-store-SchemaTemplateSetting-TableTemplate)
     - [SemanticTypeSetting](#bytebase-store-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-store-SemanticTypeSetting-SemanticType)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
@@ -3252,12 +3247,12 @@ Type is the database change type.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | sheet_uid | [int32](#int32) |  |  |
-| change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
 | instance_id | [string](#string) |  |  |
 | database_name | [string](#string) |  |  |
 | ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
 | enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
+| enable_sdl | [bool](#bool) |  | Whether this is a Schema Definition Language (SDL) change. |
 
 
 
@@ -3349,22 +3344,6 @@ Type is the database change type.
 
 
  
-
-
-<a name="bytebase-store-PlanCheckRunConfig-ChangeDatabaseType"></a>
-
-### PlanCheckRunConfig.ChangeDatabaseType
-ChangeDatabaseType extends MigrationType with additional execution contexts.
-Note: DDL, DML, and DDL_GHOST values align with MigrationType enum values.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CHANGE_DATABASE_TYPE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DML | 2 |  |
-| SDL | 3 |  |
-| DDL_GHOST | 4 |  |
-
 
  
 
@@ -4328,6 +4307,7 @@ ISSUE_CREATE represents creating an issue. |
 | wecom | [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom) |  |  |
 | lark | [AppIMSetting.Lark](#bytebase-store-AppIMSetting-Lark) |  |  |
 | dingtalk | [AppIMSetting.DingTalk](#bytebase-store-AppIMSetting-DingTalk) |  |  |
+| teams | [AppIMSetting.Teams](#bytebase-store-AppIMSetting-Teams) |  |  |
 
 
 
@@ -4359,6 +4339,23 @@ ISSUE_CREATE represents creating an issue. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | token | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-AppIMSetting-Teams"></a>
+
+### AppIMSetting.Teams
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| tenant_id | [string](#string) |  | Azure AD tenant ID (Directory ID). |
+| client_id | [string](#string) |  | Azure AD application (client) ID. |
+| client_secret | [string](#string) |  | Azure AD client secret. |
 
 
 
@@ -4551,78 +4548,6 @@ ISSUE_CREATE represents creating an issue. |
 
 
 
-<a name="bytebase-store-SchemaTemplateSetting"></a>
-
-### SchemaTemplateSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| field_templates | [SchemaTemplateSetting.FieldTemplate](#bytebase-store-SchemaTemplateSetting-FieldTemplate) | repeated |  |
-| column_types | [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType) | repeated |  |
-| table_templates | [SchemaTemplateSetting.TableTemplate](#bytebase-store-SchemaTemplateSetting-TableTemplate) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-SchemaTemplateSetting-ColumnType"></a>
-
-### SchemaTemplateSetting.ColumnType
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-store-Engine) |  |  |
-| enabled | [bool](#bool) |  |  |
-| types | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-SchemaTemplateSetting-FieldTemplate"></a>
-
-### SchemaTemplateSetting.FieldTemplate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| engine | [Engine](#bytebase-store-Engine) |  |  |
-| category | [string](#string) |  |  |
-| column | [ColumnMetadata](#bytebase-store-ColumnMetadata) |  |  |
-| catalog | [ColumnCatalog](#bytebase-store-ColumnCatalog) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-SchemaTemplateSetting-TableTemplate"></a>
-
-### SchemaTemplateSetting.TableTemplate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| engine | [Engine](#bytebase-store-Engine) |  |  |
-| category | [string](#string) |  |  |
-| table | [TableMetadata](#bytebase-store-TableMetadata) |  |  |
-| catalog | [TableCatalog](#bytebase-store-TableCatalog) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-SemanticTypeSetting"></a>
 
 ### SemanticTypeSetting
@@ -4786,12 +4711,10 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | WORKSPACE_ID | 3 |  |
 | WORKSPACE_PROFILE | 4 |  |
 | WORKSPACE_APPROVAL | 5 |  |
-| WORKSPACE_EXTERNAL_APPROVAL | 6 |  |
 | ENTERPRISE_LICENSE | 7 |  |
 | APP_IM | 8 |  |
 | WATERMARK | 9 |  |
 | AI | 10 |  |
-| SCHEMA_TEMPLATE | 13 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |
 | SCIM | 17 |  |
@@ -4808,11 +4731,10 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | SOURCE_UNSPECIFIED | 0 |  |
-| DDL | 1 |  |
-| DML | 2 |  |
-| CREATE_DATABASE | 3 |  |
-| EXPORT_DATA | 4 |  |
-| REQUEST_ROLE | 5 |  |
+| CHANGE_DATABASE | 1 |  |
+| CREATE_DATABASE | 2 |  |
+| EXPORT_DATA | 3 |  |
+| REQUEST_ROLE | 4 |  |
 
 
  

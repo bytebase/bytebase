@@ -16,6 +16,7 @@ import (
 func init() {
 	base.RegisterParseFunc(storepb.Engine_MSSQL, parseTSQLForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_MSSQL, parseTSQLStatements)
+	base.RegisterGetStatementTypes(storepb.Engine_MSSQL, GetStatementTypes)
 }
 
 // parseTSQLForRegistry is the ParseFunc for T-SQL.

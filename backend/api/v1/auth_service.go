@@ -247,7 +247,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		return false
 	}
 
-	passwordRestriction, err := s.store.GetPasswordRestrictionSetting(ctx)
+	passwordRestriction, err := s.store.GetPasswordRestriction(ctx)
 	if err != nil {
 		slog.Error("failed to get password restriction", log.BBError(err))
 		return false
@@ -339,6 +339,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
 	}
 
+	// Use command-line flag value if set, otherwise use database value
+	externalURL := common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
+
 	var userInfo *storepb.IdentityProviderUserInfo
 	switch idp.Type {
 	case storepb.IdentityProviderType_OAUTH2:
@@ -350,7 +353,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create new OAuth2 identity provider"))
 		}
-		redirectURL := fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl)
+		redirectURL := fmt.Sprintf("%s/oauth/callback", externalURL)
 		token, err := oauth2IdentityProvider.ExchangeToken(ctx, redirectURL, oauth2Context.Code)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to exchange token"))
@@ -370,7 +373,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create new OIDC identity provider"))
 		}
 
-		redirectURL := fmt.Sprintf("%s/oidc/callback", setting.ExternalUrl)
+		redirectURL := fmt.Sprintf("%s/oidc/callback", externalURL)
 		token, err := oidcIDP.ExchangeToken(ctx, redirectURL, oidcContext.Code)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to exchange token"))

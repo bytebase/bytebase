@@ -7964,6 +7964,10 @@ components:
                     readOnly: true
                     type: boolean
                     description: Whether sample data setup is enabled.
+                externalUrlFromFlag:
+                    readOnly: true
+                    type: boolean
+                    description: Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
             description: |-
                 System information and configuration for the Bytebase instance.
                  Actuator concept is similar to the Spring Boot Actuator.
@@ -8189,6 +8193,8 @@ components:
                     $ref: '#/components/schemas/AppIMSetting_Lark'
                 dingtalk:
                     $ref: '#/components/schemas/AppIMSetting_DingTalk'
+                teams:
+                    $ref: '#/components/schemas/AppIMSetting_Teams'
         AppIMSetting_Lark:
             type: object
             properties:
@@ -8204,6 +8210,21 @@ components:
                 token:
                     writeOnly: true
                     type: string
+        AppIMSetting_Teams:
+            type: object
+            properties:
+                tenantId:
+                    writeOnly: true
+                    type: string
+                    description: Azure AD tenant ID (Directory ID).
+                clientId:
+                    writeOnly: true
+                    type: string
+                    description: Azure AD application (client) ID.
+                clientSecret:
+                    writeOnly: true
+                    type: string
+                    description: Azure AD client secret.
         AppIMSetting_Wecom:
             type: object
             properties:
@@ -8725,22 +8746,6 @@ components:
                         - $ref: '#/components/schemas/Expr'
                     description: The parsed expression of the condition.
             description: Binding associates members with a role and optional conditions.
-        BoundingBox:
-            type: object
-            properties:
-                xmin:
-                    type: number
-                    format: double
-                ymin:
-                    type: number
-                    format: double
-                xmax:
-                    type: number
-                    format: double
-                ymax:
-                    type: number
-                    format: double
-            description: BoundingBox defines the bounding box for spatial indexes.
         Candidate_Content:
             type: object
             properties:
@@ -8888,16 +8893,6 @@ components:
                         - SDL
                     type: string
                     format: enum
-        CheckConstraintMetadata:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a check constraint.
-                expression:
-                    type: string
-                    description: The expression is the expression of a check constraint.
-            description: CheckConstraintMetadata is the metadata for check constraints.
         CheckReleaseRequest:
             required:
                 - parent
@@ -8999,91 +8994,6 @@ components:
                         - $ref: '#/components/schemas/ObjectSchema'
                     description: Object schema for complex column types like JSON.
             description: Column metadata within a table.
-        ColumnMetadata:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a column.
-                position:
-                    type: integer
-                    description: The position is the position in columns.
-                    format: int32
-                hasDefault:
-                    type: boolean
-                default:
-                    type: string
-                    description: The default value of column.
-                defaultOnNull:
-                    type: boolean
-                    description: |-
-                        Oracle specific metadata.
-                         The default_on_null is the default on null of a column.
-                onUpdate:
-                    type: string
-                    description: |-
-                        The on_update is the on update action of a column.
-                         For MySQL like databases, it's only supported for TIMESTAMP columns with
-                         CURRENT_TIMESTAMP as on update value.
-                nullable:
-                    type: boolean
-                    description: The nullable is the nullable of a column.
-                type:
-                    type: string
-                    description: The type is the type of a column.
-                characterSet:
-                    type: string
-                    description: The character_set is the character_set of a column.
-                collation:
-                    type: string
-                    description: The collation is the collation of a column.
-                comment:
-                    type: string
-                    description: The comment is the comment of a column.
-                generation:
-                    allOf:
-                        - $ref: '#/components/schemas/GenerationMetadata'
-                    description: The generation is the generation of a column.
-                isIdentity:
-                    type: boolean
-                identityGeneration:
-                    enum:
-                        - IDENTITY_GENERATION_UNSPECIFIED
-                        - ALWAYS
-                        - BY_DEFAULT
-                    type: string
-                    description: The identity_generation is for identity columns, PG only.
-                    format: enum
-                identitySeed:
-                    type: string
-                    description: The identity_seed is for identity columns, MSSQL only.
-                identityIncrement:
-                    type: string
-                    description: The identity_increment is for identity columns, MSSQL only.
-                defaultConstraintName:
-                    type: string
-                    description: |-
-                        The default_constraint_name is the name of the default constraint, MSSQL only.
-                         In MSSQL, default values are implemented as named constraints. When modifying or
-                         dropping a column's default value, you must reference the constraint by name.
-                         This field stores the actual constraint name from the database.
-
-                         Example: A column definition like:
-                           CREATE TABLE employees (
-                             status NVARCHAR(20) DEFAULT 'active'
-                           )
-
-                         Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
-                         or a user-defined name if specified:
-                           ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
-
-                         To modify the default, you must first drop the existing constraint by name:
-                           ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
-                           ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
-
-                         This field is populated when syncing from the database. When empty (e.g., when parsing
-                         from SQL files), the system cannot automatically drop the constraint.
-            description: ColumnMetadata is the metadata for columns.
         Constant:
             type: object
             properties:
@@ -9795,32 +9705,6 @@ components:
             properties:
                 diff:
                     type: string
-        DimensionalConfig:
-            type: object
-            properties:
-                dimensions:
-                    type: integer
-                    description: Number of dimensions (2-4, default 2)
-                    format: int32
-                dataType:
-                    type: string
-                    description: |-
-                        Spatial data type
-                         Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.
-                operatorClass:
-                    type: string
-                    description: |-
-                        PostgreSQL operator class
-                         Examples: gist_geometry_ops_2d, gist_geometry_ops_nd, etc.
-                layerGtype:
-                    type: string
-                    description: |-
-                        Oracle geometry type constraint
-                         Examples: POINT, LINE, POLYGON, COLLECTION
-                parallelBuild:
-                    type: boolean
-                    description: Parallel index creation
-            description: DimensionalConfig defines dimensional and constraint parameters for spatial indexes.
         EnvironmentSetting:
             type: object
             properties:
@@ -10245,55 +10129,6 @@ components:
                 FieldMapping saves the field names from user info API of identity provider.
                  As we save all raw json string of user info response data into `principal.idp_user_info`,
                  we can extract the relevant data based with `FieldMapping`.
-        ForeignKeyMetadata:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a foreign key.
-                columns:
-                    type: array
-                    items:
-                        type: string
-                    description: The columns are the ordered referencing columns of a foreign key.
-                referencedSchema:
-                    type: string
-                    description: |-
-                        The referenced_schema is the referenced schema name of a foreign key.
-                         It is an empty string for databases without such concept such as MySQL.
-                referencedTable:
-                    type: string
-                    description: The referenced_table is the referenced table name of a foreign key.
-                referencedColumns:
-                    type: array
-                    items:
-                        type: string
-                    description: The referenced_columns are the ordered referenced columns of a foreign key.
-                onDelete:
-                    type: string
-                    description: The on_delete is the on delete action of a foreign key.
-                onUpdate:
-                    type: string
-                    description: The on_update is the on update action of a foreign key.
-                matchType:
-                    type: string
-                    description: |-
-                        The match_type is the match type of a foreign key.
-                         The match_type is the PostgreSQL specific field.
-                         It's empty string for other databases.
-            description: ForeignKeyMetadata is the metadata for foreign keys.
-        GenerationMetadata:
-            type: object
-            properties:
-                type:
-                    enum:
-                        - TYPE_UNSPECIFIED
-                        - VIRTUAL
-                        - STORED
-                    type: string
-                    format: enum
-                expression:
-                    type: string
         GetSchemaStringResponse:
             type: object
             properties:
@@ -10331,15 +10166,6 @@ components:
                     type: string
                     description: Duration after which the grant automatically expires.
             description: GrantRequest contains details for requesting database access permissions.
-        GridLevel:
-            type: object
-            properties:
-                level:
-                    type: integer
-                    format: int32
-                density:
-                    type: string
-            description: GridLevel defines a grid level for spatial tessellation.
         Group:
             type: object
             properties:
@@ -10447,80 +10273,6 @@ components:
                         - $ref: '#/components/schemas/OIDCIdentityProviderContext'
                     description: OpenID Connect authentication context.
             description: Context for identity provider authentication.
-        IndexMetadata:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of an index.
-                expressions:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        The expressions are the ordered columns or expressions of an index.
-                         This could refer to a column or an expression.
-                keyLength:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        The key_lengths are the ordered key lengths of an index.
-                         If the key length is not specified, it's -1.
-                descending:
-                    type: array
-                    items:
-                        type: boolean
-                    description: The descending is the ordered descending of an index.
-                type:
-                    type: string
-                    description: The type is the type of an index.
-                unique:
-                    type: boolean
-                    description: The unique is whether the index is unique.
-                primary:
-                    type: boolean
-                    description: The primary is whether the index is a primary key index.
-                visible:
-                    type: boolean
-                    description: The visible is whether the index is visible.
-                comment:
-                    type: string
-                    description: The comment is the comment of an index.
-                definition:
-                    type: string
-                    description: The definition of an index.
-                parentIndexSchema:
-                    type: string
-                    description: The schema name of the parent index.
-                parentIndexName:
-                    type: string
-                    description: The index name of the parent index.
-                granularity:
-                    type: string
-                    description: The number of granules in the block. It's a ClickHouse specific field.
-                isConstraint:
-                    type: boolean
-                    description: |-
-                        It's a PostgreSQL specific field.
-                         The unique constraint and unique index are not the same thing in PostgreSQL.
-                spatialConfig:
-                    allOf:
-                        - $ref: '#/components/schemas/SpatialIndexConfig'
-                    description: Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc.
-                opclassNames:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        https://www.postgresql.org/docs/current/catalog-pg-opclass.html
-                         Name of the operator class for each column. (PostgreSQL specific).
-                opclassDefaults:
-                    type: array
-                    items:
-                        type: boolean
-                    description: True if the operator class is the default. (PostgreSQL specific).
-            description: IndexMetadata is the metadata for indexes.
         Instance:
             type: object
             properties:
@@ -12780,142 +12532,6 @@ components:
                         $ref: '#/components/schemas/TableCatalog'
                     description: The tables in the schema.
             description: Schema metadata within a database.
-        SchemaTemplateSetting:
-            type: object
-            properties:
-                fieldTemplates:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SchemaTemplateSetting_FieldTemplate'
-                columnTypes:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SchemaTemplateSetting_ColumnType'
-                tableTemplates:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/SchemaTemplateSetting_TableTemplate'
-        SchemaTemplateSetting_ColumnType:
-            type: object
-            properties:
-                engine:
-                    enum:
-                        - ENGINE_UNSPECIFIED
-                        - CLICKHOUSE
-                        - MYSQL
-                        - POSTGRES
-                        - SNOWFLAKE
-                        - SQLITE
-                        - TIDB
-                        - MONGODB
-                        - REDIS
-                        - ORACLE
-                        - SPANNER
-                        - MSSQL
-                        - REDSHIFT
-                        - MARIADB
-                        - OCEANBASE
-                        - STARROCKS
-                        - DORIS
-                        - HIVE
-                        - ELASTICSEARCH
-                        - BIGQUERY
-                        - DYNAMODB
-                        - DATABRICKS
-                        - COCKROACHDB
-                        - COSMOSDB
-                        - TRINO
-                        - CASSANDRA
-                    type: string
-                    format: enum
-                enabled:
-                    type: boolean
-                types:
-                    type: array
-                    items:
-                        type: string
-        SchemaTemplateSetting_FieldTemplate:
-            type: object
-            properties:
-                id:
-                    type: string
-                engine:
-                    enum:
-                        - ENGINE_UNSPECIFIED
-                        - CLICKHOUSE
-                        - MYSQL
-                        - POSTGRES
-                        - SNOWFLAKE
-                        - SQLITE
-                        - TIDB
-                        - MONGODB
-                        - REDIS
-                        - ORACLE
-                        - SPANNER
-                        - MSSQL
-                        - REDSHIFT
-                        - MARIADB
-                        - OCEANBASE
-                        - STARROCKS
-                        - DORIS
-                        - HIVE
-                        - ELASTICSEARCH
-                        - BIGQUERY
-                        - DYNAMODB
-                        - DATABRICKS
-                        - COCKROACHDB
-                        - COSMOSDB
-                        - TRINO
-                        - CASSANDRA
-                    type: string
-                    format: enum
-                category:
-                    type: string
-                column:
-                    $ref: '#/components/schemas/ColumnMetadata'
-                catalog:
-                    $ref: '#/components/schemas/ColumnCatalog'
-        SchemaTemplateSetting_TableTemplate:
-            type: object
-            properties:
-                id:
-                    type: string
-                engine:
-                    enum:
-                        - ENGINE_UNSPECIFIED
-                        - CLICKHOUSE
-                        - MYSQL
-                        - POSTGRES
-                        - SNOWFLAKE
-                        - SQLITE
-                        - TIDB
-                        - MONGODB
-                        - REDIS
-                        - ORACLE
-                        - SPANNER
-                        - MSSQL
-                        - REDSHIFT
-                        - MARIADB
-                        - OCEANBASE
-                        - STARROCKS
-                        - DORIS
-                        - HIVE
-                        - ELASTICSEARCH
-                        - BIGQUERY
-                        - DYNAMODB
-                        - DATABRICKS
-                        - COCKROACHDB
-                        - COSMOSDB
-                        - TRINO
-                        - CASSANDRA
-                    type: string
-                    format: enum
-                category:
-                    type: string
-                table:
-                    $ref: '#/components/schemas/TableMetadata'
-                catalog:
-                    $ref: '#/components/schemas/TableCatalog'
         SearchAuditLogsRequest:
             required:
                 - parent
@@ -13287,20 +12903,46 @@ components:
                     description: The current etag of the policy.
             description: Request message for setting an IAM policy.
         Setting:
+            required:
+                - value
             type: object
             properties:
                 name:
                     type: string
                     description: |-
-                        The resource name of the setting. Must be one of the following forms:
-
-                         - `setting/{setting}`
-                         For example, "settings/bb.branding.logo"
+                        The resource name of the setting.
+                         Format: settings/{setting}
+                         Example: "settings/SEMANTIC_TYPES"
                 value:
                     allOf:
-                        - $ref: '#/components/schemas/Value'
+                        - $ref: '#/components/schemas/SettingValue'
                     description: The configuration value of the setting.
             description: The schema of setting.
+        SettingValue:
+            type: object
+            properties:
+                stringValue:
+                    type: string
+                    description: Defines this value as being a string value.
+                appIm:
+                    $ref: '#/components/schemas/AppIMSetting'
+                workspaceProfile:
+                    $ref: '#/components/schemas/WorkspaceProfileSetting'
+                workspaceApproval:
+                    $ref: '#/components/schemas/WorkspaceApprovalSetting'
+                dataClassification:
+                    $ref: '#/components/schemas/DataClassificationSetting'
+                semanticType:
+                    $ref: '#/components/schemas/SemanticTypeSetting'
+                scim:
+                    $ref: '#/components/schemas/SCIMSetting'
+                passwordRestriction:
+                    $ref: '#/components/schemas/PasswordRestrictionSetting'
+                ai:
+                    $ref: '#/components/schemas/AISetting'
+                environment:
+                    $ref: '#/components/schemas/EnvironmentSetting'
+            description: The data in setting value.
         Sheet:
             required:
                 - name
@@ -13398,32 +13040,6 @@ components:
                     items:
                         $ref: '#/components/schemas/SheetCommand'
                     description: The start and end position of each command in the sheet statement.
-        SpatialIndexConfig:
-            type: object
-            properties:
-                method:
-                    type: string
-                    description: |-
-                        Index method/type (database-specific)
-                         Examples: "SPATIAL" (MySQL/SQL Server), "GIST"/"SPGIST" (PostgreSQL), "MDSYS.SPATIAL_INDEX_V2" (Oracle)
-                tessellation:
-                    allOf:
-                        - $ref: '#/components/schemas/TessellationConfig'
-                    description: Tessellation configuration (primarily SQL Server)
-                storage:
-                    allOf:
-                        - $ref: '#/components/schemas/StorageConfig'
-                    description: Storage and performance parameters
-                dimensional:
-                    allOf:
-                        - $ref: '#/components/schemas/DimensionalConfig'
-                    description: Dimensional and constraint parameters
-                engineSpecific:
-                    type: object
-                    additionalProperties:
-                        type: string
-                    description: Database-specific parameters (stored as key-value pairs for extensibility)
-            description: SpatialIndexConfig is the configuration for spatial indexes across different database engines.
         Stage:
             type: object
             properties:
@@ -13465,45 +13081,6 @@ components:
                         $ref: '#/components/schemas/GoogleProtobufAny'
                     description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
             description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
-        StorageConfig:
-            type: object
-            properties:
-                fillfactor:
-                    type: integer
-                    description: PostgreSQL parameters
-                    format: int32
-                buffering:
-                    type: string
-                tablespace:
-                    type: string
-                    description: Oracle parameters
-                workTablespace:
-                    type: string
-                sdoLevel:
-                    type: integer
-                    format: int32
-                commitInterval:
-                    type: integer
-                    format: int32
-                padIndex:
-                    type: boolean
-                    description: SQL Server parameters
-                sortInTempdb:
-                    type: string
-                dropExisting:
-                    type: boolean
-                online:
-                    type: boolean
-                allowRowLocks:
-                    type: boolean
-                allowPageLocks:
-                    type: boolean
-                maxdop:
-                    type: integer
-                    format: int32
-                dataCompression:
-                    type: string
-            description: StorageConfig defines storage and performance parameters for spatial indexes.
         Subscription:
             type: object
             properties:
@@ -13601,156 +13178,6 @@ components:
                         $ref: '#/components/schemas/ColumnCatalog'
                     description: The columns in the table.
             description: Column list for regular tables.
-        TableMetadata:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a table.
-                columns:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ColumnMetadata'
-                    description: The columns is the ordered list of columns in a table.
-                indexes:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/IndexMetadata'
-                    description: The indexes is the list of indexes in a table.
-                engine:
-                    type: string
-                    description: The engine is the engine of a table.
-                collation:
-                    type: string
-                    description: The collation is the collation of a table.
-                charset:
-                    type: string
-                    description: The character set of table.
-                rowCount:
-                    type: string
-                    description: The row_count is the estimated number of rows of a table.
-                dataSize:
-                    type: string
-                    description: The data_size is the estimated data size of a table.
-                indexSize:
-                    type: string
-                    description: The index_size is the estimated index size of a table.
-                dataFree:
-                    type: string
-                    description: The data_free is the estimated free data size of a table.
-                createOptions:
-                    type: string
-                    description: The create_options is the create option of a table.
-                comment:
-                    type: string
-                    description: The comment is the comment of a table.
-                foreignKeys:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ForeignKeyMetadata'
-                    description: The foreign_keys is the list of foreign keys in a table.
-                partitions:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/TablePartitionMetadata'
-                    description: The partitions is the list of partitions in a table.
-                checkConstraints:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/CheckConstraintMetadata'
-                    description: The check_constraints is the list of check constraints in a table.
-                owner:
-                    type: string
-                    description: The owner of the table.
-                sortingKeys:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
-                         Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
-                triggers:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/TriggerMetadata'
-                    description: The triggers is the list of triggers associated with the table.
-                skipDump:
-                    type: boolean
-                    description: Whether to skip this table during schema dump operations.
-                shardingInfo:
-                    type: string
-                    description: https://docs.pingcap.com/tidb/stable/information-schema-tables/
-                primaryKeyType:
-                    type: string
-                    description: |-
-                        https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
-                         CLUSTERED or NONCLUSTERED.
-            description: TableMetadata is the metadata for tables.
-        TablePartitionMetadata:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name is the name of a table partition.
-                type:
-                    enum:
-                        - TYPE_UNSPECIFIED
-                        - RANGE
-                        - RANGE_COLUMNS
-                        - LIST
-                        - LIST_COLUMNS
-                        - HASH
-                        - LINEAR_HASH
-                        - KEY
-                        - LINEAR_KEY
-                    type: string
-                    description: The type of a table partition.
-                    format: enum
-                expression:
-                    type: string
-                    description: |-
-                        The expression is the expression of a table partition.
-                         For PostgreSQL, the expression is the text of {FOR VALUES
-                         partition_bound_spec}, see
-                         https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL,
-                         the expression is the `expr` or `column_list` of the following syntax.
-                         PARTITION BY
-                            { [LINEAR] HASH(expr)
-                            | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)
-                            | RANGE{(expr) | COLUMNS(column_list)}
-                            | LIST{(expr) | COLUMNS(column_list)} }.
-                value:
-                    type: string
-                    description: |-
-                        The value is the value of a table partition.
-                         For MySQL, the value is for RANGE and LIST partition types,
-                         - For a RANGE partition, it contains the value set in the partition's
-                         VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
-                         - For a LIST partition, this column contains the values defined in the
-                         partition's VALUES IN clause, which is a list of comma-separated integer
-                         values.
-                         - For others, it's an empty string.
-                useDefault:
-                    type: string
-                    description: |-
-                        The use_default is whether the users use the default partition, it stores
-                         the different value for different database engines. For MySQL, it's [INT]
-                         type, 0 means not use default partition, otherwise, it's equals to number
-                         in syntax [SUB]PARTITION {number}.
-                subpartitions:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/TablePartitionMetadata'
-                    description: The subpartitions is the list of subpartitions in a table partition.
-                indexes:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/IndexMetadata'
-                checkConstraints:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/CheckConstraintMetadata'
-            description: TablePartitionMetadata is the metadata for table partitions.
         Task:
             type: object
             properties:
@@ -14071,28 +13498,6 @@ components:
                     description: The type of database change (MIGRATE or SDL).
                     format: enum
             description: Payload for updating a database schema.
-        TessellationConfig:
-            type: object
-            properties:
-                scheme:
-                    type: string
-                    description: |-
-                        Tessellation scheme
-                         Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
-                boundingBox:
-                    allOf:
-                        - $ref: '#/components/schemas/BoundingBox'
-                    description: Bounding box for GEOMETRY indexes (SQL Server)
-                gridLevels:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/GridLevel'
-                    description: Grid level configuration (SQL Server)
-                cellsPerObject:
-                    type: integer
-                    description: Cells per object (SQL Server)
-                    format: int32
-            description: TessellationConfig defines tessellation parameters for spatial indexes.
         TestIdentityProviderRequest:
             type: object
             properties:
@@ -14140,31 +13545,6 @@ components:
                 error:
                     type: string
                     description: The result of the test, empty if the test is successful.
-        TriggerMetadata:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: The name of the trigger.
-                event:
-                    type: string
-                    description: The event that triggers this action, such as INSERT, UPDATE, DELETE, or TRUNCATE.
-                timing:
-                    type: string
-                    description: The timing of when the trigger fires, such as BEFORE or AFTER.
-                body:
-                    type: string
-                    description: The body of the trigger.
-                sqlMode:
-                    type: string
-                characterSetClient:
-                    type: string
-                collationConnection:
-                    type: string
-                comment:
-                    type: string
-                skipDump:
-                    type: boolean
         UndeleteInstanceRequest:
             required:
                 - name
@@ -14351,35 +13731,6 @@ components:
                 source:
                     type: string
                     description: source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
-        Value:
-            type: object
-            properties:
-                stringValue:
-                    type: string
-                    description: Defines this value as being a string value.
-                appImSettingValue:
-                    $ref: '#/components/schemas/AppIMSetting'
-                workspaceProfileSettingValue:
-                    allOf:
-                        - $ref: '#/components/schemas/WorkspaceProfileSetting'
-                    description: reserved 4; // was AgentPluginSetting agent_plugin_setting_value
-                workspaceApprovalSettingValue:
-                    $ref: '#/components/schemas/WorkspaceApprovalSetting'
-                schemaTemplateSettingValue:
-                    $ref: '#/components/schemas/SchemaTemplateSetting'
-                dataClassificationSettingValue:
-                    $ref: '#/components/schemas/DataClassificationSetting'
-                semanticTypeSettingValue:
-                    $ref: '#/components/schemas/SemanticTypeSetting'
-                scimSetting:
-                    $ref: '#/components/schemas/SCIMSetting'
-                passwordRestrictionSetting:
-                    $ref: '#/components/schemas/PasswordRestrictionSetting'
-                aiSetting:
-                    $ref: '#/components/schemas/AISetting'
-                environmentSetting:
-                    $ref: '#/components/schemas/EnvironmentSetting'
-            description: The data in setting value.
         Webhook:
             required:
                 - type
@@ -14553,8 +13904,7 @@ components:
                 source:
                     enum:
                         - SOURCE_UNSPECIFIED
-                        - DDL
-                        - DML
+                        - CHANGE_DATABASE
                         - CREATE_DATABASE
                         - EXPORT_DATA
                         - REQUEST_ROLE

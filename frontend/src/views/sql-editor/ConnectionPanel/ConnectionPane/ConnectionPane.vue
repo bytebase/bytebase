@@ -655,6 +655,7 @@ watch(
 );
 
 const prepareDatabases = async () => {
+  treeByEnvironment.value.clear();
   await Promise.all(
     [...environmentList.value, unknownEnvironment()].map(
       async (environment) => {

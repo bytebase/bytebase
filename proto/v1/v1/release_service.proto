@@ -67,7 +67,6 @@ service ReleaseService {
     };
     option (google.api.method_signature) = "release,update_mask";
     option (bytebase.v1.permission) = "bb.releases.update";
-    option (bytebase.v1.allow_missing_requires) = "bb.releases.create";
     option (bytebase.v1.auth_method) = IAM;
   }
 

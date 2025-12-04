@@ -307,7 +307,7 @@ const tryFinishSetup = async () => {
 
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
   const query: LocationQueryRaw = {
-    template: "bb.issue.database.schema.update",
+    template: "bb.issue.database.update",
     mode: "normal",
   };
   const sqlMap: Record<string, string> = {};
@@ -323,7 +323,7 @@ const tryFinishSetup = async () => {
   useStorageStore().put(sqlMapStorageKey, sqlMap);
   query.sqlMapStorageKey = sqlMapStorageKey;
   query.name = generateIssueTitle(
-    "bb.issue.database.schema.update",
+    "bb.issue.database.update",
     targetDatabaseList.map((db) => db.databaseName)
   );
 

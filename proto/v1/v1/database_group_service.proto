@@ -57,7 +57,6 @@ service DatabaseGroupService {
     };
     option (google.api.method_signature) = "database_group,update_mask";
     option (bytebase.v1.permission) = "bb.databaseGroups.update";
-    option (bytebase.v1.allow_missing_requires) = "bb.databaseGroups.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }

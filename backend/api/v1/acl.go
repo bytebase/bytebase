@@ -153,19 +153,24 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 
 	// Check allow_missing secondary permission if applicable
 	// This handles Update methods that can create resources via allow_missing=true
-	allowMissingPerm, err := auth.GetAllowMissingRequiredPermission(fullMethod)
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get allow_missing permission requirement"))
-	}
+	// When allow_missing is set, we additionally require create permission
+	if hasAllowMissingEnabled(request) {
+		// Derive create permission by replacing ".update" with ".create"
+		// Example: "bb.roles.update" -> "bb.roles.create"
+		createPerm := strings.Replace(string(authContext.Permission), ".update", ".create", 1)
 
-	if allowMissingPerm != "" && hasAllowMissingEnabled(request) {
-		// User is attempting create-or-update, verify create permission
-		hasCreatePerm, err := in.iamManager.CheckPermission(ctx, iam.Permission(allowMissingPerm), user)
-		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check %s permission", allowMissingPerm))
+		// Create a new auth context for create permission check
+		createAuthContext := &common.AuthContext{
+			Permission: iam.Permission(createPerm),
+			AuthMethod: authContext.AuthMethod,
+			Resources:  authContext.Resources,
 		}
-		if !hasCreatePerm {
-			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: allow_missing=true requires both %s and %s", authContext.Permission, allowMissingPerm))
+		ok, extra, err := doIAMPermissionCheck(ctx, in.iamManager, fullMethod, user, createAuthContext)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check create permission %q, extra %v, err: %v", createPerm, extra, err))
+		}
+		if !ok {
+			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: allow_missing=true requires both %s and %s, extra %v", authContext.Permission, createPerm, extra))
 		}
 	}
 

@@ -27,6 +27,7 @@ import (
 func init() {
 	base.RegisterParseFunc(storepb.Engine_TIDB, ParseTiDBForSyntaxCheck)
 	base.RegisterParseStatementsFunc(storepb.Engine_TIDB, parseTiDBStatements)
+	base.RegisterGetStatementTypes(storepb.Engine_TIDB, GetStatementTypes)
 }
 
 // ParseTiDBForSyntaxCheck parses TiDB SQL for syntax checking purposes.

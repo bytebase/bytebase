@@ -728,7 +728,7 @@ const file_v1_group_service_proto_rawDesc = "" +
 	"\amembers\x18\x05 \x03(\v2\x18.bytebase.v1.GroupMemberR\amembers\x12\x16\n" +
 	"\x06source\x18\a \x01(\tR\x06source\x12\x14\n" +
 	"\x05email\x18\b \x01(\tR\x05email:'\xeaA$\n" +
-	"\x12bytebase.com/Group\x12\x0egroups/{group}2\xcf\x06\n" +
+	"\x12bytebase.com/Group\x12\x0egroups/{group}2\xbb\x06\n" +
 	"\fGroupService\x12u\n" +
 	"\bGetGroup\x12\x1c.bytebase.v1.GetGroupRequest\x1a\x12.bytebase.v1.Group\"7\xdaA\x04name\x8a\xea0\rbb.groups.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/{name=groups/*}\x12\x8b\x01\n" +
 	"\x0eBatchGetGroups\x12\".bytebase.v1.BatchGetGroupsRequest\x1a#.bytebase.v1.BatchGetGroupsResponse\"0\x8a\xea0\rbb.groups.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/groups:batchGet\x12z\n" +
@@ -736,8 +736,8 @@ const file_v1_group_service_proto_rawDesc = "" +
 	"ListGroups\x12\x1e.bytebase.v1.ListGroupsRequest\x1a\x1f.bytebase.v1.ListGroupsResponse\"+\xdaA\x00\x8a\xea0\x0ebb.groups.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\f\x12\n" +
 	"/v1/groups\x12\x81\x01\n" +
 	"\vCreateGroup\x12\x1f.bytebase.v1.CreateGroupRequest\x1a\x12.bytebase.v1.Group\"=\xdaA\x05group\x8a\xea0\x10bb.groups.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x05group\"\n" +
-	"/v1/groups\x12\xb0\x01\n" +
-	"\vUpdateGroup\x12\x1f.bytebase.v1.UpdateGroupRequest\x1a\x12.bytebase.v1.Group\"l\xdaA\x11group,update_mask\x8a\xea0\x10bb.groups.update\x90\xea0\x02\x98\xea0\x01\xa2\xea0\x10bb.groups.create\x82\xd3\xe4\x93\x02\":\x05group2\x19/v1/{group.name=groups/*}\x12\x86\x01\n" +
+	"/v1/groups\x12\x9c\x01\n" +
+	"\vUpdateGroup\x12\x1f.bytebase.v1.UpdateGroupRequest\x1a\x12.bytebase.v1.Group\"X\xdaA\x11group,update_mask\x8a\xea0\x10bb.groups.update\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\":\x05group2\x19/v1/{group.name=groups/*}\x12\x86\x01\n" +
 	"\vDeleteGroup\x12\x1f.bytebase.v1.DeleteGroupRequest\x1a\x16.google.protobuf.Empty\">\xdaA\x04name\x8a\xea0\x10bb.groups.delete\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x15*\x13/v1/{name=groups/*}B\xa7\x01\n" +
 	"\x0fcom.bytebase.v1B\x11GroupServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 

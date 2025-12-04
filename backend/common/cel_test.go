@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/cel-go/cel"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -111,5 +112,79 @@ func TestGetQueryExportFactors(t *testing.T) {
 		factors, err := GetQueryExportFactors(tt.expression)
 		a.NoError(err)
 		a.Equal(tt.want, *factors)
+	}
+}
+
+func TestFallbackApprovalFactors(t *testing.T) {
+	a := require.New(t)
+
+	// Fallback factors should only contain project_id
+	a.Len(FallbackApprovalFactors, 2) // 1 variable + 1 size limit
+
+	// Verify the first option is the project_id variable
+	// CEL EnvOptions are opaque, so we verify by creating an env
+	// and checking that project_id works but environment_id doesn't
+}
+
+func TestFallbackApprovalFactorsOnlyAllowsProjectId(t *testing.T) {
+	a := require.New(t)
+
+	// Create env with fallback factors
+	e, err := cel.NewEnv(FallbackApprovalFactors...)
+	a.NoError(err)
+
+	// resource.project_id should compile
+	_, issues := e.Compile(`resource.project_id == "proj-123"`)
+	a.Nil(issues)
+
+	// resource.environment_id should NOT compile (not in fallback factors)
+	_, issues = e.Compile(`resource.environment_id == "prod"`)
+	a.NotNil(issues)
+	a.Error(issues.Err())
+}
+
+func TestValidateFallbackApprovalExpr(t *testing.T) {
+	tests := []struct {
+		name       string
+		expression string
+		wantErr    bool
+	}{
+		{
+			name:       "valid project_id condition",
+			expression: `resource.project_id == "proj-123"`,
+			wantErr:    false,
+		},
+		{
+			name:       "valid true condition",
+			expression: `true`,
+			wantErr:    false,
+		},
+		{
+			name:       "invalid environment_id condition",
+			expression: `resource.environment_id == "prod"`,
+			wantErr:    true,
+		},
+		{
+			name:       "invalid statement condition",
+			expression: `statement.affected_rows > 100`,
+			wantErr:    true,
+		},
+		{
+			name:       "empty condition",
+			expression: ``,
+			wantErr:    false, // empty is allowed
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := require.New(t)
+			err := ValidateFallbackApprovalExpr(tt.expression)
+			if tt.wantErr {
+				a.Error(err)
+			} else {
+				a.NoError(err)
+			}
+		})
 	}
 }

@@ -71,13 +71,3 @@ export declare const auth_method: GenExtension<MethodOptions, AuthMethod>;
  */
 export declare const audit: GenExtension<MethodOptions, boolean>;
 
-/**
- * When a method supports allow_missing and may create resources,
- * this specifies the additional permission required when allow_missing=true.
- * Example: UpdateRole with allow_missing requires both bb.roles.update
- * (from permission) and bb.roles.create (from allow_missing_requires).
- *
- * @generated from extension: string allow_missing_requires = 100004;
- */
-export declare const allow_missing_requires: GenExtension<MethodOptions, string>;
-

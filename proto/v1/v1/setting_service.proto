@@ -10,9 +10,6 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
-import "v1/common.proto";
-import "v1/database_catalog_service.proto";
-import "v1/database_service.proto";
 import "v1/issue_service.proto";
 import "v1/project_service.proto";
 
@@ -88,8 +85,6 @@ message UpdateSettingRequest {
 
 // The schema of setting.
 message Setting {
-  reserved 16;
-
   option (google.api.resource) = {
     type: "bytebase.com/Setting"
     pattern: "settings/{setting}"
@@ -97,17 +92,12 @@ message Setting {
 
   enum SettingName {
     SETTING_NAME_UNSPECIFIED = 0;
-    AUTH_SECRET = 1;
     BRANDING_LOGO = 2;
-    WORKSPACE_ID = 3;
     WORKSPACE_PROFILE = 4;
     WORKSPACE_APPROVAL = 5;
-    WORKSPACE_EXTERNAL_APPROVAL = 6;
-    ENTERPRISE_LICENSE = 7;
     APP_IM = 8;
     WATERMARK = 9;
     AI = 10;
-    SCHEMA_TEMPLATE = 13;
     DATA_CLASSIFICATION = 14;
     SEMANTIC_TYPES = 15;
     SCIM = 17;
@@ -115,35 +105,29 @@ message Setting {
     ENVIRONMENT = 19;
   }
 
-  // The resource name of the setting. Must be one of the following forms:
-  //
-  // - `setting/{setting}`
-  // For example, "settings/bb.branding.logo"
-  string name = 1;
+  // The resource name of the setting.
+  // Format: settings/{setting}
+  // Example: "settings/SEMANTIC_TYPES"
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
 
   // The configuration value of the setting.
-  Value value = 2;
+  SettingValue value = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 // The data in setting value.
-message Value {
-  reserved 18;
-
-  // Value is a oneof field for setting value.
+message SettingValue {
   oneof value {
     // Defines this value as being a string value.
     string string_value = 1;
-    AppIMSetting app_im_setting_value = 3;
-    // reserved 4; // was AgentPluginSetting agent_plugin_setting_value
-    WorkspaceProfileSetting workspace_profile_setting_value = 5;
-    WorkspaceApprovalSetting workspace_approval_setting_value = 6;
-    SchemaTemplateSetting schema_template_setting_value = 9;
-    DataClassificationSetting data_classification_setting_value = 10;
-    SemanticTypeSetting semantic_type_setting_value = 11;
-    SCIMSetting scim_setting = 14;
-    PasswordRestrictionSetting password_restriction_setting = 15;
-    AISetting ai_setting = 16;
-    EnvironmentSetting environment_setting = 17;
+    AppIMSetting app_im = 3;
+    WorkspaceProfileSetting workspace_profile = 5;
+    WorkspaceApprovalSetting workspace_approval = 6;
+    DataClassificationSetting data_classification = 10;
+    SemanticTypeSetting semantic_type = 11;
+    SCIMSetting scim = 14;
+    PasswordRestrictionSetting password_restriction = 15;
+    AISetting ai = 16;
+    EnvironmentSetting environment = 17;
   }
 }
 
@@ -169,6 +153,14 @@ message AppIMSetting {
     string client_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
     string robot_code = 3 [(google.api.field_behavior) = INPUT_ONLY];
   }
+  message Teams {
+    // Azure AD tenant ID (Directory ID).
+    string tenant_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    // Azure AD application (client) ID.
+    string client_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    // Azure AD client secret.
+    string client_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+  }
 
   message IMSetting {
     Webhook.Type type = 1;
@@ -178,6 +170,7 @@ message AppIMSetting {
       Wecom wecom = 4;
       Lark lark = 5;
       DingTalk dingtalk = 6;
+      Teams teams = 7;
     }
   }
 
@@ -267,7 +260,7 @@ message WorkspaceApprovalSetting {
     // request.expiration_days: the role expiration days for the request, support "==", "!=", "<", "<=", ">", ">=" operations.
     // request.role: the request role full name, support "==", "!=", "in [xx]", "!(in [xx])", "contains()", "matches()", "startsWith()", "endsWith()" operations.
     //
-    // When source is DDL/DML, support: statement.*, resource.* (excluding request.*)
+    // When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*)
     // When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name
     // When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name
     // When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role
@@ -275,60 +268,17 @@ message WorkspaceApprovalSetting {
     // For examples:
     // resource.environment_id == "prod" && statement.affected_rows >= 100
     // resource.table_name.matches("sensitive_.*") && resource.db_engine == "MYSQL"
-    //
-    // Legacy format (deprecated): source == "DDL" && level == "HIGH"
     google.type.Expr condition = 2;
     Source source = 3;
     enum Source {
       SOURCE_UNSPECIFIED = 0;
-      DDL = 1;
-      DML = 2;
-      CREATE_DATABASE = 3;
-      EXPORT_DATA = 4;
-      REQUEST_ROLE = 5;
+      CHANGE_DATABASE = 1;
+      CREATE_DATABASE = 2;
+      EXPORT_DATA = 3;
+      REQUEST_ROLE = 4;
     }
   }
   repeated Rule rules = 1;
-}
-
-message SchemaTemplateSetting {
-  message FieldTemplate {
-    string id = 1;
-
-    Engine engine = 2;
-
-    string category = 3;
-
-    ColumnMetadata column = 4;
-
-    ColumnCatalog catalog = 5;
-  }
-
-  repeated FieldTemplate field_templates = 1;
-
-  message ColumnType {
-    Engine engine = 1;
-
-    bool enabled = 2;
-
-    repeated string types = 3;
-  }
-
-  repeated ColumnType column_types = 2;
-
-  message TableTemplate {
-    string id = 1;
-
-    Engine engine = 2;
-
-    string category = 3;
-
-    TableMetadata table = 4;
-
-    TableCatalog catalog = 5;
-  }
-
-  repeated TableTemplate table_templates = 3;
 }
 
 message DataClassificationSetting {

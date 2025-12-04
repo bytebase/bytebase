@@ -609,7 +609,9 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	if setting.ExternalUrl == "" {
+	// Use command-line flag value if set, otherwise use database value
+	externalURL := common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
+	if externalURL == "" {
 		return errors.Errorf("external URL is empty")
 	}
 

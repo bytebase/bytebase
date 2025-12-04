@@ -74,7 +74,7 @@ const update = async () => {
   await settingV1Store.updateWorkspaceProfile({
     payload,
     updateMask: create(FieldMaskSchema, {
-      paths: ["value.workspace_profile_setting_value.enable_audit_log_stdout"],
+      paths: ["value.workspace_profile.enable_audit_log_stdout"],
     }),
   });
 

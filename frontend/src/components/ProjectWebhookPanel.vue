@@ -65,6 +65,7 @@ const columnList = computed((): DataTableColumn<Webhook>[] => {
       key: "url",
       title: "URL",
       resizable: true,
+      ellipsis: true,
       render: (webhook) => webhook.url,
     },
     {

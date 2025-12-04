@@ -68,8 +68,7 @@ const { selectedTask } = useIssueContext();
 
 const sheet = computedAsync(async () => {
   return useSheetV1Store().getOrFetchSheetByName(
-    sheetNameOfTaskV1(selectedTask.value),
-    "FULL"
+    sheetNameOfTaskV1(selectedTask.value)
   );
 });
 

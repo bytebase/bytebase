@@ -56,7 +56,6 @@ service ReviewConfigService {
     };
     option (google.api.method_signature) = "review_config,update_mask";
     option (bytebase.v1.permission) = "bb.reviewConfigs.update";
-    option (bytebase.v1.allow_missing_requires) = "bb.reviewConfigs.create";
     option (bytebase.v1.auth_method) = IAM;
   }
 

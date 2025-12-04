@@ -1,7 +1,7 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent :title="$t('schema-template.classification.select')">
-      <div class="w-100 h-full">
+      <div class="w-[25rem] h-full">
         <ClassificationTree
           :classification-config="classificationConfig"
           @apply="onApply"
@@ -23,9 +23,9 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import ClassificationTree from "@/components/SchemaTemplate/ClassificationTree.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
+import ClassificationTree from "./ClassificationTree.vue";
 
 defineProps<{
   show: boolean;

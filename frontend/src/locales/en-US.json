@@ -344,15 +344,6 @@
     },
     "executed-by": "Executed by",
     "affected-rows": "Affected rows",
-    "result": {
-      "schema-version": "Schema: {version}",
-      "export-archive-ready": "Archive: Ready for download"
-    },
-    "waiting": {
-      "connection-limit": "Waiting for available connections",
-      "parallel-tasks-limit": "Waiting for other tasks to complete",
-      "blocking-task": "Waiting for another task"
-    },
     "type": {
       "database-create": "Create Database",
       "migrate": "Migrate",
@@ -366,7 +357,6 @@
     "history": "Execution History",
     "latest-logs": "Latest Logs",
     "latest": "Latest Execution",
-    "no-detail": "No execution details available",
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
@@ -500,7 +490,7 @@
       "assign-role": "Assign role | Assign roles"
     },
     "im-integration": {
-      "description": "Push direct messages to users for specific issue events. Works with project webhook."
+      "description": "The IM integration will be used to push direct messages to users for specific issue events. Works with the project webhook."
     },
     "sso": {
       "create": "Create SSO",
@@ -633,7 +623,9 @@
         },
         "external-url": {
           "self": "External URL",
-          "description": "The external URL where user visits Bytebase, must start with http:// or https://."
+          "description": "The external URL where user visits Bytebase, must start with http:// or https://.",
+          "managed-by-flag": "This setting is managed via the --external-url command-line flag",
+          "cannot-edit-flag": "External URL cannot be changed because it is set via --external-url command-line flag"
         },
         "sign-in-frequency": {
           "self": "Sign-in frequency",
@@ -1269,7 +1261,6 @@
     "start-to-sync-schema": "Start to sync schema",
     "failed-to-sync-schema": "Failed to sync schema",
     "successfully-synced-schema": "Successfully synced schema",
-    "create": "Create database",
     "procedures": "Procedures",
     "partitions": "Partitions",
     "packages": "Packages",
@@ -1660,7 +1651,6 @@
     "edit-environment": "Edit Environment",
     "mixed-values-for-label": "This selected label have mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key",
-    "change-data": "Change Data",
     "table-detail": "Table detail",
     "batch-action-permission-denied": "Don't have permission to {action} for databases",
     "batch-action-disabled": "Can not {action} for the databases from different projects",
@@ -2198,7 +2188,6 @@
       "drop-table": "Drop table",
       "restore": "Restore",
       "add-column": "Add column",
-      "add-from-template": "Add from template",
       "drop-column": "Drop column",
       "create-procedure": "Create procedure",
       "create-function": "Create function",
@@ -2629,8 +2618,7 @@
           "high": "High"
         },
         "namespace": {
-          "dml": "DML",
-          "ddl": "DDL",
+          "change_database": "Change Database",
           "create_database": "Create Database",
           "data_export": "Export Data",
           "request-role": "Request Role"
@@ -2650,13 +2638,15 @@
         "add": "Add node",
         "delete": "Delete approval node"
       },
-      "skip": "Skip manual approval",
+      "skip": "No approval required",
       "issue-review": {
         "sent-back": "Sent back",
         "review-sent-back-by": "Review sent back by {user}"
       },
       "add-rule": "Add rule",
       "edit-rule": "Edit rule",
+      "fallback-rules": "Fallback Rules",
+      "fallback-rules-hint": "Fallback rules are evaluated only when no other rules match.",
       "template": {
         "presets-title": "Presets",
         "presets": {
@@ -2698,41 +2688,6 @@
     }
   },
   "schema-template": {
-    "self": "Schema Template",
-    "field-template": {
-      "self": "Field Template",
-      "description": "You can pre-define the field template, then apply the template during the schema change."
-    },
-    "column-type-restriction": {
-      "self": "Column Type Restriction",
-      "description": "You can restrict the allowed column types for each database engine.",
-      "allow-all": "Allow all",
-      "allow-limited-types": "Allow limited types",
-      "back-to-edit": "Back to edit",
-      "add-and-save": "Add and save",
-      "messages": {
-        "unable-to-update": "Unable to update restriction",
-        "following-column-types-are-used": "Following column types are still used by field template",
-        "one-allowed-type-per-line": "One allowed data type per line"
-      }
-    },
-    "table-template": {
-      "self": "Table Template",
-      "description": "You can pre-define the table template, then apply the template during the schema change."
-    },
-    "search-by-name-or-comment": "Search by name or comment",
-    "form": {
-      "category": "Category",
-      "category-desc": "Select an existing category or create a new one",
-      "unclassified": "Unclassified",
-      "column-name": "Column name",
-      "column-type": "Column type",
-      "default-value": "Default",
-      "comment": "Comment",
-      "nullable": "Nullable",
-      "table-name": "Table name",
-      "on-update": "On Update"
-    },
     "classification": {
       "select": "Select classification",
       "search": "Search classification"

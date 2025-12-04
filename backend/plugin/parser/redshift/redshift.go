@@ -15,6 +15,7 @@ import (
 func init() {
 	base.RegisterParseFunc(storepb.Engine_REDSHIFT, parseRedshiftForRegistry)
 	base.RegisterParseStatementsFunc(storepb.Engine_REDSHIFT, parseRedshiftStatements)
+	base.RegisterGetStatementTypes(storepb.Engine_REDSHIFT, GetStatementTypes)
 }
 
 // parseRedshiftForRegistry is the ParseFunc for Redshift.

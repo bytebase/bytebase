@@ -344,15 +344,6 @@
     },
     "executed-by": "Ejecutado por",
     "affected-rows": "Filas afectadas",
-    "result": {
-      "schema-version": "Esquema: {version}",
-      "export-archive-ready": "Archivo: Listo para descargar"
-    },
-    "waiting": {
-      "connection-limit": "Esperando conexiones disponibles",
-      "parallel-tasks-limit": "Esperando a que se completen otras tareas",
-      "blocking-task": "Esperando otra tarea"
-    },
     "type": {
       "database-create": "Crear base de datos",
       "migrate": "Migrar",
@@ -366,7 +357,6 @@
     "history": "Historial de ejecución de tareas",
     "latest-logs": "Últimos registros",
     "latest": "Última ejecución",
-    "no-detail": "No hay detalles de ejecución disponibles.",
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
@@ -500,7 +490,7 @@
       "assign-role": "Asignar rol | Asignar roles"
     },
     "im-integration": {
-      "description": "Envíe mensajes directos a los usuarios para eventos de problemas específicos. Funciona con el webhook del proyecto."
+      "description": "La integración de IM se utilizará para enviar mensajes directos a los usuarios para eventos de incidencias específicos. Funciona con el webhook del proyecto."
     },
     "sso": {
       "create": "Crear SSO",
@@ -633,7 +623,9 @@
         },
         "external-url": {
           "self": "URL Externa",
-          "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://."
+          "description": "La URL externa donde el usuario visita Bytebase, debe comenzar con http:// o https://.",
+          "managed-by-flag": "Esta configuración está gestionada a través del parámetro de línea de comandos --external-url",
+          "cannot-edit-flag": "La URL externa no se puede cambiar porque está configurada mediante el parámetro de línea de comandos --external-url"
         },
         "sign-in-frequency": {
           "self": "Frecuencia de inicio de sesión",
@@ -1269,7 +1261,6 @@
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
-    "create": "Crear base de datos",
     "procedures": "Trámites",
     "partitions": "Particiones",
     "packages": "Paquetes",
@@ -1660,7 +1651,6 @@
     "edit-environment": "Editar entorno",
     "mixed-values-for-label": "Esta etiqueta seleccionada tiene valores mixtos.",
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave",
-    "change-data": "Cambiar datos",
     "table-detail": "Detalle de la tabla",
     "batch-action-permission-denied": "No tengo permiso para {action} para bases de datos",
     "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",
@@ -2198,7 +2188,6 @@
       "drop-table": "Eliminar tabla",
       "restore": "Restaurar",
       "add-column": "Agregar columna",
-      "add-from-template": "Agregar desde plantilla",
       "drop-column": "Eliminar columna",
       "create-procedure": "Crear procedimiento",
       "create-function": "Crear función",
@@ -2629,8 +2618,7 @@
           "high": "Alto"
         },
         "namespace": {
-          "dml": "DML",
-          "ddl": "DDL",
+          "change_database": "Cambiar base de datos",
           "create_database": "Crear base de datos",
           "data_export": "Exportar datos",
           "request-role": "Rol de solicitud"
@@ -2650,13 +2638,15 @@
         "add": "Agregar nodo",
         "delete": "Eliminar nodo de aprobación"
       },
-      "skip": "Omitir aprobación manual",
+      "skip": "No se requiere aprobación",
       "issue-review": {
         "sent-back": "Devuelto",
         "review-sent-back-by": "Reseña enviada por {user}"
       },
       "add-rule": "Agregar regla",
       "edit-rule": "Editar regla",
+      "fallback-rules": "Reglas de respaldo",
+      "fallback-rules-hint": "Las reglas de respaldo solo se evalúan cuando ninguna otra regla coincide.",
       "template": {
         "presets-title": "Plantillas",
         "presets": {
@@ -2698,41 +2688,6 @@
     }
   },
   "schema-template": {
-    "self": "Plantilla de esquema",
-    "field-template": {
-      "self": "Plantilla de campo",
-      "description": "Predefina la plantilla de campo, luego aplique la plantilla durante el cambio de esquema."
-    },
-    "column-type-restriction": {
-      "self": "Restricción de tipos de columna",
-      "description": "Para cada motor de base de datos, puede limitar los tipos de columna permitidos.",
-      "allow-all": "Permitir todos los tipos",
-      "allow-limited-types": "Permitir solo algunos tipos",
-      "back-to-edit": "Volver a editar",
-      "add-and-save": "Agregar y guardar",
-      "messages": {
-        "unable-to-update": "No se puede actualizar la restricción",
-        "following-column-types-are-used": "Los siguientes tipos de columna todavía se usan en la plantilla de campos.",
-        "one-allowed-type-per-line": "Un tipo permitido por línea"
-      }
-    },
-    "table-template": {
-      "self": "Plantilla de tabla",
-      "description": "Puede predefinir la plantilla de tabla y luego aplicar la plantilla durante el cambio de esquema."
-    },
-    "search-by-name-or-comment": "Buscar por nombre o comentario",
-    "form": {
-      "category": "Categoría",
-      "category-desc": "Seleccione una categoría existente o cree una nueva",
-      "unclassified": "Desclasificada",
-      "column-name": "Nombre de la columna",
-      "column-type": "Tipo de columna",
-      "default-value": "Por defecto",
-      "comment": "Comentario",
-      "nullable": "Anulable",
-      "table-name": "Nombre de la tabla",
-      "on-update": "En actualización"
-    },
     "classification": {
       "select": "Seleccionar clasificación",
       "search": "Clasificación de búsqueda"

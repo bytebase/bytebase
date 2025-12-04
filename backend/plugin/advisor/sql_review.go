@@ -118,10 +118,6 @@ const (
 	SchemaRuleStatementMaximumStatementsInTransaction SQLReviewRuleType = "statement.maximum-statements-in-transaction"
 	// SchemaRuleStatementJoinStrictColumnAttrs enforce the join strict column attributes.
 	SchemaRuleStatementJoinStrictColumnAttrs SQLReviewRuleType = "statement.join-strict-column-attrs"
-	// SchemaRuleStatementDisallowMixInDDL disallows DML statements in DDL statements.
-	SchemaRuleStatementDisallowMixInDDL SQLReviewRuleType = "statement.disallow-mix-in-ddl"
-	// SchemaRuleStatementDisallowMixInDML disallows DDL statements in DML statements.
-	SchemaRuleStatementDisallowMixInDML SQLReviewRuleType = "statement.disallow-mix-in-dml"
 	// SchemaRuleStatementPriorBackupCheck checks for prior backup.
 	SchemaRuleStatementPriorBackupCheck SQLReviewRuleType = "statement.prior-backup-check"
 	// SchemaRuleStatementNonTransactional checks for non-transactional statements.

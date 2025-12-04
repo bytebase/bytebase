@@ -30,6 +30,7 @@ var (
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
 	parsers                 = make(map[storepb.Engine]ParseFunc)
 	statementParsers        = make(map[storepb.Engine]ParseStatementsFunc)
+	statementTypeGetters    = make(map[storepb.Engine]GetStatementTypesFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
@@ -55,6 +56,9 @@ type ParseFunc func(statement string) ([]AST, error)
 // ParseStatementsFunc is the interface for parsing SQL statements and returning []Statement.
 // This is the new unified parsing function that returns complete Statement objects.
 type ParseStatementsFunc func(statement string) ([]Statement, error)
+// GetStatementTypesFunc returns the types of statements in the ASTs.
+// Statement types include: INSERT, UPDATE, DELETE (DML), CREATE_TABLE, ALTER_TABLE, DROP_TABLE, etc. (DDL).
+type GetStatementTypesFunc func([]AST) ([]string, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -295,6 +299,52 @@ func ParseStatements(engine storepb.Engine, statement string) ([]Statement, erro
 		return nil, errors.Errorf("engine %s is not supported for ParseStatements", engine)
 	}
 	return f(statement)
+}
+
+func RegisterGetStatementTypes(engine storepb.Engine, f GetStatementTypesFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := statementTypeGetters[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	statementTypeGetters[engine] = f
+}
+
+// GetStatementTypes returns the types of statements in the ASTs.
+func GetStatementTypes(engine storepb.Engine, asts []AST) ([]string, error) {
+	f, ok := statementTypeGetters[engine]
+	if !ok {
+		return nil, errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(asts)
+}
+
+// IsAllDML checks if all statements are DML (INSERT, UPDATE, DELETE).
+// Returns false for unsupported engines or parse errors (conservative approach).
+func IsAllDML(engine storepb.Engine, statement string) bool {
+	asts, err := Parse(engine, statement)
+	if err != nil {
+		return false
+	}
+	if len(asts) == 0 {
+		return false
+	}
+	types, err := GetStatementTypes(engine, asts)
+	if err != nil {
+		return false
+	}
+	if len(types) == 0 {
+		return false
+	}
+	for _, t := range types {
+		switch t {
+		case "INSERT", "UPDATE", "DELETE":
+			// DML statement, continue
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 type ChangeSummary struct {

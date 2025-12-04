@@ -181,7 +181,6 @@ import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { computed, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
 import { BBAttention, BBModal } from "@/bbkit";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -235,7 +234,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const route = useRoute();
 const context = useIssueContext();
 const { events, isCreating, issue, selectedTask } = context;
 const { project } = useCurrentProjectV1();
@@ -274,11 +272,6 @@ const statementTitle = computed(() => {
 const { markers } = useSQLAdviceMarkers(context, toRef(props, "advices"));
 
 const allowEditStatementWhenCreating = computed(() => {
-  if (route.query.sheetId) {
-    // Not allowed to edit pre-generated sheets
-    // E.g., rollback DML
-    return false;
-  }
   // Do not allow to edit statement for the plan with release source.
   if (
     (

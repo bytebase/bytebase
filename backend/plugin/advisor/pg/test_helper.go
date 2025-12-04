@@ -25,9 +25,9 @@ import (
 
 // TestCase is the data struct for test.
 type TestCase struct {
-	Statement  string                                        `yaml:"statement"`
-	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType `yaml:"changeType"`
-	Want       []*storepb.Advice                             `yaml:"want,omitempty"`
+	Statement string            `yaml:"statement"`
+	EnableSDL bool              `yaml:"enableSDL"`
+	Want      []*storepb.Advice `yaml:"want,omitempty"`
 }
 
 // RunANTLRAdvisorRuleTest helps to test ANTLR-based SQL review rules.
@@ -115,7 +115,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 			rule,
 			advisor.Context{
 				DBSchema:                 schemaMetadata,
-				ChangeType:               tc.ChangeType,
+				EnableSDL:                tc.EnableSDL,
 				EnablePriorBackup:        true,
 				AST:                      unifiedASTs, // Pass AST list
 				Statements:               tc.Statement,

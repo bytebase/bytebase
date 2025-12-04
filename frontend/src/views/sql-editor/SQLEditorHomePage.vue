@@ -127,7 +127,7 @@ useEmitteryEventListener(
       }
     }
     const query = {
-      template: "bb.issue.database.schema.update",
+      template: "bb.issue.database.update",
       name: `[${database.databaseName}] Edit schema`,
       databaseList: database.name,
       sql: exampleSQL.join(" "),

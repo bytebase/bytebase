@@ -174,7 +174,7 @@ import type { PasswordRestrictionSetting } from "@/types/proto-es/v1/setting_ser
 import {
   PasswordRestrictionSettingSchema,
   Setting_SettingName,
-  ValueSchema as SettingValueSchema,
+  SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
@@ -195,7 +195,7 @@ const passwordRestrictionSetting = computed(() => {
   const setting = settingV1Store.getSettingByName(
     Setting_SettingName.PASSWORD_RESTRICTION
   );
-  if (setting?.value?.value?.case === "passwordRestrictionSetting") {
+  if (setting?.value?.value?.case === "passwordRestriction") {
     return setting.value.value.value;
   }
   return create(PasswordRestrictionSettingSchema, {});
@@ -218,9 +218,9 @@ defineExpose({
   update: async () => {
     await settingV1Store.upsertSetting({
       name: Setting_SettingName.PASSWORD_RESTRICTION,
-      value: create(SettingValueSchema, {
+      value: create(SettingSettingValueSchema, {
         value: {
-          case: "passwordRestrictionSetting",
+          case: "passwordRestriction",
           value: create(PasswordRestrictionSettingSchema, {
             ...state,
           }),

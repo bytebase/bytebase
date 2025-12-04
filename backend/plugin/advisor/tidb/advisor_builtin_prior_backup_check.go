@@ -35,7 +35,7 @@ type StatementPriorBackupCheckAdvisor struct {
 
 // Check checks for no mixed DDL and DML.
 func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	if !checkCtx.EnablePriorBackup || checkCtx.ChangeType != storepb.PlanCheckRunConfig_DML {
+	if !checkCtx.EnablePriorBackup {
 		return nil, nil
 	}
 

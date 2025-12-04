@@ -419,12 +419,12 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\aenabled\x18\x03 \x01(\bR\aenabled\x120\n" +
 	"\x05rules\x18\a \x03(\v2\x1a.bytebase.v1.SQLReviewRuleR\x05rules\x12\x1c\n" +
 	"\tresources\x18\b \x03(\tR\tresources:<\xeaA9\n" +
-	"\x19bytebase.com/ReviewConfig\x12\x1creviewConfigs/{reviewConfig}2\x89\a\n" +
+	"\x19bytebase.com/ReviewConfig\x12\x1creviewConfigs/{reviewConfig}2\xed\x06\n" +
 	"\x13ReviewConfigService\x12\xa3\x01\n" +
 	"\x12CreateReviewConfig\x12&.bytebase.v1.CreateReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"J\xdaA\x00\x8a\xea0\x17bb.reviewConfigs.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\":\rreview_config\"\x11/v1/reviewConfigs\x12\x9d\x01\n" +
 	"\x11ListReviewConfigs\x12%.bytebase.v1.ListReviewConfigsRequest\x1a&.bytebase.v1.ListReviewConfigsResponse\"9\xdaA\x00\x8a\xea0\x15bb.reviewConfigs.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/reviewConfigs\x12\x98\x01\n" +
-	"\x0fGetReviewConfig\x12#.bytebase.v1.GetReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"E\xdaA\x04name\x8a\xea0\x14bb.reviewConfigs.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1c\x12\x1a/v1/{name=reviewConfigs/*}\x12\xef\x01\n" +
-	"\x12UpdateReviewConfig\x12&.bytebase.v1.UpdateReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"\x95\x01\xdaA\x19review_config,update_mask\x8a\xea0\x17bb.reviewConfigs.update\x90\xea0\x01\xa2\xea0\x17bb.reviewConfigs.create\x82\xd3\xe4\x93\x029:\rreview_config2(/v1/{review_config.name=reviewConfigs/*}\x12\x9e\x01\n" +
+	"\x0fGetReviewConfig\x12#.bytebase.v1.GetReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"E\xdaA\x04name\x8a\xea0\x14bb.reviewConfigs.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1c\x12\x1a/v1/{name=reviewConfigs/*}\x12\xd3\x01\n" +
+	"\x12UpdateReviewConfig\x12&.bytebase.v1.UpdateReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"z\xdaA\x19review_config,update_mask\x8a\xea0\x17bb.reviewConfigs.update\x90\xea0\x01\x82\xd3\xe4\x93\x029:\rreview_config2(/v1/{review_config.name=reviewConfigs/*}\x12\x9e\x01\n" +
 	"\x12DeleteReviewConfig\x12&.bytebase.v1.DeleteReviewConfigRequest\x1a\x16.google.protobuf.Empty\"H\xdaA\x04name\x8a\xea0\x17bb.reviewConfigs.delete\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1c*\x1a/v1/{name=reviewConfigs/*}B\xae\x01\n" +
 	"\x0fcom.bytebase.v1B\x18ReviewConfigServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 

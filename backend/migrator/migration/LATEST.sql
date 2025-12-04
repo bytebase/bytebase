@@ -34,7 +34,7 @@ CREATE TABLE principal (
 CREATE TABLE setting (
     id serial PRIMARY KEY,
     -- name: AUTH_SECRET, BRANDING_LOGO, WORKSPACE_ID, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
-    -- WORKSPACE_EXTERNAL_APPROVAL, ENTERPRISE_LICENSE, APP_IM, WATERMARK, AI, SCHEMA_TEMPLATE,
+    -- ENTERPRISE_LICENSE, APP_IM, WATERMARK, AI,
     -- DATA_CLASSIFICATION, SEMANTIC_TYPES, SCIM, PASSWORD_RESTRICTION, ENVIRONMENT
     -- Enum: SettingName (proto/store/store/setting.proto)
     name text NOT NULL,
@@ -547,3 +547,34 @@ ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 INSERT INTO project (id, name, resource_id) VALUES (1, 'Default', 'default');
 
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
+
+-- Initialize settings with static values
+INSERT INTO setting (name, value) VALUES ('BRANDING_LOGO', '');
+INSERT INTO setting (name, value) VALUES ('ENTERPRISE_LICENSE', '');
+INSERT INTO setting (name, value) VALUES ('APP_IM', '{}');
+INSERT INTO setting (name, value) VALUES ('WATERMARK', '0');
+INSERT INTO setting (name, value) VALUES ('DATA_CLASSIFICATION', '{}');
+INSERT INTO setting (name, value) VALUES ('WORKSPACE_APPROVAL', '{"rules":[{"template":{"flow":{"roles":["roles/projectOwner"]},"title":"Fallback Rule","description":"Requires project owner approval when no other rules match."},"condition":{"expression":"true"}}]}');
+INSERT INTO setting (name, value) VALUES ('PASSWORD_RESTRICTION', '{"minLength":8}');
+INSERT INTO setting (name, value) VALUES ('WORKSPACE_PROFILE', '{"enableMetricCollection":true}');
+INSERT INTO setting (name, value) VALUES ('ENVIRONMENT', '{"environments":[{"title":"Test","id":"test"},{"title":"Prod","id":"prod"}]}');
+
+-- Initialize settings with dynamically generated values
+-- Generate random alphanumeric string (0-9, a-z, A-Z) compatible with Go's common.RandomString
+-- Uses built-in random() function to pick random characters
+INSERT INTO setting (name, value) VALUES (
+  'AUTH_SECRET',
+  (SELECT string_agg(substr('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', floor(random() * 62 + 1)::int, 1), '')
+   FROM generate_series(1, 32))
+);
+INSERT INTO setting (name, value) VALUES ('WORKSPACE_ID', gen_random_uuid()::text);
+INSERT INTO setting (name, value) VALUES (
+  'SCIM',
+  '{"token":"' || (SELECT string_agg(substr('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', floor(random() * 62 + 1)::int, 1), '')
+                   FROM generate_series(1, 32)) || '"}'
+);
+
+-- Initialize workspace IAM policy
+-- Grant workspace member role to allUsers
+INSERT INTO policy (resource_type, resource, type, payload, inherit_from_parent, enforce)
+VALUES ('WORKSPACE', '', 'IAM', '{"bindings":[{"role":"roles/workspaceMember","members":["allUsers"]}]}', FALSE, TRUE);

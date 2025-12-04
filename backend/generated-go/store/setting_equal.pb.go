@@ -120,114 +120,6 @@ func (x *WorkspaceApprovalSetting) Equal(y *WorkspaceApprovalSetting) bool {
 	return true
 }
 
-func (x *SchemaTemplateSetting_FieldTemplate) Equal(y *SchemaTemplateSetting_FieldTemplate) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Id != y.Id {
-		return false
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	if x.Category != y.Category {
-		return false
-	}
-	if !x.Column.Equal(y.Column) {
-		return false
-	}
-	if !x.Catalog.Equal(y.Catalog) {
-		return false
-	}
-	return true
-}
-
-func (x *SchemaTemplateSetting_ColumnType) Equal(y *SchemaTemplateSetting_ColumnType) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	if x.Enabled != y.Enabled {
-		return false
-	}
-	if len(x.Types) != len(y.Types) {
-		return false
-	}
-	for i := 0; i < len(x.Types); i++ {
-		if x.Types[i] != y.Types[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *SchemaTemplateSetting_TableTemplate) Equal(y *SchemaTemplateSetting_TableTemplate) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Id != y.Id {
-		return false
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	if x.Category != y.Category {
-		return false
-	}
-	if !x.Table.Equal(y.Table) {
-		return false
-	}
-	if !x.Catalog.Equal(y.Catalog) {
-		return false
-	}
-	return true
-}
-
-func (x *SchemaTemplateSetting) Equal(y *SchemaTemplateSetting) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.FieldTemplates) != len(y.FieldTemplates) {
-		return false
-	}
-	for i := 0; i < len(x.FieldTemplates); i++ {
-		if !x.FieldTemplates[i].Equal(y.FieldTemplates[i]) {
-			return false
-		}
-	}
-	if len(x.ColumnTypes) != len(y.ColumnTypes) {
-		return false
-	}
-	for i := 0; i < len(x.ColumnTypes); i++ {
-		if !x.ColumnTypes[i].Equal(y.ColumnTypes[i]) {
-			return false
-		}
-	}
-	if len(x.TableTemplates) != len(y.TableTemplates) {
-		return false
-	}
-	for i := 0; i < len(x.TableTemplates); i++ {
-		if !x.TableTemplates[i].Equal(y.TableTemplates[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 func (x *DataClassificationSetting_DataClassificationConfig_Level) Equal(y *DataClassificationSetting_DataClassificationConfig_Level) bool {
 	if x == y {
 		return true
@@ -556,6 +448,25 @@ func (x *AppIMSetting_DingTalk) Equal(y *AppIMSetting_DingTalk) bool {
 	return true
 }
 
+func (x *AppIMSetting_Teams) Equal(y *AppIMSetting_Teams) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.TenantId != y.TenantId {
+		return false
+	}
+	if x.ClientId != y.ClientId {
+		return false
+	}
+	if x.ClientSecret != y.ClientSecret {
+		return false
+	}
+	return true
+}
+
 func (x *AppIMSetting_IMSetting) Equal(y *AppIMSetting_IMSetting) bool {
 	if x == y {
 		return true
@@ -579,6 +490,9 @@ func (x *AppIMSetting_IMSetting) Equal(y *AppIMSetting_IMSetting) bool {
 		return false
 	}
 	if !x.GetDingtalk().Equal(y.GetDingtalk()) {
+		return false
+	}
+	if !x.GetTeams().Equal(y.GetTeams()) {
 		return false
 	}
 	return true

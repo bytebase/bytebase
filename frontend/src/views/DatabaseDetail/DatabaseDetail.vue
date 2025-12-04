@@ -117,7 +117,9 @@
           </NButton>
           <NButton
             v-if="allowChangeDatabase"
-            @click="state.showChangeDatabaseDrawer = true"
+            @click="() => {
+              preCreateIssue(database.project, [database.name])
+            }"
           >
             <span>{{ $t("database.change-database") }}</span>
           </NButton>
@@ -187,15 +189,6 @@
       @dismiss="state.showTransferDatabaseModal = false"
     />
   </Drawer>
-
-  <!-- TODO(ed): the pre-selected-databases not work -->
-  <AddSpecDrawer
-    v-model:show="state.showChangeDatabaseDrawer"
-    :title="$t('database.change-database')"
-    :pre-selected-databases="[database]"
-    :project-name="database.project"
-    :use-legacy-issue-flow="true"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -219,7 +212,7 @@ import DriftedDatabaseAlert from "@/components/DatabaseDetail/DriftedDatabaseAle
 import ExportSchemaButton from "@/components/DatabaseDetail/ExportSchemaButton.vue";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
 import EllipsisText from "@/components/EllipsisText.vue";
-import { AddSpecDrawer } from "@/components/Plan";
+import { preCreateIssue } from "@/components/Plan/logic/issue";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import {
   CopyButton,
@@ -234,7 +227,6 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_PROJECT_NAME } from "@/types";
 import {
   extractProjectResourceName,
   instanceV1HasAlterSchema,
@@ -255,8 +247,6 @@ const isDatabaseHash = (x: any): x is DatabaseHash =>
 interface LocalState {
   showTransferDatabaseModal: boolean;
   showIncorrectProjectModal: boolean;
-  showChangeDatabaseDrawer: boolean;
-  currentProjectName: string;
   selectedIndex: number;
   selectedTab: DatabaseHash;
 }
@@ -272,8 +262,6 @@ const router = useRouter();
 const state = reactive<LocalState>({
   showTransferDatabaseModal: false,
   showIncorrectProjectModal: false,
-  showChangeDatabaseDrawer: false,
-  currentProjectName: UNKNOWN_PROJECT_NAME,
   selectedIndex: 0,
   selectedTab: "overview",
 });
@@ -350,12 +338,10 @@ const allowQuery = computed(() => {
 });
 
 const tryTransferProject = () => {
-  state.currentProjectName = project.value.name;
   state.showTransferDatabaseModal = true;
 };
 
 const handleGotoSQLEditorFailed = () => {
-  state.currentProjectName = database.value.project;
   state.showIncorrectProjectModal = true;
 };
 

@@ -152,7 +152,7 @@ const handleCreate = async () => {
     ...response,
     // Override title and description.
     title: generateIssueTitle(
-      "bb.issue.database.schema.update",
+      "bb.issue.database.update",
       state.targetSelectState.changeSource === "DATABASE"
         ? databaseList.map((db) => db.databaseName)
         : [databaseGroup?.title]

@@ -96,7 +96,7 @@ watch(
       }
       // Prepare the sheet data from task run.
       if (revision.sheet) {
-        await sheetStore.getOrFetchSheetByName(revision.sheet, "FULL");
+        await sheetStore.getOrFetchSheetByName(revision.sheet);
       }
     }
     state.loading = false;
