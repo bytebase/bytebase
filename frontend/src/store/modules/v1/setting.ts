@@ -43,16 +43,15 @@ export const useSettingV1Store = defineStore("setting_v1", {
       }
       return undefined;
     },
-    brandingLogo(state): string | undefined {
-      const setting = state.settingMapByName.get(
-        `${settingNamePrefix}${Setting_SettingName[Setting_SettingName.BRANDING_LOGO]}`
-      );
-      if (!setting?.value?.value) return undefined;
-      const value = setting.value.value;
-      if (value.case === "stringValue") {
-        return value.value;
+    brandingLogo(): string {
+      const bytes = this.workspaceProfileSetting?.brandingLogo;
+      if (!bytes || bytes.length === 0) {
+        return "";
       }
-      return undefined;
+      return new TextDecoder().decode(bytes);
+    },
+    watermark(): boolean {
+      return this.workspaceProfileSetting?.watermark ?? false;
     },
     classification(): DataClassificationSetting_DataClassificationConfig[] {
       const setting = this.settingMapByName.get(

@@ -28,13 +28,11 @@ type SettingName int32
 const (
 	SettingName_SETTING_NAME_UNSPECIFIED SettingName = 0
 	SettingName_AUTH_SECRET              SettingName = 1
-	SettingName_BRANDING_LOGO            SettingName = 2
 	SettingName_WORKSPACE_ID             SettingName = 3
 	SettingName_WORKSPACE_PROFILE        SettingName = 4
 	SettingName_WORKSPACE_APPROVAL       SettingName = 5
 	SettingName_ENTERPRISE_LICENSE       SettingName = 7
 	SettingName_APP_IM                   SettingName = 8
-	SettingName_WATERMARK                SettingName = 9
 	SettingName_AI                       SettingName = 10
 	SettingName_DATA_CLASSIFICATION      SettingName = 14
 	SettingName_SEMANTIC_TYPES           SettingName = 15
@@ -48,13 +46,11 @@ var (
 	SettingName_name = map[int32]string{
 		0:  "SETTING_NAME_UNSPECIFIED",
 		1:  "AUTH_SECRET",
-		2:  "BRANDING_LOGO",
 		3:  "WORKSPACE_ID",
 		4:  "WORKSPACE_PROFILE",
 		5:  "WORKSPACE_APPROVAL",
 		7:  "ENTERPRISE_LICENSE",
 		8:  "APP_IM",
-		9:  "WATERMARK",
 		10: "AI",
 		14: "DATA_CLASSIFICATION",
 		15: "SEMANTIC_TYPES",
@@ -65,13 +61,11 @@ var (
 	SettingName_value = map[string]int32{
 		"SETTING_NAME_UNSPECIFIED": 0,
 		"AUTH_SECRET":              1,
-		"BRANDING_LOGO":            2,
 		"WORKSPACE_ID":             3,
 		"WORKSPACE_PROFILE":        4,
 		"WORKSPACE_APPROVAL":       5,
 		"ENTERPRISE_LICENSE":       7,
 		"APP_IM":                   8,
-		"WATERMARK":                9,
 		"AI":                       10,
 		"DATA_CLASSIFICATION":      14,
 		"SEMANTIC_TYPES":           15,
@@ -401,8 +395,14 @@ type WorkspaceProfileSetting struct {
 	// Whether to enable audit logging to stdout in structured JSON format.
 	// Requires TEAM or ENTERPRISE license.
 	EnableAuditLogStdout bool `protobuf:"varint,15,opt,name=enable_audit_log_stdout,json=enableAuditLogStdout,proto3" json:"enable_audit_log_stdout,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// The branding logo as raw bytes.
+	// Requires ENTERPRISE license with custom logo feature.
+	BrandingLogo []byte `protobuf:"bytes,16,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
+	// Whether to show watermark.
+	// Requires ENTERPRISE license with watermark feature.
+	Watermark     bool `protobuf:"varint,17,opt,name=watermark,proto3" json:"watermark,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -522,6 +522,20 @@ func (x *WorkspaceProfileSetting) GetInactiveSessionTimeout() *durationpb.Durati
 func (x *WorkspaceProfileSetting) GetEnableAuditLogStdout() bool {
 	if x != nil {
 		return x.EnableAuditLogStdout
+	}
+	return false
+}
+
+func (x *WorkspaceProfileSetting) GetBrandingLogo() []byte {
+	if x != nil {
+		return x.BrandingLogo
+	}
+	return nil
+}
+
+func (x *WorkspaceProfileSetting) GetWatermark() bool {
+	if x != nil {
+		return x.Watermark
 	}
 	return false
 }
@@ -2322,7 +2336,7 @@ var File_store_setting_proto protoreflect.FileDescriptor
 
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x1bstore/project_webhook.proto\"\x85\x06\n" +
+	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x1bstore/project_webhook.proto\"\xc8\x06\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2338,7 +2352,9 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\x128\n" +
 	"\x18enable_metric_collection\x18\r \x01(\bR\x16enableMetricCollection\x12S\n" +
 	"\x18inactive_session_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
-	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\"\xe9\x01\n" +
+	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\x12#\n" +
+	"\rbranding_logo\x18\x10 \x01(\fR\fbrandingLogo\x12\x1c\n" +
+	"\twatermark\x18\x11 \x01(\bR\twatermark\"\xe9\x01\n" +
 	"\fAnnouncement\x12=\n" +
 	"\x05level\x18\x01 \x01(\x0e2'.bytebase.store.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
@@ -2486,25 +2502,23 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x05color\x18\x04 \x01(\tR\x05color\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xbf\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x8b\x02\n" +
 	"\vSettingName\x12\x1c\n" +
 	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x0f\n" +
-	"\vAUTH_SECRET\x10\x01\x12\x11\n" +
-	"\rBRANDING_LOGO\x10\x02\x12\x10\n" +
+	"\vAUTH_SECRET\x10\x01\x12\x10\n" +
 	"\fWORKSPACE_ID\x10\x03\x12\x15\n" +
 	"\x11WORKSPACE_PROFILE\x10\x04\x12\x16\n" +
 	"\x12WORKSPACE_APPROVAL\x10\x05\x12\x16\n" +
 	"\x12ENTERPRISE_LICENSE\x10\a\x12\n" +
 	"\n" +
-	"\x06APP_IM\x10\b\x12\r\n" +
-	"\tWATERMARK\x10\t\x12\x06\n" +
+	"\x06APP_IM\x10\b\x12\x06\n" +
 	"\x02AI\x10\n" +
 	"\x12\x17\n" +
 	"\x13DATA_CLASSIFICATION\x10\x0e\x12\x12\n" +
 	"\x0eSEMANTIC_TYPES\x10\x0f\x12\b\n" +
 	"\x04SCIM\x10\x11\x12\x18\n" +
 	"\x14PASSWORD_RESTRICTION\x10\x12\x12\x0f\n" +
-	"\vENVIRONMENT\x10\x13\"\x04\b\x10\x10\x10\"\x04\b\x06\x10\x06\"\x04\b\r\x10\r*T\n" +
+	"\vENVIRONMENT\x10\x13*T\n" +
 	"\x12DatabaseChangeMode\x12$\n" +
 	" DATABASE_CHANGE_MODE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bPIPELINE\x10\x01\x12\n" +

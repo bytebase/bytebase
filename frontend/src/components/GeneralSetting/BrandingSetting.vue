@@ -65,15 +65,12 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import { featureToRef } from "@/store";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import {
-  Setting_SettingName,
-  SettingValueSchema as SettingSettingValueSchema,
-} from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import SingleFileSelector from "../SingleFileSelector.vue";
@@ -121,13 +118,12 @@ const doUpdate = async (content: string) => {
   }
   state.loading = true;
   try {
-    await settingV1Store.upsertSetting({
-      name: Setting_SettingName.BRANDING_LOGO,
-      value: create(SettingSettingValueSchema, {
-        value: {
-          case: "stringValue",
-          value: content,
-        },
+    await settingV1Store.updateWorkspaceProfile({
+      payload: {
+        brandingLogo: new TextEncoder().encode(content),
+      },
+      updateMask: create(FieldMaskSchema, {
+        paths: ["value.workspace_profile.branding_logo"],
       }),
     });
     useActuatorV1Store().setLogo(content);
