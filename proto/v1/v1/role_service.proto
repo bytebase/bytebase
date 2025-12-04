@@ -54,7 +54,6 @@ service RoleService {
     };
     option (google.api.method_signature) = "role,update_mask";
     option (bytebase.v1.permission) = "bb.roles.update";
-    option (bytebase.v1.allow_missing_requires) = "bb.roles.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }

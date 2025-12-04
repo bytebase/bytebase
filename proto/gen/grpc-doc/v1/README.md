@@ -10,7 +10,6 @@
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
-    - [File-level Extensions](#v1_annotation-proto-extensions)
   
 - [v1/common.proto](#v1_common-proto)
     - [Position](#bytebase-v1-Position)
@@ -717,7 +716,6 @@ Authorization method for RPC calls.
 ### File-level Extensions
 | Extension | Type | Base | Number | Description |
 | --------- | ---- | ---- | ------ | ----------- |
-| allow_missing_requires | string | .google.protobuf.MethodOptions | 100004 | When a method supports allow_missing and may create resources, this specifies the additional permission required when allow_missing=true. Example: UpdateRole with allow_missing requires both bb.roles.update (from permission) and bb.roles.create (from allow_missing_requires). |
 | allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 | Whether the method allows access without authentication credentials. |
 | audit | bool | .google.protobuf.MethodOptions | 100003 | Whether to audit calls to this method. |
 | auth_method | AuthMethod | .google.protobuf.MethodOptions | 100002 | The authorization method to use for this RPC. |

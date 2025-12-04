@@ -64,7 +64,6 @@ service GroupService {
     };
     option (google.api.method_signature) = "group,update_mask";
     option (bytebase.v1.permission) = "bb.groups.update";
-    option (bytebase.v1.allow_missing_requires) = "bb.groups.create";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
   }
