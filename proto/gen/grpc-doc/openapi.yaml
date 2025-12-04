@@ -13973,9 +13973,8 @@ components:
                 brandingLogo:
                     type: string
                     description: |-
-                        The branding logo as raw bytes.
+                        The branding logo URL or data URI.
                          Requires ENTERPRISE license with custom logo feature.
-                    format: bytes
                 watermark:
                     type: boolean
                     description: |-

@@ -347,7 +347,7 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.EnableAuditLogStdout != y.EnableAuditLogStdout {
 		return false
 	}
-	if string(x.BrandingLogo) != string(y.BrandingLogo) {
+	if x.BrandingLogo != y.BrandingLogo {
 		return false
 	}
 	if x.Watermark != y.Watermark {

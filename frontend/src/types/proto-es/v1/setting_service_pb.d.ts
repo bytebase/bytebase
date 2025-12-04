@@ -601,12 +601,12 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   enableAuditLogStdout: boolean;
 
   /**
-   * The branding logo as raw bytes.
+   * The branding logo URL or data URI.
    * Requires ENTERPRISE license with custom logo feature.
    *
-   * @generated from field: bytes branding_logo = 16;
+   * @generated from field: string branding_logo = 16;
    */
-  brandingLogo: Uint8Array;
+  brandingLogo: string;
 
   /**
    * Whether to show watermark.

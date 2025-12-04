@@ -2822,7 +2822,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | enable_metric_collection | [bool](#bool) |  | Whether to enable metric collection for the workspace. |
 | inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
-| branding_logo | [bytes](#bytes) |  | The branding logo as raw bytes. Requires ENTERPRISE license with custom logo feature. |
+| branding_logo | [string](#string) |  | The branding logo URL or data URI. Requires ENTERPRISE license with custom logo feature. |
 | watermark | [bool](#bool) |  | Whether to show watermark. Requires ENTERPRISE license with watermark feature. |
 
 

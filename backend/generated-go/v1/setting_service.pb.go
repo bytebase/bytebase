@@ -945,9 +945,9 @@ type WorkspaceProfileSetting struct {
 	// Whether to enable audit logging to stdout in structured JSON format.
 	// Requires TEAM or ENTERPRISE license.
 	EnableAuditLogStdout bool `protobuf:"varint,15,opt,name=enable_audit_log_stdout,json=enableAuditLogStdout,proto3" json:"enable_audit_log_stdout,omitempty"`
-	// The branding logo as raw bytes.
+	// The branding logo URL or data URI.
 	// Requires ENTERPRISE license with custom logo feature.
-	BrandingLogo []byte `protobuf:"bytes,16,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
+	BrandingLogo string `protobuf:"bytes,16,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
 	// Whether to show watermark.
 	// Requires ENTERPRISE license with watermark feature.
 	Watermark     bool `protobuf:"varint,17,opt,name=watermark,proto3" json:"watermark,omitempty"`
@@ -1076,11 +1076,11 @@ func (x *WorkspaceProfileSetting) GetEnableAuditLogStdout() bool {
 	return false
 }
 
-func (x *WorkspaceProfileSetting) GetBrandingLogo() []byte {
+func (x *WorkspaceProfileSetting) GetBrandingLogo() string {
 	if x != nil {
 		return x.BrandingLogo
 	}
-	return nil
+	return ""
 }
 
 func (x *WorkspaceProfileSetting) GetWatermark() bool {
@@ -2974,7 +2974,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18enable_metric_collection\x18\r \x01(\bR\x16enableMetricCollection\x12S\n" +
 	"\x18inactive_session_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
 	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\x12#\n" +
-	"\rbranding_logo\x18\x10 \x01(\fR\fbrandingLogo\x12\x1c\n" +
+	"\rbranding_logo\x18\x10 \x01(\tR\fbrandingLogo\x12\x1c\n" +
 	"\twatermark\x18\x11 \x01(\bR\twatermark\"\xc2\x01\n" +
 	"\fAnnouncement\x12:\n" +
 	"\x05level\x18\x01 \x01(\x0e2$.bytebase.v1.Announcement.AlertLevelR\x05level\x12\x12\n" +

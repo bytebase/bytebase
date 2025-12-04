@@ -66,9 +66,9 @@ message WorkspaceProfileSetting {
   // Requires TEAM or ENTERPRISE license.
   bool enable_audit_log_stdout = 15;
 
-  // The branding logo as raw bytes.
+  // The branding logo URL or data URI.
   // Requires ENTERPRISE license with custom logo feature.
-  bytes branding_logo = 16;
+  string branding_logo = 16;
 
   // Whether to show watermark.
   // Requires ENTERPRISE license with watermark feature.

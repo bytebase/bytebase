@@ -8,7 +8,7 @@ SET value = (
         ELSE '{}'::jsonb
        END
     || CASE
-        WHEN EXISTS (SELECT 1 FROM setting WHERE name = 'WATERMARK' AND value != '')
+        WHEN EXISTS (SELECT 1 FROM setting WHERE name = 'WATERMARK' AND value = '1')
         THEN jsonb_build_object('watermark', true)
         ELSE '{}'::jsonb
        END
