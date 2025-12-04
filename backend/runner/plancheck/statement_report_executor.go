@@ -98,7 +98,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 	}
 
 	// Check statement syntax error.
-	_, syntaxAdvices := e.sheetManager.GetASTsForChecks(instance.Metadata.GetEngine(), statement)
+	_, syntaxAdvices := e.sheetManager.GetStatementsForChecks(instance.Metadata.GetEngine(), statement)
 	if len(syntaxAdvices) > 0 {
 		advice := syntaxAdvices[0]
 		return []*storepb.PlanCheckRunResult_Result{
@@ -157,11 +157,12 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		return nil, errors.Errorf("instance not found: %s", database.InstanceID)
 	}
 
-	asts, syntaxAdvices := sheetManager.GetASTsForChecks(instance.Metadata.GetEngine(), statement)
+	stmts, syntaxAdvices := sheetManager.GetStatementsForChecks(instance.Metadata.GetEngine(), statement)
 	if len(syntaxAdvices) > 0 {
 		// Return nil as it should already be checked before running this function.
 		return nil, nil
 	}
+	asts := parserbase.ExtractASTs(stmts)
 
 	var explainCalculator getAffectedRowsFromExplain
 	var sqlTypes []string

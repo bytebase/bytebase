@@ -413,7 +413,7 @@ func isNonTransactionStatement(stmt string) bool {
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
 		return nil, err
 	}
