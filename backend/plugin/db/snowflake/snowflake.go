@@ -331,14 +331,14 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 
 // QueryConn queries a SQL statement in a given connection.
 func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_SNOWFLAKE, statement)
+	statements, err := base.ParseStatements(storepb.Engine_SNOWFLAKE, statement)
 	if err != nil {
 		return nil, err
 	}
 
 	var results []*v1pb.QueryResult
-	for _, singleSQL := range singleSQLs {
-		statement := singleSQL.Text
+	for _, stmt := range statements {
+		statement := stmt.Text
 		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		} else if queryContext.Limit > 0 {

@@ -10,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 
 	// Register walk-through implementations
@@ -493,7 +494,8 @@ func SQLReviewCheck(
 	ruleList []*storepb.SQLReviewRule,
 	checkContext Context,
 ) ([]*storepb.Advice, error) {
-	asts, parseResult := sm.GetASTsForChecks(checkContext.DBType, statements)
+	stmts, parseResult := sm.GetStatementsForChecks(checkContext.DBType, statements)
+	asts := base.ExtractASTs(stmts)
 
 	builtinOnly := len(ruleList) == 0
 

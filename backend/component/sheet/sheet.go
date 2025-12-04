@@ -42,7 +42,6 @@ type Manager struct {
 	sync.Mutex
 
 	store          *store.Store
-	astCache       *lru.LRU[astHashKey, *Result]
 	statementCache *lru.LRU[astHashKey, *StatementResult]
 }
 
@@ -55,7 +54,6 @@ type astHashKey struct {
 func NewManager(store *store.Store) *Manager {
 	return &Manager{
 		store:          store,
-		astCache:       lru.NewLRU[astHashKey, *Result](8, nil, 3*time.Minute),
 		statementCache: lru.NewLRU[astHashKey, *StatementResult](8, nil, 3*time.Minute),
 	}
 }
@@ -103,21 +101,21 @@ func getSheetCommands(engine storepb.Engine, statement string) []*storepb.Range 
 }
 
 func getSheetCommandsGeneral(engine storepb.Engine, statement string) []*storepb.Range {
-	singleSQLs, err := base.SplitMultiSQL(engine, statement)
+	statements, err := base.ParseStatements(engine, statement)
 	if err != nil {
 		if !strings.Contains(err.Error(), "not supported") {
-			slog.Warn("failed to split multi sql", "engine", engine.String(), "statement", statement)
+			slog.Warn("failed to parse statements", "engine", engine.String(), "statement", statement)
 		}
 		return nil
 	}
 	// HACK(p0ny): always split for pg
-	if len(singleSQLs) > common.MaximumCommands && engine != storepb.Engine_POSTGRES {
+	if len(statements) > common.MaximumCommands && engine != storepb.Engine_POSTGRES {
 		return nil
 	}
 
 	var sheetCommands []*storepb.Range
 	p := 0
-	for _, s := range singleSQLs {
+	for _, s := range statements {
 		np := p + len(s.Text)
 		sheetCommands = append(sheetCommands, &storepb.Range{
 			Start: int32(p),
@@ -129,19 +127,19 @@ func getSheetCommandsGeneral(engine storepb.Engine, statement string) []*storepb
 }
 
 func getSheetCommandsFromByteOffset(engine storepb.Engine, statement string) []*storepb.Range {
-	singleSQLs, err := base.SplitMultiSQL(engine, statement)
+	statements, err := base.ParseStatements(engine, statement)
 	if err != nil {
 		if !strings.Contains(err.Error(), "not supported") {
-			slog.Warn("failed to get sheet command from byte offset", "engine", engine.String(), "statement", statement)
+			slog.Warn("failed to parse statements", "engine", engine.String(), "statement", statement)
 		}
 		return nil
 	}
-	if len(singleSQLs) > common.MaximumCommands {
+	if len(statements) > common.MaximumCommands {
 		return nil
 	}
 
 	var sheetCommands []*storepb.Range
-	for _, s := range singleSQLs {
+	for _, s := range statements {
 		sheetCommands = append(sheetCommands, &storepb.Range{
 			Start: int32(s.ByteOffsetStart),
 			End:   int32(s.ByteOffsetEnd),
@@ -188,46 +186,11 @@ func getSheetCommandsForMSSQL(statement string) []*storepb.Range {
 	return sheetCommands
 }
 
-type Result struct {
-	sync.Mutex
-	ast     []base.AST
-	advices []*storepb.Advice
-}
-
 // StatementResult holds the cached parsing results with the unified Statement type.
 type StatementResult struct {
 	sync.Mutex
 	statements []base.Statement
 	advices    []*storepb.Advice
-}
-
-// GetASTsForChecks gets the ASTs of statement with caching, and it should only be used
-// for plan checks because it involves some truncating.
-func (sm *Manager) GetASTsForChecks(dbType storepb.Engine, statement string) ([]base.AST, []*storepb.Advice) {
-	var result *Result
-	h := xxh3.HashString(statement)
-	key := astHashKey{hash: h, engine: dbType}
-	sm.Lock()
-	if v, ok := sm.astCache.Get(key); ok {
-		result = v
-	} else {
-		result = &Result{}
-		sm.astCache.Add(key, result)
-	}
-	sm.Unlock()
-
-	result.Lock()
-	defer result.Unlock()
-	if result.ast != nil || result.advices != nil {
-		return result.ast, result.advices
-	}
-	ast, err := base.Parse(dbType, statement)
-	if err != nil {
-		result.advices = convertErrorToAdvice(err)
-	} else {
-		result.ast = ast
-	}
-	return result.ast, result.advices
 }
 
 // GetStatementsForChecks gets the unified Statements (with both text and AST) with caching.

@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -51,7 +52,8 @@ func TestWalkThrough(t *testing.T) {
 		// Create DatabaseMetadata for walk-through
 		state := model.NewDatabaseMetadata(protoData, nil, nil, storepb.Engine_TIDB, !test.IgnoreCaseSensitive)
 
-		asts, _ := sm.GetASTsForChecks(storepb.Engine_TIDB, test.Statement)
+		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_TIDB, test.Statement)
+		asts := base.ExtractASTs(stmts)
 		advice := WalkThrough(state, asts)
 		if advice != nil {
 			// Compare the advice fields

@@ -83,3 +83,15 @@ func StatementToSingleSQL(stmt Statement) SingleSQL {
 		// Note: BaseLine is not preserved as Statement uses 1-based StartPosition
 	}
 }
+
+// ExtractASTs extracts ASTs from a slice of Statements.
+// This is useful for backward compatibility when migrating from []AST to []Statement.
+func ExtractASTs(stmts []Statement) []AST {
+	var asts []AST
+	for _, stmt := range stmts {
+		if stmt.AST != nil {
+			asts = append(asts, stmt.AST)
+		}
+	}
+	return asts
+}

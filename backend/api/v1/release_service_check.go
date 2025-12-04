@@ -257,7 +257,7 @@ loop:
 				statement := string(file.Statement)
 				// Check if any syntax error in the statement.
 				if common.EngineSupportSyntaxCheck(engine) {
-					_, syntaxAdvices := s.sheetManager.GetASTsForChecks(engine, statement)
+					_, syntaxAdvices := s.sheetManager.GetStatementsForChecks(engine, statement)
 					if len(syntaxAdvices) > 0 {
 						for _, advice := range syntaxAdvices {
 							checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
@@ -509,13 +509,14 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 
 			// Check if any syntax error in the statement.
 			if common.EngineSupportSyntaxCheck(engine) {
-				asts, syntaxAdvices := s.sheetManager.GetASTsForChecks(engine, statement)
+				stmts, syntaxAdvices := s.sheetManager.GetStatementsForChecks(engine, statement)
 				if len(syntaxAdvices) > 0 {
 					for _, advice := range syntaxAdvices {
 						checkResult.Advices = append(checkResult.Advices, convertToV1Advice(advice))
 					}
 				} else {
 					// Only check statement types if there are no syntax errors
+					asts := base.ExtractASTs(stmts)
 					statementsWithPos, err := getStatementTypesWithPositionsForEngine(engine, asts)
 					if err != nil {
 						checkResult.Advices = append(checkResult.Advices, &v1pb.Advice{
