@@ -118,7 +118,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
       }
     );
     if (!validateOnly) {
-      upsertInstances([response])
+      upsertInstances([response]);
     }
     return response;
   };
