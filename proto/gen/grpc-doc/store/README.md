@@ -4716,7 +4716,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | WORKSPACE_APPROVAL | 5 |  |
 | ENTERPRISE_LICENSE | 7 |  |
 | APP_IM | 8 |  |
-| WATERMARK | 9 |  |
 | AI | 10 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |

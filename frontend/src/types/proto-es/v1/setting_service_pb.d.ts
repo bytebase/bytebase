@@ -179,11 +179,6 @@ export enum Setting_SettingName {
   APP_IM = 8,
 
   /**
-   * @generated from enum value: WATERMARK = 9;
-   */
-  WATERMARK = 9,
-
-  /**
    * @generated from enum value: AI = 10;
    */
   AI = 10,

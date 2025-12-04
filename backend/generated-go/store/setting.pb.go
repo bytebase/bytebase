@@ -34,7 +34,6 @@ const (
 	SettingName_WORKSPACE_APPROVAL       SettingName = 5
 	SettingName_ENTERPRISE_LICENSE       SettingName = 7
 	SettingName_APP_IM                   SettingName = 8
-	SettingName_WATERMARK                SettingName = 9
 	SettingName_AI                       SettingName = 10
 	SettingName_DATA_CLASSIFICATION      SettingName = 14
 	SettingName_SEMANTIC_TYPES           SettingName = 15
@@ -54,7 +53,6 @@ var (
 		5:  "WORKSPACE_APPROVAL",
 		7:  "ENTERPRISE_LICENSE",
 		8:  "APP_IM",
-		9:  "WATERMARK",
 		10: "AI",
 		14: "DATA_CLASSIFICATION",
 		15: "SEMANTIC_TYPES",
@@ -71,7 +69,6 @@ var (
 		"WORKSPACE_APPROVAL":       5,
 		"ENTERPRISE_LICENSE":       7,
 		"APP_IM":                   8,
-		"WATERMARK":                9,
 		"AI":                       10,
 		"DATA_CLASSIFICATION":      14,
 		"SEMANTIC_TYPES":           15,
@@ -2497,7 +2494,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x05color\x18\x04 \x01(\tR\x05color\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xbf\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x9e\x02\n" +
 	"\vSettingName\x12\x1c\n" +
 	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vAUTH_SECRET\x10\x01\x12\x11\n" +
@@ -2507,15 +2504,14 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x12WORKSPACE_APPROVAL\x10\x05\x12\x16\n" +
 	"\x12ENTERPRISE_LICENSE\x10\a\x12\n" +
 	"\n" +
-	"\x06APP_IM\x10\b\x12\r\n" +
-	"\tWATERMARK\x10\t\x12\x06\n" +
+	"\x06APP_IM\x10\b\x12\x06\n" +
 	"\x02AI\x10\n" +
 	"\x12\x17\n" +
 	"\x13DATA_CLASSIFICATION\x10\x0e\x12\x12\n" +
 	"\x0eSEMANTIC_TYPES\x10\x0f\x12\b\n" +
 	"\x04SCIM\x10\x11\x12\x18\n" +
 	"\x14PASSWORD_RESTRICTION\x10\x12\x12\x0f\n" +
-	"\vENVIRONMENT\x10\x13\"\x04\b\x10\x10\x10\"\x04\b\x06\x10\x06\"\x04\b\r\x10\r*T\n" +
+	"\vENVIRONMENT\x10\x13*T\n" +
 	"\x12DatabaseChangeMode\x12$\n" +
 	" DATABASE_CHANGE_MODE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bPIPELINE\x10\x01\x12\n" +
