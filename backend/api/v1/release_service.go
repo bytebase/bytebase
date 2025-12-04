@@ -287,11 +287,6 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
 	}
 
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-
 	// Use GetReleaseV2 with FindReleaseMessage for database-level filtering
 	release, err := s.store.GetReleaseV2(ctx, &store.FindReleaseMessage{
 		ProjectID: &projectID,
@@ -308,13 +303,6 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 			}
 			if project == nil {
 				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", projectID))
-			}
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionReleasesCreate, user, project.ResourceID)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
-			}
-			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionReleasesCreate))
 			}
 			return s.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
 				Parent:  common.FormatProject(project.ResourceID),
