@@ -2822,6 +2822,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | enable_metric_collection | [bool](#bool) |  | Whether to enable metric collection for the workspace. |
 | inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
+| watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
 
 
 
@@ -2897,7 +2898,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | WORKSPACE_PROFILE | 4 |  |
 | WORKSPACE_APPROVAL | 5 |  |
 | APP_IM | 8 |  |
-| WATERMARK | 9 |  |
 | AI | 10 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |

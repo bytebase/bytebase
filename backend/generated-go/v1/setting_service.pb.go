@@ -85,7 +85,6 @@ const (
 	Setting_WORKSPACE_PROFILE        Setting_SettingName = 4
 	Setting_WORKSPACE_APPROVAL       Setting_SettingName = 5
 	Setting_APP_IM                   Setting_SettingName = 8
-	Setting_WATERMARK                Setting_SettingName = 9
 	Setting_AI                       Setting_SettingName = 10
 	Setting_DATA_CLASSIFICATION      Setting_SettingName = 14
 	Setting_SEMANTIC_TYPES           Setting_SettingName = 15
@@ -102,7 +101,6 @@ var (
 		4:  "WORKSPACE_PROFILE",
 		5:  "WORKSPACE_APPROVAL",
 		8:  "APP_IM",
-		9:  "WATERMARK",
 		10: "AI",
 		14: "DATA_CLASSIFICATION",
 		15: "SEMANTIC_TYPES",
@@ -116,7 +114,6 @@ var (
 		"WORKSPACE_PROFILE":        4,
 		"WORKSPACE_APPROVAL":       5,
 		"APP_IM":                   8,
-		"WATERMARK":                9,
 		"AI":                       10,
 		"DATA_CLASSIFICATION":      14,
 		"SEMANTIC_TYPES":           15,
@@ -951,8 +948,11 @@ type WorkspaceProfileSetting struct {
 	// Whether to enable audit logging to stdout in structured JSON format.
 	// Requires TEAM or ENTERPRISE license.
 	EnableAuditLogStdout bool `protobuf:"varint,15,opt,name=enable_audit_log_stdout,json=enableAuditLogStdout,proto3" json:"enable_audit_log_stdout,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// Whether to display watermark on pages.
+	// Requires ENTERPRISE license.
+	Watermark     bool `protobuf:"varint,16,opt,name=watermark,proto3" json:"watermark,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -1072,6 +1072,13 @@ func (x *WorkspaceProfileSetting) GetInactiveSessionTimeout() *durationpb.Durati
 func (x *WorkspaceProfileSetting) GetEnableAuditLogStdout() bool {
 	if x != nil {
 		return x.EnableAuditLogStdout
+	}
+	return false
+}
+
+func (x *WorkspaceProfileSetting) GetWatermark() bool {
+	if x != nil {
+		return x.Watermark
 	}
 	return false
 }
@@ -2879,18 +2886,17 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\rvalidate_only\x18\x02 \x01(\bR\fvalidateOnly\x12#\n" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\x12;\n" +
 	"\vupdate_mask\x18\x04 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"\xfc\x02\n" +
+	"updateMask\"\xed\x02\n" +
 	"\aSetting\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\bR\x04name\x124\n" +
-	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x03\xe0A\x02R\x05value\"\xf2\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x03\xe0A\x02R\x05value\"\xe3\x01\n" +
 	"\vSettingName\x12\x1c\n" +
 	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rBRANDING_LOGO\x10\x02\x12\x15\n" +
 	"\x11WORKSPACE_PROFILE\x10\x04\x12\x16\n" +
 	"\x12WORKSPACE_APPROVAL\x10\x05\x12\n" +
 	"\n" +
-	"\x06APP_IM\x10\b\x12\r\n" +
-	"\tWATERMARK\x10\t\x12\x06\n" +
+	"\x06APP_IM\x10\b\x12\x06\n" +
 	"\x02AI\x10\n" +
 	"\x12\x17\n" +
 	"\x13DATA_CLASSIFICATION\x10\x0e\x12\x12\n" +
@@ -2945,7 +2951,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\xff\x05\n" +
+	"\apayload\"\x9d\x06\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2961,7 +2967,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\x128\n" +
 	"\x18enable_metric_collection\x18\r \x01(\bR\x16enableMetricCollection\x12S\n" +
 	"\x18inactive_session_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
-	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\"\xc2\x01\n" +
+	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
+	"\twatermark\x18\x10 \x01(\bR\twatermark\"\xc2\x01\n" +
 	"\fAnnouncement\x12:\n" +
 	"\x05level\x18\x01 \x01(\x0e2$.bytebase.v1.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
