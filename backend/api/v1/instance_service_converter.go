@@ -285,6 +285,8 @@ func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSe
 				AppRole: &storepb.DataSourceExternalSecret_AppRoleAuthOption{
 					Type:      storepb.DataSourceExternalSecret_AppRoleAuthOption_SecretType(appRole.Type),
 					MountPath: appRole.MountPath,
+					RoleId:    appRole.RoleId,
+					SecretId:  appRole.SecretId,
 				},
 			}
 		}
