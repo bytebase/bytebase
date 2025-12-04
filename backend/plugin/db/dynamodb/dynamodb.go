@@ -97,18 +97,18 @@ func (*Driver) GetDB() *sql.DB {
 // NOTE: Each api contains some constraints which do not be described in api docs. For example, in ExecuteTransaction, cannot include multiple operations on one item.
 // So we use a simple solution here, use parser to split the statement and execute them one by one, unfortunately, we lose the transaction feature.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	statements, err := base.ParseStatements(storepb.Engine_DYNAMODB, statement)
+	statements, err := base.SplitMultiSQL(storepb.Engine_DYNAMODB, statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split multi statement")
 	}
-	nonEmptyStatements, idxMap := base.FilterEmptyStatementsWithIndexes(statements)
+	nonEmptyStatements, idxMap := base.FilterEmptySQLWithIndexes(statements)
 
-	for currentIndex, stmt := range nonEmptyStatements {
-		opts.LogCommandExecute([]int32{int32(idxMap[currentIndex])}, stmt.Text)
+	for currentIndex, statement := range nonEmptyStatements {
+		opts.LogCommandExecute([]int32{int32(idxMap[currentIndex])}, statement.Text)
 		_, err := d.client.ExecuteTransaction(ctx, &dynamodb.ExecuteTransactionInput{
 			TransactStatements: []types.ParameterizedStatement{
 				{
-					Statement: &stmt.Text,
+					Statement: &statement.Text,
 				},
 			},
 		})
@@ -116,8 +116,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			return 0, &db.ErrorWithPosition{
 				Err:   errors.Wrap(err, "failed to execute statement"),
-				Start: stmt.StartPosition,
-				End:   stmt.EndPosition,
+				Start: statement.Start,
+				End:   statement.End,
 			}
 		}
 		opts.LogCommandResponse(0, []int64{0}, "")
@@ -133,19 +133,19 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return nil, errors.New("DynamoDB does not support EXPLAIN")
 	}
 
-	statements, err := base.ParseStatements(storepb.Engine_DYNAMODB, statement)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_DYNAMODB, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split multi statement")
 	}
-	statements = base.FilterEmptyStatements(statements)
-	if len(statements) == 0 {
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
 
 	var results []*v1pb.QueryResult
-	for _, stmt := range statements {
+	for _, singleSQL := range singleSQLs {
 		startTime := time.Now()
-		result, err := d.querySinglePartiQL(ctx, stmt.Text, queryContext)
+		result, err := d.querySinglePartiQL(ctx, singleSQL.Text, queryContext)
 		stop := false
 		if err != nil {
 			result = &v1pb.QueryResult{

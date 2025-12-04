@@ -413,12 +413,12 @@ func isNonTransactionStatement(stmt string) bool {
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	statements, err := base.ParseStatements(storepb.Engine_TIDB, statement)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
 		return nil, err
 	}
-	statements = base.FilterEmptyStatements(statements)
-	if len(statements) == 0 {
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
 
@@ -429,8 +429,8 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
 	var results []*v1pb.QueryResult
-	for _, stmt := range statements {
-		statement := stmt.Text
+	for _, singleSQL := range singleSQLs {
+		statement := singleSQL.Text
 		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		} else if queryContext.Limit > 0 {

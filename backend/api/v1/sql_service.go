@@ -743,10 +743,10 @@ func queryRetryStopOnError(
 	schemaSyncer *schemasync.Syncer,
 	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 ) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
-	// Parse the statement into individual statements
-	statements, err := parserbase.ParseStatements(instance.Metadata.GetEngine(), statement)
+	// Split the statement into individual SQLs
+	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), statement)
 	if err != nil {
-		// Fall back to executing as a single statement if parsing fails
+		// Fall back to executing as a single statement if splitting fails
 		return queryRetry(ctx, stores, user, instance, database, driver, conn, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, action)
 	}
 

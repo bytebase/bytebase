@@ -56,6 +56,7 @@ type ParseFunc func(statement string) ([]AST, error)
 // ParseStatementsFunc is the interface for parsing SQL statements and returning []Statement.
 // This is the new unified parsing function that returns complete Statement objects.
 type ParseStatementsFunc func(statement string) ([]Statement, error)
+
 // GetStatementTypesFunc returns the types of statements in the ASTs.
 // Statement types include: INSERT, UPDATE, DELETE (DML), CREATE_TABLE, ALTER_TABLE, DROP_TABLE, etc. (DDL).
 type GetStatementTypesFunc func([]AST) ([]string, error)
