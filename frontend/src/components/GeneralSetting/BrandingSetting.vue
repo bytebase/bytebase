@@ -120,7 +120,7 @@ const doUpdate = async (content: string) => {
   try {
     await settingV1Store.updateWorkspaceProfile({
       payload: {
-        brandingLogo: new TextEncoder().encode(content),
+        brandingLogo: content,
       },
       updateMask: create(FieldMaskSchema, {
         paths: ["value.workspace_profile.branding_logo"],

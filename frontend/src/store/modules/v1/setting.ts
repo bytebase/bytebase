@@ -44,11 +44,7 @@ export const useSettingV1Store = defineStore("setting_v1", {
       return undefined;
     },
     brandingLogo(): string {
-      const bytes = this.workspaceProfileSetting?.brandingLogo;
-      if (!bytes || bytes.length === 0) {
-        return "";
-      }
-      return new TextDecoder().decode(bytes);
+      return this.workspaceProfileSetting?.brandingLogo || "";
     },
     watermark(): boolean {
       return this.workspaceProfileSetting?.watermark ?? false;

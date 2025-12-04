@@ -74,10 +74,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       return state.serverInfo;
     },
     brandingLogo: (state) => {
-      if (!state.resourcePackage?.logo) {
-        return "";
-      }
-      return new TextDecoder().decode(state.resourcePackage?.logo);
+      return state.resourcePackage?.logo || "";
     },
     version: (state) => {
       return state.serverInfo?.version || "";
