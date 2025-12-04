@@ -676,10 +676,10 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/ClickHouse/ch-go v0.68.0 h1:zd2VD8l2aVYnXFRyhTyKCrxvhSz1AaY4wBUXu/f0GiU=
-github.com/ClickHouse/ch-go v0.68.0/go.mod h1:C89Fsm7oyck9hr6rRo5gqqiVtaIY6AjdD0WFMyNRQ5s=
-github.com/ClickHouse/clickhouse-go/v2 v2.40.3 h1:46jB4kKwVDUOnECpStKMVXxvR0Cg9zeV9vdbPjtn6po=
-github.com/ClickHouse/clickhouse-go/v2 v2.40.3/go.mod h1:qO0HwvjCnTB4BPL/k6EE3l4d9f/uF+aoimAhJX70eKA=
+github.com/ClickHouse/ch-go v0.69.0 h1:nO0OJkpxOlN/eaXFj0KzjTz5p7vwP1/y3GN4qc5z/iM=
+github.com/ClickHouse/ch-go v0.69.0/go.mod h1:9XeZpSAT4S0kVjOpaJ5186b7PY/NH/hhF8R6u0WIjwg=
+github.com/ClickHouse/clickhouse-go/v2 v2.41.0 h1:JbLKMXLEkW0NMalMgI+GYb6FVZtpaMVEzQa/HC1ZMRE=
+github.com/ClickHouse/clickhouse-go/v2 v2.41.0/go.mod h1:/RoTHh4aDA4FOCIQggwsiOwO7Zq1+HxQ0inef0Au/7k=
 github.com/Codefor/geohash v0.0.0-20140723084247-1b41c28e3a9d h1:iG9B49Q218F/XxXNRM7k/vWf7MKmLIS8AcJV9cGN4nA=
 github.com/Codefor/geohash v0.0.0-20140723084247-1b41c28e3a9d/go.mod h1:RVnhzAX71far8Kc3TQeA0k/dcaEKUnTDSOyet/JCmGI=
 github.com/DATA-DOG/go-sqlmock v1.3.2/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
