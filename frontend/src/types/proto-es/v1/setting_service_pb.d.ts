@@ -159,11 +159,6 @@ export enum Setting_SettingName {
   SETTING_NAME_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: BRANDING_LOGO = 2;
-   */
-  BRANDING_LOGO = 2,
-
-  /**
    * @generated from enum value: WORKSPACE_PROFILE = 4;
    */
   WORKSPACE_PROFILE = 4,
@@ -177,11 +172,6 @@ export enum Setting_SettingName {
    * @generated from enum value: APP_IM = 8;
    */
   APP_IM = 8,
-
-  /**
-   * @generated from enum value: WATERMARK = 9;
-   */
-  WATERMARK = 9,
 
   /**
    * @generated from enum value: AI = 10;
@@ -609,6 +599,22 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool enable_audit_log_stdout = 15;
    */
   enableAuditLogStdout: boolean;
+
+  /**
+   * The branding logo as raw bytes.
+   * Requires ENTERPRISE license with custom logo feature.
+   *
+   * @generated from field: bytes branding_logo = 16;
+   */
+  brandingLogo: Uint8Array;
+
+  /**
+   * Whether to show watermark.
+   * Requires ENTERPRISE license with watermark feature.
+   *
+   * @generated from field: bool watermark = 17;
+   */
+  watermark: boolean;
 };
 
 /**
