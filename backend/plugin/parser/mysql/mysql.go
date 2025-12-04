@@ -20,6 +20,9 @@ func init() {
 	base.RegisterParseFunc(storepb.Engine_MYSQL, parseMySQLForRegistry)
 	base.RegisterParseFunc(storepb.Engine_MARIADB, parseMySQLForRegistry)
 	base.RegisterParseFunc(storepb.Engine_OCEANBASE, parseMySQLForRegistry)
+	base.RegisterParseStatementsFunc(storepb.Engine_MYSQL, parseMySQLStatements)
+	base.RegisterParseStatementsFunc(storepb.Engine_MARIADB, parseMySQLStatements)
+	base.RegisterParseStatementsFunc(storepb.Engine_OCEANBASE, parseMySQLStatements)
 	base.RegisterGetStatementTypes(storepb.Engine_MYSQL, GetStatementTypes)
 	base.RegisterGetStatementTypes(storepb.Engine_MARIADB, GetStatementTypes)
 	base.RegisterGetStatementTypes(storepb.Engine_OCEANBASE, GetStatementTypes)
@@ -46,6 +49,48 @@ func toAST(results []*base.ParseResult) []base.AST {
 		})
 	}
 	return asts
+}
+
+// parseMySQLStatements is the ParseStatementsFunc for MySQL, MariaDB, and OceanBase.
+// Returns []Statement with both text and AST populated.
+func parseMySQLStatements(statement string) ([]base.Statement, error) {
+	// First split to get SingleSQL with text and positions
+	singleSQLs, err := SplitSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	// Then parse to get ASTs
+	parseResults, err := ParseMySQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	// Combine: SingleSQL provides text/positions, ParseResult provides AST
+	// Note: parseResults may have fewer items if some statements are empty
+	var statements []base.Statement
+	astIndex := 0
+	for _, sql := range singleSQLs {
+		stmt := base.Statement{
+			Text:            sql.Text,
+			Empty:           sql.Empty,
+			StartPosition:   sql.Start,
+			EndPosition:     sql.End,
+			ByteOffsetStart: sql.ByteOffsetStart,
+			ByteOffsetEnd:   sql.ByteOffsetEnd,
+		}
+		if !sql.Empty && astIndex < len(parseResults) {
+			stmt.AST = &base.ANTLRAST{
+				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
+				Tree:          parseResults[astIndex].Tree,
+				Tokens:        parseResults[astIndex].Tokens,
+			}
+			astIndex++
+		}
+		statements = append(statements, stmt)
+	}
+
+	return statements, nil
 }
 
 // ParseMySQL parses the given SQL statement and returns the AST.

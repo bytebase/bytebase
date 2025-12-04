@@ -94,7 +94,8 @@ func TestWalkThrough(t *testing.T) {
 		// Create DatabaseMetadata for walk-through
 		state := model.NewDatabaseMetadata(protoData, nil, nil, storepb.Engine_POSTGRES, !test.IgnoreCaseSensitive)
 
-		asts, _ := sm.GetASTsForChecks(storepb.Engine_POSTGRES, test.Statement)
+		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_POSTGRES, test.Statement)
+		asts := base.ExtractASTs(stmts)
 		advice := WalkThrough(state, asts)
 		if advice != nil {
 			// Compare the advice fields

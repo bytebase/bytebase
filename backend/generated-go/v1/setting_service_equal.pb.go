@@ -347,6 +347,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.EnableAuditLogStdout != y.EnableAuditLogStdout {
 		return false
 	}
+	if x.Watermark != y.Watermark {
+		return false
+	}
 	return true
 }
 

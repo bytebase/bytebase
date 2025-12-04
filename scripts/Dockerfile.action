@@ -1,4 +1,4 @@
-FROM golang:1.25.3-alpine3.22 AS builder
+FROM golang:1.25.5-alpine3.22 AS builder
 ARG VERSION
 ARG GIT_COMMIT
 WORKDIR /action-build
@@ -8,7 +8,7 @@ RUN go build \
 --ldflags="-w -s -X 'github.com/bytebase/bytebase/action/args.Version=${VERSION}' -X 'github.com/bytebase/bytebase/action/args.Gitcommit=${GIT_COMMIT}'" \
 -o bytebase-action action/*.go
 
-FROM alpine:3.22
+FROM alpine:3.23
 RUN apk update
 # Azure DevOps pipeline requires bash.
 RUN apk add --no-cache jq bash gcompat

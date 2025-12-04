@@ -34,7 +34,7 @@ CREATE TABLE principal (
 CREATE TABLE setting (
     id serial PRIMARY KEY,
     -- name: AUTH_SECRET, BRANDING_LOGO, WORKSPACE_ID, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
-    -- ENTERPRISE_LICENSE, APP_IM, WATERMARK, AI,
+    -- ENTERPRISE_LICENSE, APP_IM, AI,
     -- DATA_CLASSIFICATION, SEMANTIC_TYPES, SCIM, PASSWORD_RESTRICTION, ENVIRONMENT
     -- Enum: SettingName (proto/store/store/setting.proto)
     name text NOT NULL,
@@ -552,7 +552,6 @@ ALTER SEQUENCE project_id_seq RESTART WITH 101;
 INSERT INTO setting (name, value) VALUES ('BRANDING_LOGO', '');
 INSERT INTO setting (name, value) VALUES ('ENTERPRISE_LICENSE', '');
 INSERT INTO setting (name, value) VALUES ('APP_IM', '{}');
-INSERT INTO setting (name, value) VALUES ('WATERMARK', '0');
 INSERT INTO setting (name, value) VALUES ('DATA_CLASSIFICATION', '{}');
 INSERT INTO setting (name, value) VALUES ('WORKSPACE_APPROVAL', '{"rules":[{"template":{"flow":{"roles":["roles/projectOwner"]},"title":"Fallback Rule","description":"Requires project owner approval when no other rules match."},"condition":{"expression":"true"}}]}');
 INSERT INTO setting (name, value) VALUES ('PASSWORD_RESTRICTION', '{"minLength":8}');

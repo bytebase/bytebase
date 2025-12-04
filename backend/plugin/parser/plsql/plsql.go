@@ -16,6 +16,7 @@ import (
 
 func init() {
 	base.RegisterParseFunc(storepb.Engine_ORACLE, parsePLSQLForRegistry)
+	base.RegisterParseStatementsFunc(storepb.Engine_ORACLE, parsePLSQLStatements)
 	base.RegisterGetStatementTypes(storepb.Engine_ORACLE, GetStatementTypes)
 }
 
@@ -40,6 +41,47 @@ func toAST(results []*base.ParseResult) []base.AST {
 		})
 	}
 	return asts
+}
+
+// parsePLSQLStatements is the ParseStatementsFunc for Oracle (PL/SQL).
+// Returns []Statement with both text and AST populated.
+func parsePLSQLStatements(statement string) ([]base.Statement, error) {
+	// First split to get SingleSQL with text and positions
+	singleSQLs, err := SplitSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	// Then parse to get ASTs (note: ParsePLSQL adds semicolon internally)
+	parseResults, err := ParsePLSQL(statement + ";")
+	if err != nil {
+		return nil, err
+	}
+
+	// Combine: SingleSQL provides text/positions, ParseResult provides AST
+	var statements []base.Statement
+	astIndex := 0
+	for _, sql := range singleSQLs {
+		stmt := base.Statement{
+			Text:            sql.Text,
+			Empty:           sql.Empty,
+			StartPosition:   sql.Start,
+			EndPosition:     sql.End,
+			ByteOffsetStart: sql.ByteOffsetStart,
+			ByteOffsetEnd:   sql.ByteOffsetEnd,
+		}
+		if !sql.Empty && astIndex < len(parseResults) {
+			stmt.AST = &base.ANTLRAST{
+				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
+				Tree:          parseResults[astIndex].Tree,
+				Tokens:        parseResults[astIndex].Tokens,
+			}
+			astIndex++
+		}
+		statements = append(statements, stmt)
+	}
+
+	return statements, nil
 }
 
 type Version struct {

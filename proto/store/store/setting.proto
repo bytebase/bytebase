@@ -10,10 +10,6 @@ import "store/project_webhook.proto";
 option go_package = "generated-go/store";
 
 enum SettingName {
-  reserved 16;
-  reserved 6; // was WORKSPACE_EXTERNAL_APPROVAL
-  reserved 13; // was SCHEMA_TEMPLATE
-
   SETTING_NAME_UNSPECIFIED = 0;
   AUTH_SECRET = 1;
   BRANDING_LOGO = 2;
@@ -22,7 +18,6 @@ enum SettingName {
   WORKSPACE_APPROVAL = 5;
   ENTERPRISE_LICENSE = 7;
   APP_IM = 8;
-  WATERMARK = 9;
   AI = 10;
   DATA_CLASSIFICATION = 14;
   SEMANTIC_TYPES = 15;
@@ -71,6 +66,10 @@ message WorkspaceProfileSetting {
   // Whether to enable audit logging to stdout in structured JSON format.
   // Requires TEAM or ENTERPRISE license.
   bool enable_audit_log_stdout = 15;
+
+  // Whether to display watermark on pages.
+  // Requires ENTERPRISE license.
+  bool watermark = 16;
 }
 
 message Announcement {

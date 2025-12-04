@@ -96,7 +96,6 @@ message Setting {
     WORKSPACE_PROFILE = 4;
     WORKSPACE_APPROVAL = 5;
     APP_IM = 8;
-    WATERMARK = 9;
     AI = 10;
     DATA_CLASSIFICATION = 14;
     SEMANTIC_TYPES = 15;
@@ -217,6 +216,10 @@ message WorkspaceProfileSetting {
   // Whether to enable audit logging to stdout in structured JSON format.
   // Requires TEAM or ENTERPRISE license.
   bool enable_audit_log_stdout = 15;
+
+  // Whether to display watermark on pages.
+  // Requires ENTERPRISE license.
+  bool watermark = 16;
 }
 
 message Announcement {
