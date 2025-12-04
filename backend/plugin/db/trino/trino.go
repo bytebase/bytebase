@@ -111,6 +111,9 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	// Connect using the Trino driver
 	db, err := sql.Open("trino", dsn)
 	if err != nil {
+		if tlsClientKey != "" {
+			trino.DeregisterCustomClient(tlsClientKey)
+		}
 		return nil, errors.Wrap(err, "failed to connect to Trino")
 	}
 
