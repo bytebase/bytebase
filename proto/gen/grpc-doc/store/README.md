@@ -2313,6 +2313,8 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | obfuscated_ssh_private_key | [string](#string) |  |  |
 | authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
 | obfuscated_authentication_private_key | [string](#string) |  |  |
+| authentication_private_key_passphrase | [string](#string) |  | Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted. |
+| obfuscated_authentication_private_key_passphrase | [string](#string) |  |  |
 | external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-store-DataSource-AuthenticationType) |  |  |
 | azure_credential | [DataSource.AzureCredential](#bytebase-store-DataSource-AzureCredential) |  |  |

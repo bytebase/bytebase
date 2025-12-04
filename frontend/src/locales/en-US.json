@@ -1977,6 +1977,9 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "Key-pair authentication",
+    "private-key-passphrase": "Private Key Passphrase",
+    "private-key-passphrase-tip": "Optional passphrase for encrypted private keys",
+    "private-key-passphrase-placeholder": "Leave empty if your private key is not encrypted",
     "extra-params": {
       "self": "Extra Parameters",
       "description": "Additional parameters for database connection string"

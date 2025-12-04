@@ -1,16 +1,14 @@
 import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
 import Emittery from "emittery";
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import { useDialog } from "naive-ui";
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { instanceServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
 import {
   pushNotification,
   useEnvironmentV1Store,
+  useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
@@ -19,21 +17,17 @@ import type {
   Instance,
 } from "@/types/proto-es/v1/instance_service_pb";
 import {
-  AddDataSourceRequestSchema,
-  CreateInstanceRequestSchema,
   DataSource_AuthenticationType,
   DataSource_RedisType,
   DataSourceExternalSecret_AuthType,
   DataSourceExternalSecret_SecretType,
   DataSourceType,
   InstanceSchema,
-  UpdateDataSourceRequestSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   convertKVListToLabels,
   convertLabelsToKVList,
-  extractInstanceResourceName,
   hasWorkspacePermissionV2,
   isValidSpannerHost,
 } from "@/utils";
@@ -62,6 +56,7 @@ export const provideInstanceFormContext = (baseContext: {
   instance: Ref<Instance | undefined>;
   hideAdvancedFeatures: Ref<boolean | undefined>;
 }) => {
+  const instanceStore = useInstanceV1Store();
   const $d = useDialog();
   const { t } = useI18n();
   const events = new Emittery<{
@@ -281,8 +276,7 @@ export const provideInstanceFormContext = (baseContext: {
         "useEmptyPassword",
         "updatedMasterPassword",
         "useEmptyMasterPassword",
-        "updateSsl",
-        "updateAuthenticationPrivateKey"
+        "updateSsl"
       )
     );
     if (edit.updatedPassword) {
@@ -398,14 +392,7 @@ export const provideInstanceFormContext = (baseContext: {
       );
       instance.dataSources = [dataSourceCreate];
       try {
-        const request = create(CreateInstanceRequestSchema, {
-          instance,
-          instanceId: extractInstanceResourceName(instance.name),
-          validateOnly: true,
-        });
-        await instanceServiceClientConnect.createInstance(request, {
-          contextValues: createContextValues().set(silentContextKey, true),
-        });
+        await instanceStore.createInstance(instance, true /* validateOnly */);
         return ok();
       } catch (err) {
         return fail(dataSourceCreate.host, err);
@@ -417,13 +404,10 @@ export const provideInstanceFormContext = (baseContext: {
         // When read-only data source is about to be created, use
         // editingDataSource + AddDataSourceRequest.validateOnly = true
         try {
-          const request = create(AddDataSourceRequestSchema, {
-            name: instance.value!.name,
+          await instanceStore.createDataSource({
+            instance: instance.value!.name,
             dataSource: ds,
             validateOnly: true,
-          });
-          await instanceServiceClientConnect.addDataSource(request, {
-            contextValues: createContextValues().set(silentContextKey, true),
           });
           return ok();
         } catch (err) {
@@ -440,14 +424,11 @@ export const provideInstanceFormContext = (baseContext: {
             throw new Error("should never reach this line");
           }
           const updateMask = calcDataSourceUpdateMask(ds, original, editingDS);
-          const request = create(UpdateDataSourceRequestSchema, {
-            name: instance.value!.name,
+          await instanceStore.updateDataSource({
+            instance: instance.value!.name,
             dataSource: ds,
-            updateMask: { paths: updateMask },
+            updateMask,
             validateOnly: true,
-          });
-          await instanceServiceClientConnect.updateDataSource(request, {
-            contextValues: createContextValues().set(silentContextKey, true),
           });
           return ok();
         } catch (err) {

@@ -1977,6 +1977,9 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "Xác thực cặp khóa",
+    "private-key-passphrase": "Mật khẩu khóa riêng",
+    "private-key-passphrase-tip": "Mật khẩu tùy chọn cho khóa riêng được mã hóa",
+    "private-key-passphrase-placeholder": "Để trống nếu khóa riêng của bạn không được mã hóa",
     "extra-params": {
       "self": "Thông số bổ sung",
       "description": "Các tham số bổ sung cho chuỗi kết nối cơ sở dữ liệu"

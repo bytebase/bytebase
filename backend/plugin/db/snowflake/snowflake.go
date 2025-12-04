@@ -73,19 +73,22 @@ func (d *Driver) Open(_ context.Context, dbType storepb.Engine, config db.Connec
 // buildSnowflakeDSN returns the Snowflake Golang DSN and a redacted version of the DSN.
 func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 	snowConfig := &snow.Config{
-		User:     config.DataSource.Username,
-		Password: config.Password,
+		User: config.DataSource.Username,
 	}
 	if config.ConnectionContext.DatabaseName != "" {
 		snowConfig.Database = fmt.Sprintf(`"%s"`, config.ConnectionContext.DatabaseName)
 	}
 	if config.DataSource.GetAuthenticationPrivateKey() != "" {
-		rsaPrivKey, err := decodeRSAPrivateKey(config.DataSource.GetAuthenticationPrivateKey())
+		// Use key-pair authentication (JWT) - password is not required
+		rsaPrivKey, err := decodeRSAPrivateKey(config.DataSource.GetAuthenticationPrivateKey(), config.DataSource.GetAuthenticationPrivateKeyPassphrase())
 		if err != nil {
 			return "", "", errors.Wrapf(err, "failed to decode rsa private key")
 		}
 		snowConfig.PrivateKey = rsaPrivKey
 		snowConfig.Authenticator = snow.AuthTypeJwt
+	} else {
+		// Use password authentication
+		snowConfig.Password = config.Password
 	}
 
 	// Host can also be account e.g. xma12345, or xma12345@host_ip where host_ip is the proxy server IP.
@@ -412,7 +415,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	return results, nil
 }
 
-func decodeRSAPrivateKey(key string) (*rsa.PrivateKey, error) {
+func decodeRSAPrivateKey(key, passphrase string) (*rsa.PrivateKey, error) {
 	block, _ := pem.Decode([]byte(key))
 	if block == nil {
 		return nil, errors.Errorf("failed to get private key PEM block from key")
@@ -432,8 +435,7 @@ func decodeRSAPrivateKey(key string) (*rsa.PrivateKey, error) {
 		// NOTE: As of Jun 2024, Golang's official library does not support passcode-encrypted PKCS8 private key. And
 		// Snowflake do not introduce an external library to achieve this due to the security purposes.
 		// We introduce https://pkg.go.dev/github.com/youmark/pkcs8 to help us to achieve this goal.
-		// TODO(zp): Assume the passphrase is empty because we do not have input area in frontend.
-		pk, err := pkcs8.ParsePKCS8PrivateKeyRSA([]byte(block.Bytes), []byte(""))
+		pk, err := pkcs8.ParsePKCS8PrivateKeyRSA(block.Bytes, []byte(passphrase))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse pkcs8 private key to rsa private key with passphrase")
 		}

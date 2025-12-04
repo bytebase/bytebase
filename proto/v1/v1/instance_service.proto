@@ -592,6 +592,8 @@ message DataSource {
   // PKCS#8 private key in PEM format. If it's empty string, no private key is required.
   // Used for authentication when connecting to the data source.
   string authentication_private_key = 20 [(google.api.field_behavior) = INPUT_ONLY];
+  // Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.
+  string authentication_private_key_passphrase = 40 [(google.api.field_behavior) = INPUT_ONLY];
 
   DataSourceExternalSecret external_secret = 21;
 

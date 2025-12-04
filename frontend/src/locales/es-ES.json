@@ -1977,6 +1977,9 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "Autenticación de par de claves",
+    "private-key-passphrase": "Frase de contraseña de clave privada",
+    "private-key-passphrase-tip": "Frase de contraseña opcional para claves privadas cifradas",
+    "private-key-passphrase-placeholder": "Deje vacío si su clave privada no está cifrada",
     "extra-params": {
       "self": "Parámetros adicionales",
       "description": "Parámetros adicionales para la cadena de conexión de la base de datos"

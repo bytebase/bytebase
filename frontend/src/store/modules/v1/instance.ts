@@ -99,12 +99,24 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     return list;
   };
-  const createInstance = async (instance: Instance) => {
+  const createInstance = async (
+    instance: Instance,
+    validateOnly: boolean = false
+  ) => {
     const request = create(CreateInstanceRequestSchema, {
       instance: instance,
       instanceId: extractInstanceResourceName(instance.name),
+      validateOnly: validateOnly,
     });
-    const response = await instanceServiceClientConnect.createInstance(request);
+    const response = await instanceServiceClientConnect.createInstance(
+      request,
+      {
+        contextValues: createContextValues().set(
+          silentContextKey,
+          validateOnly
+        ),
+      }
+    );
     const instances = upsertInstances([response]);
 
     return instances[0];
@@ -216,30 +228,52 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     instanceRequestCache.set(name, request);
     return request;
   };
-  const createDataSource = async (
-    instance: Instance,
-    dataSource: DataSource
-  ) => {
+  const createDataSource = async ({
+    instance,
+    dataSource,
+    validateOnly,
+  }: {
+    instance: string;
+    dataSource: DataSource;
+    validateOnly?: boolean;
+  }) => {
     const request = create(AddDataSourceRequestSchema, {
-      name: instance.name,
+      name: instance,
       dataSource: dataSource,
+      validateOnly,
     });
-    const response = await instanceServiceClientConnect.addDataSource(request);
+    const response = await instanceServiceClientConnect.addDataSource(request, {
+      contextValues: createContextValues().set(silentContextKey, validateOnly),
+    });
     const [updatedInstance] = upsertInstances([response]);
     return updatedInstance;
   };
-  const updateDataSource = async (
-    instance: Instance,
-    dataSource: DataSource,
-    updateMask: string[]
-  ) => {
+  const updateDataSource = async ({
+    instance,
+    dataSource,
+    updateMask,
+    validateOnly,
+  }: {
+    instance: string;
+    dataSource: DataSource;
+    updateMask: string[];
+    validateOnly?: boolean;
+  }) => {
     const request = create(UpdateDataSourceRequestSchema, {
-      name: instance.name,
+      name: instance,
       dataSource: dataSource,
       updateMask: { paths: updateMask },
+      validateOnly,
     });
-    const response =
-      await instanceServiceClientConnect.updateDataSource(request);
+    const response = await instanceServiceClientConnect.updateDataSource(
+      request,
+      {
+        contextValues: createContextValues().set(
+          silentContextKey,
+          validateOnly
+        ),
+      }
+    );
     const [updatedInstance] = upsertInstances([response]);
     return updatedInstance;
   };

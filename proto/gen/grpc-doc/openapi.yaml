@@ -9257,6 +9257,11 @@ components:
                          Used for authentication when connecting to the data source.
                 obfuscatedAuthenticationPrivateKey:
                     type: string
+                authenticationPrivateKeyPassphrase:
+                    type: string
+                    description: Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.
+                obfuscatedAuthenticationPrivateKeyPassphrase:
+                    type: string
                 externalSecret:
                     $ref: '#/components/schemas/DataSourceExternalSecret'
                 authenticationType:

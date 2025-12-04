@@ -608,10 +608,13 @@ type DataSource struct {
 	ObfuscatedSshPrivateKey string `protobuf:"bytes,19,opt,name=obfuscated_ssh_private_key,json=obfuscatedSshPrivateKey,proto3" json:"obfuscated_ssh_private_key,omitempty"`
 	// PKCS#8 private key in PEM format. If it's empty string, no private key is required.
 	// Used for authentication when connecting to the data source.
-	AuthenticationPrivateKey           string                        `protobuf:"bytes,43,opt,name=authentication_private_key,json=authenticationPrivateKey,proto3" json:"authentication_private_key,omitempty"`
-	ObfuscatedAuthenticationPrivateKey string                        `protobuf:"bytes,20,opt,name=obfuscated_authentication_private_key,json=obfuscatedAuthenticationPrivateKey,proto3" json:"obfuscated_authentication_private_key,omitempty"`
-	ExternalSecret                     *DataSourceExternalSecret     `protobuf:"bytes,21,opt,name=external_secret,json=externalSecret,proto3" json:"external_secret,omitempty"`
-	AuthenticationType                 DataSource_AuthenticationType `protobuf:"varint,22,opt,name=authentication_type,json=authenticationType,proto3,enum=bytebase.store.DataSource_AuthenticationType" json:"authentication_type,omitempty"`
+	AuthenticationPrivateKey           string `protobuf:"bytes,43,opt,name=authentication_private_key,json=authenticationPrivateKey,proto3" json:"authentication_private_key,omitempty"`
+	ObfuscatedAuthenticationPrivateKey string `protobuf:"bytes,20,opt,name=obfuscated_authentication_private_key,json=obfuscatedAuthenticationPrivateKey,proto3" json:"obfuscated_authentication_private_key,omitempty"`
+	// Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.
+	AuthenticationPrivateKeyPassphrase           string                        `protobuf:"bytes,48,opt,name=authentication_private_key_passphrase,json=authenticationPrivateKeyPassphrase,proto3" json:"authentication_private_key_passphrase,omitempty"`
+	ObfuscatedAuthenticationPrivateKeyPassphrase string                        `protobuf:"bytes,49,opt,name=obfuscated_authentication_private_key_passphrase,json=obfuscatedAuthenticationPrivateKeyPassphrase,proto3" json:"obfuscated_authentication_private_key_passphrase,omitempty"`
+	ExternalSecret                               *DataSourceExternalSecret     `protobuf:"bytes,21,opt,name=external_secret,json=externalSecret,proto3" json:"external_secret,omitempty"`
+	AuthenticationType                           DataSource_AuthenticationType `protobuf:"varint,22,opt,name=authentication_type,json=authenticationType,proto3,enum=bytebase.store.DataSource_AuthenticationType" json:"authentication_type,omitempty"`
 	// Types that are valid to be assigned to IamExtension:
 	//
 	//	*DataSource_AzureCredential_
@@ -879,6 +882,20 @@ func (x *DataSource) GetAuthenticationPrivateKey() string {
 func (x *DataSource) GetObfuscatedAuthenticationPrivateKey() string {
 	if x != nil {
 		return x.ObfuscatedAuthenticationPrivateKey
+	}
+	return ""
+}
+
+func (x *DataSource) GetAuthenticationPrivateKeyPassphrase() string {
+	if x != nil {
+		return x.AuthenticationPrivateKeyPassphrase
+	}
+	return ""
+}
+
+func (x *DataSource) GetObfuscatedAuthenticationPrivateKeyPassphrase() string {
+	if x != nil {
+		return x.ObfuscatedAuthenticationPrivateKeyPassphrase
 	}
 	return ""
 }
@@ -1772,7 +1789,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute\"\xff\x18\n" +
+	"_attribute\"\xba\x1a\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x122\n" +
@@ -1807,6 +1824,8 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x1aobfuscated_ssh_private_key\x18\x13 \x01(\tR\x17obfuscatedSshPrivateKey\x12<\n" +
 	"\x1aauthentication_private_key\x18+ \x01(\tR\x18authenticationPrivateKey\x12Q\n" +
 	"%obfuscated_authentication_private_key\x18\x14 \x01(\tR\"obfuscatedAuthenticationPrivateKey\x12Q\n" +
+	"%authentication_private_key_passphrase\x180 \x01(\tR\"authenticationPrivateKeyPassphrase\x12f\n" +
+	"0obfuscated_authentication_private_key_passphrase\x181 \x01(\tR,obfuscatedAuthenticationPrivateKeyPassphrase\x12Q\n" +
 	"\x0fexternal_secret\x18\x15 \x01(\v2(.bytebase.store.DataSourceExternalSecretR\x0eexternalSecret\x12^\n" +
 	"\x13authentication_type\x18\x16 \x01(\x0e2-.bytebase.store.DataSource.AuthenticationTypeR\x12authenticationType\x12W\n" +
 	"\x10azure_credential\x18\x17 \x01(\v2*.bytebase.store.DataSource.AzureCredentialH\x00R\x0fazureCredential\x12Q\n" +

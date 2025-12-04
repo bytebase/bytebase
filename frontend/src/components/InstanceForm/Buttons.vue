@@ -423,7 +423,11 @@ const doUpdate = async () => {
     }
 
     pendingRequestRunners.push(() =>
-      instanceV1Store.updateDataSource(inst, editing, updateMask)
+      instanceV1Store.updateDataSource({
+        instance: inst.name,
+        dataSource: editing,
+        updateMask,
+      })
     );
   };
   const maybeQueueUpdateAdminDataSource = async () => {
@@ -464,7 +468,10 @@ const doUpdate = async () => {
         }
 
         pendingRequestRunners.push(() =>
-          instanceV1Store.createDataSource(inst, patch)
+          instanceV1Store.createDataSource({
+            instance: inst.name,
+            dataSource: patch,
+          })
         );
       } else {
         const original = inst.dataSources.find((ds) => ds.id === editing.id);
