@@ -30,7 +30,7 @@
             </template>
           </BBAttention>
 
-          <div class="gap-y-2">
+          <div class="flex flex-col gap-y-2">
             <div class="gap-x-2">
               <div class="font-medium">
                 {{ $t(`settings.members.entra-sync.endpoint`) }}
@@ -63,7 +63,7 @@
             </div>
           </div>
 
-          <div class="gap-y-2">
+          <div class="flex flex-col gap-y-2">
             <div class="gap-x-2">
               <div class="font-medium">
                 {{ $t(`settings.members.entra-sync.secret-token`) }}
@@ -94,18 +94,19 @@
                 @click="handleSelect(scimTokenFieldRef)"
               />
             </div>
-            <NButton
-              v-if="hasPermission"
-              tertiary
-              :type="'warning'"
-              :size="'small'"
-              @click="resetToken"
-            >
-              <template #icon>
-                <ReplyIcon class="w-4" />
-              </template>
-              {{ $t("settings.members.entra-sync.reset-token") }}
-            </NButton>
+            <div v-if="hasPermission">
+              <NButton
+                tertiary
+                :type="'warning'"
+                :size="'small'"
+                @click="resetToken"
+              >
+                <template #icon>
+                  <ReplyIcon class="w-4" />
+                </template>
+                {{ $t("settings.members.entra-sync.reset-token") }}
+              </NButton>
+            </div>
           </div>
         </div>
       </template>
