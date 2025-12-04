@@ -283,6 +283,12 @@ func (x *DataSource) Equal(y *DataSource) bool {
 	if x.ObfuscatedAuthenticationPrivateKey != y.ObfuscatedAuthenticationPrivateKey {
 		return false
 	}
+	if x.AuthenticationPrivateKeyPassphrase != y.AuthenticationPrivateKeyPassphrase {
+		return false
+	}
+	if x.ObfuscatedAuthenticationPrivateKeyPassphrase != y.ObfuscatedAuthenticationPrivateKeyPassphrase {
+		return false
+	}
 	if !x.ExternalSecret.Equal(y.ExternalSecret) {
 		return false
 	}

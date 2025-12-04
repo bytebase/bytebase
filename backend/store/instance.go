@@ -383,6 +383,8 @@ func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instanc
 		ds.SshPrivateKey = ""
 		ds.ObfuscatedAuthenticationPrivateKey = common.Obfuscate(ds.GetAuthenticationPrivateKey(), secret)
 		ds.AuthenticationPrivateKey = ""
+		ds.ObfuscatedAuthenticationPrivateKeyPassphrase = common.Obfuscate(ds.GetAuthenticationPrivateKeyPassphrase(), secret)
+		ds.AuthenticationPrivateKeyPassphrase = ""
 		ds.ObfuscatedMasterPassword = common.Obfuscate(ds.GetMasterPassword(), secret)
 		ds.MasterPassword = ""
 
@@ -464,6 +466,12 @@ func (s *Store) unObfuscateInstance(ctx context.Context, instance *storepb.Insta
 			return err
 		}
 		ds.AuthenticationPrivateKey = authenticationPrivateKey
+
+		authenticationPrivateKeyPassphrase, err := common.Unobfuscate(ds.GetObfuscatedAuthenticationPrivateKeyPassphrase(), secret)
+		if err != nil {
+			return err
+		}
+		ds.AuthenticationPrivateKeyPassphrase = authenticationPrivateKeyPassphrase
 
 		masterPassword, err := common.Unobfuscate(ds.GetObfuscatedMasterPassword(), secret)
 		if err != nil {

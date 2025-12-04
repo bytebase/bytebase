@@ -1977,6 +1977,9 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "密钥对认证",
+    "private-key-passphrase": "私钥密码",
+    "private-key-passphrase-tip": "加密私钥的可选密码",
+    "private-key-passphrase-placeholder": "如果私钥未加密，请留空",
     "extra-params": {
       "self": "额外的参数",
       "description": "数据库连接字符串的其他参数"

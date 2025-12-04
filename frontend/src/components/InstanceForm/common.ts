@@ -26,7 +26,6 @@ export type EditDataSource = DataSource & {
   useEmptyPassword?: boolean;
   useEmptyMasterPassword?: boolean;
   updateSsl?: boolean;
-  updateAuthenticationPrivateKey?: boolean;
   extraConnectionParameters?: Record<string, string>;
 };
 
@@ -131,8 +130,7 @@ export const calcDataSourceUpdateMask = (
   const updateMask = new Set(
     calcUpdateMask(editing, original, true /* toSnakeCase */)
   );
-  const { useEmptyPassword, updateSsl, updateAuthenticationPrivateKey } =
-    editState;
+  const { useEmptyPassword, updateSsl } = editState;
   if (useEmptyPassword) {
     // We need to implicitly set "password" need to be updated
     // if the "use empty password" option if checked
@@ -144,9 +142,6 @@ export const calcDataSourceUpdateMask = (
     updateMask.add("ssl_ca");
     updateMask.add("ssl_key");
     updateMask.add("ssl_cert");
-  }
-  if (updateAuthenticationPrivateKey) {
-    updateMask.add("authentication_private_key");
   }
 
   if (updateMask.has("iam_extension")) {

@@ -1977,6 +1977,9 @@
   },
   "data-source": {
     "snowflake-keypair-tip": "キーペア認証",
+    "private-key-passphrase": "秘密鍵のパスフレーズ",
+    "private-key-passphrase-tip": "暗号化された秘密鍵のオプションパスフレーズ",
+    "private-key-passphrase-placeholder": "秘密鍵が暗号化されていない場合は空のままにしてください",
     "extra-params": {
       "self": "追加のパラメーター",
       "description": "データベース接続文字列の追加パラメーター"

@@ -1068,6 +1068,13 @@ export declare type DataSource = Message<"bytebase.v1.DataSource"> & {
   authenticationPrivateKey: string;
 
   /**
+   * Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.
+   *
+   * @generated from field: string authentication_private_key_passphrase = 40;
+   */
+  authenticationPrivateKeyPassphrase: string;
+
+  /**
    * @generated from field: bytebase.v1.DataSourceExternalSecret external_secret = 21;
    */
   externalSecret?: DataSourceExternalSecret;

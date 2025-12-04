@@ -748,6 +748,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 			dataSource.SshPrivateKey = req.Msg.DataSource.SshPrivateKey
 		case "authentication_private_key":
 			dataSource.AuthenticationPrivateKey = req.Msg.DataSource.AuthenticationPrivateKey
+		case "authentication_private_key_passphrase":
+			dataSource.AuthenticationPrivateKeyPassphrase = req.Msg.DataSource.AuthenticationPrivateKeyPassphrase
 		case "external_secret":
 			externalSecret, err := convertV1DataSourceExternalSecret(req.Msg.DataSource.ExternalSecret)
 			if err != nil {

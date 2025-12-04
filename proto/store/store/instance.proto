@@ -111,6 +111,9 @@ message DataSource {
   // Used for authentication when connecting to the data source.
   string authentication_private_key = 43;
   string obfuscated_authentication_private_key = 20;
+  // Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.
+  string authentication_private_key_passphrase = 48;
+  string obfuscated_authentication_private_key_passphrase = 49;
 
   DataSourceExternalSecret external_secret = 21;
 

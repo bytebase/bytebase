@@ -4378,6 +4378,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
 | ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 | authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
+| authentication_private_key_passphrase | [string](#string) |  | Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted. |
 | external_secret | [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret) |  |  |
 | authentication_type | [DataSource.AuthenticationType](#bytebase-v1-DataSource-AuthenticationType) |  |  |
 | azure_credential | [DataSource.AzureCredential](#bytebase-v1-DataSource-AzureCredential) |  |  |

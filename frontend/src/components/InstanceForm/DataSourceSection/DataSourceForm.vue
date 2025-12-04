@@ -778,6 +778,21 @@ MIIEvQ...
           :allow-edit="allowEdit"
         />
       </div>
+      <div class="sm:col-span-3 sm:col-start-1">
+        <div class="textlabel block">
+          {{ $t("data-source.private-key-passphrase") }}
+        </div>
+        <div class="textinfolabel text-sm">
+          {{ $t("data-source.private-key-passphrase-tip") }}
+        </div>
+        <NInput
+          v-model:value="dataSource.authenticationPrivateKeyPassphrase"
+          type="password"
+          class="mt-2 w-full"
+          :disabled="!allowEdit"
+          :placeholder="$t('data-source.private-key-passphrase-placeholder')"
+        />
+      </div>
     </template>
 
     <template v-if="basicInfo.engine === Engine.DATABRICKS">
@@ -1420,9 +1435,9 @@ const handleSSHChange = (
 
 watch(
   () => props.dataSource.authenticationPrivateKey,
-  () => {
+  (privateKey) => {
     const ds = props.dataSource;
-    ds.updateAuthenticationPrivateKey = true;
+    ds.useEmptyPassword = !!privateKey;
   }
 );
 
