@@ -179,12 +179,16 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 	switch storeName {
 	case storepb.SettingName_SETTING_NAME_UNSPECIFIED:
 		return v1pb.Setting_SETTING_NAME_UNSPECIFIED
+	case storepb.SettingName_BRANDING_LOGO:
+		return v1pb.Setting_BRANDING_LOGO
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		return v1pb.Setting_WORKSPACE_PROFILE
 	case storepb.SettingName_WORKSPACE_APPROVAL:
 		return v1pb.Setting_WORKSPACE_APPROVAL
 	case storepb.SettingName_APP_IM:
 		return v1pb.Setting_APP_IM
+	case storepb.SettingName_WATERMARK:
+		return v1pb.Setting_WATERMARK
 	case storepb.SettingName_AI:
 		return v1pb.Setting_AI
 	case storepb.SettingName_DATA_CLASSIFICATION:
@@ -210,12 +214,16 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 	switch v1Name {
 	case v1pb.Setting_SETTING_NAME_UNSPECIFIED:
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
+	case v1pb.Setting_BRANDING_LOGO:
+		return storepb.SettingName_BRANDING_LOGO
 	case v1pb.Setting_WORKSPACE_PROFILE:
 		return storepb.SettingName_WORKSPACE_PROFILE
 	case v1pb.Setting_WORKSPACE_APPROVAL:
 		return storepb.SettingName_WORKSPACE_APPROVAL
 	case v1pb.Setting_APP_IM:
 		return storepb.SettingName_APP_IM
+	case v1pb.Setting_WATERMARK:
+		return storepb.SettingName_WATERMARK
 	case v1pb.Setting_AI:
 		return storepb.SettingName_AI
 	case v1pb.Setting_DATA_CLASSIFICATION:

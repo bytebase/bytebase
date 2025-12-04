@@ -46,10 +46,13 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { computed, ref } from "vue";
 import { Switch } from "@/components/v2";
 import { featureToRef, useSettingV1Store } from "@/store";
+import {
+  Setting_SettingName,
+  SettingValueSchema as SettingSettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
@@ -78,7 +81,13 @@ const settingRefList = computed(() => [
 ]);
 
 const initEnableWatermark = computed(() => {
-  return settingV1Store.watermark;
+  const watermarkSetting = settingV1Store.getSettingByName(
+    Setting_SettingName.WATERMARK
+  );
+  if (watermarkSetting?.value?.value?.case === "stringValue") {
+    return watermarkSetting.value.value.value === "1";
+  }
+  return false;
 });
 
 const enableWatermark = ref(initEnableWatermark.value);
@@ -91,12 +100,14 @@ const isDirty = computed(() => {
 });
 
 const handleWatermarkToggle = async () => {
-  await settingV1Store.updateWorkspaceProfile({
-    payload: {
-      watermark: enableWatermark.value,
-    },
-    updateMask: create(FieldMaskSchema, {
-      paths: ["value.workspace_profile.watermark"],
+  const value = enableWatermark.value ? "1" : "0";
+  await settingV1Store.upsertSetting({
+    name: Setting_SettingName.WATERMARK,
+    value: create(SettingSettingValueSchema, {
+      value: {
+        case: "stringValue",
+        value: value,
+      },
     }),
   });
 };

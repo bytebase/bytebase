@@ -13970,17 +13970,6 @@ components:
                     description: |-
                         Whether to enable audit logging to stdout in structured JSON format.
                          Requires TEAM or ENTERPRISE license.
-                brandingLogo:
-                    type: string
-                    description: |-
-                        The branding logo as raw bytes.
-                         Requires ENTERPRISE license with custom logo feature.
-                    format: bytes
-                watermark:
-                    type: boolean
-                    description: |-
-                        Whether to show watermark.
-                         Requires ENTERPRISE license with watermark feature.
 tags:
     - name: ActuatorService
       description: ActuatorService manages system health and operational information.

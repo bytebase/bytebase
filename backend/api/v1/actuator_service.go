@@ -103,13 +103,16 @@ func (s *ActuatorService) GetResourcePackage(
 	ctx context.Context,
 	_ *connect.Request[v1pb.GetResourcePackageRequest],
 ) (*connect.Response[v1pb.ResourcePackage], error) {
-	workspaceProfileSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	brandingSetting, err := s.store.GetSettingV2(ctx, storepb.SettingName_BRANDING_LOGO)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace profile"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace branding"))
+	}
+	if brandingSetting == nil {
+		return nil, errors.Errorf("cannot find setting %v", storepb.SettingName_BRANDING_LOGO)
 	}
 
 	pkg := &v1pb.ResourcePackage{
-		Logo: workspaceProfileSetting.BrandingLogo,
+		Logo: []byte(brandingSetting.Value),
 	}
 	return connect.NewResponse(pkg), nil
 }
@@ -234,15 +237,25 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanFeatu
 	}
 
 	// setting
+	brandingLogo, err := s.store.GetSettingV2(ctx, storepb.SettingName_BRANDING_LOGO)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get branding logo setting")
+	}
+	if brandingLogo != nil && brandingLogo.Value != "" {
+		features = append(features, v1pb.PlanFeature_FEATURE_CUSTOM_LOGO)
+	}
+
+	watermark, err := s.store.GetSettingV2(ctx, storepb.SettingName_WATERMARK)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get watermark setting")
+	}
+	if watermark != nil && watermark.Value == "1" {
+		features = append(features, v1pb.PlanFeature_FEATURE_WATERMARK)
+	}
+
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get workspace general setting")
-	}
-	if len(setting.BrandingLogo) > 0 {
-		features = append(features, v1pb.PlanFeature_FEATURE_CUSTOM_LOGO)
-	}
-	if setting.Watermark {
-		features = append(features, v1pb.PlanFeature_FEATURE_WATERMARK)
 	}
 	if setting.DisallowSignup && !s.profile.SaaS {
 		features = append(features, v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP)
