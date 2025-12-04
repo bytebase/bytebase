@@ -2638,7 +2638,7 @@
         "add": "Thêm nút",
         "delete": "Xóa nút phê duyệt"
       },
-      "skip": "Bỏ qua phê duyệt thủ công",
+      "skip": "Không cần phê duyệt",
       "issue-review": {
         "sent-back": "Đã gửi lại",
         "review-sent-back-by": "Đánh giá đã gửi lại bởi {user}"

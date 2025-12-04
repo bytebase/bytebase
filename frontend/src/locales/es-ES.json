@@ -2638,7 +2638,7 @@
         "add": "Agregar nodo",
         "delete": "Eliminar nodo de aprobación"
       },
-      "skip": "Omitir aprobación manual",
+      "skip": "No se requiere aprobación",
       "issue-review": {
         "sent-back": "Devuelto",
         "review-sent-back-by": "Reseña enviada por {user}"

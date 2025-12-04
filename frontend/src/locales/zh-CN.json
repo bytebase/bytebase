@@ -2638,7 +2638,7 @@
         "add": "增加节点",
         "delete": "删除审批节点"
       },
-      "skip": "跳过人工审批",
+      "skip": "无需审批",
       "issue-review": {
         "sent-back": "被退回",
         "review-sent-back-by": "审批被 {user} 退回"
