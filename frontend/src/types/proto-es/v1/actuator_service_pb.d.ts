@@ -35,11 +35,11 @@ export declare const GetResourcePackageRequestSchema: GenMessage<GetResourcePack
  */
 export declare type ResourcePackage = Message<"bytebase.v1.ResourcePackage"> & {
   /**
-   * The branding logo.
+   * The branding logo URL or data URI.
    *
-   * @generated from field: bytes logo = 1;
+   * @generated from field: string logo = 1;
    */
-  logo: Uint8Array;
+  logo: string;
 };
 
 /**

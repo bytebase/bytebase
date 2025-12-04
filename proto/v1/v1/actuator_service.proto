@@ -69,8 +69,8 @@ message GetResourcePackageRequest {}
 
 // Custom branding resources for the Bytebase instance.
 message ResourcePackage {
-  // The branding logo.
-  bytes logo = 1;
+  // The branding logo URL or data URI.
+  string logo = 1;
 }
 
 // Request message for setting up sample data.

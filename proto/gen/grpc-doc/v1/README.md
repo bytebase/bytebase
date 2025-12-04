@@ -3285,7 +3285,7 @@ Custom branding resources for the Bytebase instance.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| logo | [bytes](#bytes) |  | The branding logo. |
+| logo | [string](#string) |  | The branding logo URL or data URI. |
 
 
 

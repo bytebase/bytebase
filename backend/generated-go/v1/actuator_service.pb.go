@@ -65,8 +65,8 @@ func (*GetResourcePackageRequest) Descriptor() ([]byte, []int) {
 // Custom branding resources for the Bytebase instance.
 type ResourcePackage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The branding logo.
-	Logo          []byte `protobuf:"bytes,1,opt,name=logo,proto3" json:"logo,omitempty"`
+	// The branding logo URL or data URI.
+	Logo          string `protobuf:"bytes,1,opt,name=logo,proto3" json:"logo,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -101,11 +101,11 @@ func (*ResourcePackage) Descriptor() ([]byte, []int) {
 	return file_v1_actuator_service_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ResourcePackage) GetLogo() []byte {
+func (x *ResourcePackage) GetLogo() string {
 	if x != nil {
 		return x.Logo
 	}
-	return nil
+	return ""
 }
 
 // Request message for setting up sample data.
@@ -600,7 +600,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x18v1/setting_service.proto\x1a\x15v1/user_service.proto\"\x1b\n" +
 	"\x19GetResourcePackageRequest\"%\n" +
 	"\x0fResourcePackage\x12\x12\n" +
-	"\x04logo\x18\x01 \x01(\fR\x04logo\"\x14\n" +
+	"\x04logo\x18\x01 \x01(\tR\x04logo\"\x14\n" +
 	"\x12SetupSampleRequest\"\x18\n" +
 	"\x16GetActuatorInfoRequest\"\xbe\x01\n" +
 	"\x19UpdateActuatorInfoRequest\x12:\n" +

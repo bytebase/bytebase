@@ -25,7 +25,7 @@ func (x *ResourcePackage) Equal(y *ResourcePackage) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if string(x.Logo) != string(y.Logo) {
+	if x.Logo != y.Logo {
 		return false
 	}
 	return true

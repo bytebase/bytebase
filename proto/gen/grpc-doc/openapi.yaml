@@ -12176,8 +12176,7 @@ components:
             properties:
                 logo:
                     type: string
-                    description: The branding logo.
-                    format: bytes
+                    description: The branding logo URL or data URI.
             description: Custom branding resources for the Bytebase instance.
         Result_SqlReviewReport:
             type: object
