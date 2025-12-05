@@ -238,6 +238,24 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     }
   };
 
+  const updateCache = (tab: SQLEditorTab) => {
+    const draftIndex = draftTabList.value.findIndex(
+      (item) => item.id === tab.id
+    );
+    if (draftIndex >= 0) {
+      Object.assign(draftTabList.value[draftIndex], tab);
+    }
+
+    const openTabIndex = openTabList.value.findIndex((item) => item.id === tab.id);
+    if (openTabIndex >= 0) {
+      const persistentTab = pick(
+        tab,
+        ...PERSISTENT_TAB_FIELDS
+      ) as PersistentTab;
+      Object.assign(openTabList.value[openTabIndex], persistentTab);
+    }
+  }
+
   const updateTab = (id: string, payload: Partial<SQLEditorTab>) => {
     const tab = tabById(id);
     if (!tab) return;
@@ -245,6 +263,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
 
     if (payload.worksheet) {
       removeDraft(tab);
+    } else {
+      updateCache(tab);
     }
   };
 
