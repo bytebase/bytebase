@@ -1526,6 +1526,10 @@ message Changelog {
     SDL = 3;
   }
   Type type = 17;
+
+  // True if this changelog's dump version differs from current engine dump version.
+  // When true and drift is detected, the drift may be a false positive from Bytebase upgrade.
+  bool dump_version_mismatch = 18;
 }
 
 message GetSchemaStringRequest {

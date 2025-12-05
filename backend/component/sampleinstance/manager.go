@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -304,8 +305,9 @@ func (m *Manager) generateInstance(
 		PrevSyncHistoryUID: &syncHistory,
 		SyncHistoryUID:     &syncHistory,
 		Payload: &storepb.ChangelogPayload{
-			Type:      storepb.ChangelogPayload_BASELINE,
-			GitCommit: m.profile.GitCommit,
+			Type:        storepb.ChangelogPayload_BASELINE,
+			GitCommit:   m.profile.GitCommit,
+			DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
 		},
 	}); err != nil {
 		return errors.Wrapf(err, "failed to create baseline changelog for %v", dbName)

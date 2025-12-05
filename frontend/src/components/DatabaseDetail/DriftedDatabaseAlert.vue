@@ -4,26 +4,31 @@
     type="warning"
     :title="$t('database.drifted.schema-drift-detected.self')"
   >
-    <div class="flex items-center justify-between gap-4">
-      <div class="flex-1">
-        {{ $t("database.drifted.schema-drift-detected.description") }}
-        <LearnMoreLink
-          class="ml-1"
-          url="https://docs.bytebase.com/change-database/drift-detection/?source=console"
-        />
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
+          {{ $t("database.drifted.schema-drift-detected.description") }}
+          <LearnMoreLink
+            class="ml-1"
+            url="https://docs.bytebase.com/change-database/drift-detection/?source=console"
+          />
+        </div>
+        <div class="flex justify-end items-center gap-x-2">
+          <NButton size="small" @click="state.showSchemaDiffModal = true">
+            {{ $t("database.drifted.view-diff") }}
+          </NButton>
+          <NButton
+            v-if="database.project !== DEFAULT_PROJECT_NAME"
+            size="small"
+            type="primary"
+            @click="updateDatabaseDrift"
+          >
+            {{ $t("database.drifted.new-baseline.self") }}
+          </NButton>
+        </div>
       </div>
-      <div class="flex justify-end items-center gap-2">
-        <NButton size="small" @click="state.showSchemaDiffModal = true">
-          {{ $t("database.drifted.view-diff") }}
-        </NButton>
-        <NButton
-          v-if="database.project !== DEFAULT_PROJECT_NAME"
-          size="small"
-          type="primary"
-          @click="updateDatabaseDrift"
-        >
-          {{ $t("database.drifted.new-baseline.self") }}
-        </NButton>
+      <div v-if="formatVersionMismatch" class="text-sm text-gray-500">
+        {{ $t("database.drifted.format-version-mismatch-caveat") }}
       </div>
     </div>
   </NAlert>
@@ -91,6 +96,7 @@ const state = reactive<LocalState>({
 
 const latestChangelogSchema = ref("-- Loading latest changelog schema...");
 const currentDatabaseSchema = ref("-- Loading current database schema...");
+const formatVersionMismatch = ref(false);
 
 const updateDatabaseDrift = async () => {
   await databaseStore.updateDatabase(
@@ -120,12 +126,15 @@ const fetchLatestChangelogSchema = async () => {
       const latestChangelog = changelogs[0];
       latestChangelogSchema.value =
         latestChangelog.schema || "-- No schema found in latest changelog";
+      formatVersionMismatch.value = latestChangelog.dumpVersionMismatch;
     } else {
       latestChangelogSchema.value = "-- No changelogs found for this database";
+      formatVersionMismatch.value = false;
     }
   } catch (error) {
     console.error("Failed to fetch changelog:", error);
     latestChangelogSchema.value = "-- Failed to load changelog schema";
+    formatVersionMismatch.value = false;
   }
 };
 

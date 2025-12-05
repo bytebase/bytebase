@@ -330,6 +330,13 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to sync database metadata and schema")
 			}
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &databaseMessage.InstanceID})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get instance for format version")
+			}
+			if instance == nil {
+				return nil, errors.Errorf("instance %q not found", databaseMessage.InstanceID)
+			}
 			if _, err := s.store.CreateChangelog(ctx, &store.ChangelogMessage{
 				InstanceID:   databaseMessage.InstanceID,
 				DatabaseName: databaseMessage.DatabaseName,
@@ -338,8 +345,9 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 				PrevSyncHistoryUID: &syncHistory,
 				SyncHistoryUID:     &syncHistory,
 				Payload: &storepb.ChangelogPayload{
-					Type:      storepb.ChangelogPayload_BASELINE,
-					GitCommit: s.profile.GitCommit,
+					Type:        storepb.ChangelogPayload_BASELINE,
+					GitCommit:   s.profile.GitCommit,
+					DumpVersion: schema.GetDumpFormatVersion(instance.Metadata.GetEngine()),
 				}}); err != nil {
 				return nil, errors.Wrapf(err, "failed to create changelog")
 			}

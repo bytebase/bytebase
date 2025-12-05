@@ -3290,6 +3290,14 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
    * @generated from field: bytebase.v1.Changelog.Type type = 17;
    */
   type: Changelog_Type;
+
+  /**
+   * True if this changelog's dump version differs from current engine dump version.
+   * When true and drift is detected, the drift may be a false positive from Bytebase upgrade.
+   *
+   * @generated from field: bool dump_version_mismatch = 18;
+   */
+  dumpVersionMismatch: boolean;
 };
 
 /**
