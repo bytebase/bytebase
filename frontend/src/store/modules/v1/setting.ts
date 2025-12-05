@@ -10,8 +10,6 @@ import {
   type DataClassificationSetting_DataClassificationConfig,
   GetSettingRequestSchema,
   ListSettingsRequestSchema,
-  type PasswordRestrictionSetting,
-  PasswordRestrictionSettingSchema,
   type Setting,
   Setting_SettingName,
   SettingSchema,
@@ -19,6 +17,8 @@ import {
   SettingValueSchema,
   UpdateSettingRequestSchema,
   type WorkspaceProfileSetting,
+  type WorkspaceProfileSetting_PasswordRestriction,
+  WorkspaceProfileSetting_PasswordRestrictionSchema,
   WorkspaceProfileSettingSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { useActuatorV1Store } from "./actuator";
@@ -57,24 +57,14 @@ export const useSettingV1Store = defineStore("setting_v1", {
       }
       return [];
     },
-    passwordRestriction(): PasswordRestrictionSetting {
-      const setting = this.settingMapByName.get(
-        `${settingNamePrefix}${Setting_SettingName[Setting_SettingName.PASSWORD_RESTRICTION]}`
-      );
-      if (!setting?.value?.value) {
-        return create(PasswordRestrictionSettingSchema, {
+    passwordRestriction(): WorkspaceProfileSetting_PasswordRestriction {
+      return (
+        this.workspaceProfileSetting?.passwordRestriction ??
+        create(WorkspaceProfileSetting_PasswordRestrictionSchema, {
           minLength: 8,
           requireLetter: true,
-        });
-      }
-      const value = setting.value.value;
-      if (value.case === "passwordRestriction") {
-        return value.value;
-      }
-      return create(PasswordRestrictionSettingSchema, {
-        minLength: 8,
-        requireLetter: true,
-      });
+        })
+      );
     },
   },
   actions: {

@@ -189,11 +189,6 @@ export enum Setting_SettingName {
   SEMANTIC_TYPES = 15,
 
   /**
-   * @generated from enum value: PASSWORD_RESTRICTION = 18;
-   */
-  PASSWORD_RESTRICTION = 18,
-
-  /**
    * @generated from enum value: ENVIRONMENT = 19;
    */
   ENVIRONMENT = 19,
@@ -243,12 +238,6 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
      */
     value: SemanticTypeSetting;
     case: "semanticType";
-  } | {
-    /**
-     * @generated from field: bytebase.v1.PasswordRestrictionSetting password_restriction = 15;
-     */
-    value: PasswordRestrictionSetting;
-    case: "passwordRestriction";
   } | {
     /**
      * @generated from field: bytebase.v1.AISetting ai = 16;
@@ -602,6 +591,13 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: string branding_logo = 18;
    */
   brandingLogo: string;
+
+  /**
+   * Password restriction settings.
+   *
+   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 19;
+   */
+  passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
 };
 
 /**
@@ -609,6 +605,66 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
  * Use `create(WorkspaceProfileSettingSchema)` to create a new message.
  */
 export declare const WorkspaceProfileSettingSchema: GenMessage<WorkspaceProfileSetting>;
+
+/**
+ * @generated from message bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
+ */
+export declare type WorkspaceProfileSetting_PasswordRestriction = Message<"bytebase.v1.WorkspaceProfileSetting.PasswordRestriction"> & {
+  /**
+   * min_length is the minimum length for password, should no less than 8.
+   *
+   * @generated from field: int32 min_length = 1;
+   */
+  minLength: number;
+
+  /**
+   * require_number requires the password must contains at least one number.
+   *
+   * @generated from field: bool require_number = 2;
+   */
+  requireNumber: boolean;
+
+  /**
+   * require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+   *
+   * @generated from field: bool require_letter = 3;
+   */
+  requireLetter: boolean;
+
+  /**
+   * require_uppercase_letter requires the password must contains at least one upper case letter.
+   *
+   * @generated from field: bool require_uppercase_letter = 4;
+   */
+  requireUppercaseLetter: boolean;
+
+  /**
+   * require_special_character requires the password must contains at least one special character.
+   *
+   * @generated from field: bool require_special_character = 5;
+   */
+  requireSpecialCharacter: boolean;
+
+  /**
+   * require_reset_password_for_first_login requires users to reset their password after the 1st login.
+   *
+   * @generated from field: bool require_reset_password_for_first_login = 6;
+   */
+  requireResetPasswordForFirstLogin: boolean;
+
+  /**
+   * password_rotation requires users to reset their password after the duration.
+   *
+   * @generated from field: google.protobuf.Duration password_rotation = 7;
+   */
+  passwordRotation?: Duration;
+};
+
+/**
+ * Describes the message bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.
+ * Use `create(WorkspaceProfileSetting_PasswordRestrictionSchema)` to create a new message.
+ */
+export declare const WorkspaceProfileSetting_PasswordRestrictionSchema: GenMessage<WorkspaceProfileSetting_PasswordRestriction>;
 
 /**
  * @generated from message bytebase.v1.Announcement
@@ -1136,66 +1192,6 @@ export enum Algorithm_InnerOuterMask_MaskType {
  * Describes the enum bytebase.v1.Algorithm.InnerOuterMask.MaskType.
  */
 export declare const Algorithm_InnerOuterMask_MaskTypeSchema: GenEnum<Algorithm_InnerOuterMask_MaskType>;
-
-/**
- * @generated from message bytebase.v1.PasswordRestrictionSetting
- */
-export declare type PasswordRestrictionSetting = Message<"bytebase.v1.PasswordRestrictionSetting"> & {
-  /**
-   * min_length is the minimum length for password, should no less than 8.
-   *
-   * @generated from field: int32 min_length = 1;
-   */
-  minLength: number;
-
-  /**
-   * require_number requires the password must contains at least one number.
-   *
-   * @generated from field: bool require_number = 2;
-   */
-  requireNumber: boolean;
-
-  /**
-   * require_letter requires the password must contains at least one letter, regardless of upper case or lower case
-   *
-   * @generated from field: bool require_letter = 3;
-   */
-  requireLetter: boolean;
-
-  /**
-   * require_uppercase_letter requires the password must contains at least one upper case letter.
-   *
-   * @generated from field: bool require_uppercase_letter = 4;
-   */
-  requireUppercaseLetter: boolean;
-
-  /**
-   * require_special_character requires the password must contains at least one special character.
-   *
-   * @generated from field: bool require_special_character = 5;
-   */
-  requireSpecialCharacter: boolean;
-
-  /**
-   * require_reset_password_for_first_login requires users to reset their password after the 1st login.
-   *
-   * @generated from field: bool require_reset_password_for_first_login = 6;
-   */
-  requireResetPasswordForFirstLogin: boolean;
-
-  /**
-   * password_rotation requires users to reset their password after the duration.
-   *
-   * @generated from field: google.protobuf.Duration password_rotation = 7;
-   */
-  passwordRotation?: Duration;
-};
-
-/**
- * Describes the message bytebase.v1.PasswordRestrictionSetting.
- * Use `create(PasswordRestrictionSettingSchema)` to create a new message.
- */
-export declare const PasswordRestrictionSettingSchema: GenMessage<PasswordRestrictionSetting>;
 
 /**
  * @generated from message bytebase.v1.AISetting

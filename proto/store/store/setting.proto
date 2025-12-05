@@ -19,7 +19,6 @@ enum SettingName {
   AI = 10;
   DATA_CLASSIFICATION = 14;
   SEMANTIC_TYPES = 15;
-  PASSWORD_RESTRICTION = 18;
   ENVIRONMENT = 19;
 }
 
@@ -110,6 +109,26 @@ message WorkspaceProfileSetting {
 
   // The branding logo as a data URI (e.g. data:image/png;base64,...).
   string branding_logo = 18;
+
+  message PasswordRestriction {
+    // min_length is the minimum length for password, should be no less than 8.
+    int32 min_length = 1;
+    // require_number requires the password must contain at least one number.
+    bool require_number = 2;
+    // require_letter requires the password must contain at least one letter, regardless of upper case or lower case
+    bool require_letter = 3;
+    // require_uppercase_letter requires the password must contain at least one upper case letter.
+    bool require_uppercase_letter = 4;
+    // require_special_character requires the password must contain at least one special character.
+    bool require_special_character = 5;
+    // require_reset_password_for_first_login requires users to reset their password after the 1st login.
+    bool require_reset_password_for_first_login = 6;
+    // password_rotation requires users to reset their password after the duration.
+    google.protobuf.Duration password_rotation = 7;
+  }
+
+  // Password restriction settings.
+  PasswordRestriction password_restriction = 19;
 }
 
 message WorkspaceApprovalSetting {
@@ -271,23 +290,6 @@ message AppIMSetting {
   }
 
   repeated IMSetting settings = 1;
-}
-
-message PasswordRestrictionSetting {
-  // min_length is the minimum length for password, should be no less than 8.
-  int32 min_length = 1;
-  // require_number requires the password must contain at least one number.
-  bool require_number = 2;
-  // require_letter requires the password must contain at least one letter, regardless of upper case or lower case
-  bool require_letter = 3;
-  // require_uppercase_letter requires the password must contain at least one upper case letter.
-  bool require_uppercase_letter = 4;
-  // require_special_character requires the password must contain at least one special character.
-  bool require_special_character = 5;
-  // require_reset_password_for_first_login requires users to reset their password after the 1st login.
-  bool require_reset_password_for_first_login = 6;
-  // password_rotation requires users to reset their password after the duration.
-  google.protobuf.Duration password_rotation = 7;
 }
 
 message AISetting {

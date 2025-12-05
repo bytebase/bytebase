@@ -287,6 +287,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				oldSetting.BrandingLogo = payload.BrandingLogo
+			case "value.workspace_profile.password_restriction":
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
+					return nil, connect.NewError(connect.CodePermissionDenied, err)
+				}
+				if payload.PasswordRestriction != nil && payload.PasswordRestriction.MinLength < 8 {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid password minimum length, should no less than 8"))
+				}
+				oldSetting.PasswordRestriction = payload.PasswordRestriction
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}
@@ -463,19 +471,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			idMap[tp.Id] = true
 		}
 		bytes, err := protojson.Marshal(storeSemanticTypeSetting)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
-		}
-		storeSettingValue = string(bytes)
-	case storepb.SettingName_PASSWORD_RESTRICTION:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_PASSWORD_RESTRICTIONS); err != nil {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-		passwordSetting := convertPasswordRestrictionSetting(request.Msg.Setting.Value.GetPasswordRestriction())
-		if passwordSetting.MinLength < 8 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid password minimum length, should no less than 8"))
-		}
-		bytes, err := protojson.Marshal(passwordSetting)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}

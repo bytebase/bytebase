@@ -98,7 +98,6 @@ message Setting {
     AI = 10;
     DATA_CLASSIFICATION = 14;
     SEMANTIC_TYPES = 15;
-    PASSWORD_RESTRICTION = 18;
     ENVIRONMENT = 19;
   }
 
@@ -119,7 +118,6 @@ message SettingValue {
     WorkspaceApprovalSetting workspace_approval = 6;
     DataClassificationSetting data_classification = 10;
     SemanticTypeSetting semantic_type = 11;
-    PasswordRestrictionSetting password_restriction = 15;
     AISetting ai = 16;
     EnvironmentSetting environment = 17;
   }
@@ -221,6 +219,26 @@ message WorkspaceProfileSetting {
 
   // The branding logo as a data URI (e.g. data:image/png;base64,...).
   string branding_logo = 18;
+
+  message PasswordRestriction {
+    // min_length is the minimum length for password, should no less than 8.
+    int32 min_length = 1;
+    // require_number requires the password must contains at least one number.
+    bool require_number = 2;
+    // require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+    bool require_letter = 3;
+    // require_uppercase_letter requires the password must contains at least one upper case letter.
+    bool require_uppercase_letter = 4;
+    // require_special_character requires the password must contains at least one special character.
+    bool require_special_character = 5;
+    // require_reset_password_for_first_login requires users to reset their password after the 1st login.
+    bool require_reset_password_for_first_login = 6;
+    // password_rotation requires users to reset their password after the duration.
+    google.protobuf.Duration password_rotation = 7;
+  }
+
+  // Password restriction settings.
+  PasswordRestriction password_restriction = 19;
 }
 
 message Announcement {
@@ -391,23 +409,6 @@ enum DatabaseChangeMode {
   PIPELINE = 1;
   // A simple database change process in SQL editor. Users can execute SQL directly.
   EDITOR = 2;
-}
-
-message PasswordRestrictionSetting {
-  // min_length is the minimum length for password, should no less than 8.
-  int32 min_length = 1;
-  // require_number requires the password must contains at least one number.
-  bool require_number = 2;
-  // require_letter requires the password must contains at least one letter, regardless of upper case or lower case
-  bool require_letter = 3;
-  // require_uppercase_letter requires the password must contains at least one upper case letter.
-  bool require_uppercase_letter = 4;
-  // require_special_character requires the password must contains at least one special character.
-  bool require_special_character = 5;
-  // require_reset_password_for_first_login requires users to reset their password after the 1st login.
-  bool require_reset_password_for_first_login = 6;
-  // password_rotation requires users to reset their password after the duration.
-  google.protobuf.Duration password_rotation = 7;
 }
 
 message AISetting {

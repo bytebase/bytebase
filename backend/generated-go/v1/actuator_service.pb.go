@@ -321,7 +321,7 @@ type ActuatorInfo struct {
 	// Whether password-based signin is disabled (except for workspace admins).
 	DisallowPasswordSignin bool `protobuf:"varint,20,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
 	// Password complexity and restriction requirements.
-	PasswordRestriction *PasswordRestrictionSetting `protobuf:"bytes,21,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
+	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,21,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
 	// Whether the Bytebase instance is running in Docker.
 	Docker bool `protobuf:"varint,22,opt,name=docker,proto3" json:"docker,omitempty"`
 	// Statistics about users in the system.
@@ -480,7 +480,7 @@ func (x *ActuatorInfo) GetDisallowPasswordSignin() bool {
 	return false
 }
 
-func (x *ActuatorInfo) GetPasswordRestriction() *PasswordRestrictionSetting {
+func (x *ActuatorInfo) GetPasswordRestriction() *WorkspaceProfileSetting_PasswordRestriction {
 	if x != nil {
 		return x.PasswordRestriction
 	}
@@ -608,7 +608,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x14\n" +
-	"\x12DeleteCacheRequest\"\x9f\t\n" +
+	"\x12DeleteCacheRequest\"\xb0\t\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -628,8 +628,8 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\fworkspace_id\x18\r \x01(\tB\x03\xe0A\x03R\vworkspaceId\x12\x14\n" +
 	"\x05debug\x18\x0f \x01(\bR\x05debug\x124\n" +
 	"\x13unlicensed_features\x18\x13 \x03(\tB\x03\xe0A\x03R\x12unlicensedFeatures\x12=\n" +
-	"\x18disallow_password_signin\x18\x14 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12_\n" +
-	"\x14password_restriction\x18\x15 \x01(\v2'.bytebase.v1.PasswordRestrictionSettingB\x03\xe0A\x03R\x13passwordRestriction\x12\x1b\n" +
+	"\x18disallow_password_signin\x18\x14 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
+	"\x14password_restriction\x18\x15 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12\x1b\n" +
 	"\x06docker\x18\x16 \x01(\bB\x03\xe0A\x03R\x06docker\x12F\n" +
 	"\n" +
 	"user_stats\x18\x17 \x03(\v2\".bytebase.v1.ActuatorInfo.StatUserB\x03\xe0A\x03R\tuserStats\x12=\n" +
@@ -663,26 +663,26 @@ func file_v1_actuator_service_proto_rawDescGZIP() []byte {
 
 var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_v1_actuator_service_proto_goTypes = []any{
-	(*GetResourcePackageRequest)(nil),  // 0: bytebase.v1.GetResourcePackageRequest
-	(*ResourcePackage)(nil),            // 1: bytebase.v1.ResourcePackage
-	(*SetupSampleRequest)(nil),         // 2: bytebase.v1.SetupSampleRequest
-	(*GetActuatorInfoRequest)(nil),     // 3: bytebase.v1.GetActuatorInfoRequest
-	(*UpdateActuatorInfoRequest)(nil),  // 4: bytebase.v1.UpdateActuatorInfoRequest
-	(*DeleteCacheRequest)(nil),         // 5: bytebase.v1.DeleteCacheRequest
-	(*ActuatorInfo)(nil),               // 6: bytebase.v1.ActuatorInfo
-	(*ActuatorInfo_StatUser)(nil),      // 7: bytebase.v1.ActuatorInfo.StatUser
-	(*fieldmaskpb.FieldMask)(nil),      // 8: google.protobuf.FieldMask
-	(*timestamppb.Timestamp)(nil),      // 9: google.protobuf.Timestamp
-	(*PasswordRestrictionSetting)(nil), // 10: bytebase.v1.PasswordRestrictionSetting
-	(UserType)(0),                      // 11: bytebase.v1.UserType
-	(State)(0),                         // 12: bytebase.v1.State
-	(*emptypb.Empty)(nil),              // 13: google.protobuf.Empty
+	(*GetResourcePackageRequest)(nil),                   // 0: bytebase.v1.GetResourcePackageRequest
+	(*ResourcePackage)(nil),                             // 1: bytebase.v1.ResourcePackage
+	(*SetupSampleRequest)(nil),                          // 2: bytebase.v1.SetupSampleRequest
+	(*GetActuatorInfoRequest)(nil),                      // 3: bytebase.v1.GetActuatorInfoRequest
+	(*UpdateActuatorInfoRequest)(nil),                   // 4: bytebase.v1.UpdateActuatorInfoRequest
+	(*DeleteCacheRequest)(nil),                          // 5: bytebase.v1.DeleteCacheRequest
+	(*ActuatorInfo)(nil),                                // 6: bytebase.v1.ActuatorInfo
+	(*ActuatorInfo_StatUser)(nil),                       // 7: bytebase.v1.ActuatorInfo.StatUser
+	(*fieldmaskpb.FieldMask)(nil),                       // 8: google.protobuf.FieldMask
+	(*timestamppb.Timestamp)(nil),                       // 9: google.protobuf.Timestamp
+	(*WorkspaceProfileSetting_PasswordRestriction)(nil), // 10: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
+	(UserType)(0),                                       // 11: bytebase.v1.UserType
+	(State)(0),                                          // 12: bytebase.v1.State
+	(*emptypb.Empty)(nil),                               // 13: google.protobuf.Empty
 }
 var file_v1_actuator_service_proto_depIdxs = []int32{
 	6,  // 0: bytebase.v1.UpdateActuatorInfoRequest.actuator:type_name -> bytebase.v1.ActuatorInfo
 	8,  // 1: bytebase.v1.UpdateActuatorInfoRequest.update_mask:type_name -> google.protobuf.FieldMask
 	9,  // 2: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
-	10, // 3: bytebase.v1.ActuatorInfo.password_restriction:type_name -> bytebase.v1.PasswordRestrictionSetting
+	10, // 3: bytebase.v1.ActuatorInfo.password_restriction:type_name -> bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
 	7,  // 4: bytebase.v1.ActuatorInfo.user_stats:type_name -> bytebase.v1.ActuatorInfo.StatUser
 	11, // 5: bytebase.v1.ActuatorInfo.StatUser.user_type:type_name -> bytebase.v1.UserType
 	12, // 6: bytebase.v1.ActuatorInfo.StatUser.state:type_name -> bytebase.v1.State

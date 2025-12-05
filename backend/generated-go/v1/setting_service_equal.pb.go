@@ -127,9 +127,6 @@ func (x *SettingValue) Equal(y *SettingValue) bool {
 	if !x.GetSemanticType().Equal(y.GetSemanticType()) {
 		return false
 	}
-	if !x.GetPasswordRestriction().Equal(y.GetPasswordRestriction()) {
-		return false
-	}
 	if !x.GetAi().Equal(y.GetAi()) {
 		return false
 	}
@@ -290,6 +287,37 @@ func (x *AppIMSetting) Equal(y *AppIMSetting) bool {
 	return true
 }
 
+func (x *WorkspaceProfileSetting_PasswordRestriction) Equal(y *WorkspaceProfileSetting_PasswordRestriction) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.MinLength != y.MinLength {
+		return false
+	}
+	if x.RequireNumber != y.RequireNumber {
+		return false
+	}
+	if x.RequireLetter != y.RequireLetter {
+		return false
+	}
+	if x.RequireUppercaseLetter != y.RequireUppercaseLetter {
+		return false
+	}
+	if x.RequireSpecialCharacter != y.RequireSpecialCharacter {
+		return false
+	}
+	if x.RequireResetPasswordForFirstLogin != y.RequireResetPasswordForFirstLogin {
+		return false
+	}
+	if p, q := x.PasswordRotation, y.PasswordRotation; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	return true
+}
+
 func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x == y {
 		return true
@@ -348,6 +376,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 		return false
 	}
 	if x.BrandingLogo != y.BrandingLogo {
+		return false
+	}
+	if !x.PasswordRestriction.Equal(y.PasswordRestriction) {
 		return false
 	}
 	return true
@@ -651,37 +682,6 @@ func (x *Algorithm) Equal(y *Algorithm) bool {
 		return false
 	}
 	if !x.GetInnerOuterMask().Equal(y.GetInnerOuterMask()) {
-		return false
-	}
-	return true
-}
-
-func (x *PasswordRestrictionSetting) Equal(y *PasswordRestrictionSetting) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.MinLength != y.MinLength {
-		return false
-	}
-	if x.RequireNumber != y.RequireNumber {
-		return false
-	}
-	if x.RequireLetter != y.RequireLetter {
-		return false
-	}
-	if x.RequireUppercaseLetter != y.RequireUppercaseLetter {
-		return false
-	}
-	if x.RequireSpecialCharacter != y.RequireSpecialCharacter {
-		return false
-	}
-	if x.RequireResetPasswordForFirstLogin != y.RequireResetPasswordForFirstLogin {
-		return false
-	}
-	if p, q := x.PasswordRotation, y.PasswordRotation; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
 	return true

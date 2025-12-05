@@ -34,8 +34,7 @@ CREATE TABLE principal (
 CREATE TABLE setting (
     id serial PRIMARY KEY,
     -- name: SYSTEM, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
-    -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES,
-    -- PASSWORD_RESTRICTION, ENVIRONMENT
+    -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES, ENVIRONMENT
     -- Enum: SettingName (proto/store/store/setting.proto)
     name text NOT NULL,
     -- Stored as JSON marshalled by protojson.Marshal (camelCase keys)
@@ -553,10 +552,9 @@ ALTER SEQUENCE project_id_seq RESTART WITH 101;
 INSERT INTO setting (name, value) VALUES ('APP_IM', '{}'::jsonb);
 INSERT INTO setting (name, value) VALUES ('DATA_CLASSIFICATION', '{}'::jsonb);
 INSERT INTO setting (name, value) VALUES ('WORKSPACE_APPROVAL', '{"rules":[{"template":{"flow":{"roles":["roles/projectOwner"]},"title":"Fallback Rule","description":"Requires project owner approval when no other rules match."},"condition":{"expression":"true"}}]}'::jsonb);
-INSERT INTO setting (name, value) VALUES ('PASSWORD_RESTRICTION', '{"minLength":8}'::jsonb);
 INSERT INTO setting (name, value) VALUES (
   'WORKSPACE_PROFILE',
-  ('{"enableMetricCollection":true,"directorySyncToken":"' || gen_random_uuid()::text || '"}')::jsonb
+  ('{"enableMetricCollection":true,"directorySyncToken":"' || gen_random_uuid()::text || '","passwordRestriction":{"minLength":8}}')::jsonb
 );
 INSERT INTO setting (name, value) VALUES ('ENVIRONMENT', '{"environments":[{"title":"Test","id":"test"},{"title":"Prod","id":"prod"}]}'::jsonb);
 

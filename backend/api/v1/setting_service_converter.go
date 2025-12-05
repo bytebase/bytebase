@@ -93,19 +93,6 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 				},
 			},
 		}, nil
-	case storepb.SettingName_PASSWORD_RESTRICTION:
-		storeValue := new(storepb.PasswordRestrictionSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
-		}
-		return &v1pb.Setting{
-			Name: settingName,
-			Value: &v1pb.SettingValue{
-				Value: &v1pb.SettingValue_PasswordRestriction{
-					PasswordRestriction: convertToPasswordRestrictionSetting(storeValue),
-				},
-			},
-		}, nil
 	case storepb.SettingName_AI:
 		storeValue := new(storepb.AISetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
@@ -171,8 +158,6 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_DATA_CLASSIFICATION
 	case storepb.SettingName_SEMANTIC_TYPES:
 		return v1pb.Setting_SEMANTIC_TYPES
-	case storepb.SettingName_PASSWORD_RESTRICTION:
-		return v1pb.Setting_PASSWORD_RESTRICTION
 	case storepb.SettingName_ENVIRONMENT:
 		return v1pb.Setting_ENVIRONMENT
 	case storepb.SettingName_SYSTEM:
@@ -200,8 +185,6 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_DATA_CLASSIFICATION
 	case v1pb.Setting_SEMANTIC_TYPES:
 		return storepb.SettingName_SEMANTIC_TYPES
-	case v1pb.Setting_PASSWORD_RESTRICTION:
-		return storepb.SettingName_PASSWORD_RESTRICTION
 	case v1pb.Setting_ENVIRONMENT:
 		return storepb.SettingName_ENVIRONMENT
 	default:
@@ -270,6 +253,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		Watermark:              v1Setting.Watermark,
 		DirectorySyncToken:     v1Setting.DirectorySyncToken,
 		BrandingLogo:           v1Setting.BrandingLogo,
+		PasswordRestriction:    convertPasswordRestrictionSetting(v1Setting.PasswordRestriction),
 	}
 
 	// Convert announcement if present
@@ -316,6 +300,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		Watermark:              storeSetting.Watermark,
 		DirectorySyncToken:     storeSetting.DirectorySyncToken,
 		BrandingLogo:           storeSetting.BrandingLogo,
+		PasswordRestriction:    convertToPasswordRestrictionSetting(storeSetting.PasswordRestriction),
 	}
 
 	if storeSetting.Announcement != nil {
@@ -722,12 +707,12 @@ func convertToAlgorithmRangeMaskSlices(storeSlices []*storepb.Algorithm_RangeMas
 	return v1Slices
 }
 
-func convertPasswordRestrictionSetting(v1Setting *v1pb.PasswordRestrictionSetting) *storepb.PasswordRestrictionSetting {
+func convertPasswordRestrictionSetting(v1Setting *v1pb.WorkspaceProfileSetting_PasswordRestriction) *storepb.WorkspaceProfileSetting_PasswordRestriction {
 	if v1Setting == nil {
 		return nil
 	}
 
-	return &storepb.PasswordRestrictionSetting{
+	return &storepb.WorkspaceProfileSetting_PasswordRestriction{
 		MinLength:                         v1Setting.MinLength,
 		RequireNumber:                     v1Setting.RequireNumber,
 		RequireLetter:                     v1Setting.RequireLetter,
@@ -738,12 +723,12 @@ func convertPasswordRestrictionSetting(v1Setting *v1pb.PasswordRestrictionSettin
 	}
 }
 
-func convertToPasswordRestrictionSetting(storeSetting *storepb.PasswordRestrictionSetting) *v1pb.PasswordRestrictionSetting {
+func convertToPasswordRestrictionSetting(storeSetting *storepb.WorkspaceProfileSetting_PasswordRestriction) *v1pb.WorkspaceProfileSetting_PasswordRestriction {
 	if storeSetting == nil {
 		return nil
 	}
 
-	return &v1pb.PasswordRestrictionSetting{
+	return &v1pb.WorkspaceProfileSetting_PasswordRestriction{
 		MinLength:                         storeSetting.MinLength,
 		RequireNumber:                     storeSetting.RequireNumber,
 		RequireLetter:                     storeSetting.RequireLetter,

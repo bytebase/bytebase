@@ -276,7 +276,6 @@
     - [EnvironmentSetting](#bytebase-store-EnvironmentSetting)
     - [EnvironmentSetting.Environment](#bytebase-store-EnvironmentSetting-Environment)
     - [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry)
-    - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SemanticTypeSetting](#bytebase-store-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-store-SemanticTypeSetting-SemanticType)
     - [SystemSetting](#bytebase-store-SystemSetting)
@@ -284,6 +283,7 @@
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
     - [WorkspaceProfileSetting.Announcement](#bytebase-store-WorkspaceProfileSetting-Announcement)
+    - [WorkspaceProfileSetting.PasswordRestriction](#bytebase-store-WorkspaceProfileSetting-PasswordRestriction)
   
     - [AISetting.Provider](#bytebase-store-AISetting-Provider)
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-store-Algorithm-InnerOuterMask-MaskType)
@@ -4498,27 +4498,6 @@ ISSUE_CREATE represents creating an issue. |
 
 
 
-<a name="bytebase-store-PasswordRestrictionSetting"></a>
-
-### PasswordRestrictionSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| min_length | [int32](#int32) |  | min_length is the minimum length for password, should be no less than 8. |
-| require_number | [bool](#bool) |  | require_number requires the password must contain at least one number. |
-| require_letter | [bool](#bool) |  | require_letter requires the password must contain at least one letter, regardless of upper case or lower case |
-| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contain at least one upper case letter. |
-| require_special_character | [bool](#bool) |  | require_special_character requires the password must contain at least one special character. |
-| require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
-| password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
-
-
-
-
-
-
 <a name="bytebase-store-SemanticTypeSetting"></a>
 
 ### SemanticTypeSetting
@@ -4626,6 +4605,7 @@ ISSUE_CREATE represents creating an issue. |
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
 | directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
 | branding_logo | [string](#string) |  | The branding logo as a data URI (e.g. data:image/png;base64,...). |
+| password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-store-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
 
 
 
@@ -4643,6 +4623,27 @@ ISSUE_CREATE represents creating an issue. |
 | level | [WorkspaceProfileSetting.Announcement.AlertLevel](#bytebase-store-WorkspaceProfileSetting-Announcement-AlertLevel) |  | The alert level of the announcement. |
 | text | [string](#string) |  | The text of the announcement. |
 | link | [string](#string) |  | The optional link, user can follow the link to check extra details |
+
+
+
+
+
+
+<a name="bytebase-store-WorkspaceProfileSetting-PasswordRestriction"></a>
+
+### WorkspaceProfileSetting.PasswordRestriction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| min_length | [int32](#int32) |  | min_length is the minimum length for password, should be no less than 8. |
+| require_number | [bool](#bool) |  | require_number requires the password must contain at least one number. |
+| require_letter | [bool](#bool) |  | require_letter requires the password must contain at least one letter, regardless of upper case or lower case |
+| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contain at least one upper case letter. |
+| require_special_character | [bool](#bool) |  | require_special_character requires the password must contain at least one special character. |
+| require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
+| password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
 
 
 
@@ -4694,7 +4695,6 @@ ISSUE_CREATE represents creating an issue. |
 | AI | 10 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |
-| PASSWORD_RESTRICTION | 18 |  |
 | ENVIRONMENT | 19 |  |
 
 

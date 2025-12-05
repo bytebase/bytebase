@@ -85,7 +85,7 @@ onMounted(async () => {
     return;
   }
   await settingV1Store.getOrFetchSettingByName(
-    Setting_SettingName.PASSWORD_RESTRICTION
+    Setting_SettingName.WORKSPACE_PROFILE
   );
 });
 
