@@ -58,7 +58,7 @@
     "match-sorter": "8.1.0",
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@21.6.0",
     "monaco-languageclient": "10.2.0",
-    "naive-ui": "2.43.1",
+    "naive-ui": "2.43.2",
     "normalize-wheel": "^1.0.1",
     "pev2": "1.17.0",
     "pinia": "3.0.3",
