@@ -4,15 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/trinodb/trino-go-client/trino"
 	"google.golang.org/protobuf/types/known/durationpb"
-
-	// Import Trino driver for side effects
-	_ "github.com/trinodb/trino-go-client/trino"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -29,6 +29,7 @@ type Driver struct {
 	config       db.ConnectionConfig
 	db           *sql.DB
 	databaseName string
+	tlsClientKey string // key for registered custom TLS client, empty if not using TLS
 }
 
 func newDriver() db.Driver {
@@ -82,6 +83,26 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 		database = "system"
 	}
 	query.Add("catalog", database)
+
+	// Configure TLS if SSL is enabled
+	var tlsClientKey string
+	if config.DataSource.UseSsl {
+		tlsConfig, err := util.GetTLSConfig(config.DataSource)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get TLS config")
+		}
+		tlsClientKey = uuid.NewString()
+		httpClient := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: tlsConfig,
+			},
+		}
+		if err := trino.RegisterCustomClient(tlsClientKey, httpClient); err != nil {
+			return nil, errors.Wrap(err, "failed to register custom TLS client")
+		}
+		query.Add("custom_client", tlsClientKey)
+	}
+
 	u.RawQuery = query.Encode()
 
 	// Get DSN from URL
@@ -90,6 +111,9 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 	// Connect using the Trino driver
 	db, err := sql.Open("trino", dsn)
 	if err != nil {
+		if tlsClientKey != "" {
+			trino.DeregisterCustomClient(tlsClientKey)
+		}
 		return nil, errors.Wrap(err, "failed to connect to Trino")
 	}
 
@@ -102,11 +126,15 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 		config:       config,
 		db:           db,
 		databaseName: config.ConnectionContext.DatabaseName,
+		tlsClientKey: tlsClientKey,
 	}
 	return d, nil
 }
 
 func (d *Driver) Close(context.Context) error {
+	if d.tlsClientKey != "" {
+		trino.DeregisterCustomClient(d.tlsClientKey)
+	}
 	if d.db != nil {
 		return d.db.Close()
 	}
@@ -114,10 +142,13 @@ func (d *Driver) Close(context.Context) error {
 }
 
 func (d *Driver) Ping(ctx context.Context) error {
-	if d.db != nil {
-		return d.db.PingContext(ctx)
+	if d.db == nil {
+		return errors.New("database connection not established")
 	}
-	return errors.New("database connection not established")
+	// trino-go-client's PingContext is a no-op, so we run an actual query
+	row := d.db.QueryRowContext(ctx, "SELECT 1")
+	var result int
+	return row.Scan(&result)
 }
 
 func (d *Driver) GetDB() *sql.DB {
