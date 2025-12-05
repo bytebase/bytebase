@@ -8,8 +8,6 @@ import (
 	parser "github.com/bytebase/parser/snowflake"
 	"github.com/pkg/errors"
 
-	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -98,7 +96,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
 	err = listener.err
 	if err != nil {
-		var resourceNotFound *parsererror.ResourceNotFoundError
+		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			return &base.QuerySpan{
 				SourceColumns: accessTables,

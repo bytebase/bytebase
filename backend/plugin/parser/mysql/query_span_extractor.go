@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	"github.com/bytebase/bytebase/backend/store/model"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -110,7 +109,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
 	err = listener.err
 	if err != nil {
-		var resourceNotFound *parsererror.ResourceNotFoundError
+		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			return &base.QuerySpan{
 				Type:          base.Select,
@@ -528,7 +527,7 @@ func (q *querySpanExtractor) extractTableWild(ctx parser.ITableWildContext) ([]b
 	}
 	querySpanResults, ok := q.getAllTableColumnSources(databaseName, tableName)
 	if !ok {
-		return nil, &parsererror.ResourceNotFoundError{
+		return nil, &base.ResourceNotFoundError{
 			Err:      errors.Errorf("failed to find table to calculate asterisk"),
 			Database: &databaseName,
 			Table:    &tableName,
@@ -1275,7 +1274,7 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 		}
 	}
 
-	return nil, &parsererror.ResourceNotFoundError{
+	return nil, &base.ResourceNotFoundError{
 		Database: &databaseName,
 		Table:    &tableName,
 		Column:   &fieldName,
@@ -1346,7 +1345,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 		}
 	}
 	if dbMetadata == nil {
-		return nil, &parsererror.ResourceNotFoundError{
+		return nil, &base.ResourceNotFoundError{
 			Database: &databaseName,
 		}
 	}
@@ -1354,7 +1353,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 	emptySchema := ""
 	schema := dbMetadata.GetSchemaMetadata(emptySchema)
 	if schema == nil {
-		return nil, &parsererror.ResourceNotFoundError{
+		return nil, &base.ResourceNotFoundError{
 			Database: &databaseName,
 			Schema:   &emptySchema,
 		}
@@ -1410,7 +1409,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 		}, nil
 	}
 
-	return nil, &parsererror.ResourceNotFoundError{
+	return nil, &base.ResourceNotFoundError{
 		Database: &databaseName,
 		Schema:   &emptySchema,
 		Table:    &tableName,

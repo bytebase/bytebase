@@ -10,7 +10,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -109,7 +108,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	antlr.ParseTreeWalkerDefault.Walk(listener, result.Tree)
 
 	if listener.err != nil {
-		var resourceNotFound *parsererror.ResourceNotFoundError
+		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(listener.err, &resourceNotFound) {
 			return &base.QuerySpan{
 				Type:          queryType,
@@ -257,13 +256,13 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 
 	// Skip if metadata function not provided (for testing)
 	if q.gCtx.GetDatabaseMetadataFunc == nil {
-		return nil, &parsererror.ResourceNotFoundError{Database: &database}
+		return nil, &base.ResourceNotFoundError{Database: &database}
 	}
 
 	// Fetch metadata using the provided function
 	_, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, database)
 	if err != nil {
-		var resourceNotFound *parsererror.ResourceNotFoundError
+		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			return nil, err
 		}
@@ -298,7 +297,7 @@ func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.Ta
 	// Get schema metadata
 	schemaMeta := metadata.GetSchemaMetadata(schema)
 	if schemaMeta == nil {
-		return nil, &parsererror.ResourceNotFoundError{
+		return nil, &base.ResourceNotFoundError{
 			Database: &db,
 			Schema:   &schema,
 		}
@@ -342,7 +341,7 @@ func (q *querySpanExtractor) findTableSchema(db, schema, name string) (*model.Ta
 	}
 
 	// Not found
-	return nil, &parsererror.ResourceNotFoundError{
+	return nil, &base.ResourceNotFoundError{
 		Database: &db,
 		Schema:   &schema,
 		Table:    &name,

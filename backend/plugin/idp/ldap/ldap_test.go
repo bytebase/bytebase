@@ -15,6 +15,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	//nolint:revive
 	flag.Parse()
 	if !testing.Verbose() {
 		ldapserver.Logger = ldapserver.DiscardingLogger

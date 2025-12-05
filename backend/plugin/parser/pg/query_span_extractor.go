@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 
 	"github.com/bytebase/parser/postgresql"
 
@@ -187,7 +186,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 			if len(stmtmulti.AllStmt()) == 1 {
 				tableSource, err := q.extractTableSourceFromStmt(stmtmulti.AllStmt()[0])
 				if err != nil {
-					var functionNotSupported *parsererror.FunctionNotSupportedError
+					var functionNotSupported *base.FunctionNotSupportedError
 					if errors.As(err, &functionNotSupported) {
 						if len(accessesMap) == 0 {
 							accessesMap[base.ColumnResource{
@@ -201,7 +200,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 							NotFoundError: functionNotSupported,
 						}, nil
 					}
-					var resourceNotFound *parsererror.ResourceNotFoundError
+					var resourceNotFound *base.ResourceNotFoundError
 					if errors.As(err, &resourceNotFound) {
 						if len(accessesMap) == 0 {
 							accessesMap[base.ColumnResource{
@@ -251,7 +250,7 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nAr
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
 	}
 	if dbMetadata == nil {
-		return nil, &parsererror.ResourceNotFoundError{
+		return nil, &base.ResourceNotFoundError{
 			Database: &q.defaultDatabase,
 		}
 	}
@@ -273,7 +272,7 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nAr
 		return nil, errors.Wrapf(err, "failed to get function candidates")
 	}
 	if len(candidates) == 0 {
-		return nil, &parsererror.ResourceNotFoundError{
+		return nil, &base.ResourceNotFoundError{
 			Database: &q.defaultDatabase,
 			Schema:   &schemaName,
 			Function: &funcName,
@@ -288,7 +287,7 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, nAr
 	functionName := fmt.Sprintf("%s.%s", function.schemaName, funcName)
 	columns, err := q.getColumnsFromFunction(functionName, function.metadata.Definition)
 	if err != nil {
-		return nil, &parsererror.FunctionNotSupportedError{
+		return nil, &base.FunctionNotSupportedError{
 			Err:      err,
 			Function: functionName,
 		}
@@ -724,7 +723,7 @@ func (*querySpanExtractor) extractLanguageFromCreateFunction(createFuncStmt post
 		case "plpgsql":
 			language = languageTypePLPGSQL
 		default:
-			return language, &parsererror.TypeNotSupportedError{
+			return language, &base.TypeNotSupportedError{
 				Type:  "function language",
 				Name:  langText,
 				Extra: fmt.Sprintf("function: %s", funcName),
@@ -771,7 +770,7 @@ func (*querySpanExtractor) extractAsBodyFromCreateFunction(createFuncStmt postgr
 		// Check for C-style function definition: AS 'obj_file', 'link_symbol'
 		// This is a legacy format for C language functions that we don't support
 		if len(allSconst) > 1 || funcAs.COMMA() != nil {
-			return "", &parsererror.TypeNotSupportedError{
+			return "", &base.TypeNotSupportedError{
 				Type:  "function",
 				Name:  funcName,
 				Extra: "C-style function with object file and link symbol is not supported",
@@ -1216,7 +1215,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
 	}
 	if dbMetadata == nil {
-		return nil, &parsererror.ResourceNotFoundError{
+		return nil, &base.ResourceNotFoundError{
 			Database: &q.defaultDatabase,
 		}
 	}
@@ -1228,7 +1227,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	sequenceSchemaName, sequence := searcher.SearchSequence(tableName)
 
 	if table == nil && view == nil && foreignTable == nil && materializedView == nil && sequence == nil {
-		return nil, &parsererror.ResourceNotFoundError{
+		return nil, &base.ResourceNotFoundError{
 			Database: &q.defaultDatabase,
 			Schema:   &schemaName,
 			Table:    &tableName,
@@ -2828,7 +2827,7 @@ func (q *querySpanExtractor) getColumnsFromColumnRef(ctx postgresql.IColumnrefCo
 			}
 			sources, ok := q.getAllTableColumnSources(schemaName, tableName)
 			if !ok {
-				return []base.QuerySpanResult{}, &parsererror.ResourceNotFoundError{
+				return []base.QuerySpanResult{}, &base.ResourceNotFoundError{
 					Err:      errors.New("cannot find the table for star expansion"),
 					Database: &q.defaultDatabase,
 					Schema:   &schemaName,
@@ -2872,7 +2871,7 @@ func (q *querySpanExtractor) getColumnsFromColumnRef(ctx postgresql.IColumnrefCo
 		if schemaName == "" {
 			tableSource := q.findTableInFrom(tableName, columnName)
 			if tableSource == nil {
-				return []base.QuerySpanResult{}, &parsererror.ResourceNotFoundError{
+				return []base.QuerySpanResult{}, &base.ResourceNotFoundError{
 					Err:      errors.New("cannot find the column ref"),
 					Database: &q.defaultDatabase,
 					Schema:   &schemaName,
@@ -2885,7 +2884,7 @@ func (q *querySpanExtractor) getColumnsFromColumnRef(ctx postgresql.IColumnrefCo
 			result = append(result, querySpanResult...)
 			return result, nil
 		}
-		return []base.QuerySpanResult{}, &parsererror.ResourceNotFoundError{
+		return []base.QuerySpanResult{}, &base.ResourceNotFoundError{
 			Err:      errors.New("cannot find the column ref"),
 			Database: &q.defaultDatabase,
 			Schema:   &schemaName,
@@ -3727,7 +3726,7 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunctionNew(funcName st
 		return tableSource, nil
 	case jsonToRecordset, jsonbToRecordset:
 		if alias == nil {
-			return nil, &parsererror.TypeNotSupportedError{
+			return nil, &base.TypeNotSupportedError{
 				Extra: fmt.Sprintf("function %s must explicitly define the structure of the record with an AS clause", funcName),
 				Type:  "function",
 				Name:  funcName,
@@ -3783,7 +3782,7 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunctionNew(funcName st
 		return tableSource, nil
 	case jsonPopulateRecord, jsonbPopulateRecord, jsonPopulateRecordset, jsonbPopulateRecordset,
 		jsonToRecord, jsonbToRecord:
-		return nil, &parsererror.TypeNotSupportedError{
+		return nil, &base.TypeNotSupportedError{
 			Extra: fmt.Sprintf("Unsupport function %s", funcName),
 			Type:  "function",
 			Name:  funcName,
@@ -3791,7 +3790,7 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunctionNew(funcName st
 	default:
 		// For unknown functions, continue with the generic handling below
 		if alias == nil {
-			return nil, &parsererror.TypeNotSupportedError{
+			return nil, &base.TypeNotSupportedError{
 				Extra: "Use system function result as the table source must have the alias clause to specify table and columns name",
 				Type:  "function",
 				Name:  funcName,

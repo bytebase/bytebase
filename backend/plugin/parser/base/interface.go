@@ -13,7 +13,6 @@ import (
 	lsp "github.com/bytebase/lsp-protocol"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -210,11 +209,11 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 		if err != nil {
 			// Try to unwrap the error to see if it's a ResourceNotFoundError to decrease the error noise.
 			// TODO(d): remove resource not found error checks.
-			var resourceNotFound *parsererror.ResourceNotFoundError
+			var resourceNotFound *ResourceNotFoundError
 			if errors.As(err, &resourceNotFound) {
 				return nil, resourceNotFound
 			}
-			var typeNotSupported *parsererror.TypeNotSupportedError
+			var typeNotSupported *TypeNotSupportedError
 			if errors.As(err, &typeNotSupported) {
 				return nil, typeNotSupported
 			}
