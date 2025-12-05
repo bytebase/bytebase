@@ -550,15 +550,15 @@ INSERT INTO project (id, name, resource_id) VALUES (1, 'Default', 'default');
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
 -- Initialize settings with static values
-INSERT INTO setting (name, value) VALUES ('APP_IM', '{}');
-INSERT INTO setting (name, value) VALUES ('DATA_CLASSIFICATION', '{}');
-INSERT INTO setting (name, value) VALUES ('WORKSPACE_APPROVAL', '{"rules":[{"template":{"flow":{"roles":["roles/projectOwner"]},"title":"Fallback Rule","description":"Requires project owner approval when no other rules match."},"condition":{"expression":"true"}}]}');
-INSERT INTO setting (name, value) VALUES ('PASSWORD_RESTRICTION', '{"minLength":8}');
+INSERT INTO setting (name, value) VALUES ('APP_IM', '{}'::jsonb);
+INSERT INTO setting (name, value) VALUES ('DATA_CLASSIFICATION', '{}'::jsonb);
+INSERT INTO setting (name, value) VALUES ('WORKSPACE_APPROVAL', '{"rules":[{"template":{"flow":{"roles":["roles/projectOwner"]},"title":"Fallback Rule","description":"Requires project owner approval when no other rules match."},"condition":{"expression":"true"}}]}'::jsonb);
+INSERT INTO setting (name, value) VALUES ('PASSWORD_RESTRICTION', '{"minLength":8}'::jsonb);
 INSERT INTO setting (name, value) VALUES (
   'WORKSPACE_PROFILE',
-  '{"enableMetricCollection":true,"directorySyncToken":"' || gen_random_uuid()::text || '"}'
+  ('{"enableMetricCollection":true,"directorySyncToken":"' || gen_random_uuid()::text || '"}')::jsonb
 );
-INSERT INTO setting (name, value) VALUES ('ENVIRONMENT', '{"environments":[{"title":"Test","id":"test"},{"title":"Prod","id":"prod"}]}');
+INSERT INTO setting (name, value) VALUES ('ENVIRONMENT', '{"environments":[{"title":"Test","id":"test"},{"title":"Prod","id":"prod"}]}'::jsonb);
 
 -- Initialize settings with dynamically generated values
 -- Generate random alphanumeric string (0-9, a-z, A-Z) compatible with Go's common.RandomString
@@ -570,7 +570,7 @@ VALUES (
     'authSecret', (SELECT string_agg(substr('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', floor(random() * 62 + 1)::int, 1), '')
      FROM generate_series(1, 32)),
     'workspaceId', gen_random_uuid()::text
-  )::TEXT
+  )
 );
 
 -- Initialize workspace IAM policy
