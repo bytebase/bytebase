@@ -715,11 +715,7 @@ func (e *metadataExtractor) extractColumn(ctx parser.IColumn_definitionContext, 
 
 				// Handle nullability
 				if nullNotNull := constraint.Null_notnull(); nullNotNull != nil {
-					if nullNotNull.NOT() != nil {
-						column.Nullable = false
-					} else {
-						column.Nullable = true
-					}
+					column.Nullable = nullNotNull.NOT() == nil
 				}
 
 				// Handle PRIMARY KEY

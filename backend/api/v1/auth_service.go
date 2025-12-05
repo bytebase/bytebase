@@ -247,14 +247,15 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		return false
 	}
 
-	passwordRestriction, err := s.store.GetPasswordRestriction(ctx)
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		slog.Error("failed to get password restriction", log.BBError(err))
+		slog.Error("failed to get workspace setting", log.BBError(err))
 		return false
 	}
+	passwordRestriction := setting.GetPasswordRestriction()
 
 	if user.Profile.LastLoginTime == nil {
-		if !passwordRestriction.RequireResetPasswordForFirstLogin {
+		if !passwordRestriction.GetRequireResetPasswordForFirstLogin() {
 			return false
 		}
 		count, err := s.store.CountUsers(ctx, storepb.PrincipalType_END_USER)
@@ -266,12 +267,12 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		return count > 1
 	}
 
-	if passwordRestriction.PasswordRotation != nil {
+	if passwordRestriction.GetPasswordRotation() != nil {
 		lastChangePasswordTime := user.CreatedAt
 		if user.Profile.LastChangePasswordTime != nil {
 			lastChangePasswordTime = user.Profile.LastChangePasswordTime.AsTime()
 		}
-		if lastChangePasswordTime.Add(passwordRestriction.PasswordRotation.AsDuration()).Before(time.Now()) {
+		if lastChangePasswordTime.Add(passwordRestriction.GetPasswordRotation().AsDuration()).Before(time.Now()) {
 			return true
 		}
 	}

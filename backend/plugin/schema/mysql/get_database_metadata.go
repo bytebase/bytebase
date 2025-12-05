@@ -374,11 +374,7 @@ func (e *metadataExtractor) extractFieldAttributes(ctx mysql.IFieldDefinitionCon
 
 		// Check for NULL/NOT NULL
 		if attr.NullLiteral() != nil {
-			if attr.NOT_SYMBOL() != nil {
-				column.Nullable = false
-			} else {
-				column.Nullable = true
-			}
+			column.Nullable = attr.NOT_SYMBOL() == nil
 		}
 
 		// Check for DEFAULT value

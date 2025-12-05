@@ -112,10 +112,11 @@ func (p *Provider) parseLicense(ctx context.Context, license string) (*v1pb.Subs
 
 func (p *Provider) findEnterpriseLicense(ctx context.Context) (*v1pb.Subscription, error) {
 	// Find enterprise license.
-	licenseStr, err := p.store.GetEnterpriseLicense(ctx)
+	systemSetting, err := p.store.GetSystemSetting(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load enterprise license from settings")
+		return nil, errors.Wrapf(err, "failed to get system setting")
 	}
+	licenseStr := systemSetting.License
 	if licenseStr != "" {
 		license, err := p.parseLicense(ctx, licenseStr)
 		if err != nil {
@@ -153,10 +154,11 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*v1pb.Subscr
 	planType := v1pb.PlanType(v)
 
 	if claim.WorkspaceID != "" && planType == v1pb.PlanType_ENTERPRISE && !claim.Trialing {
-		workspaceID, err := p.store.GetWorkspaceID(ctx)
+		systemSetting, err := p.store.GetSystemSetting(ctx)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get workspace id from setting")
+			return nil, errors.Wrapf(err, "failed to get system setting")
 		}
+		workspaceID := systemSetting.WorkspaceId
 		if workspaceID != claim.WorkspaceID {
 			return nil, common.Errorf(common.Invalid, "the workspace id not match")
 		}

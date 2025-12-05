@@ -78,21 +78,18 @@ func GetTokenDuration(ctx context.Context, store *store.Store, licenseService *e
 	if err != nil {
 		return tokenDuration
 	}
-	passwordRestriction, err := store.GetPasswordRestriction(ctx)
-	if err != nil {
-		return tokenDuration
-	}
 
-	if workspaceProfile.TokenDuration != nil && workspaceProfile.TokenDuration.GetSeconds() > 0 {
-		tokenDuration = workspaceProfile.TokenDuration.AsDuration()
+	if workspaceProfile.GetTokenDuration().GetSeconds() > 0 {
+		tokenDuration = workspaceProfile.GetTokenDuration().AsDuration()
 	}
 	// Currently we implement the password rotation restriction in a simple way:
 	// 1. Only check if users need to reset their password during login.
 	// 2. For the 1st time login, if `RequireResetPasswordForFirstLogin` is true, `require_reset_password` in the response will be true
 	// 3. Otherwise if the `PasswordRotation` exists, check the password last updated time to decide if the `require_reset_password` is true.
 	// So we will use the minimum value between (`workspaceProfile.TokenDuration`, `passwordRestriction.PasswordRotation`) to force to expire the token.
-	if passwordRestriction.PasswordRotation != nil && passwordRestriction.PasswordRotation.GetSeconds() > 0 {
-		passwordRotation := passwordRestriction.PasswordRotation.AsDuration()
+	passwordRestriction := workspaceProfile.GetPasswordRestriction()
+	if passwordRestriction.GetPasswordRotation().GetSeconds() > 0 {
+		passwordRotation := passwordRestriction.GetPasswordRotation().AsDuration()
 		if passwordRotation.Seconds() < tokenDuration.Seconds() {
 			tokenDuration = passwordRotation
 		}

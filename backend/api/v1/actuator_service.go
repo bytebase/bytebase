@@ -143,16 +143,13 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 	}
 
-	passwordRestrictionSetting, err := s.store.GetPasswordRestriction(ctx)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find password restriction setting"))
-	}
-	passwordSetting := convertToPasswordRestrictionSetting(passwordRestrictionSetting)
+	passwordSetting := convertToPasswordRestrictionSetting(setting.GetPasswordRestriction())
 
-	workspaceID, err := s.store.GetWorkspaceID(ctx)
+	systemSetting, err := s.store.GetSystemSetting(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get system setting"))
 	}
+	workspaceID := systemSetting.WorkspaceId
 
 	usedFeatures, err := s.getUsedFeatures(ctx)
 	if err != nil {

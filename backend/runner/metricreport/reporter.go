@@ -191,10 +191,11 @@ func (m *Reporter) isMetricCollectionEnabled(ctx context.Context) bool {
 
 // Identify will identify the workspace and update the subscription plan.
 func (m *Reporter) identify(ctx context.Context) (string, error) {
-	workspaceID, err := m.store.GetWorkspaceID(ctx)
+	systemSetting, err := m.store.GetSystemSetting(ctx)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to get system setting")
 	}
+	workspaceID := systemSetting.WorkspaceId
 	subscription := m.licenseService.LoadSubscription(ctx)
 	plan := subscription.Plan.String()
 	orgID := ""
@@ -251,10 +252,13 @@ func (m *Reporter) identify(ctx context.Context) (string, error) {
 
 // Report will report a metric.
 func (m *Reporter) Report(ctx context.Context, metric *metric.Metric) {
-	workspaceID, err := m.store.GetWorkspaceID(ctx)
+	systemSetting, err := m.store.GetSystemSetting(ctx)
+	var workspaceID string
 	if err != nil {
-		slog.Error("failed to find the workspace id", log.BBError(err))
-		return
+		slog.Error("failed to get system setting", log.BBError(err))
+		// On error, workspaceID remains its zero value (empty string), matching original behavior.
+	} else {
+		workspaceID = systemSetting.WorkspaceId
 	}
 	m.reportMetric(workspaceID, metric)
 }
