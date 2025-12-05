@@ -2711,7 +2711,6 @@ The data in setting value.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| string_value | [string](#string) |  | Defines this value as being a string value. |
 | app_im | [AppIMSetting](#bytebase-v1-AppIMSetting) |  |  |
 | workspace_profile | [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting) |  |  |
 | workspace_approval | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
@@ -2807,6 +2806,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
 | directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
+| branding_logo | [string](#string) |  | The branding logo as a data URI (e.g. data:image/png;base64,...). |
 
 
 
@@ -2878,7 +2878,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | SETTING_NAME_UNSPECIFIED | 0 |  |
-| BRANDING_LOGO | 2 |  |
 | WORKSPACE_PROFILE | 4 |  |
 | WORKSPACE_APPROVAL | 5 |  |
 | APP_IM | 8 |  |

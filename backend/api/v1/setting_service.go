@@ -286,6 +286,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					payload.DirectorySyncToken = uuid.New().String()
 				}
 				oldSetting.DirectorySyncToken = payload.DirectorySyncToken
+			case "value.workspace_profile.branding_logo":
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_CUSTOM_LOGO); err != nil {
+					return nil, connect.NewError(connect.CodePermissionDenied, err)
+				}
+				oldSetting.BrandingLogo = payload.BrandingLogo
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}
@@ -342,12 +347,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
 		}
 		storeSettingValue = string(bytes)
-	case storepb.SettingName_BRANDING_LOGO:
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_CUSTOM_LOGO); err != nil {
-			return nil, connect.NewError(connect.CodePermissionDenied, err)
-		}
-		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
-
 	case storepb.SettingName_APP_IM:
 		payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppIm())
 		if err != nil {
@@ -549,7 +548,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = string(bytes)
 	default:
-		storeSettingValue = request.Msg.Setting.Value.GetStringValue()
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported setting %v", apiSettingName))
 	}
 
 	if request.Msg.ValidateOnly {

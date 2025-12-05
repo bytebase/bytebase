@@ -28,7 +28,6 @@ type SettingName int32
 const (
 	SettingName_SETTING_NAME_UNSPECIFIED SettingName = 0
 	SettingName_AUTH_SECRET              SettingName = 1
-	SettingName_BRANDING_LOGO            SettingName = 2
 	SettingName_WORKSPACE_ID             SettingName = 3
 	SettingName_WORKSPACE_PROFILE        SettingName = 4
 	SettingName_WORKSPACE_APPROVAL       SettingName = 5
@@ -46,7 +45,6 @@ var (
 	SettingName_name = map[int32]string{
 		0:  "SETTING_NAME_UNSPECIFIED",
 		1:  "AUTH_SECRET",
-		2:  "BRANDING_LOGO",
 		3:  "WORKSPACE_ID",
 		4:  "WORKSPACE_PROFILE",
 		5:  "WORKSPACE_APPROVAL",
@@ -61,7 +59,6 @@ var (
 	SettingName_value = map[string]int32{
 		"SETTING_NAME_UNSPECIFIED": 0,
 		"AUTH_SECRET":              1,
-		"BRANDING_LOGO":            2,
 		"WORKSPACE_ID":             3,
 		"WORKSPACE_PROFILE":        4,
 		"WORKSPACE_APPROVAL":       5,
@@ -400,8 +397,10 @@ type WorkspaceProfileSetting struct {
 	Watermark bool `protobuf:"varint,16,opt,name=watermark,proto3" json:"watermark,omitempty"`
 	// The token for directory sync authentication.
 	DirectorySyncToken string `protobuf:"bytes,17,opt,name=directory_sync_token,json=directorySyncToken,proto3" json:"directory_sync_token,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// The branding logo as a data URI (e.g. data:image/png;base64,...).
+	BrandingLogo  string `protobuf:"bytes,18,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -535,6 +534,13 @@ func (x *WorkspaceProfileSetting) GetWatermark() bool {
 func (x *WorkspaceProfileSetting) GetDirectorySyncToken() string {
 	if x != nil {
 		return x.DirectorySyncToken
+	}
+	return ""
+}
+
+func (x *WorkspaceProfileSetting) GetBrandingLogo() string {
+	if x != nil {
+		return x.BrandingLogo
 	}
 	return ""
 }
@@ -2291,7 +2297,7 @@ var File_store_setting_proto protoreflect.FileDescriptor
 
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x1bstore/project_webhook.proto\"\xd5\x06\n" +
+	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x1bstore/project_webhook.proto\"\xfa\x06\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2309,7 +2315,8 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x18inactive_session_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
 	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
 	"\twatermark\x18\x10 \x01(\bR\twatermark\x120\n" +
-	"\x14directory_sync_token\x18\x11 \x01(\tR\x12directorySyncToken\"\xe9\x01\n" +
+	"\x14directory_sync_token\x18\x11 \x01(\tR\x12directorySyncToken\x12#\n" +
+	"\rbranding_logo\x18\x12 \x01(\tR\fbrandingLogo\"\xe9\x01\n" +
 	"\fAnnouncement\x12=\n" +
 	"\x05level\x18\x01 \x01(\x0e2'.bytebase.store.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
@@ -2455,11 +2462,10 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x05color\x18\x04 \x01(\tR\x05color\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x94\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x81\x02\n" +
 	"\vSettingName\x12\x1c\n" +
 	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x0f\n" +
-	"\vAUTH_SECRET\x10\x01\x12\x11\n" +
-	"\rBRANDING_LOGO\x10\x02\x12\x10\n" +
+	"\vAUTH_SECRET\x10\x01\x12\x10\n" +
 	"\fWORKSPACE_ID\x10\x03\x12\x15\n" +
 	"\x11WORKSPACE_PROFILE\x10\x04\x12\x16\n" +
 	"\x12WORKSPACE_APPROVAL\x10\x05\x12\x16\n" +

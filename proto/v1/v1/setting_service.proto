@@ -92,7 +92,6 @@ message Setting {
 
   enum SettingName {
     SETTING_NAME_UNSPECIFIED = 0;
-    BRANDING_LOGO = 2;
     WORKSPACE_PROFILE = 4;
     WORKSPACE_APPROVAL = 5;
     APP_IM = 8;
@@ -115,8 +114,6 @@ message Setting {
 // The data in setting value.
 message SettingValue {
   oneof value {
-    // Defines this value as being a string value.
-    string string_value = 1;
     AppIMSetting app_im = 3;
     WorkspaceProfileSetting workspace_profile = 5;
     WorkspaceApprovalSetting workspace_approval = 6;
@@ -221,6 +218,9 @@ message WorkspaceProfileSetting {
 
   // The token for directory sync authentication.
   string directory_sync_token = 17;
+
+  // The branding logo as a data URI (e.g. data:image/png;base64,...).
+  string branding_logo = 18;
 }
 
 message Announcement {

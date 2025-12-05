@@ -112,9 +112,6 @@ func (x *SettingValue) Equal(y *SettingValue) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.GetStringValue() != y.GetStringValue() {
-		return false
-	}
 	if !x.GetAppIm().Equal(y.GetAppIm()) {
 		return false
 	}
@@ -348,6 +345,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 		return false
 	}
 	if x.DirectorySyncToken != y.DirectorySyncToken {
+		return false
+	}
+	if x.BrandingLogo != y.BrandingLogo {
 		return false
 	}
 	return true
