@@ -73,7 +73,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	var webhookCtx webhook.Context
 	var mentionUsers []*store.UserMessage
 
-	setting, err := m.store.GetWorkspaceGeneralSetting(ctx)
+	setting, err := m.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get workspace setting")
 	}

@@ -9,7 +9,8 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
+
+	"google.golang.org/protobuf/proto" // Added
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -55,7 +56,7 @@ func NewSettingService(
 
 // ListSettings lists all settings.
 func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1pb.ListSettingsRequest]) (*connect.Response[v1pb.ListSettingsResponse], error) {
-	settings, err := s.store.ListSettingV2(ctx, &store.FindSettingMessage{})
+	settings, err := s.store.ListSettingV2(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list settings: %v", err))
 	}
@@ -150,7 +151,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		setServiceData(p)
 	}
 
-	var storeSettingValue string
+	var storeSettingValue proto.Message
 	var resetAuditLogStdout bool
 	var resetClassification bool
 
@@ -160,7 +161,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
 		}
 		payload := convertWorkspaceProfileSetting(request.Msg.Setting.Value.GetWorkspaceProfile())
-		oldSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		oldSetting, err := s.store.GetWorkspaceProfileSetting(ctx)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", apiSettingName, err))
 		}
@@ -303,11 +304,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if len(oldSetting.Domains) == 0 && oldSetting.EnforceIdentityDomain {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity domain can be enforced only when workspace domains are set"))
 		}
-		bytes, err := protojson.Marshal(oldSetting)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
-		}
-		storeSettingValue = string(bytes)
+		storeSettingValue = oldSetting
 	case storepb.SettingName_WORKSPACE_APPROVAL:
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
@@ -346,11 +343,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				},
 			})
 		}
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
-		}
-		storeSettingValue = string(bytes)
+		storeSettingValue = payload
 	case storepb.SettingName_APP_IM:
 		payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppIm())
 		if err != nil {
@@ -428,11 +421,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			}
 		}
 
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s, error: %v", apiSettingName, err))
-		}
-		storeSettingValue = string(bytes)
+		storeSettingValue = payload
 
 	case storepb.SettingName_DATA_CLASSIFICATION:
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION); err != nil {
@@ -446,12 +435,8 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		if len(payload.Configs) == 1 && len(payload.Configs[0].Classification) == 0 {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("missing classification map"))
 		}
-		bytes, err := protojson.Marshal(payload)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
-		}
 		resetClassification = true
-		storeSettingValue = string(bytes)
+		storeSettingValue = payload
 	case storepb.SettingName_SEMANTIC_TYPES:
 		storeSemanticTypeSetting := convertSemanticTypeSetting(request.Msg.Setting.Value.GetSemanticType())
 		idMap := make(map[string]bool)
@@ -470,11 +455,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			}
 			idMap[tp.Id] = true
 		}
-		bytes, err := protojson.Marshal(storeSemanticTypeSetting)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
-		}
-		storeSettingValue = string(bytes)
+		storeSettingValue = storeSemanticTypeSetting
 	case storepb.SettingName_AI:
 		aiSetting := convertAISetting(request.Msg.Setting.Value.GetAi())
 		if aiSetting.Enabled {
@@ -495,11 +476,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			}
 		}
 
-		bytes, err := protojson.Marshal(aiSetting)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
-		}
-		storeSettingValue = string(bytes)
+		storeSettingValue = aiSetting
 	case storepb.SettingName_ENVIRONMENT:
 		if serr := s.validateEnvironments(request.Msg.Setting.Value.GetEnvironment().GetEnvironments()); serr != nil {
 			return nil, serr
@@ -533,11 +510,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			}
 		}
 
-		bytes, err := protojson.Marshal(environmentSetting)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
-		}
-		storeSettingValue = string(bytes)
+		storeSettingValue = environmentSetting
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported setting %v", apiSettingName))
 	}
@@ -559,7 +532,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 	// Dynamically update audit logger runtime flag if enable_audit_log_stdout was changed
 	if resetAuditLogStdout {
-		workspaceProfile, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace setting message: %v", err))
 		}

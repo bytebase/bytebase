@@ -6,31 +6,50 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// FindSettingMessage is the message for finding setting.
-type FindSettingMessage struct {
-	Name *storepb.SettingName
-}
-
 // SetSettingMessage is the message for updating setting.
 type SetSettingMessage struct {
 	Name  storepb.SettingName
-	Value string
+	Value proto.Message
 }
 
 // SettingMessage is the message of setting.
 type SettingMessage struct {
 	Name  storepb.SettingName
-	Value string
+	Value proto.Message
 }
 
-// GetWorkspaceGeneralSetting gets the workspace general setting payload.
-func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.WorkspaceProfileSetting, error) {
+func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
+	switch name {
+	case storepb.SettingName_WORKSPACE_PROFILE:
+		return &storepb.WorkspaceProfileSetting{}, nil
+	case storepb.SettingName_APP_IM:
+		return &storepb.AppIMSetting{}, nil
+	case storepb.SettingName_SYSTEM:
+		return &storepb.SystemSetting{}, nil
+	case storepb.SettingName_WORKSPACE_APPROVAL:
+		return &storepb.WorkspaceApprovalSetting{}, nil
+	case storepb.SettingName_SEMANTIC_TYPES:
+		return &storepb.SemanticTypeSetting{}, nil
+	case storepb.SettingName_DATA_CLASSIFICATION:
+		return &storepb.DataClassificationSetting{}, nil
+	case storepb.SettingName_AI:
+		return &storepb.AISetting{}, nil
+	case storepb.SettingName_ENVIRONMENT:
+		return &storepb.EnvironmentSetting{}, nil
+	default:
+		return nil, errors.Errorf("unknown setting name: %v", name)
+	}
+}
+
+// GetWorkspaceProfileSetting gets the workspace profile setting payload.
+func (s *Store) GetWorkspaceProfileSetting(ctx context.Context) (*storepb.WorkspaceProfileSetting, error) {
 	setting, err := s.GetSettingV2(ctx, storepb.SettingName_WORKSPACE_PROFILE)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get setting %v", storepb.SettingName_WORKSPACE_PROFILE)
@@ -39,11 +58,11 @@ func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.Worksp
 		return nil, errors.Errorf("cannot find setting %v", storepb.SettingName_WORKSPACE_PROFILE)
 	}
 
-	payload := new(storepb.WorkspaceProfileSetting)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
-		return nil, err
+	val, ok := setting.Value.(*storepb.WorkspaceProfileSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_WORKSPACE_PROFILE)
 	}
-	return payload, nil
+	return val, nil
 }
 
 func (s *Store) GetAppIMSetting(ctx context.Context) (*storepb.AppIMSetting, error) {
@@ -55,11 +74,11 @@ func (s *Store) GetAppIMSetting(ctx context.Context) (*storepb.AppIMSetting, err
 		return nil, errors.Errorf("cannot find setting %v", storepb.SettingName_APP_IM)
 	}
 
-	payload := new(storepb.AppIMSetting)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
-		return nil, err
+	val, ok := setting.Value.(*storepb.AppIMSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_APP_IM)
 	}
-	return payload, nil
+	return val, nil
 }
 
 func (s *Store) GetSystemSetting(ctx context.Context) (*storepb.SystemSetting, error) {
@@ -71,11 +90,11 @@ func (s *Store) GetSystemSetting(ctx context.Context) (*storepb.SystemSetting, e
 		return nil, errors.Errorf("cannot find setting %v", storepb.SettingName_SYSTEM)
 	}
 
-	payload := new(storepb.SystemSetting)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
-		return nil, err
+	val, ok := setting.Value.(*storepb.SystemSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_SYSTEM)
 	}
-	return payload, nil
+	return val, nil
 }
 
 // UpsertEnterpriseLicense updates the enterprise license in SYSTEM setting.
@@ -85,23 +104,22 @@ func (s *Store) UpsertEnterpriseLicense(ctx context.Context, license string) err
 		return errors.Wrap(err, "failed to get system setting")
 	}
 
-	systemSetting := &storepb.SystemSetting{}
+	var systemSetting *storepb.SystemSetting
 	if setting != nil {
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), systemSetting); err != nil {
-			return errors.Wrap(err, "failed to unmarshal system setting")
+		val, ok := setting.Value.(*storepb.SystemSetting)
+		if !ok {
+			return errors.Errorf("invalid setting value type for %s", storepb.SettingName_SYSTEM)
 		}
+		systemSetting = val
+	} else {
+		systemSetting = &storepb.SystemSetting{}
 	}
 
 	systemSetting.License = license
 
-	value, err := protojson.Marshal(systemSetting)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshal system setting")
-	}
-
 	if _, err := s.UpsertSettingV2(ctx, &SetSettingMessage{
 		Name:  storepb.SettingName_SYSTEM,
-		Value: string(value),
+		Value: systemSetting,
 	}); err != nil {
 		return errors.Wrap(err, "failed to upsert system setting")
 	}
@@ -119,11 +137,11 @@ func (s *Store) GetWorkspaceApprovalSetting(ctx context.Context) (*storepb.Works
 		return nil, errors.Errorf("cannot find setting %v", storepb.SettingName_WORKSPACE_APPROVAL)
 	}
 
-	payload := new(storepb.WorkspaceApprovalSetting)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
-		return nil, err
+	val, ok := setting.Value.(*storepb.WorkspaceApprovalSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_WORKSPACE_APPROVAL)
 	}
-	return payload, nil
+	return val, nil
 }
 
 // GetSemanticTypesSetting gets the semantic types setting.
@@ -136,11 +154,11 @@ func (s *Store) GetSemanticTypesSetting(ctx context.Context) (*storepb.SemanticT
 		return &storepb.SemanticTypeSetting{}, nil
 	}
 
-	payload := new(storepb.SemanticTypeSetting)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
-		return nil, err
+	val, ok := setting.Value.(*storepb.SemanticTypeSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_SEMANTIC_TYPES)
 	}
-	return payload, nil
+	return val, nil
 }
 
 // GetDataClassificationSetting gets the data classification setting.
@@ -153,43 +171,43 @@ func (s *Store) GetDataClassificationSetting(ctx context.Context) (*storepb.Data
 		return &storepb.DataClassificationSetting{}, nil
 	}
 
-	payload := new(storepb.DataClassificationSetting)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
-		return nil, err
+	val, ok := setting.Value.(*storepb.DataClassificationSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_DATA_CLASSIFICATION)
 	}
-	return payload, nil
+	return val, nil
 }
 
 func (s *Store) GetAISetting(ctx context.Context) (*storepb.AISetting, error) {
-	aiSetting := &storepb.AISetting{}
 	setting, err := s.GetSettingV2(ctx, storepb.SettingName_AI)
 	if err != nil {
 		return nil, err
 	}
 	if setting == nil {
-		return aiSetting, nil
+		return &storepb.AISetting{}, nil
 	}
 
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), aiSetting); err != nil {
-		return nil, err
+	val, ok := setting.Value.(*storepb.AISetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_AI)
 	}
-	return aiSetting, nil
+	return val, nil
 }
 
 func (s *Store) GetEnvironment(ctx context.Context) (*storepb.EnvironmentSetting, error) {
-	envSetting := &storepb.EnvironmentSetting{}
 	setting, err := s.GetSettingV2(ctx, storepb.SettingName_ENVIRONMENT)
 	if err != nil {
 		return nil, err
 	}
 	if setting == nil {
-		return envSetting, nil
+		return &storepb.EnvironmentSetting{}, nil
 	}
 
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), envSetting); err != nil {
-		return nil, err
+	val, ok := setting.Value.(*storepb.EnvironmentSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_ENVIRONMENT)
 	}
-	return envSetting, nil
+	return val, nil
 }
 
 // GetSettingV2 returns the setting by name.
@@ -204,9 +222,7 @@ func (s *Store) GetSettingV2(ctx context.Context, name storepb.SettingName) (*Se
 	}
 	defer tx.Rollback()
 
-	settings, err := listSettingV2Impl(ctx, tx, &FindSettingMessage{
-		Name: &name,
-	})
+	settings, err := listSettingV2Impl(ctx, tx, &name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list setting")
 	}
@@ -224,13 +240,13 @@ func (s *Store) GetSettingV2(ctx context.Context, name storepb.SettingName) (*Se
 }
 
 // ListSettingV2 returns a list of settings.
-func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]*SettingMessage, error) {
+func (s *Store) ListSettingV2(ctx context.Context) ([]*SettingMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
-	settings, err := listSettingV2Impl(ctx, tx, find)
+	settings, err := listSettingV2Impl(ctx, tx, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list setting")
 	}
@@ -258,12 +274,17 @@ func (s *Store) GetSecret(ctx context.Context) (string, error) {
 
 // UpsertSettingV2 upserts the setting by name.
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) (*SettingMessage, error) {
+	valueBytes, err := protojson.Marshal(update.Value)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal setting value")
+	}
+
 	q := qb.Q().Space(`
 		INSERT INTO setting (name, value)
 		VALUES (?, ?)
 		ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value
 		RETURNING name, value
-	`, update.Name.String(), update.Value)
+	`, update.Name.String(), string(valueBytes))
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -278,9 +299,10 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) 
 
 	var setting SettingMessage
 	var nameString string
+	var valueString string
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&nameString,
-		&setting.Value,
+		&valueString,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("setting not found: %s", update.Name)}
@@ -292,6 +314,15 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) 
 		return nil, errors.Errorf("invalid setting name string: %s", nameString)
 	}
 	setting.Name = storepb.SettingName(value)
+
+	msg, err := getSettingMessage(setting.Name)
+	if err != nil {
+		return nil, err
+	}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), msg); err != nil {
+		return nil, err
+	}
+	setting.Value = msg
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
@@ -326,7 +357,7 @@ func (s *Store) DeleteSettingV2(ctx context.Context, name storepb.SettingName) e
 	return nil
 }
 
-func listSettingV2Impl(ctx context.Context, txn *sql.Tx, find *FindSettingMessage) ([]*SettingMessage, error) {
+func listSettingV2Impl(ctx context.Context, txn *sql.Tx, name *storepb.SettingName) ([]*SettingMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
 			name,
@@ -334,8 +365,8 @@ func listSettingV2Impl(ctx context.Context, txn *sql.Tx, find *FindSettingMessag
 		FROM setting
 		WHERE TRUE
 	`)
-	if v := find.Name; v != nil {
-		q.And("name = ?", v.String())
+	if name != nil {
+		q.And("name = ?", name.String())
 	}
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -351,9 +382,10 @@ func listSettingV2Impl(ctx context.Context, txn *sql.Tx, find *FindSettingMessag
 	for rows.Next() {
 		var settingMessage SettingMessage
 		var nameString string
+		var valueString string
 		if err := rows.Scan(
 			&nameString,
-			&settingMessage.Value,
+			&valueString,
 		); err != nil {
 			return nil, err
 		}
@@ -362,6 +394,16 @@ func listSettingV2Impl(ctx context.Context, txn *sql.Tx, find *FindSettingMessag
 			return nil, errors.Errorf("invalid setting name string: %s", nameString)
 		}
 		settingMessage.Name = storepb.SettingName(value)
+
+		msg, err := getSettingMessage(settingMessage.Name)
+		if err != nil {
+			return nil, err
+		}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), msg); err != nil {
+			return nil, err
+		}
+		settingMessage.Value = msg
+
 		settingMessages = append(settingMessages, &settingMessage)
 	}
 	if err := rows.Err(); err != nil {

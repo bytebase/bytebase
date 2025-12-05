@@ -605,7 +605,7 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 		return errors.Errorf("missing authorization token")
 	}
 
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return err
 	}
@@ -626,7 +626,7 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 		return errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID)
 	}
 
-	workspaceProfileSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	workspaceProfileSetting, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get workspace profile setting")
 	}

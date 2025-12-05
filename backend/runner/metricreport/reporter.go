@@ -14,7 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/enterprise"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/plugin/metric/segment"
@@ -167,22 +167,10 @@ func (m *Reporter) isMetricCollectionEnabled(ctx context.Context) bool {
 	}
 
 	// Get workspace profile setting
-	setting, err := m.store.GetSettingV2(ctx, storepb.SettingName_WORKSPACE_PROFILE)
+	workspaceProfile, err := m.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		// If we can't get the setting, default to enabled for backward compatibility
 		slog.Debug("Failed to get workspace profile setting for metric collection", log.BBError(err))
-		return true
-	}
-
-	if setting == nil {
-		// Default to enabled if setting is not found
-		return true
-	}
-
-	var workspaceProfile storepb.WorkspaceProfileSetting
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), &workspaceProfile); err != nil {
-		slog.Debug("Failed to unmarshal workspace profile setting", log.BBError(err))
-		// Default to enabled if we can't parse the setting
 		return true
 	}
 

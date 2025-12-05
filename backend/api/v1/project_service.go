@@ -959,7 +959,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 
 // TestWebhook tests a webhook.
 func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v1pb.TestWebhookRequest]) (*connect.Response[v1pb.TestWebhookResponse], error) {
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
 	}
@@ -1083,13 +1083,13 @@ func validateIAMPolicy(
 		return false, connect.NewError(connect.CodeInvalidArgument, errors.New("IAM Binding is empty"))
 	}
 
-	generalSetting, err := stores.GetWorkspaceGeneralSetting(ctx)
+	workspaceProfileSetting, err := stores.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
-		return false, connect.NewError(connect.CodeInternal, errors.New("failed to get workspace general setting"))
+		return false, connect.NewError(connect.CodeInternal, errors.New("failed to get workspace profile setting"))
 	}
 	var maximumRoleExpiration *durationpb.Duration
-	if generalSetting != nil {
-		maximumRoleExpiration = generalSetting.MaximumRoleExpiration
+	if workspaceProfileSetting != nil {
+		maximumRoleExpiration = workspaceProfileSetting.MaximumRoleExpiration
 	}
 
 	roleMessages, err := stores.ListRoles(ctx)
