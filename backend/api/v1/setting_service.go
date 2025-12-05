@@ -53,11 +53,6 @@ func NewSettingService(
 	}
 }
 
-// Backend-only settings that should never be exposed via the API.
-var disallowedSettings = []storepb.SettingName{
-	storepb.SettingName_SYSTEM, // Internal system settings (auth secret, workspace ID, enterprise license)
-}
-
 // ListSettings lists all settings.
 func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1pb.ListSettingsRequest]) (*connect.Response[v1pb.ListSettingsResponse], error) {
 	settings, err := s.store.ListSettingV2(ctx, &store.FindSettingMessage{})
@@ -641,12 +636,9 @@ var disallowedDomains = map[string]bool{
 }
 
 func isSettingDisallowed(name storepb.SettingName) bool {
-	for _, disallowed := range disallowedSettings {
-		if name == disallowed {
-			return true
-		}
-	}
-	return false
+	// Backend-only settings that should never be exposed via the API.
+	// SYSTEM: Internal system settings (auth secret, workspace ID, enterprise license)
+	return name == storepb.SettingName_SYSTEM
 }
 
 func validateApprovalTemplate(template *v1pb.ApprovalTemplate) error {

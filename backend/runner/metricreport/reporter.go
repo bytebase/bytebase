@@ -174,7 +174,7 @@ func (m *Reporter) isMetricCollectionEnabled(ctx context.Context) bool {
 		return true
 	}
 
-	if setting == nil || setting.Value == "" {
+	if setting == nil {
 		// Default to enabled if setting is not found
 		return true
 	}

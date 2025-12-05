@@ -122,7 +122,7 @@ func (s *Store) UpsertEnterpriseLicense(ctx context.Context, license string) err
 	}
 
 	systemSetting := &storepb.SystemSetting{}
-	if setting != nil && setting.Value != "" {
+	if setting != nil {
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), systemSetting); err != nil {
 			return errors.Wrap(err, "failed to unmarshal system setting")
 		}
