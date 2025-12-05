@@ -79,16 +79,29 @@ func (s *Store) GetAppIMSetting(ctx context.Context) (*storepb.AppIMSetting, err
 	return payload, nil
 }
 
-// GetWorkspaceID finds the workspace id in setting bb.workspace.id.
-func (s *Store) GetWorkspaceID(ctx context.Context) (string, error) {
-	setting, err := s.GetSettingV2(ctx, storepb.SettingName_WORKSPACE_ID)
+func (s *Store) GetSystemSetting(ctx context.Context) (*storepb.SystemSetting, error) {
+	setting, err := s.GetSettingV2(ctx, storepb.SettingName_SYSTEM)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get setting %v", storepb.SettingName_WORKSPACE_ID)
+		return nil, errors.Wrapf(err, "failed to get setting %v", storepb.SettingName_SYSTEM)
 	}
 	if setting == nil {
-		return "", errors.Errorf("cannot find setting %v", storepb.SettingName_WORKSPACE_ID)
+		return nil, errors.Errorf("cannot find setting %v", storepb.SettingName_SYSTEM)
 	}
-	return setting.Value, nil
+
+	payload := new(storepb.SystemSetting)
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
+		return nil, err
+	}
+	return payload, nil
+}
+
+// GetWorkspaceID finds the workspace id in setting bb.workspace.id.
+func (s *Store) GetWorkspaceID(ctx context.Context) (string, error) {
+	systemSetting, err := s.GetSystemSetting(ctx)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get system setting")
+	}
+	return systemSetting.WorkspaceId, nil
 }
 
 // GetWorkspaceApprovalSetting gets the workspace approval setting.
@@ -230,15 +243,12 @@ func (s *Store) GetSecret(ctx context.Context) (string, error) {
 	if s.Secret != "" {
 		return s.Secret, nil
 	}
-	setting, err := s.GetSettingV2(ctx, storepb.SettingName_AUTH_SECRET)
+	systemSetting, err := s.GetSystemSetting(ctx)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to get system setting")
 	}
-	if setting == nil {
-		return "", errors.New("auth secret not found")
-	}
-	s.Secret = setting.Value
-	return setting.Value, nil
+	s.Secret = systemSetting.AuthSecret
+	return systemSetting.AuthSecret, nil
 }
 
 // UpsertSettingV2 upserts the setting by name.

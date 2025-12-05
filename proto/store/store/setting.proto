@@ -9,10 +9,16 @@ import "store/project_webhook.proto";
 
 option go_package = "generated-go/store";
 
+message SystemSetting {
+  // Authentication secret for token signing (32-character random string).
+  string auth_secret = 1;
+  // Unique workspace identifier (UUID).
+  string workspace_id = 2;
+}
+
 enum SettingName {
   SETTING_NAME_UNSPECIFIED = 0;
-  AUTH_SECRET = 1;
-  WORKSPACE_ID = 3;
+  SYSTEM = 1;
   WORKSPACE_PROFILE = 4;
   WORKSPACE_APPROVAL = 5;
   ENTERPRISE_LICENSE = 7;

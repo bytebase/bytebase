@@ -280,6 +280,7 @@
     - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SemanticTypeSetting](#bytebase-store-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-store-SemanticTypeSetting-SemanticType)
+    - [SystemSetting](#bytebase-store-SystemSetting)
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
@@ -4569,6 +4570,22 @@ ISSUE_CREATE represents creating an issue. |
 
 
 
+<a name="bytebase-store-SystemSetting"></a>
+
+### SystemSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| auth_secret | [string](#string) |  | Authentication secret for token signing (32-character random string). |
+| workspace_id | [string](#string) |  | Unique workspace identifier (UUID). |
+
+
+
+
+
+
 <a name="bytebase-store-WorkspaceApprovalSetting"></a>
 
 ### WorkspaceApprovalSetting
@@ -4696,8 +4713,7 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | SETTING_NAME_UNSPECIFIED | 0 |  |
-| AUTH_SECRET | 1 |  |
-| WORKSPACE_ID | 3 |  |
+| SYSTEM | 1 |  |
 | WORKSPACE_PROFILE | 4 |  |
 | WORKSPACE_APPROVAL | 5 |  |
 | ENTERPRISE_LICENSE | 7 |  |

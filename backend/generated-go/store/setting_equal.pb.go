@@ -8,6 +8,22 @@ import (
 	proto "google.golang.org/protobuf/proto"
 )
 
+func (x *SystemSetting) Equal(y *SystemSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.AuthSecret != y.AuthSecret {
+		return false
+	}
+	if x.WorkspaceId != y.WorkspaceId {
+		return false
+	}
+	return true
+}
+
 func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x == y {
 		return true

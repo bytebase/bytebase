@@ -64,8 +64,8 @@ func (prof *Profile) UseEmbedDB() bool {
 }
 
 var saasFeatureControlMap = map[string]bool{
-	storepb.SettingName_WORKSPACE_ID.String(): true,
-	storepb.SettingName_AI.String():           true,
+	storepb.SettingName_SYSTEM.String(): true,
+	storepb.SettingName_AI.String():     true,
 }
 
 // IsFeatureUnavailable returns if the feature is unavailable in SaaS mode.

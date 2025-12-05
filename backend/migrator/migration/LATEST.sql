@@ -33,7 +33,7 @@ CREATE TABLE principal (
 -- Setting
 CREATE TABLE setting (
     id serial PRIMARY KEY,
-    -- name: AUTH_SECRET, WORKSPACE_ID, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
+    -- name: SYSTEM, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
     -- ENTERPRISE_LICENSE, APP_IM, AI,
     -- DATA_CLASSIFICATION, SEMANTIC_TYPES, PASSWORD_RESTRICTION, ENVIRONMENT
     -- Enum: SettingName (proto/store/store/setting.proto)
@@ -562,13 +562,16 @@ INSERT INTO setting (name, value) VALUES ('ENVIRONMENT', '{"environments":[{"tit
 
 -- Initialize settings with dynamically generated values
 -- Generate random alphanumeric string (0-9, a-z, A-Z) compatible with Go's common.RandomString
--- Uses built-in random() function to pick random characters
-INSERT INTO setting (name, value) VALUES (
-  'AUTH_SECRET',
-  (SELECT string_agg(substr('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', floor(random() * 62 + 1)::int, 1), '')
-   FROM generate_series(1, 32))
+-- Initialize SYSTEM setting with auth_secret and workspace_id
+INSERT INTO setting (name, value)
+VALUES (
+  'SYSTEM',
+  json_build_object(
+    'authSecret', (SELECT string_agg(substr('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', floor(random() * 62 + 1)::int, 1), '')
+     FROM generate_series(1, 32)),
+    'workspaceId', gen_random_uuid()::text
+  )::TEXT
 );
-INSERT INTO setting (name, value) VALUES ('WORKSPACE_ID', gen_random_uuid()::text);
 
 -- Initialize workspace IAM policy
 -- Grant workspace member role to allUsers
