@@ -11,8 +11,6 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
 
-	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
-
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -115,7 +113,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	}
 	err = listener.err
 	if err != nil {
-		var resourceNotFound *parsererror.ResourceNotFoundError
+		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			return &base.QuerySpan{
 				Type:          queryTypeListener.result,
@@ -543,12 +541,12 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx p
 		if tempTable, ok := q.gCtx.TempTables[tableName]; ok {
 			return tempTable, nil
 		}
-		return nil, &parsererror.ResourceNotFoundError{
+		return nil, &base.ResourceNotFoundError{
 			Table: &tableName,
 			Err:   errors.Errorf("temp table %s not found", tableName),
 		}
 	} else {
-		return nil, &parsererror.TypeNotSupportedError{
+		return nil, &base.TypeNotSupportedError{
 			Err:  errors.Errorf("only full table name in table source item is supported"),
 			Type: fmt.Sprintf("%v", ctx),
 		}
@@ -747,7 +745,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 			}
 		}
 	}
-	return nil, &parsererror.ResourceNotFoundError{
+	return nil, &base.ResourceNotFoundError{
 		Database: &normalizedDatabaseName,
 		Schema:   &normalizedSchemaName,
 		Table:    &normalizedTableName,

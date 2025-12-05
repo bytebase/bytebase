@@ -8,8 +8,6 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/googlesql"
 
-	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
-
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -734,7 +732,7 @@ func (q *querySpanExtractor) getFieldColumnSource(tableName, fieldName string) (
 		}
 	}
 
-	return nil, &parsererror.ResourceNotFoundError{
+	return nil, &base.ResourceNotFoundError{
 		Schema: nil,
 		Table:  &tableName,
 		Column: &fieldName,
@@ -1114,7 +1112,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 
 	schema := databaseMetadata.GetSchemaMetadata(schemaName)
 	if schema == nil {
-		return nil, &parsererror.ResourceNotFoundError{
+		return nil, &base.ResourceNotFoundError{
 			Database: &q.defaultDatabase,
 			Schema:   &schemaName,
 		}

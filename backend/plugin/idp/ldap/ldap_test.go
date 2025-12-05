@@ -2,7 +2,6 @@ package ldap
 
 import (
 	"crypto/tls"
-	"flag"
 	"testing"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	flag.Parse()
 	if !testing.Verbose() {
 		ldapserver.Logger = ldapserver.DiscardingLogger
 	}
