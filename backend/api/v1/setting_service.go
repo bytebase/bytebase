@@ -55,8 +55,7 @@ func NewSettingService(
 
 // Backend-only settings that should never be exposed via the API.
 var disallowedSettings = []storepb.SettingName{
-	storepb.SettingName_SYSTEM,             // Internal system settings (auth secret, workspace ID)
-	storepb.SettingName_ENTERPRISE_LICENSE, // Managed via SubscriptionService
+	storepb.SettingName_SYSTEM, // Internal system settings (auth secret, workspace ID, enterprise license)
 }
 
 // ListSettings lists all settings.

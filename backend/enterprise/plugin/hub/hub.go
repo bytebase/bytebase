@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/enterprise/config"
 	"github.com/bytebase/bytebase/backend/enterprise/plugin"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -81,14 +80,7 @@ func (p *Provider) StoreLicense(ctx context.Context, license string) error {
 			return err
 		}
 	}
-	if _, err := p.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
-		Name:  storepb.SettingName_ENTERPRISE_LICENSE,
-		Value: license,
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	return p.store.UpsertEnterpriseLicense(ctx, license)
 }
 
 // LoadSubscription will load the hub subscription.
@@ -120,12 +112,12 @@ func (p *Provider) parseLicense(ctx context.Context, license string) (*v1pb.Subs
 
 func (p *Provider) findEnterpriseLicense(ctx context.Context) (*v1pb.Subscription, error) {
 	// Find enterprise license.
-	setting, err := p.store.GetSettingV2(ctx, storepb.SettingName_ENTERPRISE_LICENSE)
+	licenseStr, err := p.store.GetEnterpriseLicense(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load enterprise license from settings")
 	}
-	if setting != nil && setting.Value != "" {
-		license, err := p.parseLicense(ctx, setting.Value)
+	if licenseStr != "" {
+		license, err := p.parseLicense(ctx, licenseStr)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse enterprise license")
 		}

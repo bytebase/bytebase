@@ -30,13 +30,13 @@ const (
 	SettingName_SYSTEM                   SettingName = 1
 	SettingName_WORKSPACE_PROFILE        SettingName = 4
 	SettingName_WORKSPACE_APPROVAL       SettingName = 5
-	SettingName_ENTERPRISE_LICENSE       SettingName = 7
-	SettingName_APP_IM                   SettingName = 8
-	SettingName_AI                       SettingName = 10
-	SettingName_DATA_CLASSIFICATION      SettingName = 14
-	SettingName_SEMANTIC_TYPES           SettingName = 15
-	SettingName_PASSWORD_RESTRICTION     SettingName = 18
-	SettingName_ENVIRONMENT              SettingName = 19
+	// 7 was ENTERPRISE_LICENSE, migrated to SYSTEM setting
+	SettingName_APP_IM               SettingName = 8
+	SettingName_AI                   SettingName = 10
+	SettingName_DATA_CLASSIFICATION  SettingName = 14
+	SettingName_SEMANTIC_TYPES       SettingName = 15
+	SettingName_PASSWORD_RESTRICTION SettingName = 18
+	SettingName_ENVIRONMENT          SettingName = 19
 )
 
 // Enum value maps for SettingName.
@@ -46,7 +46,6 @@ var (
 		1:  "SYSTEM",
 		4:  "WORKSPACE_PROFILE",
 		5:  "WORKSPACE_APPROVAL",
-		7:  "ENTERPRISE_LICENSE",
 		8:  "APP_IM",
 		10: "AI",
 		14: "DATA_CLASSIFICATION",
@@ -59,7 +58,6 @@ var (
 		"SYSTEM":                   1,
 		"WORKSPACE_PROFILE":        4,
 		"WORKSPACE_APPROVAL":       5,
-		"ENTERPRISE_LICENSE":       7,
 		"APP_IM":                   8,
 		"AI":                       10,
 		"DATA_CLASSIFICATION":      14,
@@ -365,7 +363,9 @@ type SystemSetting struct {
 	// Authentication secret for token signing (32-character random string).
 	AuthSecret string `protobuf:"bytes,1,opt,name=auth_secret,json=authSecret,proto3" json:"auth_secret,omitempty"`
 	// Unique workspace identifier (UUID).
-	WorkspaceId   string `protobuf:"bytes,2,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
+	WorkspaceId string `protobuf:"bytes,2,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
+	// Enterprise license JWT token.
+	License       string `protobuf:"bytes,3,opt,name=license,proto3" json:"license,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -410,6 +410,13 @@ func (x *SystemSetting) GetAuthSecret() string {
 func (x *SystemSetting) GetWorkspaceId() string {
 	if x != nil {
 		return x.WorkspaceId
+	}
+	return ""
+}
+
+func (x *SystemSetting) GetLicense() string {
+	if x != nil {
+		return x.License
 	}
 	return ""
 }
@@ -2348,11 +2355,12 @@ var File_store_setting_proto protoreflect.FileDescriptor
 
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x1bstore/project_webhook.proto\"S\n" +
+	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x1bstore/project_webhook.proto\"m\n" +
 	"\rSystemSetting\x12\x1f\n" +
 	"\vauth_secret\x18\x01 \x01(\tR\n" +
 	"authSecret\x12!\n" +
-	"\fworkspace_id\x18\x02 \x01(\tR\vworkspaceId\"\xfa\x06\n" +
+	"\fworkspace_id\x18\x02 \x01(\tR\vworkspaceId\x12\x18\n" +
+	"\alicense\x18\x03 \x01(\tR\alicense\"\xfa\x06\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2517,14 +2525,13 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x05color\x18\x04 \x01(\tR\x05color\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xea\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xd2\x01\n" +
 	"\vSettingName\x12\x1c\n" +
 	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
 	"\x06SYSTEM\x10\x01\x12\x15\n" +
 	"\x11WORKSPACE_PROFILE\x10\x04\x12\x16\n" +
-	"\x12WORKSPACE_APPROVAL\x10\x05\x12\x16\n" +
-	"\x12ENTERPRISE_LICENSE\x10\a\x12\n" +
+	"\x12WORKSPACE_APPROVAL\x10\x05\x12\n" +
 	"\n" +
 	"\x06APP_IM\x10\b\x12\x06\n" +
 	"\x02AI\x10\n" +

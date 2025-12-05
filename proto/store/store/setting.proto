@@ -14,6 +14,8 @@ message SystemSetting {
   string auth_secret = 1;
   // Unique workspace identifier (UUID).
   string workspace_id = 2;
+  // Enterprise license JWT token.
+  string license = 3;
 }
 
 enum SettingName {
@@ -21,7 +23,7 @@ enum SettingName {
   SYSTEM = 1;
   WORKSPACE_PROFILE = 4;
   WORKSPACE_APPROVAL = 5;
-  ENTERPRISE_LICENSE = 7;
+  // 7 was ENTERPRISE_LICENSE, migrated to SYSTEM setting
   APP_IM = 8;
   AI = 10;
   DATA_CLASSIFICATION = 14;
