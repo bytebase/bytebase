@@ -24,7 +24,7 @@
 <script lang="tsx" setup>
 import { useDebounceFn } from "@vueuse/core";
 import { intersection } from "lodash-es";
-import { computed, onMounted, reactive, watchEffect } from "vue";
+import { computed, reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/cells";
 import { usePermissionStore, useProjectV1Store } from "@/store";
@@ -177,11 +177,25 @@ const handleSearch = useDebounceFn(async (search: string) => {
   }
 }, DEBOUNCE_SEARCH_DELAY);
 
-// Only fetch selected project(s) on mount, not the entire list.
-// The full list will be fetched lazily when dropdown is opened.
-onMounted(async () => {
-  await initProjectList();
-});
+watch(
+  () => props.projectName,
+  async (newVal) => {
+    if (newVal) {
+      await initSelectedProjects([newVal]);
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.projectNames,
+  async (newVal) => {
+    if (newVal) {
+      await initSelectedProjects(newVal);
+    }
+  },
+  { immediate: true }
+);
 
 const options = computed(
   (): {
