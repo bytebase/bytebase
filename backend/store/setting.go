@@ -29,21 +29,6 @@ type SettingMessage struct {
 	Value string
 }
 
-func (s *Store) GetPasswordRestriction(ctx context.Context) (*storepb.WorkspaceProfileSetting_PasswordRestriction, error) {
-	passwordRestriction := &storepb.WorkspaceProfileSetting_PasswordRestriction{
-		MinLength: 8,
-	}
-	workspaceProfile, err := s.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if workspaceProfile == nil || workspaceProfile.PasswordRestriction == nil {
-		return passwordRestriction, nil
-	}
-
-	return workspaceProfile.PasswordRestriction, nil
-}
-
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.
 func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.WorkspaceProfileSetting, error) {
 	setting, err := s.GetSettingV2(ctx, storepb.SettingName_WORKSPACE_PROFILE)
@@ -91,24 +76,6 @@ func (s *Store) GetSystemSetting(ctx context.Context) (*storepb.SystemSetting, e
 		return nil, err
 	}
 	return payload, nil
-}
-
-// GetWorkspaceID finds the workspace id in setting bb.workspace.id.
-func (s *Store) GetWorkspaceID(ctx context.Context) (string, error) {
-	systemSetting, err := s.GetSystemSetting(ctx)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get system setting")
-	}
-	return systemSetting.WorkspaceId, nil
-}
-
-// GetEnterpriseLicense retrieves the enterprise license from SYSTEM setting.
-func (s *Store) GetEnterpriseLicense(ctx context.Context) (string, error) {
-	systemSetting, err := s.GetSystemSetting(ctx)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get system setting")
-	}
-	return systemSetting.License, nil
 }
 
 // UpsertEnterpriseLicense updates the enterprise license in SYSTEM setting.
@@ -331,61 +298,6 @@ func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) 
 	}
 	s.settingCache.Add(setting.Name, &setting)
 	return &setting, nil
-}
-
-// CreateSettingIfNotExistV2 creates a new setting only if the named setting doesn't exist.
-func (s *Store) CreateSettingIfNotExistV2(ctx context.Context, create *SettingMessage) (*SettingMessage, bool, error) {
-	if v, ok := s.settingCache.Get(create.Name); ok && s.enableCache {
-		return v, false, nil
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, false, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-	settings, err := listSettingV2Impl(ctx, tx, &FindSettingMessage{Name: &create.Name})
-	if err != nil {
-		return nil, false, errors.Wrap(err, "failed to list settings")
-	}
-	if len(settings) > 1 {
-		return nil, false, errors.Errorf("found settings for setting name: %v", create.Name)
-	}
-	if len(settings) == 1 {
-		// Don't create setting if the named setting already exists.
-		return settings[0], false, nil
-	}
-
-	q := qb.Q().Space(`
-		INSERT INTO setting (name, value)
-		VALUES (?, ?)
-		RETURNING name, value
-	`, create.Name.String(), create.Value)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to build sql")
-	}
-
-	var setting SettingMessage
-	var nameString string
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
-		&nameString,
-		&setting.Value,
-	); err != nil {
-		return nil, false, err
-	}
-	value, ok := storepb.SettingName_value[nameString]
-	if !ok {
-		return nil, false, errors.Errorf("invalid setting name string: %s", nameString)
-	}
-	setting.Name = storepb.SettingName(value)
-
-	if err := tx.Commit(); err != nil {
-		return nil, false, errors.Wrap(err, "failed to commit transaction")
-	}
-	s.settingCache.Add(setting.Name, &setting)
-	return &setting, true, nil
 }
 
 // DeleteSettingV2 deletes a setting by the name.

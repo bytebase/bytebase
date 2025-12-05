@@ -303,23 +303,25 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 }
 
 func (s *UserService) validatePassword(ctx context.Context, password string) error {
-	passwordRestriction, err := s.store.GetPasswordRestriction(ctx)
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get password restriction with error: %v", err))
 	}
-	if len(password) < int(passwordRestriction.MinLength) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password length should no less than %v characters", passwordRestriction.MinLength))
+	passwordRestriction := setting.GetPasswordRestriction()
+
+	if len(password) < int(passwordRestriction.GetMinLength()) {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password length should no less than %v characters", passwordRestriction.GetMinLength()))
 	}
-	if passwordRestriction.RequireNumber && !regexp.MustCompile("[0-9]+").MatchString(password) {
+	if passwordRestriction.GetRequireNumber() && !regexp.MustCompile("[0-9]+").MatchString(password) {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 number"))
 	}
-	if passwordRestriction.RequireLetter && !regexp.MustCompile("[a-zA-Z]+").MatchString(password) {
+	if passwordRestriction.GetRequireLetter() && !regexp.MustCompile("[a-zA-Z]+").MatchString(password) {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 lower case letter"))
 	}
-	if passwordRestriction.RequireUppercaseLetter && !regexp.MustCompile("[A-Z]+").MatchString(password) {
+	if passwordRestriction.GetRequireUppercaseLetter() && !regexp.MustCompile("[A-Z]+").MatchString(password) {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 upper case letter"))
 	}
-	if passwordRestriction.RequireSpecialCharacter && !regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+`).MatchString(password) {
+	if passwordRestriction.GetRequireSpecialCharacter() && !regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+`).MatchString(password) {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 special character"))
 	}
 	return nil

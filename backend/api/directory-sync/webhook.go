@@ -617,10 +617,11 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 
 	workspaceID := c.Param("workspaceID")
 
-	myWorkspaceID, err := s.store.GetWorkspaceID(ctx)
+	systemSetting, err := s.store.GetSystemSetting(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get system setting")
 	}
+	myWorkspaceID := systemSetting.WorkspaceId
 	if myWorkspaceID != workspaceID {
 		return errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID)
 	}

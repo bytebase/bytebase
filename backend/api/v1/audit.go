@@ -169,10 +169,11 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 
 	var parents []string
 	if authContext.HasWorkspaceResource() {
-		workspaceID, err := storage.GetWorkspaceID(ctx)
+		systemSetting, err := storage.GetSystemSetting(ctx)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get workspace id")
+			return errors.Wrapf(err, "failed to get system setting")
 		}
+		workspaceID := systemSetting.WorkspaceId
 		parents = append(parents, common.FormatWorkspace(workspaceID))
 	} else {
 		for _, projectID := range authContext.GetProjectResources() {
