@@ -123,6 +123,7 @@
 
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { ReplyIcon } from "lucide-vue-next";
 import { NButton, NInput, useDialog } from "naive-ui";
 import { computed, ref } from "vue";
@@ -137,11 +138,6 @@ import {
   useActuatorV1Store,
   useSettingV1Store,
 } from "@/store";
-import {
-  SCIMSettingSchema,
-  Setting_SettingName,
-  SettingValueSchema as SettingSettingValueSchema,
-} from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 defineProps<{
@@ -180,10 +176,7 @@ const scimUrl = computed(() => {
 });
 
 const scimToken = computed(() => {
-  const setting = settingV1Store.getSettingByName(Setting_SettingName.SCIM);
-  return setting?.value?.value?.case === "scim"
-    ? (setting.value.value.value.token ?? "")
-    : "";
+  return settingV1Store.workspaceProfileSetting?.directorySyncToken ?? "";
 });
 
 const handleSelect = (component: HTMLInputElement | null) => {
@@ -207,26 +200,20 @@ const resetToken = () => {
     positiveText: t("common.continue-anyway"),
     closeOnEsc: true,
     maskClosable: true,
-    onPositiveClick: () => {
-      settingV1Store
-        .upsertSetting({
-          name: Setting_SettingName.SCIM,
-          value: create(SettingSettingValueSchema, {
-            value: {
-              case: "scim",
-              value: create(SCIMSettingSchema, {
-                token: "",
-              }),
-            },
-          }),
-        })
-        .then(() => {
-          pushNotification({
-            module: "bytebase",
-            style: "SUCCESS",
-            title: t("common.updated"),
-          });
-        });
+    onPositiveClick: async () => {
+      await settingV1Store.updateWorkspaceProfile({
+        payload: {
+          directorySyncToken: "",
+        },
+        updateMask: create(FieldMaskSchema, {
+          paths: ["value.workspace_profile.directory_sync_token"],
+        }),
+      });
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.updated"),
+      });
     },
   });
 };

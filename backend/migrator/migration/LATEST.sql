@@ -35,7 +35,7 @@ CREATE TABLE setting (
     id serial PRIMARY KEY,
     -- name: AUTH_SECRET, BRANDING_LOGO, WORKSPACE_ID, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
     -- ENTERPRISE_LICENSE, APP_IM, AI,
-    -- DATA_CLASSIFICATION, SEMANTIC_TYPES, SCIM, PASSWORD_RESTRICTION, ENVIRONMENT
+    -- DATA_CLASSIFICATION, SEMANTIC_TYPES, PASSWORD_RESTRICTION, ENVIRONMENT
     -- Enum: SettingName (proto/store/store/setting.proto)
     name text NOT NULL,
     value text NOT NULL
@@ -555,7 +555,10 @@ INSERT INTO setting (name, value) VALUES ('APP_IM', '{}');
 INSERT INTO setting (name, value) VALUES ('DATA_CLASSIFICATION', '{}');
 INSERT INTO setting (name, value) VALUES ('WORKSPACE_APPROVAL', '{"rules":[{"template":{"flow":{"roles":["roles/projectOwner"]},"title":"Fallback Rule","description":"Requires project owner approval when no other rules match."},"condition":{"expression":"true"}}]}');
 INSERT INTO setting (name, value) VALUES ('PASSWORD_RESTRICTION', '{"minLength":8}');
-INSERT INTO setting (name, value) VALUES ('WORKSPACE_PROFILE', '{"enableMetricCollection":true}');
+INSERT INTO setting (name, value) VALUES (
+  'WORKSPACE_PROFILE',
+  '{"enableMetricCollection":true,"directorySyncToken":"' || gen_random_uuid()::text || '"}'
+);
 INSERT INTO setting (name, value) VALUES ('ENVIRONMENT', '{"environments":[{"title":"Test","id":"test"},{"title":"Prod","id":"prod"}]}');
 
 -- Initialize settings with dynamically generated values
@@ -567,11 +570,6 @@ INSERT INTO setting (name, value) VALUES (
    FROM generate_series(1, 32))
 );
 INSERT INTO setting (name, value) VALUES ('WORKSPACE_ID', gen_random_uuid()::text);
-INSERT INTO setting (name, value) VALUES (
-  'SCIM',
-  '{"token":"' || (SELECT string_agg(substr('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', floor(random() * 62 + 1)::int, 1), '')
-                   FROM generate_series(1, 32)) || '"}'
-);
 
 -- Initialize workspace IAM policy
 -- Grant workspace member role to allUsers

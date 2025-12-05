@@ -93,19 +93,6 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 				},
 			},
 		}, nil
-	case storepb.SettingName_SCIM:
-		storeValue := new(storepb.SCIMSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
-		}
-		return &v1pb.Setting{
-			Name: settingName,
-			Value: &v1pb.SettingValue{
-				Value: &v1pb.SettingValue_Scim{
-					Scim: convertToSCIMSetting(storeValue),
-				},
-			},
-		}, nil
 	case storepb.SettingName_PASSWORD_RESTRICTION:
 		storeValue := new(storepb.PasswordRestrictionSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
@@ -193,8 +180,6 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_DATA_CLASSIFICATION
 	case storepb.SettingName_SEMANTIC_TYPES:
 		return v1pb.Setting_SEMANTIC_TYPES
-	case storepb.SettingName_SCIM:
-		return v1pb.Setting_SCIM
 	case storepb.SettingName_PASSWORD_RESTRICTION:
 		return v1pb.Setting_PASSWORD_RESTRICTION
 	case storepb.SettingName_ENVIRONMENT:
@@ -226,8 +211,6 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_DATA_CLASSIFICATION
 	case v1pb.Setting_SEMANTIC_TYPES:
 		return storepb.SettingName_SEMANTIC_TYPES
-	case v1pb.Setting_SCIM:
-		return storepb.SettingName_SCIM
 	case v1pb.Setting_PASSWORD_RESTRICTION:
 		return storepb.SettingName_PASSWORD_RESTRICTION
 	case v1pb.Setting_ENVIRONMENT:
@@ -296,6 +279,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		EnableMetricCollection: v1Setting.EnableMetricCollection,
 		EnableAuditLogStdout:   v1Setting.EnableAuditLogStdout,
 		Watermark:              v1Setting.Watermark,
+		DirectorySyncToken:     v1Setting.DirectorySyncToken,
 	}
 
 	// Convert announcement if present
@@ -340,6 +324,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		EnableMetricCollection: storeSetting.EnableMetricCollection,
 		EnableAuditLogStdout:   storeSetting.EnableAuditLogStdout,
 		Watermark:              storeSetting.Watermark,
+		DirectorySyncToken:     storeSetting.DirectorySyncToken,
 	}
 
 	if storeSetting.Announcement != nil {
@@ -805,15 +790,5 @@ func convertToAISetting(storeSetting *storepb.AISetting) *v1pb.AISetting {
 		ApiKey:   storeSetting.ApiKey,
 		Model:    storeSetting.Model,
 		Version:  storeSetting.Version,
-	}
-}
-
-func convertToSCIMSetting(storeSetting *storepb.SCIMSetting) *v1pb.SCIMSetting {
-	if storeSetting == nil {
-		return nil
-	}
-
-	return &v1pb.SCIMSetting{
-		Token: storeSetting.Token,
 	}
 }

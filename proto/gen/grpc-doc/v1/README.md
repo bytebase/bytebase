@@ -133,7 +133,6 @@
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
     - [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting)
-    - [SCIMSetting](#bytebase-v1-SCIMSetting)
     - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
     - [Setting](#bytebase-v1-Setting)
@@ -2654,21 +2653,6 @@ The response message for getting a setting.
 
 
 
-<a name="bytebase-v1-SCIMSetting"></a>
-
-### SCIMSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| token | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-SemanticTypeSetting"></a>
 
 ### SemanticTypeSetting
@@ -2733,7 +2717,6 @@ The data in setting value.
 | workspace_approval | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
 | data_classification | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
 | semantic_type | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
-| scim | [SCIMSetting](#bytebase-v1-SCIMSetting) |  |  |
 | password_restriction | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
 | ai | [AISetting](#bytebase-v1-AISetting) |  |  |
 | environment | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
@@ -2823,6 +2806,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
+| directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
 
 
 
@@ -2901,7 +2885,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | AI | 10 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |
-| SCIM | 17 |  |
 | PASSWORD_RESTRICTION | 18 |  |
 | ENVIRONMENT | 19 |  |
 

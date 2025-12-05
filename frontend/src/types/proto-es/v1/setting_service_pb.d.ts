@@ -194,11 +194,6 @@ export enum Setting_SettingName {
   SEMANTIC_TYPES = 15,
 
   /**
-   * @generated from enum value: SCIM = 17;
-   */
-  SCIM = 17,
-
-  /**
    * @generated from enum value: PASSWORD_RESTRICTION = 18;
    */
   PASSWORD_RESTRICTION = 18,
@@ -261,12 +256,6 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
      */
     value: SemanticTypeSetting;
     case: "semanticType";
-  } | {
-    /**
-     * @generated from field: bytebase.v1.SCIMSetting scim = 14;
-     */
-    value: SCIMSetting;
-    case: "scim";
   } | {
     /**
      * @generated from field: bytebase.v1.PasswordRestrictionSetting password_restriction = 15;
@@ -612,6 +601,13 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: bool watermark = 16;
    */
   watermark: boolean;
+
+  /**
+   * The token for directory sync authentication.
+   *
+   * @generated from field: string directory_sync_token = 17;
+   */
+  directorySyncToken: string;
 };
 
 /**
@@ -1146,22 +1142,6 @@ export enum Algorithm_InnerOuterMask_MaskType {
  * Describes the enum bytebase.v1.Algorithm.InnerOuterMask.MaskType.
  */
 export declare const Algorithm_InnerOuterMask_MaskTypeSchema: GenEnum<Algorithm_InnerOuterMask_MaskType>;
-
-/**
- * @generated from message bytebase.v1.SCIMSetting
- */
-export declare type SCIMSetting = Message<"bytebase.v1.SCIMSetting"> & {
-  /**
-   * @generated from field: string token = 1;
-   */
-  token: string;
-};
-
-/**
- * Describes the message bytebase.v1.SCIMSetting.
- * Use `create(SCIMSettingSchema)` to create a new message.
- */
-export declare const SCIMSettingSchema: GenMessage<SCIMSetting>;
 
 /**
  * @generated from message bytebase.v1.PasswordRestrictionSetting
