@@ -34,8 +34,8 @@ CREATE TABLE principal (
 CREATE TABLE setting (
     id serial PRIMARY KEY,
     -- name: SYSTEM, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
-    -- ENTERPRISE_LICENSE, APP_IM, AI,
-    -- DATA_CLASSIFICATION, SEMANTIC_TYPES, PASSWORD_RESTRICTION, ENVIRONMENT
+    -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES,
+    -- PASSWORD_RESTRICTION, ENVIRONMENT
     -- Enum: SettingName (proto/store/store/setting.proto)
     name text NOT NULL,
     value text NOT NULL
@@ -549,7 +549,6 @@ INSERT INTO project (id, name, resource_id) VALUES (1, 'Default', 'default');
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
 -- Initialize settings with static values
-INSERT INTO setting (name, value) VALUES ('ENTERPRISE_LICENSE', '');
 INSERT INTO setting (name, value) VALUES ('APP_IM', '{}');
 INSERT INTO setting (name, value) VALUES ('DATA_CLASSIFICATION', '{}');
 INSERT INTO setting (name, value) VALUES ('WORKSPACE_APPROVAL', '{"rules":[{"template":{"flow":{"roles":["roles/projectOwner"]},"title":"Fallback Rule","description":"Requires project owner approval when no other rules match."},"condition":{"expression":"true"}}]}');

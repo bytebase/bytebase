@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -102,6 +103,46 @@ func (s *Store) GetWorkspaceID(ctx context.Context) (string, error) {
 		return "", errors.Wrap(err, "failed to get system setting")
 	}
 	return systemSetting.WorkspaceId, nil
+}
+
+// GetEnterpriseLicense retrieves the enterprise license from SYSTEM setting.
+func (s *Store) GetEnterpriseLicense(ctx context.Context) (string, error) {
+	systemSetting, err := s.GetSystemSetting(ctx)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get system setting")
+	}
+	return systemSetting.License, nil
+}
+
+// UpsertEnterpriseLicense updates the enterprise license in SYSTEM setting.
+func (s *Store) UpsertEnterpriseLicense(ctx context.Context, license string) error {
+	setting, err := s.GetSettingV2(ctx, storepb.SettingName_SYSTEM)
+	if err != nil {
+		return errors.Wrap(err, "failed to get system setting")
+	}
+
+	systemSetting := &storepb.SystemSetting{}
+	if setting != nil && setting.Value != "" {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), systemSetting); err != nil {
+			return errors.Wrap(err, "failed to unmarshal system setting")
+		}
+	}
+
+	systemSetting.License = license
+
+	value, err := protojson.Marshal(systemSetting)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal system setting")
+	}
+
+	if _, err := s.UpsertSettingV2(ctx, &SetSettingMessage{
+		Name:  storepb.SettingName_SYSTEM,
+		Value: string(value),
+	}); err != nil {
+		return errors.Wrap(err, "failed to upsert system setting")
+	}
+
+	return nil
 }
 
 // GetWorkspaceApprovalSetting gets the workspace approval setting.

@@ -4580,6 +4580,7 @@ ISSUE_CREATE represents creating an issue. |
 | ----- | ---- | ----- | ----------- |
 | auth_secret | [string](#string) |  | Authentication secret for token signing (32-character random string). |
 | workspace_id | [string](#string) |  | Unique workspace identifier (UUID). |
+| license | [string](#string) |  | Enterprise license JWT token. |
 
 
 
@@ -4716,8 +4717,7 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | SYSTEM | 1 |  |
 | WORKSPACE_PROFILE | 4 |  |
 | WORKSPACE_APPROVAL | 5 |  |
-| ENTERPRISE_LICENSE | 7 |  |
-| APP_IM | 8 |  |
+| APP_IM | 8 | 7 was ENTERPRISE_LICENSE, migrated to SYSTEM setting |
 | AI | 10 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |

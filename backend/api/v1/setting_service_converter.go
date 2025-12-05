@@ -175,8 +175,8 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_PASSWORD_RESTRICTION
 	case storepb.SettingName_ENVIRONMENT:
 		return v1pb.Setting_ENVIRONMENT
-	case storepb.SettingName_SYSTEM, storepb.SettingName_ENTERPRISE_LICENSE:
-		// Backend-only settings, not exposed in v1 API
+	case storepb.SettingName_SYSTEM:
+		// Backend-only setting, not exposed in v1 API
 	default:
 	}
 	return v1pb.Setting_SETTING_NAME_UNSPECIFIED

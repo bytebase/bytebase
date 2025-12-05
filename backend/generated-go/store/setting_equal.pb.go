@@ -21,6 +21,9 @@ func (x *SystemSetting) Equal(y *SystemSetting) bool {
 	if x.WorkspaceId != y.WorkspaceId {
 		return false
 	}
+	if x.License != y.License {
+		return false
+	}
 	return true
 }
 
