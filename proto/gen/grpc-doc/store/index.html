@@ -1299,6 +1299,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.SystemSetting"><span class="badge">M</span>SystemSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.WorkspaceApprovalSetting"><span class="badge">M</span>WorkspaceApprovalSetting</a>
                 </li>
               
@@ -12036,6 +12040,37 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
+        <h3 id="bytebase.store.SystemSetting">SystemSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>auth_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Authentication secret for token signing (32-character random string). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>workspace_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Unique workspace identifier (UUID). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.WorkspaceApprovalSetting">WorkspaceApprovalSetting</h3>
         <p></p>
 
@@ -12381,14 +12416,8 @@ Default to this mode.</p></td>
               </tr>
             
               <tr>
-                <td>AUTH_SECRET</td>
+                <td>SYSTEM</td>
                 <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WORKSPACE_ID</td>
-                <td>3</td>
                 <td><p></p></td>
               </tr>
             
