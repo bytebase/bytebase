@@ -40,7 +40,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
   const storedLastViewedProject = useLocalStorage<string>(
     "bb.sql-editor.last-viewed-project",
     "",
-    { listenToStorageChanges: true }
+    { listenToStorageChanges: false }
   );
 
   const allowViewALLProjects = computed(() => {
