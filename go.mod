@@ -8,7 +8,7 @@ godebug x509negativeserial=1
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20250912141014-52f32327d4b0.1
-	buf.build/go/protovalidate v1.0.0
+	buf.build/go/protovalidate v1.0.1
 	cloud.google.com/go/bigquery v1.72.0
 	cloud.google.com/go/cloudsqlconn v1.19.0
 	cloud.google.com/go/secretmanager v1.16.0
