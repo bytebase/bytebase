@@ -103,16 +103,13 @@ func (s *ActuatorService) GetResourcePackage(
 	ctx context.Context,
 	_ *connect.Request[v1pb.GetResourcePackageRequest],
 ) (*connect.Response[v1pb.ResourcePackage], error) {
-	brandingSetting, err := s.store.GetSettingV2(ctx, storepb.SettingName_BRANDING_LOGO)
+	workspaceProfileSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace branding"))
-	}
-	if brandingSetting == nil {
-		return nil, errors.Errorf("cannot find setting %v", storepb.SettingName_BRANDING_LOGO)
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace profile setting"))
 	}
 
 	pkg := &v1pb.ResourcePackage{
-		Logo: []byte(brandingSetting.Value),
+		Logo: []byte(workspaceProfileSetting.BrandingLogo),
 	}
 	return connect.NewResponse(pkg), nil
 }
@@ -236,15 +233,6 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanFeatu
 		features = append(features, v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO)
 	}
 
-	// setting
-	brandingLogo, err := s.store.GetSettingV2(ctx, storepb.SettingName_BRANDING_LOGO)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get branding logo setting")
-	}
-	if brandingLogo != nil && brandingLogo.Value != "" {
-		features = append(features, v1pb.PlanFeature_FEATURE_CUSTOM_LOGO)
-	}
-
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get workspace general setting")
@@ -263,6 +251,9 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanFeatu
 	}
 	if setting.Watermark {
 		features = append(features, v1pb.PlanFeature_FEATURE_WATERMARK)
+	}
+	if setting.BrandingLogo != "" {
+		features = append(features, v1pb.PlanFeature_FEATURE_CUSTOM_LOGO)
 	}
 
 	// environment tier

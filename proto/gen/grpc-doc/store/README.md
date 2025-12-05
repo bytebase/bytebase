@@ -4624,6 +4624,7 @@ ISSUE_CREATE represents creating an issue. |
 | enable_audit_log_stdout | [bool](#bool) |  | Whether to enable audit logging to stdout in structured JSON format. Requires TEAM or ENTERPRISE license. |
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
 | directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
+| branding_logo | [string](#string) |  | The branding logo as a data URI (e.g. data:image/png;base64,...). |
 
 
 
@@ -4696,7 +4697,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | ---- | ------ | ----------- |
 | SETTING_NAME_UNSPECIFIED | 0 |  |
 | AUTH_SECRET | 1 |  |
-| BRANDING_LOGO | 2 |  |
 | WORKSPACE_ID | 3 |  |
 | WORKSPACE_PROFILE | 4 |  |
 | WORKSPACE_APPROVAL | 5 |  |

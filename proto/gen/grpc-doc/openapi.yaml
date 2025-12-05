@@ -12926,9 +12926,6 @@ components:
         SettingValue:
             type: object
             properties:
-                stringValue:
-                    type: string
-                    description: Defines this value as being a string value.
                 appIm:
                     $ref: '#/components/schemas/AppIMSetting'
                 workspaceProfile:
@@ -13976,6 +13973,9 @@ components:
                 directorySyncToken:
                     type: string
                     description: The token for directory sync authentication.
+                brandingLogo:
+                    type: string
+                    description: The branding logo as a data URI (e.g. data:image/png;base64,...).
 tags:
     - name: ActuatorService
       description: ActuatorService manages system health and operational information.

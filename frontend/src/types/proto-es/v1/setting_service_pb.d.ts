@@ -159,11 +159,6 @@ export enum Setting_SettingName {
   SETTING_NAME_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: BRANDING_LOGO = 2;
-   */
-  BRANDING_LOGO = 2,
-
-  /**
    * @generated from enum value: WORKSPACE_PROFILE = 4;
    */
   WORKSPACE_PROFILE = 4,
@@ -219,14 +214,6 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
    * @generated from oneof bytebase.v1.SettingValue.value
    */
   value: {
-    /**
-     * Defines this value as being a string value.
-     *
-     * @generated from field: string string_value = 1;
-     */
-    value: string;
-    case: "stringValue";
-  } | {
     /**
      * @generated from field: bytebase.v1.AppIMSetting app_im = 3;
      */
@@ -608,6 +595,13 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * @generated from field: string directory_sync_token = 17;
    */
   directorySyncToken: string;
+
+  /**
+   * The branding logo as a data URI (e.g. data:image/png;base64,...).
+   *
+   * @generated from field: string branding_logo = 18;
+   */
+  brandingLogo: string;
 };
 
 /**

@@ -33,7 +33,7 @@ CREATE TABLE principal (
 -- Setting
 CREATE TABLE setting (
     id serial PRIMARY KEY,
-    -- name: AUTH_SECRET, BRANDING_LOGO, WORKSPACE_ID, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
+    -- name: AUTH_SECRET, WORKSPACE_ID, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
     -- ENTERPRISE_LICENSE, APP_IM, AI,
     -- DATA_CLASSIFICATION, SEMANTIC_TYPES, PASSWORD_RESTRICTION, ENVIRONMENT
     -- Enum: SettingName (proto/store/store/setting.proto)
@@ -549,7 +549,6 @@ INSERT INTO project (id, name, resource_id) VALUES (1, 'Default', 'default');
 ALTER SEQUENCE project_id_seq RESTART WITH 101;
 
 -- Initialize settings with static values
-INSERT INTO setting (name, value) VALUES ('BRANDING_LOGO', '');
 INSERT INTO setting (name, value) VALUES ('ENTERPRISE_LICENSE', '');
 INSERT INTO setting (name, value) VALUES ('APP_IM', '{}');
 INSERT INTO setting (name, value) VALUES ('DATA_CLASSIFICATION', '{}');

@@ -65,6 +65,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.DirectorySyncToken != y.DirectorySyncToken {
 		return false
 	}
+	if x.BrandingLogo != y.BrandingLogo {
+		return false
+	}
 	return true
 }
 

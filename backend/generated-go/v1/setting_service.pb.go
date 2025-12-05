@@ -81,7 +81,6 @@ type Setting_SettingName int32
 
 const (
 	Setting_SETTING_NAME_UNSPECIFIED Setting_SettingName = 0
-	Setting_BRANDING_LOGO            Setting_SettingName = 2
 	Setting_WORKSPACE_PROFILE        Setting_SettingName = 4
 	Setting_WORKSPACE_APPROVAL       Setting_SettingName = 5
 	Setting_APP_IM                   Setting_SettingName = 8
@@ -96,7 +95,6 @@ const (
 var (
 	Setting_SettingName_name = map[int32]string{
 		0:  "SETTING_NAME_UNSPECIFIED",
-		2:  "BRANDING_LOGO",
 		4:  "WORKSPACE_PROFILE",
 		5:  "WORKSPACE_APPROVAL",
 		8:  "APP_IM",
@@ -108,7 +106,6 @@ var (
 	}
 	Setting_SettingName_value = map[string]int32{
 		"SETTING_NAME_UNSPECIFIED": 0,
-		"BRANDING_LOGO":            2,
 		"WORKSPACE_PROFILE":        4,
 		"WORKSPACE_APPROVAL":       5,
 		"APP_IM":                   8,
@@ -665,7 +662,6 @@ type SettingValue struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Value:
 	//
-	//	*SettingValue_StringValue
 	//	*SettingValue_AppIm
 	//	*SettingValue_WorkspaceProfile
 	//	*SettingValue_WorkspaceApproval
@@ -714,15 +710,6 @@ func (x *SettingValue) GetValue() isSettingValue_Value {
 		return x.Value
 	}
 	return nil
-}
-
-func (x *SettingValue) GetStringValue() string {
-	if x != nil {
-		if x, ok := x.Value.(*SettingValue_StringValue); ok {
-			return x.StringValue
-		}
-	}
-	return ""
 }
 
 func (x *SettingValue) GetAppIm() *AppIMSetting {
@@ -801,11 +788,6 @@ type isSettingValue_Value interface {
 	isSettingValue_Value()
 }
 
-type SettingValue_StringValue struct {
-	// Defines this value as being a string value.
-	StringValue string `protobuf:"bytes,1,opt,name=string_value,json=stringValue,proto3,oneof"`
-}
-
 type SettingValue_AppIm struct {
 	AppIm *AppIMSetting `protobuf:"bytes,3,opt,name=app_im,json=appIm,proto3,oneof"`
 }
@@ -837,8 +819,6 @@ type SettingValue_Ai struct {
 type SettingValue_Environment struct {
 	Environment *EnvironmentSetting `protobuf:"bytes,17,opt,name=environment,proto3,oneof"`
 }
-
-func (*SettingValue_StringValue) isSettingValue_Value() {}
 
 func (*SettingValue_AppIm) isSettingValue_Value() {}
 
@@ -934,8 +914,10 @@ type WorkspaceProfileSetting struct {
 	Watermark bool `protobuf:"varint,16,opt,name=watermark,proto3" json:"watermark,omitempty"`
 	// The token for directory sync authentication.
 	DirectorySyncToken string `protobuf:"bytes,17,opt,name=directory_sync_token,json=directorySyncToken,proto3" json:"directory_sync_token,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// The branding logo as a data URI (e.g. data:image/png;base64,...).
+	BrandingLogo  string `protobuf:"bytes,18,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -1069,6 +1051,13 @@ func (x *WorkspaceProfileSetting) GetWatermark() bool {
 func (x *WorkspaceProfileSetting) GetDirectorySyncToken() string {
 	if x != nil {
 		return x.DirectorySyncToken
+	}
+	return ""
+}
+
+func (x *WorkspaceProfileSetting) GetBrandingLogo() string {
+	if x != nil {
+		return x.BrandingLogo
 	}
 	return ""
 }
@@ -2832,13 +2821,12 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\rvalidate_only\x18\x02 \x01(\bR\fvalidateOnly\x12#\n" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\x12;\n" +
 	"\vupdate_mask\x18\x04 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"\xe3\x02\n" +
+	"updateMask\"\xd0\x02\n" +
 	"\aSetting\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\bR\x04name\x124\n" +
-	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x03\xe0A\x02R\x05value\"\xd9\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x03\xe0A\x02R\x05value\"\xc6\x01\n" +
 	"\vSettingName\x12\x1c\n" +
-	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x11\n" +
-	"\rBRANDING_LOGO\x10\x02\x12\x15\n" +
+	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11WORKSPACE_PROFILE\x10\x04\x12\x16\n" +
 	"\x12WORKSPACE_APPROVAL\x10\x05\x12\n" +
 	"\n" +
@@ -2849,9 +2837,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x0eSEMANTIC_TYPES\x10\x0f\x12\x18\n" +
 	"\x14PASSWORD_RESTRICTION\x10\x12\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x13:-\xeaA*\n" +
-	"\x14bytebase.com/Setting\x12\x12settings/{setting}\"\x8e\x05\n" +
-	"\fSettingValue\x12#\n" +
-	"\fstring_value\x18\x01 \x01(\tH\x00R\vstringValue\x122\n" +
+	"\x14bytebase.com/Setting\x12\x12settings/{setting}\"\xe9\x04\n" +
+	"\fSettingValue\x122\n" +
 	"\x06app_im\x18\x03 \x01(\v2\x19.bytebase.v1.AppIMSettingH\x00R\x05appIm\x12S\n" +
 	"\x11workspace_profile\x18\x05 \x01(\v2$.bytebase.v1.WorkspaceProfileSettingH\x00R\x10workspaceProfile\x12V\n" +
 	"\x12workspace_approval\x18\x06 \x01(\v2%.bytebase.v1.WorkspaceApprovalSettingH\x00R\x11workspaceApproval\x12Y\n" +
@@ -2895,7 +2882,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\xcf\x06\n" +
+	"\apayload\"\xf4\x06\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2913,7 +2900,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18inactive_session_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
 	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
 	"\twatermark\x18\x10 \x01(\bR\twatermark\x120\n" +
-	"\x14directory_sync_token\x18\x11 \x01(\tR\x12directorySyncToken\"\xc2\x01\n" +
+	"\x14directory_sync_token\x18\x11 \x01(\tR\x12directorySyncToken\x12#\n" +
+	"\rbranding_logo\x18\x12 \x01(\tR\fbrandingLogo\"\xc2\x01\n" +
 	"\fAnnouncement\x12:\n" +
 	"\x05level\x18\x01 \x01(\x0e2$.bytebase.v1.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
@@ -3173,7 +3161,6 @@ func file_v1_setting_service_proto_init() {
 	file_v1_issue_service_proto_init()
 	file_v1_project_service_proto_init()
 	file_v1_setting_service_proto_msgTypes[6].OneofWrappers = []any{
-		(*SettingValue_StringValue)(nil),
 		(*SettingValue_AppIm)(nil),
 		(*SettingValue_WorkspaceProfile)(nil),
 		(*SettingValue_WorkspaceApproval)(nil),

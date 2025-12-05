@@ -135,14 +135,7 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			},
 		}, nil
 	default:
-		return &v1pb.Setting{
-			Name: settingName,
-			Value: &v1pb.SettingValue{
-				Value: &v1pb.SettingValue_StringValue{
-					StringValue: setting.Value,
-				},
-			},
-		}, nil
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unsupported setting %v", setting.Name))
 	}
 }
 
@@ -166,8 +159,6 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 	switch storeName {
 	case storepb.SettingName_SETTING_NAME_UNSPECIFIED:
 		return v1pb.Setting_SETTING_NAME_UNSPECIFIED
-	case storepb.SettingName_BRANDING_LOGO:
-		return v1pb.Setting_BRANDING_LOGO
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		return v1pb.Setting_WORKSPACE_PROFILE
 	case storepb.SettingName_WORKSPACE_APPROVAL:
@@ -197,8 +188,6 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 	switch v1Name {
 	case v1pb.Setting_SETTING_NAME_UNSPECIFIED:
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
-	case v1pb.Setting_BRANDING_LOGO:
-		return storepb.SettingName_BRANDING_LOGO
 	case v1pb.Setting_WORKSPACE_PROFILE:
 		return storepb.SettingName_WORKSPACE_PROFILE
 	case v1pb.Setting_WORKSPACE_APPROVAL:
@@ -280,6 +269,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		EnableAuditLogStdout:   v1Setting.EnableAuditLogStdout,
 		Watermark:              v1Setting.Watermark,
 		DirectorySyncToken:     v1Setting.DirectorySyncToken,
+		BrandingLogo:           v1Setting.BrandingLogo,
 	}
 
 	// Convert announcement if present
@@ -325,6 +315,7 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		EnableAuditLogStdout:   storeSetting.EnableAuditLogStdout,
 		Watermark:              storeSetting.Watermark,
 		DirectorySyncToken:     storeSetting.DirectorySyncToken,
+		BrandingLogo:           storeSetting.BrandingLogo,
 	}
 
 	if storeSetting.Announcement != nil {
