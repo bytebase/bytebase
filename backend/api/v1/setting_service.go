@@ -126,12 +126,15 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	if settingName == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting name is empty"))
 	}
-	if s.profile.IsFeatureUnavailable(settingName) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
-	}
 	apiSettingName, err := convertStringToSettingName(settingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid setting name: %v", err))
+	}
+	if isSettingDisallowed(apiSettingName) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
+	}
+	if s.profile.IsFeatureUnavailable(settingName) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 	}
 	existedSetting, err := s.store.GetSettingV2(ctx, apiSettingName)
 	if err != nil {
