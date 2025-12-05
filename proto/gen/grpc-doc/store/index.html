@@ -1219,10 +1219,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.Announcement"><span class="badge">M</span>Announcement</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.AppIMSetting"><span class="badge">M</span>AppIMSetting</a>
                 </li>
               
@@ -1314,6 +1310,10 @@
                   <a href="#bytebase.store.WorkspaceProfileSetting"><span class="badge">M</span>WorkspaceProfileSetting</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.WorkspaceProfileSetting.Announcement"><span class="badge">M</span>WorkspaceProfileSetting.Announcement</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.store.AISetting.Provider"><span class="badge">E</span>AISetting.Provider</a>
@@ -1324,19 +1324,19 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.Announcement.AlertLevel"><span class="badge">E</span>Announcement.AlertLevel</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.DatabaseChangeMode"><span class="badge">E</span>DatabaseChangeMode</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.SettingName"><span class="badge">E</span>SettingName</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.store.WorkspaceApprovalSetting.Rule.Source"><span class="badge">E</span>WorkspaceApprovalSetting.Rule.Source</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.WorkspaceProfileSetting.Announcement.AlertLevel"><span class="badge">E</span>WorkspaceProfileSetting.Announcement.AlertLevel</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.WorkspaceProfileSetting.DatabaseChangeMode"><span class="badge">E</span>WorkspaceProfileSetting.DatabaseChangeMode</a>
                 </li>
               
               
@@ -11282,44 +11282,6 @@ But frontend can be started with a single rule easily. </p></td>
 
         
       
-        <h3 id="bytebase.store.Announcement">Announcement</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>level</td>
-                  <td><a href="#bytebase.store.Announcement.AlertLevel">Announcement.AlertLevel</a></td>
-                  <td></td>
-                  <td><p>The alert level of the announcement. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>text</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The text of the announcement. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>link</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The optional link, user can follow the link to check extra details </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.AppIMSetting">AppIMSetting</h3>
         <p></p>
 
@@ -12180,7 +12142,7 @@ are /[a-z][0-9]-/. </p></td>
               
                 <tr>
                   <td>announcement</td>
-                  <td><a href="#bytebase.store.Announcement">Announcement</a></td>
+                  <td><a href="#bytebase.store.WorkspaceProfileSetting.Announcement">WorkspaceProfileSetting.Announcement</a></td>
                   <td></td>
                   <td><p>The setting of custom announcement </p></td>
                 </tr>
@@ -12208,7 +12170,7 @@ are /[a-z][0-9]-/. </p></td>
               
                 <tr>
                   <td>database_change_mode</td>
-                  <td><a href="#bytebase.store.DatabaseChangeMode">DatabaseChangeMode</a></td>
+                  <td><a href="#bytebase.store.WorkspaceProfileSetting.DatabaseChangeMode">WorkspaceProfileSetting.DatabaseChangeMode</a></td>
                   <td></td>
                   <td><p>The workspace database change mode. </p></td>
                 </tr>
@@ -12262,6 +12224,44 @@ Requires ENTERPRISE license. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The branding logo as a data URI (e.g. data:image/png;base64,...). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.WorkspaceProfileSetting.Announcement">WorkspaceProfileSetting.Announcement</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>level</td>
+                  <td><a href="#bytebase.store.WorkspaceProfileSetting.Announcement.AlertLevel">WorkspaceProfileSetting.Announcement.AlertLevel</a></td>
+                  <td></td>
+                  <td><p>The alert level of the announcement. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>text</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The text of the announcement. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>link</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The optional link, user can follow the link to check extra details </p></td>
                 </tr>
               
             </tbody>
@@ -12338,71 +12338,6 @@ Requires ENTERPRISE license. </p></td>
                 <td>OUTER</td>
                 <td>2</td>
                 <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.Announcement.AlertLevel">Announcement.AlertLevel</h3>
-        <p>We support three levels of AlertLevel: INFO, WARNING, and ERROR.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>ALERT_LEVEL_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ALERT_LEVEL_INFO</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ALERT_LEVEL_WARNING</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ALERT_LEVEL_CRITICAL</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.DatabaseChangeMode">DatabaseChangeMode</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DATABASE_CHANGE_MODE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PIPELINE</td>
-                <td>1</td>
-                <td><p>A more advanced database change process, including custom approval workflows and other advanced features.
-Default to this mode.</p></td>
-              </tr>
-            
-              <tr>
-                <td>EDITOR</td>
-                <td>2</td>
-                <td><p>A simple database change process in SQL editor. Users can execute SQL directly.</p></td>
               </tr>
             
           </tbody>
@@ -12515,6 +12450,71 @@ Default to this mode.</p></td>
                 <td>REQUEST_ROLE</td>
                 <td>4</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.WorkspaceProfileSetting.Announcement.AlertLevel">WorkspaceProfileSetting.Announcement.AlertLevel</h3>
+        <p>We support three levels of AlertLevel: INFO, WARNING, and ERROR.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ALERT_LEVEL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALERT_LEVEL_INFO</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALERT_LEVEL_WARNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ALERT_LEVEL_CRITICAL</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.WorkspaceProfileSetting.DatabaseChangeMode">WorkspaceProfileSetting.DatabaseChangeMode</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>DATABASE_CHANGE_MODE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PIPELINE</td>
+                <td>1</td>
+                <td><p>A more advanced database change process, including custom approval workflows and other advanced features.
+Default to this mode.</p></td>
+              </tr>
+            
+              <tr>
+                <td>EDITOR</td>
+                <td>2</td>
+                <td><p>A simple database change process in SQL editor. Users can execute SQL directly.</p></td>
               </tr>
             
           </tbody>

@@ -260,7 +260,6 @@
     - [Algorithm.MD5Mask](#bytebase-store-Algorithm-MD5Mask)
     - [Algorithm.RangeMask](#bytebase-store-Algorithm-RangeMask)
     - [Algorithm.RangeMask.Slice](#bytebase-store-Algorithm-RangeMask-Slice)
-    - [Announcement](#bytebase-store-Announcement)
     - [AppIMSetting](#bytebase-store-AppIMSetting)
     - [AppIMSetting.DingTalk](#bytebase-store-AppIMSetting-DingTalk)
     - [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu)
@@ -284,13 +283,14 @@
     - [WorkspaceApprovalSetting](#bytebase-store-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-store-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-store-WorkspaceProfileSetting)
+    - [WorkspaceProfileSetting.Announcement](#bytebase-store-WorkspaceProfileSetting-Announcement)
   
     - [AISetting.Provider](#bytebase-store-AISetting-Provider)
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-store-Algorithm-InnerOuterMask-MaskType)
-    - [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel)
-    - [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode)
     - [SettingName](#bytebase-store-SettingName)
     - [WorkspaceApprovalSetting.Rule.Source](#bytebase-store-WorkspaceApprovalSetting-Rule-Source)
+    - [WorkspaceProfileSetting.Announcement.AlertLevel](#bytebase-store-WorkspaceProfileSetting-Announcement-AlertLevel)
+    - [WorkspaceProfileSetting.DatabaseChangeMode](#bytebase-store-WorkspaceProfileSetting-DatabaseChangeMode)
   
 - [store/sheet.proto](#store_sheet-proto)
     - [SheetPayload](#bytebase-store-SheetPayload)
@@ -4231,23 +4231,6 @@ ISSUE_CREATE represents creating an issue. |
 
 
 
-<a name="bytebase-store-Announcement"></a>
-
-### Announcement
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| level | [Announcement.AlertLevel](#bytebase-store-Announcement-AlertLevel) |  | The alert level of the announcement. |
-| text | [string](#string) |  | The text of the announcement. |
-| link | [string](#string) |  | The optional link, user can follow the link to check extra details |
-
-
-
-
-
-
 <a name="bytebase-store-AppIMSetting"></a>
 
 ### AppIMSetting
@@ -4631,11 +4614,11 @@ ISSUE_CREATE represents creating an issue. |
 | disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
 | token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for token. |
-| announcement | [Announcement](#bytebase-store-Announcement) |  | The setting of custom announcement |
+| announcement | [WorkspaceProfileSetting.Announcement](#bytebase-store-WorkspaceProfileSetting-Announcement) |  | The setting of custom announcement |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
 | domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
-| database_change_mode | [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode) |  | The workspace database change mode. |
+| database_change_mode | [WorkspaceProfileSetting.DatabaseChangeMode](#bytebase-store-WorkspaceProfileSetting-DatabaseChangeMode) |  | The workspace database change mode. |
 | disallow_password_signin | [bool](#bool) |  | Whether to disallow password signin. (Except workspace admins) |
 | enable_metric_collection | [bool](#bool) |  | Whether to enable metric collection for the workspace. |
 | inactive_session_timeout | [google.protobuf.Duration](#google-protobuf-Duration) |  | The session expiration time if not activity detected for the user. Value &lt;= 0 means no limit. |
@@ -4643,6 +4626,23 @@ ISSUE_CREATE represents creating an issue. |
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
 | directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
 | branding_logo | [string](#string) |  | The branding logo as a data URI (e.g. data:image/png;base64,...). |
+
+
+
+
+
+
+<a name="bytebase-store-WorkspaceProfileSetting-Announcement"></a>
+
+### WorkspaceProfileSetting.Announcement
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| level | [WorkspaceProfileSetting.Announcement.AlertLevel](#bytebase-store-WorkspaceProfileSetting-Announcement-AlertLevel) |  | The alert level of the announcement. |
+| text | [string](#string) |  | The text of the announcement. |
+| link | [string](#string) |  | The optional link, user can follow the link to check extra details |
 
 
 
@@ -4679,33 +4679,6 @@ ISSUE_CREATE represents creating an issue. |
 
 
 
-<a name="bytebase-store-Announcement-AlertLevel"></a>
-
-### Announcement.AlertLevel
-We support three levels of AlertLevel: INFO, WARNING, and ERROR.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ALERT_LEVEL_UNSPECIFIED | 0 |  |
-| ALERT_LEVEL_INFO | 1 |  |
-| ALERT_LEVEL_WARNING | 2 |  |
-| ALERT_LEVEL_CRITICAL | 3 |  |
-
-
-
-<a name="bytebase-store-DatabaseChangeMode"></a>
-
-### DatabaseChangeMode
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DATABASE_CHANGE_MODE_UNSPECIFIED | 0 |  |
-| PIPELINE | 1 | A more advanced database change process, including custom approval workflows and other advanced features. Default to this mode. |
-| EDITOR | 2 | A simple database change process in SQL editor. Users can execute SQL directly. |
-
-
-
 <a name="bytebase-store-SettingName"></a>
 
 ### SettingName
@@ -4738,6 +4711,33 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | CREATE_DATABASE | 2 |  |
 | EXPORT_DATA | 3 |  |
 | REQUEST_ROLE | 4 |  |
+
+
+
+<a name="bytebase-store-WorkspaceProfileSetting-Announcement-AlertLevel"></a>
+
+### WorkspaceProfileSetting.Announcement.AlertLevel
+We support three levels of AlertLevel: INFO, WARNING, and ERROR.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ALERT_LEVEL_UNSPECIFIED | 0 |  |
+| ALERT_LEVEL_INFO | 1 |  |
+| ALERT_LEVEL_WARNING | 2 |  |
+| ALERT_LEVEL_CRITICAL | 3 |  |
+
+
+
+<a name="bytebase-store-WorkspaceProfileSetting-DatabaseChangeMode"></a>
+
+### WorkspaceProfileSetting.DatabaseChangeMode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATABASE_CHANGE_MODE_UNSPECIFIED | 0 |  |
+| PIPELINE | 1 | A more advanced database change process, including custom approval workflows and other advanced features. Default to this mode. |
+| EDITOR | 2 | A simple database change process in SQL editor. Users can execute SQL directly. |
 
 
  
