@@ -27,6 +27,25 @@ func (x *SystemSetting) Equal(y *SystemSetting) bool {
 	return true
 }
 
+func (x *WorkspaceProfileSetting_Announcement) Equal(y *WorkspaceProfileSetting_Announcement) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Level != y.Level {
+		return false
+	}
+	if x.Text != y.Text {
+		return false
+	}
+	if x.Link != y.Link {
+		return false
+	}
+	return true
+}
+
 func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x == y {
 		return true
@@ -85,25 +104,6 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 		return false
 	}
 	if x.BrandingLogo != y.BrandingLogo {
-		return false
-	}
-	return true
-}
-
-func (x *Announcement) Equal(y *Announcement) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Level != y.Level {
-		return false
-	}
-	if x.Text != y.Text {
-		return false
-	}
-	if x.Link != y.Link {
 		return false
 	}
 	return true
@@ -243,49 +243,6 @@ func (x *DataClassificationSetting) Equal(y *DataClassificationSetting) bool {
 	return true
 }
 
-func (x *SemanticTypeSetting_SemanticType) Equal(y *SemanticTypeSetting_SemanticType) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Id != y.Id {
-		return false
-	}
-	if x.Title != y.Title {
-		return false
-	}
-	if x.Description != y.Description {
-		return false
-	}
-	if !x.Algorithm.Equal(y.Algorithm) {
-		return false
-	}
-	if x.Icon != y.Icon {
-		return false
-	}
-	return true
-}
-
-func (x *SemanticTypeSetting) Equal(y *SemanticTypeSetting) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Types) != len(y.Types) {
-		return false
-	}
-	for i := 0; i < len(x.Types); i++ {
-		if !x.Types[i].Equal(y.Types[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 func (x *Algorithm_FullMask) Equal(y *Algorithm_FullMask) bool {
 	if x == y {
 		return true
@@ -389,6 +346,49 @@ func (x *Algorithm) Equal(y *Algorithm) bool {
 	}
 	if !x.GetInnerOuterMask().Equal(y.GetInnerOuterMask()) {
 		return false
+	}
+	return true
+}
+
+func (x *SemanticTypeSetting_SemanticType) Equal(y *SemanticTypeSetting_SemanticType) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Id != y.Id {
+		return false
+	}
+	if x.Title != y.Title {
+		return false
+	}
+	if x.Description != y.Description {
+		return false
+	}
+	if !x.Algorithm.Equal(y.Algorithm) {
+		return false
+	}
+	if x.Icon != y.Icon {
+		return false
+	}
+	return true
+}
+
+func (x *SemanticTypeSetting) Equal(y *SemanticTypeSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Types) != len(y.Types) {
+		return false
+	}
+	for i := 0; i < len(x.Types); i++ {
+		if !x.Types[i].Equal(y.Types[i]) {
+			return false
+		}
 	}
 	return true
 }

@@ -263,7 +263,7 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		MaximumRoleExpiration:  v1Setting.MaximumRoleExpiration,
 		Domains:                v1Setting.Domains,
 		EnforceIdentityDomain:  v1Setting.EnforceIdentityDomain,
-		DatabaseChangeMode:     storepb.DatabaseChangeMode(v1Setting.DatabaseChangeMode),
+		DatabaseChangeMode:     storepb.WorkspaceProfileSetting_DatabaseChangeMode(v1Setting.DatabaseChangeMode),
 		DisallowPasswordSignin: v1Setting.DisallowPasswordSignin,
 		EnableMetricCollection: v1Setting.EnableMetricCollection,
 		EnableAuditLogStdout:   v1Setting.EnableAuditLogStdout,
@@ -274,20 +274,20 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 
 	// Convert announcement if present
 	if v1Setting.Announcement != nil {
-		storeSetting.Announcement = &storepb.Announcement{
+		storeSetting.Announcement = &storepb.WorkspaceProfileSetting_Announcement{
 			Text: v1Setting.Announcement.Text,
 			Link: v1Setting.Announcement.Link,
 		}
 		// Convert alert level
 		switch v1Setting.Announcement.Level {
 		case v1pb.Announcement_ALERT_LEVEL_UNSPECIFIED:
-			storeSetting.Announcement.Level = storepb.Announcement_ALERT_LEVEL_UNSPECIFIED
+			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_UNSPECIFIED
 		case v1pb.Announcement_INFO:
-			storeSetting.Announcement.Level = storepb.Announcement_ALERT_LEVEL_INFO
+			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_INFO
 		case v1pb.Announcement_WARNING:
-			storeSetting.Announcement.Level = storepb.Announcement_ALERT_LEVEL_WARNING
+			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_WARNING
 		case v1pb.Announcement_CRITICAL:
-			storeSetting.Announcement.Level = storepb.Announcement_ALERT_LEVEL_CRITICAL
+			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_CRITICAL
 		default:
 		}
 	}
@@ -324,13 +324,13 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 			Link: storeSetting.Announcement.Link,
 		}
 		switch storeSetting.Announcement.Level {
-		case storepb.Announcement_ALERT_LEVEL_UNSPECIFIED:
+		case storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_UNSPECIFIED:
 			v1Setting.Announcement.Level = v1pb.Announcement_ALERT_LEVEL_UNSPECIFIED
-		case storepb.Announcement_ALERT_LEVEL_INFO:
+		case storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_INFO:
 			v1Setting.Announcement.Level = v1pb.Announcement_INFO
-		case storepb.Announcement_ALERT_LEVEL_WARNING:
+		case storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_WARNING:
 			v1Setting.Announcement.Level = v1pb.Announcement_WARNING
-		case storepb.Announcement_ALERT_LEVEL_CRITICAL:
+		case storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_CRITICAL:
 			v1Setting.Announcement.Level = v1pb.Announcement_CRITICAL
 		default:
 		}
