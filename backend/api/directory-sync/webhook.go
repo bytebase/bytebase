@@ -625,19 +625,15 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 		return errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID)
 	}
 
-	scimSetting, err := s.store.GetSettingV2(ctx, storepb.SettingName_SCIM)
+	workspaceProfileSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "failed to find scim setting")
+		return errors.Wrapf(err, "failed to get workspace profile setting")
 	}
-	if scimSetting == nil {
-		return errors.Errorf("cannot found scim setting")
-	}
-	payload := new(storepb.SCIMSetting)
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(scimSetting.Value), payload); err != nil {
-		return errors.Wrapf(err, "failed to unmarshal scim setting")
+	if workspaceProfileSetting.DirectorySyncToken == "" {
+		return errors.Errorf("directory sync token is not configured")
 	}
 
-	if subtle.ConstantTimeCompare([]byte(payload.Token), []byte(authorization)) != 1 {
+	if subtle.ConstantTimeCompare([]byte(workspaceProfileSetting.DirectorySyncToken), []byte(authorization)) != 1 {
 		return errors.Errorf("invalid authorization token")
 	}
 

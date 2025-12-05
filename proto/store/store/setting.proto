@@ -21,7 +21,6 @@ enum SettingName {
   AI = 10;
   DATA_CLASSIFICATION = 14;
   SEMANTIC_TYPES = 15;
-  SCIM = 17;
   PASSWORD_RESTRICTION = 18;
   ENVIRONMENT = 19;
 }
@@ -70,6 +69,9 @@ message WorkspaceProfileSetting {
   // Whether to display watermark on pages.
   // Requires ENTERPRISE license.
   bool watermark = 16;
+
+  // The token for directory sync authentication.
+  string directory_sync_token = 17;
 }
 
 message Announcement {
@@ -259,10 +261,6 @@ enum DatabaseChangeMode {
   PIPELINE = 1;
   // A simple database change process in SQL editor. Users can execute SQL directly.
   EDITOR = 2;
-}
-
-message SCIMSetting {
-  string token = 1;
 }
 
 message PasswordRestrictionSetting {

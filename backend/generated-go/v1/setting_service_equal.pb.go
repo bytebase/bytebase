@@ -130,9 +130,6 @@ func (x *SettingValue) Equal(y *SettingValue) bool {
 	if !x.GetSemanticType().Equal(y.GetSemanticType()) {
 		return false
 	}
-	if !x.GetScim().Equal(y.GetScim()) {
-		return false
-	}
 	if !x.GetPasswordRestriction().Equal(y.GetPasswordRestriction()) {
 		return false
 	}
@@ -348,6 +345,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 		return false
 	}
 	if x.Watermark != y.Watermark {
+		return false
+	}
+	if x.DirectorySyncToken != y.DirectorySyncToken {
 		return false
 	}
 	return true
@@ -651,19 +651,6 @@ func (x *Algorithm) Equal(y *Algorithm) bool {
 		return false
 	}
 	if !x.GetInnerOuterMask().Equal(y.GetInnerOuterMask()) {
-		return false
-	}
-	return true
-}
-
-func (x *SCIMSetting) Equal(y *SCIMSetting) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Token != y.Token {
 		return false
 	}
 	return true

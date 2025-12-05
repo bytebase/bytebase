@@ -12474,11 +12474,6 @@ components:
             properties:
                 krbConfig:
                     $ref: '#/components/schemas/KerberosConfig'
-        SCIMSetting:
-            type: object
-            properties:
-                token:
-                    type: string
         SQLReviewRule:
             type: object
             properties:
@@ -12939,8 +12934,6 @@ components:
                     $ref: '#/components/schemas/DataClassificationSetting'
                 semanticType:
                     $ref: '#/components/schemas/SemanticTypeSetting'
-                scim:
-                    $ref: '#/components/schemas/SCIMSetting'
                 passwordRestriction:
                     $ref: '#/components/schemas/PasswordRestrictionSetting'
                 ai:
@@ -13975,6 +13968,9 @@ components:
                     description: |-
                         Whether to display watermark on pages.
                          Requires ENTERPRISE license.
+                directorySyncToken:
+                    type: string
+                    description: The token for directory sync authentication.
 tags:
     - name: ActuatorService
       description: ActuatorService manages system health and operational information.

@@ -62,6 +62,9 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.Watermark != y.Watermark {
 		return false
 	}
+	if x.DirectorySyncToken != y.DirectorySyncToken {
+		return false
+	}
 	return true
 }
 
@@ -515,19 +518,6 @@ func (x *AppIMSetting) Equal(y *AppIMSetting) bool {
 		if !x.Settings[i].Equal(y.Settings[i]) {
 			return false
 		}
-	}
-	return true
-}
-
-func (x *SCIMSetting) Equal(y *SCIMSetting) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Token != y.Token {
-		return false
 	}
 	return true
 }

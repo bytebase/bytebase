@@ -99,7 +99,6 @@ message Setting {
     AI = 10;
     DATA_CLASSIFICATION = 14;
     SEMANTIC_TYPES = 15;
-    SCIM = 17;
     PASSWORD_RESTRICTION = 18;
     ENVIRONMENT = 19;
   }
@@ -123,7 +122,6 @@ message SettingValue {
     WorkspaceApprovalSetting workspace_approval = 6;
     DataClassificationSetting data_classification = 10;
     SemanticTypeSetting semantic_type = 11;
-    SCIMSetting scim = 14;
     PasswordRestrictionSetting password_restriction = 15;
     AISetting ai = 16;
     EnvironmentSetting environment = 17;
@@ -220,6 +218,9 @@ message WorkspaceProfileSetting {
   // Whether to display watermark on pages.
   // Requires ENTERPRISE license.
   bool watermark = 16;
+
+  // The token for directory sync authentication.
+  string directory_sync_token = 17;
 }
 
 message Announcement {
@@ -390,10 +391,6 @@ enum DatabaseChangeMode {
   PIPELINE = 1;
   // A simple database change process in SQL editor. Users can execute SQL directly.
   EDITOR = 2;
-}
-
-message SCIMSetting {
-  string token = 1;
 }
 
 message PasswordRestrictionSetting {

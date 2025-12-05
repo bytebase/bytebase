@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -275,6 +276,16 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					}
 				}
 				oldSetting.Watermark = payload.Watermark
+			case "value.workspace_profile.directory_sync_token":
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DIRECTORY_SYNC); err != nil {
+					return nil, connect.NewError(connect.CodePermissionDenied, err)
+				}
+				// Generate a new token if the payload is empty.
+				// This handles both initial setup and token reset (when user explicitly sends empty string).
+				if payload.DirectorySyncToken == "" {
+					payload.DirectorySyncToken = uuid.New().String()
+				}
+				oldSetting.DirectorySyncToken = payload.DirectorySyncToken
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
 			}
@@ -459,18 +470,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		bytes, err := protojson.Marshal(storeSemanticTypeSetting)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal setting for %s with error: %v", apiSettingName, err))
-		}
-		storeSettingValue = string(bytes)
-	case storepb.SettingName_SCIM:
-		scimToken, err := common.RandomString(32)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random SCIM secret with error: %v", err))
-		}
-		bytes, err := protojson.Marshal(&storepb.SCIMSetting{
-			Token: scimToken,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal SCIM setting with error: %v", err))
 		}
 		storeSettingValue = string(bytes)
 	case storepb.SettingName_PASSWORD_RESTRICTION:
