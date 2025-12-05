@@ -87,7 +87,6 @@ const (
 	Setting_AI                       Setting_SettingName = 10
 	Setting_DATA_CLASSIFICATION      Setting_SettingName = 14
 	Setting_SEMANTIC_TYPES           Setting_SettingName = 15
-	Setting_PASSWORD_RESTRICTION     Setting_SettingName = 18
 	Setting_ENVIRONMENT              Setting_SettingName = 19
 )
 
@@ -101,7 +100,6 @@ var (
 		10: "AI",
 		14: "DATA_CLASSIFICATION",
 		15: "SEMANTIC_TYPES",
-		18: "PASSWORD_RESTRICTION",
 		19: "ENVIRONMENT",
 	}
 	Setting_SettingName_value = map[string]int32{
@@ -112,7 +110,6 @@ var (
 		"AI":                       10,
 		"DATA_CLASSIFICATION":      14,
 		"SEMANTIC_TYPES":           15,
-		"PASSWORD_RESTRICTION":     18,
 		"ENVIRONMENT":              19,
 	}
 )
@@ -353,7 +350,7 @@ func (x AISetting_Provider) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AISetting_Provider.Descriptor instead.
 func (AISetting_Provider) EnumDescriptor() ([]byte, []int) {
-	return file_v1_setting_service_proto_rawDescGZIP(), []int{15, 0}
+	return file_v1_setting_service_proto_rawDescGZIP(), []int{14, 0}
 }
 
 type ListSettingsRequest struct {
@@ -667,7 +664,6 @@ type SettingValue struct {
 	//	*SettingValue_WorkspaceApproval
 	//	*SettingValue_DataClassification
 	//	*SettingValue_SemanticType
-	//	*SettingValue_PasswordRestriction
 	//	*SettingValue_Ai
 	//	*SettingValue_Environment
 	Value         isSettingValue_Value `protobuf_oneof:"value"`
@@ -757,15 +753,6 @@ func (x *SettingValue) GetSemanticType() *SemanticTypeSetting {
 	return nil
 }
 
-func (x *SettingValue) GetPasswordRestriction() *PasswordRestrictionSetting {
-	if x != nil {
-		if x, ok := x.Value.(*SettingValue_PasswordRestriction); ok {
-			return x.PasswordRestriction
-		}
-	}
-	return nil
-}
-
 func (x *SettingValue) GetAi() *AISetting {
 	if x != nil {
 		if x, ok := x.Value.(*SettingValue_Ai); ok {
@@ -808,10 +795,6 @@ type SettingValue_SemanticType struct {
 	SemanticType *SemanticTypeSetting `protobuf:"bytes,11,opt,name=semantic_type,json=semanticType,proto3,oneof"`
 }
 
-type SettingValue_PasswordRestriction struct {
-	PasswordRestriction *PasswordRestrictionSetting `protobuf:"bytes,15,opt,name=password_restriction,json=passwordRestriction,proto3,oneof"`
-}
-
 type SettingValue_Ai struct {
 	Ai *AISetting `protobuf:"bytes,16,opt,name=ai,proto3,oneof"`
 }
@@ -829,8 +812,6 @@ func (*SettingValue_WorkspaceApproval) isSettingValue_Value() {}
 func (*SettingValue_DataClassification) isSettingValue_Value() {}
 
 func (*SettingValue_SemanticType) isSettingValue_Value() {}
-
-func (*SettingValue_PasswordRestriction) isSettingValue_Value() {}
 
 func (*SettingValue_Ai) isSettingValue_Value() {}
 
@@ -915,9 +896,11 @@ type WorkspaceProfileSetting struct {
 	// The token for directory sync authentication.
 	DirectorySyncToken string `protobuf:"bytes,17,opt,name=directory_sync_token,json=directorySyncToken,proto3" json:"directory_sync_token,omitempty"`
 	// The branding logo as a data URI (e.g. data:image/png;base64,...).
-	BrandingLogo  string `protobuf:"bytes,18,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	BrandingLogo string `protobuf:"bytes,18,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
+	// Password restriction settings.
+	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,19,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *WorkspaceProfileSetting) Reset() {
@@ -1060,6 +1043,13 @@ func (x *WorkspaceProfileSetting) GetBrandingLogo() string {
 		return x.BrandingLogo
 	}
 	return ""
+}
+
+func (x *WorkspaceProfileSetting) GetPasswordRestriction() *WorkspaceProfileSetting_PasswordRestriction {
+	if x != nil {
+		return x.PasswordRestriction
+	}
+	return nil
 }
 
 type Announcement struct {
@@ -1371,105 +1361,6 @@ func (*Algorithm_Md5Mask) isAlgorithm_Mask() {}
 
 func (*Algorithm_InnerOuterMask_) isAlgorithm_Mask() {}
 
-type PasswordRestrictionSetting struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// min_length is the minimum length for password, should no less than 8.
-	MinLength int32 `protobuf:"varint,1,opt,name=min_length,json=minLength,proto3" json:"min_length,omitempty"`
-	// require_number requires the password must contains at least one number.
-	RequireNumber bool `protobuf:"varint,2,opt,name=require_number,json=requireNumber,proto3" json:"require_number,omitempty"`
-	// require_letter requires the password must contains at least one letter, regardless of upper case or lower case
-	RequireLetter bool `protobuf:"varint,3,opt,name=require_letter,json=requireLetter,proto3" json:"require_letter,omitempty"`
-	// require_uppercase_letter requires the password must contains at least one upper case letter.
-	RequireUppercaseLetter bool `protobuf:"varint,4,opt,name=require_uppercase_letter,json=requireUppercaseLetter,proto3" json:"require_uppercase_letter,omitempty"`
-	// require_special_character requires the password must contains at least one special character.
-	RequireSpecialCharacter bool `protobuf:"varint,5,opt,name=require_special_character,json=requireSpecialCharacter,proto3" json:"require_special_character,omitempty"`
-	// require_reset_password_for_first_login requires users to reset their password after the 1st login.
-	RequireResetPasswordForFirstLogin bool `protobuf:"varint,6,opt,name=require_reset_password_for_first_login,json=requireResetPasswordForFirstLogin,proto3" json:"require_reset_password_for_first_login,omitempty"`
-	// password_rotation requires users to reset their password after the duration.
-	PasswordRotation *durationpb.Duration `protobuf:"bytes,7,opt,name=password_rotation,json=passwordRotation,proto3" json:"password_rotation,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *PasswordRestrictionSetting) Reset() {
-	*x = PasswordRestrictionSetting{}
-	mi := &file_v1_setting_service_proto_msgTypes[14]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PasswordRestrictionSetting) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PasswordRestrictionSetting) ProtoMessage() {}
-
-func (x *PasswordRestrictionSetting) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[14]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PasswordRestrictionSetting.ProtoReflect.Descriptor instead.
-func (*PasswordRestrictionSetting) Descriptor() ([]byte, []int) {
-	return file_v1_setting_service_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *PasswordRestrictionSetting) GetMinLength() int32 {
-	if x != nil {
-		return x.MinLength
-	}
-	return 0
-}
-
-func (x *PasswordRestrictionSetting) GetRequireNumber() bool {
-	if x != nil {
-		return x.RequireNumber
-	}
-	return false
-}
-
-func (x *PasswordRestrictionSetting) GetRequireLetter() bool {
-	if x != nil {
-		return x.RequireLetter
-	}
-	return false
-}
-
-func (x *PasswordRestrictionSetting) GetRequireUppercaseLetter() bool {
-	if x != nil {
-		return x.RequireUppercaseLetter
-	}
-	return false
-}
-
-func (x *PasswordRestrictionSetting) GetRequireSpecialCharacter() bool {
-	if x != nil {
-		return x.RequireSpecialCharacter
-	}
-	return false
-}
-
-func (x *PasswordRestrictionSetting) GetRequireResetPasswordForFirstLogin() bool {
-	if x != nil {
-		return x.RequireResetPasswordForFirstLogin
-	}
-	return false
-}
-
-func (x *PasswordRestrictionSetting) GetPasswordRotation() *durationpb.Duration {
-	if x != nil {
-		return x.PasswordRotation
-	}
-	return nil
-}
-
 type AISetting struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Enabled       bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
@@ -1484,7 +1375,7 @@ type AISetting struct {
 
 func (x *AISetting) Reset() {
 	*x = AISetting{}
-	mi := &file_v1_setting_service_proto_msgTypes[15]
+	mi := &file_v1_setting_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1496,7 +1387,7 @@ func (x *AISetting) String() string {
 func (*AISetting) ProtoMessage() {}
 
 func (x *AISetting) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[15]
+	mi := &file_v1_setting_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1509,7 +1400,7 @@ func (x *AISetting) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AISetting.ProtoReflect.Descriptor instead.
 func (*AISetting) Descriptor() ([]byte, []int) {
-	return file_v1_setting_service_proto_rawDescGZIP(), []int{15}
+	return file_v1_setting_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *AISetting) GetEnabled() bool {
@@ -1563,7 +1454,7 @@ type EnvironmentSetting struct {
 
 func (x *EnvironmentSetting) Reset() {
 	*x = EnvironmentSetting{}
-	mi := &file_v1_setting_service_proto_msgTypes[16]
+	mi := &file_v1_setting_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1575,7 +1466,7 @@ func (x *EnvironmentSetting) String() string {
 func (*EnvironmentSetting) ProtoMessage() {}
 
 func (x *EnvironmentSetting) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[16]
+	mi := &file_v1_setting_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1588,7 +1479,7 @@ func (x *EnvironmentSetting) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnvironmentSetting.ProtoReflect.Descriptor instead.
 func (*EnvironmentSetting) Descriptor() ([]byte, []int) {
-	return file_v1_setting_service_proto_rawDescGZIP(), []int{16}
+	return file_v1_setting_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *EnvironmentSetting) GetEnvironments() []*EnvironmentSetting_Environment {
@@ -1607,7 +1498,7 @@ type AppIMSetting_Slack struct {
 
 func (x *AppIMSetting_Slack) Reset() {
 	*x = AppIMSetting_Slack{}
-	mi := &file_v1_setting_service_proto_msgTypes[17]
+	mi := &file_v1_setting_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1619,7 +1510,7 @@ func (x *AppIMSetting_Slack) String() string {
 func (*AppIMSetting_Slack) ProtoMessage() {}
 
 func (x *AppIMSetting_Slack) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[17]
+	mi := &file_v1_setting_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1652,7 +1543,7 @@ type AppIMSetting_Feishu struct {
 
 func (x *AppIMSetting_Feishu) Reset() {
 	*x = AppIMSetting_Feishu{}
-	mi := &file_v1_setting_service_proto_msgTypes[18]
+	mi := &file_v1_setting_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1664,7 +1555,7 @@ func (x *AppIMSetting_Feishu) String() string {
 func (*AppIMSetting_Feishu) ProtoMessage() {}
 
 func (x *AppIMSetting_Feishu) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[18]
+	mi := &file_v1_setting_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1705,7 +1596,7 @@ type AppIMSetting_Wecom struct {
 
 func (x *AppIMSetting_Wecom) Reset() {
 	*x = AppIMSetting_Wecom{}
-	mi := &file_v1_setting_service_proto_msgTypes[19]
+	mi := &file_v1_setting_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1717,7 +1608,7 @@ func (x *AppIMSetting_Wecom) String() string {
 func (*AppIMSetting_Wecom) ProtoMessage() {}
 
 func (x *AppIMSetting_Wecom) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[19]
+	mi := &file_v1_setting_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1764,7 +1655,7 @@ type AppIMSetting_Lark struct {
 
 func (x *AppIMSetting_Lark) Reset() {
 	*x = AppIMSetting_Lark{}
-	mi := &file_v1_setting_service_proto_msgTypes[20]
+	mi := &file_v1_setting_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1776,7 +1667,7 @@ func (x *AppIMSetting_Lark) String() string {
 func (*AppIMSetting_Lark) ProtoMessage() {}
 
 func (x *AppIMSetting_Lark) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[20]
+	mi := &file_v1_setting_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1817,7 +1708,7 @@ type AppIMSetting_DingTalk struct {
 
 func (x *AppIMSetting_DingTalk) Reset() {
 	*x = AppIMSetting_DingTalk{}
-	mi := &file_v1_setting_service_proto_msgTypes[21]
+	mi := &file_v1_setting_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1829,7 +1720,7 @@ func (x *AppIMSetting_DingTalk) String() string {
 func (*AppIMSetting_DingTalk) ProtoMessage() {}
 
 func (x *AppIMSetting_DingTalk) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[21]
+	mi := &file_v1_setting_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1880,7 +1771,7 @@ type AppIMSetting_Teams struct {
 
 func (x *AppIMSetting_Teams) Reset() {
 	*x = AppIMSetting_Teams{}
-	mi := &file_v1_setting_service_proto_msgTypes[22]
+	mi := &file_v1_setting_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1892,7 +1783,7 @@ func (x *AppIMSetting_Teams) String() string {
 func (*AppIMSetting_Teams) ProtoMessage() {}
 
 func (x *AppIMSetting_Teams) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[22]
+	mi := &file_v1_setting_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1947,7 +1838,7 @@ type AppIMSetting_IMSetting struct {
 
 func (x *AppIMSetting_IMSetting) Reset() {
 	*x = AppIMSetting_IMSetting{}
-	mi := &file_v1_setting_service_proto_msgTypes[23]
+	mi := &file_v1_setting_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1959,7 +1850,7 @@ func (x *AppIMSetting_IMSetting) String() string {
 func (*AppIMSetting_IMSetting) ProtoMessage() {}
 
 func (x *AppIMSetting_IMSetting) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_setting_service_proto_msgTypes[23]
+	mi := &file_v1_setting_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2082,6 +1973,105 @@ func (*AppIMSetting_IMSetting_Lark) isAppIMSetting_IMSetting_Payload() {}
 func (*AppIMSetting_IMSetting_Dingtalk) isAppIMSetting_IMSetting_Payload() {}
 
 func (*AppIMSetting_IMSetting_Teams) isAppIMSetting_IMSetting_Payload() {}
+
+type WorkspaceProfileSetting_PasswordRestriction struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// min_length is the minimum length for password, should no less than 8.
+	MinLength int32 `protobuf:"varint,1,opt,name=min_length,json=minLength,proto3" json:"min_length,omitempty"`
+	// require_number requires the password must contains at least one number.
+	RequireNumber bool `protobuf:"varint,2,opt,name=require_number,json=requireNumber,proto3" json:"require_number,omitempty"`
+	// require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+	RequireLetter bool `protobuf:"varint,3,opt,name=require_letter,json=requireLetter,proto3" json:"require_letter,omitempty"`
+	// require_uppercase_letter requires the password must contains at least one upper case letter.
+	RequireUppercaseLetter bool `protobuf:"varint,4,opt,name=require_uppercase_letter,json=requireUppercaseLetter,proto3" json:"require_uppercase_letter,omitempty"`
+	// require_special_character requires the password must contains at least one special character.
+	RequireSpecialCharacter bool `protobuf:"varint,5,opt,name=require_special_character,json=requireSpecialCharacter,proto3" json:"require_special_character,omitempty"`
+	// require_reset_password_for_first_login requires users to reset their password after the 1st login.
+	RequireResetPasswordForFirstLogin bool `protobuf:"varint,6,opt,name=require_reset_password_for_first_login,json=requireResetPasswordForFirstLogin,proto3" json:"require_reset_password_for_first_login,omitempty"`
+	// password_rotation requires users to reset their password after the duration.
+	PasswordRotation *durationpb.Duration `protobuf:"bytes,7,opt,name=password_rotation,json=passwordRotation,proto3" json:"password_rotation,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *WorkspaceProfileSetting_PasswordRestriction) Reset() {
+	*x = WorkspaceProfileSetting_PasswordRestriction{}
+	mi := &file_v1_setting_service_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkspaceProfileSetting_PasswordRestriction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkspaceProfileSetting_PasswordRestriction) ProtoMessage() {}
+
+func (x *WorkspaceProfileSetting_PasswordRestriction) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_setting_service_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkspaceProfileSetting_PasswordRestriction.ProtoReflect.Descriptor instead.
+func (*WorkspaceProfileSetting_PasswordRestriction) Descriptor() ([]byte, []int) {
+	return file_v1_setting_service_proto_rawDescGZIP(), []int{8, 0}
+}
+
+func (x *WorkspaceProfileSetting_PasswordRestriction) GetMinLength() int32 {
+	if x != nil {
+		return x.MinLength
+	}
+	return 0
+}
+
+func (x *WorkspaceProfileSetting_PasswordRestriction) GetRequireNumber() bool {
+	if x != nil {
+		return x.RequireNumber
+	}
+	return false
+}
+
+func (x *WorkspaceProfileSetting_PasswordRestriction) GetRequireLetter() bool {
+	if x != nil {
+		return x.RequireLetter
+	}
+	return false
+}
+
+func (x *WorkspaceProfileSetting_PasswordRestriction) GetRequireUppercaseLetter() bool {
+	if x != nil {
+		return x.RequireUppercaseLetter
+	}
+	return false
+}
+
+func (x *WorkspaceProfileSetting_PasswordRestriction) GetRequireSpecialCharacter() bool {
+	if x != nil {
+		return x.RequireSpecialCharacter
+	}
+	return false
+}
+
+func (x *WorkspaceProfileSetting_PasswordRestriction) GetRequireResetPasswordForFirstLogin() bool {
+	if x != nil {
+		return x.RequireResetPasswordForFirstLogin
+	}
+	return false
+}
+
+func (x *WorkspaceProfileSetting_PasswordRestriction) GetPasswordRotation() *durationpb.Duration {
+	if x != nil {
+		return x.PasswordRotation
+	}
+	return nil
+}
 
 type WorkspaceApprovalSetting_Rule struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
@@ -2765,7 +2755,7 @@ func (x *EnvironmentSetting_Environment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EnvironmentSetting_Environment.ProtoReflect.Descriptor instead.
 func (*EnvironmentSetting_Environment) Descriptor() ([]byte, []int) {
-	return file_v1_setting_service_proto_rawDescGZIP(), []int{16, 0}
+	return file_v1_setting_service_proto_rawDescGZIP(), []int{15, 0}
 }
 
 func (x *EnvironmentSetting_Environment) GetName() string {
@@ -2821,10 +2811,10 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\rvalidate_only\x18\x02 \x01(\bR\fvalidateOnly\x12#\n" +
 	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\x12;\n" +
 	"\vupdate_mask\x18\x04 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"\xd0\x02\n" +
+	"updateMask\"\xb6\x02\n" +
 	"\aSetting\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\bR\x04name\x124\n" +
-	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x03\xe0A\x02R\x05value\"\xc6\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x03\xe0A\x02R\x05value\"\xac\x01\n" +
 	"\vSettingName\x12\x1c\n" +
 	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11WORKSPACE_PROFILE\x10\x04\x12\x16\n" +
@@ -2834,18 +2824,16 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x02AI\x10\n" +
 	"\x12\x17\n" +
 	"\x13DATA_CLASSIFICATION\x10\x0e\x12\x12\n" +
-	"\x0eSEMANTIC_TYPES\x10\x0f\x12\x18\n" +
-	"\x14PASSWORD_RESTRICTION\x10\x12\x12\x0f\n" +
+	"\x0eSEMANTIC_TYPES\x10\x0f\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x13:-\xeaA*\n" +
-	"\x14bytebase.com/Setting\x12\x12settings/{setting}\"\xe9\x04\n" +
+	"\x14bytebase.com/Setting\x12\x12settings/{setting}\"\x8b\x04\n" +
 	"\fSettingValue\x122\n" +
 	"\x06app_im\x18\x03 \x01(\v2\x19.bytebase.v1.AppIMSettingH\x00R\x05appIm\x12S\n" +
 	"\x11workspace_profile\x18\x05 \x01(\v2$.bytebase.v1.WorkspaceProfileSettingH\x00R\x10workspaceProfile\x12V\n" +
 	"\x12workspace_approval\x18\x06 \x01(\v2%.bytebase.v1.WorkspaceApprovalSettingH\x00R\x11workspaceApproval\x12Y\n" +
 	"\x13data_classification\x18\n" +
 	" \x01(\v2&.bytebase.v1.DataClassificationSettingH\x00R\x12dataClassification\x12G\n" +
-	"\rsemantic_type\x18\v \x01(\v2 .bytebase.v1.SemanticTypeSettingH\x00R\fsemanticType\x12\\\n" +
-	"\x14password_restriction\x18\x0f \x01(\v2'.bytebase.v1.PasswordRestrictionSettingH\x00R\x13passwordRestriction\x12(\n" +
+	"\rsemantic_type\x18\v \x01(\v2 .bytebase.v1.SemanticTypeSettingH\x00R\fsemanticType\x12(\n" +
 	"\x02ai\x18\x10 \x01(\v2\x16.bytebase.v1.AISettingH\x00R\x02ai\x12C\n" +
 	"\venvironment\x18\x11 \x01(\v2\x1f.bytebase.v1.EnvironmentSettingH\x00R\venvironmentB\a\n" +
 	"\x05value\"\x83\b\n" +
@@ -2882,7 +2870,8 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\xf4\x06\n" +
+	"\apayload\"\xf7\n" +
+	"\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
@@ -2901,7 +2890,17 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
 	"\twatermark\x18\x10 \x01(\bR\twatermark\x120\n" +
 	"\x14directory_sync_token\x18\x11 \x01(\tR\x12directorySyncToken\x12#\n" +
-	"\rbranding_logo\x18\x12 \x01(\tR\fbrandingLogo\"\xc2\x01\n" +
+	"\rbranding_logo\x18\x12 \x01(\tR\fbrandingLogo\x12k\n" +
+	"\x14password_restriction\x18\x13 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x1a\x93\x03\n" +
+	"\x13PasswordRestriction\x12\x1d\n" +
+	"\n" +
+	"min_length\x18\x01 \x01(\x05R\tminLength\x12%\n" +
+	"\x0erequire_number\x18\x02 \x01(\bR\rrequireNumber\x12%\n" +
+	"\x0erequire_letter\x18\x03 \x01(\bR\rrequireLetter\x128\n" +
+	"\x18require_uppercase_letter\x18\x04 \x01(\bR\x16requireUppercaseLetter\x12:\n" +
+	"\x19require_special_character\x18\x05 \x01(\bR\x17requireSpecialCharacter\x12Q\n" +
+	"&require_reset_password_for_first_login\x18\x06 \x01(\bR!requireResetPasswordForFirstLogin\x12F\n" +
+	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotation\"\xc2\x01\n" +
 	"\fAnnouncement\x12:\n" +
 	"\x05level\x18\x01 \x01(\x0e2$.bytebase.v1.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
@@ -2979,16 +2978,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x15MASK_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05INNER\x10\x01\x12\t\n" +
 	"\x05OUTER\x10\x02B\x06\n" +
-	"\x04mask\"\x9a\x03\n" +
-	"\x1aPasswordRestrictionSetting\x12\x1d\n" +
-	"\n" +
-	"min_length\x18\x01 \x01(\x05R\tminLength\x12%\n" +
-	"\x0erequire_number\x18\x02 \x01(\bR\rrequireNumber\x12%\n" +
-	"\x0erequire_letter\x18\x03 \x01(\bR\rrequireLetter\x128\n" +
-	"\x18require_uppercase_letter\x18\x04 \x01(\bR\x16requireUppercaseLetter\x12:\n" +
-	"\x19require_special_character\x18\x05 \x01(\bR\x17requireSpecialCharacter\x12Q\n" +
-	"&require_reset_password_for_first_login\x18\x06 \x01(\bR!requireResetPasswordForFirstLogin\x12F\n" +
-	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotation\"\xa4\x02\n" +
+	"\x04mask\"\xa4\x02\n" +
 	"\tAISetting\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12;\n" +
 	"\bprovider\x18\x02 \x01(\x0e2\x1f.bytebase.v1.AISetting.ProviderR\bprovider\x12\x1a\n" +
@@ -3062,16 +3052,16 @@ var file_v1_setting_service_proto_goTypes = []any{
 	(*DataClassificationSetting)(nil),                                // 17: bytebase.v1.DataClassificationSetting
 	(*SemanticTypeSetting)(nil),                                      // 18: bytebase.v1.SemanticTypeSetting
 	(*Algorithm)(nil),                                                // 19: bytebase.v1.Algorithm
-	(*PasswordRestrictionSetting)(nil),                               // 20: bytebase.v1.PasswordRestrictionSetting
-	(*AISetting)(nil),                                                // 21: bytebase.v1.AISetting
-	(*EnvironmentSetting)(nil),                                       // 22: bytebase.v1.EnvironmentSetting
-	(*AppIMSetting_Slack)(nil),                                       // 23: bytebase.v1.AppIMSetting.Slack
-	(*AppIMSetting_Feishu)(nil),                                      // 24: bytebase.v1.AppIMSetting.Feishu
-	(*AppIMSetting_Wecom)(nil),                                       // 25: bytebase.v1.AppIMSetting.Wecom
-	(*AppIMSetting_Lark)(nil),                                        // 26: bytebase.v1.AppIMSetting.Lark
-	(*AppIMSetting_DingTalk)(nil),                                    // 27: bytebase.v1.AppIMSetting.DingTalk
-	(*AppIMSetting_Teams)(nil),                                       // 28: bytebase.v1.AppIMSetting.Teams
-	(*AppIMSetting_IMSetting)(nil),                                   // 29: bytebase.v1.AppIMSetting.IMSetting
+	(*AISetting)(nil),                                                // 20: bytebase.v1.AISetting
+	(*EnvironmentSetting)(nil),                                       // 21: bytebase.v1.EnvironmentSetting
+	(*AppIMSetting_Slack)(nil),                                       // 22: bytebase.v1.AppIMSetting.Slack
+	(*AppIMSetting_Feishu)(nil),                                      // 23: bytebase.v1.AppIMSetting.Feishu
+	(*AppIMSetting_Wecom)(nil),                                       // 24: bytebase.v1.AppIMSetting.Wecom
+	(*AppIMSetting_Lark)(nil),                                        // 25: bytebase.v1.AppIMSetting.Lark
+	(*AppIMSetting_DingTalk)(nil),                                    // 26: bytebase.v1.AppIMSetting.DingTalk
+	(*AppIMSetting_Teams)(nil),                                       // 27: bytebase.v1.AppIMSetting.Teams
+	(*AppIMSetting_IMSetting)(nil),                                   // 28: bytebase.v1.AppIMSetting.IMSetting
+	(*WorkspaceProfileSetting_PasswordRestriction)(nil),              // 29: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
 	(*WorkspaceApprovalSetting_Rule)(nil),                            // 30: bytebase.v1.WorkspaceApprovalSetting.Rule
 	(*DataClassificationSetting_DataClassificationConfig)(nil),       // 31: bytebase.v1.DataClassificationSetting.DataClassificationConfig
 	(*DataClassificationSetting_DataClassificationConfig_Level)(nil), // 32: bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
@@ -3102,15 +3092,15 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	16, // 7: bytebase.v1.SettingValue.workspace_approval:type_name -> bytebase.v1.WorkspaceApprovalSetting
 	17, // 8: bytebase.v1.SettingValue.data_classification:type_name -> bytebase.v1.DataClassificationSetting
 	18, // 9: bytebase.v1.SettingValue.semantic_type:type_name -> bytebase.v1.SemanticTypeSetting
-	20, // 10: bytebase.v1.SettingValue.password_restriction:type_name -> bytebase.v1.PasswordRestrictionSetting
-	21, // 11: bytebase.v1.SettingValue.ai:type_name -> bytebase.v1.AISetting
-	22, // 12: bytebase.v1.SettingValue.environment:type_name -> bytebase.v1.EnvironmentSetting
-	29, // 13: bytebase.v1.AppIMSetting.settings:type_name -> bytebase.v1.AppIMSetting.IMSetting
-	44, // 14: bytebase.v1.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
-	15, // 15: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
-	44, // 16: bytebase.v1.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
-	0,  // 17: bytebase.v1.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.v1.DatabaseChangeMode
-	44, // 18: bytebase.v1.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
+	20, // 10: bytebase.v1.SettingValue.ai:type_name -> bytebase.v1.AISetting
+	21, // 11: bytebase.v1.SettingValue.environment:type_name -> bytebase.v1.EnvironmentSetting
+	28, // 12: bytebase.v1.AppIMSetting.settings:type_name -> bytebase.v1.AppIMSetting.IMSetting
+	44, // 13: bytebase.v1.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
+	15, // 14: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
+	44, // 15: bytebase.v1.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
+	0,  // 16: bytebase.v1.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.v1.DatabaseChangeMode
+	44, // 17: bytebase.v1.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
+	29, // 18: bytebase.v1.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
 	2,  // 19: bytebase.v1.Announcement.level:type_name -> bytebase.v1.Announcement.AlertLevel
 	30, // 20: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
 	31, // 21: bytebase.v1.DataClassificationSetting.configs:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig
@@ -3119,16 +3109,16 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	37, // 24: bytebase.v1.Algorithm.range_mask:type_name -> bytebase.v1.Algorithm.RangeMask
 	38, // 25: bytebase.v1.Algorithm.md5_mask:type_name -> bytebase.v1.Algorithm.MD5Mask
 	39, // 26: bytebase.v1.Algorithm.inner_outer_mask:type_name -> bytebase.v1.Algorithm.InnerOuterMask
-	44, // 27: bytebase.v1.PasswordRestrictionSetting.password_rotation:type_name -> google.protobuf.Duration
-	5,  // 28: bytebase.v1.AISetting.provider:type_name -> bytebase.v1.AISetting.Provider
-	41, // 29: bytebase.v1.EnvironmentSetting.environments:type_name -> bytebase.v1.EnvironmentSetting.Environment
-	45, // 30: bytebase.v1.AppIMSetting.IMSetting.type:type_name -> bytebase.v1.Webhook.Type
-	23, // 31: bytebase.v1.AppIMSetting.IMSetting.slack:type_name -> bytebase.v1.AppIMSetting.Slack
-	24, // 32: bytebase.v1.AppIMSetting.IMSetting.feishu:type_name -> bytebase.v1.AppIMSetting.Feishu
-	25, // 33: bytebase.v1.AppIMSetting.IMSetting.wecom:type_name -> bytebase.v1.AppIMSetting.Wecom
-	26, // 34: bytebase.v1.AppIMSetting.IMSetting.lark:type_name -> bytebase.v1.AppIMSetting.Lark
-	27, // 35: bytebase.v1.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.v1.AppIMSetting.DingTalk
-	28, // 36: bytebase.v1.AppIMSetting.IMSetting.teams:type_name -> bytebase.v1.AppIMSetting.Teams
+	5,  // 27: bytebase.v1.AISetting.provider:type_name -> bytebase.v1.AISetting.Provider
+	41, // 28: bytebase.v1.EnvironmentSetting.environments:type_name -> bytebase.v1.EnvironmentSetting.Environment
+	45, // 29: bytebase.v1.AppIMSetting.IMSetting.type:type_name -> bytebase.v1.Webhook.Type
+	22, // 30: bytebase.v1.AppIMSetting.IMSetting.slack:type_name -> bytebase.v1.AppIMSetting.Slack
+	23, // 31: bytebase.v1.AppIMSetting.IMSetting.feishu:type_name -> bytebase.v1.AppIMSetting.Feishu
+	24, // 32: bytebase.v1.AppIMSetting.IMSetting.wecom:type_name -> bytebase.v1.AppIMSetting.Wecom
+	25, // 33: bytebase.v1.AppIMSetting.IMSetting.lark:type_name -> bytebase.v1.AppIMSetting.Lark
+	26, // 34: bytebase.v1.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.v1.AppIMSetting.DingTalk
+	27, // 35: bytebase.v1.AppIMSetting.IMSetting.teams:type_name -> bytebase.v1.AppIMSetting.Teams
+	44, // 36: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.password_rotation:type_name -> google.protobuf.Duration
 	46, // 37: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
 	47, // 38: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
 	3,  // 39: bytebase.v1.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule.Source
@@ -3166,7 +3156,6 @@ func file_v1_setting_service_proto_init() {
 		(*SettingValue_WorkspaceApproval)(nil),
 		(*SettingValue_DataClassification)(nil),
 		(*SettingValue_SemanticType)(nil),
-		(*SettingValue_PasswordRestriction)(nil),
 		(*SettingValue_Ai)(nil),
 		(*SettingValue_Environment)(nil),
 	}
@@ -3176,7 +3165,7 @@ func file_v1_setting_service_proto_init() {
 		(*Algorithm_Md5Mask)(nil),
 		(*Algorithm_InnerOuterMask_)(nil),
 	}
-	file_v1_setting_service_proto_msgTypes[23].OneofWrappers = []any{
+	file_v1_setting_service_proto_msgTypes[22].OneofWrappers = []any{
 		(*AppIMSetting_IMSetting_Slack)(nil),
 		(*AppIMSetting_IMSetting_Feishu)(nil),
 		(*AppIMSetting_IMSetting_Wecom)(nil),

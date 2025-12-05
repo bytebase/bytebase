@@ -1283,10 +1283,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PasswordRestrictionSetting"><span class="badge">M</span>PasswordRestrictionSetting</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.SemanticTypeSetting"><span class="badge">M</span>SemanticTypeSetting</a>
                 </li>
               
@@ -1312,6 +1308,10 @@
               
                 <li>
                   <a href="#bytebase.store.WorkspaceProfileSetting.Announcement"><span class="badge">M</span>WorkspaceProfileSetting.Announcement</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.WorkspaceProfileSetting.PasswordRestriction"><span class="badge">M</span>WorkspaceProfileSetting.PasswordRestriction</a>
                 </li>
               
               
@@ -11860,72 +11860,6 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
-        <h3 id="bytebase.store.PasswordRestrictionSetting">PasswordRestrictionSetting</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>min_length</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>min_length is the minimum length for password, should be no less than 8. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>require_number</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>require_number requires the password must contain at least one number. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>require_letter</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>require_letter requires the password must contain at least one letter, regardless of upper case or lower case </p></td>
-                </tr>
-              
-                <tr>
-                  <td>require_uppercase_letter</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>require_uppercase_letter requires the password must contain at least one upper case letter. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>require_special_character</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>require_special_character requires the password must contain at least one special character. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>require_reset_password_for_first_login</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>require_reset_password_for_first_login requires users to reset their password after the 1st login. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password_rotation</td>
-                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
-                  <td></td>
-                  <td><p>password_rotation requires users to reset their password after the duration. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.SemanticTypeSetting">SemanticTypeSetting</h3>
         <p></p>
 
@@ -12226,6 +12160,13 @@ Requires ENTERPRISE license. </p></td>
                   <td><p>The branding logo as a data URI (e.g. data:image/png;base64,...). </p></td>
                 </tr>
               
+                <tr>
+                  <td>password_restriction</td>
+                  <td><a href="#bytebase.store.WorkspaceProfileSetting.PasswordRestriction">WorkspaceProfileSetting.PasswordRestriction</a></td>
+                  <td></td>
+                  <td><p>Password restriction settings. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -12262,6 +12203,72 @@ Requires ENTERPRISE license. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The optional link, user can follow the link to check extra details </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.WorkspaceProfileSetting.PasswordRestriction">WorkspaceProfileSetting.PasswordRestriction</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>min_length</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>min_length is the minimum length for password, should be no less than 8. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_number</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>require_number requires the password must contain at least one number. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_letter</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>require_letter requires the password must contain at least one letter, regardless of upper case or lower case </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_uppercase_letter</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>require_uppercase_letter requires the password must contain at least one upper case letter. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_special_character</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>require_special_character requires the password must contain at least one special character. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_reset_password_for_first_login</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>require_reset_password_for_first_login requires users to reset their password after the 1st login. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password_rotation</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>password_rotation requires users to reset their password after the duration. </p></td>
                 </tr>
               
             </tbody>
@@ -12396,12 +12403,6 @@ Requires ENTERPRISE license. </p></td>
               <tr>
                 <td>SEMANTIC_TYPES</td>
                 <td>15</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PASSWORD_RESTRICTION</td>
-                <td>18</td>
                 <td><p></p></td>
               </tr>
             

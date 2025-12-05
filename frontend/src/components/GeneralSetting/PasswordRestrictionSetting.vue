@@ -164,18 +164,14 @@
 
 <script setup lang="tsx">
 import { create } from "@bufbuild/protobuf";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import { DurationSchema, FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { cloneDeep, isEqual } from "lodash-es";
 import { NCheckbox, NInputNumber } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import type { PasswordRestrictionSetting } from "@/types/proto-es/v1/setting_service_pb";
-import {
-  PasswordRestrictionSettingSchema,
-  Setting_SettingName,
-  SettingValueSchema as SettingSettingValueSchema,
-} from "@/types/proto-es/v1/setting_service_pb";
+import type { WorkspaceProfileSetting_PasswordRestriction } from "@/types/proto-es/v1/setting_service_pb";
+import { WorkspaceProfileSetting_PasswordRestrictionSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 
@@ -192,20 +188,19 @@ const hasPasswordFeature = featureToRef(
 );
 
 const passwordRestrictionSetting = computed(() => {
-  const setting = settingV1Store.getSettingByName(
-    Setting_SettingName.PASSWORD_RESTRICTION
+  return (
+    settingV1Store.workspaceProfileSetting?.passwordRestriction ??
+    create(WorkspaceProfileSetting_PasswordRestrictionSchema, {})
   );
-  if (setting?.value?.value?.case === "passwordRestriction") {
-    return setting.value.value.value;
-  }
-  return create(PasswordRestrictionSettingSchema, {});
 });
 
-const state = reactive<PasswordRestrictionSetting>(
+const state = reactive<WorkspaceProfileSetting_PasswordRestriction>(
   cloneDeep(passwordRestrictionSetting.value)
 );
 
-const onUpdate = async (update: Partial<PasswordRestrictionSetting>) => {
+const onUpdate = async (
+  update: Partial<WorkspaceProfileSetting_PasswordRestriction>
+) => {
   if (!hasPasswordFeature.value) {
     showFeatureModal.value = true;
     return;
@@ -216,15 +211,20 @@ const onUpdate = async (update: Partial<PasswordRestrictionSetting>) => {
 defineExpose({
   isDirty: computed(() => !isEqual(passwordRestrictionSetting.value, state)),
   update: async () => {
-    await settingV1Store.upsertSetting({
-      name: Setting_SettingName.PASSWORD_RESTRICTION,
-      value: create(SettingSettingValueSchema, {
-        value: {
-          case: "passwordRestriction",
-          value: create(PasswordRestrictionSettingSchema, {
+    if (!settingV1Store.workspaceProfileSetting) {
+      return;
+    }
+    await settingV1Store.updateWorkspaceProfile({
+      payload: {
+        passwordRestriction: create(
+          WorkspaceProfileSetting_PasswordRestrictionSchema,
+          {
             ...state,
-          }),
-        },
+          }
+        ),
+      },
+      updateMask: create(FieldMaskSchema, {
+        paths: ["value.workspace_profile.password_restriction"],
       }),
     });
   },

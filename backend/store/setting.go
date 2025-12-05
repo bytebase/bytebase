@@ -29,22 +29,19 @@ type SettingMessage struct {
 	Value string
 }
 
-func (s *Store) GetPasswordRestriction(ctx context.Context) (*storepb.PasswordRestrictionSetting, error) {
-	passwordRestriction := &storepb.PasswordRestrictionSetting{
+func (s *Store) GetPasswordRestriction(ctx context.Context) (*storepb.WorkspaceProfileSetting_PasswordRestriction, error) {
+	passwordRestriction := &storepb.WorkspaceProfileSetting_PasswordRestriction{
 		MinLength: 8,
 	}
-	setting, err := s.GetSettingV2(ctx, storepb.SettingName_PASSWORD_RESTRICTION)
+	workspaceProfile, err := s.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if setting == nil {
+	if workspaceProfile == nil || workspaceProfile.PasswordRestriction == nil {
 		return passwordRestriction, nil
 	}
 
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), passwordRestriction); err != nil {
-		return nil, err
-	}
-	return passwordRestriction, nil
+	return workspaceProfile.PasswordRestriction, nil
 }
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.

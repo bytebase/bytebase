@@ -18,7 +18,7 @@ import type {
   ResourcePackage,
 } from "@/types/proto-es/v1/actuator_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { PasswordRestrictionSettingSchema } from "@/types/proto-es/v1/setting_service_pb";
+import { WorkspaceProfileSetting_PasswordRestrictionSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import { semverCompare } from "@/utils";
 
@@ -129,7 +129,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     passwordRestriction: (state) => {
       return (
         state.serverInfo?.passwordRestriction ??
-        create(PasswordRestrictionSettingSchema, {
+        create(WorkspaceProfileSetting_PasswordRestrictionSchema, {
           minLength: 8,
           requireLetter: true,
         })

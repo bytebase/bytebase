@@ -109,13 +109,13 @@ import { useRouter } from "vue-router";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { type PasswordRestrictionSetting } from "@/types/proto-es/v1/setting_service_pb";
+import { type WorkspaceProfileSetting_PasswordRestriction } from "@/types/proto-es/v1/setting_service_pb";
 
 const props = withDefaults(
   defineProps<{
     password: string;
     passwordConfirm: string;
-    passwordRestriction: PasswordRestrictionSetting;
+    passwordRestriction: WorkspaceProfileSetting_PasswordRestriction;
     showLearnMore?: boolean;
   }>(),
   {

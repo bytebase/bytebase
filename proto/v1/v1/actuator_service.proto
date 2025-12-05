@@ -147,7 +147,7 @@ message ActuatorInfo {
   bool disallow_password_signin = 20 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Password complexity and restriction requirements.
-  PasswordRestrictionSetting password_restriction = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
+  WorkspaceProfileSetting.PasswordRestriction password_restriction = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Whether the Bytebase instance is running in Docker.
   bool docker = 22 [(google.api.field_behavior) = OUTPUT_ONLY];

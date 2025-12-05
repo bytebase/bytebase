@@ -5,7 +5,7 @@
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { PasswordRestrictionSetting } from "./setting_service_pb";
+import type { WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
 import type { UserType } from "./user_service_pb";
 import type { State } from "./common_pb";
 
@@ -247,9 +247,9 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   /**
    * Password complexity and restriction requirements.
    *
-   * @generated from field: bytebase.v1.PasswordRestrictionSetting password_restriction = 21;
+   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 21;
    */
-  passwordRestriction?: PasswordRestrictionSetting;
+  passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
 
   /**
    * Whether the Bytebase instance is running in Docker.

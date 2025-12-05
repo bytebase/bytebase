@@ -132,7 +132,6 @@
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
-    - [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting)
     - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
     - [Setting](#bytebase-v1-Setting)
@@ -141,6 +140,7 @@
     - [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule)
     - [WorkspaceProfileSetting](#bytebase-v1-WorkspaceProfileSetting)
+    - [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction)
   
     - [AISetting.Provider](#bytebase-v1-AISetting-Provider)
     - [Algorithm.InnerOuterMask.MaskType](#bytebase-v1-Algorithm-InnerOuterMask-MaskType)
@@ -2632,27 +2632,6 @@ The response message for getting a setting.
 
 
 
-<a name="bytebase-v1-PasswordRestrictionSetting"></a>
-
-### PasswordRestrictionSetting
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| min_length | [int32](#int32) |  | min_length is the minimum length for password, should no less than 8. |
-| require_number | [bool](#bool) |  | require_number requires the password must contains at least one number. |
-| require_letter | [bool](#bool) |  | require_letter requires the password must contains at least one letter, regardless of upper case or lower case |
-| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one upper case letter. |
-| require_special_character | [bool](#bool) |  | require_special_character requires the password must contains at least one special character. |
-| require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
-| password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
-
-
-
-
-
-
 <a name="bytebase-v1-SemanticTypeSetting"></a>
 
 ### SemanticTypeSetting
@@ -2716,7 +2695,6 @@ The data in setting value.
 | workspace_approval | [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting) |  |  |
 | data_classification | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
 | semantic_type | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
-| password_restriction | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
 | ai | [AISetting](#bytebase-v1-AISetting) |  |  |
 | environment | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
 
@@ -2807,6 +2785,28 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | watermark | [bool](#bool) |  | Whether to display watermark on pages. Requires ENTERPRISE license. |
 | directory_sync_token | [string](#string) |  | The token for directory sync authentication. |
 | branding_logo | [string](#string) |  | The branding logo as a data URI (e.g. data:image/png;base64,...). |
+| password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password restriction settings. |
+
+
+
+
+
+
+<a name="bytebase-v1-WorkspaceProfileSetting-PasswordRestriction"></a>
+
+### WorkspaceProfileSetting.PasswordRestriction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| min_length | [int32](#int32) |  | min_length is the minimum length for password, should no less than 8. |
+| require_number | [bool](#bool) |  | require_number requires the password must contains at least one number. |
+| require_letter | [bool](#bool) |  | require_letter requires the password must contains at least one letter, regardless of upper case or lower case |
+| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one upper case letter. |
+| require_special_character | [bool](#bool) |  | require_special_character requires the password must contains at least one special character. |
+| require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
+| password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
 
 
 
@@ -2884,7 +2884,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | AI | 10 |  |
 | DATA_CLASSIFICATION | 14 |  |
 | SEMANTIC_TYPES | 15 |  |
-| PASSWORD_RESTRICTION | 18 |  |
 | ENVIRONMENT | 19 |  |
 
 
@@ -3199,7 +3198,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | debug | [bool](#bool) |  | Whether debug mode is enabled. |
 | unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
 | disallow_password_signin | [bool](#bool) |  | Whether password-based signin is disabled (except for workspace admins). |
-| password_restriction | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  | Password complexity and restriction requirements. |
+| password_restriction | [WorkspaceProfileSetting.PasswordRestriction](#bytebase-v1-WorkspaceProfileSetting-PasswordRestriction) |  | Password complexity and restriction requirements. |
 | docker | [bool](#bool) |  | Whether the Bytebase instance is running in Docker. |
 | user_stats | [ActuatorInfo.StatUser](#bytebase-v1-ActuatorInfo-StatUser) | repeated | Statistics about users in the system. |
 | activated_instance_count | [int32](#int32) |  | The number of activated database instances. |
