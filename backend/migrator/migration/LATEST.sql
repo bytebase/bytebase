@@ -38,7 +38,8 @@ CREATE TABLE setting (
     -- PASSWORD_RESTRICTION, ENVIRONMENT
     -- Enum: SettingName (proto/store/store/setting.proto)
     name text NOT NULL,
-    value text NOT NULL
+    -- Stored as JSON marshalled by protojson.Marshal (camelCase keys)
+    value jsonb NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_setting_unique_name ON setting(name);
