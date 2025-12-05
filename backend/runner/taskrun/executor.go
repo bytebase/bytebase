@@ -514,9 +514,9 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 		PrevSyncHistoryUID: syncHistoryPrevUID,
 		SyncHistoryUID:     nil,
 		Payload: &storepb.ChangelogPayload{
-			TaskRun:                 mc.taskRunName,
-			Issue:                   mc.issueName,
-			Revision:                0,
+			TaskRun:          mc.taskRunName,
+			Issue:            mc.issueName,
+			Revision:         0,
 			ChangedResources: mc.changeHistoryPayload.GetChangedResources(),
 			Sheet:            mc.sheetName,
 			Version:          mc.version,
