@@ -246,7 +246,9 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       Object.assign(draftTabList.value[draftIndex], tab);
     }
 
-    const openTabIndex = openTabList.value.findIndex((item) => item.id === tab.id);
+    const openTabIndex = openTabList.value.findIndex(
+      (item) => item.id === tab.id
+    );
     if (openTabIndex >= 0) {
       const persistentTab = pick(
         tab,
@@ -254,7 +256,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       ) as PersistentTab;
       Object.assign(openTabList.value[openTabIndex], persistentTab);
     }
-  }
+  };
 
   const updateTab = (id: string, payload: Partial<SQLEditorTab>) => {
     const tab = tabById(id);
