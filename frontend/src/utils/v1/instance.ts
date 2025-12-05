@@ -171,6 +171,7 @@ export const instanceV1HasSSL = (
     Engine.ELASTICSEARCH,
     Engine.MSSQL,
     Engine.CASSANDRA,
+    Engine.TRINO,
   ].includes(engine);
 };
 
