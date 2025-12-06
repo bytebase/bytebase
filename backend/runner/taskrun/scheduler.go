@@ -33,8 +33,8 @@ const (
 // No limit by default.
 const defaultRolloutMaxRunningTaskRuns = 0
 
-// SchedulerV2 is the V2 scheduler for task run.
-type SchedulerV2 struct {
+// Scheduler is the scheduler for task run.
+type Scheduler struct {
 	store          *store.Store
 	stateCfg       *state.State
 	webhookManager *webhook.Manager
@@ -43,15 +43,15 @@ type SchedulerV2 struct {
 	licenseService *enterprise.LicenseService
 }
 
-// NewSchedulerV2 will create a new scheduler.
-func NewSchedulerV2(
+// NewScheduler will create a new scheduler.
+func NewScheduler(
 	store *store.Store,
 	stateCfg *state.State,
 	webhookManager *webhook.Manager,
 	profile *config.Profile,
 	licenseService *enterprise.LicenseService,
-) *SchedulerV2 {
-	return &SchedulerV2{
+) *Scheduler {
+	return &Scheduler{
 		store:          store,
 		stateCfg:       stateCfg,
 		webhookManager: webhookManager,
@@ -62,7 +62,7 @@ func NewSchedulerV2(
 }
 
 // Register will register a task executor factory.
-func (s *SchedulerV2) Register(taskType storepb.Task_Type, executorGetter Executor) {
+func (s *Scheduler) Register(taskType storepb.Task_Type, executorGetter Executor) {
 	if executorGetter == nil {
 		panic("scheduler: Register executor is nil for task type: " + taskType.String())
 	}
@@ -73,7 +73,7 @@ func (s *SchedulerV2) Register(taskType storepb.Task_Type, executorGetter Execut
 }
 
 // Run will start the scheduler.
-func (s *SchedulerV2) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	go s.ListenTaskSkippedOrDone(ctx)
 
 	ticker := time.NewTicker(taskSchedulerInterval)
@@ -92,7 +92,7 @@ func (s *SchedulerV2) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (s *SchedulerV2) runOnce(ctx context.Context) {
+func (s *Scheduler) runOnce(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -116,7 +116,7 @@ func (s *SchedulerV2) runOnce(ctx context.Context) {
 	}
 }
 
-func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
+func (s *Scheduler) scheduleAutoRolloutTasks(ctx context.Context) error {
 	environments, err := s.store.GetEnvironment(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list environments")
@@ -145,7 +145,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
 	return nil
 }
 
-func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) error {
+func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) error {
 	task, err := s.store.GetTaskByID(ctx, taskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
@@ -281,7 +281,7 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 	return nil
 }
 
-func (s *SchedulerV2) schedulePendingTaskRuns(ctx context.Context) error {
+func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_PENDING},
 	})
@@ -297,7 +297,7 @@ func (s *SchedulerV2) schedulePendingTaskRuns(ctx context.Context) error {
 	return nil
 }
 
-func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
+func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
 	// here, we move pending taskruns to running taskruns which means they are ready to be executed.
 	// pending taskruns remain pending if
 	// 1. taskRun.RunAt not met.
@@ -362,7 +362,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 	return nil
 }
 
-func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
+func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_RUNNING},
 	})
@@ -405,7 +405,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 	return nil
 }
 
-func (s *SchedulerV2) scheduleRunningTaskRun(ctx context.Context, taskRun *store.TaskRunMessage, minTaskIDForDatabase map[string]int) error {
+func (s *Scheduler) scheduleRunningTaskRun(ctx context.Context, taskRun *store.TaskRunMessage, minTaskIDForDatabase map[string]int) error {
 	// Skip the task run if it is already executing.
 	if _, ok := s.stateCfg.RunningTaskRuns.Load(taskRun.ID); ok {
 		return nil
@@ -549,7 +549,7 @@ func (s *SchedulerV2) scheduleRunningTaskRun(ctx context.Context, taskRun *store
 	return nil
 }
 
-func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMessage, task *store.TaskMessage, executor Executor) {
+func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMessage, task *store.TaskMessage, executor Executor) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -740,7 +740,7 @@ func getDatabaseKey(instanceID, databaseName string) string {
 	return fmt.Sprintf("%s/%s", instanceID, databaseName)
 }
 
-func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
+func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -963,7 +963,7 @@ func (s *SchedulerV2) ListenTaskSkippedOrDone(ctx context.Context) {
 	}
 }
 
-func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus storepb.TaskRun_Status, errDetail string) {
+func (s *Scheduler) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus storepb.TaskRun_Status, errDetail string) {
 	if err := func() error {
 		rollout, err := s.store.GetPipelineByID(ctx, task.PipelineID)
 		if err != nil {
