@@ -3,17 +3,118 @@ package enterprise
 
 import (
 	"context"
+	"crypto/rsa"
+	"embed"
+	"encoding/json"
+	"fmt"
+	"io/fs"
+	"log/slog"
 	"math"
+	"slices"
 	"sync"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/enterprise/plugin"
+	"github.com/bytebase/bytebase/backend/common/log"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+//go:embed keys
+var keysFS embed.FS
+
+//go:embed plan.yaml
+var planConfigStr string
+
+var userLimitValues = map[v1pb.PlanType]int{}
+var instanceLimitValues = map[v1pb.PlanType]int{}
+
+// planFeatureMatrix maps plans to their available features
+var planFeatureMatrix = make(map[v1pb.PlanType]map[v1pb.PlanFeature]bool)
+
+var defaultFreeSubscription = &v1pb.Subscription{
+	Plan: v1pb.PlanType_FREE,
+}
+
+func init() {
+	// First unmarshal YAML to a generic map, then convert to JSON for protojson
+	var yamlData map[string]any
+	if err := yaml.Unmarshal([]byte(planConfigStr), &yamlData); err != nil {
+		panic("failed to unmarshal plan.yaml: " + err.Error())
+	}
+
+	// Convert YAML data to JSON bytes
+	jsonBytes, err := json.Marshal(yamlData)
+	if err != nil {
+		panic("failed to convert plan.yaml to JSON: " + err.Error())
+	}
+
+	conf := &v1pb.PlanConfig{}
+	//nolint:forbidigo
+	if err := protojson.Unmarshal(jsonBytes, conf); err != nil {
+		panic("failed to unmarshal plan config proto: " + err.Error())
+	}
+
+	for _, plan := range conf.Plans {
+		userLimitValues[plan.Type] = int(plan.MaximumSeatCount)
+		instanceLimitValues[plan.Type] = int(plan.MaximumInstanceCount)
+
+		planFeatureMatrix[plan.Type] = make(map[v1pb.PlanFeature]bool)
+		for _, feature := range plan.Features {
+			planFeatureMatrix[plan.Type][feature] = true
+		}
+	}
+}
+
+// Config is the API message for enterprise config.
+type Config struct {
+	// PublicKey is the parsed RSA public key.
+	PublicKey *rsa.PublicKey
+	// Version is the JWT key version.
+	Version string
+	// Issuer is the license issuer, it should always be "bytebase".
+	Issuer string
+	// Audience is the license audience, it should always be "bb.license".
+	Audience string
+	// Mode can be "prod" or "dev"
+	Mode common.ReleaseMode
+}
+
+const (
+	// keyID is the license key version.
+	keyID = "v1"
+	// issuer is the license issuer.
+	issuer = "bytebase"
+	// audience is the license token audience.
+	audience = "bb.license"
+)
+
+// NewConfig will create a new enterprise config instance.
+func NewConfig(mode common.ReleaseMode) (*Config, error) {
+	licensePubKey, err := fs.ReadFile(keysFS, fmt.Sprintf("keys/%s.pub.pem", mode))
+	if err != nil {
+		return nil, errors.Errorf("cannot read license public key for env %s", mode)
+	}
+
+	key, err := jwt.ParseRSAPublicKeyFromPEM(licensePubKey)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse license public key for env %s", mode)
+	}
+
+	return &Config{
+		PublicKey: key,
+		Version:   keyID,
+		Issuer:    issuer,
+		Audience:  audience,
+		Mode:      mode,
+	}, nil
+}
 
 // LicenseService is the service for enterprise license.
 type LicenseService struct {
@@ -21,22 +122,32 @@ type LicenseService struct {
 	cachedSubscription *v1pb.Subscription
 	mu                 sync.RWMutex
 
-	provider plugin.LicenseProvider
+	config *Config
+}
+
+// claims creates a struct that will be encoded to a JWT.
+// We add jwt.RegisteredClaims as an embedded type, to provide fields such as name.
+type claims struct {
+	ActiveInstances int    `json:"instanceCount"`
+	Instances       int    `json:"instance"`
+	Seats           int    `json:"seat"`
+	Trialing        bool   `json:"trialing"`
+	Plan            string `json:"plan"`
+	OrgName         string `json:"orgName"`
+	WorkspaceID     string `json:"workspaceId"`
+	jwt.RegisteredClaims
 }
 
 // NewLicenseService will create a new enterprise license service.
 func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseService, error) {
-	provider, err := getLicenseProvider(&plugin.ProviderConfig{
-		Mode:  mode,
-		Store: store,
-	})
+	config, err := NewConfig(mode)
 	if err != nil {
 		return nil, err
 	}
 
 	return &LicenseService{
-		store:    store,
-		provider: provider,
+		store:  store,
+		config: config,
 	}, nil
 }
 
@@ -44,44 +155,64 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseSer
 // If there is no license, we will return a free plan subscription without expiration time.
 // If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 func (s *LicenseService) LoadSubscription(ctx context.Context) *v1pb.Subscription {
-	s.mu.RLock()
-	cached := s.cachedSubscription
-	s.mu.RUnlock()
-
-	if cached != nil {
-		// Invalidate the cache if expired.
-		if cached.ExpiresTime != nil && cached.ExpiresTime.AsTime().Before(time.Now()) {
-			// refresh expired subscription
-			s.mu.Lock()
-			s.cachedSubscription = nil
-			s.mu.Unlock()
-			cached = nil
-		}
-	}
-	if cached != nil {
-		return cached
-	}
-
-	// Cache the subscription.
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	subscription := s.provider.LoadSubscription(ctx)
-	if subscription == nil {
-		// Never had a subscription, set to free plan.
-		subscription = &v1pb.Subscription{
-			Plan: v1pb.PlanType_FREE,
-		}
+	if s.cachedSubscription != nil && !isExpired(s.cachedSubscription) {
+		return s.cachedSubscription
 	}
+
+	// Try to load the subscription from the store.
+	// We use an IIFE (Immediately Invoked Function Expression) to handle the error return flow cleanly
+	// before we decide on the fallback.
+	subscription, err := func() (*v1pb.Subscription, error) {
+		setting, err := s.store.GetSystemSetting(ctx)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get system setting")
+		}
+
+		if setting.License == "" {
+			return defaultFreeSubscription, nil
+		}
+
+		subscription, err := s.parseLicense(setting.License, setting.WorkspaceId)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse enterprise license")
+		}
+
+		slog.Debug(
+			"Load valid license",
+			slog.String("plan", subscription.Plan.String()),
+			slog.Time("expiresAt", subscription.ExpiresTime.AsTime()),
+			slog.Int("activeInstances", int(subscription.ActiveInstances)),
+			slog.Int("instances", int(subscription.Instances)),
+			slog.Int("seats", int(subscription.Seats)),
+		)
+		return subscription, nil
+	}()
+
+	if err != nil {
+		slog.Debug("failed to load enterprise license", log.BBError(err))
+		subscription = defaultFreeSubscription
+	}
+
 	// Switch to free plan if the subscription is expired.
-	if subscription.ExpiresTime != nil && subscription.ExpiresTime.AsTime().Before(time.Now()) {
+	if isExpired(subscription) {
 		subscription = &v1pb.Subscription{
 			Plan:        v1pb.PlanType_FREE,
 			ExpiresTime: subscription.ExpiresTime,
 		}
 	}
 	s.cachedSubscription = subscription
+
 	return subscription
+}
+
+func isExpired(sub *v1pb.Subscription) bool {
+	if sub == nil {
+		return false
+	}
+	return sub.ExpiresTime != nil && sub.ExpiresTime.AsTime().Before(time.Now())
 }
 
 // GetEffectivePlan gets the effective plan.
@@ -172,7 +303,17 @@ func (s *LicenseService) GetInstanceLimit(ctx context.Context) int {
 
 // StoreLicense will store license into file.
 func (s *LicenseService) StoreLicense(ctx context.Context, license string) error {
-	if err := s.provider.StoreLicense(ctx, license); err != nil {
+	if license != "" {
+		systemSetting, err := s.store.GetSystemSetting(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get system setting")
+		}
+		if _, err := s.parseLicense(license, systemSetting.WorkspaceId); err != nil {
+			return err
+		}
+	}
+
+	if err := s.store.UpdateLicense(ctx, license); err != nil {
 		return err
 	}
 
@@ -218,4 +359,74 @@ func (s *LicenseService) GetAuditLogRetentionCutoff() *time.Time {
 	}
 	cutoff := time.Now().AddDate(0, 0, -days)
 	return &cutoff
+}
+
+func (s *LicenseService) parseLicense(license, workspaceID string) (*v1pb.Subscription, error) {
+	claim := &claims{}
+	token, err := jwt.ParseWithClaims(license, claim, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, common.Errorf(common.Invalid, "unexpected signing method: %v", token.Header["alg"])
+		}
+
+		kid, ok := token.Header["kid"].(string)
+		if !ok || kid != s.config.Version {
+			return nil, common.Errorf(common.Invalid, "version '%v' is not valid. expect %s", token.Header["kid"], s.config.Version)
+		}
+
+		return s.config.PublicKey, nil
+	})
+	if err != nil {
+		return nil, common.Wrap(err, common.Invalid)
+	}
+
+	if !token.Valid {
+		return nil, common.Errorf(common.Invalid, "invalid token")
+	}
+
+	if s.config.Issuer != claim.Issuer {
+		return nil, common.Errorf(common.Invalid, "iss is not valid, expect %s but found '%v'", s.config.Issuer, claim.Issuer)
+	}
+	if !slices.Contains(claim.Audience, s.config.Audience) {
+		return nil, common.Errorf(common.Invalid, "aud is not valid, expect %s but found '%v'", s.config.Audience, claim.Audience)
+	}
+
+	v, ok := v1pb.PlanType_value[claim.Plan]
+	if !ok {
+		return nil, common.Errorf(common.Invalid, "plan type %q is not valid", claim.Plan)
+	}
+	planType := v1pb.PlanType(v)
+
+	if claim.WorkspaceID != "" && planType == v1pb.PlanType_ENTERPRISE && !claim.Trialing {
+		if workspaceID != claim.WorkspaceID {
+			return nil, common.Errorf(common.Invalid, "the workspace id not match")
+		}
+	}
+
+	switch planType {
+	case v1pb.PlanType_FREE, v1pb.PlanType_TEAM, v1pb.PlanType_ENTERPRISE:
+	default:
+		return nil, errors.Errorf("plan %q is not valid, expect %s or %s",
+			planType.String(),
+			v1pb.PlanType_TEAM.String(),
+			v1pb.PlanType_ENTERPRISE.String(),
+		)
+	}
+
+	var expiresTime *timestamppb.Timestamp
+	if claim.ExpiresAt != nil && !claim.ExpiresAt.IsZero() {
+		expiresTime = timestamppb.New(claim.ExpiresAt.Time)
+	}
+	if expiresTime != nil && expiresTime.AsTime().Before(time.Now()) {
+		return nil, errors.Errorf("license has expired at %v", expiresTime.AsTime())
+	}
+
+	return &v1pb.Subscription{
+		ActiveInstances: int32(claim.ActiveInstances),
+		Instances:       int32(claim.Instances),
+		Seats:           int32(claim.Seats),
+		ExpiresTime:     expiresTime,
+		Plan:            planType,
+		Trialing:        claim.Trialing,
+		OrgName:         claim.OrgName,
+	}, nil
 }
