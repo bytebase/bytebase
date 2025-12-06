@@ -149,7 +149,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user has been deactivated by administrators"))
 	}
 
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting, error"))
 	}
@@ -247,7 +247,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		return false
 	}
 
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		slog.Error("failed to get workspace setting", log.BBError(err))
 		return false
@@ -335,7 +335,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("identity provider not found"))
 	}
 
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace setting"))
 	}

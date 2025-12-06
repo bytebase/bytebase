@@ -17,9 +17,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 	settingName := fmt.Sprintf("%s%s", common.SettingNamePrefix, convertStoreSettingNameToV1(setting.Name).String())
 	switch setting.Name {
 	case storepb.SettingName_APP_IM:
-		storeValue := new(storepb.AppIMSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
+		storeValue, ok := setting.Value.(*storepb.AppIMSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
 		}
 		v1Value := convertToAppIMSetting(storeValue)
 		return &v1pb.Setting{
@@ -31,9 +31,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			},
 		}, nil
 	case storepb.SettingName_WORKSPACE_PROFILE:
-		storeValue := new(storepb.WorkspaceProfileSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
+		storeValue, ok := setting.Value.(*storepb.WorkspaceProfileSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
 		}
 		v1Value := convertToWorkspaceProfileSetting(storeValue)
 		v1Value.DisallowSignup = v1Value.DisallowSignup || profile.SaaS
@@ -46,9 +46,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			},
 		}, nil
 	case storepb.SettingName_WORKSPACE_APPROVAL:
-		storeValue := new(storepb.WorkspaceApprovalSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
+		storeValue, ok := setting.Value.(*storepb.WorkspaceApprovalSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
 		}
 		v1Value := &v1pb.WorkspaceApprovalSetting{}
 		for _, rule := range storeValue.Rules {
@@ -68,9 +68,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			},
 		}, nil
 	case storepb.SettingName_DATA_CLASSIFICATION:
-		storeValue := new(storepb.DataClassificationSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
+		storeValue, ok := setting.Value.(*storepb.DataClassificationSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -81,9 +81,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			},
 		}, nil
 	case storepb.SettingName_SEMANTIC_TYPES:
-		storeValue := new(storepb.SemanticTypeSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
+		storeValue, ok := setting.Value.(*storepb.SemanticTypeSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
 		}
 		return &v1pb.Setting{
 			Name: settingName,
@@ -94,9 +94,9 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			},
 		}, nil
 	case storepb.SettingName_AI:
-		storeValue := new(storepb.AISetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), storeValue); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to unmarshal setting value for %s with error: %v", setting.Name, err))
+		storeValue, ok := setting.Value.(*storepb.AISetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
 		}
 		// DO NOT expose the api key.
 		storeValue.ApiKey = ""
@@ -109,15 +109,16 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 			},
 		}, nil
 	case storepb.SettingName_ENVIRONMENT:
-		storeValue, err := convertToEnvironmentSetting(setting.Value)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting value for %s with error: %v", setting.Name, err))
+		storeValue, ok := setting.Value.(*storepb.EnvironmentSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
 		}
+		v1Value := convertToEnvironmentSetting(storeValue)
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.SettingValue{
 				Value: &v1pb.SettingValue_Environment{
-					Environment: storeValue,
+					Environment: v1Value,
 				},
 			},
 		}, nil
@@ -192,19 +193,18 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 	}
 }
 
-func convertToEnvironmentSetting(value string) (*v1pb.EnvironmentSetting, error) {
-	var setting storepb.EnvironmentSetting
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(value), &setting); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal environment setting")
+func convertToEnvironmentSetting(storeValue *storepb.EnvironmentSetting) *v1pb.EnvironmentSetting {
+	if storeValue == nil {
+		return nil
 	}
 	var environments []*v1pb.EnvironmentSetting_Environment
 
-	for _, e := range setting.Environments {
+	for _, e := range storeValue.Environments {
 		environments = append(environments, convertToEnvironment(e))
 	}
 	return &v1pb.EnvironmentSetting{
 		Environments: environments,
-	}, nil
+	}
 }
 
 func convertToEnvironment(e *storepb.EnvironmentSetting_Environment) *v1pb.EnvironmentSetting_Environment {

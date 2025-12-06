@@ -251,7 +251,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	go mmm.Run(ctx, &s.runnerWG)
 
 	// Check workspace setting and set audit logger runtime flag
-	workspaceProfile, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	workspaceProfile, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err == nil && workspaceProfile.GetEnableAuditLogStdout() {
 		// Validate license before enabling (prevents usage after license downgrade/expiry)
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {

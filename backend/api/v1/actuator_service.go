@@ -103,7 +103,7 @@ func (s *ActuatorService) GetResourcePackage(
 	ctx context.Context,
 	_ *connect.Request[v1pb.GetResourcePackageRequest],
 ) (*connect.Response[v1pb.ResourcePackage], error) {
-	workspaceProfileSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	workspaceProfileSetting, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace profile setting"))
 	}
@@ -138,7 +138,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 	}
@@ -230,7 +230,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanFeatu
 		features = append(features, v1pb.PlanFeature_FEATURE_ENTERPRISE_SSO)
 	}
 
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get workspace general setting")
 	}

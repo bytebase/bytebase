@@ -169,7 +169,7 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 // CreateUser creates a user.
 func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v1pb.CreateUserRequest]) (*connect.Response[v1pb.User], error) {
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err == nil {
-		setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find workspace setting, error: %v", err))
 		}
@@ -303,7 +303,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 }
 
 func (s *UserService) validatePassword(ctx context.Context, password string) error {
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get password restriction with error: %v", err))
 	}
@@ -430,7 +430,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 					TempOtpSecretCreatedTime: nil,
 				}
 			} else {
-				setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+				setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find workspace setting, error: %v", err))
 				}
@@ -730,7 +730,7 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 		}
 		return nil
 	}
-	setting, err := stores.GetWorkspaceGeneralSetting(ctx)
+	setting, err := stores.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to find workspace setting, error: %v", err))
 	}

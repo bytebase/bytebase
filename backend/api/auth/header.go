@@ -74,7 +74,7 @@ func GetTokenDuration(ctx context.Context, store *store.Store, licenseService *e
 		return tokenDuration
 	}
 
-	workspaceProfile, err := store.GetWorkspaceGeneralSetting(ctx)
+	workspaceProfile, err := store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
 		return tokenDuration
 	}
