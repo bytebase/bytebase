@@ -299,7 +299,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get rollout UID from %q", taskRunName)
 		}
-		issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutUID})
+		issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PipelineID: &rolloutUID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get issue by rollout %q", rolloutUID)
 		}

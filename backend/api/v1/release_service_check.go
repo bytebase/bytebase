@@ -37,7 +37,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID:  &projectID,
 		ShowDeleted: true,
 	})
@@ -64,7 +64,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 
 		// Handle database group target. Extract all matched databases in the database group.
 		if projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 				ResourceID: &projectResourceID,
 			})
 			if err != nil {
@@ -148,7 +148,7 @@ func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, files []*v1p
 
 loop:
 	for _, database := range databases {
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 			ResourceID: &database.InstanceID,
 		})
 		if err != nil {
@@ -346,7 +346,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 	var results []*v1pb.CheckReleaseResponse_CheckResult
 	var errorAdviceCount, warningAdviceCount int
 	for _, database := range databases {
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 			ResourceID: &database.InstanceID,
 		})
 		if err != nil {

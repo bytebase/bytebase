@@ -159,14 +159,14 @@ func (m *Manager) GenerateOnboardingData(ctx context.Context, userID int, schema
 	}
 
 	projectID := "project-sample"
-	project, err := m.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := m.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find onboarding project %v", projectID)
 	}
 	if project == nil {
-		sampleProject, err := m.store.CreateProjectV2(ctx, &store.ProjectMessage{
+		sampleProject, err := m.store.CreateProject(ctx, &store.ProjectMessage{
 			ResourceID: "project-sample",
 			Title:      "Sample Project",
 			Setting:    setting,
@@ -223,14 +223,14 @@ func (m *Manager) generateInstance(
 	schemaSyncer *schemasync.Syncer,
 ) error {
 	// Generate Sample Instance
-	instance, err := m.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+	instance, err := m.store.GetInstance(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceMessage.ResourceID,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find onboarding instance %v", instanceMessage.ResourceID)
 	}
 	if instance == nil {
-		sampleInstance, err := m.store.CreateInstanceV2(ctx, &store.InstanceMessage{
+		sampleInstance, err := m.store.CreateInstance(ctx, &store.InstanceMessage{
 			ResourceID:    instanceMessage.ResourceID,
 			EnvironmentID: instanceMessage.EnvironmentID,
 			Metadata: &storepb.Instance{
@@ -279,7 +279,7 @@ func (m *Manager) generateInstance(
 		return errors.Wrapf(err, "failed to transfer sample database %v", dbName)
 	}
 
-	testDatabase, err := m.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	testDatabase, err := m.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:      &instance.ResourceID,
 		DatabaseName:    &dbName,
 		IsCaseSensitive: store.IsObjectCaseSensitive(instance),

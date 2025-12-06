@@ -59,7 +59,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, errors.Errorf("empty create database statement")
 	}
 
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
 	}
@@ -68,14 +68,14 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, errors.Errorf("creating database is not supported for engine %v", instance.Metadata.GetEngine().String())
 	}
 
-	pipeline, err := exec.store.GetPipelineV2ByID(ctx, task.PipelineID)
+	pipeline, err := exec.store.GetPipelineByID(ctx, task.PipelineID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get pipeline")
 	}
 	if pipeline == nil {
 		return true, nil, errors.Errorf("pipeline %v not found", task.PipelineID)
 	}
-	project, err := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+	project, err := exec.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
 	if err != nil {
 		return true, nil, errors.Errorf("failed to find project %s", pipeline.ProjectID)
 	}

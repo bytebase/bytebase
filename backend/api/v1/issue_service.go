@@ -298,7 +298,7 @@ func (s *IssueService) ListIssues(ctx context.Context, req *connect.Request[v1pb
 	}
 	issueFind.ProjectID = &projectID
 
-	issues, err := s.store.ListIssueV2(ctx, issueFind)
+	issues, err := s.store.ListIssues(ctx, issueFind)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to search issue, error: %v", err))
 	}
@@ -360,7 +360,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 		issueFind.ProjectIDs = projectIDsFilter
 	}
 
-	issues, err := s.store.ListIssueV2(ctx, issueFind)
+	issues, err := s.store.ListIssues(ctx, issueFind)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to search issue, error: %v", err))
 	}
@@ -424,7 +424,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -457,7 +457,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 		}
-		pipeline, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+		pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
 			ID:        &rolloutID,
 			ProjectID: &projectID,
 		})
@@ -489,7 +489,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, user.ID)
+	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.ID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
 	}
@@ -527,7 +527,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -579,7 +579,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, user.ID)
+	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.ID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
 	}
@@ -618,7 +618,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -651,7 +651,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 		}
-		pipeline, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+		pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
 			ID:        &rolloutID,
 			ProjectID: &projectID,
 		})
@@ -683,7 +683,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssueV2(ctx, issueCreateMessage, user.ID)
+	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.ID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
 	}
@@ -755,7 +755,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the approval is approved, error: %v", err))
 	}
 
-	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+	issue, err = s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval: payload.Approval,
 		},
@@ -933,7 +933,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		PrincipalId: int32(user.ID),
 	})
 
-	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+	issue, err = s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval: payload.Approval,
 		},
@@ -1011,7 +1011,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	}
 	payload.Approval.Approvers = updatedApprovers
 
-	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+	issue, err = s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval: payload.Approval,
 		},
@@ -1240,7 +1240,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 	}
 
-	issue, err = s.store.UpdateIssueV2(ctx, issue.UID, patch)
+	issue, err = s.store.UpdateIssue(ctx, issue.UID, patch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update issue, error: %v", err))
 	}
@@ -1288,7 +1288,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 		// Check if there is any running/pending task runs.
 		if issue.PipelineUID != nil {
 			taskRunStatusList := []storepb.TaskRun_Status{storepb.TaskRun_RUNNING, storepb.TaskRun_PENDING}
-			taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{PipelineUID: issue.PipelineUID, Status: &taskRunStatusList})
+			taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{PipelineUID: issue.PipelineUID, Status: &taskRunStatusList})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list task runs, err: %v", err))
 			}
@@ -1314,7 +1314,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 	if err := func() error {
 		var errs error
 		for _, issue := range issues {
-			updatedIssue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issue.UID})
+			updatedIssue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{UID: &issue.UID})
 			if err != nil {
 				errs = multierr.Append(errs, errors.Wrapf(err, "failed to get issue %v", issue.UID))
 				continue
@@ -1365,7 +1365,7 @@ func (s *IssueService) ListIssueComments(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 		UID:       &issueUID,
 		ProjectID: &projectID,
 	})
@@ -1511,7 +1511,7 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 		UID:       &issueUID,
 		ProjectID: &projectID,
 	})

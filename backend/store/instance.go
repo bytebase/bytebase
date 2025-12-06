@@ -49,8 +49,8 @@ type FindInstanceMessage struct {
 	FilterQ     *qb.Query
 }
 
-// GetInstanceV2 gets an instance by the resource_id.
-func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
+// GetInstance gets an instance by the resource_id.
+func (s *Store) GetInstance(ctx context.Context, find *FindInstanceMessage) (*InstanceMessage, error) {
 	if find.ResourceID != nil {
 		if v, ok := s.instanceCache.Get(getInstanceCacheKey(*find.ResourceID)); ok && s.enableCache {
 			return v, nil
@@ -60,7 +60,7 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 	// We will always return the resource regardless of its deleted state.
 	find.ShowDeleted = true
 
-	instances, err := s.ListInstancesV2(ctx, find)
+	instances, err := s.ListInstances(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list instances with find instance message %+v", find)
 	}
@@ -76,15 +76,15 @@ func (s *Store) GetInstanceV2(ctx context.Context, find *FindInstanceMessage) (*
 	return instance, nil
 }
 
-// ListInstancesV2 lists all instance.
-func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) ([]*InstanceMessage, error) {
+// ListInstances lists all instance.
+func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	instances, err := s.listInstanceImplV2(ctx, tx, find)
+	instances, err := s.listInstanceImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +99,8 @@ func (s *Store) ListInstancesV2(ctx context.Context, find *FindInstanceMessage) 
 	return instances, nil
 }
 
-// CreateInstanceV2 creates an instance.
-func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMessage) (*InstanceMessage, error) {
+// CreateInstance creates an instance.
+func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMessage) (*InstanceMessage, error) {
 	if err := validateDataSources(instanceCreate.Metadata); err != nil {
 		return nil, err
 	}
@@ -151,8 +151,8 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 	return instance, nil
 }
 
-// UpdateInstanceV2 updates an instance.
-func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
+// UpdateInstance updates an instance.
+func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage) (*InstanceMessage, error) {
 	set := qb.Q()
 
 	if v := patch.EnvironmentID; v != nil {
@@ -218,13 +218,13 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 
 	if v := patch.ResourceID; v != nil {
 		s.instanceCache.Remove(getInstanceCacheKey(*v))
-		return s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: v})
+		return s.GetInstance(ctx, &FindInstanceMessage{ResourceID: v})
 	}
 
 	return nil, nil
 }
 
-func (s *Store) listInstanceImplV2(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
+func (s *Store) listInstanceImpl(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	where := qb.Q().Space("TRUE")
 	from := qb.Q().Space("instance")
 	if filterQ := find.FilterQ; filterQ != nil {
@@ -542,7 +542,7 @@ func (s *Store) unObfuscateInstance(ctx context.Context, instance *storepb.Insta
 
 // HasSampleInstances checks if there are sample instances in the database.
 func (s *Store) HasSampleInstances(ctx context.Context) (bool, error) {
-	instances, err := s.ListInstancesV2(ctx, &FindInstanceMessage{
+	instances, err := s.ListInstances(ctx, &FindInstanceMessage{
 		ResourceIDs: &[]string{"test-sample-instance", "prod-sample-instance"},
 		ShowDeleted: false,
 	})

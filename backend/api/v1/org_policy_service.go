@@ -94,7 +94,7 @@ func (s *OrgPolicyService) ListPolicies(ctx context.Context, req *connect.Reques
 		find.Type = &policyType
 	}
 
-	policies, err := s.store.ListPoliciesV2(ctx, find)
+	policies, err := s.store.ListPolicies(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -196,7 +196,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 		}
 	}
 
-	p, err := s.store.UpdatePolicyV2(ctx, patch)
+	p, err := s.store.UpdatePolicy(ctx, patch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -235,7 +235,7 @@ func (s *OrgPolicyService) DeletePolicy(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 
-	if err := s.store.DeletePolicyV2(ctx, policy); err != nil {
+	if err := s.store.DeletePolicy(ctx, policy); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -322,7 +322,7 @@ func (s *OrgPolicyService) findPolicyMessage(ctx context.Context, policyName str
 		return nil, policyParent, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+	policy, err := s.store.GetPolicy(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		Type:         &policyType,
 		Resource:     resource,
@@ -371,7 +371,7 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, parent strin
 		Enforce: true,
 	}
 
-	p, err := s.store.CreatePolicyV2(ctx, create)
+	p, err := s.store.CreatePolicy(ctx, create)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

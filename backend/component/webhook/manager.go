@@ -45,7 +45,7 @@ func NewManager(store *store.Store, iamManager *iam.Manager, profile *config.Pro
 }
 
 func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
-	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
+	webhookList, err := m.store.FindProjectWebhook(ctx, &store.FindProjectWebhookMessage{
 		ProjectID: &e.Project.ResourceID,
 		EventType: &e.Type,
 	})
@@ -349,7 +349,7 @@ func getUsersFromUsers(users ...*store.UserMessage) UsersGetter {
 // ChangeIssueStatus changes the status of an issue.
 func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager *Manager, issue *store.IssueMessage, newStatus storepb.Issue_Status, updater *store.UserMessage, comment string) error {
 	updateIssueMessage := &store.UpdateIssueMessage{Status: &newStatus}
-	updatedIssue, err := stores.UpdateIssueV2(ctx, issue.UID, updateIssueMessage)
+	updatedIssue, err := stores.UpdateIssue(ctx, issue.UID, updateIssueMessage)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 	}

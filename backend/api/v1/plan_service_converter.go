@@ -43,7 +43,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	}
 	p.Creator = common.FormatUserEmail(creator.Email)
 
-	issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})
+	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
 	}

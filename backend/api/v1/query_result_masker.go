@@ -227,7 +227,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	if instance != nil && !common.EngineSupportMasking(instance.Metadata.GetEngine()) {
 		return masker.NewNoneMasker(), nil, nil
 	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instance.ResourceID,
 		DatabaseName: &sourceColumn.Database,
 	})
@@ -238,7 +238,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return masker.NewNoneMasker(), nil, nil
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &database.ProjectID,
 	})
 	if err != nil {
@@ -310,7 +310,7 @@ func (s *QueryResultMasker) getColumnForColumnResource(ctx context.Context, inst
 	if sourceColumn == nil {
 		return nil, nil, nil
 	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &sourceColumn.Database,
 	})

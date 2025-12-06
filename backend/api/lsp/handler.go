@@ -166,7 +166,7 @@ func (h *Handler) getEngineType(ctx context.Context) storepb.Engine {
 		return storepb.Engine_ENGINE_UNSPECIFIED
 	}
 
-	instance, err := h.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+	instance, err := h.store.GetInstance(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
 	if err != nil {
@@ -218,7 +218,7 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 			return err
 		}
 
-		database, err := h.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := h.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instanceID,
 			DatabaseName: &metadata.DatabaseName,
 		})

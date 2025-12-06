@@ -89,7 +89,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	return release, nil
 }
 
-func (s *Store) GetReleaseV2(ctx context.Context, find *FindReleaseMessage) (*ReleaseMessage, error) {
+func (s *Store) GetRelease(ctx context.Context, find *FindReleaseMessage) (*ReleaseMessage, error) {
 	releases, err := s.ListReleases(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list releases")
@@ -104,7 +104,7 @@ func (s *Store) GetReleaseV2(ctx context.Context, find *FindReleaseMessage) (*Re
 }
 
 func (s *Store) GetReleaseByUID(ctx context.Context, uid int64) (*ReleaseMessage, error) {
-	return s.GetReleaseV2(ctx, &FindReleaseMessage{UID: &uid, ShowDeleted: true})
+	return s.GetRelease(ctx, &FindReleaseMessage{UID: &uid, ShowDeleted: true})
 }
 
 func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*ReleaseMessage, error) {

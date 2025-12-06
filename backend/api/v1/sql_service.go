@@ -549,7 +549,7 @@ func queryRetry(
 	// Sync database metadata.
 	for accessDatabaseName := range syncDatabaseMap {
 		slog.Debug("sync database metadata", slog.String("instance", instance.ResourceID), slog.String("database", accessDatabaseName))
-		d, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
+		d, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
 		if err != nil {
 			return nil, nil, duration, err
 		}
@@ -893,7 +893,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		}
 	}
 
-	pipeline, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+	pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
 		ID:        &rolloutID,
 		ProjectID: &projectID,
 	})
@@ -916,7 +916,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 	targetTaskRunStatus := []storepb.TaskRun_Status{storepb.TaskRun_DONE}
 
 	for _, task := range tasks {
-		taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
+		taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 			TaskUID: &task.ID,
 			Status:  &targetTaskRunStatus,
 		})
@@ -1351,7 +1351,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 			return "", "", nil, err
 		}
 		for _, database := range databaseList {
-			instance, err := storeInstance.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+			instance, err := storeInstance.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 			if err != nil {
 				return "", "", nil, err
 			}
@@ -1387,7 +1387,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 
 func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetDatabaseMetadataFunc {
 	return func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
-		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := storeInstance.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instanceID,
 			DatabaseName: &databaseName,
 		})
@@ -1436,7 +1436,7 @@ func (s *SQLService) accessCheck(
 	spans []*parserbase.QuerySpan,
 	isExplain bool,
 ) error {
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
 		return err
 	}
@@ -1601,7 +1601,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 		ResourceID: &database.InstanceID,
 	})
 	if err != nil {
@@ -1691,7 +1691,7 @@ func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *sto
 	}
 
 	// Check the project setting to see if we should use the database owner.
-	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get project")
 	}
@@ -1766,7 +1766,7 @@ func checkAndGetDataSourceQueriable(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("data source id is required"))
 	}
 
-	instance, err := storeInstance.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	instance, err := storeInstance.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance %v with error: %v", database.InstanceID, err.Error()))
 	}
@@ -1817,7 +1817,7 @@ func checkAndGetDataSourceQueriable(
 
 		environmentResourceType := storepb.Policy_ENVIRONMENT
 		environmentResource := common.FormatEnvironment(environment.Id)
-		environmentPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
+		environmentPolicy, err := storeInstance.GetPolicy(ctx, &store.FindPolicyMessage{
 			ResourceType: &environmentResourceType,
 			Resource:     &environmentResource,
 			Type:         &dataSourceQueryPolicyType,
@@ -1838,7 +1838,7 @@ func checkAndGetDataSourceQueriable(
 	var projectAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction
 	projectResourceType := storepb.Policy_PROJECT
 	projectResource := common.FormatProject(database.ProjectID)
-	projectPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
+	projectPolicy, err := storeInstance.GetPolicy(ctx, &store.FindPolicyMessage{
 		ResourceType: &projectResourceType,
 		Resource:     &projectResource,
 		Type:         &dataSourceQueryPolicyType,
@@ -1891,7 +1891,7 @@ func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store,
 	resourceType := storepb.Policy_ENVIRONMENT
 	environmentResource := common.FormatEnvironment(environment.Id)
 	policyType := storepb.Policy_DATA_SOURCE_QUERY
-	dataSourceQueryPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
+	dataSourceQueryPolicy, err := storeInstance.GetPolicy(ctx, &store.FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &environmentResource,
 		Type:         &policyType,

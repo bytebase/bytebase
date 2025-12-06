@@ -98,8 +98,8 @@ type FindIssueMessage struct {
 	NoPipeline bool
 }
 
-// GetIssueV2 gets issue by issue UID.
-func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueMessage, error) {
+// GetIssue gets issue by issue UID.
+func (s *Store) GetIssue(ctx context.Context, find *FindIssueMessage) (*IssueMessage, error) {
 	if find.UID != nil {
 		if v, ok := s.issueCache.Get(*find.UID); ok && s.enableCache {
 			return v, nil
@@ -111,7 +111,7 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 		}
 	}
 
-	issues, err := s.ListIssueV2(ctx, find)
+	issues, err := s.ListIssues(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -130,8 +130,8 @@ func (s *Store) GetIssueV2(ctx context.Context, find *FindIssueMessage) (*IssueM
 	return issue, nil
 }
 
-// CreateIssueV2 creates a new issue.
-func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creatorID int) (*IssueMessage, error) {
+// CreateIssue creates a new issue.
+func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage, creatorID int) (*IssueMessage, error) {
 	create.Status = storepb.Issue_OPEN
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
@@ -185,12 +185,12 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		return nil, err
 	}
 
-	return s.GetIssueV2(ctx, &FindIssueMessage{UID: &create.UID})
+	return s.GetIssue(ctx, &FindIssueMessage{UID: &create.UID})
 }
 
-// UpdateIssueV2 updates an issue.
-func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMessage) (*IssueMessage, error) {
-	oldIssue, err := s.GetIssueV2(ctx, &FindIssueMessage{UID: &uid})
+// UpdateIssue updates an issue.
+func (s *Store) UpdateIssue(ctx context.Context, uid int, patch *UpdateIssueMessage) (*IssueMessage, error) {
+	oldIssue, err := s.GetIssue(ctx, &FindIssueMessage{UID: &uid})
 	if err != nil {
 		return nil, err
 	}
@@ -257,11 +257,11 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	if oldIssue.PipelineUID != nil {
 		s.issueByPipelineCache.Remove(*oldIssue.PipelineUID)
 	}
-	return s.GetIssueV2(ctx, &FindIssueMessage{UID: &uid})
+	return s.GetIssue(ctx, &FindIssueMessage{UID: &uid})
 }
 
-// ListIssueV2 returns the list of issues by find query.
-func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
+// ListIssues returns the list of issues by find query.
+func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
 	orderByClause := "ORDER BY issue.id DESC"
 	from := qb.Q().Space("issue")
 	where := qb.Q()
@@ -461,7 +461,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 
 	// Populate from internal fields.
 	for _, issue := range issues {
-		project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &issue.projectID})
+		project, err := s.GetProject(ctx, &FindProjectMessage{ResourceID: &issue.projectID})
 		if err != nil {
 			return nil, err
 		}

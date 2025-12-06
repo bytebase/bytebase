@@ -148,7 +148,7 @@ func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, instanceID, datab
 		return "", nil, errors.Errorf("instance is not specified")
 	}
 
-	database, err := h.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	database, err := h.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
 	})

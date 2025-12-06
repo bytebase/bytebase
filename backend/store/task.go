@@ -89,8 +89,8 @@ type TaskPatch struct {
 	Flags *map[string]string
 }
 
-// GetTaskV2ByID gets a task by ID.
-func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error) {
+// GetTaskByID gets a task by ID.
+func (s *Store) GetTaskByID(ctx context.Context, id int) (*TaskMessage, error) {
 	tasks, err := s.ListTasks(ctx, &TaskFind{ID: &id})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get Task with ID %d", id)
@@ -388,9 +388,9 @@ func (s *Store) ListTasks(ctx context.Context, find *TaskFind) ([]*TaskMessage, 
 	return tasks, nil
 }
 
-// UpdateTaskV2 updates an existing task.
+// UpdateTask updates an existing task.
 // Returns ENOTFOUND if task does not exist.
-func (s *Store) UpdateTaskV2(ctx context.Context, patch *TaskPatch) (*TaskMessage, error) {
+func (s *Store) UpdateTask(ctx context.Context, patch *TaskPatch) (*TaskMessage, error) {
 	set := qb.Q()
 	if v := patch.DatabaseName; v != nil {
 		set.Comma("db_name = ?", *v)

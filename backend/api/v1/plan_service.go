@@ -200,7 +200,7 @@ func getProjectIDsSearchFilter(ctx context.Context, user *store.UserMessage, per
 	if ok {
 		return nil, nil
 	}
-	projects, err := stores.ListProjectV2(ctx, &store.FindProjectMessage{})
+	projects, err := stores.ListProjects(ctx, &store.FindProjectMessage{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list projects")
 	}
@@ -229,7 +229,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -303,7 +303,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project %q, err: %v", projectID, err))
 	}
@@ -480,7 +480,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			var taskPatchList []*store.TaskPatch
 			var issueCommentCreates []*store.IssueCommentMessage
 
-			issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
+			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
 			}
@@ -718,7 +718,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			for _, taskPatch := range taskPatchList {
 				task := tasksMap[taskPatch.ID]
-				if _, err := s.store.UpdateTaskV2(ctx, taskPatch); err != nil {
+				if _, err := s.store.UpdateTask(ctx, taskPatch); err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update task %v: %v", task.ID, err))
 				}
 			}
@@ -731,7 +731,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			if issue != nil && doUpdateSheet {
 				if err := func() error {
-					issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+					issue, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
 						PayloadUpsert: &storepb.Issue{
 							Approval: &storepb.IssuePayloadApproval{
 								ApprovalFindingDone: false,
@@ -982,7 +982,7 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -1049,7 +1049,7 @@ func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *con
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {

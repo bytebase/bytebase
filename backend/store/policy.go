@@ -82,7 +82,7 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 		return nil, err
 	}
 
-	if _, err := s.CreatePolicyV2(ctx, &PolicyMessage{
+	if _, err := s.CreatePolicy(ctx, &PolicyMessage{
 		ResourceType:      storepb.Policy_WORKSPACE,
 		Payload:           string(policyPayload),
 		Type:              storepb.Policy_IAM,
@@ -108,7 +108,7 @@ func (s *Store) GetProjectIamPolicy(ctx context.Context, projectID string) (*Iam
 func (s *Store) getIamPolicy(ctx context.Context, find *FindPolicyMessage) (*IamPolicyMessage, error) {
 	pType := storepb.Policy_IAM
 	find.Type = &pType
-	policy, err := s.GetPolicyV2(ctx, find)
+	policy, err := s.GetPolicy(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environment string) (*stor
 	resource := common.FormatEnvironment(environment)
 	resourceType := storepb.Policy_ENVIRONMENT
 	pType := storepb.Policy_ROLLOUT
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
 		Type:         &pType,
@@ -236,7 +236,7 @@ func (s *Store) getQueryDataPolicy(ctx context.Context, resource string) (*store
 		return nil, err
 	}
 	pType := storepb.Policy_QUERY_DATA
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
 		Type:         &pType,
@@ -294,7 +294,7 @@ func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *Databa
 func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType storepb.Policy_Resource, resource string) (*storepb.ReviewConfigPayload, error) {
 	pType := storepb.Policy_TAG
 
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
 		Type:         &pType,
@@ -340,7 +340,7 @@ func (s *Store) getReviewConfigByResource(ctx context.Context, resourceType stor
 // GetMaskingRulePolicy will get the masking rule policy.
 func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRulePolicy, error) {
 	pType := storepb.Policy_MASKING_RULE
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		Type: &pType,
 	})
 	if err != nil {
@@ -364,7 +364,7 @@ func (s *Store) GetMaskingExceptionPolicyByProject(ctx context.Context, projectI
 	resourceType := storepb.Policy_PROJECT
 	resource := common.FormatProject(projectID)
 	pType := storepb.Policy_MASKING_EXCEPTION
-	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
 		Type:         &pType,
@@ -416,8 +416,8 @@ type UpdatePolicyMessage struct {
 	Enforce           *bool
 }
 
-// GetPolicyV2 gets a policy.
-func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*PolicyMessage, error) {
+// GetPolicy gets a policy.
+func (s *Store) GetPolicy(ctx context.Context, find *FindPolicyMessage) (*PolicyMessage, error) {
 	if find.ResourceType != nil && find.Resource != nil && find.Type != nil {
 		if v, ok := s.policyCache.Get(getPolicyCacheKey(*find.ResourceType, *find.Resource, *find.Type)); ok && s.enableCache {
 			return v, nil
@@ -432,7 +432,7 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 
 	// We will always return the resource regardless of its deleted state.
 	find.ShowAll = true
-	policies, err := s.listPolicyImplV2(ctx, tx, find)
+	policies, err := s.listPolicyImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -457,15 +457,15 @@ func (s *Store) GetPolicyV2(ctx context.Context, find *FindPolicyMessage) (*Poli
 	return policy, nil
 }
 
-// ListPoliciesV2 lists all policies.
-func (s *Store) ListPoliciesV2(ctx context.Context, find *FindPolicyMessage) ([]*PolicyMessage, error) {
+// ListPolicies lists all policies.
+func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*PolicyMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	policies, err := s.listPolicyImplV2(ctx, tx, find)
+	policies, err := s.listPolicyImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -481,15 +481,15 @@ func (s *Store) ListPoliciesV2(ctx context.Context, find *FindPolicyMessage) ([]
 	return policies, nil
 }
 
-// CreatePolicyV2 creates a policy.
-func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage) (*PolicyMessage, error) {
+// CreatePolicy creates a policy.
+func (s *Store) CreatePolicy(ctx context.Context, create *PolicyMessage) (*PolicyMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	policy, err := upsertPolicyV2Impl(ctx, tx, create)
+	policy, err := upsertPolicyImpl(ctx, tx, create)
 	if err != nil {
 		return nil, err
 	}
@@ -503,8 +503,8 @@ func (s *Store) CreatePolicyV2(ctx context.Context, create *PolicyMessage) (*Pol
 	return policy, nil
 }
 
-// UpdatePolicyV2 updates the policy.
-func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) (*PolicyMessage, error) {
+// UpdatePolicy updates the policy.
+func (s *Store) UpdatePolicy(ctx context.Context, patch *UpdatePolicyMessage) (*PolicyMessage, error) {
 	set := qb.Q()
 	set.Comma("updated_at = ?", time.Now())
 	if v := patch.InheritFromParent; v != nil {
@@ -555,8 +555,8 @@ func (s *Store) UpdatePolicyV2(ctx context.Context, patch *UpdatePolicyMessage) 
 	return policy, nil
 }
 
-// DeletePolicyV2 deletes the policy.
-func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error {
+// DeletePolicy deletes the policy.
+func (s *Store) DeletePolicy(ctx context.Context, policy *PolicyMessage) error {
 	q := qb.Q().Space("DELETE FROM policy WHERE resource_type = ? AND resource = ? AND type = ?",
 		policy.ResourceType,
 		policy.Resource,
@@ -586,7 +586,7 @@ func (s *Store) DeletePolicyV2(ctx context.Context, policy *PolicyMessage) error
 	return nil
 }
 
-func upsertPolicyV2Impl(ctx context.Context, txn *sql.Tx, create *PolicyMessage) (*PolicyMessage, error) {
+func upsertPolicyImpl(ctx context.Context, txn *sql.Tx, create *PolicyMessage) (*PolicyMessage, error) {
 	create.UpdatedAt = time.Now()
 
 	q := qb.Q().Space(`
@@ -626,7 +626,7 @@ func upsertPolicyV2Impl(ctx context.Context, txn *sql.Tx, create *PolicyMessage)
 	return create, nil
 }
 
-func (*Store) listPolicyImplV2(ctx context.Context, txn *sql.Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
+func (*Store) listPolicyImpl(ctx context.Context, txn *sql.Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
 			updated_at,

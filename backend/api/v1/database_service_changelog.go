@@ -25,7 +25,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Parent))
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -115,7 +115,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 	}
 
 	// Get related database to convert changelog from store.
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
 	if err != nil {
@@ -124,7 +124,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 	if instance == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:      &instanceID,
 		DatabaseName:    &databaseName,
 		IsCaseSensitive: store.IsObjectCaseSensitive(instance),

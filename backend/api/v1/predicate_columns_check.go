@@ -71,7 +71,7 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 	var result []base.ColumnResource
 
 	for column := range predicateColumns {
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &column.Database,
 		})
@@ -82,7 +82,7 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 			continue
 		}
 
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 			ResourceID: &database.ProjectID,
 		})
 		if err != nil {

@@ -88,7 +88,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 		for {
 			select {
 			case <-ticker.C:
-				instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
+				instances, err := s.store.ListInstances(ctx, &store.FindInstanceMessage{})
 				if err != nil {
 					if err != nil {
 						slog.Error("Failed to list instance", log.BBError(err))
@@ -157,7 +157,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 	}()
 
 	wp := pool.New().WithMaxGoroutines(MaximumOutstanding)
-	instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{})
+	instances, err := s.store.ListInstances(ctx, &store.FindInstanceMessage{})
 	if err != nil {
 		slog.Error("Failed to retrieve instances", log.BBError(err))
 		return
@@ -300,7 +300,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	if instanceMeta.Version != instance.Metadata.GetVersion() {
 		metadata.Version = instanceMeta.Version
 	}
-	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance)
+	updatedInstance, err := s.store.UpdateInstance(ctx, updateInstance)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -354,7 +354,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 
 // doSyncDatabaseSchema is the core implementation that syncs the schema for a database and optionally creates a sync history record.
 func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, createSyncHistory bool) (syncHistoryID int64, retErr error) {
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
 	}
@@ -537,7 +537,7 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 		}
 	case storepb.Engine_MYSQL, storepb.Engine_MSSQL, storepb.Engine_TIDB:
 		dbName := common.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine())
-		backupDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		backupDB, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &dbName,
 		})
@@ -548,7 +548,7 @@ func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.In
 		return backupDB != nil
 	case storepb.Engine_ORACLE:
 		dbName := common.BackupDatabaseNameOfEngine(storepb.Engine_ORACLE)
-		backupDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		backupDB, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &dbName,
 		})

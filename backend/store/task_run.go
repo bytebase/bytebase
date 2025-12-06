@@ -57,8 +57,8 @@ type TaskRunStatusPatch struct {
 	Result *string
 }
 
-// ListTaskRunsV2 lists task runs.
-func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([]*TaskRunMessage, error) {
+// ListTaskRuns lists task runs.
+func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*TaskRunMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
 			task_run.id,
@@ -178,7 +178,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 
 // GetTaskRunV1 gets a task run.
 func (s *Store) GetTaskRunV1(ctx context.Context, find *FindTaskRunMessage) (*TaskRunMessage, error) {
-	taskRuns, err := s.ListTaskRunsV2(ctx, find)
+	taskRuns, err := s.ListTaskRuns(ctx, find)
 	if err != nil {
 		return nil, err
 	}

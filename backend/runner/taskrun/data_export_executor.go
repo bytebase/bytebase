@@ -42,19 +42,19 @@ type DataExportExecutor struct {
 
 // RunOnce will run the data export task executor once.
 func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+	issue, err := exec.store.GetIssue(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get issue")
 	}
 
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
+	database, err := exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get database")
 	}
 	if database == nil {
 		return true, nil, errors.Errorf("database not found")
 	}
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID, ShowDeleted: true})
+	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID, ShowDeleted: true})
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get instance")
 	}

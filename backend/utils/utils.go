@@ -132,7 +132,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	if err != nil {
 		return err
 	}
-	if _, err := stores.CreatePolicyV2(ctx, &store.PolicyMessage{
+	if _, err := stores.CreatePolicy(ctx, &store.PolicyMessage{
 		Resource:          common.FormatProject(issue.Project.ResourceID),
 		ResourceType:      storepb.Policy_PROJECT,
 		Payload:           string(policyPayload),

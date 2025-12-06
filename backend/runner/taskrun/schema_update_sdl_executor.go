@@ -42,11 +42,11 @@ type SchemaDeclareExecutor struct {
 
 // RunOnce will run the schema declare (SDL) task executor once.
 func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
 	}
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
+	database, err := exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
 	if err != nil {
 		return true, nil, err
 	}
@@ -184,7 +184,7 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 
 		if syncHistory != nil && syncHistory.Metadata != nil {
 			// Get instance to determine engine and case sensitivity
-			instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+			instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 			if err != nil {
 				return "", nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
 			}

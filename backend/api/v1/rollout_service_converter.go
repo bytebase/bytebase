@@ -124,21 +124,21 @@ func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *
 		}, nil
 	case *storepb.SchedulerInfo_WaitingCause_TaskUid:
 		taskUID := cause.TaskUid
-		task, err := s.GetTaskV2ByID(ctx, int(taskUID))
+		task, err := s.GetTaskByID(ctx, int(taskUID))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get task %v", taskUID)
 		}
 		if task == nil {
 			return nil, errors.Errorf("task %v not found", taskUID)
 		}
-		pipeline, err := s.GetPipelineV2ByID(ctx, task.PipelineID)
+		pipeline, err := s.GetPipelineByID(ctx, task.PipelineID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get pipeline %v", task.PipelineID)
 		}
 		if pipeline == nil {
 			return nil, errors.Errorf("pipeline %d not found", task.PipelineID)
 		}
-		issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+		issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get issue by pipeline %v", task.PipelineID)
 		}
@@ -320,7 +320,7 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 }
 
 func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+	instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{
 		ResourceID: &task.InstanceID,
 	})
 	if err != nil {
@@ -359,7 +359,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	if task.DatabaseName == nil {
 		return nil, errors.Errorf("schema update task database is nil")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
+	database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
@@ -407,7 +407,7 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 	if task.DatabaseName == nil {
 		return nil, errors.Errorf("data export task database is nil")
 	}
-	database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
+	database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}

@@ -202,14 +202,14 @@ func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineM
 	return pipeline, nil
 }
 
-// GetPipelineV2 gets the pipeline.
-func (s *Store) GetPipelineV2(ctx context.Context, find *PipelineFind) (*PipelineMessage, error) {
+// GetPipeline gets the pipeline.
+func (s *Store) GetPipeline(ctx context.Context, find *PipelineFind) (*PipelineMessage, error) {
 	if find.ID != nil {
 		if v, ok := s.pipelineCache.Get(*find.ID); ok && s.enableCache {
 			return v, nil
 		}
 	}
-	pipelines, err := s.ListPipelineV2(ctx, find)
+	pipelines, err := s.ListPipelines(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -223,13 +223,13 @@ func (s *Store) GetPipelineV2(ctx context.Context, find *PipelineFind) (*Pipelin
 	return pipeline, nil
 }
 
-// GetPipelineV2ByID gets the pipeline by ID.
-func (s *Store) GetPipelineV2ByID(ctx context.Context, id int) (*PipelineMessage, error) {
-	return s.GetPipelineV2(ctx, &PipelineFind{ID: &id})
+// GetPipelineByID gets the pipeline by ID.
+func (s *Store) GetPipelineByID(ctx context.Context, id int) (*PipelineMessage, error) {
+	return s.GetPipeline(ctx, &PipelineFind{ID: &id})
 }
 
-// ListPipelineV2 lists pipelines.
-func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*PipelineMessage, error) {
+// ListPipelines lists pipelines.
+func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*PipelineMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
 			pipeline.id,

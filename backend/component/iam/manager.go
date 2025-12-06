@@ -63,7 +63,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 	if len(projectIDs) > 0 {
 		allOK := true
 		for _, projectID := range projectIDs {
-			project, err := m.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			project, err := m.store.GetProject(ctx, &store.FindProjectMessage{
 				ResourceID:  &projectID,
 				ShowDeleted: true,
 			})
