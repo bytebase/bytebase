@@ -11,11 +11,12 @@ import (
 	"log/slog"
 	"math"
 	"slices"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v3"
@@ -118,11 +119,15 @@ func NewConfig(mode common.ReleaseMode) (*Config, error) {
 
 // LicenseService is the service for enterprise license.
 type LicenseService struct {
-	store              *store.Store
-	cachedSubscription *v1pb.Subscription
-	mu                 sync.RWMutex
+	store   *store.Store
+	config  *Config
+	sfGroup singleflight.Group
+	cache   atomic.Pointer[cachedState]
+}
 
-	config *Config
+type cachedState struct {
+	subscription *v1pb.Subscription
+	loadedAt     time.Time
 }
 
 // claims creates a struct that will be encoded to a JWT.
@@ -151,61 +156,86 @@ func NewLicenseService(mode common.ReleaseMode, store *store.Store) (*LicenseSer
 	}, nil
 }
 
+const cacheTTL = time.Minute
+
 // LoadSubscription will load subscription.
 // If there is no license, we will return a free plan subscription without expiration time.
 // If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
 func (s *LicenseService) LoadSubscription(ctx context.Context) *v1pb.Subscription {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.cachedSubscription != nil && !isExpired(s.cachedSubscription) {
-		return s.cachedSubscription
+	// 1. Fast path: Atomic load
+	if state := s.cache.Load(); state != nil && time.Since(state.loadedAt) < cacheTTL {
+		return state.subscription
 	}
 
-	// Try to load the subscription from the store.
-	// We use an IIFE (Immediately Invoked Function Expression) to handle the error return flow cleanly
-	// before we decide on the fallback.
-	subscription, err := func() (*v1pb.Subscription, error) {
-		setting, err := s.store.GetSystemSetting(ctx)
+	// 2. Slow path: Singleflight
+	// key "license" ensures strict serialization of reloads
+	v, err, _ := s.sfGroup.Do("license", func() (any, error) {
+		// Double check after entering singleflight (optimization, though standard singleflight doesn't double-check cache implicitly)
+		if state := s.cache.Load(); state != nil && time.Since(state.loadedAt) < cacheTTL {
+			return state.subscription, nil
+		}
+
+		// Try to load the subscription from the store.
+		// We use an IIFE (Immediately Invoked Function Expression) to handle the error return flow cleanly
+		// before we decide on the fallback.
+		subscription, err := func() (*v1pb.Subscription, error) {
+			setting, err := s.store.GetSystemSetting(ctx)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get system setting")
+			}
+
+			if setting.License == "" {
+				return defaultFreeSubscription, nil
+			}
+
+			subscription, err := s.parseLicense(setting.License, setting.WorkspaceId)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to parse enterprise license")
+			}
+
+			slog.Debug(
+				"Load valid license",
+				slog.String("plan", subscription.Plan.String()),
+				slog.Time("expiresAt", subscription.ExpiresTime.AsTime()),
+				slog.Int("activeInstances", int(subscription.ActiveInstances)),
+				slog.Int("instances", int(subscription.Instances)),
+				slog.Int("seats", int(subscription.Seats)),
+			)
+			return subscription, nil
+		}()
+
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get system setting")
+			slog.Debug("failed to load enterprise license", log.BBError(err))
+			subscription = defaultFreeSubscription
 		}
 
-		if setting.License == "" {
-			return defaultFreeSubscription, nil
+		// Switch to free plan if the subscription is expired.
+		if isExpired(subscription) {
+			subscription = &v1pb.Subscription{
+				Plan:        v1pb.PlanType_FREE,
+				ExpiresTime: subscription.ExpiresTime,
+			}
 		}
 
-		subscription, err := s.parseLicense(setting.License, setting.WorkspaceId)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse enterprise license")
-		}
+		s.cache.Store(&cachedState{
+			subscription: subscription,
+			loadedAt:     time.Now(),
+		})
 
-		slog.Debug(
-			"Load valid license",
-			slog.String("plan", subscription.Plan.String()),
-			slog.Time("expiresAt", subscription.ExpiresTime.AsTime()),
-			slog.Int("activeInstances", int(subscription.ActiveInstances)),
-			slog.Int("instances", int(subscription.Instances)),
-			slog.Int("seats", int(subscription.Seats)),
-		)
 		return subscription, nil
-	}()
+	})
 
 	if err != nil {
-		slog.Debug("failed to load enterprise license", log.BBError(err))
-		subscription = defaultFreeSubscription
+		// This should theoretically not happen as our func above suppresses errors and returns defaultFreeSubscription
+		// but singleflight signature returns error.
+		return defaultFreeSubscription
 	}
 
-	// Switch to free plan if the subscription is expired.
-	if isExpired(subscription) {
-		subscription = &v1pb.Subscription{
-			Plan:        v1pb.PlanType_FREE,
-			ExpiresTime: subscription.ExpiresTime,
-		}
+	if sub, ok := v.(*v1pb.Subscription); ok {
+		return sub
 	}
-	s.cachedSubscription = subscription
-
-	return subscription
+	// Fallback in case of unexpected type mismatch
+	return defaultFreeSubscription
 }
 
 func isExpired(sub *v1pb.Subscription) bool {
@@ -317,18 +347,10 @@ func (s *LicenseService) StoreLicense(ctx context.Context, license string) error
 		return err
 	}
 
-	// refresh the cached subscription after storing the license.
-	s.RefreshCache(ctx)
-	return nil
-}
+	// Invalidate cache atomically
+	s.cache.Store(nil)
 
-// RefreshCache refresh the cache for subscription.
-func (s *LicenseService) RefreshCache(ctx context.Context) {
-	// refresh the cached subscription after storing the license.
-	s.mu.Lock()
-	s.cachedSubscription = nil
-	s.mu.Unlock()
-	s.LoadSubscription(ctx)
+	return nil
 }
 
 // GetAuditLogRetentionDays returns the audit log retention period in days for the current plan.
