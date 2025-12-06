@@ -56,7 +56,7 @@ func NewSettingService(
 
 // ListSettings lists all settings.
 func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1pb.ListSettingsRequest]) (*connect.Response[v1pb.ListSettingsResponse], error) {
-	settings, err := s.store.ListSettingV2(ctx)
+	settings, err := s.store.ListSettingV2(ctx, &store.FindSettingMessage{})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list settings: %v", err))
 	}

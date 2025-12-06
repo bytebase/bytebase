@@ -210,21 +210,20 @@ func (s *Store) GetEnvironment(ctx context.Context) (*storepb.EnvironmentSetting
 	return val, nil
 }
 
+// FindSettingMessage is the message for finding settings.
+type FindSettingMessage struct {
+	Name *storepb.SettingName
+}
+
 // GetSettingV2 returns the setting by name.
 func (s *Store) GetSettingV2(ctx context.Context, name storepb.SettingName) (*SettingMessage, error) {
 	if v, ok := s.settingCache.Get(name); ok && s.enableCache {
 		return v, nil
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	settings, err := s.ListSettingV2(ctx, &FindSettingMessage{Name: &name})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	settings, err := listSettingV2Impl(ctx, tx, &name)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list setting")
+		return nil, err
 	}
 	if len(settings) == 0 {
 		return nil, nil
@@ -233,31 +232,77 @@ func (s *Store) GetSettingV2(ctx context.Context, name storepb.SettingName) (*Se
 		return nil, errors.Errorf("found multiple settings: %v", name)
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
-	}
 	return settings[0], nil
 }
 
 // ListSettingV2 returns a list of settings.
-func (s *Store) ListSettingV2(ctx context.Context) ([]*SettingMessage, error) {
+func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]*SettingMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
-	settings, err := listSettingV2Impl(ctx, tx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list setting")
+
+	q := qb.Q().Space(`
+		SELECT
+			name,
+			value
+		FROM setting
+		WHERE TRUE
+	`)
+	if find != nil && find.Name != nil {
+		q.And("name = ?", find.Name.String())
 	}
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var settingMessages []*SettingMessage
+	for rows.Next() {
+		var settingMessage SettingMessage
+		var nameString string
+		var valueString string
+		if err := rows.Scan(
+			&nameString,
+			&valueString,
+		); err != nil {
+			return nil, err
+		}
+		value, ok := storepb.SettingName_value[nameString]
+		if !ok {
+			return nil, errors.Errorf("invalid setting name string: %s", nameString)
+		}
+		settingMessage.Name = storepb.SettingName(value)
+
+		msg, err := getSettingMessage(settingMessage.Name)
+		if err != nil {
+			return nil, err
+		}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), msg); err != nil {
+			return nil, err
+		}
+		settingMessage.Value = msg
+
+		settingMessages = append(settingMessages, &settingMessage)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
-	for _, setting := range settings {
+	for _, setting := range settingMessages {
 		s.settingCache.Add(setting.Name, setting)
 	}
-	return settings, nil
+	return settingMessages, nil
 }
 
 func (s *Store) GetSecret(ctx context.Context) (string, error) {
@@ -355,60 +400,4 @@ func (s *Store) DeleteSettingV2(ctx context.Context, name storepb.SettingName) e
 
 	s.settingCache.Remove(name)
 	return nil
-}
-
-func listSettingV2Impl(ctx context.Context, txn *sql.Tx, name *storepb.SettingName) ([]*SettingMessage, error) {
-	q := qb.Q().Space(`
-		SELECT
-			name,
-			value
-		FROM setting
-		WHERE TRUE
-	`)
-	if name != nil {
-		q.And("name = ?", name.String())
-	}
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-	rows, err := txn.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var settingMessages []*SettingMessage
-	for rows.Next() {
-		var settingMessage SettingMessage
-		var nameString string
-		var valueString string
-		if err := rows.Scan(
-			&nameString,
-			&valueString,
-		); err != nil {
-			return nil, err
-		}
-		value, ok := storepb.SettingName_value[nameString]
-		if !ok {
-			return nil, errors.Errorf("invalid setting name string: %s", nameString)
-		}
-		settingMessage.Name = storepb.SettingName(value)
-
-		msg, err := getSettingMessage(settingMessage.Name)
-		if err != nil {
-			return nil, err
-		}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), msg); err != nil {
-			return nil, err
-		}
-		settingMessage.Value = msg
-
-		settingMessages = append(settingMessages, &settingMessage)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return settingMessages, nil
 }
