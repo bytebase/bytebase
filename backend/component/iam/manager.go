@@ -88,7 +88,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 }
 
 func (m *Manager) ReloadCache(ctx context.Context) error {
-	roles, err := m.store.ListRoles(ctx)
+	roles, err := m.store.ListRoles(ctx, &store.FindRoleMessage{})
 	if err != nil {
 		return err
 	}
