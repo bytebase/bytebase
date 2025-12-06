@@ -27,7 +27,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.3
 	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.6.15
-	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.37.2
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.40.3
 	github.com/beltran/gohive v1.8.1
 	github.com/blang/semver/v4 v4.0.0
