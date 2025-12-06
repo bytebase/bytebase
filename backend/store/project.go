@@ -194,7 +194,7 @@ func (s *Store) UpdateProject(ctx context.Context, patch *UpdateProjectMessage) 
 	}
 	defer tx.Rollback()
 
-	if err := updateProjectImplV2(ctx, tx, patch); err != nil {
+	if err := updateProjectImpl(ctx, tx, patch); err != nil {
 		return nil, err
 	}
 
@@ -224,7 +224,7 @@ func (s *Store) BatchUpdateProjects(ctx context.Context, patches []*UpdateProjec
 
 	// Update all projects in the transaction
 	for _, patch := range patches {
-		if err := updateProjectImplV2(ctx, tx, patch); err != nil {
+		if err := updateProjectImpl(ctx, tx, patch); err != nil {
 			return nil, err
 		}
 	}
@@ -246,7 +246,7 @@ func (s *Store) BatchUpdateProjects(ctx context.Context, patches []*UpdateProjec
 	return updatedProjects, nil
 }
 
-func updateProjectImplV2(ctx context.Context, txn *sql.Tx, patch *UpdateProjectMessage) error {
+func updateProjectImpl(ctx context.Context, txn *sql.Tx, patch *UpdateProjectMessage) error {
 	set := qb.Q()
 
 	if v := patch.Title; v != nil {

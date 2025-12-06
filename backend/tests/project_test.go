@@ -40,7 +40,7 @@ func TestArchiveProject(t *testing.T) {
 
 	t.Run("ArchiveProjectWithDatbase", func(_ *testing.T) {
 		databaseName := "db1"
-		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
+		err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 		a.NoError(err)
 
 		_, err = ctl.projectServiceClient.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{

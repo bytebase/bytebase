@@ -47,7 +47,7 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 
 	// Create database
 	dbName := generateRandomString("db")
-	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
 	a.NoError(err)
 
 	// Create approval rule directly via WorkspaceApprovalSetting
@@ -184,7 +184,7 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 
 	// Create database
 	dbName := generateRandomString("db")
-	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
 	a.NoError(err)
 
 	// Create multiple approval rules - first one should match
@@ -332,7 +332,7 @@ func TestApprovalRuleNoMatch(t *testing.T) {
 
 	// Create database
 	dbName := generateRandomString("db")
-	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
 	a.NoError(err)
 
 	// Create approval rule only for prod environment
@@ -536,7 +536,7 @@ func TestFallbackRuleMatchesWhenSourceSpecificDoesNot(t *testing.T) {
 
 	// Create database
 	dbName := generateRandomString("db")
-	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
 	a.NoError(err)
 
 	// Create rules:
@@ -678,7 +678,7 @@ func TestSourceSpecificRuleTakesPriorityOverFallback(t *testing.T) {
 
 	// Create database
 	dbName := generateRandomString("db")
-	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
 	a.NoError(err)
 
 	// Create rules with fallback FIRST in the list, but source-specific should still win

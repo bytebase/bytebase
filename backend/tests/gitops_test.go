@@ -71,9 +71,9 @@ func TestGitOpsCheck(t *testing.T) {
 
 	// Create databases.
 	databaseName := "gitops_check_db"
-	err = ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "")
+	err = ctl.createDatabase(ctx, project, testInstance, nil, databaseName, "")
 	a.NoError(err)
-	err = ctl.createDatabaseV2(ctx, project, prodInstance, nil, databaseName, "")
+	err = ctl.createDatabase(ctx, project, prodInstance, nil, databaseName, "")
 	a.NoError(err)
 
 	// Create a release with migration files simulating GitOps workflow.
@@ -192,7 +192,7 @@ func TestGitOpsRollout(t *testing.T) {
 
 	// Create database.
 	databaseName := "gitops_rollout_db"
-	err = ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "")
+	err = ctl.createDatabase(ctx, project, testInstance, nil, databaseName, "")
 	a.NoError(err)
 
 	// Step 1: Create a release containing migration files.
@@ -396,9 +396,9 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 
 	// Create databases.
 	databaseName := "gitops_multi_db"
-	err = ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "")
+	err = ctl.createDatabase(ctx, project, testInstance, nil, databaseName, "")
 	a.NoError(err)
-	err = ctl.createDatabaseV2(ctx, project, prodInstance, nil, databaseName, "")
+	err = ctl.createDatabase(ctx, project, prodInstance, nil, databaseName, "")
 	a.NoError(err)
 
 	// Step 1: Create a release containing 3 simple migration files.
@@ -653,7 +653,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 
 	// Create database.
 	databaseName := "gitops_changed_db"
-	err = ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "")
+	err = ctl.createDatabase(ctx, project, testInstance, nil, databaseName, "")
 	a.NoError(err)
 
 	// Step 1: Create a release with version 1.0.0 file.

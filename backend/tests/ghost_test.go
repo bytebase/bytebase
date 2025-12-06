@@ -81,10 +81,10 @@ func TestGhostSchemaUpdate(t *testing.T) {
 
 	// Create backup database for MySQL.
 	backupDBName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, backupDBName, "")
+	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, backupDBName, "")
 	a.NoError(err)
 
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
+	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 	a.NoError(err)
 
 	databaseResponse, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
