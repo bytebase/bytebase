@@ -522,7 +522,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}), nil
 	}
 
-	setting, err := s.store.UpsertSetting(ctx, &store.SetSettingMessage{
+	setting, err := s.store.UpsertSetting(ctx, &store.SettingMessage{
 		Name:  apiSettingName,
 		Value: storeSettingValue,
 	})

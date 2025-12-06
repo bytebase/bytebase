@@ -13,12 +13,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// SetSettingMessage is the message for updating setting.
-type SetSettingMessage struct {
-	Name  storepb.SettingName
-	Value proto.Message
-}
-
 // SettingMessage is the message of setting.
 type SettingMessage struct {
 	Name  storepb.SettingName
@@ -97,33 +91,27 @@ func (s *Store) GetSystemSetting(ctx context.Context) (*storepb.SystemSetting, e
 	return val, nil
 }
 
-// UpsertEnterpriseLicense updates the enterprise license in SYSTEM setting.
-func (s *Store) UpsertEnterpriseLicense(ctx context.Context, license string) error {
+// UpdateLicense updates the license in SYSTEM setting.
+func (s *Store) UpdateLicense(ctx context.Context, license string) error {
 	setting, err := s.GetSetting(ctx, storepb.SettingName_SYSTEM)
 	if err != nil {
 		return errors.Wrap(err, "failed to get system setting")
 	}
-
-	var systemSetting *storepb.SystemSetting
-	if setting != nil {
-		val, ok := setting.Value.(*storepb.SystemSetting)
-		if !ok {
-			return errors.Errorf("invalid setting value type for %s", storepb.SettingName_SYSTEM)
-		}
-		systemSetting = val
-	} else {
-		systemSetting = &storepb.SystemSetting{}
+	if setting == nil {
+		return errors.Errorf("system setting not found")
+	}
+	systemSetting, ok := setting.Value.(*storepb.SystemSetting)
+	if !ok {
+		return errors.Errorf("invalid system setting value type for %s", storepb.SettingName_SYSTEM)
 	}
 
 	systemSetting.License = license
-
-	if _, err := s.UpsertSetting(ctx, &SetSettingMessage{
+	if _, err := s.UpsertSetting(ctx, &SettingMessage{
 		Name:  storepb.SettingName_SYSTEM,
 		Value: systemSetting,
 	}); err != nil {
 		return errors.Wrap(err, "failed to upsert system setting")
 	}
-
 	return nil
 }
 
@@ -306,7 +294,7 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 }
 
 // UpsertSetting upserts the setting by name.
-func (s *Store) UpsertSetting(ctx context.Context, update *SetSettingMessage) (*SettingMessage, error) {
+func (s *Store) UpsertSetting(ctx context.Context, update *SettingMessage) (*SettingMessage, error) {
 	valueBytes, err := protojson.Marshal(update.Value)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal setting value")
