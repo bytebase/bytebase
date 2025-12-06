@@ -231,7 +231,11 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *v1pb.Subscriptio
 		return defaultFreeSubscription
 	}
 
-	return v.(*v1pb.Subscription)
+	if sub, ok := v.(*v1pb.Subscription); ok {
+		return sub
+	}
+	// Fallback in case of unexpected type mismatch
+	return defaultFreeSubscription
 }
 
 func isExpired(sub *v1pb.Subscription) bool {
