@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -27,6 +26,11 @@ type UpdateRoleMessage struct {
 	Name        *string
 	Description *string
 	Permissions *map[string]bool
+}
+
+// FindRoleMessage is the message for finding roles.
+type FindRoleMessage struct {
+	ResourceID *string
 }
 
 type RoleUsedByResource struct {
@@ -103,52 +107,41 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage) (*RoleMessa
 }
 
 // GetRole returns a role by ID.
-func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, error) {
-	if v, ok := s.rolesCache.Get(resourceID); ok && s.enableCache {
-		return v, nil
-	}
-
-	q := qb.Q().Space(`
-		SELECT
-			name, description, permissions
-		FROM role
-		WHERE resource_id = ?
-	`, resourceID)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	role := &RoleMessage{
-		Permissions: map[string]bool{},
-	}
-	var permissions []byte
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&role.Name, &role.Description, &permissions); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+func (s *Store) GetRole(ctx context.Context, find *FindRoleMessage) (*RoleMessage, error) {
+	if find.ResourceID != nil {
+		if v, ok := s.rolesCache.Get(*find.ResourceID); ok && s.enableCache {
+			return v, nil
 		}
+	}
+
+	roles, err := s.ListRoles(ctx, find)
+	if err != nil {
 		return nil, err
 	}
-	var rolePermissions storepb.RolePermissions
-	if err := common.ProtojsonUnmarshaler.Unmarshal(permissions, &rolePermissions); err != nil {
-		return nil, err
+	if len(roles) == 0 {
+		return nil, nil
 	}
-	for _, v := range rolePermissions.Permissions {
-		role.Permissions[v] = true
+	if len(roles) > 1 {
+		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d roles with filter %+v, expect 1", len(roles), find)}
 	}
-	role.ResourceID = resourceID
-	s.rolesCache.Add(resourceID, role)
+	role := roles[0]
+
+	s.rolesCache.Add(role.ResourceID, role)
 	return role, nil
 }
 
 // ListRoles returns a list of roles.
-func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
+func (s *Store) ListRoles(ctx context.Context, find *FindRoleMessage) ([]*RoleMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
 			resource_id, name, description, permissions
 		FROM role
+		WHERE TRUE
 	`)
+
+	if v := find.ResourceID; v != nil {
+		q.And("resource_id = ?", *v)
+	}
 
 	query, args, err := q.ToSQL()
 	if err != nil {

@@ -1092,7 +1092,7 @@ func validateIAMPolicy(
 		maximumRoleExpiration = workspaceProfileSetting.MaximumRoleExpiration
 	}
 
-	roleMessages, err := stores.ListRoles(ctx)
+	roleMessages, err := stores.ListRoles(ctx, &store.FindRoleMessage{})
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list roles"))
 	}

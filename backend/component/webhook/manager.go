@@ -45,7 +45,7 @@ func NewManager(store *store.Store, iamManager *iam.Manager, profile *config.Pro
 }
 
 func (m *Manager) CreateEvent(ctx context.Context, e *Event) {
-	webhookList, err := m.store.FindProjectWebhook(ctx, &store.FindProjectWebhookMessage{
+	webhookList, err := m.store.ListProjectWebhooks(ctx, &store.FindProjectWebhookMessage{
 		ProjectID: &e.Project.ResourceID,
 		EventType: &e.Type,
 	})

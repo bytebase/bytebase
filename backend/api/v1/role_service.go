@@ -37,7 +37,7 @@ func NewRoleService(store *store.Store, iamManager *iam.Manager, licenseService 
 
 // ListRoles lists roles.
 func (s *RoleService) ListRoles(ctx context.Context, _ *connect.Request[v1pb.ListRolesRequest]) (*connect.Response[v1pb.ListRolesResponse], error) {
-	roleMessages, err := s.store.ListRoles(ctx)
+	roleMessages, err := s.store.ListRoles(ctx, &store.FindRoleMessage{})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list roles"))
 	}
@@ -59,7 +59,7 @@ func (s *RoleService) GetRole(ctx context.Context, req *connect.Request[v1pb.Get
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	role, err := s.store.GetRole(ctx, roleID)
+	role, err := s.store.GetRole(ctx, &store.FindRoleMessage{ResourceID: &roleID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get role"))
 	}
@@ -139,7 +139,7 @@ func (s *RoleService) UpdateRole(ctx context.Context, req *connect.Request[v1pb.
 	if predefinedRole := s.getBuildinRole(roleID); predefinedRole != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot change the build-in role %s", req.Msg.Role.Name))
 	}
-	role, err := s.store.GetRole(ctx, roleID)
+	role, err := s.store.GetRole(ctx, &store.FindRoleMessage{ResourceID: &roleID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get role"))
 	}
@@ -200,7 +200,7 @@ func (s *RoleService) DeleteRole(ctx context.Context, req *connect.Request[v1pb.
 	if predefinedRole := s.getBuildinRole(roleID); predefinedRole != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot delete the build-in role %s", req.Msg.Name))
 	}
-	role, err := s.store.GetRole(ctx, roleID)
+	role, err := s.store.GetRole(ctx, &store.FindRoleMessage{ResourceID: &roleID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get role"))
 	}
