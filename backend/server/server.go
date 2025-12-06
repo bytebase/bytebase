@@ -56,7 +56,7 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	taskScheduler      *taskrun.Scheduler
+	taskScheduler        *taskrun.Scheduler
 	planCheckScheduler   *plancheck.Scheduler
 	metricReporter       *metricreport.Reporter
 	schemaSyncer         *schemasync.Syncer
