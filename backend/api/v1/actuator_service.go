@@ -94,7 +94,6 @@ func (s *ActuatorService) DeleteCache(
 	_ *connect.Request[v1pb.DeleteCacheRequest],
 ) (*connect.Response[emptypb.Empty], error) {
 	s.store.DeleteCache()
-	s.licenseService.RefreshCache(ctx)
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
