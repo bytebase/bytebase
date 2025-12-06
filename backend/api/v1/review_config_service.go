@@ -161,7 +161,7 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *conne
 	}
 
 	policyType := storepb.Policy_TAG
-	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
+	policies, err := s.store.ListPolicies(ctx, &store.FindPolicyMessage{
 		Type: &policyType,
 	})
 	if err != nil {
@@ -186,7 +186,7 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *conne
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to marshal tag policy"))
 		}
 		patch := string(payloadBytes)
-		if _, err := s.store.UpdatePolicyV2(ctx, &store.UpdatePolicyMessage{
+		if _, err := s.store.UpdatePolicy(ctx, &store.UpdatePolicyMessage{
 			ResourceType: policy.ResourceType,
 			Resource:     policy.Resource,
 			Payload:      &patch,
@@ -225,7 +225,7 @@ func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.Revie
 
 func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, reviewConfigMessage *store.ReviewConfigMessage) (*v1pb.ReviewConfig, error) {
 	policyType := storepb.Policy_TAG
-	tagPolicies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
+	tagPolicies, err := s.store.ListPolicies(ctx, &store.FindPolicyMessage{
 		Type:    &policyType,
 		ShowAll: false,
 	})
@@ -268,7 +268,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 			if err != nil {
 				return nil, err
 			}
-			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 				ResourceID:  &projectID,
 				ShowDeleted: false,
 			})

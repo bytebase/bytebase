@@ -68,7 +68,7 @@ DROP SCHEMA IF EXISTS "schema_a";
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase")
+	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, databaseName, "bytebase")
 	a.NoError(err)
 
 	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
@@ -99,7 +99,7 @@ DROP SCHEMA IF EXISTS "schema_a";
 	changelogs := resp.Msg.Changelogs
 	a.Equal(1, len(changelogs))
 
-	err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, newDatabaseName, "bytebase")
+	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, newDatabaseName, "bytebase")
 	a.NoError(err)
 
 	newDatabaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{

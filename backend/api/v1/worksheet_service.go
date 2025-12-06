@@ -52,7 +52,7 @@ func (s *WorksheetService) CreateWorksheet(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -493,7 +493,7 @@ func (s *WorksheetService) checkWorksheetPermission(
 	user *store.UserMessage,
 	permission iam.Permission,
 ) (bool, error) {
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -509,7 +509,7 @@ func (s *WorksheetService) checkWorksheetPermission(
 func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, worksheet *store.WorkSheetMessage) (*v1pb.Worksheet, error) {
 	databaseParent := ""
 	if worksheet.InstanceID != nil && worksheet.DatabaseName != nil {
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 			ProjectID:    &worksheet.ProjectID,
 			InstanceID:   worksheet.InstanceID,
 			DatabaseName: worksheet.DatabaseName,
@@ -539,7 +539,7 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get creator: %v", err))
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &worksheet.ProjectID,
 	})
 	if err != nil {

@@ -107,7 +107,7 @@ func (r *Runner) runOnce(ctx context.Context) {
 }
 
 func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
-	issues, err := r.store.ListIssueV2(ctx, &store.FindIssueMessage{
+	issues, err := r.store.ListIssues(ctx, &store.FindIssueMessage{
 		StatusList: []storepb.Issue_Status{storepb.Issue_OPEN},
 	})
 	if err != nil {
@@ -458,7 +458,7 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 
 	var celVarsList []map[string]any
 	for _, task := range pipelineCreate.Tasks {
-		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		instance, err := r.store.GetInstance(ctx, &store.FindInstanceMessage{
 			ResourceID: &task.InstanceID,
 		})
 		if err != nil {
@@ -484,7 +484,7 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 			databaseName = task.Payload.GetDatabaseName()
 			environmentID = task.Payload.GetEnvironmentId()
 		} else {
-			database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			database, err := r.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 				InstanceID:   &task.InstanceID,
 				DatabaseName: task.DatabaseName,
 			})
@@ -572,7 +572,7 @@ func (r *Runner) buildCELVariablesForDataExport(ctx context.Context, issue *stor
 		if task.Type != storepb.Task_DATABASE_EXPORT {
 			continue
 		}
-		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		instance, err := r.store.GetInstance(ctx, &store.FindInstanceMessage{
 			ResourceID: &task.InstanceID,
 		})
 		if err != nil {
@@ -582,7 +582,7 @@ func (r *Runner) buildCELVariablesForDataExport(ctx context.Context, issue *stor
 			continue
 		}
 
-		database, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := r.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &task.InstanceID,
 			DatabaseName: task.DatabaseName,
 		})
@@ -685,14 +685,14 @@ func (r *Runner) getDatabaseMap(ctx context.Context, databases []string) (map[st
 		if err != nil {
 			return nil, err
 		}
-		instance, err := r.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		instance, err := r.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 		if err != nil {
 			return nil, err
 		}
 		if instance == nil || instance.Deleted {
 			continue
 		}
-		db, err := r.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		db, err := r.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:      &instanceID,
 			DatabaseName:    &databaseName,
 			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
@@ -749,7 +749,7 @@ func (r *Runner) getApprovalSourceFromIssue(ctx context.Context, issue *store.Is
 }
 
 func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval, riskLevel storepb.RiskLevel) error {
-	if _, err := s.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+	if _, err := s.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
 		PayloadUpsert: &storepb.Issue{
 			Approval:  approval,
 			RiskLevel: riskLevel,

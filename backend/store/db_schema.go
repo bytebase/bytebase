@@ -188,7 +188,7 @@ func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, 
 	if err := common.ProtojsonUnmarshaler.Unmarshal(config, &databaseConfig); err != nil {
 		return nil, err
 	}
-	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := s.GetInstance(ctx, &FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
 		return nil, err
 	}

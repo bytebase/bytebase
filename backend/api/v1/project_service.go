@@ -86,7 +86,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	find.FilterQ = filterQ
-	projects, err := s.store.ListProjectV2(ctx, find)
+	projects, err := s.store.ListProjects(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -136,7 +136,7 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 	}
 	find.FilterQ = filterQ
 
-	projects, err := s.store.ListProjectV2(ctx, find)
+	projects, err := s.store.ListProjects(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -202,7 +202,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	project, err := s.store.CreateProjectV2(ctx,
+	project, err := s.store.CreateProject(ctx,
 		projectMessage,
 		user.ID,
 	)
@@ -340,7 +340,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		}
 	}
 
-	project, err = s.store.UpdateProjectV2(ctx, patch)
+	project, err = s.store.UpdateProject(ctx, patch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -396,7 +396,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		// We don't close the issues because they might be open still.
 	} else {
 		// Return the open issue error first because that's more important than transferring out databases.
-		openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{ProjectIDs: &[]string{project.ResourceID}, StatusList: []storepb.Issue_Status{storepb.Issue_OPEN}})
+		openIssues, err := s.store.ListIssues(ctx, &store.FindIssueMessage{ProjectIDs: &[]string{project.ResourceID}, StatusList: []storepb.Issue_Status{storepb.Issue_OPEN}})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
@@ -408,7 +408,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		}
 	}
 
-	if _, err := s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
+	if _, err := s.store.UpdateProject(ctx, &store.UpdateProjectMessage{
 		ResourceID: project.ResourceID,
 		Delete:     &deletePatch,
 	}); err != nil {
@@ -428,7 +428,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q is active", req.Msg.Name))
 	}
 
-	project, err = s.store.UpdateProjectV2(ctx, &store.UpdateProjectMessage{
+	project, err = s.store.UpdateProject(ctx, &store.UpdateProjectMessage{
 		ResourceID: project.ResourceID,
 		Delete:     &undeletePatch,
 	})
@@ -465,7 +465,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 		var blockedProjects []string
 		for _, project := range projects {
 			// Check for open issues
-			openIssues, err := s.store.ListIssueV2(ctx, &store.FindIssueMessage{
+			openIssues, err := s.store.ListIssues(ctx, &store.FindIssueMessage{
 				ProjectIDs: &[]string{project.ResourceID},
 				StatusList: []storepb.Issue_Status{storepb.Issue_OPEN},
 			})
@@ -529,7 +529,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 		})
 	}
 
-	if _, err := s.store.BatchUpdateProjectsV2(ctx, updatePatches); err != nil {
+	if _, err := s.store.BatchUpdateProjects(ctx, updatePatches); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -542,7 +542,7 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -573,7 +573,7 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, req *connect.Req
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 			ResourceID: &projectID,
 		})
 		if err != nil {
@@ -605,7 +605,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -644,7 +644,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
+	if _, err := s.store.CreatePolicy(ctx, &store.PolicyMessage{
 		Resource:          common.FormatProject(project.ResourceID),
 		ResourceType:      storepb.Policy_PROJECT,
 		Payload:           string(policyPayload),
@@ -781,7 +781,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -804,11 +804,11 @@ func (s *ProjectService) AddWebhook(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid webhook URL"))
 	}
 
-	if _, err := s.store.CreateProjectWebhookV2(ctx, project.ResourceID, create); err != nil {
+	if _, err := s.store.CreateProjectWebhook(ctx, project.ResourceID, create); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -828,7 +828,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid webhook id %q", webhookID))
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -841,7 +841,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", projectID))
 	}
 
-	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
+	webhook, err := s.store.GetProjectWebhook(ctx, &store.FindProjectWebhookMessage{
 		ProjectID: &project.ResourceID,
 		ID:        &webhookIDInt,
 	})
@@ -896,11 +896,11 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 		Payload: updatedPayload,
 	}
 
-	if _, err := s.store.UpdateProjectWebhookV2(ctx, project.ResourceID, webhook.ID, update); err != nil {
+	if _, err := s.store.UpdateProjectWebhook(ctx, project.ResourceID, webhook.ID, update); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -920,7 +920,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid webhook id %q", webhookID))
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -933,7 +933,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", projectID))
 	}
 
-	webhook, err := s.store.GetProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
+	webhook, err := s.store.GetProjectWebhook(ctx, &store.FindProjectWebhookMessage{
 		ProjectID: &project.ResourceID,
 		ID:        &webhookIDInt,
 	})
@@ -944,11 +944,11 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", req.Msg.Webhook.Url))
 	}
 
-	if err := s.store.DeleteProjectWebhookV2(ctx, project.ResourceID, webhook.ID); err != nil {
+	if err := s.store.DeleteProjectWebhook(ctx, project.ResourceID, webhook.ID); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -973,7 +973,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -1043,7 +1043,7 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 		ResourceID:  &projectID,
 		ShowDeleted: true,
 	}
-	project, err := s.store.GetProjectV2(ctx, find)
+	project, err := s.store.GetProject(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

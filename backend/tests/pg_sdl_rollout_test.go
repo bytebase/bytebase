@@ -91,7 +91,7 @@ func (stc *sdlTestContext) createTestPgDatabase(t *testing.T, dbNamePrefix strin
 	instance := instanceResp.Msg
 
 	// Create database in Bytebase
-	err = stc.ctl.createDatabaseV2(stc.ctx, stc.ctl.project, instance, nil, dbName, "postgres")
+	err = stc.ctl.createDatabase(stc.ctx, stc.ctl.project, instance, nil, dbName, "postgres")
 	a.NoError(err)
 
 	// Get database

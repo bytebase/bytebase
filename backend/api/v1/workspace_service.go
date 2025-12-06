@@ -80,7 +80,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		Payload:      &payloadStr,
 	}
 
-	if _, err := s.store.UpdatePolicyV2(ctx, patch); err != nil {
+	if _, err := s.store.UpdatePolicy(ctx, patch); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 

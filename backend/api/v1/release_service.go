@@ -64,7 +64,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get project id"))
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 	}
@@ -141,7 +141,7 @@ func (s *ReleaseService) GetRelease(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
 	}
-	releaseMessage, err := s.store.GetReleaseV2(ctx, &store.FindReleaseMessage{
+	releaseMessage, err := s.store.GetRelease(ctx, &store.FindReleaseMessage{
 		ProjectID: &projectID,
 		UID:       &releaseUID,
 	})
@@ -167,7 +167,7 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get project id"))
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 	}
@@ -225,7 +225,7 @@ func (s *ReleaseService) SearchReleases(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get project id"))
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 	}
@@ -287,8 +287,8 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
 	}
 
-	// Use GetReleaseV2 with FindReleaseMessage for database-level filtering
-	release, err := s.store.GetReleaseV2(ctx, &store.FindReleaseMessage{
+	// Use GetRelease with FindReleaseMessage for database-level filtering
+	release, err := s.store.GetRelease(ctx, &store.FindReleaseMessage{
 		ProjectID: &projectID,
 		UID:       &releaseUID,
 	})
@@ -297,7 +297,7 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 	}
 	if release == nil {
 		if req.Msg.AllowMissing {
-			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+			project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 			}
@@ -343,7 +343,7 @@ func (s *ReleaseService) DeleteRelease(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
 	}
-	release, err := s.store.GetReleaseV2(ctx, &store.FindReleaseMessage{
+	release, err := s.store.GetRelease(ctx, &store.FindReleaseMessage{
 		ProjectID: &projectID,
 		UID:       &releaseUID,
 	})
@@ -368,7 +368,7 @@ func (s *ReleaseService) UndeleteRelease(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get release uid"))
 	}
-	release, err := s.store.GetReleaseV2(ctx, &store.FindReleaseMessage{
+	release, err := s.store.GetRelease(ctx, &store.FindReleaseMessage{
 		ProjectID:   &projectID,
 		UID:         &releaseUID,
 		ShowDeleted: true,
@@ -421,7 +421,7 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 	}
 	r.Files = files
 
-	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &release.ProjectID})
+	project, err := s.GetProject(ctx, &store.FindProjectMessage{ResourceID: &release.ProjectID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find project")
 	}

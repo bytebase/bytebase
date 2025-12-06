@@ -65,7 +65,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -101,7 +101,7 @@ func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -130,7 +130,7 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -158,7 +158,7 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 	if err := s.buildRolloutFindWithFilter(ctx, find, request.Filter); err != nil {
 		return nil, err
 	}
-	pipelines, err := s.store.ListPipelineV2(ctx, find)
+	pipelines, err := s.store.ListPipelines(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list pipelines, error: %v", err))
 	}
@@ -219,7 +219,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -288,7 +288,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -298,7 +298,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
-	pipeline, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+	pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
 		ID:        &rolloutID,
 		ProjectID: &projectID,
 	})
@@ -309,7 +309,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("pipeline %d not found in project %s", rolloutID, projectID))
 	}
 
-	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
+	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 		PipelineUID: &rolloutID,
 		Environment: maybeStageID,
 		TaskUID:     maybeTaskID,
@@ -335,7 +335,7 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	pipeline, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+	pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
 		ID:        &rolloutID,
 		ProjectID: &projectID,
 	})
@@ -392,12 +392,12 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("expect connection id to be of type string but found %T", connIDAny))
 	}
 
-	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
+	task, err := s.store.GetTaskByID(ctx, taskUID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task, error: %v", err))
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance, error: %v", err))
 	}
@@ -522,7 +522,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -532,7 +532,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
-	rollout, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+	rollout, err := s.store.GetPipeline(ctx, &store.PipelineFind{
 		ID:        &rolloutID,
 		ProjectID: &projectID,
 	})
@@ -543,7 +543,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %v not found", rolloutID))
 	}
 
-	issueN, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 		PipelineID: &rolloutID,
 		ProjectID:  &projectID,
 	})
@@ -669,7 +669,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -679,7 +679,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
-	rollout, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+	rollout, err := s.store.GetPipeline(ctx, &store.PipelineFind{
 		ID:        &rolloutID,
 		ProjectID: &projectID,
 	})
@@ -690,7 +690,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %v not found", rolloutID))
 	}
 
-	issueN, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 		PipelineID: &rolloutID,
 		ProjectID:  &projectID,
 	})
@@ -780,7 +780,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
@@ -790,7 +790,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
-	rollout, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+	rollout, err := s.store.GetPipeline(ctx, &store.PipelineFind{
 		ID:        &rolloutID,
 		ProjectID: &projectID,
 	})
@@ -801,7 +801,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %v not found", rolloutID))
 	}
 
-	issueN, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{
+	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 		PipelineID: &rolloutID,
 		ProjectID:  &projectID,
 	})
@@ -844,7 +844,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		taskNames = append(taskNames, common.FormatTask(projectID, rolloutID, stageID, taskID))
 	}
 
-	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
+	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 		UIDs: &taskRunIDs,
 	})
 	if err != nil {
@@ -899,7 +899,7 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get task run uid, error: %v", err))
 	}
 
-	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
+	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 		UID: &taskRunUID,
 	})
 	if err != nil {
@@ -927,12 +927,12 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no rollback", taskRun.ID))
 	}
 
-	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
+	task, err := s.store.GetTaskByID(ctx, taskUID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task, error: %v", err))
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance, error: %v", err))
 	}
@@ -1117,7 +1117,7 @@ func (s *RolloutService) canUserSkipEnvironmentTasks(ctx context.Context, user *
 
 // getRolloutWithTasks retrieves a pipeline by ID with its tasks populated.
 func (s *RolloutService) getRolloutWithTasks(ctx context.Context, projectID string, rolloutID int) (*store.PipelineMessage, error) {
-	pipeline, err := s.store.GetPipelineV2(ctx, &store.PipelineFind{
+	pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
 		ID:        &rolloutID,
 		ProjectID: &projectID,
 	})

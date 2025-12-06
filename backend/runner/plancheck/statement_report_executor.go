@@ -71,7 +71,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, err
 	}
 
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
+	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %v", config.InstanceId)
 	}
@@ -89,7 +89,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 		}, nil
 	}
 
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
+	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
 	}
@@ -149,7 +149,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	if databaseSchema.GetProto() == nil {
 		return nil, errors.Errorf("database schema metadata %s not found", database.String())
 	}
-	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +286,7 @@ func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *sto
 	}
 
 	// Check the project setting to see if we should use the database owner.
-	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get project")
 	}

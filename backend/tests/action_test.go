@@ -558,7 +558,7 @@ func (ctl *controller) createTestDatabase(ctx context.Context, t *testing.T) *v1
 
 	// Create database
 	dbName := generateRandomString("db")[:8]
-	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
 	a.NoError(err)
 
 	// Get database
@@ -600,7 +600,7 @@ func (ctl *controller) createTestMySQLDatabase(ctx context.Context, t *testing.T
 
 	// Create database
 	dbName := generateRandomString("db")[:8]
-	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
 	a.NoError(err)
 
 	// Get database
@@ -642,7 +642,7 @@ func (ctl *controller) createTestPostgreSQLDatabase(ctx context.Context, t *test
 
 	// Create database
 	dbName := generateRandomString("db")[:8]
-	err = ctl.createDatabaseV2(ctx, ctl.project, instanceResp.Msg, nil, dbName, "postgres")
+	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "postgres")
 	a.NoError(err)
 
 	// Get database

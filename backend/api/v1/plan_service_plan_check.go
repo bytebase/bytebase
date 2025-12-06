@@ -31,7 +31,7 @@ func getPlanCheckRunsFromPlan(ctx context.Context, s *store.Store, plan *store.P
 }
 
 func getPlanCheckRunsFromPlanSpecs(ctx context.Context, s *store.Store, plan *store.PlanMessage, skippedSpecIDs map[string]struct{}) ([]*store.PlanCheckRunMessage, error) {
-	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
+	project, err := s.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project %v", plan.ProjectID)
 	}
@@ -169,7 +169,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context,
 }
 
 func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig, sheetUID int, database *store.DatabaseMessage) ([]*store.PlanCheckRunMessage, error) {
-	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
+	instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{
 		ResourceID: &database.InstanceID,
 	})
 	if err != nil {

@@ -54,7 +54,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -92,7 +92,7 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -141,7 +141,7 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid sheet id %d, must be positive integer", sheetUID))
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -191,7 +191,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid sheet id %d, must be positive integer", sheetUID))
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
@@ -276,7 +276,7 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get creator"))
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &sheet.ProjectID,
 	})
 	if err != nil {

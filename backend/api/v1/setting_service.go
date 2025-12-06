@@ -56,7 +56,7 @@ func NewSettingService(
 
 // ListSettings lists all settings.
 func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1pb.ListSettingsRequest]) (*connect.Response[v1pb.ListSettingsResponse], error) {
-	settings, err := s.store.ListSettingV2(ctx)
+	settings, err := s.store.ListSettings(ctx, &store.FindSettingMessage{})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list settings: %v", err))
 	}
@@ -92,7 +92,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("setting is not available"))
 	}
 
-	setting, err := s.store.GetSettingV2(ctx, apiSettingName)
+	setting, err := s.store.GetSetting(ctx, apiSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get setting: %v", err))
 	}
@@ -131,7 +131,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	if s.profile.IsFeatureUnavailable(settingName) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("feature %s is unavailable in current mode", settingName))
 	}
-	existedSetting, err := s.store.GetSettingV2(ctx, apiSettingName)
+	existedSetting, err := s.store.GetSetting(ctx, apiSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", settingName, err))
 	}
@@ -495,7 +495,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			if !newEnvIDMap[env.Id] {
 				// deleted
 				emptyStr := ""
-				if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
+				if _, err := s.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 					EnvironmentID:       &emptyStr,
 					FindByEnvironmentID: &env.Id,
 				}); err != nil {
@@ -522,7 +522,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}), nil
 	}
 
-	setting, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
+	setting, err := s.store.UpsertSetting(ctx, &store.SetSettingMessage{
 		Name:  apiSettingName,
 		Value: storeSettingValue,
 	})
@@ -550,7 +550,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			classificationID = classification.Configs[0].Id
 		}
 
-		projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: false})
+		projects, err := s.store.ListProjects(ctx, &store.FindProjectMessage{ShowDeleted: false})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list projects with error: %v", err))
 		}
@@ -562,7 +562,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				DataClassificationConfigID: &classificationID,
 			})
 		}
-		if _, err = s.store.BatchUpdateProjectsV2(ctx, batchUpdate); err != nil {
+		if _, err = s.store.BatchUpdateProjects(ctx, batchUpdate); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to patch project classification with error: %v", err))
 		}
 	}

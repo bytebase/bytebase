@@ -137,7 +137,7 @@ func TestCreateDatabaseGroup(t *testing.T) {
 				instance := instanceResp.Msg
 				instanceResourceID2InstanceTitle[instanceResourceID] = instance.Title
 				for preCreateDatabase := range prepareInstance.matchedDatabasesName {
-					err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, preCreateDatabase, "")
+					err = ctl.createDatabase(ctx, ctl.project, instance, nil, preCreateDatabase, "")
 					a.NoError(err)
 				}
 			}

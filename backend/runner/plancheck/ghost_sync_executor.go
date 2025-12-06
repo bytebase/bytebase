@@ -62,7 +62,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 		}
 	}()
 
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
+	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %s", config.InstanceId)
 	}
@@ -70,7 +70,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 		return nil, errors.Errorf("instance %s not found", config.InstanceId)
 	}
 
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
+	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
 	}

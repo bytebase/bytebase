@@ -288,7 +288,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 			}
-			project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			project, err = s.store.GetProject(ctx, &store.FindProjectMessage{
 				ResourceID:  &projectID,
 				ShowDeleted: true,
 			})
@@ -330,7 +330,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to sync database metadata and schema")
 			}
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &databaseMessage.InstanceID})
+			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &databaseMessage.InstanceID})
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get instance for format version")
 			}
@@ -460,7 +460,7 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, req *connect
 		databases = append(databases, database)
 	}
 	if batchUpdate.ProjectID != nil {
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 			ResourceID:  batchUpdate.ProjectID,
 			ShowDeleted: true,
 		})
@@ -637,14 +637,14 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
 	}
 	if instance == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:      &instanceID,
 		DatabaseName:    &databaseName,
 		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
@@ -689,7 +689,7 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
 	}
@@ -697,7 +697,7 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 	}
 
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:      &instanceID,
 		DatabaseName:    &databaseName,
 		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
@@ -819,7 +819,7 @@ func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb
 			}
 
 			// Get instance to determine engine and case sensitivity
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 			if err != nil {
 				return nil, err
 			}
@@ -899,7 +899,7 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 			}
 
 			// Get instance to determine engine and case sensitivity
-			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 			if err != nil {
 				return nil, err
 			}
@@ -950,7 +950,7 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 		if err != nil {
 			return nil, err
 		}
-		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 		if err != nil {
 			return nil, err
 		}
@@ -988,7 +988,7 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 		instanceID = insID
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
 		return storepb.Engine_ENGINE_UNSPECIFIED, errors.Wrapf(err, "failed to get instance %s", instanceID)
 	}
@@ -1057,7 +1057,7 @@ func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResourc
 }
 
 func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store.DatabaseMessage) (*v1pb.Database, error) {
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 		ResourceID: &database.InstanceID,
 	})
 	if err != nil {
@@ -1105,7 +1105,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 	}
 
-	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 	}

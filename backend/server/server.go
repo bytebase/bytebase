@@ -56,7 +56,7 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	taskSchedulerV2      *taskrun.SchedulerV2
+	taskScheduler        *taskrun.Scheduler
 	planCheckScheduler   *plancheck.Scheduler
 	metricReporter       *metricreport.Reporter
 	schemaSyncer         *schemasync.Syncer
@@ -168,10 +168,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.licenseService.LoadSubscription(ctx)
 
 	// Settings are now initialized in the database schema (LATEST.sql)
-	secret, err := s.store.GetSecret(ctx)
+	systemSetting, err := s.store.GetSystemSetting(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get secret")
+		return nil, errors.Wrap(err, "failed to get system setting")
 	}
+	secret := systemSetting.AuthSecret
 	s.iamManager, err = iam.NewManager(stores, s.licenseService)
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
 		return nil, errors.Wrapf(err, "failed to reload iam cache")
@@ -189,11 +190,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.profile, s.stateCfg, s.licenseService)
 	s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
-	s.taskSchedulerV2 = taskrun.NewSchedulerV2(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
-	s.taskSchedulerV2.Register(storepb.Task_DATABASE_CREATE, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
-	s.taskSchedulerV2.Register(storepb.Task_DATABASE_MIGRATE, taskrun.NewDatabaseMigrateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskSchedulerV2.Register(storepb.Task_DATABASE_EXPORT, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskSchedulerV2.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskScheduler = taskrun.NewScheduler(stores, s.stateCfg, s.webhookManager, profile, s.licenseService)
+	s.taskScheduler.Register(storepb.Task_DATABASE_CREATE, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
+	s.taskScheduler.Register(storepb.Task_DATABASE_MIGRATE, taskrun.NewDatabaseMigrateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskScheduler.Register(storepb.Task_DATABASE_EXPORT, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskScheduler.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg)
 	databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(stores, s.dbFactory)
@@ -231,7 +232,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	s.cancel = cancel
 	// runnerWG waits for all goroutines to complete.
 	s.runnerWG.Add(1)
-	go s.taskSchedulerV2.Run(ctx, &s.runnerWG)
+	go s.taskScheduler.Run(ctx, &s.runnerWG)
 	s.runnerWG.Add(1)
 	go s.schemaSyncer.Run(ctx, &s.runnerWG)
 	s.runnerWG.Add(1)

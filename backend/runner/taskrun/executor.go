@@ -109,7 +109,7 @@ func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *sto
 	}
 
 	// Check the project setting to see if we should use the database owner.
-	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get project")
 	}
@@ -157,18 +157,18 @@ func runMigrationWithFunc(
 }
 
 func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, schemaVersion string, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*migrateContext, error) {
-	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, err
 	}
-	database, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
+	database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
 	if err != nil {
 		return nil, err
 	}
 	if database == nil {
 		return nil, errors.Errorf("database not found")
 	}
-	pipeline, err := stores.GetPipelineV2ByID(ctx, task.PipelineID)
+	pipeline, err := stores.GetPipelineByID(ctx, task.PipelineID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get pipeline")
 	}
@@ -252,7 +252,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 			if foundChangedResources {
 				break
 			}
-			taskInstance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+			taskInstance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 			if err != nil {
 				return nil, err
 			}
@@ -285,7 +285,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		}
 	}
 
-	issue, err := stores.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+	issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		slog.Error("failed to find containing issue", log.BBError(err))
 	}
@@ -330,7 +330,7 @@ func doMigrationWithFunc(
 
 	opts := db.ExecuteOptions{}
 
-	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get project %v for database %v", database.ProjectID, database.DatabaseName)
 	}

@@ -80,7 +80,7 @@ func getResourcesForMySQL(
 		return list, nil
 	}
 
-	database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	database, err := storeInstance.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:      &instance.ResourceID,
 		DatabaseName:    &databaseName,
 		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
@@ -113,7 +113,7 @@ func getResourcesForMySQL(
 				LinkedServer: sourceColumn.Server,
 			}
 			if sourceColumn.Database != dbMetadata.GetProto().Name {
-				resourceDB, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				resourceDB, err := storeInstance.GetDatabase(ctx, &store.FindDatabaseMessage{
 					InstanceID:      &instance.ResourceID,
 					DatabaseName:    &sourceColumn.Database,
 					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
@@ -168,7 +168,7 @@ func getResourcesForPostgres(
 		return nil, err
 	}
 
-	database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	database, err := storeInstance.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:      &instance.ResourceID,
 		DatabaseName:    &databaseName,
 		IsCaseSensitive: store.IsObjectCaseSensitive(instance),

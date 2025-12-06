@@ -494,7 +494,7 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 		return nil, errors.Wrapf(err, "failed to parse %q", databaseResourceName)
 	}
 
-	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
 	}
@@ -508,7 +508,7 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
 		ShowDeleted:     true,
 	}
-	database, err := s.GetDatabaseV2(ctx, find)
+	database, err := s.GetDatabase(ctx, find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database")
 	}

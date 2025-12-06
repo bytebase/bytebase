@@ -53,8 +53,8 @@ type UpdateProjectMessage struct {
 	Delete                     *bool
 }
 
-// GetProjectV2 gets project by resource ID.
-func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*ProjectMessage, error) {
+// GetProject gets project by resource ID.
+func (s *Store) GetProject(ctx context.Context, find *FindProjectMessage) (*ProjectMessage, error) {
 	if find.ResourceID != nil {
 		if v, ok := s.projectCache.Get(*find.ResourceID); ok && s.enableCache {
 			return v, nil
@@ -70,7 +70,7 @@ func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*Pr
 	}
 	defer tx.Rollback()
 
-	projects, err := s.listProjectImplV2(ctx, tx, find)
+	projects, err := s.listProjectImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -90,15 +90,15 @@ func (s *Store) GetProjectV2(ctx context.Context, find *FindProjectMessage) (*Pr
 	return projects[0], nil
 }
 
-// ListProjectV2 lists all projects.
-func (s *Store) ListProjectV2(ctx context.Context, find *FindProjectMessage) ([]*ProjectMessage, error) {
+// ListProjects lists all projects.
+func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*ProjectMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	projects, err := s.listProjectImplV2(ctx, tx, find)
+	projects, err := s.listProjectImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -113,8 +113,8 @@ func (s *Store) ListProjectV2(ctx context.Context, find *FindProjectMessage) ([]
 	return projects, nil
 }
 
-// CreateProjectV2 creates a project.
-func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, creatorID int) (*ProjectMessage, error) {
+// CreateProject creates a project.
+func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creatorID int) (*ProjectMessage, error) {
 	user, err := s.GetUserByID(ctx, creatorID)
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.CreatePolicyV2(ctx, &PolicyMessage{
+	if _, err := s.CreatePolicy(ctx, &PolicyMessage{
 		ResourceType:      storepb.Policy_PROJECT,
 		Resource:          common.FormatProject(project.ResourceID),
 		Payload:           string(policyPayload),
@@ -184,8 +184,8 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	return project, nil
 }
 
-// UpdateProjectV2 updates a project.
-func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage) (*ProjectMessage, error) {
+// UpdateProject updates a project.
+func (s *Store) UpdateProject(ctx context.Context, patch *UpdateProjectMessage) (*ProjectMessage, error) {
 	s.removeProjectCache(patch.ResourceID)
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -194,7 +194,7 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 	}
 	defer tx.Rollback()
 
-	if err := updateProjectImplV2(ctx, tx, patch); err != nil {
+	if err := updateProjectImpl(ctx, tx, patch); err != nil {
 		return nil, err
 	}
 
@@ -202,11 +202,11 @@ func (s *Store) UpdateProjectV2(ctx context.Context, patch *UpdateProjectMessage
 		return nil, err
 	}
 
-	return s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &patch.ResourceID})
+	return s.GetProject(ctx, &FindProjectMessage{ResourceID: &patch.ResourceID})
 }
 
-// BatchUpdateProjectsV2 updates multiple projects in a single transaction.
-func (s *Store) BatchUpdateProjectsV2(ctx context.Context, patches []*UpdateProjectMessage) ([]*ProjectMessage, error) {
+// BatchUpdateProjects updates multiple projects in a single transaction.
+func (s *Store) BatchUpdateProjects(ctx context.Context, patches []*UpdateProjectMessage) ([]*ProjectMessage, error) {
 	if len(patches) == 0 {
 		return nil, nil
 	}
@@ -224,7 +224,7 @@ func (s *Store) BatchUpdateProjectsV2(ctx context.Context, patches []*UpdateProj
 
 	// Update all projects in the transaction
 	for _, patch := range patches {
-		if err := updateProjectImplV2(ctx, tx, patch); err != nil {
+		if err := updateProjectImpl(ctx, tx, patch); err != nil {
 			return nil, err
 		}
 	}
@@ -236,7 +236,7 @@ func (s *Store) BatchUpdateProjectsV2(ctx context.Context, patches []*UpdateProj
 	// Fetch and return all updated projects
 	var updatedProjects []*ProjectMessage
 	for _, patch := range patches {
-		project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &patch.ResourceID})
+		project, err := s.GetProject(ctx, &FindProjectMessage{ResourceID: &patch.ResourceID})
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +246,7 @@ func (s *Store) BatchUpdateProjectsV2(ctx context.Context, patches []*UpdateProj
 	return updatedProjects, nil
 }
 
-func updateProjectImplV2(ctx context.Context, txn *sql.Tx, patch *UpdateProjectMessage) error {
+func updateProjectImpl(ctx context.Context, txn *sql.Tx, patch *UpdateProjectMessage) error {
 	set := qb.Q()
 
 	if v := patch.Title; v != nil {
@@ -283,7 +283,7 @@ func updateProjectImplV2(ctx context.Context, txn *sql.Tx, patch *UpdateProjectM
 	return nil
 }
 
-func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
+func (s *Store) listProjectImpl(ctx context.Context, txn *sql.Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
 	q := qb.Q().Space("SELECT resource_id, name, data_classification_config_id, setting, deleted FROM project WHERE TRUE")
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
@@ -338,7 +338,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, txn *sql.Tx, find *FindPr
 	}
 
 	for _, project := range projectMessages {
-		projectWebhooks, err := s.findProjectWebhookImplV2(ctx, txn, &FindProjectWebhookMessage{ProjectID: &project.ResourceID})
+		projectWebhooks, err := s.findProjectWebhookImpl(ctx, txn, &FindProjectWebhookMessage{ProjectID: &project.ResourceID})
 		if err != nil {
 			return nil, err
 		}

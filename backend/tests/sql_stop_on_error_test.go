@@ -230,7 +230,7 @@ func TestSQLQueryStopOnError(t *testing.T) {
 				}
 			}
 
-			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, tt.databaseName, databaseOwner)
+			err = ctl.createDatabase(ctx, ctl.project, instance, nil, tt.databaseName, databaseOwner)
 			a.NoError(err)
 
 			databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
@@ -397,7 +397,7 @@ func TestSQLAdminExecuteStopOnError(t *testing.T) {
 				a.FailNow("unsupported db type")
 			}
 
-			err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil, tt.databaseName, databaseOwner)
+			err = ctl.createDatabase(ctx, ctl.project, instance, nil, tt.databaseName, databaseOwner)
 			a.NoError(err)
 
 			databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{

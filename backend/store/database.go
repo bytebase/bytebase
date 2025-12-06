@@ -75,8 +75,8 @@ type FindDatabaseMessage struct {
 	Offset  *int
 }
 
-// GetDatabaseV2 gets a database.
-func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
+// GetDatabase gets a database.
+func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*DatabaseMessage, error) {
 	if find.InstanceID != nil && find.DatabaseName != nil {
 		if v, ok := s.databaseCache.Get(getDatabaseCacheKey(*find.InstanceID, *find.DatabaseName)); ok && s.enableCache {
 			return v, nil
@@ -89,7 +89,7 @@ func (s *Store) GetDatabaseV2(ctx context.Context, find *FindDatabaseMessage) (*
 	}
 	defer tx.Rollback()
 
-	databases, err := s.listDatabaseImplV2(ctx, tx, find)
+	databases, err := s.listDatabaseImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 	defer tx.Rollback()
 
-	databases, err := s.listDatabaseImplV2(ctx, tx, find)
+	databases, err := s.listDatabaseImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessa
 
 	// Invalidate an update the cache.
 	s.databaseCache.Remove(getDatabaseCacheKey(create.InstanceID, create.DatabaseName))
-	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
+	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
 // createDatabaseDefault only creates a default database with charset, collation only in the default project.
@@ -241,7 +241,7 @@ func (s *Store) UpsertDatabase(ctx context.Context, create *DatabaseMessage) (*D
 
 	// Invalidate and update the cache.
 	s.databaseCache.Remove(getDatabaseCacheKey(create.InstanceID, create.DatabaseName))
-	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
+	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &create.InstanceID, DatabaseName: &create.DatabaseName, ShowDeleted: true})
 }
 
 // UpdateDatabase updates a database.
@@ -262,7 +262,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		set.Comma("deleted = ?", *v)
 	}
 	if fs := patch.MetadataUpdates; len(fs) > 0 {
-		database, err := s.GetDatabaseV2(ctx, &FindDatabaseMessage{
+		database, err := s.GetDatabase(ctx, &FindDatabaseMessage{
 			InstanceID:   &patch.InstanceID,
 			DatabaseName: &patch.DatabaseName,
 		})
@@ -307,7 +307,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 
 	// Invalidate and update database cache.
 	s.databaseCache.Remove(getDatabaseCacheKey(patch.InstanceID, patch.DatabaseName))
-	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{InstanceID: &patch.InstanceID, DatabaseName: &patch.DatabaseName, ShowDeleted: true})
+	return s.GetDatabase(ctx, &FindDatabaseMessage{InstanceID: &patch.InstanceID, DatabaseName: &patch.DatabaseName, ShowDeleted: true})
 }
 
 // BatchUpdateDatabases update databases in batch.
@@ -379,7 +379,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		if update.EnvironmentID != nil {
 			updatedDatabase.EnvironmentID = update.EnvironmentID
 			if *update.EnvironmentID == "" {
-				instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &database.InstanceID})
+				instance, err := s.GetInstance(ctx, &FindInstanceMessage{ResourceID: &database.InstanceID})
 				if err != nil {
 					// Should not reach here.
 					return nil, err
@@ -395,7 +395,7 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 	return updatedDatabases, nil
 }
 
-func (*Store) listDatabaseImplV2(ctx context.Context, txn *sql.Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
+func (*Store) listDatabaseImpl(ctx context.Context, txn *sql.Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
 	from := qb.Q().Space("db")
 	where := qb.Q().Space("TRUE")
 

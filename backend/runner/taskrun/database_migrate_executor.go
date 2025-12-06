@@ -73,21 +73,21 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 	// so this works correctly for mixed DDL+DML statements.
 	var priorBackupDetail *storepb.PriorBackupDetail
 	if task.Payload.GetEnablePriorBackup() {
-		instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+		instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 		if err != nil {
 			return true, nil, errors.Wrap(err, "failed to get instance")
 		}
 		if instance == nil {
 			return true, nil, errors.Errorf("instance not found for task %v", task.ID)
 		}
-		database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
+		database, err := exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
 		if err != nil {
 			return true, nil, errors.Wrap(err, "failed to get database")
 		}
 		if database == nil {
 			return true, nil, errors.Errorf("database not found for task %v", task.ID)
 		}
-		issueN, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+		issueN, err := exec.store.GetIssue(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 		if err != nil {
 			return true, nil, errors.Wrapf(err, "failed to find issue for pipeline %v", task.PipelineID)
 		}
@@ -159,14 +159,14 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	}
 	flags := task.Payload.GetFlags()
 
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return true, nil, err
 	}
 	if instance == nil {
 		return true, nil, errors.Errorf("instance %s not found", task.InstanceID)
 	}
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
+	database, err := exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName})
 	if err != nil {
 		return true, nil, err
 	}
@@ -252,11 +252,11 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 }
 
 func (exec *DatabaseMigrateExecutor) shouldSkipBackupError(ctx context.Context, task *store.TaskMessage) (bool, error) {
-	pipeline, pipelineErr := exec.store.GetPipelineV2ByID(ctx, task.PipelineID)
+	pipeline, pipelineErr := exec.store.GetPipelineByID(ctx, task.PipelineID)
 	if pipelineErr != nil {
 		return false, errors.Wrapf(pipelineErr, "failed to get pipeline %v", task.PipelineID)
 	}
-	project, projectErr := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+	project, projectErr := exec.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
 	if projectErr != nil {
 		return false, errors.Wrapf(projectErr, "failed to get project %v", pipeline.ProjectID)
 	}
@@ -296,7 +296,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	}
 
 	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
-		backupDatabase, err = exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &backupInstanceID, DatabaseName: &backupDatabaseName})
+		backupDatabase, err = exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &backupInstanceID, DatabaseName: &backupDatabaseName})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get backup database")
 		}
@@ -467,7 +467,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 
 func buildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetDatabaseMetadataFunc {
 	return func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
-		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		database, err := storeInstance.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instanceID,
 			DatabaseName: &databaseName,
 		})

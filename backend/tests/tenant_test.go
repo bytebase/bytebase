@@ -94,11 +94,11 @@ func TestDatabaseGroup(t *testing.T) {
 	// Create issues that create databases.
 	databaseName := "testTenantSchemaUpdate"
 	for _, testInstance := range testInstances {
-		err := ctl.createDatabaseV2(ctx, project, testInstance, nil, databaseName, "")
+		err := ctl.createDatabase(ctx, project, testInstance, nil, databaseName, "")
 		a.NoError(err)
 	}
 	for _, prodInstance := range prodInstances {
-		err := ctl.createDatabaseV2(ctx, project, prodInstance, nil, databaseName, "")
+		err := ctl.createDatabase(ctx, project, prodInstance, nil, databaseName, "")
 		a.NoError(err)
 	}
 
@@ -185,7 +185,7 @@ func TestDatabaseGroup(t *testing.T) {
 
 	// Create another database in the prod environment.
 	databaseName2 := "testTenantSchemaUpdate2"
-	err = ctl.createDatabaseV2(ctx, project, prodInstances[0], nil, databaseName2, "")
+	err = ctl.createDatabase(ctx, project, prodInstances[0], nil, databaseName2, "")
 	a.NoError(err)
 
 	resp, err = ctl.databaseServiceClient.ListDatabases(ctx, connect.NewRequest(&v1pb.ListDatabasesRequest{
