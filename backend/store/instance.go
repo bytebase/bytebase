@@ -362,10 +362,11 @@ func IsObjectCaseSensitive(instance *InstanceMessage) bool {
 }
 
 func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instance) (*storepb.Instance, error) {
-	secret, err := s.GetSecret(ctx)
+	systemSetting, err := s.GetSystemSetting(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get system setting")
 	}
+	secret := systemSetting.AuthSecret
 
 	redacted := proto.CloneOf(instance)
 	for _, ds := range redacted.GetDataSources() {
@@ -419,10 +420,11 @@ func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instanc
 }
 
 func (s *Store) unObfuscateInstance(ctx context.Context, instance *storepb.Instance) error {
-	secret, err := s.GetSecret(ctx)
+	systemSetting, err := s.GetSystemSetting(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get system setting")
 	}
+	secret := systemSetting.AuthSecret
 
 	for _, ds := range instance.GetDataSources() {
 		password, err := common.Unobfuscate(ds.GetObfuscatedPassword(), secret)

@@ -305,17 +305,7 @@ func (s *Store) ListSettingV2(ctx context.Context, find *FindSettingMessage) ([]
 	return settingMessages, nil
 }
 
-func (s *Store) GetSecret(ctx context.Context) (string, error) {
-	if s.Secret != "" {
-		return s.Secret, nil
-	}
-	systemSetting, err := s.GetSystemSetting(ctx)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get system setting")
-	}
-	s.Secret = systemSetting.AuthSecret
-	return systemSetting.AuthSecret, nil
-}
+
 
 // UpsertSettingV2 upserts the setting by name.
 func (s *Store) UpsertSettingV2(ctx context.Context, update *SetSettingMessage) (*SettingMessage, error) {

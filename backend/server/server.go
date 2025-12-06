@@ -168,10 +168,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.licenseService.LoadSubscription(ctx)
 
 	// Settings are now initialized in the database schema (LATEST.sql)
-	secret, err := s.store.GetSecret(ctx)
+	systemSetting, err := s.store.GetSystemSetting(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get secret")
+		return nil, errors.Wrap(err, "failed to get system setting")
 	}
+	secret := systemSetting.AuthSecret
 	s.iamManager, err = iam.NewManager(stores, s.licenseService)
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
 		return nil, errors.Wrapf(err, "failed to reload iam cache")
