@@ -39,26 +39,7 @@ type claims struct {
 	jwt.RegisteredClaims
 }
 
-var validPlans = map[v1pb.PlanType]bool{
-	v1pb.PlanType_FREE:       true,
-	v1pb.PlanType_TEAM:       true,
-	v1pb.PlanType_ENTERPRISE: true,
-}
-
 // validateSubscription validates if the subscription is expired or has correct plan type.
-func validateSubscription(s *v1pb.Subscription) error {
-	if !validPlans[s.Plan] {
-		return errors.Errorf("plan %q is not valid, expect %s or %s",
-			s.Plan.String(),
-			v1pb.PlanType_TEAM.String(),
-			v1pb.PlanType_ENTERPRISE.String(),
-		)
-	}
-	if s.ExpiresTime != nil && s.ExpiresTime.AsTime().Before(time.Now()) {
-		return errors.Errorf("license has expired at %v", s.ExpiresTime.AsTime())
-	}
-	return nil
-}
 
 // NewProvider will create a new hub license provider.
 func NewProvider(providerConfig *plugin.ProviderConfig) (plugin.LicenseProvider, error) {
@@ -76,70 +57,69 @@ func NewProvider(providerConfig *plugin.ProviderConfig) (plugin.LicenseProvider,
 // StoreLicense will store the hub license.
 func (p *Provider) StoreLicense(ctx context.Context, license string) error {
 	if license != "" {
-		if _, err := p.parseLicense(ctx, license); err != nil {
+		systemSetting, err := p.store.GetSystemSetting(ctx)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get system setting")
+		}
+		if _, err := p.parseLicense(license, systemSetting.WorkspaceId); err != nil {
 			return err
 		}
 	}
-	return p.store.UpsertEnterpriseLicense(ctx, license)
+	return p.store.UpdateLicense(ctx, license)
 }
 
 // LoadSubscription will load the hub subscription.
 func (p *Provider) LoadSubscription(ctx context.Context) *v1pb.Subscription {
-	license, err := p.findEnterpriseLicense(ctx)
+	systemSetting, err := p.store.GetSystemSetting(ctx)
 	if err != nil {
-		slog.Debug("failed to load enterprise license", log.BBError(err))
-	}
-
-	if license == nil {
+		slog.Debug("failed to load enterprise license", log.BBError(errors.Wrapf(err, "failed to get system setting")))
 		return nil
 	}
 
-	if err := validateSubscription(license); err != nil {
-		slog.Debug("license is invalid", log.BBError(err))
+	if systemSetting.License == "" {
 		return nil
 	}
+
+	license, err := p.parseLicense(systemSetting.License, systemSetting.WorkspaceId)
+	if err != nil {
+		slog.Debug("failed to load enterprise license", log.BBError(errors.Wrapf(err, "failed to parse enterprise license")))
+		return nil
+	}
+
+	slog.Debug(
+		"Load valid license",
+		slog.String("plan", license.Plan.String()),
+		slog.Time("expiresAt", license.ExpiresTime.AsTime()),
+		slog.Int("activeInstances", int(license.ActiveInstances)),
+		slog.Int("instances", int(license.Instances)),
+		slog.Int("seats", int(license.Seats)),
+	)
+
 	return license
 }
 
-func (p *Provider) parseLicense(ctx context.Context, license string) (*v1pb.Subscription, error) {
+func (p *Provider) parseLicense(license, workspaceID string) (*v1pb.Subscription, error) {
 	claim := &claims{}
-	if err := parseJWTToken(license, p.config.Version, p.config.PublicKey, claim); err != nil {
+	token, err := jwt.ParseWithClaims(license, claim, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, common.Errorf(common.Invalid, "unexpected signing method: %v", token.Header["alg"])
+		}
+
+		kid, ok := token.Header["kid"].(string)
+		if !ok || kid != p.config.Version {
+			return nil, common.Errorf(common.Invalid, "version '%v' is not valid. expect %s", token.Header["kid"], p.config.Version)
+		}
+
+		return p.config.PublicKey, nil
+	})
+	if err != nil {
 		return nil, common.Wrap(err, common.Invalid)
 	}
 
-	return p.parseClaims(ctx, claim)
-}
-
-func (p *Provider) findEnterpriseLicense(ctx context.Context) (*v1pb.Subscription, error) {
-	// Find enterprise license.
-	systemSetting, err := p.store.GetSystemSetting(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get system setting")
-	}
-	licenseStr := systemSetting.License
-	if licenseStr != "" {
-		license, err := p.parseLicense(ctx, licenseStr)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse enterprise license")
-		}
-		if license != nil {
-			slog.Debug(
-				"Load valid license",
-				slog.String("plan", license.Plan.String()),
-				slog.Time("expiresAt", license.ExpiresTime.AsTime()),
-				slog.Int("activeInstances", int(license.ActiveInstances)),
-				slog.Int("instances", int(license.Instances)),
-				slog.Int("seats", int(license.Seats)),
-			)
-			return license, nil
-		}
+	if !token.Valid {
+		return nil, common.Errorf(common.Invalid, "invalid token")
 	}
 
-	return nil, nil
-}
-
-// parseClaims will valid and parse JWT claims to license instance.
-func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*v1pb.Subscription, error) {
 	if p.config.Issuer != claim.Issuer {
 		return nil, common.Errorf(common.Invalid, "iss is not valid, expect %s but found '%v'", p.config.Issuer, claim.Issuer)
 	}
@@ -154,22 +134,30 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*v1pb.Subscr
 	planType := v1pb.PlanType(v)
 
 	if claim.WorkspaceID != "" && planType == v1pb.PlanType_ENTERPRISE && !claim.Trialing {
-		systemSetting, err := p.store.GetSystemSetting(ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get system setting")
-		}
-		workspaceID := systemSetting.WorkspaceId
 		if workspaceID != claim.WorkspaceID {
 			return nil, common.Errorf(common.Invalid, "the workspace id not match")
 		}
+	}
+
+	switch planType {
+	case v1pb.PlanType_FREE, v1pb.PlanType_TEAM, v1pb.PlanType_ENTERPRISE:
+	default:
+		return nil, errors.Errorf("plan %q is not valid, expect %s or %s",
+			planType.String(),
+			v1pb.PlanType_TEAM.String(),
+			v1pb.PlanType_ENTERPRISE.String(),
+		)
 	}
 
 	var expiresTime *timestamppb.Timestamp
 	if claim.ExpiresAt != nil && !claim.ExpiresAt.IsZero() {
 		expiresTime = timestamppb.New(claim.ExpiresAt.Time)
 	}
+	if expiresTime != nil && expiresTime.AsTime().Before(time.Now()) {
+		return nil, errors.Errorf("license has expired at %v", expiresTime.AsTime())
+	}
 
-	license := &v1pb.Subscription{
+	return &v1pb.Subscription{
 		ActiveInstances: int32(claim.ActiveInstances),
 		Instances:       int32(claim.Instances),
 		Seats:           int32(claim.Seats),
@@ -177,36 +165,5 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*v1pb.Subscr
 		Plan:            planType,
 		Trialing:        claim.Trialing,
 		OrgName:         claim.OrgName,
-	}
-
-	return license, nil
-}
-
-func parseJWTToken(tokenString, expectVersion, publicKey string, claims jwt.Claims) error {
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, common.Errorf(common.Invalid, "unexpected signing method: %v", token.Header["alg"])
-		}
-
-		kid, ok := token.Header["kid"].(string)
-		if !ok || kid != expectVersion {
-			return nil, common.Errorf(common.Invalid, "version '%v' is not valid. expect %s", token.Header["kid"], expectVersion)
-		}
-
-		key, err := jwt.ParseRSAPublicKeyFromPEM([]byte(publicKey))
-		if err != nil {
-			return nil, common.Wrap(err, common.Invalid)
-		}
-
-		return key, nil
-	})
-	if err != nil {
-		return common.Wrap(err, common.Invalid)
-	}
-
-	if !token.Valid {
-		return common.Errorf(common.Invalid, "invalid token")
-	}
-
-	return nil
+	}, nil
 }

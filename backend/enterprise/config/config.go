@@ -2,10 +2,12 @@
 package config
 
 import (
+	"crypto/rsa"
 	"embed"
 	"fmt"
 	"io/fs"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -16,8 +18,8 @@ var keysFS embed.FS
 
 // Config is the API message for enterprise config.
 type Config struct {
-	// PublicKey is the key we used to decrypt license.
-	PublicKey string
+	// PublicKey is the parsed RSA public key.
+	PublicKey *rsa.PublicKey
 	// Version is the JWT key version.
 	Version string
 	// Issuer is the license issuer, it should always be "bytebase".
@@ -44,8 +46,13 @@ func NewConfig(mode common.ReleaseMode) (*Config, error) {
 		return nil, errors.Errorf("cannot read license public key for env %s", mode)
 	}
 
+	key, err := jwt.ParseRSAPublicKeyFromPEM(licensePubKey)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse license public key for env %s", mode)
+	}
+
 	return &Config{
-		PublicKey: string(licensePubKey),
+		PublicKey: key,
 		Version:   keyID,
 		Issuer:    issuer,
 		Audience:  audience,
