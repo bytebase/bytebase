@@ -111,7 +111,7 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 	}
 	defer tx.Rollback()
 
-	identityProviders, err := s.listIdentityProvidersImpl(ctx, tx, find)
+	identityProviders, err := s.ListIdentityProviders(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -138,18 +138,63 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 	}
 	defer tx.Rollback()
 
-	identityProviders, err := s.listIdentityProvidersImpl(ctx, tx, find)
+	q := qb.Q().Space(`
+		SELECT
+			resource_id,
+			name,
+			domain,
+			type,
+			config
+		FROM idp
+		WHERE TRUE
+	`)
+
+	if v := find.ResourceID; v != nil {
+		q.And("resource_id = ?", *v)
+	}
+
+	q.Space("ORDER BY id ASC")
+
+	query, args, err := q.ToSQL()
 	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var identityProviderMessages []*IdentityProviderMessage
+	for rows.Next() {
+		var identityProviderMessage IdentityProviderMessage
+		var identityProviderType string
+		var identityProviderConfig string
+		if err := rows.Scan(
+			&identityProviderMessage.ResourceID,
+			&identityProviderMessage.Title,
+			&identityProviderMessage.Domain,
+			&identityProviderType,
+			&identityProviderConfig,
+		); err != nil {
+			return nil, err
+		}
+		identityProviderMessage.Type = convertIdentityProviderType(identityProviderType)
+		identityProviderMessage.Config = convertIdentityProviderConfigString(identityProviderMessage.Type, identityProviderConfig)
+		identityProviderMessages = append(identityProviderMessages, &identityProviderMessage)
+	}
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	for _, identityProvider := range identityProviders {
+	for _, identityProvider := range identityProviderMessages {
 		s.idpCache.Add(identityProvider.ResourceID, identityProvider)
 	}
-	return identityProviders, nil
+	return identityProviderMessages, nil
 }
 
 // UpdateIdentityProvider updates an identity provider.
@@ -227,60 +272,6 @@ func (*Store) updateIdentityProviderImpl(ctx context.Context, txn *sql.Tx, patch
 	identityProvider.Type = convertIdentityProviderType(identityProviderType)
 	identityProvider.Config = convertIdentityProviderConfigString(identityProvider.Type, identityProviderConfig)
 	return identityProvider, nil
-}
-
-func (*Store) listIdentityProvidersImpl(ctx context.Context, txn *sql.Tx, find *FindIdentityProviderMessage) ([]*IdentityProviderMessage, error) {
-	q := qb.Q().Space(`
-		SELECT
-			resource_id,
-			name,
-			domain,
-			type,
-			config
-		FROM idp
-		WHERE TRUE
-	`)
-
-	if v := find.ResourceID; v != nil {
-		q.And("resource_id = ?", *v)
-	}
-
-	q.Space("ORDER BY id ASC")
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	rows, err := txn.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var identityProviderMessages []*IdentityProviderMessage
-	for rows.Next() {
-		var identityProviderMessage IdentityProviderMessage
-		var identityProviderType string
-		var identityProviderConfig string
-		if err := rows.Scan(
-			&identityProviderMessage.ResourceID,
-			&identityProviderMessage.Title,
-			&identityProviderMessage.Domain,
-			&identityProviderType,
-			&identityProviderConfig,
-		); err != nil {
-			return nil, err
-		}
-		identityProviderMessage.Type = convertIdentityProviderType(identityProviderType)
-		identityProviderMessage.Config = convertIdentityProviderConfigString(identityProviderMessage.Type, identityProviderConfig)
-		identityProviderMessages = append(identityProviderMessages, &identityProviderMessage)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return identityProviderMessages, nil
 }
 
 func (s *Store) DeleteIdentityProvider(ctx context.Context, resourceID string) error {

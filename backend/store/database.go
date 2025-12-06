@@ -89,7 +89,7 @@ func (s *Store) GetDatabase(ctx context.Context, find *FindDatabaseMessage) (*Da
 	}
 	defer tx.Rollback()
 
-	databases, err := s.listDatabaseImpl(ctx, tx, find)
+	databases, err := s.ListDatabases(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -117,8 +117,113 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	}
 	defer tx.Rollback()
 
-	databases, err := s.listDatabaseImpl(ctx, tx, find)
+	from := qb.Q().Space("db")
+	where := qb.Q().Space("TRUE")
+
+	if filterQ := find.FilterQ; filterQ != nil {
+		where.And("?", filterQ)
+		// Check if the filter requires the db_schema table for table filtering
+		sql, _, err := filterQ.ToSQL()
+		if err == nil && strings.Contains(sql, "ds.metadata") {
+			from.Space("INNER JOIN db_schema ds ON db.instance = ds.instance AND db.name = ds.db_name")
+		}
+	}
+
+	from.Space("LEFT JOIN instance ON db.instance = instance.resource_id")
+
+	if v := find.ProjectID; v != nil {
+		where.And("db.project = ?", *v)
+	}
+	if v := find.EffectiveEnvironmentID; v != nil {
+		where.And(`COALESCE(
+			db.environment,
+			instance.environment
+		) = ?`, *v)
+	}
+	if v := find.InstanceID; v != nil {
+		where.And("db.instance = ?", *v)
+	}
+	if v := find.DatabaseName; v != nil {
+		if find.IsCaseSensitive {
+			where.And("db.name = ?", *v)
+		} else {
+			where.And("LOWER(db.name) = LOWER(?)", *v)
+		}
+	}
+	if v := find.Engine; v != nil {
+		where.And("instance.metadata->>'engine' = ?", *v)
+	}
+	if !find.ShowDeleted {
+		where.And("instance.deleted = ?", false)
+		where.And("db.deleted = ?", false)
+	}
+
+	q := qb.Q().Space(`
+		SELECT
+			db.project,
+			COALESCE(
+				db.environment,
+				instance.environment
+			),
+			db.environment,
+			db.instance,
+			db.name,
+			db.deleted,
+			db.metadata
+		FROM ?
+		WHERE ?
+		ORDER BY db.project, db.instance, db.name
+	`, from, where)
+
+	if v := find.Limit; v != nil {
+		q.Space("LIMIT ?", *v)
+	}
+	if v := find.Offset; v != nil {
+		q.Space("OFFSET ?", *v)
+	}
+
+	query, args, err := q.ToSQL()
 	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql %+v", q)
+	}
+
+	var databases []*DatabaseMessage
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		databaseMessage := &DatabaseMessage{}
+		var metadataString string
+		var effectiveEnvironment, environment sql.NullString
+		if err := rows.Scan(
+			&databaseMessage.ProjectID,
+			&effectiveEnvironment,
+			&environment,
+			&databaseMessage.InstanceID,
+			&databaseMessage.DatabaseName,
+			&databaseMessage.Deleted,
+			&metadataString,
+		); err != nil {
+			return nil, err
+		}
+		if effectiveEnvironment.Valid {
+			databaseMessage.EffectiveEnvironmentID = &effectiveEnvironment.String
+		}
+		if environment.Valid {
+			databaseMessage.EnvironmentID = &environment.String
+		}
+
+		var metadata storepb.DatabaseMetadata
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(metadataString), &metadata); err != nil {
+			return nil, err
+		}
+		databaseMessage.Metadata = &metadata
+
+		databases = append(databases, databaseMessage)
+	}
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
@@ -393,120 +498,6 @@ func (s *Store) BatchUpdateDatabases(ctx context.Context, databases []*DatabaseM
 		updatedDatabases = append(updatedDatabases, &updatedDatabase)
 	}
 	return updatedDatabases, nil
-}
-
-func (*Store) listDatabaseImpl(ctx context.Context, txn *sql.Tx, find *FindDatabaseMessage) ([]*DatabaseMessage, error) {
-	from := qb.Q().Space("db")
-	where := qb.Q().Space("TRUE")
-
-	if filterQ := find.FilterQ; filterQ != nil {
-		where.And("?", filterQ)
-		// Check if the filter requires the db_schema table for table filtering
-		sql, _, err := filterQ.ToSQL()
-		if err == nil && strings.Contains(sql, "ds.metadata") {
-			from.Space("INNER JOIN db_schema ds ON db.instance = ds.instance AND db.name = ds.db_name")
-		}
-	}
-
-	from.Space("LEFT JOIN instance ON db.instance = instance.resource_id")
-
-	if v := find.ProjectID; v != nil {
-		where.And("db.project = ?", *v)
-	}
-	if v := find.EffectiveEnvironmentID; v != nil {
-		where.And(`COALESCE(
-			db.environment,
-			instance.environment
-		) = ?`, *v)
-	}
-	if v := find.InstanceID; v != nil {
-		where.And("db.instance = ?", *v)
-	}
-	if v := find.DatabaseName; v != nil {
-		if find.IsCaseSensitive {
-			where.And("db.name = ?", *v)
-		} else {
-			where.And("LOWER(db.name) = LOWER(?)", *v)
-		}
-	}
-	if v := find.Engine; v != nil {
-		where.And("instance.metadata->>'engine' = ?", *v)
-	}
-	if !find.ShowDeleted {
-		where.And("instance.deleted = ?", false)
-		where.And("db.deleted = ?", false)
-	}
-
-	q := qb.Q().Space(`
-		SELECT
-			db.project,
-			COALESCE(
-				db.environment,
-				instance.environment
-			),
-			db.environment,
-			db.instance,
-			db.name,
-			db.deleted,
-			db.metadata
-		FROM ?
-		WHERE ?
-		ORDER BY db.project, db.instance, db.name
-	`, from, where)
-
-	if v := find.Limit; v != nil {
-		q.Space("LIMIT ?", *v)
-	}
-	if v := find.Offset; v != nil {
-		q.Space("OFFSET ?", *v)
-	}
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql %+v", q)
-	}
-
-	var databaseMessages []*DatabaseMessage
-	rows, err := txn.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		databaseMessage := &DatabaseMessage{}
-		var metadataString string
-		var effectiveEnvironment, environment sql.NullString
-		if err := rows.Scan(
-			&databaseMessage.ProjectID,
-			&effectiveEnvironment,
-			&environment,
-			&databaseMessage.InstanceID,
-			&databaseMessage.DatabaseName,
-			&databaseMessage.Deleted,
-			&metadataString,
-		); err != nil {
-			return nil, err
-		}
-		if effectiveEnvironment.Valid {
-			databaseMessage.EffectiveEnvironmentID = &effectiveEnvironment.String
-		}
-		if environment.Valid {
-			databaseMessage.EnvironmentID = &environment.String
-		}
-
-		var metadata storepb.DatabaseMetadata
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(metadataString), &metadata); err != nil {
-			return nil, err
-		}
-		databaseMessage.Metadata = &metadata
-
-		databaseMessages = append(databaseMessages, databaseMessage)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return databaseMessages, nil
 }
 
 func GetListDatabaseFilter(filter string) (*qb.Query, error) {

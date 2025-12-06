@@ -63,54 +63,6 @@ func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupM
 	}
 	defer tx.Rollback()
 
-	databaseGroups, err := s.listDatabaseGroupImpl(ctx, tx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list database groups")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
-	for _, databaseGroup := range databaseGroups {
-		s.databaseGroupCache.Add(getDatabaseGroupCacheKey(databaseGroup.ProjectID, databaseGroup.ResourceID), databaseGroup)
-	}
-
-	return databaseGroups, nil
-}
-
-// GetDatabaseGroup gets a database group.
-func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
-	if find.ProjectID != nil && find.ResourceID != nil {
-		if v, ok := s.databaseGroupCache.Get(getDatabaseGroupCacheKey(*find.ProjectID, *find.ResourceID)); ok && s.enableCache {
-			return v, nil
-		}
-	}
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	databaseGroups, err := s.listDatabaseGroupImpl(ctx, tx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list database groups")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
-
-	if len(databaseGroups) == 0 {
-		return nil, nil
-	}
-	if len(databaseGroups) > 1 {
-		return nil, errors.Errorf("found multiple database groups")
-	}
-	s.databaseGroupCache.Add(getDatabaseGroupCacheKey(databaseGroups[0].ProjectID, databaseGroups[0].ResourceID), databaseGroups[0])
-	return databaseGroups[0], nil
-}
-
-func (*Store) listDatabaseGroupImpl(ctx context.Context, txn *sql.Tx, find *FindDatabaseGroupMessage) ([]*DatabaseGroupMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
 			project,
@@ -136,7 +88,7 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, txn *sql.Tx, find *Find
 	}
 
 	var databaseGroups []*DatabaseGroupMessage
-	rows, err := txn.QueryContext(ctx, query, args...)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}
@@ -163,7 +115,47 @@ func (*Store) listDatabaseGroupImpl(ctx context.Context, txn *sql.Tx, find *Find
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+	for _, databaseGroup := range databaseGroups {
+		s.databaseGroupCache.Add(getDatabaseGroupCacheKey(databaseGroup.ProjectID, databaseGroup.ResourceID), databaseGroup)
+	}
+
 	return databaseGroups, nil
+}
+
+// GetDatabaseGroup gets a database group.
+func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
+	if find.ProjectID != nil && find.ResourceID != nil {
+		if v, ok := s.databaseGroupCache.Get(getDatabaseGroupCacheKey(*find.ProjectID, *find.ResourceID)); ok && s.enableCache {
+			return v, nil
+		}
+	}
+	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	databaseGroups, err := s.ListDatabaseGroups(ctx, find)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit transaction")
+	}
+
+	if len(databaseGroups) == 0 {
+		return nil, nil
+	}
+	if len(databaseGroups) > 1 {
+		return nil, errors.Errorf("found multiple database groups")
+	}
+	s.databaseGroupCache.Add(getDatabaseGroupCacheKey(databaseGroups[0].ProjectID, databaseGroups[0].ResourceID), databaseGroups[0])
+	return databaseGroups[0], nil
 }
 
 // UpdateDatabaseGroup updates a database group.

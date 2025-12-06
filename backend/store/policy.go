@@ -432,7 +432,7 @@ func (s *Store) GetPolicy(ctx context.Context, find *FindPolicyMessage) (*Policy
 
 	// We will always return the resource regardless of its deleted state.
 	find.ShowAll = true
-	policies, err := s.listPolicyImpl(ctx, tx, find)
+	policies, err := s.ListPolicies(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -465,8 +465,71 @@ func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*P
 	}
 	defer tx.Rollback()
 
-	policies, err := s.listPolicyImpl(ctx, tx, find)
+	q := qb.Q().Space(`
+		SELECT
+			updated_at,
+			resource_type,
+			resource,
+			inherit_from_parent,
+			type,
+			payload,
+			enforce
+		FROM policy
+		WHERE TRUE
+	`)
+
+	if v := find.ResourceType; v != nil {
+		q.And("resource_type = ?", v.String())
+	}
+	if v := find.Resource; v != nil {
+		q.And("resource = ?", *v)
+	}
+	if v := find.Type; v != nil {
+		q.And("type = ?", v.String())
+	}
+	if !find.ShowAll {
+		q.And("enforce = ?", true)
+	}
+
+	query, args, err := q.ToSQL()
 	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var policyList []*PolicyMessage
+	for rows.Next() {
+		var policyMessage PolicyMessage
+		var resourceTypeString, typeString string
+		if err := rows.Scan(
+			&policyMessage.UpdatedAt,
+			&resourceTypeString,
+			&policyMessage.Resource,
+			&policyMessage.InheritFromParent,
+			&typeString,
+			&policyMessage.Payload,
+			&policyMessage.Enforce,
+		); err != nil {
+			return nil, err
+		}
+		resourceTypeValue, ok := storepb.Policy_Resource_value[resourceTypeString]
+		if !ok {
+			return nil, errors.Errorf("invalid policy resource type string: %s", resourceTypeString)
+		}
+		policyMessage.ResourceType = storepb.Policy_Resource(resourceTypeValue)
+		value, ok := storepb.Policy_Type_value[typeString]
+		if !ok {
+			return nil, errors.Errorf("invalid policy type string: %s", typeString)
+		}
+		policyMessage.Type = storepb.Policy_Type(value)
+		policyList = append(policyList, &policyMessage)
+	}
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
@@ -474,11 +537,11 @@ func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*P
 		return nil, err
 	}
 
-	for _, policy := range policies {
+	for _, policy := range policyList {
 		s.policyCache.Add(getPolicyCacheKey(policy.ResourceType, policy.Resource, policy.Type), policy)
 	}
 
-	return policies, nil
+	return policyList, nil
 }
 
 // CreatePolicy creates a policy.
@@ -624,75 +687,4 @@ func upsertPolicyImpl(ctx context.Context, txn *sql.Tx, create *PolicyMessage) (
 		return nil, err
 	}
 	return create, nil
-}
-
-func (*Store) listPolicyImpl(ctx context.Context, txn *sql.Tx, find *FindPolicyMessage) ([]*PolicyMessage, error) {
-	q := qb.Q().Space(`
-		SELECT
-			updated_at,
-			resource_type,
-			resource,
-			inherit_from_parent,
-			type,
-			payload,
-			enforce
-		FROM policy
-		WHERE TRUE
-	`)
-
-	if v := find.ResourceType; v != nil {
-		q.And("resource_type = ?", v.String())
-	}
-	if v := find.Resource; v != nil {
-		q.And("resource = ?", *v)
-	}
-	if v := find.Type; v != nil {
-		q.And("type = ?", v.String())
-	}
-	if !find.ShowAll {
-		q.And("enforce = ?", true)
-	}
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	rows, err := txn.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var policyList []*PolicyMessage
-	for rows.Next() {
-		var policyMessage PolicyMessage
-		var resourceTypeString, typeString string
-		if err := rows.Scan(
-			&policyMessage.UpdatedAt,
-			&resourceTypeString,
-			&policyMessage.Resource,
-			&policyMessage.InheritFromParent,
-			&typeString,
-			&policyMessage.Payload,
-			&policyMessage.Enforce,
-		); err != nil {
-			return nil, err
-		}
-		resourceTypeValue, ok := storepb.Policy_Resource_value[resourceTypeString]
-		if !ok {
-			return nil, errors.Errorf("invalid policy resource type string: %s", resourceTypeString)
-		}
-		policyMessage.ResourceType = storepb.Policy_Resource(resourceTypeValue)
-		value, ok := storepb.Policy_Type_value[typeString]
-		if !ok {
-			return nil, errors.Errorf("invalid policy type string: %s", typeString)
-		}
-		policyMessage.Type = storepb.Policy_Type(value)
-		policyList = append(policyList, &policyMessage)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return policyList, nil
 }

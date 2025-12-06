@@ -70,7 +70,7 @@ func (s *Store) GetProject(ctx context.Context, find *FindProjectMessage) (*Proj
 	}
 	defer tx.Rollback()
 
-	projects, err := s.listProjectImpl(ctx, tx, find)
+	projects, err := s.ListProjects(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -98,19 +98,75 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 	}
 	defer tx.Rollback()
 
-	projects, err := s.listProjectImpl(ctx, tx, find)
+	q := qb.Q().Space("SELECT resource_id, name, data_classification_config_id, setting, deleted FROM project WHERE TRUE")
+	if filterQ := find.FilterQ; filterQ != nil {
+		q.And("?", filterQ)
+	}
+	if v := find.ResourceID; v != nil {
+		q.And("resource_id = ?", *v)
+	}
+	if !find.ShowDeleted {
+		q.And("deleted = ?", false)
+	}
+	q.Space("ORDER BY project.resource_id")
+	if v := find.Limit; v != nil {
+		q.Space("LIMIT ?", *v)
+	}
+	if v := find.Offset; v != nil {
+		q.Space("OFFSET ?", *v)
+	}
+
+	sql, args, err := q.ToSQL()
 	if err != nil {
 		return nil, err
+	}
+
+	var projectMessages []*ProjectMessage
+	rows, err := tx.QueryContext(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var projectMessage ProjectMessage
+		var payload []byte
+		if err := rows.Scan(
+			&projectMessage.ResourceID,
+			&projectMessage.Title,
+			&projectMessage.DataClassificationConfigID,
+			&payload,
+			&projectMessage.Deleted,
+		); err != nil {
+			return nil, err
+		}
+		setting := &storepb.Project{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, setting); err != nil {
+			return nil, err
+		}
+		projectMessage.Setting = setting
+		projectMessages = append(projectMessages, &projectMessage)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	for _, project := range projectMessages {
+		projectWebhooks, err := s.ListProjectWebhooks(ctx, &FindProjectWebhookMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, err
+		}
+		project.Webhooks = projectWebhooks
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	for _, project := range projects {
+	for _, project := range projectMessages {
 		s.storeProjectCache(project)
 	}
-	return projects, nil
+	return projectMessages, nil
 }
 
 // CreateProject creates a project.
@@ -281,71 +337,6 @@ func updateProjectImpl(ctx context.Context, txn *sql.Tx, patch *UpdateProjectMes
 		return err
 	}
 	return nil
-}
-
-func (s *Store) listProjectImpl(ctx context.Context, txn *sql.Tx, find *FindProjectMessage) ([]*ProjectMessage, error) {
-	q := qb.Q().Space("SELECT resource_id, name, data_classification_config_id, setting, deleted FROM project WHERE TRUE")
-	if filterQ := find.FilterQ; filterQ != nil {
-		q.And("?", filterQ)
-	}
-	if v := find.ResourceID; v != nil {
-		q.And("resource_id = ?", *v)
-	}
-	if !find.ShowDeleted {
-		q.And("deleted = ?", false)
-	}
-	q.Space("ORDER BY project.resource_id")
-	if v := find.Limit; v != nil {
-		q.Space("LIMIT ?", *v)
-	}
-	if v := find.Offset; v != nil {
-		q.Space("OFFSET ?", *v)
-	}
-
-	sql, args, err := q.ToSQL()
-	if err != nil {
-		return nil, err
-	}
-
-	var projectMessages []*ProjectMessage
-	rows, err := txn.QueryContext(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var projectMessage ProjectMessage
-		var payload []byte
-		if err := rows.Scan(
-			&projectMessage.ResourceID,
-			&projectMessage.Title,
-			&projectMessage.DataClassificationConfigID,
-			&payload,
-			&projectMessage.Deleted,
-		); err != nil {
-			return nil, err
-		}
-		setting := &storepb.Project{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, setting); err != nil {
-			return nil, err
-		}
-		projectMessage.Setting = setting
-		projectMessages = append(projectMessages, &projectMessage)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	for _, project := range projectMessages {
-		projectWebhooks, err := s.findProjectWebhookImpl(ctx, txn, &FindProjectWebhookMessage{ProjectID: &project.ResourceID})
-		if err != nil {
-			return nil, err
-		}
-		project.Webhooks = projectWebhooks
-	}
-
-	return projectMessages, nil
 }
 
 func (s *Store) storeProjectCache(project *ProjectMessage) {

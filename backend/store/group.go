@@ -63,7 +63,7 @@ func (s *Store) GetGroup(ctx context.Context, find *FindGroupMessage) (*GroupMes
 	}
 	defer tx.Rollback()
 
-	groups, err := s.listGroupImpl(ctx, tx, find)
+	groups, err := s.ListGroups(ctx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -87,21 +87,6 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 	}
 	defer tx.Rollback()
 
-	groups, err := s.listGroupImpl(ctx, tx, find)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	for _, group := range groups {
-		s.groupCache.Add(group.Email, group)
-	}
-	return groups, nil
-}
-
-func (*Store) listGroupImpl(ctx context.Context, txn *sql.Tx, find *FindGroupMessage) ([]*GroupMessage, error) {
 	with := qb.Q()
 	from := qb.Q().Space("user_group")
 	where := qb.Q().Space("TRUE")
@@ -160,7 +145,7 @@ func (*Store) listGroupImpl(ctx context.Context, txn *sql.Tx, find *FindGroupMes
 	}
 
 	var groups []*GroupMessage
-	rows, err := txn.QueryContext(ctx, query, args...)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +177,13 @@ func (*Store) listGroupImpl(ctx context.Context, txn *sql.Tx, find *FindGroupMes
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 
+	for _, group := range groups {
+		s.groupCache.Add(group.Email, group)
+	}
 	return groups, nil
 }
 
