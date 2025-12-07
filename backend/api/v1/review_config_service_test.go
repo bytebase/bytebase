@@ -26,7 +26,7 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			rules: []*v1pb.SQLReviewRule{
 				{
 					Type:    "table.require-pk",
-					Level:   v1pb.SQLReviewRuleLevel_ERROR,
+					Level:   v1pb.SQLReviewRule_ERROR,
 					Engine:  v1pb.Engine_POSTGRES,
 					Payload: "",
 				},
@@ -38,7 +38,7 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			rules: []*v1pb.SQLReviewRule{
 				{
 					Type:    "table.require-pk",
-					Level:   v1pb.SQLReviewRuleLevel_WARNING,
+					Level:   v1pb.SQLReviewRule_WARNING,
 					Engine:  v1pb.Engine_POSTGRES,
 					Payload: "",
 				},
@@ -50,7 +50,7 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			rules: []*v1pb.SQLReviewRule{
 				{
 					Type:    "table.require-pk",
-					Level:   v1pb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED,
+					Level:   v1pb.SQLReviewRule_LEVEL_UNSPECIFIED,
 					Engine:  v1pb.Engine_POSTGRES,
 					Payload: "",
 				},
@@ -63,13 +63,13 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			rules: []*v1pb.SQLReviewRule{
 				{
 					Type:    "table.require-pk",
-					Level:   v1pb.SQLReviewRuleLevel_ERROR,
+					Level:   v1pb.SQLReviewRule_ERROR,
 					Engine:  v1pb.Engine_POSTGRES,
 					Payload: "",
 				},
 				{
 					Type:    "table.no-foreign-key",
-					Level:   v1pb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED,
+					Level:   v1pb.SQLReviewRule_LEVEL_UNSPECIFIED,
 					Engine:  v1pb.Engine_POSTGRES,
 					Payload: "",
 				},

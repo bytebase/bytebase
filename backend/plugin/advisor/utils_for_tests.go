@@ -230,7 +230,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		ruleList := []*storepb.SQLReviewRule{
 			{
 				Type:    string(rule),
-				Level:   storepb.SQLReviewRuleLevel_WARNING,
+				Level:   storepb.SQLReviewRule_WARNING,
 				Payload: string(payload),
 			},
 		}

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
+import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
@@ -70,11 +70,11 @@ describe("SQL Review YAML Templates Validation", () => {
         });
       });
 
-      test("all rules must be convertible to SQLReviewRuleLevel enum", () => {
+      test("all rules must be convertible to SQLReviewRule_Level enum", () => {
         data.ruleList.forEach((rule: any, index: number) => {
           const ruleDesc = `rule[${index}] (${rule.type})`;
-          const levelKey = rule.level as keyof typeof SQLReviewRuleLevel;
-          const levelValue = SQLReviewRuleLevel[levelKey];
+          const levelKey = rule.level as keyof typeof SQLReviewRule_Level;
+          const levelValue = SQLReviewRule_Level[levelKey];
 
           expect(
             levelValue,
@@ -83,7 +83,7 @@ describe("SQL Review YAML Templates Validation", () => {
           expect(
             levelValue,
             `${ruleDesc} level must not be LEVEL_UNSPECIFIED (0)`
-          ).not.toBe(SQLReviewRuleLevel.LEVEL_UNSPECIFIED);
+          ).not.toBe(SQLReviewRule_Level.LEVEL_UNSPECIFIED);
         });
       });
     });

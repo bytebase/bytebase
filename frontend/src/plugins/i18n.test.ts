@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
+import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import { getRuleLocalizationKey, TEMPLATE_LIST_V2 } from "../types/sqlReview";
 import { mergedLocalMessage } from "./i18n-messages";
 
@@ -88,14 +88,14 @@ describe("Test i18n for SQL review", () => {
   }
 });
 
-// Helper function to convert SQLReviewRuleLevel to string
-const sqlReviewRuleLevelToString = (level: SQLReviewRuleLevel): string => {
+// Helper function to convert SQLReviewRule_Level to string
+const sqlReviewRuleLevelToString = (level: SQLReviewRule_Level): string => {
   switch (level) {
-    case SQLReviewRuleLevel.LEVEL_UNSPECIFIED:
+    case SQLReviewRule_Level.LEVEL_UNSPECIFIED:
       return "LEVEL_UNSPECIFIED";
-    case SQLReviewRuleLevel.ERROR:
+    case SQLReviewRule_Level.ERROR:
       return "ERROR";
-    case SQLReviewRuleLevel.WARNING:
+    case SQLReviewRule_Level.WARNING:
       return "WARNING";
     default:
       return "UNKNOWN";

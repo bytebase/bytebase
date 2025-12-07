@@ -72,14 +72,14 @@ import { nextTick, reactive, ref, watch } from "vue";
 import { BBModal } from "@/bbkit";
 import { payloadValueListToComponentList } from "@/components/SQLReview/components";
 import { RichEngineName } from "@/components/v2";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
+import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
 import { getRuleLocalization } from "@/types/sqlReview";
 import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 
 type LocalState = {
-  level: SQLReviewRuleLevel;
+  level: SQLReviewRule_Level;
 };
 
 const props = defineProps<{

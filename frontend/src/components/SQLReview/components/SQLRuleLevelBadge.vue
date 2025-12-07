@@ -12,11 +12,11 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBBadge } from "@/bbkit";
 import type { BBBadgeStyle } from "@/bbkit/BBBadge.vue";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
+import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 
 const props = withDefaults(
   defineProps<{
-    level: SQLReviewRuleLevel;
+    level: SQLReviewRule_Level;
     suffix?: string;
   }>(),
   {
@@ -28,23 +28,23 @@ const { t } = useI18n();
 
 const style = computed((): BBBadgeStyle => {
   switch (props.level) {
-    case SQLReviewRuleLevel.ERROR:
+    case SQLReviewRule_Level.ERROR:
       return "CRITICAL";
-    case SQLReviewRuleLevel.WARNING:
+    case SQLReviewRule_Level.WARNING:
       return "WARN";
     default:
       return "DISABLED";
   }
 });
 
-// Helper function to convert SQLReviewRuleLevel to string
-const sqlReviewRuleLevelToString = (level: SQLReviewRuleLevel): string => {
+// Helper function to convert SQLReviewRule_Level to string
+const sqlReviewRuleLevelToString = (level: SQLReviewRule_Level): string => {
   switch (level) {
-    case SQLReviewRuleLevel.LEVEL_UNSPECIFIED:
+    case SQLReviewRule_Level.LEVEL_UNSPECIFIED:
       return "LEVEL_UNSPECIFIED";
-    case SQLReviewRuleLevel.ERROR:
+    case SQLReviewRule_Level.ERROR:
       return "ERROR";
-    case SQLReviewRuleLevel.WARNING:
+    case SQLReviewRule_Level.WARNING:
       return "WARNING";
     default:
       return "UNKNOWN";

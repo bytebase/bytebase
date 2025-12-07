@@ -25,16 +25,16 @@
 <script lang="ts" setup>
 import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
+import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import SQLRuleLevelBadge from "./SQLRuleLevelBadge.vue";
 
-const LEVEL_LIST = [SQLReviewRuleLevel.ERROR, SQLReviewRuleLevel.WARNING];
+const LEVEL_LIST = [SQLReviewRule_Level.ERROR, SQLReviewRule_Level.WARNING];
 
 const props = withDefaults(
   defineProps<{
     ruleList: RuleListWithCategory[];
-    isCheckedLevel?: (level: SQLReviewRuleLevel) => boolean;
+    isCheckedLevel?: (level: SQLReviewRule_Level) => boolean;
   }>(),
   {
     isCheckedLevel: () => false,
@@ -42,14 +42,18 @@ const props = withDefaults(
 );
 
 defineEmits<{
-  (event: "toggle-checked-level", level: SQLReviewRuleLevel, on: boolean): void;
+  (
+    event: "toggle-checked-level",
+    level: SQLReviewRule_Level,
+    on: boolean
+  ): void;
 }>();
 
 const errorLevelList = computed(() => {
   const map = LEVEL_LIST.reduce((m, level) => {
     m.set(level, 0);
     return m;
-  }, new Map<SQLReviewRuleLevel, number>());
+  }, new Map<SQLReviewRule_Level, number>());
 
   for (const ruleWithCategory of props.ruleList) {
     for (const rule of ruleWithCategory.ruleList) {
@@ -60,14 +64,14 @@ const errorLevelList = computed(() => {
   return map;
 });
 
-// Helper function to convert SQLReviewRuleLevel to string
-const sqlReviewRuleLevelToString = (level: SQLReviewRuleLevel): string => {
+// Helper function to convert SQLReviewRule_Level to string
+const sqlReviewRuleLevelToString = (level: SQLReviewRule_Level): string => {
   switch (level) {
-    case SQLReviewRuleLevel.LEVEL_UNSPECIFIED:
+    case SQLReviewRule_Level.LEVEL_UNSPECIFIED:
       return "LEVEL_UNSPECIFIED";
-    case SQLReviewRuleLevel.ERROR:
+    case SQLReviewRule_Level.ERROR:
       return "ERROR";
-    case SQLReviewRuleLevel.WARNING:
+    case SQLReviewRule_Level.WARNING:
       return "WARNING";
     default:
       return "UNKNOWN";

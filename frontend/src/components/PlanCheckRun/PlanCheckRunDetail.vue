@@ -265,7 +265,7 @@ import {
   PlanCheckRun_ResultSchema,
   PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
+import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { convertPositionLineToMonacoLine } from "@/utils/v1/position";
 import { usePlanCheckRunContext } from "./context";
@@ -360,12 +360,12 @@ const isBuiltinRule = (type: string) => {
   return type.startsWith("builtin.");
 };
 
-const builtinRuleLevel = (type: string): SQLReviewRuleLevel => {
+const builtinRuleLevel = (type: string): SQLReviewRule_Level => {
   switch (type) {
     case "builtin.prior-backup-check":
-      return SQLReviewRuleLevel.ERROR;
+      return SQLReviewRule_Level.ERROR;
     default:
-      return SQLReviewRuleLevel.ERROR;
+      return SQLReviewRule_Level.ERROR;
   }
 };
 

@@ -11,14 +11,18 @@ message ReviewConfigPayload {
 }
 
 message SQLReviewRule {
+  // The severity level for SQL review rules.
+  enum Level {
+    // Unspecified level.
+    LEVEL_UNSPECIFIED = 0;
+    // Rule violation is an error.
+    ERROR = 1;
+    // Rule violation is a warning.
+    WARNING = 2;
+  }
+
   string type = 1;
-  SQLReviewRuleLevel level = 2;
+  Level level = 2;
   string payload = 3;
   Engine engine = 4;
-}
-
-enum SQLReviewRuleLevel {
-  LEVEL_UNSPECIFIED = 0;
-  ERROR = 1;
-  WARNING = 2;
 }

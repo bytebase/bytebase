@@ -292,7 +292,7 @@ func validateSQLReviewRules(rules []*v1pb.SQLReviewRule) error {
 		return errors.Errorf("invalid payload, rule list cannot be empty")
 	}
 	for _, rule := range rules {
-		if rule.Level == v1pb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED {
+		if rule.Level == v1pb.SQLReviewRule_LEVEL_UNSPECIFIED {
 			return errors.Errorf("invalid rule level: LEVEL_UNSPECIFIED is not allowed for rule %q", rule.Type)
 		}
 		ruleType := advisor.SQLReviewRuleType(rule.Type)

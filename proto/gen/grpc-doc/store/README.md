@@ -245,7 +245,7 @@
     - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
   
-    - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
+    - [SQLReviewRule.Level](#bytebase-store-SQLReviewRule-Level)
   
 - [store/revision.proto](#store_revision-proto)
     - [RevisionPayload](#bytebase-store-RevisionPayload)
@@ -4008,7 +4008,7 @@ ISSUE_CREATE represents creating an issue. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [string](#string) |  |  |
-| level | [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel) |  |  |
+| level | [SQLReviewRule.Level](#bytebase-store-SQLReviewRule-Level) |  |  |
 | payload | [string](#string) |  |  |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
 
@@ -4019,16 +4019,16 @@ ISSUE_CREATE represents creating an issue. |
  
 
 
-<a name="bytebase-store-SQLReviewRuleLevel"></a>
+<a name="bytebase-store-SQLReviewRule-Level"></a>
 
-### SQLReviewRuleLevel
-
+### SQLReviewRule.Level
+The severity level for SQL review rules.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| LEVEL_UNSPECIFIED | 0 |  |
-| ERROR | 1 |  |
-| WARNING | 2 |  |
+| LEVEL_UNSPECIFIED | 0 | Unspecified level. |
+| ERROR | 1 | Rule violation is an error. |
+| WARNING | 2 | Rule violation is a warning. |
 
 
  

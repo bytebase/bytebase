@@ -15,11 +15,11 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
+import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 
 const props = withDefaults(
   defineProps<{
-    level: SQLReviewRuleLevel;
+    level: SQLReviewRule_Level;
     disabled?: boolean;
     editable?: boolean;
   }>(),
@@ -30,7 +30,7 @@ const props = withDefaults(
 );
 
 defineEmits<{
-  (event: "level-change", level: SQLReviewRuleLevel): void;
+  (event: "level-change", level: SQLReviewRule_Level): void;
 }>();
 
 const { t } = useI18n();
@@ -38,12 +38,12 @@ const { t } = useI18n();
 const availableLevel = computed(() => {
   return [
     {
-      level: SQLReviewRuleLevel.ERROR,
+      level: SQLReviewRule_Level.ERROR,
       title: t("sql-review.level.error"),
       class: "error",
     },
     {
-      level: SQLReviewRuleLevel.WARNING,
+      level: SQLReviewRule_Level.WARNING,
       title: t("sql-review.level.warning"),
       class: "warning",
     },

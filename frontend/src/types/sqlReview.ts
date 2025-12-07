@@ -1,6 +1,6 @@
 import { t, te } from "@/plugins/i18n";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
+import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
@@ -102,7 +102,7 @@ interface CasePayload {
 // Used by the backend
 export interface SchemaPolicyRule {
   type: string;
-  level: SQLReviewRuleLevel;
+  level: SQLReviewRule_Level;
   engine: Engine;
   payload?:
     | NamingFormatPayload
@@ -133,7 +133,7 @@ interface RuleTemplateV2Raw {
   type: string;
   category: string;
   engine: string; // keyof typeof Engine
-  level: string; // keyof typeof SQLReviewRuleLevel
+  level: string; // keyof typeof SQLReviewRule_Level
   componentList: RuleConfigComponent[];
 }
 
@@ -142,7 +142,7 @@ export interface RuleTemplateV2 {
   type: string;
   category: string;
   engine: Engine;
-  level: SQLReviewRuleLevel;
+  level: SQLReviewRule_Level;
   componentList: RuleConfigComponent[];
 }
 
@@ -180,7 +180,7 @@ const convertRuleTemplateV2Raw = (
 
     // Schema rules from YAML don't have levels (enforced by tests).
     // WARNING is the default severity when users add these rules to their policies.
-    const level = SQLReviewRuleLevel.WARNING;
+    const level = SQLReviewRule_Level.WARNING;
 
     return {
       ...rawRule,
@@ -207,7 +207,7 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
     id: string;
     ruleList: {
       type: string;
-      level: string; // keyof typeof SQLReviewRuleLevel
+      level: string; // keyof typeof SQLReviewRule_Level
       payload?: PayloadObject;
       engine: string; // keyof typeof Engine
     }[];
@@ -232,8 +232,8 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
           `Template rule ${rule.type} is missing required 'level' field in template ${template.id}`
         );
       }
-      const levelKey = rule.level as keyof typeof SQLReviewRuleLevel;
-      const level = SQLReviewRuleLevel[levelKey];
+      const levelKey = rule.level as keyof typeof SQLReviewRule_Level;
+      const level = SQLReviewRule_Level[levelKey];
       if (level === undefined) {
         throw new Error(
           `Template rule ${rule.type} has invalid level '${rule.level}' in template ${template.id}`

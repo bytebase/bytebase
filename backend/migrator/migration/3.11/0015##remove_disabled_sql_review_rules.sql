@@ -1,6 +1,6 @@
 -- Remove DISABLED rules from SQL review configurations.
 --
--- Context: SQLReviewRuleLevel enum previously had DISABLED as an option.
+-- Context: SQLReviewRule_Level enum previously had DISABLED as an option.
 -- This has been removed - rules should either be in the policy (ERROR/WARNING) or absent.
 --
 -- This migration filters out any rules with level = "DISABLED" from the sqlReviewRules array
