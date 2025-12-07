@@ -210,7 +210,6 @@
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [RolloutPolicy.Checkers](#bytebase-store-RolloutPolicy-Checkers)
     - [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-store-RolloutPolicy-Checkers-RequiredStatusChecks)
-    - [SQLReviewRule](#bytebase-store-SQLReviewRule)
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
   
@@ -220,7 +219,6 @@
     - [Policy.Resource](#bytebase-store-Policy-Resource)
     - [Policy.Type](#bytebase-store-Policy-Type)
     - [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-store-RolloutPolicy-Checkers-PlanCheckEnforcement)
-    - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/project.proto](#store_project-proto)
     - [Label](#bytebase-store-Label)
@@ -245,6 +243,9 @@
   
 - [store/review_config.proto](#store_review_config-proto)
     - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
+    - [SQLReviewRule](#bytebase-store-SQLReviewRule)
+  
+    - [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel)
   
 - [store/revision.proto](#store_revision-proto)
     - [RevisionPayload](#bytebase-store-RevisionPayload)
@@ -3571,24 +3572,6 @@ QueryDataPolicy is the policy configuration for querying data.
 
 
 
-<a name="bytebase-store-SQLReviewRule"></a>
-
-### SQLReviewRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [string](#string) |  |  |
-| level | [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel) |  |  |
-| payload | [string](#string) |  |  |
-| engine | [Engine](#bytebase-store-Engine) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-TagPolicy"></a>
 
 ### TagPolicy
@@ -3703,19 +3686,6 @@ QueryDataPolicy is the policy configuration for querying data.
 | PLAN_CHECK_ENFORCEMENT_UNSPECIFIED | 0 | Allow rollout regardless of plan check results (no enforcement). |
 | ERROR_ONLY | 1 | Block rollout only when plan check finds errors. |
 | STRICT | 2 | Block rollout when plan check finds errors or warnings. |
-
-
-
-<a name="bytebase-store-SQLReviewRuleLevel"></a>
-
-### SQLReviewRuleLevel
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LEVEL_UNSPECIFIED | 0 |  |
-| ERROR | 1 |  |
-| WARNING | 2 |  |
 
 
  
@@ -4028,7 +3998,38 @@ ISSUE_CREATE represents creating an issue. |
 
 
 
+
+<a name="bytebase-store-SQLReviewRule"></a>
+
+### SQLReviewRule
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [string](#string) |  |  |
+| level | [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel) |  |  |
+| payload | [string](#string) |  |  |
+| engine | [Engine](#bytebase-store-Engine) |  |  |
+
+
+
+
+
  
+
+
+<a name="bytebase-store-SQLReviewRuleLevel"></a>
+
+### SQLReviewRuleLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 |  |
+| ERROR | 1 |  |
+| WARNING | 2 |  |
+
 
  
 

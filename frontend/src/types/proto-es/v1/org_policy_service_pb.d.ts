@@ -5,7 +5,6 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
-import type { Engine } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -436,47 +435,6 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 export declare const QueryDataPolicySchema: GenMessage<QueryDataPolicy>;
 
 /**
- * SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
- *
- * @generated from message bytebase.v1.SQLReviewRule
- */
-export declare type SQLReviewRule = Message<"bytebase.v1.SQLReviewRule"> & {
-  /**
-   * The type of SQL review rule.
-   *
-   * @generated from field: string type = 1;
-   */
-  type: string;
-
-  /**
-   * The severity level of the rule.
-   *
-   * @generated from field: bytebase.v1.SQLReviewRuleLevel level = 2;
-   */
-  level: SQLReviewRuleLevel;
-
-  /**
-   * The payload is a JSON string that varies by rule type.
-   *
-   * @generated from field: string payload = 3;
-   */
-  payload: string;
-
-  /**
-   * The database engine this rule applies to.
-   *
-   * @generated from field: bytebase.v1.Engine engine = 4;
-   */
-  engine: Engine;
-};
-
-/**
- * Describes the message bytebase.v1.SQLReviewRule.
- * Use `create(SQLReviewRuleSchema)` to create a new message.
- */
-export declare const SQLReviewRuleSchema: GenMessage<SQLReviewRule>;
-
-/**
  * MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
  *
  * @generated from message bytebase.v1.MaskingExceptionPolicy
@@ -845,39 +803,6 @@ export enum PolicyResourceType {
  * Describes the enum bytebase.v1.PolicyResourceType.
  */
 export declare const PolicyResourceTypeSchema: GenEnum<PolicyResourceType>;
-
-/**
- * The severity level for SQL review rules.
- *
- * @generated from enum bytebase.v1.SQLReviewRuleLevel
- */
-export enum SQLReviewRuleLevel {
-  /**
-   * Unspecified level.
-   *
-   * @generated from enum value: LEVEL_UNSPECIFIED = 0;
-   */
-  LEVEL_UNSPECIFIED = 0,
-
-  /**
-   * Rule violation is an error.
-   *
-   * @generated from enum value: ERROR = 1;
-   */
-  ERROR = 1,
-
-  /**
-   * Rule violation is a warning.
-   *
-   * @generated from enum value: WARNING = 2;
-   */
-  WARNING = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.SQLReviewRuleLevel.
- */
-export declare const SQLReviewRuleLevelSchema: GenEnum<SQLReviewRuleLevel>;
 
 /**
  * OrgPolicyService manages organizational policies at various resource levels.

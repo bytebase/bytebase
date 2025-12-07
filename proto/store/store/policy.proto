@@ -95,19 +95,6 @@ message MaskingRulePolicy {
   repeated MaskingRule rules = 1;
 }
 
-message SQLReviewRule {
-  string type = 1;
-  SQLReviewRuleLevel level = 2;
-  string payload = 3;
-  Engine engine = 4;
-}
-
-enum SQLReviewRuleLevel {
-  LEVEL_UNSPECIFIED = 0;
-  ERROR = 1;
-  WARNING = 2;
-}
-
 message TagPolicy {
   // tags is the key-value map for resources.
   // For example, the environment resource can have the SQL review config tag, such as "bb.tag.review_config": "reviewConfigs/{review config resource id}".

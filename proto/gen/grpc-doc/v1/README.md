@@ -432,7 +432,6 @@
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [RolloutPolicy.Checkers](#bytebase-v1-RolloutPolicy-Checkers)
     - [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks)
-    - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
     - [TagPolicy](#bytebase-v1-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
@@ -442,7 +441,6 @@
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
     - [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement)
-    - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
@@ -548,7 +546,10 @@
     - [ListReviewConfigsRequest](#bytebase-v1-ListReviewConfigsRequest)
     - [ListReviewConfigsResponse](#bytebase-v1-ListReviewConfigsResponse)
     - [ReviewConfig](#bytebase-v1-ReviewConfig)
+    - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
     - [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest)
+  
+    - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
   
     - [ReviewConfigService](#bytebase-v1-ReviewConfigService)
   
@@ -7261,24 +7262,6 @@ Rollout policy configuration.
 
 
 
-<a name="bytebase-v1-SQLReviewRule"></a>
-
-### SQLReviewRule
-SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [string](#string) |  | The type of SQL review rule. |
-| level | [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel) |  | The severity level of the rule. |
-| payload | [string](#string) |  | The payload is a JSON string that varies by rule type. |
-| engine | [Engine](#bytebase-v1-Engine) |  | The database engine this rule applies to. |
-
-
-
-
-
-
 <a name="bytebase-v1-TagPolicy"></a>
 
 ### TagPolicy
@@ -7398,19 +7381,6 @@ The type of organizational policy.
 | PLAN_CHECK_ENFORCEMENT_UNSPECIFIED | 0 | Allow rollout regardless of plan check results (no enforcement). |
 | ERROR_ONLY | 1 | Block rollout only when plan check finds errors. |
 | STRICT | 2 | Block rollout when plan check finds errors or warnings. |
-
-
-
-<a name="bytebase-v1-SQLReviewRuleLevel"></a>
-
-### SQLReviewRuleLevel
-The severity level for SQL review rules.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LEVEL_UNSPECIFIED | 0 | Unspecified level. |
-| ERROR | 1 | Rule violation is an error. |
-| WARNING | 2 | Rule violation is a warning. |
 
 
  
@@ -9025,6 +8995,24 @@ ReleaseService manages releases for coordinating deployments.
 
 
 
+<a name="bytebase-v1-SQLReviewRule"></a>
+
+### SQLReviewRule
+SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [string](#string) |  | The type of SQL review rule. |
+| level | [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel) |  | The severity level of the rule. |
+| payload | [string](#string) |  | The payload is a JSON string that varies by rule type. |
+| engine | [Engine](#bytebase-v1-Engine) |  | The database engine this rule applies to. |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateReviewConfigRequest"></a>
 
 ### UpdateReviewConfigRequest
@@ -9044,6 +9032,19 @@ The name field is used to identify the SQL review config to update. |
 
 
  
+
+
+<a name="bytebase-v1-SQLReviewRuleLevel"></a>
+
+### SQLReviewRuleLevel
+The severity level for SQL review rules.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 | Unspecified level. |
+| ERROR | 1 | Rule violation is an error. |
+| WARNING | 2 | Rule violation is a warning. |
+
 
  
 

@@ -1003,10 +1003,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.TagPolicy"><span class="badge">M</span>TagPolicy</a>
                 </li>
               
@@ -1037,10 +1033,6 @@
               
                 <li>
                   <a href="#bytebase.store.RolloutPolicy.Checkers.PlanCheckEnforcement"><span class="badge">E</span>RolloutPolicy.Checkers.PlanCheckEnforcement</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.SQLReviewRuleLevel"><span class="badge">E</span>SQLReviewRuleLevel</a>
                 </li>
               
               
@@ -1149,6 +1141,14 @@
                   <a href="#bytebase.store.ReviewConfigPayload"><span class="badge">M</span>ReviewConfigPayload</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.SQLReviewRuleLevel"><span class="badge">E</span>SQLReviewRuleLevel</a>
+                </li>
               
               
               
@@ -9876,51 +9876,6 @@ These checks are performed in UI workflows only. </p></td>
 
         
       
-        <h3 id="bytebase.store.SQLReviewRule">SQLReviewRule</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>level</td>
-                  <td><a href="#bytebase.store.SQLReviewRuleLevel">SQLReviewRuleLevel</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>payload</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>engine</td>
-                  <td><a href="#bytebase.store.Engine">Engine</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.TagPolicy">TagPolicy</h3>
         <p></p>
 
@@ -10184,35 +10139,6 @@ For example, the environment resource can have the SQL review config tag, such a
                 <td>STRICT</td>
                 <td>2</td>
                 <td><p>Block rollout when plan check finds errors or warnings.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.SQLReviewRuleLevel">SQLReviewRuleLevel</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>LEVEL_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ERROR</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>WARNING</td>
-                <td>2</td>
-                <td><p></p></td>
               </tr>
             
           </tbody>
@@ -10884,7 +10810,81 @@ Format: projects/{project}/sheets/{sheet} </p></td>
 
         
       
+        <h3 id="bytebase.store.SQLReviewRule">SQLReviewRule</h3>
+        <p></p>
 
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>level</td>
+                  <td><a href="#bytebase.store.SQLReviewRuleLevel">SQLReviewRuleLevel</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>payload</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>engine</td>
+                  <td><a href="#bytebase.store.Engine">Engine</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.SQLReviewRuleLevel">SQLReviewRuleLevel</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>LEVEL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WARNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       
