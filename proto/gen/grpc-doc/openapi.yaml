@@ -13411,9 +13411,6 @@ components:
                     type: string
                     description: The database engine this rule applies to.
                     format: enum
-                comment:
-                    type: string
-                    description: Additional comment for the rule.
             description: SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
         SchedulerInfo_WaitingCause:
             type: object

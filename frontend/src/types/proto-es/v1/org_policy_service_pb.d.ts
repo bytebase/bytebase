@@ -468,13 +468,6 @@ export declare type SQLReviewRule = Message<"bytebase.v1.SQLReviewRule"> & {
    * @generated from field: bytebase.v1.Engine engine = 4;
    */
   engine: Engine;
-
-  /**
-   * Additional comment for the rule.
-   *
-   * @generated from field: string comment = 5;
-   */
-  comment: string;
 };
 
 /**

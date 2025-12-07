@@ -347,8 +347,6 @@ message SQLReviewRule {
   string payload = 3;
   // The database engine this rule applies to.
   Engine engine = 4;
-  // Additional comment for the rule.
-  string comment = 5;
 }
 
 // The severity level for SQL review rules.

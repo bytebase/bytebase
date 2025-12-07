@@ -168,9 +168,6 @@ func (x *SQLReviewRule) Equal(y *SQLReviewRule) bool {
 	if x.Engine != y.Engine {
 		return false
 	}
-	if x.Comment != y.Comment {
-		return false
-	}
 	return true
 }
 

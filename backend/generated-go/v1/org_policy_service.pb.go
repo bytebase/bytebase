@@ -1063,9 +1063,7 @@ type SQLReviewRule struct {
 	// The payload is a JSON string that varies by rule type.
 	Payload string `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
 	// The database engine this rule applies to.
-	Engine Engine `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
-	// Additional comment for the rule.
-	Comment       string `protobuf:"bytes,5,opt,name=comment,proto3" json:"comment,omitempty"`
+	Engine        Engine `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1126,13 +1124,6 @@ func (x *SQLReviewRule) GetEngine() Engine {
 		return x.Engine
 	}
 	return Engine_ENGINE_UNSPECIFIED
-}
-
-func (x *SQLReviewRule) GetComment() string {
-	if x != nil {
-		return x.Comment
-	}
-	return ""
 }
 
 // MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
@@ -1668,13 +1659,12 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\x0edisable_export\x18\x02 \x01(\bR\rdisableExport\x12.\n" +
 	"\x13maximum_result_size\x18\x03 \x01(\x03R\x11maximumResultSize\x12.\n" +
 	"\x13maximum_result_rows\x18\x04 \x01(\x05R\x11maximumResultRows\x12*\n" +
-	"\x11disable_copy_data\x18\x05 \x01(\bR\x0fdisableCopyData\"\xbb\x01\n" +
+	"\x11disable_copy_data\x18\x05 \x01(\bR\x0fdisableCopyData\"\xa1\x01\n" +
 	"\rSQLReviewRule\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x125\n" +
 	"\x05level\x18\x02 \x01(\x0e2\x1f.bytebase.v1.SQLReviewRuleLevelR\x05level\x12\x18\n" +
 	"\apayload\x18\x03 \x01(\tR\apayload\x12+\n" +
-	"\x06engine\x18\x04 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12\x18\n" +
-	"\acomment\x18\x05 \x01(\tR\acomment\"\xe9\x02\n" +
+	"\x06engine\x18\x04 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\"\xe9\x02\n" +
 	"\x16MaskingExceptionPolicy\x12c\n" +
 	"\x12masking_exceptions\x18\x01 \x03(\v24.bytebase.v1.MaskingExceptionPolicy.MaskingExceptionR\x11maskingExceptions\x1a\xe9\x01\n" +
 	"\x10MaskingException\x12S\n" +
