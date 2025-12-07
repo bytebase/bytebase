@@ -42,6 +42,6 @@ func TestMSSQLRules(t *testing.T) {
 // Add SQL review type here if you need metadata for test.
 var advisorNeedMockData = map[storepb.SQLReviewRule_Type]bool{
 	storepb.SQLReviewRule_STATEMENT_DISALLOW_CROSS_DB_QUERIES: true,
-	storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY:     true,
-	storepb.SQLReviewRule_INDEX_NOT_REDUNDANT:               true,
+	storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY:       true,
+	storepb.SQLReviewRule_INDEX_NOT_REDUNDANT:                 true,
 }
