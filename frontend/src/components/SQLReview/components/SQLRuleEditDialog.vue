@@ -69,7 +69,7 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { nextTick, reactive, ref, watch } from "vue";
-import { BBModal, BBTextField } from "@/bbkit";
+import { BBModal } from "@/bbkit";
 import { payloadValueListToComponentList } from "@/components/SQLReview/components";
 import { RichEngineName } from "@/components/v2";
 import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
