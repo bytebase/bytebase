@@ -256,7 +256,7 @@ import {
   ruleTemplateMapV2,
   SQLReviewPolicyErrorCode,
 } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
 import type {
   PlanCheckRun,
   PlanCheckRun_Result,

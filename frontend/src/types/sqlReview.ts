@@ -1,6 +1,6 @@
 import { t, te } from "@/plugins/i18n";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";

@@ -15,7 +15,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
 
 const props = withDefaults(
   defineProps<{

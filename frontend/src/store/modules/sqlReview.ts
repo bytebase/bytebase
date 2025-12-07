@@ -14,7 +14,6 @@ import type {
 } from "@/types";
 import {
   PolicyType,
-  SQLReviewRuleSchema,
   TagPolicySchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { ReviewConfig } from "@/types/proto-es/v1/review_config_service_pb";
@@ -23,6 +22,7 @@ import {
   GetReviewConfigRequestSchema,
   ListReviewConfigsRequestSchema,
   ReviewConfigSchema,
+  SQLReviewRuleSchema,
   UpdateReviewConfigRequestSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
 import { usePolicyV1Store } from "./v1/policy";

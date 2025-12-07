@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
 import { getRuleLocalizationKey, TEMPLATE_LIST_V2 } from "../types/sqlReview";
 import { mergedLocalMessage } from "./i18n-messages";
 
