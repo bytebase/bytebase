@@ -33,11 +33,11 @@
     "bb-sql-review-empty-desc": "空のテンプレートです。必要なルールを自分で追加する必要があります。"
   },
   "rule": {
-    "engine-mysql-use-innodb": {
+    "ENGINE_MYSQL_USE_INNODB": {
       "title": "InnoDBストレージエンジンの強制",
       "description": "InnoDBはMySQLのデフォルトのストレージエンジンであり、トランザクションのサポートを提供します。高並行性と低遅延のシナリオにおいても優れたパフォーマンスを提供し、オンラインデータのバックアップとリカバリをサポートします。OLTPビジネスにおいては優先される選択肢です。提案エラーレベル：エラー"
     },
-    "table-require-pk": {
+    "TABLE_REQUIRE_PK": {
       "title": "テーブルに主キーの含まれることを強制する",
       "description": "さまざまなデータ同期、比較、ロールバック ツールでは、テーブルに主キーが必要になることがよくあります。提案エラー レベル: エラー"
     },
@@ -45,7 +45,7 @@
       "title": "外部キー制約の使用を禁止する",
       "description": "外部キーの利点と欠点は非常に議論が分かれています。外部キーの使用は、データベースの変更やスケーラビリティ（シャーディングなど）の難しさを大幅に増加させる可能性があります。また、一部のツールの使用を妨げることさえあります。そのため、別のオプションとして、アプリケーションレイヤーで外部キー制約を実装することがあります。提案エラーレベル：警告"
     },
-    "table-drop-naming-convention": {
+    "TABLE_DROP_NAMING_CONVENTION": {
       "title": "削除するテーブルの命名形式を制限する",
       "description": "例えば、「_del」の接尾辞を要求することで、誤って削除することを効果的に防ぐことができます。提案エラーレベル：エラー",
       "component": {
@@ -54,19 +54,19 @@
         }
       }
     },
-    "table-disallow-partition": {
+    "TABLE_DISALLOW_PARTITION": {
       "title": "パーティションテーブルの使用を禁止する",
       "description": "一部のデータベースエンジンでは、パーティションテーブルは未熟であり、使用やメンテナンスが不便です。そのため、データベースやテーブルのシャーディングなどの手動のデータパーティショニング方法の使用がより好まれます。提案エラーレベル：警告"
     },
-    "table-disallow-trigger": {
+    "TABLE_DISALLOW_TRIGGER": {
       "title": "テーブルにトリガの使用を禁止する",
       "description": "トリガはデータベースの複雑さを増加させ、データの整合性を保つための手段としては適切ではありません。代わりに、アプリケーションレイヤーでデータの整合性を保つことをお勧めします。提案エラーレベル：警告"
     },
-    "table-no-duplicate-index": {
-      "title": "重複インデックスの禁止",
-      "description": "このルールは、テーブル上の重複インデックスの作成を禁止します。重複インデックスは、余分なストレージスペースを占有し、クエリのパフォーマンスを低下させる可能性があります。推奨エラーレベル: 警告"
+    "INDEX_NO_DUPLICATE_COLUMN": {
+      "title": "重複する列を含むインデックスの作成を禁止する",
+      "description": "重複する列を持つインデックスの作成は失敗します。提案されるエラーレベル：エラー"
     },
-    "table-text-fields-total-length": {
+    "TABLE_TEXT_FIELDS_TOTAL_LENGTH": {
       "title": "テキスト入力欄の文字数を制限する",
       "description": "このルールは、テーブルが保持できるデータ量を制限し、過剰なストレージ使用を防ぎます。",
       "component": {
@@ -75,11 +75,11 @@
         }
       }
     },
-    "table-disallow-set-charset": {
+    "TABLE_DISALLOW_SET_CHARSET": {
       "title": "テーブルプロパティでの文字セットの定義を禁止する",
       "description": "データベースの文字セットは、データベースレベルで設定することを推奨します。より細かいレベルで文字セットを設定すると、不要な複雑さが生じる可能性があります。推奨されるエラーレベル: エラー。"
     },
-    "table-comment": {
+    "TABLE_COMMENT": {
       "title": "コメントの規約",
       "description": "テーブルにコメントが必要かどうか、および最大コメント長を設定します。",
       "component": {
@@ -95,7 +95,7 @@
         }
       }
     },
-    "table-disallow-ddl": {
+    "TABLE_DISALLOW_DDL": {
       "title": "DDL を禁止する",
       "description": "DDL の実行を禁止するテーブルを設定します。提案エラー レベル: 警告",
       "component": {
@@ -104,7 +104,7 @@
         }
       }
     },
-    "table-limit-size": {
+    "TABLE_LIMIT_SIZE": {
       "title": "行数の多いテーブルに対するDDL操作を制限する",
       "description": "DDLが実行可能なテーブルの最大行数を設定します。推奨エラーレベル：警告",
       "component": {
@@ -113,7 +113,7 @@
         }
       }
     },
-    "table-disallow-dml": {
+    "TABLE_DISALLOW_DML": {
       "title": "DML を禁止する",
       "description": "DML の実行を禁止するテーブルを設定します。提案エラー レベル: 警告",
       "component": {
@@ -122,19 +122,19 @@
         }
       }
     },
-    "table-require-charset": {
+    "TABLE_REQUIRE_CHARSET": {
       "title": "文字セットを要求する",
       "description": "テーブルの文字セットを指定する必要があります。提案エラーレベル: 警告"
     },
-    "table-require-collation": {
+    "TABLE_REQUIRE_COLLATION": {
       "title": "照合を要求する",
       "description": "テーブルの照合順序を指定する必要があります。提案エラー レベル: 警告"
     },
-    "naming-fully-qualified": {
+    "NAMING_FULLY_QUALIFIED": {
       "title": "完全修飾オブジェクト名",
       "description": "完全修飾オブジェクト名の使用を強制します。 例えば、「schema.table」、推奨エラーレベル：警告"
     },
-    "naming-table": {
+    "NAMING_TABLE": {
       "title": "テーブルの命名形式の強制",
       "description": "デフォルトの形式はすべて小文字で、単語間にアンダースコアで区切られ、最大63文字までです。例えば「abc」や「abc_def」です。提案エラーレベル：警告",
       "component": {
@@ -146,7 +146,7 @@
         }
       }
     },
-    "naming-column": {
+    "NAMING_COLUMN": {
       "title": "列名の形式を強制する",
       "description": "デフォルトの形式はすべて小文字で、単語間にアンダースコアで区切られ、最大63文字までです。例えば「abc」や「abc_def」です。提案エラーレベル：警告",
       "component": {
@@ -158,7 +158,7 @@
         }
       }
     },
-    "naming-index-uk": {
+    "NAMING_INDEX_UK": {
       "title": "一意キーの命名形式を強制する",
       "description": "名前は空白であることが許可され、データベースによって命名されます。空でない場合、デフォルトの形式は「uk_<テーブル名>_<一意キーカラム名の組み合わせ>」で、最大63文字までです。例えば「uk_my_table_id_name」です。提案エラーレベル：警告",
       "component": {
@@ -174,7 +174,7 @@
         }
       }
     },
-    "naming-index-pk": {
+    "NAMING_INDEX_PK": {
       "title": "主キーの命名形式を強制する",
       "description": "名前は空白であることが許可され、データベースによって命名されます。空でない場合、デフォルトの形式は「pk_<テーブル名>_<一意キーカラム名の組み合わせ>」で、最大63文字までです。例えば「pk_my_table_id_name」です。提案エラーレベル：警告",
       "component": {
@@ -190,7 +190,7 @@
         }
       }
     },
-    "naming-index-fk": {
+    "NAMING_INDEX_FK": {
       "title": "外部キーの命名形式を強制する",
       "description": "名前は空であることもあり、データベースによって命名されることもあります。空でない場合、デフォルトの形式は「fk_<テーブル名>_<一意のキーカラム名の組み合わせ>」で、63文字を超えないようにします。例えば「fk_my_table_id_name」です。提案エラーレベル：警告",
       "component": {
@@ -208,7 +208,7 @@
         }
       }
     },
-    "naming-index-idx": {
+    "NAMING_INDEX_IDX": {
       "title": "インデックスの命名形式を強制する",
       "description": "名前は空であることもあり、データベースによって命名されることもあります。空でない場合、デフォルトの形式は「idx_<テーブル名>_<一意のキーカラム名の組み合わせ>」で、63文字を超えないようにします。例えば「idx_my_table_id_name」です。提案エラーレベル：警告",
       "component": {
@@ -224,7 +224,7 @@
         }
       }
     },
-    "naming-column-auto-increment": {
+    "NAMING_COLUMN_AUTO_INCREMENT": {
       "title": "オートインクリメント列の命名形式を強制する",
       "description": "デフォルトの列名は「ID」で、63文字を超えないようにします。",
       "component": {
@@ -236,15 +236,15 @@
         }
       }
     },
-    "naming-table-no-keyword": {
+    "NAMING_TABLE_NO_KEYWORD": {
       "title": "テーブル名としてキーワードの使用を禁止する",
       "description": ""
     },
-    "naming-identifier-no-keyword": {
+    "NAMING_IDENTIFIER_NO_KEYWORD": {
       "title": "識別子としてキーワードの使用を禁止する",
       "description": ""
     },
-    "naming-identifier-case": {
+    "NAMING_IDENTIFIER_CASE": {
       "title": "識別子の大文字小文字を強制する",
       "description": "",
       "component": {
@@ -253,7 +253,7 @@
         }
       }
     },
-    "column-required": {
+    "COLUMN_REQUIRED": {
       "title": "テーブルに特定の列を含めることを強制する",
       "description": "いくつかの共通の列は、アプリケーションのメンテナンスを向上させるために役立ちます。例えば、ビジネスに依存しない「ID」列を主キーとして追加することで、ビジネスの変更（ビジネスの統合など）による主キーの競合を回避することができ、一部のシナリオではデータの挿入パフォーマンスも向上させることができます。推奨エラーレベル：警告",
       "component": {
@@ -262,7 +262,7 @@
         }
       }
     },
-    "column-type-disallow-list": {
+    "COLUMN_TYPE_DISALLOW_LIST": {
       "title": "特定の列データ型の使用を禁止する",
       "description": "列のデータ型の乱用は、システムの保守性とパフォーマンスに深刻な悪影響を与える可能性があります。例えば、「LOB」列を使用して大量の音声やビデオデータを保存すると、データベースのパフォーマンスが低下し、バックアップと復旧時間が長くなり、データ同期ツールとの互換性が失われる可能性があります。推奨エラーレベル：エラー",
       "component": {
@@ -271,47 +271,47 @@
         }
       }
     },
-    "column-no-null": {
+    "COLUMN_NO_NULL": {
       "title": "列に「NOT NULL」制約を強制する",
       "description": "列にNULL値を持つことはできません。"
     },
-    "column-disallow-set-charset": {
+    "COLUMN_DISALLOW_SET_CHARSET": {
       "title": "列のプロパティで文字セットの定義を禁止する",
       "description": "データベースレベルまたはテーブルレベルで文字セットを設定することをおすすめします。細かい粒度で文字セットを設定すると、不必要な複雑さが生じる場合があります。推奨エラーレベル：エラー。"
     },
-    "column-disallow-change-type": {
+    "COLUMN_DISALLOW_CHANGE_TYPE": {
       "title": "列の型の変更を禁止する",
       "description": "列の型を変更すると、システムのパフォーマンス、保守性、さらにはデータの損失に影響を与える可能性があります。推奨エラーレベル：警告"
     },
-    "column-disallow-change": {
+    "COLUMN_DISALLOW_CHANGE": {
       "title": "\"CHANGE COLUMN\" ステートメントの使用を禁止する",
       "description": "\"CHANGE COLUMN\" は MySQL の構文に固有のものであり、列名やその他のプロパティを同時に変更するために使用できます。ただし、プロパティを変更する際に列名が誤って変更される可能性があります。2つの変更の種類を区別するために、引き続き標準の \"RENAME\" および \"MODIFY\" ステートメントを使用することを推奨します。推奨エラーレベル：エラー"
     },
-    "column-disallow-changing-order": {
+    "COLUMN_DISALLOW_CHANGING_ORDER": {
       "title": "テーブル内の列の順序の変更を禁止する",
       "description": "列の順序を変更すると、元のテーブルのデフォルトの順序に依存する一部のアプリケーションやビューが予期しない結果（\"select *\" など）を生成する可能性があります。推奨エラーレベル：警告"
     },
-    "column-disallow-drop": {
+    "COLUMN_DISALLOW_DROP": {
       "title": "列の削除を禁止",
       "description": "列を削除することは禁止されています。推奨されるエラーレベル：警告。"
     },
-    "column-disallow-drop-in-index": {
+    "COLUMN_DISALLOW_DROP_IN_INDEX": {
       "title": "インデックス内の列の削除を禁止する",
       "description": "インデックス内の列の削除を禁止します。推奨エラーレベル：エラー"
     },
-    "column-set-default-for-not-null": {
+    "COLUMN_SET_DEFAULT_FOR_NOT_NULL": {
       "title": "「NOT NULL」列にデフォルト値を強制します",
       "description": "「NOT NULL」列に新しい行を挿入する際に列に値が割り当てられていない場合、かつ列にデフォルト値がない場合、データベースはその行の挿入を拒否します。新しい列にデフォルト値を設定することで、レガシーアプリケーションとの互換性も確保できます。推奨エラーレベル：エラー"
     },
-    "column-auto-increment-must-integer": {
+    "COLUMN_AUTO_INCREMENT_MUST_INTEGER": {
       "title": "自動増分列に「INTEGER」データ型の使用を強制します",
       "description": "MySQLの自動増分列は一般的にビジネスに依存しない主キーとして使用されます。整数型を使用することで、ストレージスペースを節約し、主キーのインデックス構造をよりコンパクトにし、クエリとDMLのパフォーマンスを向上させることができます。推奨エラーレベル：エラー"
     },
-    "column-auto-increment-must-unsigned": {
+    "COLUMN_AUTO_INCREMENT_MUST_UNSIGNED": {
       "title": "自動増分列に「UNSIGNED」データ型の使用を強制します",
       "description": "符号なしの型は負の数を格納せず、同じ型で格納できる値の範囲が倍増するため、自動増分列のオーバーフローを回避することができます。推奨エラーレベル：警告"
     },
-    "column-comment": {
+    "COLUMN_COMMENT": {
       "title": "列コメントの規則",
       "description": "カラムにコメントを追加することは良い開発の慣行ですが、極端に長いコメントはスキーマの可読性を低下させる可能性があります。推奨エラーレベル：警告",
       "component": {
@@ -327,7 +327,7 @@
         }
       }
     },
-    "column-maximum-character-length": {
+    "COLUMN_MAXIMUM_CHARACTER_LENGTH": {
       "title": "\"CHAR\"データ型の長さを制限する",
       "description": "\"CHAR\"は固定長のタイプです。例えば、CHAR(20)のカラムは1文字しか格納されていなくても20文字分のスペースを占有し、無駄になります。文字列が長すぎて長さが固定されていない場合は、MySQLではVARCHARを使用し、PostgreSQLではTEXTを使用することを検討してください。推奨エラーレベル：エラー",
       "component": {
@@ -336,7 +336,7 @@
         }
       }
     },
-    "column-maximum-varchar-length": {
+    "COLUMN_MAXIMUM_VARCHAR_LENGTH": {
       "title": "\"VARCHAR\"データ型の長さを制限する",
       "description": "",
       "component": {
@@ -345,7 +345,7 @@
         }
       }
     },
-    "column-auto-increment-initial-value": {
+    "COLUMN_AUTO_INCREMENT_INITIAL_VALUE": {
       "title": "自動インクリメントカラムの初期値を制限する",
       "description": "管理要件に基づいて自動インクリメントカラムの初期値を制限します。推奨エラーレベル：警告",
       "component": {
@@ -358,71 +358,71 @@
       "title": "システム時刻を取得する必要のあるテーブルのカラム数を制限する",
       "description": "レコードの作成時に\"DEFAULT NOW()\"で作成時刻を記録し、レコードの更新時に\"DEFAULT NOW() ON UPDATE\"で更新時刻を記録するカラムのみ、システム時刻を取得するための関数を呼び出す必要があります。他のカラムにシステム時刻を記録することは意味がなく、リソースのオーバーヘッドを増やすだけです。推奨エラーレベル：エラー"
     },
-    "column-require-default": {
+    "COLUMN_REQUIRE_DEFAULT": {
       "title": "カラムにデフォルト値の設定を強制する",
       "description": "ビジネスロジックを満たすデフォルト値の設定は、ダウンストリームの分析パイプラインのデータ品質を効果的に向上させることができます。このルールは「PRIMARY KEY」、「JSON」、「BLOB」、「TEXT」、「GEOMETRY」、「AUTO_INCREMENT」、「GENERATED」のタイプをチェックしません。提案エラーレベル：警告"
     },
-    "column-default-disallow-volatile": {
+    "COLUMN_DEFAULT_DISALLOW_VOLATILE": {
       "title": "列に対して揮発性のあるデフォルト値の設定を禁止します",
       "description": "ボラタイル関数（例: clock_timestamp()）は、ALTER TABLE ADD COLUMN 実行時の値で各行を更新し、更新が長引く可能性があります。"
     },
-    "column-require-charset": {
+    "COLUMN_REQUIRE_CHARSET": {
       "title": "テキスト列に文字セットを要求する",
       "description": "テキスト データ型の列の文字セットを指定する必要があります。提案エラー レベル: 警告"
     },
-    "column-require-collation": {
+    "COLUMN_REQUIRE_COLLATION": {
       "title": "テキスト列の照合を要求する",
       "description": "テキスト データ型の列の照合を指定する必要があります。提案エラー レベル: 警告"
     },
-    "statement-select-no-select-all": {
+    "STATEMENT_SELECT_NO_SELECT_ALL": {
       "title": "「SELECT *」の使用を禁止する",
       "description": "「SELECT *」を使用して全行データを取得すると、不必要なリソースのオーバーヘッドが発生し、テーブルに列を追加または削除した場合にアプリケーションで予期しない結果が発生する可能性があります。提案エラーレベル：エラー"
     },
-    "statement-where-require-select": {
+    "STATEMENT_WHERE_REQUIRE_SELECT": {
       "title": "SELECT文に「WHERE」条件を強制する",
       "description": "WHERE 句のないクエリは、膨大なリソースのオーバーヘッドを引き起こす可能性があります。提案エラー レベル: エラー"
     },
-    "statement-where-require-update-delete": {
+    "STATEMENT_WHERE_REQUIRE_UPDATE_DELETE": {
       "title": "ステートメント内の「WHERE」条件の存在を強制する",
       "description": "WHERE 句のない DML は、大量の偶発的なデータ損失を引き起こす可能性があります。提案エラー レベル: エラー"
     },
-    "statement-where-no-leading-wildcard-like": {
+    "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE": {
       "title": "フィルタ条件で先行ワイルドカードの使用を禁止する",
       "description": "「LIKE '%ABC'」のような先行ワイルドカードを使用すると、データベースの最適化プランナーは高速なインデックススキャンを使用できず、フルテーブルスキャンまたはフルインデックススキャンにフォールバックする可能性があります。これにより、重大なパフォーマンスの影響が発生する可能性があります。提案エラーレベル：エラー"
     },
-    "statement-disallow-on-del-cascade": {
+    "STATEMENT_DISALLOW_ON_DEL_CASCADE": {
       "title": "ON DELETE節での CASCADE オプションの使用を禁止する",
       "description": "'ON DELETEの\"CASCADE\"オプションは、多数の依存オブジェクトが削除または変更される原因となり、予期しない結果をもたらす可能性があります。提案されるエラーレベル：エラー"
     },
-    "statement-disallow-rm-tbl-cascade": {
+    "STATEMENT_DISALLOW_RM_TBL_CASCADE": {
       "title": "テーブルの削除時に\"CASCADE\"を使用することを禁止する",
       "description": "テーブルを削除する際の\"CASCADE\"オプションの使用は、多数の依存オブジェクトが削除または変更される原因となり、予期しない結果をもたらす可能性があります。提案されるエラーレベル：エラー"
     },
-    "statement-disallow-commit": {
+    "STATEMENT_DISALLOW_COMMIT": {
       "title": "明示的な\"COMMIT\"ステートメントの禁止",
       "description": "システムによってコミットされるトランザクションには複数のステートメントが含まれる場合があり、部分的な障害の場合にはすばやく再実行するために必要です。そのため、明示的な\"COMMIT\"は許可されていません。提案エラーレベル：警告"
     },
-    "statement-disallow-limit": {
+    "STATEMENT_DISALLOW_LIMIT": {
       "title": "DMLステートメントでの\"LIMIT\"句の使用の禁止",
       "description": "ORDER BY句がない場合にDMLステートメントでLIMITを使用すると、影響を受ける行の順序が固定されないため、一部のレプリケーションモードではプライマリとレプリカのデータの整合性の問題が発生する可能性があります。提案エラーレベル：エラー"
     },
-    "statement-disallow-order-by": {
+    "STATEMENT_DISALLOW_ORDER_BY": {
       "title": "\"UPDATE\"および\"DELETE\"ステートメントでの\"ORDER BY\"句の使用の禁止",
       "description": "ソート操作は非常にリソースを消費するため、更新および削除操作では、ORDER BYおよびLIMITの代わりに可能な限り決定論的なフィルタリング条件を使用することをお勧めします。提案エラーレベル：エラー"
     },
-    "statement-merge-alter-table": {
+    "STATEMENT_MERGE_ALTER_TABLE": {
       "title": "同じテーブルに対して複数の独立した変更の発行の禁止",
       "description": "テーブルへの変更ごとにテーブルレベルのロックが発生し、大量のリソースを消費する可能性があります。同じテーブルに複数の変更がある場合は、それらを1つの変更ステートメントに統合する必要があります。提案エラーレベル：エラー"
     },
-    "statement-insert-must-specify-column": {
+    "STATEMENT_INSERT_MUST_SPECIFY_COLUMN": {
       "title": "\"INSERT\" ステートメントで列名の指定を強制する",
       "description": "\"INSERT INTO table VALUES (...)\" ステートメントは列名を明示的にリストしません。列の順序が変更されたり、列が追加または削除された場合、ステートメントは失敗するか予期しないデータを生成する可能性があります。提案エラーレベル：エラー"
     },
-    "statement-insert-disallow-order-by-rand": {
+    "STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND": {
       "title": "\"INSERT\" ステートメントで \"ORDER BY rand()\" の使用を禁止する",
       "description": "挿入するデータをランダムに並べ替えることは意味がなく、不必要なリソースを消費するだけです。提案エラーレベル：エラー"
     },
-    "statement-insert-row-limit": {
+    "STATEMENT_INSERT_ROW_LIMIT": {
       "title": "挿入される行数の最大制限",
       "description": "挿入される行数を明示することで、ステートメントがビジネスの期待に沿っているかどうかを判断するのに役立ちます。提案エラーレベル：警告",
       "component": {
@@ -431,7 +431,7 @@
         }
       }
     },
-    "statement-affected-row-limit": {
+    "STATEMENT_AFFECTED_ROW_LIMIT": {
       "title": "更新または削除される行数の最大制限 (推定)",
       "description": "更新または削除される行数を明示することで、ステートメントがビジネスの期待に沿っているかどうかを判断するのに役立ちます。提案エラーレベル：警告",
       "component": {
@@ -440,51 +440,51 @@
         }
       }
     },
-    "statement-dml-dry-run": {
+    "STATEMENT_DML_DRY_RUN": {
       "title": "DML ステートメントの実行可能性を検証する",
       "description": "構文は正しいが、テーブル名が間違っているか、権限が不足している場合、実際の実行前にドライランで発見できます。提案エラーレベル：警告"
     },
-    "statement-disallow-add-column-with-default": {
+    "STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT": {
       "title": "テーブルにデフォルト値を持つ列を追加することを制限する",
       "description": "PostgreSQL 11以前では、デフォルト値を持つ列を追加するとテーブルがロックされて読み書きができなくなり、業務の中断を引き起こす可能性があります。PostgreSQL 11以降では、この問題が最適化されており、このルールに注意する必要はありません。提案エラーレベル：警告"
     },
-    "statement-add-check-not-valid": {
+    "STATEMENT_ADD_CHECK_NOT_VALID": {
       "title": "\"CHECK\"制約を追加する際に\"NOT VALID\"オプションを強制する",
       "description": "CHECK 制約を追加するには、既存のデータを検証する必要があり、ACCESS EXCLUSIVE テーブル ロックが必要です。 これにより読み取りと書き込みがブロックされ、ビジネスの中断が発生する可能性があります。新しいデータを検証するために\"NOT VALID\"オプションを追加し、変更が完了した後に既存のデータを手動で検証することをおすすめします。提案エラーレベル：警告"
     },
-    "statement-disallow-add-not-null": {
+    "STATEMENT_DISALLOW_ADD_NOT_NULL": {
       "title": "既存の列に\"NOT NULL\"制約を追加することを制限する",
       "description": "PostgreSQL 11 より前にデフォルト値のある NOT NULL 制約を追加する場合、またはデフォルト値なしの NOT NULL 制約を追加する場合は、既存のデータを検証する必要があります。 これにより読み取りと書き込みがブロックされ、ビジネスの中断が発生する可能性があります。提案エラーレベル：警告"
     },
-    "statement-select-full-table-scan": {
+    "STATEMENT_SELECT_FULL_TABLE_SCAN": {
       "title": "クエリのフルテーブルスキャンをチェックする",
       "description": "フルテーブルスキャンはリソースを消費する操作であり、重大なパフォーマンスの影響を引き起こす可能性があります。提案エラーレベル：エラー"
     },
-    "statement-create-specify-schema": {
+    "STATEMENT_CREATE_SPECIFY_SCHEMA": {
       "title": "スキーマを指定せずにオブジェクトを作成することを禁止する",
       "description": "スキーマが指定されていない場合、オブジェクトはデフォルトのスキーマに作成され、予期しない結果を引き起こす可能性があります。"
     },
-    "statement-check-set-role-variable": {
+    "STATEMENT_CHECK_SET_ROLE_VARIABLE": {
       "title": "開始時にロールステートメントが設定されているかを確認する",
       "description": "セッションの初めにロールステートメントを適切に設定しないと、不正なアクセスや不適切な権限の割り当てが発生し、データのセキュリティと完全性が危険にさらされる可能性があります。エラーレベル：警告"
     },
-    "statement-disallow-using-temporary": {
+    "STATEMENT_DISALLOW_USING_TEMPORARY": {
       "title": "一時テーブルの使用を禁止する",
       "description": "一時テーブルは、データの永続化が不要な場合にのみ使用することをお勧めします。一時テーブルはディスクに書き込まれるため、パフォーマンスが低下する可能性があります。提案エラーレベル：警告"
     },
-    "statement-disallow-using-filesort": {
+    "STATEMENT_DISALLOW_USING_FILESORT": {
       "title": "ファイルソートの使用を禁止する",
       "description": "ファイルソートは、データの大量の読み書きを伴うため、パフォーマンスが低下する可能性があります。提案エラーレベル：警告"
     },
-    "statement-where-no-equal-null": {
+    "STATEMENT_WHERE_NO_EQUAL_NULL": {
       "title": "WHERE句でのNULL等価比較の使用を禁止する",
       "description": "NULL等価比較の結果は常にNULLです、これは予期しない結果を引き起こす可能性があります。推奨エラーレベル：警告"
     },
-    "statement-where-disallow-functions-and-calculations": {
+    "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS": {
       "title": "WHERE 句でインデックス付きフィールドに関数や計算を適用しないでください",
       "description": "あなたがインデックス付けされたフィールドに関数や計算を適用すると、データベースはインデックスを使用できず、代わりにテーブル全体をスキャンする必要があります。"
     },
-    "statement-query-minimum-plan-level": {
+    "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL": {
       "title": "クエリ アクセス メソッドの最大レベルを制限する",
       "description": "SQL パフォーマンス最適化は、定数時間 (じょうすうじかん) アクセスを目指すもので、基準として参照 (さんしょう) レベルを置き、許容範囲として範囲 (はんい) レベルのパフォーマンスを想定します。",
       "component": {
@@ -493,7 +493,7 @@
         }
       }
     },
-    "statement-where-maximum-logical-operator-count": {
+    "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT": {
       "title": "WHERE 句の IN または OR 句の値数を制限する",
       "description": "このアプローチは、広範な比較とリソースの制限によるパフォーマンスの低下を防ぎます。",
       "component": {
@@ -502,7 +502,7 @@
         }
       }
     },
-    "statement-maximum-limit-value": {
+    "STATEMENT_MAXIMUM_LIMIT_VALUE": {
       "title": "リミット節の上限値を制限する",
       "description": "LIMIT による行数の制限は、データベースが管理可能なサイズの塊で処理を行い、クエリの実行速度を向上させます。上限を設定した LIMIT は、過度なメモリ使用を防ぎ、システム全体の安定性とパフォーマンスの低下を防ぐセーフガードとして機能します。",
       "component": {
@@ -511,7 +511,7 @@
         }
       }
     },
-    "statement-maximum-join-table-count": {
+    "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT": {
       "title": "結合するテーブル数を制限する",
       "description": "結合するテーブル数が増えるほど、クエリは 複雑 (fukuzatsu) になり、実行時間が 長くなります (nagaku narimasu)。 一般的に、結合数を 最小限 (saishougen) に抑えることが望ましいです。",
       "component": {
@@ -520,7 +520,7 @@
         }
       }
     },
-    "statement-maximum-statements-in-transaction": {
+    "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION": {
       "title": "トランザクション内のステートメント数を制限する",
       "description": "大きなトランザクションは、データベースのパフォーマンスに著しく影響を及ぼします。 多数のステートメントが関与しており、1つでも失敗すると、トランザクション全体のロールバックが複雑になります。 ステートメントを制限することで、単一の障害による潜在的な損害を最小限に抑え、ロールバック手順を簡素化できます。",
       "component": {
@@ -529,31 +529,27 @@
         }
       }
     },
-    "statement-join-strict-column-attrs": {
+    "STATEMENT_JOIN_STRICT_COLUMN_ATTRS": {
       "title": "ジョインするフィールドは、データ型と文字セットが一致している必要があります",
       "description": "加入カラムのデータ型、文字セットが一致しないと、データベースは一致する行を正しく識別できず、不正確または不完全な結果が生じるおそれがあります。"
     },
-    "statement-prior-backup-check": {
-      "title": "事前にデータのバックアップが可能か確認する",
-      "description": "このルールは、データが変更される前にバックアップを作成できるかどうかをチェックします。このルールでは、バックアップ ターゲット データベースが存在し、DDL ステートメントが含まれていないことが必要です。"
-    },
-    "statement-add-column-without-position": {
+    "STATEMENT_ADD_COLUMN_WITHOUT_POSITION": {
       "title": "指定位置への列の追加を禁止",
       "description": "場合によっては、FIRST/AFTER を使用して指定位置に列を追加すると、データの再編成（元のデータを再び書き直す）が発生する可能性があります。推奨エラーレベル：警告。"
     },
-    "statement-disallow-offline-ddl": {
+    "STATEMENT_DISALLOW_OFFLINE_DDL": {
       "title": "オフラインDDLを禁止",
       "description": "データベースの変更がビジネスに影響するのを防ぐために、オフラインDDLの使用を避けてください。"
     },
-    "statement-disallow-cross-db-queries": {
+    "STATEMENT_DISALLOW_CROSS_DB_QUERIES": {
       "title": "データベース間のクエリを禁止する",
       "description": "データベース間のクエリはシステムの結合度を高め、効率性に問題を引き起こす可能性があります。推奨されるエラーレベル：警告"
     },
-    "schema-backward-compatibility": {
+    "SCHEMA_BACKWARD_COMPATIBILITY": {
       "title": "アプリケーションの後方互換性を確認する",
       "description": "一部の変更は実行中のアプリケーションに影響を与える可能性があります。データベースオブジェクトの名前の変更や新しい制約の追加などが該当します。このルールにより、既存のアプリケーションの障害を防ぐことができます。提案されるエラーレベル：警告"
     },
-    "statement-max-execution-time": {
+    "STATEMENT_MAX_EXECUTION_TIME": {
       "title": "最大実行時間パラメータの設定を強制する",
       "description": "SQL 文の最大実行時間を設定します。実行時間が制限を超えると、文は終了します。提案エラー レベル: 警告",
       "mysql": {
@@ -565,31 +561,27 @@
         "description": "変更スクリプトで MAX_STATEMENT_TIME パラメータを設定して、ステートメントの最大実行時間を明示的に制御します。提案エラー レベル: 警告"
       }
     },
-    "statement-require-algorithm-option": {
+    "STATEMENT_REQUIRE_ALGORITHM_OPTION": {
       "title": "ALTER TABLE文でALGORITHMオプションを指定する必要がある",
       "description": "ALTER TABLE ステートメントで ALGORITHM オプションを指定すると、テーブルの変更の適用方法をより細かく制御できるようになり、テーブル全体のコピーやロックを回避することで潜在的な中断を最小限に抑えることができます。これにより、パフォーマンスが最適化され、スキーマ変更中のダウンタイムが短縮されます。推奨されるエラー レベル: 警告。"
     },
-    "statement-require-lock-option": {
+    "STATEMENT_REQUIRE_LOCK_OPTION": {
       "title": "ALTER TABLE文でLOCKオプションを指定する必要がある",
       "description": "ALTER TABLE ステートメントの LOCK オプションを使用すると、スキーマ変更時のロック レベルを制御できるため、不要なテーブル ロックを防止し、同時実行性を向上させることができます。このオプションを適切に使用すると、アクティブなクエリに対する DDL 操作の影響を大幅に軽減できます。推奨されるエラー レベル: 警告。"
     },
-    "database-drop-empty-database": {
+    "DATABASE_DROP_EMPTY_DATABASE": {
       "title": "空でないデータベースの削除を禁止する",
       "description": "データベース内にテーブルが存在しない場合のみ削除が許可されます。これにより、誤って削除することを大幅に防ぐことができます。提案されるエラーレベル：エラー"
     },
-    "index-no-duplicate-column": {
-      "title": "重複する列を含むインデックスの作成を禁止する",
-      "description": "重複する列を持つインデックスの作成は失敗します。提案されるエラーレベル：エラー"
-    },
-    "index-type-no-blob": {
+    "INDEX_TYPE_NO_BLOB": {
       "title": "\"BLOB\"および\"TEXT\"データ型の列にインデックスの作成を禁止する",
       "description": "\"BLOB\"タイプは通常、バイナリデータを格納するために使用され、クエリ条件として使用するべきではありません。誤ってこの列タイプにインデックスを作成すると、多くのリソースを消費し、重大なパフォーマンスの影響を引き起こす可能性があります。提案されるエラーレベル：エラー"
     },
-    "index-pk-type-limit": {
+    "INDEX_PK_TYPE_LIMIT": {
       "title": "プライマリキーのタイプ制限",
       "description": "プライマリキーのタイプをINTまたはBIGINTに制限します。"
     },
-    "index-key-number-limit": {
+    "INDEX_KEY_NUMBER_LIMIT": {
       "title": "単一のインデックス内の列の数を制限する",
       "description": "5つ以上の列を持つ複合インデックスは、クエリのパフォーマンスを大幅に向上させるわけではありませんが、多くのスペースを占有し、DMLのパフォーマンスを低下させます。提案エラーレベル：警告",
       "component": {
@@ -598,7 +590,7 @@
         }
       }
     },
-    "index-total-number-limit": {
+    "INDEX_TOTAL_NUMBER_LIMIT": {
       "title": "単一のテーブルにおけるインデックスの数を制限します",
       "description": "インデックスはクエリのパフォーマンスを向上させることができますが、多くのスペースを占有し、DMLのパフォーマンスを低下させることもあります。したがって、テーブルに5つ以上のインデックスを作成することは推奨されません。提案エラーレベル：警告",
       "component": {
@@ -607,7 +599,7 @@
         }
       }
     },
-    "index-primary-key-type-allowlist": {
+    "INDEX_PRIMARY_KEY_TYPE_ALLOWLIST": {
       "title": "許可される主キーのタイプのリスト",
       "description": "適切な主キーのタイプは、ストレージ構造を最適化し、スペース使用量を減らし、挿入およびクエリのパフォーマンスを向上させることができます。提案エラーレベル：警告",
       "component": {
@@ -616,11 +608,11 @@
         }
       }
     },
-    "index-create-concurrently": {
+    "INDEX_CREATE_CONCURRENTLY": {
       "title": "同時インデックス作成の強制",
       "description": "PostgreSQL 11以降では、標準のステートメントを使用してインデックスを作成すると、テーブルのロックが発生し、書き込みができなくなります。\"CONCURRENTLY\"モードを使用すると、この問題を回避できます。提案エラーレベル：警告"
     },
-    "index-type-allow-list": {
+    "INDEX_TYPE_ALLOW_LIST": {
       "title": "許可されたインデックスタイプのリスト",
       "description": "異なるインデックスタイプには異なるパフォーマンス特性があります。例えば、B-tree インデックスは範囲クエリに適していますが、ハッシュインデックスは等価クエリに適しています。提案エラーレベル: 警告",
       "component": {
@@ -629,11 +621,11 @@
         }
       }
     },
-    "index-not-redundant": {
+    "INDEX_NOT_REDUNDANT": {
       "title": "冗長なインデックスを禁止する",
       "description": "冗長なインデックスはパフォーマンスの損失と追加のスペースの占有を引き起こす可能性があります。例えば、列（c1）にすでにインデックスが存在する場合、列（c1、c2）上のインデックスは冗長なインデックスとして扱われます。提案されるエラーレベル：警告"
     },
-    "system-charset-allowlist": {
+    "SYSTEM_CHARSET_ALLOWLIST": {
       "title": "許可される文字セットのリスト",
       "description": "文字セットは、テーブルに格納できる文字を決定します。間違った文字セットを使用すると、アプリケーションの一部の文字が正しく格納および表示されない場合があります。CJKや絵文字などが該当します。提案エラーレベル：エラー",
       "component": {
@@ -642,7 +634,7 @@
         }
       }
     },
-    "system-collation-allowlist": {
+    "SYSTEM_COLLATION_ALLOWLIST": {
       "title": "許可可能な照合のリスト",
       "description": "照合は文字の比較とソートのルールを決定します。例えば、大文字小文字を区別しない照合を使用する場合、クエリ内では\"ABC\"と\"abc\"は同じ文字列として扱われます。推奨エラーレベル：エラー",
       "component": {
@@ -651,7 +643,7 @@
         }
       }
     },
-    "system-comment-length": {
+    "SYSTEM_COMMENT_LENGTH": {
       "title": "コメントの長さを制限する",
       "description": "",
       "component": {
@@ -660,23 +652,23 @@
         }
       }
     },
-    "system-procedure-disallow-create": {
+    "SYSTEM_PROCEDURE_DISALLOW_CREATE": {
       "title": "システムプロシージャの実行を禁止する",
       "description": "システムプロシージャは、データベースのメタデータを変更するために使用されるため、誤って実行するとデータベースの整合性が失われる可能性があります。提案エラーレベル：警告"
     },
-    "system-event-disallow-create": {
+    "SYSTEM_EVENT_DISALLOW_CREATE": {
       "title": "イベントの作成は許可されていません",
       "description": "このルールは、データベース内でのイベントの作成を禁止します。システム イベントは、多くの場合、データベース環境に影響を与える可能性のある自動タスクを実行します。イベントの作成を禁止することで、データベース操作の制御を維持し、潜在的な問題を防ぐことができます。推奨エラー レベル：警告"
     },
-    "system-view-disallow-create": {
+    "SYSTEM_VIEW_DISALLOW_CREATE": {
       "title": "ビューの作成を禁止",
       "description": "このルールは、データベース内でのビューの作成を禁止します。ビューは、クエリを単純化し、データのセキュリティを向上させることができるデータの仮想表現を提供します。その作成を禁止することで、データベーススキーマの管理を維持し、潜在的なセキュリティリスクを防ぐのに役立ちます。推奨されるエラーレベル：警告"
     },
-    "system-function-disallow-create": {
+    "SYSTEM_FUNCTION_DISALLOW_CREATE": {
       "title": "関数の作成を禁止する",
       "description": "このルールは、データベース内での関数の作成を禁止します。関数は再利用可能なロジックを提供し、クエリを簡素化し、データの整合性を向上させることができます。その作成を禁止することで、データベーススキーマの制御を維持し、潜在的なセキュリティリスクを防止します。推奨されるエラーレベル：警告"
     },
-    "system-function-disallowed-list": {
+    "SYSTEM_FUNCTION_DISALLOWED_LIST": {
       "title": "特定の関数の使用を禁止する",
       "description": "このルールは、データベース内の特定の関数の使用を制限します。これらの関数の使用を禁止することで、データの一貫性とセキュリティを維持するのに役立ちます。推奨エラーレベル：警告",
       "component": {
@@ -685,7 +677,7 @@
         }
       }
     },
-    "advice-online-migration": {
+    "ADVICE_ONLINE_MIGRATION": {
       "title": "オンライン移行",
       "description": "移行されたテーブル行数が設定値を超えた場合、オンライン移行の有効化を推奨します。推奨されるエラーレベル: 警告",
       "component": {
@@ -694,19 +686,19 @@
         }
       }
     },
-    "statement-add-foreign-key-not-valid": {
+    "STATEMENT_ADD_FOREIGN_KEY_NOT_VALID": {
       "title": "外部キーを追加するときに「NOT VALID」オプションを含めることを強制する",
       "description": "外部キーを追加するには、既存のデータを検証する必要があり、SHARE ROW EXCLUSIVE テーブル ロックが必要です。\nこれにより書き込みがブロックされ、業務が中断される可能性があります。\n新しいデータを検証し、変更の完了後に既存のデータを検証するには、「NOT VALID」オプションを追加することをお勧めします。\n提案エラーレベル: 警告"
     },
-    "statement-non-transactional": {
+    "STATEMENT_NON_TRANSACTIONAL": {
       "title": "非トランザクションステートメントを検出してレポートする",
       "description": ""
     },
-    "builtin-prior-backup-check": {
+    "BUILTIN_PRIOR_BACKUP_CHECK": {
       "title": "事前のバックアップ実行可能性チェック",
       "description": "このルールは、データが変更される前にバックアップを作成できるかどうかを確認します。バックアップ ターゲット データベースの存在を確認し、サポートされていないシナリオを禁止します。これは組み込みであり、スキップできません。"
     },
-    "statement-object-owner-check": {
+    "STATEMENT_OBJECT_OWNER_CHECK": {
       "title": "オブジェクト所有者のチェック",
       "description": "このルールは、DDLのオブジェクト所有者が現在のユーザーと同じであるかどうかを確認します。"
     }

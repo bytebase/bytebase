@@ -33,11 +33,11 @@
     "bb-sql-review-empty-desc": "An empty template. You need to add needed rules by yourself."
   },
   "rule": {
-    "engine-mysql-use-innodb": {
+    "ENGINE_MYSQL_USE_INNODB": {
       "title": "Enforce InnoDB storage engine",
       "description": "InnoDB is the default storage engine for MySQL that provides transaction support. It also provides better performance for high-concurrency and low-latency scenarios, and supports online data backup and recovery. It is the preferred choice for OLTP businesses. Suggestion error level: Error"
     },
-    "table-require-pk": {
+    "TABLE_REQUIRE_PK": {
       "title": "Enforce inclusion of primary key in a table",
       "description": "Various data synchronization, comparison, and rollback tools require tables to have primary key. Suggestion error level: Error"
     },
@@ -45,7 +45,7 @@
       "title": "Prohibit using foreign key constraints",
       "description": "The advantages and disadvantages of foreign key are highly controversial. Using foreign key may significantly increase the difficulty of database changes, scalability (such as sharding), etc. And may even prevent the use of some tools. Therefore, another option is to implement foreign key constraints at the application layer. Suggestion error level: Warning"
     },
-    "table-drop-naming-convention": {
+    "TABLE_DROP_NAMING_CONVENTION": {
       "title": "Restrict the naming format of tables to be deleted",
       "description": "For example, by requiring the \"_del\" suffix, it can effectively prevent accidental deletions. Suggestion error level: Error",
       "component": {
@@ -54,19 +54,19 @@
         }
       }
     },
-    "table-disallow-partition": {
+    "TABLE_DISALLOW_PARTITION": {
       "title": "Prohibit using partition table",
       "description": "In some database engines, partitioned tables are not mature, and the use and maintenance are inconvenient. Therefore, it is more inclined to use manual data partitioning methods such as database and table sharding. Suggestion error level: Warning"
     },
-    "table-disallow-trigger": {
+    "TABLE_DISALLOW_TRIGGER": {
       "title": "Prevent the use of triggers on tables",
       "description": "This rule restricts the usage of triggers on tables. Triggers can introduce complexity and potential performance issues to database operations. By disallowing triggers, the system can maintain a simpler and more predictable behavior. Suggestion error level: Warning"
     },
-    "table-no-duplicate-index": {
-      "title": "Disallow duplicate indexes",
-      "description": "This rule prohibits the creation of duplicate indexes on a table. Duplicate indexes consume extra storage space and can potentially reduce query performance. Suggestion error level: Warning"
+    "INDEX_NO_DUPLICATE_COLUMN": {
+      "title": "Prohibit indexes containing duplicate columns",
+      "description": "Creating an index with duplicate columns will result in failure. Suggestion error level: Error"
     },
-    "table-text-fields-total-length": {
+    "TABLE_TEXT_FIELDS_TOTAL_LENGTH": {
       "title": "Restrict the total length of text fields in a table",
       "description": "This rule limits the amount of data a table can hold, preventing excessive storage usage.",
       "component": {
@@ -75,11 +75,11 @@
         }
       }
     },
-    "table-disallow-set-charset": {
+    "TABLE_DISALLOW_SET_CHARSET": {
       "title": "Prohibit defining character set in table properties",
       "description": "It is recommended to set the charset at the database level. Setting the charset at finer granularity can bring unnecessary complexities. Suggested error level: Error."
     },
-    "table-comment": {
+    "TABLE_COMMENT": {
       "title": "Table comment convention",
       "description": "Configure whether the table requires comments and the maximum comment length.",
       "component": {
@@ -95,7 +95,7 @@
         }
       }
     },
-    "table-disallow-ddl": {
+    "TABLE_DISALLOW_DDL": {
       "title": "Disallow DDL",
       "description": "Configure which tables are prohibited from executing DDL. Suggestion error level: Warning",
       "component": {
@@ -104,7 +104,7 @@
         }
       }
     },
-    "table-limit-size": {
+    "TABLE_LIMIT_SIZE": {
       "title": "Limit DDL operations on tables with a large number of rows",
       "description": "Configure the maximum number of rows in tables for which DDL can be executed. Recommended error level: warning",
       "component": {
@@ -113,7 +113,7 @@
         }
       }
     },
-    "table-disallow-dml": {
+    "TABLE_DISALLOW_DML": {
       "title": "Disallow DML",
       "description": "Configure which tables are prohibited from executing DML. Suggestion error level: Warning",
       "component": {
@@ -122,19 +122,19 @@
         }
       }
     },
-    "table-require-charset": {
+    "TABLE_REQUIRE_CHARSET": {
       "title": "Require charset",
       "description": "The charset of the table must be specified. Suggestion error level: Warning"
     },
-    "table-require-collation": {
+    "TABLE_REQUIRE_COLLATION": {
       "title": "Require collation",
       "description": "The collation of the table must be specified. Suggestion error level: Warning"
     },
-    "naming-fully-qualified": {
+    "NAMING_FULLY_QUALIFIED": {
       "title": "Fully qualified object name",
       "description": "Enforce the use of fully qualified object names. For example, “schema.table”, suggested error level: Warning"
     },
-    "naming-table": {
+    "NAMING_TABLE": {
       "title": "Enforce table naming format",
       "description": "The default format is all lowercase letters, separated by underscores between words, and no more than 63 characters long, such as \"abc\" and \"abc_def\". Suggestion error level: Warning",
       "component": {
@@ -146,7 +146,7 @@
         }
       }
     },
-    "naming-column": {
+    "NAMING_COLUMN": {
       "title": "Enforce column naming format",
       "description": "The default format is all lowercase letters, separated by underscores between words, which is no more than 63 characters long, such as \"abc\" and \"abc_def\". Suggestion error level: Warning",
       "component": {
@@ -158,7 +158,7 @@
         }
       }
     },
-    "naming-index-uk": {
+    "NAMING_INDEX_UK": {
       "title": "Enforce unique key naming format",
       "description": "The name is allowed to be empty and named by the database. If not empty, the default format is \"uk_<table name>_<unique key column name combination>\", which is no more than 63 characters long, such as \"uk_my_table_id_name\". Suggestion error level: Warning",
       "component": {
@@ -174,7 +174,7 @@
         }
       }
     },
-    "naming-index-pk": {
+    "NAMING_INDEX_PK": {
       "title": "Enforce primary key naming format",
       "description": "The name is allowed to be empty and named by the database. If not empty, the default format is \"pk_<table name>_<unique key column name combination>\", which is no more than 63 characters long, such as \"pk_my_table_id_name\". Suggestion error level: Warning",
       "component": {
@@ -190,7 +190,7 @@
         }
       }
     },
-    "naming-index-fk": {
+    "NAMING_INDEX_FK": {
       "title": "Enforce foreign key naming format",
       "description": "The name is allowed to be empty and named by the database. If not empty, the default format is \"fk_<table name>_<unique key column name combination>\", which is no more than 63 characters long, such as \"fk_my_table_id_name\". Suggestion error level: Warning",
       "component": {
@@ -208,7 +208,7 @@
         }
       }
     },
-    "naming-index-idx": {
+    "NAMING_INDEX_IDX": {
       "title": "Enforce index naming format",
       "description": "The name is allowed to be empty and named by the database. If not empty, the default format is \"idx_<table name>_<unique key column name combination>\", which is no more than 63 characters long, such as \"idx_my_table_id_name\". Suggestion error level: Warning",
       "component": {
@@ -224,7 +224,7 @@
         }
       }
     },
-    "naming-column-auto-increment": {
+    "NAMING_COLUMN_AUTO_INCREMENT": {
       "title": " Enforce auto-increment column naming format",
       "description": "The default column name is \"ID\", and is no more than 63 characters long.",
       "component": {
@@ -236,15 +236,15 @@
         }
       }
     },
-    "naming-table-no-keyword": {
+    "NAMING_TABLE_NO_KEYWORD": {
       "title": "Prohibit using keywords as table names",
       "description": ""
     },
-    "naming-identifier-no-keyword": {
+    "NAMING_IDENTIFIER_NO_KEYWORD": {
       "title": "Prohibit using keywords as identifiers",
       "description": ""
     },
-    "naming-identifier-case": {
+    "NAMING_IDENTIFIER_CASE": {
       "title": "Enforce identifier case",
       "description": "",
       "component": {
@@ -253,7 +253,7 @@
         }
       }
     },
-    "column-required": {
+    "COLUMN_REQUIRED": {
       "title": "Enforce the inclusion of specific columns in a table",
       "description": "Some common columns are helpful for better application maintenance. For example, adding a business-independent \"ID\" column as the primary key avoids primary key conflicts caused by business changes (such as business mergers), and in some scenarios can also bring better data insertion performance. Suggested error level: Warning",
       "component": {
@@ -262,7 +262,7 @@
         }
       }
     },
-    "column-type-disallow-list": {
+    "COLUMN_TYPE_DISALLOW_LIST": {
       "title": "Prohibit the use of certain column data types",
       "description": "Abusing column types can have serious negative effects on system maintainability and performance. For example, using \"LOB\" column to store large amounts of audio and video data may cause database performance to decrease, backup and recovery times to lengthen, and data synchronization tools incompatible. Suggested error level: Error",
       "component": {
@@ -271,47 +271,47 @@
         }
       }
     },
-    "column-no-null": {
+    "COLUMN_NO_NULL": {
       "title": "Enforce \"NOT NULL\" constraints on columns",
       "description": "Columns cannot have NULL value."
     },
-    "column-disallow-set-charset": {
+    "COLUMN_DISALLOW_SET_CHARSET": {
       "title": "Prohibit defining character set in column properties",
       "description": "It is recommended to set the charset at the database level or table level. Setting the charset at finer granularity can bring unnecessary complexities. Suggested error level: Error."
     },
-    "column-disallow-change-type": {
+    "COLUMN_DISALLOW_CHANGE_TYPE": {
       "title": "Prohibit modifying column types",
       "description": "Modifying column types may affect system performance, maintainability, and even lead to data loss. Suggested error level: Warning"
     },
-    "column-disallow-change": {
+    "COLUMN_DISALLOW_CHANGE": {
       "title": "Prohibit using \"CHANGE COLUMN\" statement",
       "description": "\"CHANGE COLUMN\" is unique to MySQL syntax and can be used to modify column names and other properties at the same time. However, it may cause the column name to be mistakenly changed when modifying properties. It is recommended to still use standard \"RENAME\" and \"MODIFY\" statements to distinguish between the two types of changes. Suggested error level: Error"
     },
-    "column-disallow-changing-order": {
+    "COLUMN_DISALLOW_CHANGING_ORDER": {
       "title": "Prohibit changing the order of columns in a table",
       "description": "Modifying the order of columns may cause some applications or views that depend on the default order of the original table to produce unexpected results, such as \"select *\". Suggested error level: Warning"
     },
-    "column-disallow-drop": {
+    "COLUMN_DISALLOW_DROP": {
       "title": "Prohibit dropping columns",
       "description": "Prohibit dropping columns. Suggested error level: Warning"
     },
-    "column-disallow-drop-in-index": {
+    "COLUMN_DISALLOW_DROP_IN_INDEX": {
       "title": "Prohibit dropping columns in index",
       "description": "Prohibit dropping columns in index. Suggested error level: Error"
     },
-    "column-set-default-for-not-null": {
+    "COLUMN_SET_DEFAULT_FOR_NOT_NULL": {
       "title": "Enforce default value on \"NOT NULL\" columns",
       "description": "For a 'NOT NULL' column, if a value is not assigned to the column when inserting a new row and the column does not have a default value, the database will reject the insertion of that row. Setting a default value for a new column can also ensure compatibility with legacy application. Suggested error level: Error"
     },
-    "column-auto-increment-must-integer": {
+    "COLUMN_AUTO_INCREMENT_MUST_INTEGER": {
       "title": "Enforce the use of \"INTEGER\" data type for auto-increment columns",
       "description": "MySQL's auto-increment column are generally used as business-independent primary key. Using integer types occupies less storage space and makes the primary key index structure more compact, bringing better query and DML performance. Suggested error level: Error"
     },
-    "column-auto-increment-must-unsigned": {
+    "COLUMN_AUTO_INCREMENT_MUST_UNSIGNED": {
       "title": "Enforce the use of \"UNSIGNED\" data type for auto-increment columns",
       "description": "Unsigned types do not store negative numbers, and the range of values that can be stored by the same type is doubled, which can avoid auto-increment columns overflow. Suggested error level: Warning"
     },
-    "column-comment": {
+    "COLUMN_COMMENT": {
       "title": "Column comment convention",
       "description": "Adding comments to columns is a good development practice, but excessively long comments can decrease the readability of the schema. Suggested error level: Warning",
       "component": {
@@ -327,7 +327,7 @@
         }
       }
     },
-    "column-maximum-character-length": {
+    "COLUMN_MAXIMUM_CHARACTER_LENGTH": {
       "title": "Restrict the length of \"CHAR\" data type",
       "description": "\"CHAR\" is a fixed-length type. For example, the CHAR(20) column will occupy 20 character spaces even if only one character is stored, causing waste. When the string is too long and the length is not fixed, consider using VARCHAR for MySQL and using TEXT for PostgreSQL. Suggestion error level: Error",
       "component": {
@@ -336,7 +336,7 @@
         }
       }
     },
-    "column-maximum-varchar-length": {
+    "COLUMN_MAXIMUM_VARCHAR_LENGTH": {
       "title": "Restrict the length of \"VARCHAR\" data type",
       "description": "",
       "component": {
@@ -345,7 +345,7 @@
         }
       }
     },
-    "column-auto-increment-initial-value": {
+    "COLUMN_AUTO_INCREMENT_INITIAL_VALUE": {
       "title": "Restrict the initial value of auto-increment columns",
       "description": "based on management requirements to limit the initial value of the auto-increment column. Suggestion error level: Warning",
       "component": {
@@ -358,71 +358,71 @@
       "title": "Restrict the number of columns in the table that acquire system time",
       "description": "Only columns recording the creation time of the record with \"DEFAULT NOW()\" and recording the update time of the record with \"DEFAULT NOW() ON UPDATE\" need to call function to get system time. It is meaningless and will increase resource overhead to record system time in other columns. Suggestion error level: Error"
     },
-    "column-require-default": {
+    "COLUMN_REQUIRE_DEFAULT": {
       "title": "Enforce setting default value on columns",
       "description": "Setting default values that satisfy business logic can effectively improve the data quality of downstream  analytical pipeline. This rule does not check \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\" types. Suggestion error level: Warning"
     },
-    "column-default-disallow-volatile": {
+    "COLUMN_DEFAULT_DISALLOW_VOLATILE": {
       "title": "Disallow setting volatile default value on columns",
       "description": "Volatile functions (e.g., clock_timestamp()) update each row with the value at the time of ALTER TABLE ADD COLUMN execution, potentially causing lengthy updates."
     },
-    "column-require-charset": {
+    "COLUMN_REQUIRE_CHARSET": {
       "title": "Require charset for text columns",
       "description": "The charset of columns with text data types must be specified. Suggestion error level: Warning"
     },
-    "column-require-collation": {
+    "COLUMN_REQUIRE_COLLATION": {
       "title": "Require collation for text columns",
       "description": "The collation of columns with text data types must be specified. Suggestion error level: Warning"
     },
-    "statement-select-no-select-all": {
+    "STATEMENT_SELECT_NO_SELECT_ALL": {
       "title": "Prohibit using \"SELECT *\"",
       "description": "SELECT * to fetch entire row data may cause unnecessary resource overhead and may also cause unexpected results in applications once the table adds or removes columns. Suggestion error level: Error"
     },
-    "statement-where-require-select": {
+    "STATEMENT_WHERE_REQUIRE_SELECT": {
       "title": "Enforce the presence of \"WHERE\" condition in SELECT statements",
       "description": "Queries without WHERE clause may cause huge uncessary resource overhead. Suggestion error level: Error"
     },
-    "statement-where-require-update-delete": {
+    "STATEMENT_WHERE_REQUIRE_UPDATE_DELETE": {
       "title": "Enforce the presence of \"WHERE\" condition in UDPATE/DELETE statements",
       "description": "DMLs without WHERE clause may cause massive accidental data loss. Suggestion error level: Error"
     },
-    "statement-where-no-leading-wildcard-like": {
+    "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE": {
       "title": "Prohibit using leading wildcard in filter conditions",
       "description": "When using leading wildcard, such as \"LIKE '%ABC'\", the database optimizer cannot use fast index scan, and fallback to full table scan or full index scan, which may cause serious performance impact. Suggestion error level: Error"
     },
-    "statement-disallow-on-del-cascade": {
+    "STATEMENT_DISALLOW_ON_DEL_CASCADE": {
       "title": "Prohibit using CASCADE option for ON DELETE clauses",
       "description": "The \"CASCADE\" option in 'ON DELETE' can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
     },
-    "statement-disallow-rm-tbl-cascade": {
+    "STATEMENT_DISALLOW_RM_TBL_CASCADE": {
       "title": "Prohibit using CASCADE when removing a table",
       "description": "Using the \"CASCADE\" option when removing a table can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
     },
-    "statement-disallow-commit": {
+    "STATEMENT_DISALLOW_COMMIT": {
       "title": "Prohibit explicit \"COMMIT\" statement",
       "description": "In some cases, multiple statements are required to be included in a transaction committed by the system, in order to quickly rerun in case of partial failure. Therefore, explicit \"COMMIT\" is not allowed. Suggestion error level: Warning"
     },
-    "statement-disallow-limit": {
+    "STATEMENT_DISALLOW_LIMIT": {
       "title": "Prohibit using \"LIMIT\" clause in DML statements",
       "description": "If LIMIT is used in DML statements without an ORDER BY clause, the affected rows order are not fixed, which may cause data inconsistency between the primary and replica databases in some replication modes. Suggestion error level: Error"
     },
-    "statement-disallow-order-by": {
+    "STATEMENT_DISALLOW_ORDER_BY": {
       "title": "Prohibit using \"ORDER BY\" clause in \"UPDATE\" and \"DELETE\" statements",
       "description": "Sorting operations are extremely resource-intensive, so for update and delete operations, it is recommended to use a deterministic filtering condition as much as possible instead of using ORDER BY and LIMIT. Suggestion error level: Error"
     },
-    "statement-merge-alter-table": {
+    "STATEMENT_MERGE_ALTER_TABLE": {
       "title": "Prohibit issuing multiple independent changes on the same table",
       "description": "Every change to a table may cause a table-level lock and consume a large amount of resources. If there are multiple changes to the same table, they should be merged into a single change statement. Suggestion error level: Error"
     },
-    "statement-insert-must-specify-column": {
+    "STATEMENT_INSERT_MUST_SPECIFY_COLUMN": {
       "title": "Enforce specifying column names in \"INSERT\" statements",
       "description": "The \"INSERT INTO table VALUES (...)\" statement does not explicit list column names. Once the column order changes or columns are added or dropped, the statement may faile or generate unexpected data. Suggestion error level: Error"
     },
-    "statement-insert-disallow-order-by-rand": {
+    "STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND": {
       "title": "Prohibit using \"ORDER BY rand()\" in \"INSERT\" statement",
       "description": "Randomly sorting the data to be inserted is meaningless and will only consume uncessary resources. Suggestion error level: Error"
     },
-    "statement-insert-row-limit": {
+    "STATEMENT_INSERT_ROW_LIMIT": {
       "title": "Restrict the maximum number of inserted rows",
       "description": "Reveal the number of rows to be inserted can help determine whether the statement meets business expectations. Suggestion error level: Warning",
       "component": {
@@ -431,7 +431,7 @@
         }
       }
     },
-    "statement-affected-row-limit": {
+    "STATEMENT_AFFECTED_ROW_LIMIT": {
       "title": "Restrict the maximum number of updated or deleted rows (estimated).",
       "description": "Reveal the number of rows to be updated or deleted can help determine whether the statement meets business expectations. Suggestion error level: Warning",
       "component": {
@@ -440,51 +440,51 @@
         }
       }
     },
-    "statement-dml-dry-run": {
+    "STATEMENT_DML_DRY_RUN": {
       "title": "Validate the executability of DML statements",
       "description": "When the syntax is correct, but the table name is incorrect or the permission is insufficient, it can be discovered by dry run before the actual execution. Suggestion error level: Warning"
     },
-    "statement-disallow-add-column-with-default": {
+    "STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT": {
       "title": "Restrict adding columns with default values to a table",
       "description": "Before PostgreSQL 11, adding a column with a default value cause table locking and unable to read and write, which may cause business interruption. In PostgreSQL 11 and above, this issue has been optimized and there is no need to pay attention to this rule. Suggestion error level: Warning"
     },
-    "statement-add-check-not-valid": {
+    "STATEMENT_ADD_CHECK_NOT_VALID": {
       "title": "Enforce including \"NOT VALID\" option when adding \"CHECK\" constraints",
       "description": "Adding a CHECK constraint needs to verify the existing data and requires ACCESS EXCLUSIVE table lock. This blocks read and write, which may cause business interruption. It is recommended to add the \"NOT VALID\" option to validate new data and manually validate existing data after the change is completed. Suggestion error level: Warning"
     },
-    "statement-disallow-add-not-null": {
+    "STATEMENT_DISALLOW_ADD_NOT_NULL": {
       "title": "Restrict adding \"NOT NULL\" constraint to existing columns",
       "description": "Adding NOT NULL constraint with default value before PostgreSQL 11 or adding NOT NULL constraint without default value requires to verify the existing data. This blocks read and write, which may cause business interruption. Suggestion error level: Warning"
     },
-    "statement-select-full-table-scan": {
+    "STATEMENT_SELECT_FULL_TABLE_SCAN": {
       "title": "Check full table scan for queries",
       "description": "Full table scan is a resource-intensive operation and may cause serious performance impact. Suggestion error level: Error"
     },
-    "statement-create-specify-schema": {
+    "STATEMENT_CREATE_SPECIFY_SCHEMA": {
       "title": "Prohibit creating objects without specifying the schema",
       "description": "If the schema is not specified, the object will be created in the default schema, which may cause unexpected results."
     },
-    "statement-check-set-role-variable": {
+    "STATEMENT_CHECK_SET_ROLE_VARIABLE": {
       "title": "Check if Set Role statement at the beginning",
       "description": "Failure to set the role statement properly at the beginning of a session may lead to unauthorized access or improper permissions assignment, potentially compromising data security and integrity. Suggestion error level: Warning"
     },
-    "statement-disallow-using-temporary": {
+    "STATEMENT_DISALLOW_USING_TEMPORARY": {
       "title": "Prohibit using temporary tables",
       "description": "Temporary tables are not recommended for use in production environments. They can cause resource contention and performance issues. Suggestion error level: Warning"
     },
-    "statement-disallow-using-filesort": {
+    "STATEMENT_DISALLOW_USING_FILESORT": {
       "title": "Prohibit using filesort",
       "description": "Filesort is a resource-intensive operation and may cause serious performance impact. Suggestion error level: Warning"
     },
-    "statement-where-no-equal-null": {
+    "STATEMENT_WHERE_NO_EQUAL_NULL": {
       "title": "Prohibit using NULL equality comparison in WHERE clause",
       "description": "The result of NULL equality comparison is always NULL, which may cause unexpected results. Suggestion error level: Warning"
     },
-    "statement-where-disallow-functions-and-calculations": {
+    "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS": {
       "title": "Do not apply functions or perform calculations on indexed fields in the WHERE clause",
       "description": "If you apply a function or perform a calculation on the indexed field, the database cannot use the index and has to scan the entire table instead."
     },
-    "statement-query-minimum-plan-level": {
+    "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL": {
       "title": "Restrict the maximum level of query access method",
       "description": "SQL performance optimization strives for constant (const) access, aiming for reference (ref) level as a baseline, with acceptable performance at range level.",
       "component": {
@@ -493,7 +493,7 @@
         }
       }
     },
-    "statement-where-maximum-logical-operator-count": {
+    "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT": {
       "title": "Restrict the number of values in the IN or OR clause of the WHERE clause",
       "description": "This prevents performance degradation due to extensive comparisons and resource limitations.",
       "component": {
@@ -502,7 +502,7 @@
         }
       }
     },
-    "statement-maximum-limit-value": {
+    "STATEMENT_MAXIMUM_LIMIT_VALUE": {
       "title": "Restrict the maximum number of the LIMIT clause",
       "description": "Limiting the number of rows through LIMIT ensures the database processes manageable chunks, improving query execution speed.  A capped LIMIT value prevents excessive memory usage, safeguarding overall system stability and preventing performance degradation.",
       "component": {
@@ -511,7 +511,7 @@
         }
       }
     },
-    "statement-maximum-join-table-count": {
+    "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT": {
       "title": "Restrict the number of tables to be joined",
       "description": "The more tables you join, the more complex the query becomes and the longer it takes to execute. In general, it is best to keep the number of joins to a minimum.",
       "component": {
@@ -520,7 +520,7 @@
         }
       }
     },
-    "statement-maximum-statements-in-transaction": {
+    "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION": {
       "title": "Restrict the number of statements in a transaction",
       "description": "Large transactions can significantly impact database performance. If a large number of statements are involved and one fails, rolling back the entire transaction becomes complex. Limiting statements minimizes the potential damage caused by a single failure and simplifies rollback procedures.",
       "component": {
@@ -529,31 +529,27 @@
         }
       }
     },
-    "statement-join-strict-column-attrs": {
+    "STATEMENT_JOIN_STRICT_COLUMN_ATTRS": {
       "title": "Fields to be joined must have identical data types, character sets",
       "description": "If the data types, character sets of the join columns are not identical, the database may not be able to correctly identify matching rows, leading to inaccurate or incomplete results."
     },
-    "statement-prior-backup-check": {
-      "title": "Check for prior backup before data change",
-      "description": "This rule will check if a backup can be created before the data change. For more details, contains the backup target database exists and disallow the DDL statement."
-    },
-    "statement-add-column-without-position": {
+    "STATEMENT_ADD_COLUMN_WITHOUT_POSITION": {
       "title": "Check no position in ADD COLUMN clause",
       "description": "In some cases, using FIRST/AFTER to add columns will cause data reorganization (rewriting all data). Suggested error level: Warning"
     },
-    "statement-disallow-offline-ddl": {
+    "STATEMENT_DISALLOW_OFFLINE_DDL": {
       "title": "Disallow Offline DDL",
       "description": "To prevent database changes from impacting your business, avoid using Offline DDL."
     },
-    "statement-disallow-cross-db-queries": {
+    "STATEMENT_DISALLOW_CROSS_DB_QUERIES": {
       "title": "Disallow cross database queries",
       "description": "Cross-database queries increase system coupling and can lead to efficiency issues. Suggested error level: Warning"
     },
-    "schema-backward-compatibility": {
+    "SCHEMA_BACKWARD_COMPATIBILITY": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"
     },
-    "statement-max-execution-time": {
+    "STATEMENT_MAX_EXECUTION_TIME": {
       "title": "Enforce set the max execution time parameter",
       "description": "Set the maximum execution time for SQL statements. If the execution time exceeds the limit, the statement will be terminated. Suggestion error level: Warning",
       "mysql": {
@@ -565,31 +561,27 @@
         "description": "Set the MAX_STATEMENT_TIME parameter in the change script to explicitly control the maximum execution time of the statement. Suggestion error level: Warning"
       }
     },
-    "statement-require-algorithm-option": {
+    "STATEMENT_REQUIRE_ALGORITHM_OPTION": {
       "title": "Require specifying the ALGORITHM option in ALTER TABLE statements",
       "description": "Specifying the ALGORITHM option in ALTER TABLE statements ensures more control over how table changes are applied, minimizing potential disruptions by avoiding full table copies or locks. It helps optimize performance and reduce downtime during schema modifications. Suggested error level: Warning."
     },
-    "statement-require-lock-option": {
+    "STATEMENT_REQUIRE_LOCK_OPTION": {
       "title": "Require specifying the LOCK option in ALTER TABLE statements",
       "description": "The LOCK option in ALTER TABLE statements allows you to control the level of locking during schema changes, helping to prevent unnecessary table locks and ensuring better concurrency. Proper use of this option can significantly reduce the impact of DDL operations on active queries. Suggested error level: Warning."
     },
-    "database-drop-empty-database": {
+    "DATABASE_DROP_EMPTY_DATABASE": {
       "title": "Prohibit deleting non-empty database",
       "description": "Deletion is only allowed when there are no tables in the database, which can greatly avoid accidental deletion. Suggested error level: Error"
     },
-    "index-no-duplicate-column": {
-      "title": "Prohibit indexes containing duplicate columns",
-      "description": "Creating an index with duplicate columns will result in failure. Suggestion error level: Error"
-    },
-    "index-type-no-blob": {
+    "INDEX_TYPE_NO_BLOB": {
       "title": "Prohibit creating indexes on \"BLOB\" and \"TEXT\" data type columns",
       "description": "The \"BLOB\" type is usually used to store binary data and should not be used as a query condition. If an index is created on this column type by mistake, it will consume a lot of resources and cause serious performance impact. Suggestion error level: Error"
     },
-    "index-pk-type-limit": {
+    "INDEX_PK_TYPE_LIMIT": {
       "title": "Primary key type limit",
       "description": "Enforce the primary key type to be INT or BIGINT."
     },
-    "index-key-number-limit": {
+    "INDEX_KEY_NUMBER_LIMIT": {
       "title": "Restrict the number of columns in a single index",
       "description": "A composite index with over 5 columns does not significantly improve query performance, but it occupies a lot of space and reduces DML performance. Suggestion error level: Warning",
       "component": {
@@ -598,7 +590,7 @@
         }
       }
     },
-    "index-total-number-limit": {
+    "INDEX_TOTAL_NUMBER_LIMIT": {
       "title": "Restrict the number of indexes on a single table",
       "description": "Although indexes can improve query performance, they also occupy a lot of space and reduce DML performance. Therefore, it is not recommended to create more than 5 indexes in a table. Suggestion error level: Warning",
       "component": {
@@ -607,7 +599,7 @@
         }
       }
     },
-    "index-primary-key-type-allowlist": {
+    "INDEX_PRIMARY_KEY_TYPE_ALLOWLIST": {
       "title": "Allowable list of primary key types",
       "description": "The appropriate primary key type can optimize storage structure, reduce space usage, and beneficial for insert and query performance. Suggestion error level: Warning",
       "component": {
@@ -616,11 +608,11 @@
         }
       }
     },
-    "index-create-concurrently": {
+    "INDEX_CREATE_CONCURRENTLY": {
       "title": "Enforce concurrent index creation",
       "description": "In PostgreSQL 11 and above, using the standard statement to create an index will cause table locking and unable to write. Using the \"CONCURRENTLY\" mode can avoid this problem. Suggestion error level: Warning"
     },
-    "index-type-allow-list": {
+    "INDEX_TYPE_ALLOW_LIST": {
       "title": "Allowable list of index types",
       "description": "Different index types have different performance characteristics. For example, B-tree indexes are suitable for range queries, while hash indexes are suitable for equality queries. Suggestion error level: Warning",
       "component": {
@@ -629,11 +621,11 @@
         }
       }
     },
-    "index-not-redundant": {
+    "INDEX_NOT_REDUNDANT": {
       "title": "Disallow redundant indexes",
       "description": "Redundant index may result in performance loss and occupy additional space. For example, the index on columns (c1, c2) will be treated as redundant indexes if there is already a index on column (c1). Suggestion error level: Warning"
     },
-    "system-charset-allowlist": {
+    "SYSTEM_CHARSET_ALLOWLIST": {
       "title": "Allowable list of Charset",
       "description": "The character set determines which characters can be stored in the table. Using the wrong character set may result in certain characters in the application being unable to be stored and displayed correctly, such as CJK and Emoji. Suggested error level: Error",
       "component": {
@@ -642,7 +634,7 @@
         }
       }
     },
-    "system-collation-allowlist": {
+    "SYSTEM_COLLATION_ALLOWLIST": {
       "title": "Allowable list of Collation",
       "description": "The collation determines the rules for character comparison and sorting. For example, when using a case-insensitive collation, \"ABC\" and \"abc\" will be treated as the same string in queries. Suggested error level: Error",
       "component": {
@@ -651,7 +643,7 @@
         }
       }
     },
-    "system-comment-length": {
+    "SYSTEM_COMMENT_LENGTH": {
       "title": "Restrict the length of comments",
       "description": "",
       "component": {
@@ -660,23 +652,23 @@
         }
       }
     },
-    "system-procedure-disallow-create": {
+    "SYSTEM_PROCEDURE_DISALLOW_CREATE": {
       "title": "Disallow to create procedures",
       "description": "This rule prohibits the execution of procedures within the database. System procedures often perform critical operations that could impact the stability and security of the database environment. By disallowing their execution, it helps prevent unintended changes and potential vulnerabilities. Suggested error level: Warning"
     },
-    "system-event-disallow-create": {
+    "SYSTEM_EVENT_DISALLOW_CREATE": {
       "title": "Disallow to create events",
       "description": "This rule prohibits the creation of events within the database. System events often perform automated tasks that could affect the database environment. By disallowing their creation, it helps maintain control over database operations and prevents potential disruptions. Suggested error level: Warning"
     },
-    "system-view-disallow-create": {
+    "SYSTEM_VIEW_DISALLOW_CREATE": {
       "title": "Disallow to create views",
       "description": "This rule prohibits the creation of views within the database. Views provide a virtual representation of data that can simplify queries and enhance data security. By disallowing their creation, it helps maintain control over database schema and prevents potential security risks. Suggested error level: Warning"
     },
-    "system-function-disallow-create": {
+    "SYSTEM_FUNCTION_DISALLOW_CREATE": {
       "title": "Disallow to create functions",
       "description": "This rule prohibits the creation of functions within the database. Functions provide reusable logic that can simplify queries and enhance data integrity. By disallowing their creation, it helps maintain control over database schema and prevents potential security risks. Suggested error level: Warning"
     },
-    "system-function-disallowed-list": {
+    "SYSTEM_FUNCTION_DISALLOWED_LIST": {
       "title": "Prohibit the use of certain functions",
       "description": "This rule restricts the usage of specific functions within the database. By disallowing the use of these functions, it helps maintain data consistency and security. Suggested error level: Warning",
       "component": {
@@ -685,7 +677,7 @@
         }
       }
     },
-    "advice-online-migration": {
+    "ADVICE_ONLINE_MIGRATION": {
       "title": "Online migration",
       "description": "Advise enabling online migration if the migrated table row count exceeds your setting. Suggested error level: Warning",
       "component": {
@@ -694,19 +686,19 @@
         }
       }
     },
-    "statement-add-foreign-key-not-valid": {
+    "STATEMENT_ADD_FOREIGN_KEY_NOT_VALID": {
       "title": "Enforce including \"NOT VALID\" option when adding foreign keys",
       "description": "Adding foreign keys needs to verify the existing data and requires SHARE ROW EXCLUSIVE table lock. This blocks write, which may cause business interruption. It is recommended to add the \"NOT VALID\" option to validate new data and validate existing data after the change is completed. Suggestion error level: Warning"
     },
-    "statement-non-transactional": {
+    "STATEMENT_NON_TRANSACTIONAL": {
       "title": "Detect and report non-transactional statements",
       "description": ""
     },
-    "builtin-prior-backup-check": {
+    "BUILTIN_PRIOR_BACKUP_CHECK": {
       "title": "Prior backup feasibility check",
       "description": "This rule checks whether a backup can be created before data changes. It verifies the existence of the backup target database and disallows non-supported scenarios. It's builtin and cannot skip."
     },
-    "statement-object-owner-check": {
+    "STATEMENT_OBJECT_OWNER_CHECK": {
       "title": "Object owner check",
       "description": "This rule checks whether the object owner for DDL is the same as the current user."
     }
