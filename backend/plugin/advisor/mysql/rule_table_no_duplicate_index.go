@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableNoDuplicateIndex, &TableNoDuplicateIndexAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_NO_DUPLICATE_INDEX, &TableNoDuplicateIndexAdvisor{})
 }
 
 // TableNoDuplicateIndexAdvisor is the advisor checking for no duplicate index in table.
@@ -45,7 +45,7 @@ func (*TableNoDuplicateIndexAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	// Create the rule
-	rule := NewTableNoDuplicateIndexRule(level, string(checkCtx.Rule.Type))
+	rule := NewTableNoDuplicateIndexRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

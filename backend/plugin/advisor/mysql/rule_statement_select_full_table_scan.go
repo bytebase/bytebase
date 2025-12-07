@@ -23,9 +23,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementSelectFullTableScan, &StatementSelectFullTableScanAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementSelectFullTableScan, &StatementSelectFullTableScanAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementSelectFullTableScan, &StatementSelectFullTableScanAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_SELECT_FULL_TABLE_SCAN, &StatementSelectFullTableScanAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_SELECT_FULL_TABLE_SCAN, &StatementSelectFullTableScanAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_SELECT_FULL_TABLE_SCAN, &StatementSelectFullTableScanAdvisor{})
 }
 
 type StatementSelectFullTableScanAdvisor struct {
@@ -44,7 +44,7 @@ func (*StatementSelectFullTableScanAdvisor) Check(ctx context.Context, checkCtx 
 	}
 
 	// Create the rule
-	rule := NewStatementSelectFullTableScanRule(ctx, level, string(checkCtx.Rule.Type), checkCtx.Driver)
+	rule := NewStatementSelectFullTableScanRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

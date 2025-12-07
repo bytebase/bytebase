@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleRequiredColumn, &ColumnRequireAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, storepb.SQLReviewRule_COLUMN_REQUIRED, &ColumnRequireAdvisor{})
 }
 
 // ColumnRequireAdvisor is the advisor checking for column requirement.
@@ -50,7 +50,7 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 		requireColumns[column] = true
 	}
 
-	rule := NewColumnRequireRule(level, string(checkCtx.Rule.Type), requireColumns)
+	rule := NewColumnRequireRule(level, checkCtx.Rule.Type.String(), requireColumns)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, parseResult := range parseResults {

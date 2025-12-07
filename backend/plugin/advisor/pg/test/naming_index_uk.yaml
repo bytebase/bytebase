@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name"
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "dzfzqbhnkiiegdhvqjeqoevesfuwcmokrehxlapoqj"
       startposition:
         line: 1
@@ -29,7 +29,7 @@
   want:
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "tech_book_id_name"
       startposition:
         line: 1
@@ -48,7 +48,7 @@
   want:
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key in table "book" mismatches the naming convention, expect "^$|^uk_book_name$" but found "book_name"
       startposition:
         line: 5
@@ -65,7 +65,7 @@
   want:
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
       startposition:
         line: 1
@@ -78,7 +78,7 @@
   want:
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
       startposition:
         line: 1
@@ -91,7 +91,7 @@
   want:
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
       startposition:
         line: 1

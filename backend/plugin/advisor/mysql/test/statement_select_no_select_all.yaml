@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: '"SELECT * FROM t;" uses SELECT all'
       startposition:
         line: 1
@@ -19,7 +19,7 @@
   want:
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: '"SELECT * FROM t;" uses SELECT all'
       startposition:
         line: 2
@@ -27,7 +27,7 @@
       endposition: null
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: '"SELECT a, b FROM (SELECT * from t1 JOIN t2) t;" uses SELECT all'
       startposition:
         line: 3
@@ -42,7 +42,7 @@
   want:
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: |-
         "SELECT * FROM t1
         UNION
@@ -53,7 +53,7 @@
       endposition: null
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: |-
         "SELECT * FROM t1
         UNION
@@ -71,7 +71,7 @@
   want:
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: |-
         "WITH cte AS (
           SELECT * FROM a
@@ -82,7 +82,7 @@
       endposition: null
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: |-
         "WITH cte AS (
           SELECT * FROM a
@@ -100,7 +100,7 @@
   want:
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: |-
         "SELECT *
         FROM a

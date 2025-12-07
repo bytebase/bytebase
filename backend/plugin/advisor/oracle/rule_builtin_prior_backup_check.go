@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.BuiltinRulePriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK, &StatementPriorBackupCheckAdvisor{})
 }
 
 type StatementPriorBackupCheckAdvisor struct {
@@ -43,7 +43,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, err
 	}
 
-	rule := NewStatementPriorBackupCheckRule(ctx, level, string(checkCtx.Rule.Type), checkCtx)
+	rule := NewStatementPriorBackupCheckRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

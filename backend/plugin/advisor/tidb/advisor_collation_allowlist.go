@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST, &CollationAllowlistAdvisor{})
 }
 
 // CollationAllowlistAdvisor is the advisor checking for collation allowlist.
@@ -46,7 +46,7 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 	checker := &collationAllowlistChecker{
 		level:     level,
-		title:     string(checkCtx.Rule.Type),
+		title:     checkCtx.Rule.Type.String(),
 		allowlist: make(map[string]bool),
 	}
 	for _, collation := range payload.List {

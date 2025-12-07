@@ -8,7 +8,7 @@
   want:
     - status: 2
       code: 610
-      title: table.disallow-trigger
+      title: TABLE_DISALLOW_TRIGGER
       content: |-
         Trigger is forbidden, but "CREATE TRIGGER ins_sum BEFORE INSERT ON account
            FOR EACH ROW SET @sum = @sum + NEW.amount;" creates

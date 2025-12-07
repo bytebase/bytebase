@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementMaximumJoinTableCount, &StatementMaximumJoinTableCountAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_MAXIMUM_JOIN_TABLE_COUNT, &StatementMaximumJoinTableCountAdvisor{})
 }
 
 type StatementMaximumJoinTableCountAdvisor struct {
@@ -41,7 +41,7 @@ func (*StatementMaximumJoinTableCountAdvisor) Check(_ context.Context, checkCtx 
 	}
 
 	// Create the rule
-	rule := NewStatementMaximumJoinTableCountRule(level, string(checkCtx.Rule.Type), payload.Number)
+	rule := NewStatementMaximumJoinTableCountRule(level, checkCtx.Rule.Type.String(), payload.Number)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

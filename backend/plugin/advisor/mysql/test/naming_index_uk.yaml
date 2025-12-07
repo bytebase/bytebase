@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `tech_book_id_name`
       startposition:
         line: 2
@@ -20,7 +20,7 @@
   want:
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
       startposition:
         line: 2
@@ -28,7 +28,7 @@
       endposition: null
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `qtzmquwvlnttctfluoouxelxeliltcfzzstrtyocogwwyiyrflmrkbhbfasynlacy`
       startposition:
         line: 2
@@ -43,7 +43,7 @@
   want:
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `tech_book_id_name`
       startposition:
         line: 2
@@ -58,7 +58,7 @@
   want:
     - status: 2
       code: 304
-      title: naming.index.uk
+      title: NAMING_INDEX_UK
       content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `uk_tech_book`
       startposition:
         line: 2

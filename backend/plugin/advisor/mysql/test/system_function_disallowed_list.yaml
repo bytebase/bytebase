@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 1702
-      title: system.function.disallowed-list
+      title: SYSTEM_FUNCTION_DISALLOWED_LIST
       content: Function "RAND" is disallowed, but "SELECT RAND();" uses
       startposition:
         line: 1
@@ -21,7 +21,7 @@
   want:
     - status: 2
       code: 1702
-      title: system.function.disallowed-list
+      title: SYSTEM_FUNCTION_DISALLOWED_LIST
       content: |-
         Function "UUID" is disallowed, but "CREATE TABLE employee (
           id VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
@@ -37,7 +37,7 @@
   want:
     - status: 2
       code: 1702
-      title: system.function.disallowed-list
+      title: SYSTEM_FUNCTION_DISALLOWED_LIST
       content: Function "SLEEP" is disallowed, but "SELECT SLEEP(5);" uses
       startposition:
         line: 1

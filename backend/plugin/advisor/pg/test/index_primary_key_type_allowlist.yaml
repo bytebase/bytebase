@@ -10,7 +10,7 @@
   want:
     - status: 2
       code: 803
-      title: index.primary-key-type-allowlist
+      title: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
       content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
       startposition:
         line: 2
@@ -25,7 +25,7 @@
   want:
     - status: 2
       code: 803
-      title: index.primary-key-type-allowlist
+      title: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
       content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
       startposition:
         line: 2

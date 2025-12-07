@@ -11,7 +11,7 @@
   want:
     - status: 2
       code: 613
-      title: table.disallow-ddl
+      title: TABLE_DISALLOW_DDL
       content: DDL is disallowed on table MySchema.Identifier.
       startposition:
         line: 5

@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_TABLE_REQUIRE_PK, &TableRequirePKAdvisor{})
 }
 
 // TableRequirePKAdvisor is the advisor checking table requires PK.
@@ -42,7 +42,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	rule := &tableRequirePKRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		statementsText: checkCtx.Statements,
 		finalMetadata:  checkCtx.FinalMetadata,

@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleSchemaBackwardCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.
@@ -40,7 +40,7 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 	rule := &compatibilityRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		statementsText: checkCtx.Statements,
 	}

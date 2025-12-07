@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleIndexNoDuplicateColumn, &IndexNoDuplicateColumnAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_INDEX_NO_DUPLICATE_COLUMN, &IndexNoDuplicateColumnAdvisor{})
 }
 
 // IndexNoDuplicateColumnAdvisor is the advisor checking for no duplicate columns in index.
@@ -42,7 +42,7 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 	rule := &indexNoDuplicateColumnRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 	}
 

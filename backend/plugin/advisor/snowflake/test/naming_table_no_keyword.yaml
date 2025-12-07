@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.table.no-keyword
+      title: NAMING_TABLE_NO_KEYWORD
       content: Table name "CONNECT" is a keyword identifier and should be avoided.
       startposition: null
       endposition: null
@@ -12,7 +12,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.table.no-keyword
+      title: NAMING_TABLE_NO_KEYWORD
       content: Table name "CONNECT" is a keyword identifier and should be avoided.
       startposition: null
       endposition: null
@@ -23,7 +23,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.table.no-keyword
+      title: NAMING_TABLE_NO_KEYWORD
       content: Table name "CONNECT" is a keyword identifier and should be avoided.
       startposition: null
       endposition: null

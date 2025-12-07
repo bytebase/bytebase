@@ -23,9 +23,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleIndexTypeNoBlob, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_INDEX_TYPE_NO_BLOB, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_INDEX_TYPE_NO_BLOB, &IndexTypeNoBlobAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_INDEX_TYPE_NO_BLOB, &IndexTypeNoBlobAdvisor{})
 }
 
 // IndexTypeNoBlobAdvisor is the advisor checking for index type no blob.
@@ -46,7 +46,7 @@ func (*IndexTypeNoBlobAdvisor) Check(_ context.Context, checkCtx advisor.Context
 	}
 
 	// Create the rule
-	rule := NewIndexTypeNoBlobRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
+	rule := NewIndexTypeNoBlobRule(level, checkCtx.Rule.Type.String(), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

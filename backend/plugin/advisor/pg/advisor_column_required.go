@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleRequiredColumn, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_COLUMN_REQUIRED, &ColumnRequirementAdvisor{})
 }
 
 type columnSet map[string]bool
@@ -57,7 +57,7 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	rule := &columnRequirementRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		requiredColumnsMap: requiredColumnsMap,
 	}

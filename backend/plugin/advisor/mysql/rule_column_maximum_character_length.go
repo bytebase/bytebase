@@ -22,9 +22,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnMaximumCharacterLength, &ColumnMaximumCharacterLengthAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnMaximumCharacterLength, &ColumnMaximumCharacterLengthAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnMaximumCharacterLength, &ColumnMaximumCharacterLengthAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH, &ColumnMaximumCharacterLengthAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH, &ColumnMaximumCharacterLengthAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH, &ColumnMaximumCharacterLengthAdvisor{})
 }
 
 // ColumnMaximumCharacterLengthAdvisor is the advisor checking for max character length.
@@ -49,7 +49,7 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 	}
 
 	// Create the rule
-	rule := NewColumnMaximumCharacterLengthRule(level, string(checkCtx.Rule.Type), payload.Number)
+	rule := NewColumnMaximumCharacterLengthRule(level, checkCtx.Rule.Type.String(), payload.Number)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

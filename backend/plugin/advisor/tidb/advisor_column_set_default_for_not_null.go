@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL, &ColumnSetDefaultForNotNullAdvisor{})
 }
 
 // ColumnSetDefaultForNotNullAdvisor is the advisor checking for set default value for not null column.
@@ -42,7 +42,7 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advi
 	}
 	checker := &columnSetDefaultForNotNullChecker{
 		level: level,
-		title: string(checkCtx.Rule.Type),
+		title: checkCtx.Rule.Type.String(),
 	}
 
 	for _, stmt := range stmtList {

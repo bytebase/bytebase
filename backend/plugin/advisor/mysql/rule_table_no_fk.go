@@ -22,9 +22,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableNoFK, &TableNoFKAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleTableNoFK, &TableNoFKAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY, &TableNoFKAdvisor{})
 }
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.
@@ -44,7 +44,7 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 	}
 
 	// Create the rule
-	rule := NewTableNoFKRule(level, string(checkCtx.Rule.Type))
+	rule := NewTableNoFKRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

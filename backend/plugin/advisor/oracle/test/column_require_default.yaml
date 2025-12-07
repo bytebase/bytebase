@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 420
-      title: column.require-default
+      title: COLUMN_REQUIRE_DEFAULT
       content: Column "A" doesn't have default value
       startposition:
         line: 1
@@ -18,7 +18,7 @@
   want:
     - status: 2
       code: 420
-      title: column.require-default
+      title: COLUMN_REQUIRE_DEFAULT
       content: Column "A" doesn't have default value
       startposition:
         line: 2

@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementAddCheckNotValid, &StatementAddCheckNotValidAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_ADD_CHECK_NOT_VALID, &StatementAddCheckNotValidAdvisor{})
 }
 
 // StatementAddCheckNotValidAdvisor is the advisor checking for to add check not valid.
@@ -39,7 +39,7 @@ func (*StatementAddCheckNotValidAdvisor) Check(_ context.Context, checkCtx advis
 	rule := &statementAddCheckNotValidRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 	}
 

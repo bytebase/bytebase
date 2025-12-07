@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `no_pk` requires PRIMARY KEY
       startposition:
         line: 2
@@ -15,7 +15,7 @@
       endposition: null
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `no_pk_fork` requires PRIMARY KEY
       startposition:
         line: 4
@@ -30,7 +30,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `t` requires PRIMARY KEY
       startposition:
         line: 1
@@ -51,7 +51,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `t` requires PRIMARY KEY
       startposition:
         line: 2
@@ -64,7 +64,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `t` requires PRIMARY KEY
       startposition:
         line: 2
@@ -97,7 +97,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `t` requires PRIMARY KEY
       startposition:
         line: 2
@@ -108,7 +108,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `tech_book` requires PRIMARY KEY
       startposition:
         line: 1
@@ -123,7 +123,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `tech_book` requires PRIMARY KEY
       startposition:
         line: 2

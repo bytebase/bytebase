@@ -47,7 +47,7 @@
     - |-
       {
         "status": "ERROR",
-        "title": "table.require-pk",
+        "title": "TABLE_REQUIRE_PK",
         "content": "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(         id INT,         name VARCHAR(255),         \\\"roomId\\\" INT,         CONSTRAINT uk1 UNIQUE (id, name),         CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)         );\"",
         "code": 601,
         "sqlReviewReport": {
@@ -59,7 +59,7 @@
     - |-
       {
         "status": "ERROR",
-        "title": "table.no-foreign-key",
+        "title": "TABLE_NO_FOREIGN_KEY",
         "content": "Foreign key is not allowed in the table \"public\".\"userTable\", related statement: \"CREATE TABLE \"userTable\"(         id INT,         name VARCHAR(255),         \"roomId\" INT,         CONSTRAINT uk1 UNIQUE (id, name),         CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)         );\"",
         "code": 602,
         "sqlReviewReport": {
@@ -71,7 +71,7 @@
     - |-
       {
         "status": "WARNING",
-        "title": "naming.table",
+        "title": "NAMING_TABLE",
         "content": "\"userTable\" mismatches table naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
         "code": 301,
         "sqlReviewReport": {
@@ -83,7 +83,7 @@
     - |-
       {
         "status": "WARNING",
-        "title": "naming.column",
+        "title": "NAMING_COLUMN",
         "content": "\"userTable\".\"roomId\" mismatches column naming convention, naming format should be \"^[a-z]+(_[a-z]+)*$\"",
         "code": 302,
         "sqlReviewReport": {
@@ -95,7 +95,7 @@
     - |-
       {
         "status": "WARNING",
-        "title": "naming.index.uk",
+        "title": "NAMING_INDEX_UK",
         "content": "Unique key in table \"userTable\" mismatches the naming convention, expect \"^$|^uk_userTable_id_name$\" but found \"uk1\"",
         "code": 304,
         "sqlReviewReport": {
@@ -107,7 +107,7 @@
     - |-
       {
         "status": "WARNING",
-        "title": "naming.index.fk",
+        "title": "NAMING_INDEX_FK",
         "content": "Foreign key in table \"userTable\" mismatches the naming convention, expect \"^$|^fk_userTable_roomId_room_id$\" but found \"fk1\"",
         "code": 305,
         "sqlReviewReport": {
@@ -119,7 +119,7 @@
     - |-
       {
         "status": "WARNING",
-        "title": "column.required",
+        "title": "COLUMN_REQUIRED",
         "content": "Table \"userTable\" requires columns: created_ts, creator_id, updated_ts, updater_id",
         "code": 401,
         "sqlReviewReport": {
@@ -131,7 +131,7 @@
     - |-
       {
         "status": "WARNING",
-        "title": "column.no-null",
+        "title": "COLUMN_NO_NULL",
         "content": "Column \"id\" in \"public\".\"userTable\" cannot have NULL value",
         "code": 402,
         "sqlReviewReport": {
@@ -143,7 +143,7 @@
     - |-
       {
         "status": "WARNING",
-        "title": "column.no-null",
+        "title": "COLUMN_NO_NULL",
         "content": "Column \"name\" in \"public\".\"userTable\" cannot have NULL value",
         "code": 402,
         "sqlReviewReport": {
@@ -155,7 +155,7 @@
     - |-
       {
         "status": "WARNING",
-        "title": "column.no-null",
+        "title": "COLUMN_NO_NULL",
         "content": "Column \"roomId\" in \"public\".\"userTable\" cannot have NULL value",
         "code": 402,
         "sqlReviewReport": {
@@ -170,7 +170,7 @@
     - |-
       {
         "status": "ERROR",
-        "title": "statement.where.require.update-delete",
+        "title": "STATEMENT_WHERE_REQUIRE_UPDATE_DELETE",
         "content": "\"DELETE FROM t\" requires WHERE clause",
         "code": 202,
         "sqlReviewReport": {
@@ -185,7 +185,7 @@
     - |-
       {
         "status": "ERROR",
-        "title": "statement.where.no-leading-wildcard-like",
+        "title": "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE",
         "content": "\"DELETE FROM t WHERE a like '%abc'\" uses leading wildcard LIKE",
         "code": 204,
         "sqlReviewReport": {
@@ -233,7 +233,7 @@
     - |-
       {
         "status": "WARNING",
-        "title": "naming.index.pk",
+        "title": "NAMING_INDEX_PK",
         "content": "Primary key in table \"tech_book\" mismatches the naming convention, expect \"^$|^pk_tech_book_id$\" but found \"pk1\"",
         "code": 306,
         "sqlReviewReport": {
@@ -245,7 +245,7 @@
     - |-
       {
         "status": "WARNING",
-        "title": "schema.backward-compatibility",
+        "title": "SCHEMA_BACKWARD_COMPATIBILITY",
         "content": "\"ALTER INDEX pk_tech_book_id RENAME TO pk1\" may cause incompatibility with the existing data and code",
         "code": 102,
         "sqlReviewReport": {

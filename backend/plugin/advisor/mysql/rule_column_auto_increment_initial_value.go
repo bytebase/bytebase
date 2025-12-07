@@ -23,9 +23,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnAutoIncrementInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnAutoIncrementInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnAutoIncrementInitialValue, &ColumnAutoIncrementInitialValueAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE, &ColumnAutoIncrementInitialValueAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE, &ColumnAutoIncrementInitialValueAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE, &ColumnAutoIncrementInitialValueAdvisor{})
 }
 
 // ColumnAutoIncrementInitialValueAdvisor is the advisor checking for auto-increment column initial value.
@@ -50,7 +50,7 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(_ context.Context, checkCtx
 	}
 
 	// Create the rule
-	rule := NewColumnAutoIncrementInitialValueRule(level, string(checkCtx.Rule.Type), payload.Number)
+	rule := NewColumnAutoIncrementInitialValueRule(level, checkCtx.Rule.Type.String(), payload.Number)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

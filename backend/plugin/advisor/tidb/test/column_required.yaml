@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 401
-      title: column.required
+      title: COLUMN_REQUIRED
       content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
       startposition:
         line: 1
@@ -29,7 +29,7 @@
   want:
     - status: 2
       code: 401
-      title: column.required
+      title: COLUMN_REQUIRED
       content: 'Table `book` requires columns: creator_id'
       startposition:
         line: 7
@@ -56,7 +56,7 @@
   want:
     - status: 2
       code: 401
-      title: column.required
+      title: COLUMN_REQUIRED
       content: 'Table `book` requires columns: creator_id'
       startposition:
         line: 7
@@ -83,7 +83,7 @@
   want:
     - status: 2
       code: 401
-      title: column.required
+      title: COLUMN_REQUIRED
       content: 'Table `book` requires columns: creator_id'
       startposition:
         line: 7
@@ -110,7 +110,7 @@
   want:
     - status: 2
       code: 401
-      title: column.required
+      title: COLUMN_REQUIRED
       content: 'Table `book` requires columns: updater_id'
       startposition:
         line: 5
@@ -139,7 +139,7 @@
   want:
     - status: 2
       code: 401
-      title: column.required
+      title: COLUMN_REQUIRED
       content: 'Table `book` requires columns: creator_id'
       startposition:
         line: 5
@@ -147,7 +147,7 @@
       endposition: null
     - status: 2
       code: 401
-      title: column.required
+      title: COLUMN_REQUIRED
       content: 'Table `student` requires columns: creator_id, updater_id'
       startposition:
         line: 9

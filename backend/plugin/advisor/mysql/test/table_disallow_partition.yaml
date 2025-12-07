@@ -10,7 +10,7 @@
   want:
     - status: 2
       code: 608
-      title: table.disallow-partition
+      title: TABLE_DISALLOW_PARTITION
       content: |-
         Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a) (
                 PARTITION p0 VALUES LESS THAN (6),
@@ -29,7 +29,7 @@
   want:
     - status: 2
       code: 608
-      title: table.disallow-partition
+      title: TABLE_DISALLOW_PARTITION
       content: |-
         Table partition is forbidden, but "ALTER TABLE tech_book PARTITION BY RANGE (a) (
                 PARTITION p0 VALUES LESS THAN (6),
@@ -52,7 +52,7 @@
   want:
     - status: 2
       code: 608
-      title: table.disallow-partition
+      title: TABLE_DISALLOW_PARTITION
       content: |-
         Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a) (
                 PARTITION p0 VALUES LESS THAN (6),
@@ -64,7 +64,7 @@
       endposition: null
     - status: 2
       code: 608
-      title: table.disallow-partition
+      title: TABLE_DISALLOW_PARTITION
       content: |-
         Table partition is forbidden, but "ALTER TABLE tech_book PARTITION BY RANGE (a) (
                 PARTITION p0 VALUES LESS THAN (6),

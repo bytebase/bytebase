@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleColumnDisallowChangeType, &ColumnDisallowChangingTypeAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE_TYPE, &ColumnDisallowChangingTypeAdvisor{})
 }
 
 // ColumnDisallowChangingTypeAdvisor is the advisor checking for disallow changing column type.
@@ -41,7 +41,7 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 	rule := &columnDisallowChangingTypeRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 	}
 

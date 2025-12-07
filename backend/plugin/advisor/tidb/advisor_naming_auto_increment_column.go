@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleAutoIncrementColumnNaming, &NamingAutoIncrementColumnAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT, &NamingAutoIncrementColumnAdvisor{})
 }
 
 // NamingAutoIncrementColumnAdvisor is the advisor checking for auto-increment naming convention.
@@ -46,7 +46,7 @@ func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advis
 	}
 	checker := &namingAutoIncrementColumnChecker{
 		level:     level,
-		title:     string(checkCtx.Rule.Type),
+		title:     checkCtx.Rule.Type.String(),
 		format:    format,
 		maxLength: maxLength,
 	}

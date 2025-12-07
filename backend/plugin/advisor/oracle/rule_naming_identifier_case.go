@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleIdentifierCase, &NamingIdentifierCaseAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_NAMING_IDENTIFIER_CASE, &NamingIdentifierCaseAdvisor{})
 }
 
 // NamingIdentifierCaseAdvisor is the advisor checking for identifier case.
@@ -44,7 +44,7 @@ func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := NewNamingIdentifierCaseRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, payload.Upper)
+	rule := NewNamingIdentifierCaseRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, payload.Upper)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

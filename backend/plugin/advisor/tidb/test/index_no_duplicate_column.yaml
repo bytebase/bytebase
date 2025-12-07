@@ -8,7 +8,7 @@
   want:
     - status: 2
       code: 812
-      title: index.no-duplicate-column
+      title: INDEX_NO_DUPLICATE_COLUMN
       content: INDEX `idx_a` has duplicate column `t`.`a`
       startposition:
         line: 3
@@ -21,7 +21,7 @@
   want:
     - status: 2
       code: 812
-      title: index.no-duplicate-column
+      title: INDEX_NO_DUPLICATE_COLUMN
       content: INDEX `idx_a` has duplicate column `t`.`a`
       startposition:
         line: 2
@@ -34,7 +34,7 @@
   want:
     - status: 2
       code: 812
-      title: index.no-duplicate-column
+      title: INDEX_NO_DUPLICATE_COLUMN
       content: INDEX `idx_a` has duplicate column `t`.`a`
       startposition:
         line: 2
@@ -47,7 +47,7 @@
   want:
     - status: 2
       code: 812
-      title: index.no-duplicate-column
+      title: INDEX_NO_DUPLICATE_COLUMN
       content: PRIMARY KEY `pk_a` has duplicate column `t`.`a`
       startposition:
         line: 2
@@ -60,7 +60,7 @@
   want:
     - status: 2
       code: 812
-      title: index.no-duplicate-column
+      title: INDEX_NO_DUPLICATE_COLUMN
       content: UNIQUE KEY `uk_a` has duplicate column `t`.`a`
       startposition:
         line: 2
@@ -73,7 +73,7 @@
   want:
     - status: 2
       code: 812
-      title: index.no-duplicate-column
+      title: INDEX_NO_DUPLICATE_COLUMN
       content: FOREIGN KEY `fk_a` has duplicate column `t`.`a`
       startposition:
         line: 2

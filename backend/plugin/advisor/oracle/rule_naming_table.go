@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleTableNaming, &NamingTableAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_NAMING_TABLE, &NamingTableAdvisor{})
 }
 
 // NamingTableAdvisor is the advisor checking for table naming convention.
@@ -44,7 +44,7 @@ func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, err
 	}
 
-	rule := NewNamingTableRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, format, maxLength)
+	rule := NewNamingTableRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, format, maxLength)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

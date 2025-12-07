@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 1104
-      title: statement.disallow-order-by
+      title: STATEMENT_DISALLOW_ORDER_BY
       content: ORDER BY clause is forbidden in DELETE and UPDATE statements, but "UPDATE tech_book SET name = 'my name' ORDER BY id;" uses
       startposition:
         line: 2
@@ -20,7 +20,7 @@
   want:
     - status: 2
       code: 1105
-      title: statement.disallow-order-by
+      title: STATEMENT_DISALLOW_ORDER_BY
       content: ORDER BY clause is forbidden in DELETE and UPDATE statements, but "DELETE FROM tech_book ORDER BY id;" uses
       startposition:
         line: 2

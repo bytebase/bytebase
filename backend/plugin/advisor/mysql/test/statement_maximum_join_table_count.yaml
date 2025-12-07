@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 223
-      title: statement.maximum-join-table-count
+      title: STATEMENT_MAXIMUM_JOIN_TABLE_COUNT
       content: '"select name from hello join world on hello.id = world.id join baby on world.id = baby.id;" exceeds the maximum number of joins 2.'
       startposition:
         line: 1

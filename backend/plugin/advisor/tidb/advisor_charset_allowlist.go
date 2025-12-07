@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleCharsetAllowlist, &CharsetAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST, &CharsetAllowlistAdvisor{})
 }
 
 // CharsetAllowlistAdvisor is the advisor checking for charset allowlist.
@@ -45,7 +45,7 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 	checker := &charsetAllowlistChecker{
 		level:     level,
-		title:     string(checkCtx.Rule.Type),
+		title:     checkCtx.Rule.Type.String(),
 		allowlist: make(map[string]bool),
 	}
 	for _, charset := range payload.List {

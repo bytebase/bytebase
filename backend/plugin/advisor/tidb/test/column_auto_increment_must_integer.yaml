@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 410
-      title: column.auto-increment-must-integer
+      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
       content: Auto-increment column `t`.`a` requires integer type
       startposition:
         line: 1
@@ -18,7 +18,7 @@
   want:
     - status: 2
       code: 410
-      title: column.auto-increment-must-integer
+      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
       content: Auto-increment column `t`.`a` requires integer type
       startposition:
         line: 2
@@ -31,7 +31,7 @@
   want:
     - status: 2
       code: 410
-      title: column.auto-increment-must-integer
+      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
       content: Auto-increment column `t`.`a` requires integer type
       startposition:
         line: 2
@@ -44,7 +44,7 @@
   want:
     - status: 2
       code: 410
-      title: column.auto-increment-must-integer
+      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
       content: Auto-increment column `t`.`a` requires integer type
       startposition:
         line: 2

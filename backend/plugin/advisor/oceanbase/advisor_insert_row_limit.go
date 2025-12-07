@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, &InsertRowLimitAdvisor{})
 }
 
 // InsertRowLimitAdvisor is the advisor checking for insert row limit.
@@ -47,7 +47,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 
 	checker := &insertRowLimitChecker{
 		level:  level,
-		title:  string(checkCtx.Rule.Type),
+		title:  checkCtx.Rule.Type.String(),
 		maxRow: payload.Number,
 		driver: checkCtx.Driver,
 		ctx:    ctx,

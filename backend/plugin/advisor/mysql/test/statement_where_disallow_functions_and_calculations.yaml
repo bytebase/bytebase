@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 1702
-      title: statement.where.disallow-functions-and-calculations
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
       content: Function is disallowed in where clause, but "SELECT * FROM employee WHERE id = RAND();" uses
       startposition:
         line: 1

@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 207
-      title: statement.merge-alter-table
+      title: STATEMENT_MERGE_ALTER_TABLE
       content: There are 2 statements to modify table `tech_book`
       startposition:
         line: 2
@@ -22,7 +22,7 @@
   want:
     - status: 2
       code: 207
-      title: statement.merge-alter-table
+      title: STATEMENT_MERGE_ALTER_TABLE
       content: There are 2 statements to modify table `t`
       startposition:
         line: 3
@@ -30,7 +30,7 @@
       endposition: null
     - status: 2
       code: 207
-      title: statement.merge-alter-table
+      title: STATEMENT_MERGE_ALTER_TABLE
       content: There are 2 statements to modify table `tech_book`
       startposition:
         line: 4
@@ -45,7 +45,7 @@
   want:
     - status: 2
       code: 207
-      title: statement.merge-alter-table
+      title: STATEMENT_MERGE_ALTER_TABLE
       content: There are 2 statements to modify table `tech_book`
       startposition:
         line: 3
@@ -53,7 +53,7 @@
       endposition: null
     - status: 2
       code: 207
-      title: statement.merge-alter-table
+      title: STATEMENT_MERGE_ALTER_TABLE
       content: There are 2 statements to modify table `t`
       startposition:
         line: 4

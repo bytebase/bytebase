@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
         line: 1
@@ -14,7 +14,7 @@
   want:
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
         line: 1
@@ -22,7 +22,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       startposition:
         line: 1
@@ -30,7 +30,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       startposition:
         line: 1
@@ -41,7 +41,7 @@
   want:
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
         line: 1
@@ -49,7 +49,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       startposition:
         line: 1
@@ -57,7 +57,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       startposition:
         line: 1
@@ -68,7 +68,7 @@
   want:
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
         line: 1
@@ -76,7 +76,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       startposition:
         line: 1
@@ -84,7 +84,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       startposition:
         line: 1
@@ -99,7 +99,7 @@
   want:
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
         line: 2
@@ -112,7 +112,7 @@
   want:
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
         line: 2
@@ -120,7 +120,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       startposition:
         line: 2
@@ -128,7 +128,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       startposition:
         line: 2
@@ -141,7 +141,7 @@
   want:
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
         line: 2
@@ -149,7 +149,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       startposition:
         line: 2
@@ -157,7 +157,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       startposition:
         line: 2
@@ -177,7 +177,7 @@
   want:
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`b` is blob
       startposition:
         line: 2
@@ -185,7 +185,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`mb` is mediumblob
       startposition:
         line: 3
@@ -193,7 +193,7 @@
       endposition: null
     - status: 2
       code: 804
-      title: index.type-no-blob
+      title: INDEX_TYPE_NO_BLOB
       content: Columns in index must not be BLOB but `t`.`lb` is longblob
       startposition:
         line: 4

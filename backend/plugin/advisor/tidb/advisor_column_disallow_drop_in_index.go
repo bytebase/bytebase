@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnDisallowDropInIndex, &ColumnDisallowDropInIndexAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_COLUMN_DISALLOW_DROP_IN_INDEX, &ColumnDisallowDropInIndexAdvisor{})
 }
 
 // ColumnDisallowDropInIndexAdvisor is the advisor checking for disallow DROP COLUMN in index.
@@ -44,7 +44,7 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 
 	checker := &columnDisallowDropInIndexChecker{
 		level:            level,
-		title:            string(checkCtx.Rule.Type),
+		title:            checkCtx.Rule.Type.String(),
 		tables:           make(tableState),
 		originalMetadata: checkCtx.OriginalMetadata,
 	}

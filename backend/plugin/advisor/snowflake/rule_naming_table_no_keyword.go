@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleTableNameNoKeyword, &NamingTableNoKeywordAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, storepb.SQLReviewRule_NAMING_TABLE_NO_KEYWORD, &NamingTableNoKeywordAdvisor{})
 }
 
 // NamingTableNoKeywordAdvisor is the advisor checking for table naming convention without keyword.
@@ -39,7 +39,7 @@ func (*NamingTableNoKeywordAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := NewNamingTableNoKeywordRule(level, string(checkCtx.Rule.Type))
+	rule := NewNamingTableNoKeywordRule(level, checkCtx.Rule.Type.String())
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, parseResult := range parseResults {

@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier "CONNECT" is a keyword and should be avoided
       startposition:
         line: 2
@@ -22,7 +22,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier "connect" is a keyword and should be avoided
       startposition:
         line: 2
@@ -43,7 +43,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier "connect" is a keyword and should be avoided
       startposition:
         line: 2
@@ -60,7 +60,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier "connect" is a keyword and should be avoided
       startposition:
         line: 1

@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking the MySQLTableDropNamingConvention rule.
@@ -47,7 +47,7 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	// Create the rule
-	rule := NewTableDropNamingConventionRule(level, string(checkCtx.Rule.Type), format)
+	rule := NewTableDropNamingConventionRule(level, checkCtx.Rule.Type.String(), format)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

@@ -19,11 +19,11 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementRequireAlgorithmOption, &RequireAlgorithmOrLockOptionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementRequireAlgorithmOption, &RequireAlgorithmOrLockOptionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_REQUIRE_ALGORITHM_OPTION, &RequireAlgorithmOrLockOptionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_REQUIRE_ALGORITHM_OPTION, &RequireAlgorithmOrLockOptionAdvisor{})
 
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementRequireLockOption, &RequireAlgorithmOrLockOptionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementRequireLockOption, &RequireAlgorithmOrLockOptionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION, &RequireAlgorithmOrLockOptionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION, &RequireAlgorithmOrLockOptionAdvisor{})
 }
 
 // RequireAlgorithmOrLockOptionAdvisor is the advisor checking for the max execution time.
@@ -42,12 +42,12 @@ func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx ad
 	}
 
 	requiredOption, errorCode := "ALGORITHM", code.StatementNoAlgorithmOption
-	if checkCtx.Rule.Type == string(advisor.SchemaRuleStatementRequireLockOption) {
+	if checkCtx.Rule.Type == storepb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION {
 		requiredOption, errorCode = "LOCK", code.StatementNoLockOption
 	}
 
 	// Create the rule
-	rule := NewRequireAlgorithmOrLockOptionRule(level, string(checkCtx.Rule.Type), requiredOption, errorCode)
+	rule := NewRequireAlgorithmOrLockOptionRule(level, checkCtx.Rule.Type.String(), requiredOption, errorCode)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

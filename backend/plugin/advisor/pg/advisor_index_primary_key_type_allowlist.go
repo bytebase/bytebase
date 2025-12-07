@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist, &IndexPrimaryKeyTypeAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST, &IndexPrimaryKeyTypeAllowlistAdvisor{})
 }
 
 // IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary key type allowlist.
@@ -45,7 +45,7 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 	}
 
 	rule := &indexPrimaryKeyTypeAllowlistRule{
-		BaseRule:  BaseRule{level: level, title: string(checkCtx.Rule.Type)},
+		BaseRule:  BaseRule{level: level, title: checkCtx.Rule.Type.String()},
 		allowlist: payload.List,
 	}
 

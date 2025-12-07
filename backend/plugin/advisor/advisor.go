@@ -78,13 +78,13 @@ type Advisor interface {
 
 var (
 	advisorMu sync.RWMutex
-	advisors  = make(map[storepb.Engine]map[SQLReviewRuleType]Advisor)
+	advisors  = make(map[storepb.Engine]map[storepb.SQLReviewRule_Type]Advisor)
 )
 
 // Register makes a advisor available by the provided id.
 // If Register is called twice with the same name or if advisor is nil,
 // it panics.
-func Register(dbType storepb.Engine, ruleType SQLReviewRuleType, f Advisor) {
+func Register(dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, f Advisor) {
 	advisorMu.Lock()
 	defer advisorMu.Unlock()
 	if f == nil {
@@ -92,7 +92,7 @@ func Register(dbType storepb.Engine, ruleType SQLReviewRuleType, f Advisor) {
 	}
 	dbAdvisors, ok := advisors[dbType]
 	if !ok {
-		advisors[dbType] = map[SQLReviewRuleType]Advisor{
+		advisors[dbType] = map[storepb.SQLReviewRule_Type]Advisor{
 			ruleType: f,
 		}
 	} else {
@@ -104,7 +104,7 @@ func Register(dbType storepb.Engine, ruleType SQLReviewRuleType, f Advisor) {
 }
 
 // Check runs the advisor and returns the advices.
-func Check(ctx context.Context, dbType storepb.Engine, ruleType SQLReviewRuleType, checkCtx Context) (adviceList []*storepb.Advice, err error) {
+func Check(ctx context.Context, dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, checkCtx Context) (adviceList []*storepb.Advice, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
 			panicErr, ok := panicErr.(error)

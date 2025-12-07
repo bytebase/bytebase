@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, &StatementDmlDryRunAdvisor{})
 }
 
 type StatementDmlDryRunAdvisor struct {
@@ -39,7 +39,7 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := NewStatementDmlDryRunRule(ctx, level, string(checkCtx.Rule.Type), checkCtx.Driver)
+	rule := NewStatementDmlDryRunRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver)
 	checker := NewGenericChecker([]Rule{rule})
 
 	if checkCtx.Driver != nil {

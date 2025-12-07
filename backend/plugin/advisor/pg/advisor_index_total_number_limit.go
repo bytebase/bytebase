@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleIndexTotalNumberLimit, &IndexTotalNumberLimitAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT, &IndexTotalNumberLimitAdvisor{})
 }
 
 // IndexTotalNumberLimitAdvisor is the advisor checking for index total number limit.
@@ -45,7 +45,7 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	rule := &indexTotalNumberLimitRule{
-		BaseRule:      BaseRule{level: level, title: string(checkCtx.Rule.Type)},
+		BaseRule:      BaseRule{level: level, title: checkCtx.Rule.Type.String()},
 		max:           payload.Number,
 		finalMetadata: checkCtx.FinalMetadata,
 		tableLine:     make(tableLineMap),

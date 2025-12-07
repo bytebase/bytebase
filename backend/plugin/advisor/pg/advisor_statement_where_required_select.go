@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementRequireWhereForSelect, &StatementWhereRequiredSelectAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT, &StatementWhereRequiredSelectAdvisor{})
 }
 
 // StatementWhereRequiredSelectAdvisor is the advisor checking for WHERE clause requirement in SELECT statements.
@@ -39,7 +39,7 @@ func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx ad
 	rule := &statementWhereRequiredSelectRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		statementsText: checkCtx.Statements,
 	}

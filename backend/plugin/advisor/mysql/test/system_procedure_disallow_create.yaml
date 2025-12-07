@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 1401
-      title: system.procedure.disallow-create
+      title: SYSTEM_PROCEDURE_DISALLOW_CREATE
       content: |-
         Procedure is forbidden, but "CREATE PROCEDURE simpleProcedure()
         BEGIN

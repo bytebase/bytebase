@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN, &InsertMustSpecifyColumnAdvisor{})
 }
 
 // InsertMustSpecifyColumnAdvisor is the advisor checking for to enforce column specified.
@@ -41,7 +41,7 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 	checker := &insertMustSpecifyColumnChecker{
 		level: level,
-		title: string(checkCtx.Rule.Type),
+		title: checkCtx.Rule.Type.String(),
 	}
 
 	for _, stmt := range stmtList {

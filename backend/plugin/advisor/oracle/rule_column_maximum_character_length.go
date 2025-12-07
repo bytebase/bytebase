@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleColumnMaximumCharacterLength, &ColumnMaximumCharacterLengthAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH, &ColumnMaximumCharacterLengthAdvisor{})
 }
 
 // ColumnMaximumCharacterLengthAdvisor is the advisor checking for maximum character length.
@@ -49,7 +49,7 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, nil
 	}
 
-	rule := NewColumnMaximumCharacterLengthRule(level, string(checkCtx.Rule.Type), payload.Number)
+	rule := NewColumnMaximumCharacterLengthRule(level, checkCtx.Rule.Type.String(), payload.Number)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

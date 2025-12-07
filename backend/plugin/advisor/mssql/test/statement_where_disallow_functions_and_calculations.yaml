@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 234
-      title: statement.where.disallow-functions-and-calculations
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
       content: Performing calculations in 'WHERE' clause is not allowed
       startposition:
         line: 2
@@ -15,7 +15,7 @@
       endposition: null
     - status: 2
       code: 234
-      title: statement.where.disallow-functions-and-calculations
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
       content: Performing calculations in 'WHERE' clause is not allowed
       startposition:
         line: 4
@@ -28,7 +28,7 @@
   want:
     - status: 2
       code: 234
-      title: statement.where.disallow-functions-and-calculations
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
       content: Performing calculations in 'WHERE' clause is not allowed
       startposition:
         line: 1
@@ -36,7 +36,7 @@
       endposition: null
     - status: 2
       code: 234
-      title: statement.where.disallow-functions-and-calculations
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
       content: Calling function 'AVG(bar)' in 'WHERE' clause is not allowed
       startposition:
         line: 2
@@ -55,7 +55,7 @@
   want:
     - status: 2
       code: 234
-      title: statement.where.disallow-functions-and-calculations
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
       content: Calling function 'AVG(a)' in 'WHERE' clause is not allowed
       startposition:
         line: 1

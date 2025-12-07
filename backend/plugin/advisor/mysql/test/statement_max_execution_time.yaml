@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 235
-      title: statement.max-execution-time
+      title: STATEMENT_MAX_EXECUTION_TIME
       content: The max_execution_time is not set
       startposition: null
       endposition: null
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 235
-      title: statement.max-execution-time
+      title: STATEMENT_MAX_EXECUTION_TIME
       content: The max_execution_time is not set
       startposition: null
       endposition: null

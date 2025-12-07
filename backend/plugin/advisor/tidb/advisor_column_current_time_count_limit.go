@@ -29,7 +29,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleCurrentTimeColumnCountLimit, &ColumnCurrentTimeCountLimitAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_COLUMN_CURRENT_TIME_COUNT_LIMIT, &ColumnCurrentTimeCountLimitAdvisor{})
 }
 
 // ColumnCurrentTimeCountLimitAdvisor is the advisor checking for current time column count limit.
@@ -50,7 +50,7 @@ func (*ColumnCurrentTimeCountLimitAdvisor) Check(_ context.Context, checkCtx adv
 	}
 	checker := &columnCurrentTimeCountLimitChecker{
 		level:    level,
-		title:    string(checkCtx.Rule.Type),
+		title:    checkCtx.Rule.Type.String(),
 		tableSet: make(map[string]tableData),
 	}
 

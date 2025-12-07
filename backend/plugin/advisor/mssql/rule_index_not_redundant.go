@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleIndexNotRedundant, &IndexNotRedundantAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_INDEX_NOT_REDUNDANT, &IndexNotRedundantAdvisor{})
 }
 
 var dftMSSQLSchemaName = "dbo"
@@ -42,7 +42,7 @@ func (IndexNotRedundantAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 
 	// Create the rule
-	rule := NewIndexNotRedundantRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, checkCtx.DBSchema)
+	rule := NewIndexNotRedundantRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, checkCtx.DBSchema)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

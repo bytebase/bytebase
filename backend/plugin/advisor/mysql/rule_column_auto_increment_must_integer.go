@@ -22,9 +22,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnAutoIncrementMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnAutoIncrementMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnAutoIncrementMustInteger, &ColumnAutoIncrementMustIntegerAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_INTEGER, &ColumnAutoIncrementMustIntegerAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_INTEGER, &ColumnAutoIncrementMustIntegerAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_INTEGER, &ColumnAutoIncrementMustIntegerAdvisor{})
 }
 
 // ColumnAutoIncrementMustIntegerAdvisor is the advisor checking for auto-increment column type.
@@ -45,7 +45,7 @@ func (*ColumnAutoIncrementMustIntegerAdvisor) Check(_ context.Context, checkCtx 
 	}
 
 	// Create the rule
-	rule := NewColumnAutoIncrementMustIntegerRule(level, string(checkCtx.Rule.Type))
+	rule := NewColumnAutoIncrementMustIntegerRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

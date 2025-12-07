@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier "execute" is a keyword and should be avoided
       startposition:
         line: 1
@@ -27,7 +27,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier "execute" is a keyword and should be avoided
       startposition:
         line: 1
@@ -38,7 +38,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier "interval" is a keyword and should be avoided
       startposition:
         line: 1
@@ -49,7 +49,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier "current_timestamp" is a keyword and should be avoided
       startposition:
         line: 3
@@ -60,7 +60,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier "interval" is a keyword and should be avoided
       startposition:
         line: 1

@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableDisallowPartition, &TableDisallowPartitionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleTableDisallowPartition, &TableDisallowPartitionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleTableDisallowPartition, &TableDisallowPartitionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_DISALLOW_PARTITION, &TableDisallowPartitionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_TABLE_DISALLOW_PARTITION, &TableDisallowPartitionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_TABLE_DISALLOW_PARTITION, &TableDisallowPartitionAdvisor{})
 }
 
 // TableDisallowPartitionAdvisor is the advisor checking for disallow table partition.
@@ -43,7 +43,7 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	// Create the rule
-	rule := NewTableDisallowPartitionRule(level, string(checkCtx.Rule.Type))
+	rule := NewTableDisallowPartitionRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

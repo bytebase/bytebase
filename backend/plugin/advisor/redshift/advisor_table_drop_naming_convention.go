@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_REDSHIFT, advisor.SchemaRuleTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_REDSHIFT, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention.
@@ -46,7 +46,7 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 
 	listener := &tableDropNamingConventionListener{
 		level:      level,
-		title:      string(checkCtx.Rule.Type),
+		title:      checkCtx.Rule.Type.String(),
 		format:     format,
 		adviceList: []*storepb.Advice{},
 	}

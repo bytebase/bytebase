@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleRequiredColumn, &ColumnRequireAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_COLUMN_REQUIRED, &ColumnRequireAdvisor{})
 }
 
 // ColumnRequireAdvisor is the advisor checking for column requirement..
@@ -47,7 +47,7 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 	}
 
 	// Create the rule
-	rule := NewColumnRequireRule(level, string(checkCtx.Rule.Type), columnList)
+	rule := NewColumnRequireRule(level, checkCtx.Rule.Type.String(), columnList)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

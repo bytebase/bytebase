@@ -21,7 +21,7 @@
   want:
     - status: 2
       code: 1401
-      title: system.procedure.disallow-create
+      title: SYSTEM_PROCEDURE_DISALLOW_CREATE
       content: Creating or altering procedures is prohibited
       startposition:
         line: 1

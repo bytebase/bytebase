@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 403
-      title: column.disallow-change-type
+      title: COLUMN_DISALLOW_CHANGE_TYPE
       content: The statement "ALTER TABLE tech_book ALTER COLUMN id SET DATA TYPE INTEGER" changes column type
       startposition:
         line: 1

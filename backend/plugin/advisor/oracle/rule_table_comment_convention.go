@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleTableCommentConvention, &TableCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_TABLE_COMMENT, &TableCommentConventionAdvisor{})
 }
 
 // TableCommentConventionAdvisor is the advisor checking for table comment convention.
@@ -43,7 +43,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := NewTableCommentConventionRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, payload)
+	rule := NewTableCommentConventionRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, payload)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

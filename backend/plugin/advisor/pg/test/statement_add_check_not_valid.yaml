@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 211
-      title: statement.add-check-not-valid
+      title: STATEMENT_ADD_CHECK_NOT_VALID
       content: Adding check constraints with validation will block reads and writes. You can add check constraints not valid and then validate separately
       startposition:
         line: 1

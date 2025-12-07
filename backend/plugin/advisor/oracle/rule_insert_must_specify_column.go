@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleStatementInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN, &InsertMustSpecifyColumnAdvisor{})
 }
 
 // InsertMustSpecifyColumnAdvisor is the advisor checking for to enforce column specified.
@@ -38,7 +38,7 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := NewInsertMustSpecifyColumnRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
+	rule := NewInsertMustSpecifyColumnRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

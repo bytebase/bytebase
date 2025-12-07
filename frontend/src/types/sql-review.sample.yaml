@@ -1,73 +1,73 @@
 id: bb.sql-review.sample
 ruleList:
-  - type: database.drop-empty-database
+  - type: DATABASE_DROP_EMPTY_DATABASE
     level: ERROR
     engine: MYSQL
-  - type: database.drop-empty-database
+  - type: DATABASE_DROP_EMPTY_DATABASE
     level: ERROR
     engine: TIDB
-  - type: database.drop-empty-database
+  - type: DATABASE_DROP_EMPTY_DATABASE
     level: ERROR
     engine: OCEANBASE
-  - type: database.drop-empty-database
+  - type: DATABASE_DROP_EMPTY_DATABASE
     level: ERROR
     engine: MARIADB
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: MYSQL
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: TIDB
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: POSTGRES
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: OCEANBASE
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: SNOWFLAKE
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: MSSQL
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: MARIADB
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: MYSQL
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: TIDB
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: POSTGRES
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: ORACLE
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: OCEANBASE
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: SNOWFLAKE
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: MSSQL
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: MARIADB

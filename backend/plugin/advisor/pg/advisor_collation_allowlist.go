@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleCollationAllowlist, &CollationAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST, &CollationAllowlistAdvisor{})
 }
 
 // CollationAllowlistAdvisor is the advisor checking for collation allowlist.
@@ -49,7 +49,7 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	rule := &collationAllowlistRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		allowlist: allowlist,
 	}

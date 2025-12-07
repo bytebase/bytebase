@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 1032
-      title: column.comment
+      title: COLUMN_COMMENT
       content: Comment is required for column `t.a`
       startposition:
         line: 1
@@ -20,7 +20,7 @@
   want:
     - status: 2
       code: 1301
-      title: column.comment
+      title: COLUMN_COMMENT
       content: Column `t.a` comment is too long. The length of comment should be within 10 characters
       startposition:
         line: 2
@@ -33,7 +33,7 @@
   want:
     - status: 2
       code: 1032
-      title: column.comment
+      title: COLUMN_COMMENT
       content: Comment is required for column `t.d`
       startposition:
         line: 1
@@ -47,7 +47,7 @@
   want:
     - status: 2
       code: 1032
-      title: column.comment
+      title: COLUMN_COMMENT
       content: Comment is required for column `t.a`
       startposition:
         line: 1

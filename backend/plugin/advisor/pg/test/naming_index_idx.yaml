@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 303
-      title: naming.index.idx
+      title: NAMING_INDEX_IDX
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "tech_book_id_name"
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 303
-      title: naming.index.idx
+      title: NAMING_INDEX_IDX
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "wfdtqyetsyoovcvikjlyfukxyjxxxhifl"
       startposition:
         line: 1
@@ -29,7 +29,7 @@
   want:
     - status: 2
       code: 303
-      title: naming.index.idx
+      title: NAMING_INDEX_IDX
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "idx_tech_book"
       startposition:
         line: 1

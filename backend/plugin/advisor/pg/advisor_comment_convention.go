@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleCommentLength, &CommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_SYSTEM_COMMENT_LENGTH, &CommentConventionAdvisor{})
 }
 
 // CommentConventionAdvisor is the advisor checking for comment length.
@@ -45,7 +45,7 @@ func (*CommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	rule := &commentConventionRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		maxLength: payload.Number,
 	}

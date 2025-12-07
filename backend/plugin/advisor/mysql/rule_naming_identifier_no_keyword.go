@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleIdentifierNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD, &NamingIdentifierNoKeywordAdvisor{})
 }
 
 // NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier naming convention without keyword.
@@ -40,7 +40,7 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	// Create the rule
-	rule := NewNamingIdentifierNoKeywordRule(level, string(checkCtx.Rule.Type))
+	rule := NewNamingIdentifierNoKeywordRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

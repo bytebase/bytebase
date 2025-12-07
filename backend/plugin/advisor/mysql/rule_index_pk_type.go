@@ -23,9 +23,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleIndexPKTypeLimit, &IndexPkTypeAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleIndexPKTypeLimit, &IndexPkTypeAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleIndexPKTypeLimit, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_INDEX_PK_TYPE_LIMIT, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_INDEX_PK_TYPE_LIMIT, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_INDEX_PK_TYPE_LIMIT, &IndexPkTypeAdvisor{})
 }
 
 // IndexPkTypeAdvisor is the advisor checking for correct type of PK.
@@ -46,7 +46,7 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	}
 
 	// Create the rule
-	rule := NewIndexPkTypeRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
+	rule := NewIndexPkTypeRule(level, checkCtx.Rule.Type.String(), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

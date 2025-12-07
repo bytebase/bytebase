@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 1301
-      title: table.comment
+      title: TABLE_COMMENT
       content: The length of table `t` comment should be within 10 characters
       startposition:
         line: 2
@@ -18,7 +18,7 @@
   want:
     - status: 2
       code: 1032
-      title: table.comment
+      title: TABLE_COMMENT
       content: Table `t` requires comments
       startposition:
         line: 2
@@ -31,7 +31,7 @@
   want:
     - status: 2
       code: 1301
-      title: table.comment
+      title: TABLE_COMMENT
       content: The length of table `t` comment should be within 10 characters
       startposition:
         line: 2

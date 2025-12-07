@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleDropEmptyDatabase, &DatabaseAllowDropIfEmptyAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_DATABASE_DROP_EMPTY_DATABASE, &DatabaseAllowDropIfEmptyAdvisor{})
 }
 
 // DatabaseAllowDropIfEmptyAdvisor is the advisor checking the MySQLDatabaseAllowDropIfEmpty rule.
@@ -42,7 +42,7 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 
 	checker := &allowDropEmptyDBChecker{
 		level:            level,
-		title:            string(checkCtx.Rule.Type),
+		title:            checkCtx.Rule.Type.String(),
 		originalMetadata: checkCtx.OriginalMetadata,
 	}
 	for _, stmtNode := range root {

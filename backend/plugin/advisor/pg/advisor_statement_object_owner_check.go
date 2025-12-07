@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementObjectOwnerCheck, &StatementObjectOwnerCheckAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_OBJECT_OWNER_CHECK, &StatementObjectOwnerCheckAdvisor{})
 }
 
 const (
@@ -56,7 +56,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	rule := &statementObjectOwnerCheckRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		dbMetadata:  dbMetadata,
 		currentRole: currentRole,

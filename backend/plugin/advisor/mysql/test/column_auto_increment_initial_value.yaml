@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 416
-      title: column.auto-increment-initial-value
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
       content: The initial auto-increment value in table `t2` is 2, which doesn't equal 20
       startposition:
         line: 2
@@ -24,7 +24,7 @@
   want:
     - status: 2
       code: 416
-      title: column.auto-increment-initial-value
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
       content: The initial auto-increment value in table `t` is 100, which doesn't equal 20
       startposition:
         line: 4

@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementDisallowRemoveTblCascade, &StatementDisallowRemoveTblCascadeAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DISALLOW_RM_TBL_CASCADE, &StatementDisallowRemoveTblCascadeAdvisor{})
 }
 
 // StatementDisallowRemoveTblCascadeAdvisor is the advisor checking for disallow CASCADE option when removing tables.
@@ -39,7 +39,7 @@ func (*StatementDisallowRemoveTblCascadeAdvisor) Check(_ context.Context, checkC
 	rule := &statementDisallowRemoveTblCascadeRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 	}
 

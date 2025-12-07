@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleSchemaBackwardCompatibility, &MigrationCompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, &MigrationCompatibilityAdvisor{})
 }
 
 // MigrationCompatibilityAdvisor is the advisor checking for migration compatibility.
@@ -40,7 +40,7 @@ func (*MigrationCompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := NewMigrationCompatibilityRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
+	rule := NewMigrationCompatibilityRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, parseResult := range parseResults {

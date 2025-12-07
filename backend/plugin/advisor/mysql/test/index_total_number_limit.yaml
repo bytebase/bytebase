@@ -12,7 +12,7 @@
   want:
     - status: 2
       code: 813
-      title: index.total-number-limit
+      title: INDEX_TOTAL_NUMBER_LIMIT
       content: The count of index in table `tech_book` should be no more than 5, but found 8
       startposition:
         line: 5
@@ -29,7 +29,7 @@
   want:
     - status: 2
       code: 813
-      title: index.total-number-limit
+      title: INDEX_TOTAL_NUMBER_LIMIT
       content: The count of index in table `t` should be no more than 5, but found 6
       startposition:
         line: 6
@@ -49,7 +49,7 @@
   want:
     - status: 2
       code: 813
-      title: index.total-number-limit
+      title: INDEX_TOTAL_NUMBER_LIMIT
       content: The count of index in table `t` should be no more than 5, but found 6
       startposition:
         line: 1
@@ -70,7 +70,7 @@
   want:
     - status: 2
       code: 813
-      title: index.total-number-limit
+      title: INDEX_TOTAL_NUMBER_LIMIT
       content: The count of index in table `t` should be no more than 5, but found 6
       startposition:
         line: 10

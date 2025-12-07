@@ -295,35 +295,35 @@ func validateSQLReviewRules(rules []*v1pb.SQLReviewRule) error {
 		if rule.Level == v1pb.SQLReviewRule_LEVEL_UNSPECIFIED {
 			return errors.Errorf("invalid rule level: LEVEL_UNSPECIFIED is not allowed for rule %q", rule.Type)
 		}
-		ruleType := advisor.SQLReviewRuleType(rule.Type)
+		ruleType := storepb.SQLReviewRule_Type(rule.Type)
 		// TODO(rebelice): add other SQL review rule validation.
 		switch ruleType {
-		case advisor.SchemaRuleTableNaming, advisor.SchemaRuleColumnNaming, advisor.SchemaRuleAutoIncrementColumnNaming:
+		case storepb.SQLReviewRule_NAMING_TABLE, storepb.SQLReviewRule_NAMING_COLUMN, storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT:
 			if _, _, err := advisor.UnmarshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
 				return err
 			}
-		case advisor.SchemaRuleFKNaming, advisor.SchemaRuleIDXNaming, advisor.SchemaRuleUKNaming:
+		case storepb.SQLReviewRule_NAMING_INDEX_FK, storepb.SQLReviewRule_NAMING_INDEX_IDX, storepb.SQLReviewRule_NAMING_INDEX_UK:
 			if _, _, _, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ruleType, rule.Payload); err != nil {
 				return err
 			}
-		case advisor.SchemaRuleRequiredColumn:
+		case storepb.SQLReviewRule_COLUMN_REQUIRED:
 			if _, err := advisor.UnmarshalRequiredColumnList(rule.Payload); err != nil {
 				return err
 			}
-		case advisor.SchemaRuleColumnCommentConvention, advisor.SchemaRuleTableCommentConvention:
+		case storepb.SQLReviewRule_COLUMN_COMMENT, storepb.SQLReviewRule_TABLE_COMMENT:
 			if _, err := advisor.UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
 				return err
 			}
-		case advisor.SchemaRuleIndexKeyNumberLimit, advisor.SchemaRuleStatementInsertRowLimit, advisor.SchemaRuleIndexTotalNumberLimit,
-			advisor.SchemaRuleColumnMaximumCharacterLength, advisor.SchemaRuleColumnMaximumVarcharLength, advisor.SchemaRuleColumnAutoIncrementInitialValue, advisor.SchemaRuleStatementAffectedRowLimit:
+		case storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT,
+			storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH, storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH, storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT:
 			if _, err := advisor.UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
 				return err
 			}
-		case advisor.SchemaRuleColumnTypeDisallowList, advisor.SchemaRuleCharsetAllowlist, advisor.SchemaRuleCollationAllowlist, advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist:
+		case storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST, storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST, storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST, storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST:
 			if _, err := advisor.UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
 				return err
 			}
-		case advisor.SchemaRuleIdentifierCase:
+		case storepb.SQLReviewRule_NAMING_IDENTIFIER_CASE:
 			if _, err := advisor.UnmarshalNamingCaseRulePayload(rule.Payload); err != nil {
 				return err
 			}

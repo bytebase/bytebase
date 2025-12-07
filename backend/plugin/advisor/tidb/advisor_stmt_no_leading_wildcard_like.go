@@ -23,7 +23,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementNoLeadingWildcardLike, &NoLeadingWildcardLikeAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE, &NoLeadingWildcardLikeAdvisor{})
 }
 
 // NoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.
@@ -53,7 +53,7 @@ func (*NoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.C
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
 				Code:          code.StatementLeadingWildcardLike.Int32(),
-				Title:         string(checkCtx.Rule.Type),
+				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("\"%s\" uses leading wildcard LIKE", checker.text),
 				StartPosition: common.ConvertANTLRLineToPosition(stmtNode.OriginTextPosition()),
 			})

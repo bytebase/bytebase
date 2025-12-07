@@ -25,7 +25,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableTextFieldsTotalLength, &TableMaximumVarcharLengthAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_TEXT_FIELDS_TOTAL_LENGTH, &TableMaximumVarcharLengthAdvisor{})
 }
 
 type TableMaximumVarcharLengthAdvisor struct {
@@ -48,7 +48,7 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	// Create the rule
-	rule := NewTableTextFieldsTotalLengthRule(level, string(checkCtx.Rule.Type), checkCtx.FinalMetadata, payload.Number)
+	rule := NewTableTextFieldsTotalLengthRule(level, checkCtx.Rule.Type.String(), checkCtx.FinalMetadata, payload.Number)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

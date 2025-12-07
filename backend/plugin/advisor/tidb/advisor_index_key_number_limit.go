@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, &IndexKeyNumberLimitAdvisor{})
 }
 
 // IndexKeyNumberLimitAdvisor is the advisor checking for index key number limit.
@@ -46,7 +46,7 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	}
 	checker := &indexKeyNumberLimitChecker{
 		level: level,
-		title: string(checkCtx.Rule.Type),
+		title: checkCtx.Rule.Type.String(),
 		max:   payload.Number,
 	}
 

@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleTableNoFK, &TableNoFKAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY, &TableNoFKAdvisor{})
 }
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.
@@ -41,7 +41,7 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 	rule := &tableNoFKRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		statementsText: checkCtx.Statements,
 	}

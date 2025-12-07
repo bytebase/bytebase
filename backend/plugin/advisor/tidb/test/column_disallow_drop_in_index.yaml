@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 424
-      title: column.disallow-drop-in-index
+      title: COLUMN_DISALLOW_DROP_IN_INDEX
       content: '`t`.`b` cannot drop index column'
       startposition:
         line: 2
@@ -22,7 +22,7 @@
   want:
     - status: 2
       code: 424
-      title: column.disallow-drop-in-index
+      title: COLUMN_DISALLOW_DROP_IN_INDEX
       content: '`t`.`c` cannot drop index column'
       startposition:
         line: 2
@@ -41,7 +41,7 @@
   want:
     - status: 2
       code: 424
-      title: column.disallow-drop-in-index
+      title: COLUMN_DISALLOW_DROP_IN_INDEX
       content: '`t`.`a` cannot drop index column'
       startposition:
         line: 2
@@ -49,7 +49,7 @@
       endposition: null
     - status: 2
       code: 424
-      title: column.disallow-drop-in-index
+      title: COLUMN_DISALLOW_DROP_IN_INDEX
       content: '`t`.`c` cannot drop index column'
       startposition:
         line: 3

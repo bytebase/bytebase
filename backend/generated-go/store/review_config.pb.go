@@ -74,6 +74,376 @@ func (SQLReviewRule_Level) EnumDescriptor() ([]byte, []int) {
 	return file_store_review_config_proto_rawDescGZIP(), []int{1, 0}
 }
 
+type SQLReviewRule_Type int32
+
+const (
+	SQLReviewRule_TYPE_UNSPECIFIED                                    SQLReviewRule_Type = 0
+	SQLReviewRule_ENGINE_MYSQL_USE_INNODB                             SQLReviewRule_Type = 1
+	SQLReviewRule_NAMING_FULLY_QUALIFIED                              SQLReviewRule_Type = 2
+	SQLReviewRule_NAMING_TABLE                                        SQLReviewRule_Type = 3
+	SQLReviewRule_NAMING_COLUMN                                       SQLReviewRule_Type = 4
+	SQLReviewRule_NAMING_INDEX_PK                                     SQLReviewRule_Type = 5
+	SQLReviewRule_NAMING_INDEX_UK                                     SQLReviewRule_Type = 6
+	SQLReviewRule_NAMING_INDEX_FK                                     SQLReviewRule_Type = 7
+	SQLReviewRule_NAMING_INDEX_IDX                                    SQLReviewRule_Type = 8
+	SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT                        SQLReviewRule_Type = 9
+	SQLReviewRule_NAMING_TABLE_NO_KEYWORD                             SQLReviewRule_Type = 10
+	SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD                        SQLReviewRule_Type = 11
+	SQLReviewRule_NAMING_IDENTIFIER_CASE                              SQLReviewRule_Type = 12
+	SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL                      SQLReviewRule_Type = 13
+	SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT                      SQLReviewRule_Type = 14
+	SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE               SQLReviewRule_Type = 15
+	SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE            SQLReviewRule_Type = 16
+	SQLReviewRule_STATEMENT_DISALLOW_ON_DEL_CASCADE                   SQLReviewRule_Type = 17
+	SQLReviewRule_STATEMENT_DISALLOW_RM_TBL_CASCADE                   SQLReviewRule_Type = 18
+	SQLReviewRule_STATEMENT_DISALLOW_COMMIT                           SQLReviewRule_Type = 19
+	SQLReviewRule_STATEMENT_DISALLOW_LIMIT                            SQLReviewRule_Type = 20
+	SQLReviewRule_STATEMENT_DISALLOW_ORDER_BY                         SQLReviewRule_Type = 21
+	SQLReviewRule_STATEMENT_MERGE_ALTER_TABLE                         SQLReviewRule_Type = 22
+	SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT                          SQLReviewRule_Type = 23
+	SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN                SQLReviewRule_Type = 24
+	SQLReviewRule_STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND             SQLReviewRule_Type = 25
+	SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT                        SQLReviewRule_Type = 26
+	SQLReviewRule_STATEMENT_DML_DRY_RUN                               SQLReviewRule_Type = 27
+	SQLReviewRule_STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT          SQLReviewRule_Type = 28
+	SQLReviewRule_STATEMENT_ADD_CHECK_NOT_VALID                       SQLReviewRule_Type = 29
+	SQLReviewRule_STATEMENT_ADD_FOREIGN_KEY_NOT_VALID                 SQLReviewRule_Type = 30
+	SQLReviewRule_STATEMENT_DISALLOW_ADD_NOT_NULL                     SQLReviewRule_Type = 31
+	SQLReviewRule_STATEMENT_SELECT_FULL_TABLE_SCAN                    SQLReviewRule_Type = 32
+	SQLReviewRule_STATEMENT_CREATE_SPECIFY_SCHEMA                     SQLReviewRule_Type = 33
+	SQLReviewRule_STATEMENT_CHECK_SET_ROLE_VARIABLE                   SQLReviewRule_Type = 34
+	SQLReviewRule_STATEMENT_DISALLOW_USING_FILESORT                   SQLReviewRule_Type = 35
+	SQLReviewRule_STATEMENT_DISALLOW_USING_TEMPORARY                  SQLReviewRule_Type = 36
+	SQLReviewRule_STATEMENT_WHERE_NO_EQUAL_NULL                       SQLReviewRule_Type = 37
+	SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS SQLReviewRule_Type = 38
+	SQLReviewRule_STATEMENT_QUERY_MINIMUM_PLAN_LEVEL                  SQLReviewRule_Type = 39
+	SQLReviewRule_STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT      SQLReviewRule_Type = 40
+	SQLReviewRule_STATEMENT_MAXIMUM_LIMIT_VALUE                       SQLReviewRule_Type = 41
+	SQLReviewRule_STATEMENT_MAXIMUM_JOIN_TABLE_COUNT                  SQLReviewRule_Type = 42
+	SQLReviewRule_STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION         SQLReviewRule_Type = 43
+	SQLReviewRule_STATEMENT_JOIN_STRICT_COLUMN_ATTRS                  SQLReviewRule_Type = 44
+	SQLReviewRule_STATEMENT_NON_TRANSACTIONAL                         SQLReviewRule_Type = 45
+	SQLReviewRule_STATEMENT_ADD_COLUMN_WITHOUT_POSITION               SQLReviewRule_Type = 46
+	SQLReviewRule_STATEMENT_DISALLOW_OFFLINE_DDL                      SQLReviewRule_Type = 47
+	SQLReviewRule_STATEMENT_DISALLOW_CROSS_DB_QUERIES                 SQLReviewRule_Type = 48
+	SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME                        SQLReviewRule_Type = 49
+	SQLReviewRule_STATEMENT_REQUIRE_ALGORITHM_OPTION                  SQLReviewRule_Type = 50
+	SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION                       SQLReviewRule_Type = 51
+	SQLReviewRule_STATEMENT_OBJECT_OWNER_CHECK                        SQLReviewRule_Type = 52
+	SQLReviewRule_TABLE_REQUIRE_PK                                    SQLReviewRule_Type = 53
+	SQLReviewRule_TABLE_NO_FOREIGN_KEY                                SQLReviewRule_Type = 54
+	SQLReviewRule_TABLE_DROP_NAMING_CONVENTION                        SQLReviewRule_Type = 55
+	SQLReviewRule_TABLE_COMMENT                                       SQLReviewRule_Type = 56
+	SQLReviewRule_TABLE_DISALLOW_PARTITION                            SQLReviewRule_Type = 57
+	SQLReviewRule_TABLE_DISALLOW_TRIGGER                              SQLReviewRule_Type = 58
+	SQLReviewRule_TABLE_NO_DUPLICATE_INDEX                            SQLReviewRule_Type = 59
+	SQLReviewRule_TABLE_TEXT_FIELDS_TOTAL_LENGTH                      SQLReviewRule_Type = 60
+	SQLReviewRule_TABLE_DISALLOW_SET_CHARSET                          SQLReviewRule_Type = 61
+	SQLReviewRule_TABLE_DISALLOW_DDL                                  SQLReviewRule_Type = 62
+	SQLReviewRule_TABLE_DISALLOW_DML                                  SQLReviewRule_Type = 63
+	SQLReviewRule_TABLE_LIMIT_SIZE                                    SQLReviewRule_Type = 64
+	SQLReviewRule_TABLE_REQUIRE_CHARSET                               SQLReviewRule_Type = 65
+	SQLReviewRule_TABLE_REQUIRE_COLLATION                             SQLReviewRule_Type = 66
+	SQLReviewRule_COLUMN_REQUIRED                                     SQLReviewRule_Type = 67
+	SQLReviewRule_COLUMN_NO_NULL                                      SQLReviewRule_Type = 68
+	SQLReviewRule_COLUMN_DISALLOW_CHANGE_TYPE                         SQLReviewRule_Type = 69
+	SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL                     SQLReviewRule_Type = 70
+	SQLReviewRule_COLUMN_DISALLOW_CHANGE                              SQLReviewRule_Type = 71
+	SQLReviewRule_COLUMN_DISALLOW_CHANGING_ORDER                      SQLReviewRule_Type = 72
+	SQLReviewRule_COLUMN_DISALLOW_DROP                                SQLReviewRule_Type = 73
+	SQLReviewRule_COLUMN_DISALLOW_DROP_IN_INDEX                       SQLReviewRule_Type = 74
+	SQLReviewRule_COLUMN_COMMENT                                      SQLReviewRule_Type = 75
+	SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_INTEGER                  SQLReviewRule_Type = 76
+	SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST                           SQLReviewRule_Type = 77
+	SQLReviewRule_COLUMN_DISALLOW_SET_CHARSET                         SQLReviewRule_Type = 78
+	SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH                     SQLReviewRule_Type = 79
+	SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH                       SQLReviewRule_Type = 80
+	SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE                 SQLReviewRule_Type = 81
+	SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_UNSIGNED                 SQLReviewRule_Type = 82
+	SQLReviewRule_COLUMN_CURRENT_TIME_COUNT_LIMIT                     SQLReviewRule_Type = 83
+	SQLReviewRule_COLUMN_REQUIRE_DEFAULT                              SQLReviewRule_Type = 84
+	SQLReviewRule_COLUMN_DEFAULT_DISALLOW_VOLATILE                    SQLReviewRule_Type = 85
+	SQLReviewRule_COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT                 SQLReviewRule_Type = 86
+	SQLReviewRule_COLUMN_REQUIRE_CHARSET                              SQLReviewRule_Type = 87
+	SQLReviewRule_COLUMN_REQUIRE_COLLATION                            SQLReviewRule_Type = 88
+	SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY                       SQLReviewRule_Type = 89
+	SQLReviewRule_DATABASE_DROP_EMPTY_DATABASE                        SQLReviewRule_Type = 90
+	SQLReviewRule_INDEX_NO_DUPLICATE_COLUMN                           SQLReviewRule_Type = 91
+	SQLReviewRule_INDEX_KEY_NUMBER_LIMIT                              SQLReviewRule_Type = 92
+	SQLReviewRule_INDEX_PK_TYPE_LIMIT                                 SQLReviewRule_Type = 93
+	SQLReviewRule_INDEX_TYPE_NO_BLOB                                  SQLReviewRule_Type = 94
+	SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT                            SQLReviewRule_Type = 95
+	SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST                    SQLReviewRule_Type = 96
+	SQLReviewRule_INDEX_CREATE_CONCURRENTLY                           SQLReviewRule_Type = 97
+	SQLReviewRule_INDEX_TYPE_ALLOW_LIST                               SQLReviewRule_Type = 98
+	SQLReviewRule_INDEX_NOT_REDUNDANT                                 SQLReviewRule_Type = 99
+	SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST                            SQLReviewRule_Type = 100
+	SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST                          SQLReviewRule_Type = 101
+	SQLReviewRule_SYSTEM_COMMENT_LENGTH                               SQLReviewRule_Type = 102
+	SQLReviewRule_SYSTEM_PROCEDURE_DISALLOW_CREATE                    SQLReviewRule_Type = 103
+	SQLReviewRule_SYSTEM_EVENT_DISALLOW_CREATE                        SQLReviewRule_Type = 104
+	SQLReviewRule_SYSTEM_VIEW_DISALLOW_CREATE                         SQLReviewRule_Type = 105
+	SQLReviewRule_SYSTEM_FUNCTION_DISALLOW_CREATE                     SQLReviewRule_Type = 106
+	SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST                     SQLReviewRule_Type = 107
+	SQLReviewRule_ADVICE_ONLINE_MIGRATION                             SQLReviewRule_Type = 108
+	SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK                          SQLReviewRule_Type = 109
+)
+
+// Enum value maps for SQLReviewRule_Type.
+var (
+	SQLReviewRule_Type_name = map[int32]string{
+		0:   "TYPE_UNSPECIFIED",
+		1:   "ENGINE_MYSQL_USE_INNODB",
+		2:   "NAMING_FULLY_QUALIFIED",
+		3:   "NAMING_TABLE",
+		4:   "NAMING_COLUMN",
+		5:   "NAMING_INDEX_PK",
+		6:   "NAMING_INDEX_UK",
+		7:   "NAMING_INDEX_FK",
+		8:   "NAMING_INDEX_IDX",
+		9:   "NAMING_COLUMN_AUTO_INCREMENT",
+		10:  "NAMING_TABLE_NO_KEYWORD",
+		11:  "NAMING_IDENTIFIER_NO_KEYWORD",
+		12:  "NAMING_IDENTIFIER_CASE",
+		13:  "STATEMENT_SELECT_NO_SELECT_ALL",
+		14:  "STATEMENT_WHERE_REQUIRE_SELECT",
+		15:  "STATEMENT_WHERE_REQUIRE_UPDATE_DELETE",
+		16:  "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE",
+		17:  "STATEMENT_DISALLOW_ON_DEL_CASCADE",
+		18:  "STATEMENT_DISALLOW_RM_TBL_CASCADE",
+		19:  "STATEMENT_DISALLOW_COMMIT",
+		20:  "STATEMENT_DISALLOW_LIMIT",
+		21:  "STATEMENT_DISALLOW_ORDER_BY",
+		22:  "STATEMENT_MERGE_ALTER_TABLE",
+		23:  "STATEMENT_INSERT_ROW_LIMIT",
+		24:  "STATEMENT_INSERT_MUST_SPECIFY_COLUMN",
+		25:  "STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND",
+		26:  "STATEMENT_AFFECTED_ROW_LIMIT",
+		27:  "STATEMENT_DML_DRY_RUN",
+		28:  "STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT",
+		29:  "STATEMENT_ADD_CHECK_NOT_VALID",
+		30:  "STATEMENT_ADD_FOREIGN_KEY_NOT_VALID",
+		31:  "STATEMENT_DISALLOW_ADD_NOT_NULL",
+		32:  "STATEMENT_SELECT_FULL_TABLE_SCAN",
+		33:  "STATEMENT_CREATE_SPECIFY_SCHEMA",
+		34:  "STATEMENT_CHECK_SET_ROLE_VARIABLE",
+		35:  "STATEMENT_DISALLOW_USING_FILESORT",
+		36:  "STATEMENT_DISALLOW_USING_TEMPORARY",
+		37:  "STATEMENT_WHERE_NO_EQUAL_NULL",
+		38:  "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS",
+		39:  "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL",
+		40:  "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT",
+		41:  "STATEMENT_MAXIMUM_LIMIT_VALUE",
+		42:  "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT",
+		43:  "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION",
+		44:  "STATEMENT_JOIN_STRICT_COLUMN_ATTRS",
+		45:  "STATEMENT_NON_TRANSACTIONAL",
+		46:  "STATEMENT_ADD_COLUMN_WITHOUT_POSITION",
+		47:  "STATEMENT_DISALLOW_OFFLINE_DDL",
+		48:  "STATEMENT_DISALLOW_CROSS_DB_QUERIES",
+		49:  "STATEMENT_MAX_EXECUTION_TIME",
+		50:  "STATEMENT_REQUIRE_ALGORITHM_OPTION",
+		51:  "STATEMENT_REQUIRE_LOCK_OPTION",
+		52:  "STATEMENT_OBJECT_OWNER_CHECK",
+		53:  "TABLE_REQUIRE_PK",
+		54:  "TABLE_NO_FOREIGN_KEY",
+		55:  "TABLE_DROP_NAMING_CONVENTION",
+		56:  "TABLE_COMMENT",
+		57:  "TABLE_DISALLOW_PARTITION",
+		58:  "TABLE_DISALLOW_TRIGGER",
+		59:  "TABLE_NO_DUPLICATE_INDEX",
+		60:  "TABLE_TEXT_FIELDS_TOTAL_LENGTH",
+		61:  "TABLE_DISALLOW_SET_CHARSET",
+		62:  "TABLE_DISALLOW_DDL",
+		63:  "TABLE_DISALLOW_DML",
+		64:  "TABLE_LIMIT_SIZE",
+		65:  "TABLE_REQUIRE_CHARSET",
+		66:  "TABLE_REQUIRE_COLLATION",
+		67:  "COLUMN_REQUIRED",
+		68:  "COLUMN_NO_NULL",
+		69:  "COLUMN_DISALLOW_CHANGE_TYPE",
+		70:  "COLUMN_SET_DEFAULT_FOR_NOT_NULL",
+		71:  "COLUMN_DISALLOW_CHANGE",
+		72:  "COLUMN_DISALLOW_CHANGING_ORDER",
+		73:  "COLUMN_DISALLOW_DROP",
+		74:  "COLUMN_DISALLOW_DROP_IN_INDEX",
+		75:  "COLUMN_COMMENT",
+		76:  "COLUMN_AUTO_INCREMENT_MUST_INTEGER",
+		77:  "COLUMN_TYPE_DISALLOW_LIST",
+		78:  "COLUMN_DISALLOW_SET_CHARSET",
+		79:  "COLUMN_MAXIMUM_CHARACTER_LENGTH",
+		80:  "COLUMN_MAXIMUM_VARCHAR_LENGTH",
+		81:  "COLUMN_AUTO_INCREMENT_INITIAL_VALUE",
+		82:  "COLUMN_AUTO_INCREMENT_MUST_UNSIGNED",
+		83:  "COLUMN_CURRENT_TIME_COUNT_LIMIT",
+		84:  "COLUMN_REQUIRE_DEFAULT",
+		85:  "COLUMN_DEFAULT_DISALLOW_VOLATILE",
+		86:  "COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT",
+		87:  "COLUMN_REQUIRE_CHARSET",
+		88:  "COLUMN_REQUIRE_COLLATION",
+		89:  "SCHEMA_BACKWARD_COMPATIBILITY",
+		90:  "DATABASE_DROP_EMPTY_DATABASE",
+		91:  "INDEX_NO_DUPLICATE_COLUMN",
+		92:  "INDEX_KEY_NUMBER_LIMIT",
+		93:  "INDEX_PK_TYPE_LIMIT",
+		94:  "INDEX_TYPE_NO_BLOB",
+		95:  "INDEX_TOTAL_NUMBER_LIMIT",
+		96:  "INDEX_PRIMARY_KEY_TYPE_ALLOWLIST",
+		97:  "INDEX_CREATE_CONCURRENTLY",
+		98:  "INDEX_TYPE_ALLOW_LIST",
+		99:  "INDEX_NOT_REDUNDANT",
+		100: "SYSTEM_CHARSET_ALLOWLIST",
+		101: "SYSTEM_COLLATION_ALLOWLIST",
+		102: "SYSTEM_COMMENT_LENGTH",
+		103: "SYSTEM_PROCEDURE_DISALLOW_CREATE",
+		104: "SYSTEM_EVENT_DISALLOW_CREATE",
+		105: "SYSTEM_VIEW_DISALLOW_CREATE",
+		106: "SYSTEM_FUNCTION_DISALLOW_CREATE",
+		107: "SYSTEM_FUNCTION_DISALLOWED_LIST",
+		108: "ADVICE_ONLINE_MIGRATION",
+		109: "BUILTIN_PRIOR_BACKUP_CHECK",
+	}
+	SQLReviewRule_Type_value = map[string]int32{
+		"TYPE_UNSPECIFIED":                                    0,
+		"ENGINE_MYSQL_USE_INNODB":                             1,
+		"NAMING_FULLY_QUALIFIED":                              2,
+		"NAMING_TABLE":                                        3,
+		"NAMING_COLUMN":                                       4,
+		"NAMING_INDEX_PK":                                     5,
+		"NAMING_INDEX_UK":                                     6,
+		"NAMING_INDEX_FK":                                     7,
+		"NAMING_INDEX_IDX":                                    8,
+		"NAMING_COLUMN_AUTO_INCREMENT":                        9,
+		"NAMING_TABLE_NO_KEYWORD":                             10,
+		"NAMING_IDENTIFIER_NO_KEYWORD":                        11,
+		"NAMING_IDENTIFIER_CASE":                              12,
+		"STATEMENT_SELECT_NO_SELECT_ALL":                      13,
+		"STATEMENT_WHERE_REQUIRE_SELECT":                      14,
+		"STATEMENT_WHERE_REQUIRE_UPDATE_DELETE":               15,
+		"STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE":            16,
+		"STATEMENT_DISALLOW_ON_DEL_CASCADE":                   17,
+		"STATEMENT_DISALLOW_RM_TBL_CASCADE":                   18,
+		"STATEMENT_DISALLOW_COMMIT":                           19,
+		"STATEMENT_DISALLOW_LIMIT":                            20,
+		"STATEMENT_DISALLOW_ORDER_BY":                         21,
+		"STATEMENT_MERGE_ALTER_TABLE":                         22,
+		"STATEMENT_INSERT_ROW_LIMIT":                          23,
+		"STATEMENT_INSERT_MUST_SPECIFY_COLUMN":                24,
+		"STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND":             25,
+		"STATEMENT_AFFECTED_ROW_LIMIT":                        26,
+		"STATEMENT_DML_DRY_RUN":                               27,
+		"STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT":          28,
+		"STATEMENT_ADD_CHECK_NOT_VALID":                       29,
+		"STATEMENT_ADD_FOREIGN_KEY_NOT_VALID":                 30,
+		"STATEMENT_DISALLOW_ADD_NOT_NULL":                     31,
+		"STATEMENT_SELECT_FULL_TABLE_SCAN":                    32,
+		"STATEMENT_CREATE_SPECIFY_SCHEMA":                     33,
+		"STATEMENT_CHECK_SET_ROLE_VARIABLE":                   34,
+		"STATEMENT_DISALLOW_USING_FILESORT":                   35,
+		"STATEMENT_DISALLOW_USING_TEMPORARY":                  36,
+		"STATEMENT_WHERE_NO_EQUAL_NULL":                       37,
+		"STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS": 38,
+		"STATEMENT_QUERY_MINIMUM_PLAN_LEVEL":                  39,
+		"STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT":      40,
+		"STATEMENT_MAXIMUM_LIMIT_VALUE":                       41,
+		"STATEMENT_MAXIMUM_JOIN_TABLE_COUNT":                  42,
+		"STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION":         43,
+		"STATEMENT_JOIN_STRICT_COLUMN_ATTRS":                  44,
+		"STATEMENT_NON_TRANSACTIONAL":                         45,
+		"STATEMENT_ADD_COLUMN_WITHOUT_POSITION":               46,
+		"STATEMENT_DISALLOW_OFFLINE_DDL":                      47,
+		"STATEMENT_DISALLOW_CROSS_DB_QUERIES":                 48,
+		"STATEMENT_MAX_EXECUTION_TIME":                        49,
+		"STATEMENT_REQUIRE_ALGORITHM_OPTION":                  50,
+		"STATEMENT_REQUIRE_LOCK_OPTION":                       51,
+		"STATEMENT_OBJECT_OWNER_CHECK":                        52,
+		"TABLE_REQUIRE_PK":                                    53,
+		"TABLE_NO_FOREIGN_KEY":                                54,
+		"TABLE_DROP_NAMING_CONVENTION":                        55,
+		"TABLE_COMMENT":                                       56,
+		"TABLE_DISALLOW_PARTITION":                            57,
+		"TABLE_DISALLOW_TRIGGER":                              58,
+		"TABLE_NO_DUPLICATE_INDEX":                            59,
+		"TABLE_TEXT_FIELDS_TOTAL_LENGTH":                      60,
+		"TABLE_DISALLOW_SET_CHARSET":                          61,
+		"TABLE_DISALLOW_DDL":                                  62,
+		"TABLE_DISALLOW_DML":                                  63,
+		"TABLE_LIMIT_SIZE":                                    64,
+		"TABLE_REQUIRE_CHARSET":                               65,
+		"TABLE_REQUIRE_COLLATION":                             66,
+		"COLUMN_REQUIRED":                                     67,
+		"COLUMN_NO_NULL":                                      68,
+		"COLUMN_DISALLOW_CHANGE_TYPE":                         69,
+		"COLUMN_SET_DEFAULT_FOR_NOT_NULL":                     70,
+		"COLUMN_DISALLOW_CHANGE":                              71,
+		"COLUMN_DISALLOW_CHANGING_ORDER":                      72,
+		"COLUMN_DISALLOW_DROP":                                73,
+		"COLUMN_DISALLOW_DROP_IN_INDEX":                       74,
+		"COLUMN_COMMENT":                                      75,
+		"COLUMN_AUTO_INCREMENT_MUST_INTEGER":                  76,
+		"COLUMN_TYPE_DISALLOW_LIST":                           77,
+		"COLUMN_DISALLOW_SET_CHARSET":                         78,
+		"COLUMN_MAXIMUM_CHARACTER_LENGTH":                     79,
+		"COLUMN_MAXIMUM_VARCHAR_LENGTH":                       80,
+		"COLUMN_AUTO_INCREMENT_INITIAL_VALUE":                 81,
+		"COLUMN_AUTO_INCREMENT_MUST_UNSIGNED":                 82,
+		"COLUMN_CURRENT_TIME_COUNT_LIMIT":                     83,
+		"COLUMN_REQUIRE_DEFAULT":                              84,
+		"COLUMN_DEFAULT_DISALLOW_VOLATILE":                    85,
+		"COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT":                 86,
+		"COLUMN_REQUIRE_CHARSET":                              87,
+		"COLUMN_REQUIRE_COLLATION":                            88,
+		"SCHEMA_BACKWARD_COMPATIBILITY":                       89,
+		"DATABASE_DROP_EMPTY_DATABASE":                        90,
+		"INDEX_NO_DUPLICATE_COLUMN":                           91,
+		"INDEX_KEY_NUMBER_LIMIT":                              92,
+		"INDEX_PK_TYPE_LIMIT":                                 93,
+		"INDEX_TYPE_NO_BLOB":                                  94,
+		"INDEX_TOTAL_NUMBER_LIMIT":                            95,
+		"INDEX_PRIMARY_KEY_TYPE_ALLOWLIST":                    96,
+		"INDEX_CREATE_CONCURRENTLY":                           97,
+		"INDEX_TYPE_ALLOW_LIST":                               98,
+		"INDEX_NOT_REDUNDANT":                                 99,
+		"SYSTEM_CHARSET_ALLOWLIST":                            100,
+		"SYSTEM_COLLATION_ALLOWLIST":                          101,
+		"SYSTEM_COMMENT_LENGTH":                               102,
+		"SYSTEM_PROCEDURE_DISALLOW_CREATE":                    103,
+		"SYSTEM_EVENT_DISALLOW_CREATE":                        104,
+		"SYSTEM_VIEW_DISALLOW_CREATE":                         105,
+		"SYSTEM_FUNCTION_DISALLOW_CREATE":                     106,
+		"SYSTEM_FUNCTION_DISALLOWED_LIST":                     107,
+		"ADVICE_ONLINE_MIGRATION":                             108,
+		"BUILTIN_PRIOR_BACKUP_CHECK":                          109,
+	}
+)
+
+func (x SQLReviewRule_Type) Enum() *SQLReviewRule_Type {
+	p := new(SQLReviewRule_Type)
+	*p = x
+	return p
+}
+
+func (x SQLReviewRule_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SQLReviewRule_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_review_config_proto_enumTypes[1].Descriptor()
+}
+
+func (SQLReviewRule_Type) Type() protoreflect.EnumType {
+	return &file_store_review_config_proto_enumTypes[1]
+}
+
+func (x SQLReviewRule_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SQLReviewRule_Type.Descriptor instead.
+func (SQLReviewRule_Type) EnumDescriptor() ([]byte, []int) {
+	return file_store_review_config_proto_rawDescGZIP(), []int{1, 1}
+}
+
 type ReviewConfigPayload struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	SqlReviewRules []*SQLReviewRule       `protobuf:"bytes,1,rep,name=sql_review_rules,json=sqlReviewRules,proto3" json:"sql_review_rules,omitempty"`
@@ -120,7 +490,7 @@ func (x *ReviewConfigPayload) GetSqlReviewRules() []*SQLReviewRule {
 
 type SQLReviewRule struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Type          SQLReviewRule_Type     `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.SQLReviewRule_Type" json:"type,omitempty"`
 	Level         SQLReviewRule_Level    `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.store.SQLReviewRule_Level" json:"level,omitempty"`
 	Payload       string                 `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
 	Engine        Engine                 `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.store.Engine" json:"engine,omitempty"`
@@ -158,11 +528,11 @@ func (*SQLReviewRule) Descriptor() ([]byte, []int) {
 	return file_store_review_config_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SQLReviewRule) GetType() string {
+func (x *SQLReviewRule) GetType() SQLReviewRule_Type {
 	if x != nil {
 		return x.Type
 	}
-	return ""
+	return SQLReviewRule_TYPE_UNSPECIFIED
 }
 
 func (x *SQLReviewRule) GetLevel() SQLReviewRule_Level {
@@ -192,16 +562,128 @@ const file_store_review_config_proto_rawDesc = "" +
 	"\n" +
 	"\x19store/review_config.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"^\n" +
 	"\x13ReviewConfigPayload\x12G\n" +
-	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRules\"\xe0\x01\n" +
-	"\rSQLReviewRule\x12\x12\n" +
-	"\x04type\x18\x01 \x01(\tR\x04type\x129\n" +
+	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRules\"\xb7\x1e\n" +
+	"\rSQLReviewRule\x126\n" +
+	"\x04type\x18\x01 \x01(\x0e2\".bytebase.store.SQLReviewRule.TypeR\x04type\x129\n" +
 	"\x05level\x18\x02 \x01(\x0e2#.bytebase.store.SQLReviewRule.LevelR\x05level\x12\x18\n" +
 	"\apayload\x18\x03 \x01(\tR\apayload\x12.\n" +
 	"\x06engine\x18\x04 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\"6\n" +
 	"\x05Level\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
-	"\aWARNING\x10\x02B\x94\x01\n" +
+	"\aWARNING\x10\x02\"\xb0\x1c\n" +
+	"\x04Type\x12\x14\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17ENGINE_MYSQL_USE_INNODB\x10\x01\x12\x1a\n" +
+	"\x16NAMING_FULLY_QUALIFIED\x10\x02\x12\x10\n" +
+	"\fNAMING_TABLE\x10\x03\x12\x11\n" +
+	"\rNAMING_COLUMN\x10\x04\x12\x13\n" +
+	"\x0fNAMING_INDEX_PK\x10\x05\x12\x13\n" +
+	"\x0fNAMING_INDEX_UK\x10\x06\x12\x13\n" +
+	"\x0fNAMING_INDEX_FK\x10\a\x12\x14\n" +
+	"\x10NAMING_INDEX_IDX\x10\b\x12 \n" +
+	"\x1cNAMING_COLUMN_AUTO_INCREMENT\x10\t\x12\x1b\n" +
+	"\x17NAMING_TABLE_NO_KEYWORD\x10\n" +
+	"\x12 \n" +
+	"\x1cNAMING_IDENTIFIER_NO_KEYWORD\x10\v\x12\x1a\n" +
+	"\x16NAMING_IDENTIFIER_CASE\x10\f\x12\"\n" +
+	"\x1eSTATEMENT_SELECT_NO_SELECT_ALL\x10\r\x12\"\n" +
+	"\x1eSTATEMENT_WHERE_REQUIRE_SELECT\x10\x0e\x12)\n" +
+	"%STATEMENT_WHERE_REQUIRE_UPDATE_DELETE\x10\x0f\x12,\n" +
+	"(STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE\x10\x10\x12%\n" +
+	"!STATEMENT_DISALLOW_ON_DEL_CASCADE\x10\x11\x12%\n" +
+	"!STATEMENT_DISALLOW_RM_TBL_CASCADE\x10\x12\x12\x1d\n" +
+	"\x19STATEMENT_DISALLOW_COMMIT\x10\x13\x12\x1c\n" +
+	"\x18STATEMENT_DISALLOW_LIMIT\x10\x14\x12\x1f\n" +
+	"\x1bSTATEMENT_DISALLOW_ORDER_BY\x10\x15\x12\x1f\n" +
+	"\x1bSTATEMENT_MERGE_ALTER_TABLE\x10\x16\x12\x1e\n" +
+	"\x1aSTATEMENT_INSERT_ROW_LIMIT\x10\x17\x12(\n" +
+	"$STATEMENT_INSERT_MUST_SPECIFY_COLUMN\x10\x18\x12+\n" +
+	"'STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND\x10\x19\x12 \n" +
+	"\x1cSTATEMENT_AFFECTED_ROW_LIMIT\x10\x1a\x12\x19\n" +
+	"\x15STATEMENT_DML_DRY_RUN\x10\x1b\x12.\n" +
+	"*STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT\x10\x1c\x12!\n" +
+	"\x1dSTATEMENT_ADD_CHECK_NOT_VALID\x10\x1d\x12'\n" +
+	"#STATEMENT_ADD_FOREIGN_KEY_NOT_VALID\x10\x1e\x12#\n" +
+	"\x1fSTATEMENT_DISALLOW_ADD_NOT_NULL\x10\x1f\x12$\n" +
+	" STATEMENT_SELECT_FULL_TABLE_SCAN\x10 \x12#\n" +
+	"\x1fSTATEMENT_CREATE_SPECIFY_SCHEMA\x10!\x12%\n" +
+	"!STATEMENT_CHECK_SET_ROLE_VARIABLE\x10\"\x12%\n" +
+	"!STATEMENT_DISALLOW_USING_FILESORT\x10#\x12&\n" +
+	"\"STATEMENT_DISALLOW_USING_TEMPORARY\x10$\x12!\n" +
+	"\x1dSTATEMENT_WHERE_NO_EQUAL_NULL\x10%\x127\n" +
+	"3STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS\x10&\x12&\n" +
+	"\"STATEMENT_QUERY_MINIMUM_PLAN_LEVEL\x10'\x122\n" +
+	".STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT\x10(\x12!\n" +
+	"\x1dSTATEMENT_MAXIMUM_LIMIT_VALUE\x10)\x12&\n" +
+	"\"STATEMENT_MAXIMUM_JOIN_TABLE_COUNT\x10*\x12/\n" +
+	"+STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION\x10+\x12&\n" +
+	"\"STATEMENT_JOIN_STRICT_COLUMN_ATTRS\x10,\x12\x1f\n" +
+	"\x1bSTATEMENT_NON_TRANSACTIONAL\x10-\x12)\n" +
+	"%STATEMENT_ADD_COLUMN_WITHOUT_POSITION\x10.\x12\"\n" +
+	"\x1eSTATEMENT_DISALLOW_OFFLINE_DDL\x10/\x12'\n" +
+	"#STATEMENT_DISALLOW_CROSS_DB_QUERIES\x100\x12 \n" +
+	"\x1cSTATEMENT_MAX_EXECUTION_TIME\x101\x12&\n" +
+	"\"STATEMENT_REQUIRE_ALGORITHM_OPTION\x102\x12!\n" +
+	"\x1dSTATEMENT_REQUIRE_LOCK_OPTION\x103\x12 \n" +
+	"\x1cSTATEMENT_OBJECT_OWNER_CHECK\x104\x12\x14\n" +
+	"\x10TABLE_REQUIRE_PK\x105\x12\x18\n" +
+	"\x14TABLE_NO_FOREIGN_KEY\x106\x12 \n" +
+	"\x1cTABLE_DROP_NAMING_CONVENTION\x107\x12\x11\n" +
+	"\rTABLE_COMMENT\x108\x12\x1c\n" +
+	"\x18TABLE_DISALLOW_PARTITION\x109\x12\x1a\n" +
+	"\x16TABLE_DISALLOW_TRIGGER\x10:\x12\x1c\n" +
+	"\x18TABLE_NO_DUPLICATE_INDEX\x10;\x12\"\n" +
+	"\x1eTABLE_TEXT_FIELDS_TOTAL_LENGTH\x10<\x12\x1e\n" +
+	"\x1aTABLE_DISALLOW_SET_CHARSET\x10=\x12\x16\n" +
+	"\x12TABLE_DISALLOW_DDL\x10>\x12\x16\n" +
+	"\x12TABLE_DISALLOW_DML\x10?\x12\x14\n" +
+	"\x10TABLE_LIMIT_SIZE\x10@\x12\x19\n" +
+	"\x15TABLE_REQUIRE_CHARSET\x10A\x12\x1b\n" +
+	"\x17TABLE_REQUIRE_COLLATION\x10B\x12\x13\n" +
+	"\x0fCOLUMN_REQUIRED\x10C\x12\x12\n" +
+	"\x0eCOLUMN_NO_NULL\x10D\x12\x1f\n" +
+	"\x1bCOLUMN_DISALLOW_CHANGE_TYPE\x10E\x12#\n" +
+	"\x1fCOLUMN_SET_DEFAULT_FOR_NOT_NULL\x10F\x12\x1a\n" +
+	"\x16COLUMN_DISALLOW_CHANGE\x10G\x12\"\n" +
+	"\x1eCOLUMN_DISALLOW_CHANGING_ORDER\x10H\x12\x18\n" +
+	"\x14COLUMN_DISALLOW_DROP\x10I\x12!\n" +
+	"\x1dCOLUMN_DISALLOW_DROP_IN_INDEX\x10J\x12\x12\n" +
+	"\x0eCOLUMN_COMMENT\x10K\x12&\n" +
+	"\"COLUMN_AUTO_INCREMENT_MUST_INTEGER\x10L\x12\x1d\n" +
+	"\x19COLUMN_TYPE_DISALLOW_LIST\x10M\x12\x1f\n" +
+	"\x1bCOLUMN_DISALLOW_SET_CHARSET\x10N\x12#\n" +
+	"\x1fCOLUMN_MAXIMUM_CHARACTER_LENGTH\x10O\x12!\n" +
+	"\x1dCOLUMN_MAXIMUM_VARCHAR_LENGTH\x10P\x12'\n" +
+	"#COLUMN_AUTO_INCREMENT_INITIAL_VALUE\x10Q\x12'\n" +
+	"#COLUMN_AUTO_INCREMENT_MUST_UNSIGNED\x10R\x12#\n" +
+	"\x1fCOLUMN_CURRENT_TIME_COUNT_LIMIT\x10S\x12\x1a\n" +
+	"\x16COLUMN_REQUIRE_DEFAULT\x10T\x12$\n" +
+	" COLUMN_DEFAULT_DISALLOW_VOLATILE\x10U\x12'\n" +
+	"#COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT\x10V\x12\x1a\n" +
+	"\x16COLUMN_REQUIRE_CHARSET\x10W\x12\x1c\n" +
+	"\x18COLUMN_REQUIRE_COLLATION\x10X\x12!\n" +
+	"\x1dSCHEMA_BACKWARD_COMPATIBILITY\x10Y\x12 \n" +
+	"\x1cDATABASE_DROP_EMPTY_DATABASE\x10Z\x12\x1d\n" +
+	"\x19INDEX_NO_DUPLICATE_COLUMN\x10[\x12\x1a\n" +
+	"\x16INDEX_KEY_NUMBER_LIMIT\x10\\\x12\x17\n" +
+	"\x13INDEX_PK_TYPE_LIMIT\x10]\x12\x16\n" +
+	"\x12INDEX_TYPE_NO_BLOB\x10^\x12\x1c\n" +
+	"\x18INDEX_TOTAL_NUMBER_LIMIT\x10_\x12$\n" +
+	" INDEX_PRIMARY_KEY_TYPE_ALLOWLIST\x10`\x12\x1d\n" +
+	"\x19INDEX_CREATE_CONCURRENTLY\x10a\x12\x19\n" +
+	"\x15INDEX_TYPE_ALLOW_LIST\x10b\x12\x17\n" +
+	"\x13INDEX_NOT_REDUNDANT\x10c\x12\x1c\n" +
+	"\x18SYSTEM_CHARSET_ALLOWLIST\x10d\x12\x1e\n" +
+	"\x1aSYSTEM_COLLATION_ALLOWLIST\x10e\x12\x19\n" +
+	"\x15SYSTEM_COMMENT_LENGTH\x10f\x12$\n" +
+	" SYSTEM_PROCEDURE_DISALLOW_CREATE\x10g\x12 \n" +
+	"\x1cSYSTEM_EVENT_DISALLOW_CREATE\x10h\x12\x1f\n" +
+	"\x1bSYSTEM_VIEW_DISALLOW_CREATE\x10i\x12#\n" +
+	"\x1fSYSTEM_FUNCTION_DISALLOW_CREATE\x10j\x12#\n" +
+	"\x1fSYSTEM_FUNCTION_DISALLOWED_LIST\x10k\x12\x1b\n" +
+	"\x17ADVICE_ONLINE_MIGRATION\x10l\x12\x1e\n" +
+	"\x1aBUILTIN_PRIOR_BACKUP_CHECK\x10mB\x94\x01\n" +
 	"\x12com.bytebase.storeB\x11ReviewConfigProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -216,23 +698,25 @@ func file_store_review_config_proto_rawDescGZIP() []byte {
 	return file_store_review_config_proto_rawDescData
 }
 
-var file_store_review_config_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_store_review_config_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_store_review_config_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_review_config_proto_goTypes = []any{
 	(SQLReviewRule_Level)(0),    // 0: bytebase.store.SQLReviewRule.Level
-	(*ReviewConfigPayload)(nil), // 1: bytebase.store.ReviewConfigPayload
-	(*SQLReviewRule)(nil),       // 2: bytebase.store.SQLReviewRule
-	(Engine)(0),                 // 3: bytebase.store.Engine
+	(SQLReviewRule_Type)(0),     // 1: bytebase.store.SQLReviewRule.Type
+	(*ReviewConfigPayload)(nil), // 2: bytebase.store.ReviewConfigPayload
+	(*SQLReviewRule)(nil),       // 3: bytebase.store.SQLReviewRule
+	(Engine)(0),                 // 4: bytebase.store.Engine
 }
 var file_store_review_config_proto_depIdxs = []int32{
-	2, // 0: bytebase.store.ReviewConfigPayload.sql_review_rules:type_name -> bytebase.store.SQLReviewRule
-	0, // 1: bytebase.store.SQLReviewRule.level:type_name -> bytebase.store.SQLReviewRule.Level
-	3, // 2: bytebase.store.SQLReviewRule.engine:type_name -> bytebase.store.Engine
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	3, // 0: bytebase.store.ReviewConfigPayload.sql_review_rules:type_name -> bytebase.store.SQLReviewRule
+	1, // 1: bytebase.store.SQLReviewRule.type:type_name -> bytebase.store.SQLReviewRule.Type
+	0, // 2: bytebase.store.SQLReviewRule.level:type_name -> bytebase.store.SQLReviewRule.Level
+	4, // 3: bytebase.store.SQLReviewRule.engine:type_name -> bytebase.store.Engine
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_store_review_config_proto_init() }
@@ -246,7 +730,7 @@ func file_store_review_config_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_review_config_proto_rawDesc), len(file_store_review_config_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,

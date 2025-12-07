@@ -13,7 +13,7 @@
   want:
     - status: 2
       code: 1501
-      title: system.event.disallow-create
+      title: SYSTEM_EVENT_DISALLOW_CREATE
       content: |-
         Event is forbidden, but "CREATE EVENT daily_backup
         ON SCHEDULE

@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementRequireWhereForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE, &WhereRequirementForUpdateDeleteAdvisor{})
 }
 
 // WhereRequirementForUpdateDeleteAdvisor is the advisor checking for the WHERE clause requirement for UPDATE and DELETE statements.
@@ -39,7 +39,7 @@ func (*WhereRequirementForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx
 	}
 	checker := &whereRequirementForUpdateDeleteChecker{
 		level: level,
-		title: string(checkCtx.Rule.Type),
+		title: checkCtx.Rule.Type.String(),
 	}
 	for _, stmtNode := range root {
 		checker.text = stmtNode.Text()

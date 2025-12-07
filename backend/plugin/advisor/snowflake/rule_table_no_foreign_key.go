@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleTableNoFK, &TableNoForeignKeyAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY, &TableNoForeignKeyAdvisor{})
 }
 
 // TableNoForeignKeyAdvisor is the advisor checking for table disallow foreign key.
@@ -39,7 +39,7 @@ func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	rule := NewTableNoForeignKeyRule(level, string(checkCtx.Rule.Type))
+	rule := NewTableNoForeignKeyRule(level, checkCtx.Rule.Type.String())
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, parseResult := range parseResults {

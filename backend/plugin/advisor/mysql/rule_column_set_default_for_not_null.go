@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnSetDefaultForNotNull, &ColumnSetDefaultForNotNullAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL, &ColumnSetDefaultForNotNullAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL, &ColumnSetDefaultForNotNullAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL, &ColumnSetDefaultForNotNullAdvisor{})
 }
 
 // ColumnSetDefaultForNotNullAdvisor is the advisor checking for set default value for not null column.
@@ -44,7 +44,7 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advi
 	}
 
 	// Create the rule
-	rule := NewColumnSetDefaultForNotNullRule(level, string(checkCtx.Rule.Type))
+	rule := NewColumnSetDefaultForNotNullRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

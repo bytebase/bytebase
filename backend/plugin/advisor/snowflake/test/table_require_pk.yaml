@@ -26,7 +26,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table CUSTOMER requires PRIMARY KEY.
       startposition:
         line: 1
@@ -44,7 +44,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table CUSTOMER requires PRIMARY KEY.
       startposition:
         line: 7
@@ -87,7 +87,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table CUSTOMER requires PRIMARY KEY.
       startposition:
         line: 9
@@ -123,7 +123,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table CUSTOMER requires PRIMARY KEY.
       startposition:
         line: 25
@@ -131,7 +131,7 @@
       endposition: null
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table ORDERING requires PRIMARY KEY.
       startposition:
         line: 25

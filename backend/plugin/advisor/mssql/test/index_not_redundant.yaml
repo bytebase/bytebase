@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 817
-      title: index.not-redundant
+      title: INDEX_NOT_REDUNDANT
       content: Redundant indexes with the same prefix ('idx_0' and 'test_index') in 'dbo.pokes' is not allowed
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 817
-      title: index.not-redundant
+      title: INDEX_NOT_REDUNDANT
       content: Redundant indexes with the same prefix ('idx_0' and 'test_index') in 'dbo.pokes' is not allowed
       startposition:
         line: 1

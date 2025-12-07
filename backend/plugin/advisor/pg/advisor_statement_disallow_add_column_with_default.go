@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementDisallowAddColumnWithDefault, &StatementDisallowAddColumnWithDefaultAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT, &StatementDisallowAddColumnWithDefaultAdvisor{})
 }
 
 // StatementDisallowAddColumnWithDefaultAdvisor is the advisor checking for to disallow add column with default.
@@ -39,7 +39,7 @@ func (*StatementDisallowAddColumnWithDefaultAdvisor) Check(_ context.Context, ch
 	rule := &statementDisallowAddColumnWithDefaultRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 	}
 

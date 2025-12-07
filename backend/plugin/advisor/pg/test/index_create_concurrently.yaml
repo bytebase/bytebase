@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 814
-      title: index.create-concurrently
+      title: INDEX_CREATE_CONCURRENTLY
       content: Creating indexes will block writes on the table, unless use CONCURRENTLY
       startposition:
         line: 1

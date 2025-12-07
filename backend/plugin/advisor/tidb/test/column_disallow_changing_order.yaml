@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 407
-      title: column.disallow-changing-order
+      title: COLUMN_DISALLOW_CHANGING_ORDER
       content: '"ALTER TABLE t MODIFY COLUMN a int FIRST" changes column order'
       startposition:
         line: 2
@@ -22,7 +22,7 @@
   want:
     - status: 2
       code: 407
-      title: column.disallow-changing-order
+      title: COLUMN_DISALLOW_CHANGING_ORDER
       content: '"ALTER TABLE t CHANGE COLUMN a1 a int FIRST" changes column order'
       startposition:
         line: 2
@@ -35,7 +35,7 @@
   want:
     - status: 2
       code: 407
-      title: column.disallow-changing-order
+      title: COLUMN_DISALLOW_CHANGING_ORDER
       content: '"ALTER TABLE t MODIFY COLUMN a int AFTER b" changes column order'
       startposition:
         line: 2
@@ -48,7 +48,7 @@
   want:
     - status: 2
       code: 407
-      title: column.disallow-changing-order
+      title: COLUMN_DISALLOW_CHANGING_ORDER
       content: '"ALTER TABLE t CHANGE COLUMN a1 a int AFTER b" changes column order'
       startposition:
         line: 2

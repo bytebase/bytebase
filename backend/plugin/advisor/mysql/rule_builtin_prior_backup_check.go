@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.BuiltinRulePriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK, &StatementPriorBackupCheckAdvisor{})
 }
 
 type StatementPriorBackupCheckAdvisor struct {
@@ -42,7 +42,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	if err != nil {
 		return nil, err
 	}
-	title := string(checkCtx.Rule.Type)
+	title := checkCtx.Rule.Type.String()
 
 	if len(checkCtx.Statements) > common.MaxSheetCheckSize {
 		adviceList = append(adviceList, &storepb.Advice{

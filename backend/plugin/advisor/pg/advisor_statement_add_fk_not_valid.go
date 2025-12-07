@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementAddFKNotValid, &StatementAddFKNotValidAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_ADD_FOREIGN_KEY_NOT_VALID, &StatementAddFKNotValidAdvisor{})
 }
 
 // StatementAddFKNotValidAdvisor is the advisor checking for adding foreign key constraints without NOT VALID.
@@ -39,7 +39,7 @@ func (*StatementAddFKNotValidAdvisor) Check(_ context.Context, checkCtx advisor.
 	rule := &statementAddFKNotValidRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 	}
 

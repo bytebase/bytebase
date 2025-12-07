@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 111
-      title: schema.backward-compatibility
+      title: SCHEMA_BACKWARD_COMPATIBILITY
       content: '"ALTER TABLE tech_book CHANGE name f2 TEXT;" may cause incompatibility with the existing data and code'
       startposition:
         line: 1
@@ -14,7 +14,7 @@
   want:
     - status: 2
       code: 111
-      title: schema.backward-compatibility
+      title: SCHEMA_BACKWARD_COMPATIBILITY
       content: '"ALTER TABLE tech_book MODIFY name TEXT;" may cause incompatibility with the existing data and code'
       startposition:
         line: 1
@@ -25,7 +25,7 @@
   want:
     - status: 2
       code: 111
-      title: schema.backward-compatibility
+      title: SCHEMA_BACKWARD_COMPATIBILITY
       content: '"ALTER TABLE tech_book MODIFY name TEXT NULL;" may cause incompatibility with the existing data and code'
       startposition:
         line: 1
@@ -36,7 +36,7 @@
   want:
     - status: 2
       code: 111
-      title: schema.backward-compatibility
+      title: SCHEMA_BACKWARD_COMPATIBILITY
       content: '"ALTER TABLE tech_book MODIFY name TEXT NOT NULL;" may cause incompatibility with the existing data and code'
       startposition:
         line: 1
@@ -47,7 +47,7 @@
   want:
     - status: 2
       code: 111
-      title: schema.backward-compatibility
+      title: SCHEMA_BACKWARD_COMPATIBILITY
       content: '"ALTER TABLE tech_book MODIFY name TEXT COMMENT ''bla'';" may cause incompatibility with the existing data and code'
       startposition:
         line: 1

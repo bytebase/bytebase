@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 422
-      title: column.maximum-varchar-length
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
       content: The maximum varchar length is 2560.
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 422
-      title: column.maximum-varchar-length
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
       content: The maximum varchar length is 2560.
       startposition:
         line: 1
@@ -27,7 +27,7 @@
   want:
     - status: 2
       code: 422
-      title: column.maximum-varchar-length
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
       content: The maximum varchar length is 2560.
       startposition:
         line: 1
@@ -38,7 +38,7 @@
   want:
     - status: 2
       code: 422
-      title: column.maximum-varchar-length
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
       content: The maximum varchar length is 2560.
       startposition:
         line: 1
@@ -51,7 +51,7 @@
   want:
     - status: 2
       code: 422
-      title: column.maximum-varchar-length
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
       content: The maximum varchar length is 2560.
       startposition:
         line: 1

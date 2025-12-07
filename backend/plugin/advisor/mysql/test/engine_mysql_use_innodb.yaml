@@ -15,7 +15,7 @@
   want:
     - status: 2
       code: 501
-      title: engine.mysql.use-innodb
+      title: ENGINE_MYSQL_USE_INNODB
       content: |-
         "CREATE TABLE userTable(
           id INT NOT NULL,
@@ -59,7 +59,7 @@
   want:
     - status: 2
       code: 501
-      title: engine.mysql.use-innodb
+      title: ENGINE_MYSQL_USE_INNODB
       content: |-
         "CREATE TABLE book(
           id INT,
@@ -79,7 +79,7 @@
   want:
     - status: 2
       code: 501
-      title: engine.mysql.use-innodb
+      title: ENGINE_MYSQL_USE_INNODB
       content: |-
         "CREATE TABLE book(
           id INT,
@@ -99,7 +99,7 @@
   want:
     - status: 2
       code: 501
-      title: engine.mysql.use-innodb
+      title: ENGINE_MYSQL_USE_INNODB
       content: '"ALTER TABLE tech_book ENGINE = CSV;" doesn''t use InnoDB engine'
       startposition:
         line: 3
@@ -114,7 +114,7 @@
   want:
     - status: 2
       code: 501
-      title: engine.mysql.use-innodb
+      title: ENGINE_MYSQL_USE_INNODB
       content: '"SET default_storage_engine=CSV;" doesn''t use InnoDB engine'
       startposition:
         line: 2

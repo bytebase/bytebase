@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleIDXNaming, &NamingIndexConventionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleIDXNaming, &NamingIndexConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleIDXNaming, &NamingIndexConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_NAMING_INDEX_IDX, &NamingIndexConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_NAMING_INDEX_IDX, &NamingIndexConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_NAMING_INDEX_IDX, &NamingIndexConventionAdvisor{})
 }
 
 // indexMetaData is the metadata for index.
@@ -51,13 +51,13 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(checkCtx.Rule.Type), checkCtx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(storepb.SQLReviewRule_Type(checkCtx.Rule.Type), checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create the rule
-	rule := NewNamingIndexConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginalMetadata)
+	rule := NewNamingIndexConventionRule(level, checkCtx.Rule.Type.String(), format, maxLength, templateList, checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

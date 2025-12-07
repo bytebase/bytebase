@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST, &ColumnTypeDisallowListAdvisor{})
 }
 
 // ColumnTypeDisallowListAdvisor is the advisor checking for column type restriction.
@@ -54,7 +54,7 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 	rule := &columnTypeDisallowListRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		typeRestriction: typeRestriction,
 	}

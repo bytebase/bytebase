@@ -26,9 +26,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableRequirePK, &TableRequirePKAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleTableRequirePK, &TableRequirePKAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleTableRequirePK, &TableRequirePKAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_REQUIRE_PK, &TableRequirePKAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_TABLE_REQUIRE_PK, &TableRequirePKAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_TABLE_REQUIRE_PK, &TableRequirePKAdvisor{})
 }
 
 // TableRequirePKAdvisor is the advisor checking table requires PK.
@@ -49,7 +49,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	}
 
 	// Create the rule
-	rule := NewTableRequirePKRule(level, string(checkCtx.Rule.Type), checkCtx.OriginalMetadata)
+	rule := NewTableRequirePKRule(level, checkCtx.Rule.Type.String(), checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

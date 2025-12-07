@@ -21,9 +21,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleUKNaming, &NamingUKConventionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleUKNaming, &NamingUKConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleUKNaming, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_NAMING_INDEX_UK, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_NAMING_INDEX_UK, &NamingUKConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_NAMING_INDEX_UK, &NamingUKConventionAdvisor{})
 }
 
 // NamingUKConventionAdvisor is the advisor checking for unique key naming convention.
@@ -43,13 +43,13 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(checkCtx.Rule.Type), checkCtx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(storepb.SQLReviewRule_Type(checkCtx.Rule.Type), checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create the rule
-	rule := NewNamingUKConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList, checkCtx.OriginalMetadata)
+	rule := NewNamingUKConventionRule(level, checkCtx.Rule.Type.String(), format, maxLength, templateList, checkCtx.OriginalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

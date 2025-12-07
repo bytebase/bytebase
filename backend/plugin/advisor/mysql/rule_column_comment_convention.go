@@ -19,9 +19,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnCommentConvention, &ColumnCommentConventionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleColumnCommentConvention, &ColumnCommentConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnCommentConvention, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_COLUMN_COMMENT, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_COLUMN_COMMENT, &ColumnCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_COLUMN_COMMENT, &ColumnCommentConventionAdvisor{})
 }
 
 // ColumnCommentConventionAdvisor is the advisor checking for column comment convention.
@@ -46,7 +46,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	// Create the rule
-	rule := NewColumnCommentConventionRule(level, string(checkCtx.Rule.Type), payload)
+	rule := NewColumnCommentConventionRule(level, checkCtx.Rule.Type.String(), payload)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '[\\] mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"'
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: all_lowercase mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
       startposition:
         line: 1
@@ -31,7 +31,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: salesTerr mismatches table naming convention, naming format should be "^[A-Z]([_A-Za-z])*$"
       startposition:
         line: 1

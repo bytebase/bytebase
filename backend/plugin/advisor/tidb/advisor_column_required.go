@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleRequiredColumn, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_COLUMN_REQUIRED, &ColumnRequirementAdvisor{})
 }
 
 // ColumnRequirementAdvisor is the advisor checking for column requirement.
@@ -50,7 +50,7 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	}
 	checker := &columnRequirementChecker{
 		level:           level,
-		title:           string(checkCtx.Rule.Type),
+		title:           checkCtx.Rule.Type.String(),
 		requiredColumns: requiredColumns,
 		tables:          make(tableState),
 		line:            make(map[string]int),

@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementDMLDryRun, &StatementDmlDryRunAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, &StatementDmlDryRunAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, &StatementDmlDryRunAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, &StatementDmlDryRunAdvisor{})
 }
 
 // StatementDmlDryRunAdvisor is the advisor checking for DML dry run.
@@ -43,7 +43,7 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	}
 
 	// Create the rule
-	rule := NewStatementDmlDryRunRule(ctx, level, string(checkCtx.Rule.Type), checkCtx.Driver)
+	rule := NewStatementDmlDryRunRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

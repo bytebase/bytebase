@@ -19,9 +19,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementInsertMustSpecifyColumn, &InsertMustSpecifyColumnAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN, &InsertMustSpecifyColumnAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN, &InsertMustSpecifyColumnAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN, &InsertMustSpecifyColumnAdvisor{})
 }
 
 // InsertMustSpecifyColumnAdvisor is the advisor checking for to enforce column specified.
@@ -42,7 +42,7 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	// Create the rule
-	rule := NewInsertMustSpecifyColumnRule(level, string(checkCtx.Rule.Type))
+	rule := NewInsertMustSpecifyColumnRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

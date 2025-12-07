@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementRequireWhereForUpdateDelete, &StatementWhereRequiredUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE, &StatementWhereRequiredUpdateDeleteAdvisor{})
 }
 
 // StatementWhereRequiredUpdateDeleteAdvisor is the advisor checking for WHERE clause requirement in UPDATE/DELETE.
@@ -40,7 +40,7 @@ func (*StatementWhereRequiredUpdateDeleteAdvisor) Check(_ context.Context, check
 	rule := &statementWhereRequiredRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		statementsText: checkCtx.Statements,
 	}

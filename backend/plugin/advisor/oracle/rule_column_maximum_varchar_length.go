@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleColumnMaximumVarcharLength, &ColumnMaximumVarcharLengthAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH, &ColumnMaximumVarcharLengthAdvisor{})
 }
 
 // ColumnMaximumVarcharLengthAdvisor is the advisor checking for maximum varchar length.
@@ -49,7 +49,7 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, nil
 	}
 
-	rule := NewColumnMaximumVarcharLengthRule(level, string(checkCtx.Rule.Type), payload.Number)
+	rule := NewColumnMaximumVarcharLengthRule(level, checkCtx.Rule.Type.String(), payload.Number)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

@@ -20,8 +20,8 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementMaxExecutionTime, &MaxExecutionTimeAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementMaxExecutionTime, &MaxExecutionTimeAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME, &MaxExecutionTimeAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME, &MaxExecutionTimeAdvisor{})
 }
 
 // MaxExecutionTimeAdvisor is the advisor checking for the max execution time.
@@ -46,7 +46,7 @@ func (*MaxExecutionTimeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 
 	// Create the rule
-	rule := NewMaxExecutionTimeRule(level, string(checkCtx.Rule.Type), systemVariable)
+	rule := NewMaxExecutionTimeRule(level, checkCtx.Rule.Type.String(), systemVariable)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

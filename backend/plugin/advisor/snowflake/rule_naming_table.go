@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleTableNaming, &NamingTableAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, storepb.SQLReviewRule_NAMING_TABLE, &NamingTableAdvisor{})
 }
 
 // NamingTableAdvisor is the advisor checking for table naming convention.
@@ -45,7 +45,7 @@ func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, err
 	}
 
-	rule := NewNamingTableRule(level, string(checkCtx.Rule.Type), format, maxLength)
+	rule := NewNamingTableRule(level, checkCtx.Rule.Type.String(), format, maxLength)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, parseResult := range parseResults {

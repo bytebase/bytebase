@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, &IndexKeyNumberLimitAdvisor{})
 }
 
 // IndexKeyNumberLimitAdvisor is the advisor checking for index key number limit.
@@ -48,7 +48,7 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 		return nil, nil
 	}
 
-	rule := NewIndexKeyNumberLimitRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase, payload.Number)
+	rule := NewIndexKeyNumberLimitRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, payload.Number)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

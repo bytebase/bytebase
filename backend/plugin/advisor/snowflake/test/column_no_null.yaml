@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: Column AGE is nullable, which is not allowed.
       startposition:
         line: 4
@@ -17,7 +17,7 @@
       endposition: null
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: Column ADDRESS is nullable, which is not allowed.
       startposition:
         line: 5
@@ -35,7 +35,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: Column ADDRESS is nullable, which is not allowed.
       startposition:
         line: 5
@@ -54,7 +54,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: Column AGE is nullable, which is not allowed.
       startposition:
         line: 1
@@ -67,7 +67,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: After dropping NOT NULL of column AGE, it will be nullable, which is not allowed.
       startposition:
         line: 1

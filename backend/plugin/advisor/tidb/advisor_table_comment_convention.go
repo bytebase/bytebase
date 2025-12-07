@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleTableCommentConvention, &TableCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_TABLE_COMMENT, &TableCommentConventionAdvisor{})
 }
 
 // TableCommentConventionAdvisor is the advisor checking for table comment convention.
@@ -45,7 +45,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 	checker := &tableCommentConventionChecker{
 		level:   level,
-		title:   string(checkCtx.Rule.Type),
+		title:   checkCtx.Rule.Type.String(),
 		payload: payload,
 	}
 

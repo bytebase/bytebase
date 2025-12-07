@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleFKNaming, &NamingFKConventionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleFKNaming, &NamingFKConventionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleFKNaming, &NamingFKConventionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_NAMING_INDEX_FK, &NamingFKConventionAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_NAMING_INDEX_FK, &NamingFKConventionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_NAMING_INDEX_FK, &NamingFKConventionAdvisor{})
 }
 
 // NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.
@@ -42,13 +42,13 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(checkCtx.Rule.Type), checkCtx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(storepb.SQLReviewRule_Type(checkCtx.Rule.Type), checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create the rule
-	rule := NewNamingFKConventionRule(level, string(checkCtx.Rule.Type), format, maxLength, templateList)
+	rule := NewNamingFKConventionRule(level, checkCtx.Rule.Type.String(), format, maxLength, templateList)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

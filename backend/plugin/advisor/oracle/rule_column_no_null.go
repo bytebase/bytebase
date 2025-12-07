@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleColumnNotNull, &ColumnNoNullAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_COLUMN_NO_NULL, &ColumnNoNullAdvisor{})
 }
 
 type columnMap map[string]int
@@ -42,7 +42,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		return nil, err
 	}
 
-	rule := NewColumnNoNullRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
+	rule := NewColumnNoNullRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

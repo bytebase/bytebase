@@ -8,7 +8,7 @@
   want:
     - status: 2
       code: 420
-      title: column.require-default
+      title: COLUMN_REQUIRE_DEFAULT
       content: Column `t`.`b` doesn't have DEFAULT.
       startposition:
         line: 3
@@ -25,7 +25,7 @@
   want:
     - status: 2
       code: 420
-      title: column.require-default
+      title: COLUMN_REQUIRE_DEFAULT
       content: Column `t`.`a` doesn't have DEFAULT.
       startposition:
         line: 2
@@ -39,7 +39,7 @@
   want:
     - status: 2
       code: 420
-      title: column.require-default
+      title: COLUMN_REQUIRE_DEFAULT
       content: Column `tech_book`.`b` doesn't have DEFAULT.
       startposition:
         line: 2
@@ -47,7 +47,7 @@
       endposition: null
     - status: 2
       code: 420
-      title: column.require-default
+      title: COLUMN_REQUIRE_DEFAULT
       content: Column `tech_book`.`a` doesn't have DEFAULT.
       startposition:
         line: 3

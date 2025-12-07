@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 111
-      title: schema.backward-compatibility
+      title: SCHEMA_BACKWARD_COMPATIBILITY
       content: '"ALTER TABLE tech_book ALTER COLUMN name TYPE TEXT" may cause incompatibility with the existing data and code'
       startposition:
         line: 1

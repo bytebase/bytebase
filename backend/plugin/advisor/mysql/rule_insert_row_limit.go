@@ -22,8 +22,8 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementInsertRowLimit, &InsertRowLimitAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleStatementInsertRowLimit, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, &InsertRowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, &InsertRowLimitAdvisor{})
 }
 
 // InsertRowLimitAdvisor is the advisor checking for insert row limit.
@@ -49,7 +49,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 	}
 
 	// Create the rule
-	rule := NewInsertRowLimitRule(ctx, level, string(checkCtx.Rule.Type), payload.Number, checkCtx.Driver)
+	rule := NewInsertRowLimitRule(ctx, level, checkCtx.Rule.Type.String(), payload.Number, checkCtx.Driver)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

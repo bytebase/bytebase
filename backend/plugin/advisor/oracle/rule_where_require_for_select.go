@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleStatementRequireWhereForSelect, &WhereRequireForSelectAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT, &WhereRequireForSelectAdvisor{})
 }
 
 // WhereRequireForSelectAdvisor is the advisor checking for WHERE clause requirement.
@@ -39,7 +39,7 @@ func (*WhereRequireForSelectAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	rule := NewWhereRequireForSelectRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
+	rule := NewWhereRequireForSelectRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

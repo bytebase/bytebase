@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleIndexKeyNumberLimit, &IndexKeyNumberLimitAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, &IndexKeyNumberLimitAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, &IndexKeyNumberLimitAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, &IndexKeyNumberLimitAdvisor{})
 }
 
 // IndexKeyNumberLimitAdvisor is the advisor checking for index key number limit.
@@ -47,7 +47,7 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	}
 
 	// Create the rule
-	rule := NewIndexKeyNumberLimitRule(level, string(checkCtx.Rule.Type), payload.Number)
+	rule := NewIndexKeyNumberLimitRule(level, checkCtx.Rule.Type.String(), payload.Number)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

@@ -1,58 +1,58 @@
-- type: engine.mysql.use-innodb
+- type: ENGINE_MYSQL_USE_INNODB
   category: ENGINE
   engine: MYSQL
-- type: engine.mysql.use-innodb
+- type: ENGINE_MYSQL_USE_INNODB
   category: ENGINE
   engine: MARIADB
-- type: table.require-pk
+- type: TABLE_REQUIRE_PK
   category: TABLE
   engine: MYSQL
-- type: table.require-pk
+- type: TABLE_REQUIRE_PK
   category: TABLE
   engine: TIDB
-- type: table.require-pk
+- type: TABLE_REQUIRE_PK
   category: TABLE
   engine: POSTGRES
-- type: table.require-pk
+- type: TABLE_REQUIRE_PK
   category: TABLE
   engine: ORACLE
-- type: table.require-pk
+- type: TABLE_REQUIRE_PK
   category: TABLE
   engine: OCEANBASE
-- type: table.require-pk
+- type: TABLE_REQUIRE_PK
   category: TABLE
   engine: SNOWFLAKE
-- type: table.require-pk
+- type: TABLE_REQUIRE_PK
   category: TABLE
   engine: MSSQL
-- type: table.require-pk
+- type: TABLE_REQUIRE_PK
   category: TABLE
   engine: MARIADB
-- type: table.no-foreign-key
+- type: TABLE_NO_FOREIGN_KEY
   category: TABLE
   engine: MYSQL
-- type: table.no-foreign-key
+- type: TABLE_NO_FOREIGN_KEY
   category: TABLE
   engine: TIDB
-- type: table.no-foreign-key
+- type: TABLE_NO_FOREIGN_KEY
   category: TABLE
   engine: POSTGRES
-- type: table.no-foreign-key
+- type: TABLE_NO_FOREIGN_KEY
   category: TABLE
   engine: ORACLE
-- type: table.no-foreign-key
+- type: TABLE_NO_FOREIGN_KEY
   category: TABLE
   engine: OCEANBASE
-- type: table.no-foreign-key
+- type: TABLE_NO_FOREIGN_KEY
   category: TABLE
   engine: SNOWFLAKE
-- type: table.no-foreign-key
+- type: TABLE_NO_FOREIGN_KEY
   category: TABLE
   engine: MSSQL
-- type: table.no-foreign-key
+- type: TABLE_NO_FOREIGN_KEY
   category: TABLE
   engine: MARIADB
-- type: table.drop-naming-convention
+- type: TABLE_DROP_NAMING_CONVENTION
   category: TABLE
   componentList:
     - key: format
@@ -60,7 +60,7 @@
         type: STRING
         default: _del$
   engine: MYSQL
-- type: table.drop-naming-convention
+- type: TABLE_DROP_NAMING_CONVENTION
   category: TABLE
   componentList:
     - key: format
@@ -68,7 +68,7 @@
         type: STRING
         default: _del$
   engine: TIDB
-- type: table.drop-naming-convention
+- type: TABLE_DROP_NAMING_CONVENTION
   category: TABLE
   componentList:
     - key: format
@@ -76,7 +76,7 @@
         type: STRING
         default: _del$
   engine: POSTGRES
-- type: table.drop-naming-convention
+- type: TABLE_DROP_NAMING_CONVENTION
   category: TABLE
   componentList:
     - key: format
@@ -84,7 +84,7 @@
         type: STRING
         default: _del$
   engine: OCEANBASE
-- type: table.drop-naming-convention
+- type: TABLE_DROP_NAMING_CONVENTION
   category: TABLE
   componentList:
     - key: format
@@ -92,7 +92,7 @@
         type: STRING
         default: _del$
   engine: SNOWFLAKE
-- type: table.drop-naming-convention
+- type: TABLE_DROP_NAMING_CONVENTION
   category: TABLE
   componentList:
     - key: format
@@ -100,7 +100,7 @@
         type: STRING
         default: _del$
   engine: REDSHIFT
-- type: table.drop-naming-convention
+- type: TABLE_DROP_NAMING_CONVENTION
   category: TABLE
   componentList:
     - key: format
@@ -108,7 +108,7 @@
         type: STRING
         default: _del$
   engine: MSSQL
-- type: table.drop-naming-convention
+- type: TABLE_DROP_NAMING_CONVENTION
   category: TABLE
   componentList:
     - key: format
@@ -116,7 +116,7 @@
         type: STRING
         default: _del$
   engine: MARIADB
-- type: table.comment
+- type: TABLE_COMMENT
   category: TABLE
   componentList:
     - key: required
@@ -132,7 +132,7 @@
         type: NUMBER
         default: 64
   engine: MYSQL
-- type: table.comment
+- type: TABLE_COMMENT
   category: TABLE
   componentList:
     - key: required
@@ -148,7 +148,7 @@
         type: NUMBER
         default: 64
   engine: TIDB
-- type: table.comment
+- type: TABLE_COMMENT
   category: TABLE
   componentList:
     - key: required
@@ -164,7 +164,7 @@
         type: NUMBER
         default: 64
   engine: OCEANBASE
-- type: table.comment
+- type: TABLE_COMMENT
   category: TABLE
   componentList:
     - key: required
@@ -180,7 +180,7 @@
         type: NUMBER
         default: 64
   engine: POSTGRES
-- type: table.comment
+- type: TABLE_COMMENT
   category: TABLE
   componentList:
     - key: required
@@ -196,28 +196,28 @@
         type: NUMBER
         default: 64
   engine: ORACLE
-- type: table.disallow-partition
+- type: TABLE_DISALLOW_PARTITION
   category: TABLE
   engine: MYSQL
-- type: table.disallow-partition
+- type: TABLE_DISALLOW_PARTITION
   category: TABLE
   engine: TIDB
-- type: table.disallow-partition
+- type: TABLE_DISALLOW_PARTITION
   category: TABLE
   engine: POSTGRES
-- type: table.disallow-partition
+- type: TABLE_DISALLOW_PARTITION
   category: TABLE
   engine: OCEANBASE
-- type: table.disallow-partition
+- type: TABLE_DISALLOW_PARTITION
   category: TABLE
   engine: MARIADB
-- type: table.disallow-trigger
+- type: TABLE_DISALLOW_TRIGGER
   category: TABLE
   engine: MYSQL
-- type: table.no-duplicate-index
+- type: TABLE_NO_DUPLICATE_INDEX
   category: TABLE
   engine: MYSQL
-- type: table.text-fields-total-length
+- type: TABLE_TEXT_FIELDS_TOTAL_LENGTH
   category: TABLE
   componentList:
     - key: number
@@ -225,10 +225,10 @@
         type: NUMBER
         default: 1000
   engine: MYSQL
-- type: table.disallow-set-charset
+- type: TABLE_DISALLOW_SET_CHARSET
   category: TABLE
   engine: MYSQL
-- type: table.disallow-ddl
+- type: TABLE_DISALLOW_DDL
   category: TABLE
   componentList:
     - key: list
@@ -236,7 +236,7 @@
         type: STRING_ARRAY
         default: []
   engine: MSSQL
-- type: table.disallow-ddl
+- type: TABLE_DISALLOW_DDL
   category: TABLE
   componentList:
     - key: list
@@ -244,7 +244,7 @@
         type: STRING_ARRAY
         default: []
   engine: MYSQL
-- type: table.disallow-dml
+- type: TABLE_DISALLOW_DML
   category: TABLE
   componentList:
     - key: list
@@ -252,7 +252,7 @@
         type: STRING_ARRAY
         default: []
   engine: MSSQL
-- type: table.disallow-dml
+- type: TABLE_DISALLOW_DML
   category: TABLE
   componentList:
     - key: list
@@ -260,7 +260,7 @@
         type: STRING_ARRAY
         default: []
   engine: MYSQL
-- type: table.limit-size
+- type: TABLE_LIMIT_SIZE
   category: TABLE
   componentList:
     - key: number
@@ -268,163 +268,163 @@
         type: NUMBER
         default: 10000000
   engine: MYSQL
-- type: table.require-charset
+- type: TABLE_REQUIRE_CHARSET
   category: TABLE
   engine: MYSQL
-- type: table.require-collation
+- type: TABLE_REQUIRE_COLLATION
   category: TABLE
   engine: MYSQL
-- type: statement.select.no-select-all
+- type: STATEMENT_SELECT_NO_SELECT_ALL
   category: STATEMENT
   engine: MYSQL
-- type: statement.select.no-select-all
+- type: STATEMENT_SELECT_NO_SELECT_ALL
   category: STATEMENT
   engine: TIDB
-- type: statement.select.no-select-all
+- type: STATEMENT_SELECT_NO_SELECT_ALL
   category: STATEMENT
   engine: POSTGRES
-- type: statement.select.no-select-all
+- type: STATEMENT_SELECT_NO_SELECT_ALL
   category: STATEMENT
   engine: ORACLE
-- type: statement.select.no-select-all
+- type: STATEMENT_SELECT_NO_SELECT_ALL
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.select.no-select-all
+- type: STATEMENT_SELECT_NO_SELECT_ALL
   category: STATEMENT
   engine: SNOWFLAKE
-- type: statement.select.no-select-all
+- type: STATEMENT_SELECT_NO_SELECT_ALL
   category: STATEMENT
   engine: MSSQL
-- type: statement.select.no-select-all
+- type: STATEMENT_SELECT_NO_SELECT_ALL
   category: STATEMENT
   engine: MARIADB
-- type: statement.where.require.select
+- type: STATEMENT_WHERE_REQUIRE_SELECT
   category: STATEMENT
   engine: MYSQL
-- type: statement.where.require.select
+- type: STATEMENT_WHERE_REQUIRE_SELECT
   category: STATEMENT
   engine: TIDB
-- type: statement.where.require.select
+- type: STATEMENT_WHERE_REQUIRE_SELECT
   category: STATEMENT
   engine: POSTGRES
-- type: statement.where.require.select
+- type: STATEMENT_WHERE_REQUIRE_SELECT
   category: STATEMENT
   engine: ORACLE
-- type: statement.where.require.select
+- type: STATEMENT_WHERE_REQUIRE_SELECT
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.where.require.select
+- type: STATEMENT_WHERE_REQUIRE_SELECT
   category: STATEMENT
   engine: SNOWFLAKE
-- type: statement.where.require.select
+- type: STATEMENT_WHERE_REQUIRE_SELECT
   category: STATEMENT
   engine: MSSQL
-- type: statement.where.require.select
+- type: STATEMENT_WHERE_REQUIRE_SELECT
   category: STATEMENT
   engine: MARIADB
-- type: statement.where.require.update-delete
+- type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
   category: STATEMENT
   engine: MYSQL
-- type: statement.where.require.update-delete
+- type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
   category: STATEMENT
   engine: TIDB
-- type: statement.where.require.update-delete
+- type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
   category: STATEMENT
   engine: POSTGRES
-- type: statement.where.require.update-delete
+- type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
   category: STATEMENT
   engine: ORACLE
-- type: statement.where.require.update-delete
+- type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.where.require.update-delete
+- type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
   category: STATEMENT
   engine: SNOWFLAKE
-- type: statement.where.require.update-delete
+- type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
   category: STATEMENT
   engine: MSSQL
-- type: statement.where.require.update-delete
+- type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
   category: STATEMENT
   engine: MARIADB
-- type: statement.where.no-leading-wildcard-like
+- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
   category: STATEMENT
   engine: MYSQL
-- type: statement.where.no-leading-wildcard-like
+- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
   category: STATEMENT
   engine: TIDB
-- type: statement.where.no-leading-wildcard-like
+- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
   category: STATEMENT
   engine: POSTGRES
-- type: statement.where.no-leading-wildcard-like
+- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
   category: STATEMENT
   engine: ORACLE
-- type: statement.where.no-leading-wildcard-like
+- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.where.no-leading-wildcard-like
+- type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
   category: STATEMENT
   engine: MARIADB
-- type: statement.disallow-on-del-cascade
+- type: STATEMENT_DISALLOW_ON_DEL_CASCADE
   category: STATEMENT
   engine: POSTGRES
-- type: statement.disallow-rm-tbl-cascade
+- type: STATEMENT_DISALLOW_RM_TBL_CASCADE
   category: STATEMENT
   engine: POSTGRES
-- type: statement.disallow-commit
+- type: STATEMENT_DISALLOW_COMMIT
   category: STATEMENT
   engine: MYSQL
-- type: statement.disallow-commit
+- type: STATEMENT_DISALLOW_COMMIT
   category: STATEMENT
   engine: TIDB
-- type: statement.disallow-commit
+- type: STATEMENT_DISALLOW_COMMIT
   category: STATEMENT
   engine: POSTGRES
-- type: statement.disallow-commit
+- type: STATEMENT_DISALLOW_COMMIT
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.disallow-commit
+- type: STATEMENT_DISALLOW_COMMIT
   category: STATEMENT
   engine: MARIADB
-- type: statement.disallow-limit
+- type: STATEMENT_DISALLOW_LIMIT
   category: STATEMENT
   engine: MYSQL
-- type: statement.disallow-limit
+- type: STATEMENT_DISALLOW_LIMIT
   category: STATEMENT
   engine: TIDB
-- type: statement.disallow-limit
+- type: STATEMENT_DISALLOW_LIMIT
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.disallow-limit
+- type: STATEMENT_DISALLOW_LIMIT
   category: STATEMENT
   engine: MARIADB
-- type: statement.disallow-order-by
+- type: STATEMENT_DISALLOW_ORDER_BY
   category: STATEMENT
   engine: MYSQL
-- type: statement.disallow-order-by
+- type: STATEMENT_DISALLOW_ORDER_BY
   category: STATEMENT
   engine: TIDB
-- type: statement.disallow-order-by
+- type: STATEMENT_DISALLOW_ORDER_BY
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.disallow-order-by
+- type: STATEMENT_DISALLOW_ORDER_BY
   category: STATEMENT
   engine: MARIADB
-- type: statement.merge-alter-table
+- type: STATEMENT_MERGE_ALTER_TABLE
   category: STATEMENT
   engine: MYSQL
-- type: statement.merge-alter-table
+- type: STATEMENT_MERGE_ALTER_TABLE
   category: STATEMENT
   engine: TIDB
-- type: statement.merge-alter-table
+- type: STATEMENT_MERGE_ALTER_TABLE
   category: STATEMENT
   engine: POSTGRES
-- type: statement.merge-alter-table
+- type: STATEMENT_MERGE_ALTER_TABLE
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.merge-alter-table
+- type: STATEMENT_MERGE_ALTER_TABLE
   category: STATEMENT
   engine: MARIADB
-- type: statement.insert.row-limit
+- type: STATEMENT_INSERT_ROW_LIMIT
   category: STATEMENT
   componentList:
     - key: number
@@ -432,7 +432,7 @@
         type: NUMBER
         default: 1000
   engine: MYSQL
-- type: statement.insert.row-limit
+- type: STATEMENT_INSERT_ROW_LIMIT
   category: STATEMENT
   componentList:
     - key: number
@@ -440,7 +440,7 @@
         type: NUMBER
         default: 1000
   engine: POSTGRES
-- type: statement.insert.row-limit
+- type: STATEMENT_INSERT_ROW_LIMIT
   category: STATEMENT
   componentList:
     - key: number
@@ -448,7 +448,7 @@
         type: NUMBER
         default: 1000
   engine: OCEANBASE
-- type: statement.insert.row-limit
+- type: STATEMENT_INSERT_ROW_LIMIT
   category: STATEMENT
   componentList:
     - key: number
@@ -456,40 +456,40 @@
         type: NUMBER
         default: 1000
   engine: MARIADB
-- type: statement.insert.must-specify-column
+- type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
   category: STATEMENT
   engine: MYSQL
-- type: statement.insert.must-specify-column
+- type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
   category: STATEMENT
   engine: TIDB
-- type: statement.insert.must-specify-column
+- type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
   category: STATEMENT
   engine: POSTGRES
-- type: statement.insert.must-specify-column
+- type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
   category: STATEMENT
   engine: ORACLE
-- type: statement.insert.must-specify-column
+- type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.insert.must-specify-column
+- type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
   category: STATEMENT
   engine: MARIADB
-- type: statement.insert.disallow-order-by-rand
+- type: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
   category: STATEMENT
   engine: MYSQL
-- type: statement.insert.disallow-order-by-rand
+- type: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
   category: STATEMENT
   engine: TIDB
-- type: statement.insert.disallow-order-by-rand
+- type: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
   category: STATEMENT
   engine: POSTGRES
-- type: statement.insert.disallow-order-by-rand
+- type: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.insert.disallow-order-by-rand
+- type: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
   category: STATEMENT
   engine: MARIADB
-- type: statement.affected-row-limit
+- type: STATEMENT_AFFECTED_ROW_LIMIT
   category: STATEMENT
   componentList:
     - key: number
@@ -497,7 +497,7 @@
         type: NUMBER
         default: 1000
   engine: MYSQL
-- type: statement.affected-row-limit
+- type: STATEMENT_AFFECTED_ROW_LIMIT
   category: STATEMENT
   componentList:
     - key: number
@@ -505,7 +505,7 @@
         type: NUMBER
         default: 1000
   engine: POSTGRES
-- type: statement.affected-row-limit
+- type: STATEMENT_AFFECTED_ROW_LIMIT
   category: STATEMENT
   componentList:
     - key: number
@@ -513,7 +513,7 @@
         type: NUMBER
         default: 1000
   engine: OCEANBASE
-- type: statement.affected-row-limit
+- type: STATEMENT_AFFECTED_ROW_LIMIT
   category: STATEMENT
   componentList:
     - key: number
@@ -521,64 +521,64 @@
         type: NUMBER
         default: 1000
   engine: MARIADB
-- type: statement.dml-dry-run
+- type: STATEMENT_DML_DRY_RUN
   category: STATEMENT
   engine: MYSQL
-- type: statement.dml-dry-run
+- type: STATEMENT_DML_DRY_RUN
   category: STATEMENT
   engine: POSTGRES
-- type: statement.dml-dry-run
+- type: STATEMENT_DML_DRY_RUN
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.dml-dry-run
+- type: STATEMENT_DML_DRY_RUN
   category: STATEMENT
   engine: MARIADB
-- type: statement.dml-dry-run
+- type: STATEMENT_DML_DRY_RUN
   category: STATEMENT
   engine: TIDB
-- type: statement.dml-dry-run
+- type: STATEMENT_DML_DRY_RUN
   category: STATEMENT
   engine: ORACLE
-- type: statement.disallow-add-column-with-default
+- type: STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT
   category: STATEMENT
   engine: POSTGRES
-- type: statement.add-check-not-valid
+- type: STATEMENT_ADD_CHECK_NOT_VALID
   category: STATEMENT
   engine: POSTGRES
-- type: statement.disallow-add-not-null
+- type: STATEMENT_DISALLOW_ADD_NOT_NULL
   category: STATEMENT
   engine: POSTGRES
-- type: statement.select-full-table-scan
+- type: STATEMENT_SELECT_FULL_TABLE_SCAN
   category: STATEMENT
   engine: MYSQL
-- type: statement.select-full-table-scan
+- type: STATEMENT_SELECT_FULL_TABLE_SCAN
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.select-full-table-scan
+- type: STATEMENT_SELECT_FULL_TABLE_SCAN
   category: STATEMENT
   engine: MARIADB
-- type: statement.create-specify-schema
+- type: STATEMENT_CREATE_SPECIFY_SCHEMA
   category: STATEMENT
   engine: POSTGRES
-- type: statement.check-set-role-variable
+- type: STATEMENT_CHECK_SET_ROLE_VARIABLE
   category: STATEMENT
   engine: POSTGRES
-- type: statement.disallow-using-temporary
+- type: STATEMENT_DISALLOW_USING_TEMPORARY
   category: STATEMENT
   engine: MYSQL
-- type: statement.disallow-using-filesort
+- type: STATEMENT_DISALLOW_USING_FILESORT
   category: STATEMENT
   engine: MYSQL
-- type: statement.where.no-equal-null
+- type: STATEMENT_WHERE_NO_EQUAL_NULL
   category: STATEMENT
   engine: MYSQL
-- type: statement.where.disallow-functions-and-calculations
+- type: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
   category: STATEMENT
   engine: MYSQL
-- type: statement.where.disallow-functions-and-calculations
+- type: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
   category: STATEMENT
   engine: MSSQL
-- type: statement.query.minimum-plan-level
+- type: STATEMENT_QUERY_MINIMUM_PLAN_LEVEL
   category: STATEMENT
   componentList:
     - key: level
@@ -586,7 +586,7 @@
         type: STRING
         default: INDEX
   engine: MYSQL
-- type: statement.where.maximum-logical-operator-count
+- type: STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT
   category: STATEMENT
   componentList:
     - key: number
@@ -594,7 +594,7 @@
         type: NUMBER
         default: 10
   engine: MYSQL
-- type: statement.maximum-limit-value
+- type: STATEMENT_MAXIMUM_LIMIT_VALUE
   category: STATEMENT
   componentList:
     - key: number
@@ -602,7 +602,7 @@
         type: NUMBER
         default: 1000
   engine: MYSQL
-- type: statement.maximum-limit-value
+- type: STATEMENT_MAXIMUM_LIMIT_VALUE
   category: STATEMENT
   componentList:
     - key: number
@@ -610,7 +610,7 @@
         type: NUMBER
         default: 1000
   engine: OCEANBASE
-- type: statement.maximum-limit-value
+- type: STATEMENT_MAXIMUM_LIMIT_VALUE
   category: STATEMENT
   componentList:
     - key: number
@@ -618,7 +618,7 @@
         type: NUMBER
         default: 1000
   engine: MARIADB
-- type: statement.maximum-limit-value
+- type: STATEMENT_MAXIMUM_LIMIT_VALUE
   category: STATEMENT
   componentList:
     - key: number
@@ -626,7 +626,7 @@
         type: NUMBER
         default: 1000
   engine: TIDB
-- type: statement.maximum-limit-value
+- type: STATEMENT_MAXIMUM_LIMIT_VALUE
   category: STATEMENT
   componentList:
     - key: number
@@ -634,7 +634,7 @@
         type: NUMBER
         default: 1000
   engine: POSTGRES
-- type: statement.maximum-join-table-count
+- type: STATEMENT_MAXIMUM_JOIN_TABLE_COUNT
   category: STATEMENT
   componentList:
     - key: number
@@ -642,7 +642,7 @@
         type: NUMBER
         default: 2
   engine: MYSQL
-- type: statement.maximum-statements-in-transaction
+- type: STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION
   category: STATEMENT
   componentList:
     - key: number
@@ -650,40 +650,40 @@
         type: NUMBER
         default: 10
   engine: MYSQL
-- type: statement.join-strict-column-attrs
+- type: STATEMENT_JOIN_STRICT_COLUMN_ATTRS
   category: STATEMENT
   engine: MYSQL
-- type: statement.add-column-without-position
+- type: STATEMENT_ADD_COLUMN_WITHOUT_POSITION
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.disallow-offline-ddl
+- type: STATEMENT_DISALLOW_OFFLINE_DDL
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.disallow-cross-db-queries
+- type: STATEMENT_DISALLOW_CROSS_DB_QUERIES
   category: STATEMENT
   engine: MSSQL
-- type: statement.max-execution-time
+- type: STATEMENT_MAX_EXECUTION_TIME
   category: STATEMENT
   engine: MYSQL
-- type: statement.max-execution-time
+- type: STATEMENT_MAX_EXECUTION_TIME
   category: STATEMENT
   engine: MARIADB
-- type: statement.require-algorithm-option
+- type: STATEMENT_REQUIRE_ALGORITHM_OPTION
   category: STATEMENT
   engine: MYSQL
-- type: statement.require-algorithm-option
+- type: STATEMENT_REQUIRE_ALGORITHM_OPTION
   category: STATEMENT
   engine: MARIADB
-- type: statement.require-lock-option
+- type: STATEMENT_REQUIRE_LOCK_OPTION
   category: STATEMENT
   engine: MYSQL
-- type: statement.require-lock-option
+- type: STATEMENT_REQUIRE_LOCK_OPTION
   category: STATEMENT
   engine: MARIADB
-- type: naming.fully-qualified
+- type: NAMING_FULLY_QUALIFIED
   category: NAMING
   engine: POSTGRES
-- type: naming.table
+- type: NAMING_TABLE
   category: NAMING
   componentList:
     - key: format
@@ -695,7 +695,7 @@
         type: NUMBER
         default: 64
   engine: MYSQL
-- type: naming.table
+- type: NAMING_TABLE
   category: NAMING
   componentList:
     - key: format
@@ -707,7 +707,7 @@
         type: NUMBER
         default: 64
   engine: TIDB
-- type: naming.table
+- type: NAMING_TABLE
   category: NAMING
   componentList:
     - key: format
@@ -719,7 +719,7 @@
         type: NUMBER
         default: 64
   engine: POSTGRES
-- type: naming.table
+- type: NAMING_TABLE
   category: NAMING
   componentList:
     - key: format
@@ -731,7 +731,7 @@
         type: NUMBER
         default: 64
   engine: ORACLE
-- type: naming.table
+- type: NAMING_TABLE
   category: NAMING
   componentList:
     - key: format
@@ -743,7 +743,7 @@
         type: NUMBER
         default: 64
   engine: OCEANBASE
-- type: naming.table
+- type: NAMING_TABLE
   category: NAMING
   componentList:
     - key: format
@@ -755,7 +755,7 @@
         type: NUMBER
         default: 64
   engine: SNOWFLAKE
-- type: naming.table
+- type: NAMING_TABLE
   category: NAMING
   componentList:
     - key: format
@@ -767,7 +767,7 @@
         type: NUMBER
         default: 64
   engine: MSSQL
-- type: naming.table
+- type: NAMING_TABLE
   category: NAMING
   componentList:
     - key: format
@@ -779,7 +779,7 @@
         type: NUMBER
         default: 64
   engine: MARIADB
-- type: naming.column
+- type: NAMING_COLUMN
   category: NAMING
   componentList:
     - key: format
@@ -791,7 +791,7 @@
         type: NUMBER
         default: 64
   engine: MYSQL
-- type: naming.column
+- type: NAMING_COLUMN
   category: NAMING
   componentList:
     - key: format
@@ -803,7 +803,7 @@
         type: NUMBER
         default: 64
   engine: TIDB
-- type: naming.column
+- type: NAMING_COLUMN
   category: NAMING
   componentList:
     - key: format
@@ -815,7 +815,7 @@
         type: NUMBER
         default: 64
   engine: POSTGRES
-- type: naming.column
+- type: NAMING_COLUMN
   category: NAMING
   componentList:
     - key: format
@@ -827,7 +827,7 @@
         type: NUMBER
         default: 64
   engine: OCEANBASE
-- type: naming.column
+- type: NAMING_COLUMN
   category: NAMING
   componentList:
     - key: format
@@ -839,7 +839,7 @@
         type: NUMBER
         default: 64
   engine: MARIADB
-- type: naming.index.uk
+- type: NAMING_INDEX_UK
   category: NAMING
   componentList:
     - key: format
@@ -854,7 +854,7 @@
         type: NUMBER
         default: 64
   engine: MYSQL
-- type: naming.index.uk
+- type: NAMING_INDEX_UK
   category: NAMING
   componentList:
     - key: format
@@ -869,7 +869,7 @@
         type: NUMBER
         default: 64
   engine: TIDB
-- type: naming.index.uk
+- type: NAMING_INDEX_UK
   category: NAMING
   componentList:
     - key: format
@@ -884,7 +884,7 @@
         type: NUMBER
         default: 64
   engine: POSTGRES
-- type: naming.index.uk
+- type: NAMING_INDEX_UK
   category: NAMING
   componentList:
     - key: format
@@ -899,7 +899,7 @@
         type: NUMBER
         default: 64
   engine: OCEANBASE
-- type: naming.index.uk
+- type: NAMING_INDEX_UK
   category: NAMING
   componentList:
     - key: format
@@ -914,7 +914,7 @@
         type: NUMBER
         default: 64
   engine: MARIADB
-- type: naming.index.idx
+- type: NAMING_INDEX_IDX
   category: NAMING
   componentList:
     - key: format
@@ -929,7 +929,7 @@
         type: NUMBER
         default: 64
   engine: MYSQL
-- type: naming.index.idx
+- type: NAMING_INDEX_IDX
   category: NAMING
   componentList:
     - key: format
@@ -944,7 +944,7 @@
         type: NUMBER
         default: 64
   engine: TIDB
-- type: naming.index.idx
+- type: NAMING_INDEX_IDX
   category: NAMING
   componentList:
     - key: format
@@ -959,7 +959,7 @@
         type: NUMBER
         default: 64
   engine: POSTGRES
-- type: naming.index.idx
+- type: NAMING_INDEX_IDX
   category: NAMING
   componentList:
     - key: format
@@ -974,7 +974,7 @@
         type: NUMBER
         default: 64
   engine: OCEANBASE
-- type: naming.index.idx
+- type: NAMING_INDEX_IDX
   category: NAMING
   componentList:
     - key: format
@@ -989,7 +989,7 @@
         type: NUMBER
         default: 64
   engine: MARIADB
-- type: naming.index.fk
+- type: NAMING_INDEX_FK
   category: NAMING
   componentList:
     - key: format
@@ -1006,7 +1006,7 @@
         type: NUMBER
         default: 64
   engine: MYSQL
-- type: naming.index.fk
+- type: NAMING_INDEX_FK
   category: NAMING
   componentList:
     - key: format
@@ -1023,7 +1023,7 @@
         type: NUMBER
         default: 64
   engine: TIDB
-- type: naming.index.fk
+- type: NAMING_INDEX_FK
   category: NAMING
   componentList:
     - key: format
@@ -1040,7 +1040,7 @@
         type: NUMBER
         default: 64
   engine: POSTGRES
-- type: naming.index.fk
+- type: NAMING_INDEX_FK
   category: NAMING
   componentList:
     - key: format
@@ -1057,7 +1057,7 @@
         type: NUMBER
         default: 64
   engine: OCEANBASE
-- type: naming.index.fk
+- type: NAMING_INDEX_FK
   category: NAMING
   componentList:
     - key: format
@@ -1074,7 +1074,7 @@
         type: NUMBER
         default: 64
   engine: MARIADB
-- type: naming.index.pk
+- type: NAMING_INDEX_PK
   category: NAMING
   componentList:
     - key: format
@@ -1089,7 +1089,7 @@
         type: NUMBER
         default: 63
   engine: POSTGRES
-- type: naming.column.auto-increment
+- type: NAMING_COLUMN_AUTO_INCREMENT
   category: NAMING
   componentList:
     - key: format
@@ -1101,7 +1101,7 @@
         type: NUMBER
         default: 64
   engine: MYSQL
-- type: naming.column.auto-increment
+- type: NAMING_COLUMN_AUTO_INCREMENT
   category: NAMING
   componentList:
     - key: format
@@ -1113,7 +1113,7 @@
         type: NUMBER
         default: 64
   engine: TIDB
-- type: naming.column.auto-increment
+- type: NAMING_COLUMN_AUTO_INCREMENT
   category: NAMING
   componentList:
     - key: format
@@ -1125,7 +1125,7 @@
         type: NUMBER
         default: 64
   engine: OCEANBASE
-- type: naming.column.auto-increment
+- type: NAMING_COLUMN_AUTO_INCREMENT
   category: NAMING
   componentList:
     - key: format
@@ -1137,28 +1137,28 @@
         type: NUMBER
         default: 64
   engine: MARIADB
-- type: naming.table.no-keyword
+- type: NAMING_TABLE_NO_KEYWORD
   category: NAMING
   engine: ORACLE
-- type: naming.table.no-keyword
+- type: NAMING_TABLE_NO_KEYWORD
   category: NAMING
   engine: SNOWFLAKE
-- type: naming.table.no-keyword
+- type: NAMING_TABLE_NO_KEYWORD
   category: NAMING
   engine: MSSQL
-- type: naming.identifier.no-keyword
+- type: NAMING_IDENTIFIER_NO_KEYWORD
   category: NAMING
   engine: ORACLE
-- type: naming.identifier.no-keyword
+- type: NAMING_IDENTIFIER_NO_KEYWORD
   category: NAMING
   engine: SNOWFLAKE
-- type: naming.identifier.no-keyword
+- type: NAMING_IDENTIFIER_NO_KEYWORD
   category: NAMING
   engine: MSSQL
-- type: naming.identifier.no-keyword
+- type: NAMING_IDENTIFIER_NO_KEYWORD
   category: NAMING
   engine: MYSQL
-- type: naming.identifier.case
+- type: NAMING_IDENTIFIER_CASE
   category: NAMING
   componentList:
     - key: upper
@@ -1166,7 +1166,7 @@
         type: BOOLEAN
         default: true
   engine: ORACLE
-- type: naming.identifier.case
+- type: NAMING_IDENTIFIER_CASE
   category: NAMING
   componentList:
     - key: upper
@@ -1174,7 +1174,7 @@
         type: BOOLEAN
         default: true
   engine: SNOWFLAKE
-- type: column.required
+- type: COLUMN_REQUIRED
   category: COLUMN
   componentList:
     - key: list
@@ -1187,7 +1187,7 @@
           - creator_id
           - updater_id
   engine: MYSQL
-- type: column.required
+- type: COLUMN_REQUIRED
   category: COLUMN
   componentList:
     - key: list
@@ -1200,7 +1200,7 @@
           - creator_id
           - updater_id
   engine: TIDB
-- type: column.required
+- type: COLUMN_REQUIRED
   category: COLUMN
   componentList:
     - key: list
@@ -1213,7 +1213,7 @@
           - creator_id
           - updater_id
   engine: POSTGRES
-- type: column.required
+- type: COLUMN_REQUIRED
   category: COLUMN
   componentList:
     - key: list
@@ -1226,7 +1226,7 @@
           - CREATOR_ID
           - UPDATER_ID
   engine: ORACLE
-- type: column.required
+- type: COLUMN_REQUIRED
   category: COLUMN
   componentList:
     - key: list
@@ -1239,7 +1239,7 @@
           - creator_id
           - updater_id
   engine: OCEANBASE
-- type: column.required
+- type: COLUMN_REQUIRED
   category: COLUMN
   componentList:
     - key: list
@@ -1252,7 +1252,7 @@
           - CREATOR_ID
           - UPDATER_ID
   engine: SNOWFLAKE
-- type: column.required
+- type: COLUMN_REQUIRED
   category: COLUMN
   componentList:
     - key: list
@@ -1265,7 +1265,7 @@
           - creator_id
           - updater_id
   engine: MSSQL
-- type: column.required
+- type: COLUMN_REQUIRED
   category: COLUMN
   componentList:
     - key: list
@@ -1278,97 +1278,97 @@
           - creator_id
           - updater_id
   engine: MARIADB
-- type: column.no-null
+- type: COLUMN_NO_NULL
   category: COLUMN
   engine: MYSQL
-- type: column.no-null
+- type: COLUMN_NO_NULL
   category: COLUMN
   engine: TIDB
-- type: column.no-null
+- type: COLUMN_NO_NULL
   category: COLUMN
   engine: POSTGRES
-- type: column.no-null
+- type: COLUMN_NO_NULL
   category: COLUMN
   engine: ORACLE
-- type: column.no-null
+- type: COLUMN_NO_NULL
   category: COLUMN
   engine: OCEANBASE
-- type: column.no-null
+- type: COLUMN_NO_NULL
   category: COLUMN
   engine: SNOWFLAKE
-- type: column.no-null
+- type: COLUMN_NO_NULL
   category: COLUMN
   engine: MSSQL
-- type: column.no-null
+- type: COLUMN_NO_NULL
   category: COLUMN
   engine: MARIADB
-- type: column.disallow-change-type
+- type: COLUMN_DISALLOW_CHANGE_TYPE
   category: COLUMN
   engine: MYSQL
-- type: column.disallow-change-type
+- type: COLUMN_DISALLOW_CHANGE_TYPE
   category: COLUMN
   engine: TIDB
-- type: column.disallow-change-type
+- type: COLUMN_DISALLOW_CHANGE_TYPE
   category: COLUMN
   engine: POSTGRES
-- type: column.disallow-change-type
+- type: COLUMN_DISALLOW_CHANGE_TYPE
   category: COLUMN
   engine: OCEANBASE
-- type: column.disallow-change-type
+- type: COLUMN_DISALLOW_CHANGE_TYPE
   category: COLUMN
   engine: MARIADB
-- type: column.set-default-for-not-null
+- type: COLUMN_SET_DEFAULT_FOR_NOT_NULL
   category: COLUMN
   engine: MYSQL
-- type: column.set-default-for-not-null
+- type: COLUMN_SET_DEFAULT_FOR_NOT_NULL
   category: COLUMN
   engine: TIDB
-- type: column.set-default-for-not-null
+- type: COLUMN_SET_DEFAULT_FOR_NOT_NULL
   category: COLUMN
   engine: OCEANBASE
-- type: column.set-default-for-not-null
+- type: COLUMN_SET_DEFAULT_FOR_NOT_NULL
   category: COLUMN
   engine: MARIADB
-- type: column.disallow-change
+- type: COLUMN_DISALLOW_CHANGE
   category: COLUMN
   engine: MYSQL
-- type: column.disallow-change
+- type: COLUMN_DISALLOW_CHANGE
   category: COLUMN
   engine: TIDB
-- type: column.disallow-change
+- type: COLUMN_DISALLOW_CHANGE
   category: COLUMN
   engine: OCEANBASE
-- type: column.disallow-change
+- type: COLUMN_DISALLOW_CHANGE
   category: COLUMN
   engine: MARIADB
-- type: column.disallow-changing-order
+- type: COLUMN_DISALLOW_CHANGING_ORDER
   category: COLUMN
   engine: MYSQL
-- type: column.disallow-changing-order
+- type: COLUMN_DISALLOW_CHANGING_ORDER
   category: COLUMN
   engine: TIDB
-- type: column.disallow-changing-order
+- type: COLUMN_DISALLOW_CHANGING_ORDER
   category: COLUMN
   engine: OCEANBASE
-- type: column.disallow-changing-order
+- type: COLUMN_DISALLOW_CHANGING_ORDER
   category: COLUMN
   engine: MARIADB
-- type: column.disallow-drop
+- type: COLUMN_DISALLOW_DROP
   category: COLUMN
   engine: OCEANBASE
-- type: column.disallow-drop-in-index
+- type: COLUMN_DISALLOW_DROP_IN_INDEX
   category: COLUMN
   engine: MYSQL
-- type: column.disallow-drop-in-index
+- type: COLUMN_DISALLOW_DROP_IN_INDEX
   category: COLUMN
   engine: TIDB
-- type: column.disallow-drop-in-index
+- type: COLUMN_DISALLOW_DROP_IN_INDEX
   category: COLUMN
   engine: OCEANBASE
-- type: column.disallow-drop-in-index
+- type: COLUMN_DISALLOW_DROP_IN_INDEX
   category: COLUMN
   engine: MARIADB
-- type: column.comment
+- type: COLUMN_COMMENT
   category: COLUMN
   componentList:
     - key: required
@@ -1384,7 +1384,7 @@
         type: NUMBER
         default: 64
   engine: MYSQL
-- type: column.comment
+- type: COLUMN_COMMENT
   category: COLUMN
   componentList:
     - key: required
@@ -1400,7 +1400,7 @@
         type: NUMBER
         default: 64
   engine: TIDB
-- type: column.comment
+- type: COLUMN_COMMENT
   category: COLUMN
   componentList:
     - key: required
@@ -1416,7 +1416,7 @@
         type: NUMBER
         default: 64
   engine: OCEANBASE
-- type: column.comment
+- type: COLUMN_COMMENT
   category: COLUMN
   componentList:
     - key: required
@@ -1432,7 +1432,7 @@
         type: NUMBER
         default: 64
   engine: POSTGRES
-- type: column.comment
+- type: COLUMN_COMMENT
   category: COLUMN
   componentList:
     - key: required
@@ -1448,19 +1448,19 @@
         type: NUMBER
         default: 64
   engine: ORACLE
-- type: column.auto-increment-must-integer
+- type: COLUMN_AUTO_INCREMENT_MUST_INTEGER
   category: COLUMN
   engine: MYSQL
-- type: column.auto-increment-must-integer
+- type: COLUMN_AUTO_INCREMENT_MUST_INTEGER
   category: COLUMN
   engine: TIDB
-- type: column.auto-increment-must-integer
+- type: COLUMN_AUTO_INCREMENT_MUST_INTEGER
   category: COLUMN
   engine: OCEANBASE
-- type: column.auto-increment-must-integer
+- type: COLUMN_AUTO_INCREMENT_MUST_INTEGER
   category: COLUMN
   engine: MARIADB
-- type: column.type-disallow-list
+- type: COLUMN_TYPE_DISALLOW_LIST
   category: COLUMN
   componentList:
     - key: list
@@ -1468,7 +1468,7 @@
         type: STRING_ARRAY
         default: []
   engine: MYSQL
-- type: column.type-disallow-list
+- type: COLUMN_TYPE_DISALLOW_LIST
   category: COLUMN
   componentList:
     - key: list
@@ -1476,7 +1476,7 @@
         type: STRING_ARRAY
         default: []
   engine: TIDB
-- type: column.type-disallow-list
+- type: COLUMN_TYPE_DISALLOW_LIST
   category: COLUMN
   componentList:
     - key: list
@@ -1484,7 +1484,7 @@
         type: STRING_ARRAY
         default: []
   engine: POSTGRES
-- type: column.type-disallow-list
+- type: COLUMN_TYPE_DISALLOW_LIST
   category: COLUMN
   componentList:
     - key: list
@@ -1492,7 +1492,7 @@
         type: STRING_ARRAY
         default: []
   engine: ORACLE
-- type: column.type-disallow-list
+- type: COLUMN_TYPE_DISALLOW_LIST
   category: COLUMN
   componentList:
     - key: list
@@ -1500,7 +1500,7 @@
         type: STRING_ARRAY
         default: []
   engine: OCEANBASE
-- type: column.type-disallow-list
+- type: COLUMN_TYPE_DISALLOW_LIST
   category: COLUMN
   componentList:
     - key: list
@@ -1508,7 +1508,7 @@
         type: STRING_ARRAY
         default: []
   engine: MARIADB
-- type: column.type-disallow-list
+- type: COLUMN_TYPE_DISALLOW_LIST
   category: COLUMN
   componentList:
     - key: list
@@ -1516,19 +1516,19 @@
         type: STRING_ARRAY
         default: []
   engine: MSSQL
-- type: column.disallow-set-charset
+- type: COLUMN_DISALLOW_SET_CHARSET
   category: COLUMN
   engine: MYSQL
-- type: column.disallow-set-charset
+- type: COLUMN_DISALLOW_SET_CHARSET
   category: COLUMN
   engine: TIDB
-- type: column.disallow-set-charset
+- type: COLUMN_DISALLOW_SET_CHARSET
   category: COLUMN
   engine: OCEANBASE
-- type: column.disallow-set-charset
+- type: COLUMN_DISALLOW_SET_CHARSET
   category: COLUMN
   engine: MARIADB
-- type: column.maximum-character-length
+- type: COLUMN_MAXIMUM_CHARACTER_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1536,7 +1536,7 @@
         type: NUMBER
         default: 20
   engine: MYSQL
-- type: column.maximum-character-length
+- type: COLUMN_MAXIMUM_CHARACTER_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1544,7 +1544,7 @@
         type: NUMBER
         default: 20
   engine: TIDB
-- type: column.maximum-character-length
+- type: COLUMN_MAXIMUM_CHARACTER_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1552,7 +1552,7 @@
         type: NUMBER
         default: 20
   engine: POSTGRES
-- type: column.maximum-character-length
+- type: COLUMN_MAXIMUM_CHARACTER_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1560,7 +1560,7 @@
         type: NUMBER
         default: 20
   engine: ORACLE
-- type: column.maximum-character-length
+- type: COLUMN_MAXIMUM_CHARACTER_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1568,7 +1568,7 @@
         type: NUMBER
         default: 20
   engine: OCEANBASE
-- type: column.maximum-character-length
+- type: COLUMN_MAXIMUM_CHARACTER_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1576,7 +1576,7 @@
         type: NUMBER
         default: 20
   engine: MARIADB
-- type: column.maximum-varchar-length
+- type: COLUMN_MAXIMUM_VARCHAR_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1584,7 +1584,7 @@
         type: NUMBER
         default: 2560
   engine: MYSQL
-- type: column.maximum-varchar-length
+- type: COLUMN_MAXIMUM_VARCHAR_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1592,7 +1592,7 @@
         type: NUMBER
         default: 2560
   engine: OCEANBASE
-- type: column.maximum-varchar-length
+- type: COLUMN_MAXIMUM_VARCHAR_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1600,7 +1600,7 @@
         type: NUMBER
         default: 2560
   engine: MARIADB
-- type: column.maximum-varchar-length
+- type: COLUMN_MAXIMUM_VARCHAR_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1608,7 +1608,7 @@
         type: NUMBER
         default: 2560
   engine: ORACLE
-- type: column.maximum-varchar-length
+- type: COLUMN_MAXIMUM_VARCHAR_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1616,7 +1616,7 @@
         type: NUMBER
         default: 2560
   engine: SNOWFLAKE
-- type: column.maximum-varchar-length
+- type: COLUMN_MAXIMUM_VARCHAR_LENGTH
   category: COLUMN
   componentList:
     - key: number
@@ -1624,7 +1624,7 @@
         type: NUMBER
         default: 2560
   engine: MSSQL
-- type: column.auto-increment-initial-value
+- type: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
   category: COLUMN
   componentList:
     - key: number
@@ -1632,7 +1632,7 @@
         type: NUMBER
         default: 1
   engine: MYSQL
-- type: column.auto-increment-initial-value
+- type: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
   category: COLUMN
   componentList:
     - key: number
@@ -1640,7 +1640,7 @@
         type: NUMBER
         default: 1
   engine: TIDB
-- type: column.auto-increment-initial-value
+- type: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
   category: COLUMN
   componentList:
     - key: number
@@ -1648,7 +1648,7 @@
         type: NUMBER
         default: 1
   engine: OCEANBASE
-- type: column.auto-increment-initial-value
+- type: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
   category: COLUMN
   componentList:
     - key: number
@@ -1656,106 +1656,106 @@
         type: NUMBER
         default: 1
   engine: MARIADB
-- type: column.auto-increment-must-unsigned
+- type: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
   category: COLUMN
   engine: MYSQL
-- type: column.auto-increment-must-unsigned
+- type: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
   category: COLUMN
   engine: TIDB
-- type: column.auto-increment-must-unsigned
+- type: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
   category: COLUMN
   engine: OCEANBASE
-- type: column.auto-increment-must-unsigned
+- type: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
   category: COLUMN
   engine: MARIADB
-- type: column.current-time-count-limit
+- type: COLUMN_CURRENT_TIME_COUNT_LIMIT
   category: COLUMN
   engine: MYSQL
-- type: column.current-time-count-limit
+- type: COLUMN_CURRENT_TIME_COUNT_LIMIT
   category: COLUMN
   engine: TIDB
-- type: column.current-time-count-limit
+- type: COLUMN_CURRENT_TIME_COUNT_LIMIT
   category: COLUMN
   engine: OCEANBASE
-- type: column.current-time-count-limit
+- type: COLUMN_CURRENT_TIME_COUNT_LIMIT
   category: COLUMN
   engine: MARIADB
-- type: column.require-default
+- type: COLUMN_REQUIRE_DEFAULT
   category: COLUMN
   engine: MYSQL
-- type: column.require-default
+- type: COLUMN_REQUIRE_DEFAULT
   category: COLUMN
   engine: TIDB
-- type: column.require-default
+- type: COLUMN_REQUIRE_DEFAULT
   category: COLUMN
   engine: POSTGRES
-- type: column.require-default
+- type: COLUMN_REQUIRE_DEFAULT
   category: COLUMN
   engine: ORACLE
-- type: column.require-default
+- type: COLUMN_REQUIRE_DEFAULT
   category: COLUMN
   engine: OCEANBASE
-- type: column.require-default
+- type: COLUMN_REQUIRE_DEFAULT
   category: COLUMN
   engine: MARIADB
-- type: column.default-disallow-volatile
+- type: COLUMN_DEFAULT_DISALLOW_VOLATILE
   category: COLUMN
   engine: POSTGRES
-- type: column.require-charset
+- type: COLUMN_REQUIRE_CHARSET
   category: COLUMN
   engine: MYSQL
-- type: column.require-collation
+- type: COLUMN_REQUIRE_COLLATION
   category: COLUMN
   engine: MYSQL
-- type: schema.backward-compatibility
+- type: SCHEMA_BACKWARD_COMPATIBILITY
   category: SCHEMA
   engine: MYSQL
-- type: schema.backward-compatibility
+- type: SCHEMA_BACKWARD_COMPATIBILITY
   category: SCHEMA
   engine: TIDB
-- type: schema.backward-compatibility
+- type: SCHEMA_BACKWARD_COMPATIBILITY
   category: SCHEMA
   engine: POSTGRES
-- type: schema.backward-compatibility
+- type: SCHEMA_BACKWARD_COMPATIBILITY
   category: SCHEMA
   engine: OCEANBASE
-- type: schema.backward-compatibility
+- type: SCHEMA_BACKWARD_COMPATIBILITY
   category: SCHEMA
   engine: SNOWFLAKE
-- type: schema.backward-compatibility
+- type: SCHEMA_BACKWARD_COMPATIBILITY
   category: SCHEMA
   engine: MSSQL
-- type: schema.backward-compatibility
+- type: SCHEMA_BACKWARD_COMPATIBILITY
   category: SCHEMA
   engine: MARIADB
-- type: database.drop-empty-database
+- type: DATABASE_DROP_EMPTY_DATABASE
   category: DATABASE
   engine: MYSQL
-- type: database.drop-empty-database
+- type: DATABASE_DROP_EMPTY_DATABASE
   category: DATABASE
   engine: TIDB
-- type: database.drop-empty-database
+- type: DATABASE_DROP_EMPTY_DATABASE
   category: DATABASE
   engine: OCEANBASE
-- type: database.drop-empty-database
+- type: DATABASE_DROP_EMPTY_DATABASE
   category: DATABASE
   engine: MARIADB
-- type: index.no-duplicate-column
+- type: INDEX_NO_DUPLICATE_COLUMN
   category: INDEX
   engine: MYSQL
-- type: index.no-duplicate-column
+- type: INDEX_NO_DUPLICATE_COLUMN
   category: INDEX
   engine: TIDB
-- type: index.no-duplicate-column
+- type: INDEX_NO_DUPLICATE_COLUMN
   category: INDEX
   engine: POSTGRES
-- type: index.no-duplicate-column
+- type: INDEX_NO_DUPLICATE_COLUMN
   category: INDEX
   engine: OCEANBASE
-- type: index.no-duplicate-column
+- type: INDEX_NO_DUPLICATE_COLUMN
   category: INDEX
   engine: MARIADB
-- type: index.key-number-limit
+- type: INDEX_KEY_NUMBER_LIMIT
   category: INDEX
   componentList:
     - key: number
@@ -1763,7 +1763,7 @@
         type: NUMBER
         default: 5
   engine: MYSQL
-- type: index.key-number-limit
+- type: INDEX_KEY_NUMBER_LIMIT
   category: INDEX
   componentList:
     - key: number
@@ -1771,7 +1771,7 @@
         type: NUMBER
         default: 5
   engine: TIDB
-- type: index.key-number-limit
+- type: INDEX_KEY_NUMBER_LIMIT
   category: INDEX
   componentList:
     - key: number
@@ -1779,7 +1779,7 @@
         type: NUMBER
         default: 5
   engine: POSTGRES
-- type: index.key-number-limit
+- type: INDEX_KEY_NUMBER_LIMIT
   category: INDEX
   componentList:
     - key: number
@@ -1787,7 +1787,7 @@
         type: NUMBER
         default: 5
   engine: ORACLE
-- type: index.key-number-limit
+- type: INDEX_KEY_NUMBER_LIMIT
   category: INDEX
   componentList:
     - key: number
@@ -1795,7 +1795,7 @@
         type: NUMBER
         default: 5
   engine: OCEANBASE
-- type: index.key-number-limit
+- type: INDEX_KEY_NUMBER_LIMIT
   category: INDEX
   componentList:
     - key: number
@@ -1803,31 +1803,31 @@
         type: NUMBER
         default: 5
   engine: MARIADB
-- type: index.pk-type-limit
+- type: INDEX_PK_TYPE_LIMIT
   category: INDEX
   engine: MYSQL
-- type: index.pk-type-limit
+- type: INDEX_PK_TYPE_LIMIT
   category: INDEX
   engine: TIDB
-- type: index.pk-type-limit
+- type: INDEX_PK_TYPE_LIMIT
   category: INDEX
   engine: OCEANBASE
-- type: index.pk-type-limit
+- type: INDEX_PK_TYPE_LIMIT
   category: INDEX
   engine: MARIADB
-- type: index.type-no-blob
+- type: INDEX_TYPE_NO_BLOB
   category: INDEX
   engine: MYSQL
-- type: index.type-no-blob
+- type: INDEX_TYPE_NO_BLOB
   category: INDEX
   engine: TIDB
-- type: index.type-no-blob
+- type: INDEX_TYPE_NO_BLOB
   category: INDEX
   engine: OCEANBASE
-- type: index.type-no-blob
+- type: INDEX_TYPE_NO_BLOB
   category: INDEX
   engine: MARIADB
-- type: index.total-number-limit
+- type: INDEX_TOTAL_NUMBER_LIMIT
   category: INDEX
   componentList:
     - key: number
@@ -1835,7 +1835,7 @@
         type: NUMBER
         default: 5
   engine: MYSQL
-- type: index.total-number-limit
+- type: INDEX_TOTAL_NUMBER_LIMIT
   category: INDEX
   componentList:
     - key: number
@@ -1843,7 +1843,7 @@
         type: NUMBER
         default: 5
   engine: TIDB
-- type: index.total-number-limit
+- type: INDEX_TOTAL_NUMBER_LIMIT
   category: INDEX
   componentList:
     - key: number
@@ -1851,7 +1851,7 @@
         type: NUMBER
         default: 5
   engine: POSTGRES
-- type: index.total-number-limit
+- type: INDEX_TOTAL_NUMBER_LIMIT
   category: INDEX
   componentList:
     - key: number
@@ -1859,7 +1859,7 @@
         type: NUMBER
         default: 5
   engine: OCEANBASE
-- type: index.total-number-limit
+- type: INDEX_TOTAL_NUMBER_LIMIT
   category: INDEX
   componentList:
     - key: number
@@ -1867,7 +1867,7 @@
         type: NUMBER
         default: 5
   engine: MARIADB
-- type: index.primary-key-type-allowlist
+- type: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
   category: INDEX
   componentList:
     - key: list
@@ -1875,7 +1875,7 @@
         type: STRING_ARRAY
         default: []
   engine: MYSQL
-- type: index.primary-key-type-allowlist
+- type: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
   category: INDEX
   componentList:
     - key: list
@@ -1883,7 +1883,7 @@
         type: STRING_ARRAY
         default: []
   engine: TIDB
-- type: index.primary-key-type-allowlist
+- type: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
   category: INDEX
   componentList:
     - key: list
@@ -1891,7 +1891,7 @@
         type: STRING_ARRAY
         default: []
   engine: POSTGRES
-- type: index.primary-key-type-allowlist
+- type: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
   category: INDEX
   componentList:
     - key: list
@@ -1899,10 +1899,10 @@
         type: STRING_ARRAY
         default: []
   engine: OCEANBASE
-- type: index.create-concurrently
+- type: INDEX_CREATE_CONCURRENTLY
   category: INDEX
   engine: POSTGRES
-- type: index.type-allow-list
+- type: INDEX_TYPE_ALLOW_LIST
   category: INDEX
   componentList:
     - key: list
@@ -1910,10 +1910,10 @@
         type: STRING_ARRAY
         default: []
   engine: MYSQL
-- type: index.not-redundant
+- type: INDEX_NOT_REDUNDANT
   category: INDEX
   engine: MSSQL
-- type: system.charset.allowlist
+- type: SYSTEM_CHARSET_ALLOWLIST
   category: SYSTEM
   componentList:
     - key: list
@@ -1921,7 +1921,7 @@
         type: STRING_ARRAY
         default: []
   engine: MYSQL
-- type: system.charset.allowlist
+- type: SYSTEM_CHARSET_ALLOWLIST
   category: SYSTEM
   componentList:
     - key: list
@@ -1929,7 +1929,7 @@
         type: STRING_ARRAY
         default: []
   engine: TIDB
-- type: system.charset.allowlist
+- type: SYSTEM_CHARSET_ALLOWLIST
   category: SYSTEM
   componentList:
     - key: list
@@ -1937,7 +1937,7 @@
         type: STRING_ARRAY
         default: []
   engine: POSTGRES
-- type: system.charset.allowlist
+- type: SYSTEM_CHARSET_ALLOWLIST
   category: SYSTEM
   componentList:
     - key: list
@@ -1945,7 +1945,7 @@
         type: STRING_ARRAY
         default: []
   engine: OCEANBASE
-- type: system.charset.allowlist
+- type: SYSTEM_CHARSET_ALLOWLIST
   category: SYSTEM
   componentList:
     - key: list
@@ -1953,7 +1953,7 @@
         type: STRING_ARRAY
         default: []
   engine: MARIADB
-- type: system.collation.allowlist
+- type: SYSTEM_COLLATION_ALLOWLIST
   category: SYSTEM
   componentList:
     - key: list
@@ -1961,7 +1961,7 @@
         type: STRING_ARRAY
         default: []
   engine: MYSQL
-- type: system.collation.allowlist
+- type: SYSTEM_COLLATION_ALLOWLIST
   category: SYSTEM
   componentList:
     - key: list
@@ -1969,7 +1969,7 @@
         type: STRING_ARRAY
         default: []
   engine: TIDB
-- type: system.collation.allowlist
+- type: SYSTEM_COLLATION_ALLOWLIST
   category: SYSTEM
   componentList:
     - key: list
@@ -1977,7 +1977,7 @@
         type: STRING_ARRAY
         default: []
   engine: POSTGRES
-- type: system.collation.allowlist
+- type: SYSTEM_COLLATION_ALLOWLIST
   category: SYSTEM
   componentList:
     - key: list
@@ -1985,7 +1985,7 @@
         type: STRING_ARRAY
         default: []
   engine: OCEANBASE
-- type: system.collation.allowlist
+- type: SYSTEM_COLLATION_ALLOWLIST
   category: SYSTEM
   componentList:
     - key: list
@@ -1993,7 +1993,7 @@
         type: STRING_ARRAY
         default: []
   engine: MARIADB
-- type: system.comment.length
+- type: SYSTEM_COMMENT_LENGTH
   category: SYSTEM
   componentList:
     - key: number
@@ -2001,25 +2001,25 @@
         type: NUMBER
         default: 64
   engine: POSTGRES
-- type: system.procedure.disallow-create
+- type: SYSTEM_PROCEDURE_DISALLOW_CREATE
   category: SYSTEM
   engine: MYSQL
-- type: system.procedure.disallow-create
+- type: SYSTEM_PROCEDURE_DISALLOW_CREATE
   category: SYSTEM
   engine: MSSQL
-- type: system.event.disallow-create
+- type: SYSTEM_EVENT_DISALLOW_CREATE
   category: SYSTEM
   engine: MYSQL
-- type: system.view.disallow-create
+- type: SYSTEM_VIEW_DISALLOW_CREATE
   category: SYSTEM
   engine: MYSQL
-- type: system.function.disallow-create
+- type: SYSTEM_FUNCTION_DISALLOW_CREATE
   category: SYSTEM
   engine: MYSQL
-- type: system.function.disallow-create
+- type: SYSTEM_FUNCTION_DISALLOW_CREATE
   category: SYSTEM
   engine: MSSQL
-- type: system.function.disallowed-list
+- type: SYSTEM_FUNCTION_DISALLOWED_LIST
   category: SYSTEM
   componentList:
     - key: list
@@ -2027,7 +2027,7 @@
         type: STRING_ARRAY
         default: []
   engine: MYSQL
-- type: advice.online-migration
+- type: ADVICE_ONLINE_MIGRATION
   category: ADVICE
   componentList:
     - key: number
@@ -2035,7 +2035,7 @@
         type: NUMBER
         default: 100000000
   engine: MYSQL
-- type: advice.online-migration
+- type: ADVICE_ONLINE_MIGRATION
   category: ADVICE
   componentList:
     - key: number
@@ -2043,12 +2043,12 @@
         type: NUMBER
         default: 100000000
   engine: MARIADB
-- type: statement.add-foreign-key-not-valid
+- type: STATEMENT_ADD_FOREIGN_KEY_NOT_VALID
   category: STATEMENT
   engine: POSTGRES
-- type: statement.non-transactional
+- type: STATEMENT_NON_TRANSACTIONAL
   category: STATEMENT
   engine: POSTGRES
-- type: statement.object-owner-check
+- type: STATEMENT_OBJECT_OWNER_CHECK
   category: STATEMENT
   engine: POSTGRES

@@ -15,7 +15,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `userTable` requires PRIMARY KEY
       startposition:
         line: 1
@@ -42,7 +42,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `t2` requires PRIMARY KEY
       startposition:
         line: 2
@@ -56,7 +56,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `t2` requires PRIMARY KEY
       startposition:
         line: 2
@@ -74,7 +74,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `t2` requires PRIMARY KEY
       startposition:
         line: 2
@@ -97,7 +97,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `t` requires PRIMARY KEY
       startposition:
         line: 2
@@ -110,7 +110,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `t` requires PRIMARY KEY
       startposition:
         line: 2
@@ -144,7 +144,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `t` requires PRIMARY KEY
       startposition:
         line: 3
@@ -157,7 +157,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `tech_book` requires PRIMARY KEY
       startposition:
         line: 2
@@ -172,7 +172,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `tech_book` requires PRIMARY KEY
       startposition:
         line: 2
@@ -185,7 +185,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table `tech_book` requires PRIMARY KEY
       startposition:
         line: 2

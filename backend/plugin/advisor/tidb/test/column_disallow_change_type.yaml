@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 403
-      title: column.disallow-change-type
+      title: COLUMN_DISALLOW_CHANGE_TYPE
       content: '"ALTER TABLE tech_book MODIFY id INTEGER UNSIGNED" changes column type'
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 403
-      title: column.disallow-change-type
+      title: COLUMN_DISALLOW_CHANGE_TYPE
       content: '"ALTER TABLE tech_book MODIFY id bigint" changes column type'
       startposition:
         line: 1
@@ -27,7 +27,7 @@
   want:
     - status: 2
       code: 403
-      title: column.disallow-change-type
+      title: COLUMN_DISALLOW_CHANGE_TYPE
       content: '"ALTER TABLE tech_book CHANGE name uname varchar(20)" changes column type'
       startposition:
         line: 1

@@ -10,7 +10,7 @@
   want:
     - status: 2
       code: 221
-      title: statement.where.no-equal-null
+      title: STATEMENT_WHERE_NO_EQUAL_NULL
       content: 'WHERE clause contains equal null: SELECT * FROM t WHERE name = ''test'' AND id = NULL;'
       startposition:
         line: 1

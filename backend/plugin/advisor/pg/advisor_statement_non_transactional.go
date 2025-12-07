@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementNonTransactional, &NonTransactionalAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_NON_TRANSACTIONAL, &NonTransactionalAdvisor{})
 }
 
 // NonTransactionalAdvisor is the advisor checking for non-transactional statements.
@@ -40,7 +40,7 @@ func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	rule := &nonTransactionalRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		statementsText: checkCtx.Statements,
 	}

@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementRequireWhereForSelect, &WhereRequirementForSelectAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT, &WhereRequirementForSelectAdvisor{})
 }
 
 // WhereRequirementForSelectAdvisor is the advisor checking for the WHERE clause requirement for SELECT statements.
@@ -39,7 +39,7 @@ func (*WhereRequirementForSelectAdvisor) Check(_ context.Context, checkCtx advis
 	}
 	checker := &whereRequirementForSelectChecker{
 		level: level,
-		title: string(checkCtx.Rule.Type),
+		title: checkCtx.Rule.Type.String(),
 	}
 	for _, stmtNode := range root {
 		checker.text = stmtNode.Text()

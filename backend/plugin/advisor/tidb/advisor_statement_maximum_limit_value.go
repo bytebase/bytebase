@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleStatementMaximumLimitValue, &StatementMaximumLimitValueAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_STATEMENT_MAXIMUM_LIMIT_VALUE, &StatementMaximumLimitValueAdvisor{})
 }
 
 // StatementMaximumLimitValueAdvisor is the advisor checking for LIMIT maximum value.
@@ -47,7 +47,7 @@ func (*StatementMaximumLimitValueAdvisor) Check(_ context.Context, checkCtx advi
 
 	checker := &statementMaximumLimitValueChecker{
 		level:         level,
-		title:         string(checkCtx.Rule.Type),
+		title:         checkCtx.Rule.Type.String(),
 		limitMaxValue: payload.Number,
 	}
 

@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleStatementNoSelectAll, &SelectNoSelectAllAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL, &SelectNoSelectAllAdvisor{})
 }
 
 // SelectNoSelectAllAdvisor is the advisor checking for no select all.
@@ -37,7 +37,7 @@ func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	rule := NewSelectNoSelectAllRule(level, string(checkCtx.Rule.Type))
+	rule := NewSelectNoSelectAllRule(level, checkCtx.Rule.Type.String())
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, parseResult := range parseResults {

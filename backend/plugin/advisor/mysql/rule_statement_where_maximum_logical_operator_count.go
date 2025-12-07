@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount, &StatementWhereMaximumLogicalOperatorCountAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT, &StatementWhereMaximumLogicalOperatorCountAdvisor{})
 }
 
 type StatementWhereMaximumLogicalOperatorCountAdvisor struct {
@@ -43,7 +43,7 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context
 	var allAdvice []*storepb.Advice
 	for _, stmt := range stmtList {
 		// Create the rule for each statement
-		rule := NewStatementWhereMaximumLogicalOperatorCountRule(level, string(checkCtx.Rule.Type), payload.Number)
+		rule := NewStatementWhereMaximumLogicalOperatorCountRule(level, checkCtx.Rule.Type.String(), payload.Number)
 
 		// Create the generic checker with the rule
 		checker := NewGenericChecker([]Rule{rule})

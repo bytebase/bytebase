@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 601
-      title: table.require-pk
+      title: TABLE_REQUIRE_PK
       content: Table MySchema.MyTable requires PRIMARY KEY.
       startposition:
         line: 1

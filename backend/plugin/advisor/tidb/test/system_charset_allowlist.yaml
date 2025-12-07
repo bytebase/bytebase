@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 1001
-      title: system.charset.allowlist
+      title: SYSTEM_CHARSET_ALLOWLIST
       content: '"CREATE TABLE t(a int) CHARSET ascii" used disabled charset ''ascii'''
       startposition:
         line: 1
@@ -20,7 +20,7 @@
   want:
     - status: 2
       code: 1001
-      title: system.charset.allowlist
+      title: SYSTEM_CHARSET_ALLOWLIST
       content: '"ALTER TABLE t CHARSET ascii" used disabled charset ''ascii'''
       startposition:
         line: 2
@@ -31,7 +31,7 @@
   want:
     - status: 2
       code: 1001
-      title: system.charset.allowlist
+      title: SYSTEM_CHARSET_ALLOWLIST
       content: '"ALTER DATABASE test CHARSET ascii" used disabled charset ''ascii'''
       startposition:
         line: 1
@@ -42,7 +42,7 @@
   want:
     - status: 2
       code: 1001
-      title: system.charset.allowlist
+      title: SYSTEM_CHARSET_ALLOWLIST
       content: '"CREATE TABLE t(a varchar(255) CHARSET ascii)" used disabled charset ''ascii'''
       startposition:
         line: 1
@@ -55,7 +55,7 @@
   want:
     - status: 2
       code: 1001
-      title: system.charset.allowlist
+      title: SYSTEM_CHARSET_ALLOWLIST
       content: '"ALTER TABLE t ADD COLUMN a varchar(255) CHARSET ascii" used disabled charset ''ascii'''
       startposition:
         line: 2
@@ -68,7 +68,7 @@
   want:
     - status: 2
       code: 1001
-      title: system.charset.allowlist
+      title: SYSTEM_CHARSET_ALLOWLIST
       content: '"ALTER TABLE t MODIFY COLUMN a varchar(255) CHARSET ascii" used disabled charset ''ascii'''
       startposition:
         line: 2
@@ -81,7 +81,7 @@
   want:
     - status: 2
       code: 1001
-      title: system.charset.allowlist
+      title: SYSTEM_CHARSET_ALLOWLIST
       content: '"ALTER TABLE t CHANGE COLUMN a a varchar(255) CHARSET ascii" used disabled charset ''ascii'''
       startposition:
         line: 2

@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleStatementRequireWhereForUpdateDelete, &WhereRequireForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE, &WhereRequireForUpdateDeleteAdvisor{})
 }
 
 // WhereRequireForUpdateDeleteAdvisor is the advisor checking for WHERE clause requirement.
@@ -38,7 +38,7 @@ func (*WhereRequireForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	rule := NewWhereRequireForUpdateDeleteRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
+	rule := NewWhereRequireForUpdateDeleteRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

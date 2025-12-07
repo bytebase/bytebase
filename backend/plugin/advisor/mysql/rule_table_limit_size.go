@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableLimitSize, &MaximumTableSizeAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_LIMIT_SIZE, &MaximumTableSizeAdvisor{})
 }
 
 type MaximumTableSizeAdvisor struct {
@@ -55,7 +55,7 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 
 		if statTypeChecker.IsDDL {
 			// Create the rule
-			rule := NewTableLimitSizeRule(status, string(checkCtx.Rule.Type), payload.Number, checkCtx.DBSchema)
+			rule := NewTableLimitSizeRule(status, checkCtx.Rule.Type.String(), payload.Number, checkCtx.DBSchema)
 
 			// Create the generic checker with the rule
 			checker := NewGenericChecker([]Rule{rule})

@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleSchemaBackwardCompatibility, &MigrationCompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, &MigrationCompatibilityAdvisor{})
 }
 
 // MigrationCompatibilityAdvisor is the advisor checking for migration compatibility.
@@ -41,7 +41,7 @@ func (*MigrationCompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	// Create the rule
-	rule := NewMigrationCompatibilityRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
+	rule := NewMigrationCompatibilityRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

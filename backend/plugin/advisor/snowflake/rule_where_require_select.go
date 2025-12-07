@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleStatementRequireWhereForSelect, &WhereRequireForSelectAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT, &WhereRequireForSelectAdvisor{})
 }
 
 // WhereRequireForSelectAdvisor is the advisor checking for WHERE clause requirement for SELECT statement.
@@ -37,7 +37,7 @@ func (*WhereRequireForSelectAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	rule := NewWhereRequireForSelectRule(level, string(checkCtx.Rule.Type))
+	rule := NewWhereRequireForSelectRule(level, checkCtx.Rule.Type.String())
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, parseResult := range parseResults {

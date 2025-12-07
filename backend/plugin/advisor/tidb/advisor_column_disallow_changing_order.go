@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnDisallowChangingOrder, &ColumnDisallowChangingOrderAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGING_ORDER, &ColumnDisallowChangingOrderAdvisor{})
 }
 
 // ColumnDisallowChangingOrderAdvisor is the advisor checking for disallow changing column order.
@@ -42,7 +42,7 @@ func (*ColumnDisallowChangingOrderAdvisor) Check(_ context.Context, checkCtx adv
 	}
 	checker := &columnDisallowChangingOrderChecker{
 		level: level,
-		title: string(checkCtx.Rule.Type),
+		title: checkCtx.Rule.Type.String(),
 	}
 
 	for _, stmt := range stmtList {

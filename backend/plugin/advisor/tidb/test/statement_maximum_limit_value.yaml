@@ -4,7 +4,7 @@
   want:
     - status: 2
       code: 222
-      title: statement.maximum-limit-value
+      title: STATEMENT_MAXIMUM_LIMIT_VALUE
       content: The limit value 1000000 exceeds the maximum allowed value 1000
       startposition:
         line: 1

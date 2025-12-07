@@ -30,9 +30,9 @@ type TestCase struct {
 	Want      []*storepb.Advice `yaml:"want,omitempty"`
 }
 
-// RunANTLRAdvisorRuleTest helps to test ANTLR-based SQL review rules.
-// This is similar to advisor.RunSQLReviewRuleTest but for ANTLR advisors.
-func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbType storepb.Engine, record bool) {
+// RunPGSQLReviewRuleTest helps to test PostgreSQL SQL review rules.
+// This is similar to advisor.RunSQLReviewRuleTest.
+func RunPGSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType storepb.Engine, record bool) {
 	var tests []TestCase
 
 	fileName := strings.Map(func(r rune) rune {
@@ -42,7 +42,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		default:
 			return r
 		}
-	}, string(rule))
+	}, strings.ToLower(rule.String()))
 	filepath := filepath.Join("test", fileName+".yaml")
 	yamlFile, err := os.Open(filepath)
 	require.NoError(t, err)
@@ -102,7 +102,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 
 		ruleList := []*storepb.SQLReviewRule{
 			{
-				Type:    string(rule),
+				Type:    rule,
 				Level:   storepb.SQLReviewRule_WARNING,
 				Payload: payload,
 			},

@@ -24,7 +24,7 @@ func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLR
 		}
 		rules = append(rules, &v1pb.SQLReviewRule{
 			Level:   level,
-			Type:    string(rule.Type),
+			Type:    v1pb.SQLReviewRule_Type(rule.Type),
 			Payload: rule.Payload,
 			Engine:  convertToEngine(rule.Engine),
 		})
@@ -48,7 +48,7 @@ func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewR
 		ruleList = append(ruleList, &storepb.SQLReviewRule{
 			Level:   level,
 			Payload: rule.Payload,
-			Type:    rule.Type,
+			Type:    storepb.SQLReviewRule_Type(rule.Type),
 			Engine:  convertEngine(rule.Engine),
 		})
 	}

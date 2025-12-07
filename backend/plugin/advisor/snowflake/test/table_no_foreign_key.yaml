@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 602
-      title: table.no-foreign-key
+      title: TABLE_NO_FOREIGN_KEY
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
       startposition:
         line: 1
@@ -27,7 +27,7 @@
   want:
     - status: 2
       code: 602
-      title: table.no-foreign-key
+      title: TABLE_NO_FOREIGN_KEY
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
       startposition:
         line: 6
@@ -45,7 +45,7 @@
   want:
     - status: 2
       code: 602
-      title: table.no-foreign-key
+      title: TABLE_NO_FOREIGN_KEY
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
       startposition:
         line: 7
@@ -63,7 +63,7 @@
   want:
     - status: 2
       code: 602
-      title: table.no-foreign-key
+      title: TABLE_NO_FOREIGN_KEY
       content: FOREIGN KEY is not allowed in the table "ANOTHER_SCHEMA"."CUSTOMER".
       startposition:
         line: 1
@@ -96,7 +96,7 @@
   want:
     - status: 2
       code: 602
-      title: table.no-foreign-key
+      title: TABLE_NO_FOREIGN_KEY
       content: FOREIGN KEY is not allowed in the table CUSTOMER.
       startposition:
         line: 13

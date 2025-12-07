@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleCharsetAllowlist, &CharsetAllowlistAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleCharsetAllowlist, &CharsetAllowlistAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleCharsetAllowlist, &CharsetAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST, &CharsetAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST, &CharsetAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST, &CharsetAllowlistAdvisor{})
 }
 
 // CharsetAllowlistAdvisor is the advisor checking for charset allowlist.
@@ -51,7 +51,7 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 
 	// Create the rule
-	rule := NewCharsetAllowlistRule(level, string(checkCtx.Rule.Type), allowList)
+	rule := NewCharsetAllowlistRule(level, checkCtx.Rule.Type.String(), allowList)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleTableNaming, &NamingTableAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_NAMING_TABLE, &NamingTableAdvisor{})
 }
 
 // NamingTableAdvisor is the advisor checking for table naming convention..
@@ -46,7 +46,7 @@ func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	}
 
 	// Create the rule
-	rule := NewNamingTableRule(level, string(checkCtx.Rule.Type), format, maxLength)
+	rule := NewNamingTableRule(level, checkCtx.Rule.Type.String(), format, maxLength)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

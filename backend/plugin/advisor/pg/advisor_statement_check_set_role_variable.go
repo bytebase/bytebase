@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementCheckSetRoleVariable, &StatementCheckSetRoleVariable{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_CHECK_SET_ROLE_VARIABLE, &StatementCheckSetRoleVariable{})
 }
 
 type StatementCheckSetRoleVariable struct {
@@ -37,7 +37,7 @@ func (*StatementCheckSetRoleVariable) Check(_ context.Context, checkCtx advisor.
 	rule := &StatementCheckSetRoleVariableRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 	}
 

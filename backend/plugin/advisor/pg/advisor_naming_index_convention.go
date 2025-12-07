@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleIDXNaming, &NamingIndexConventionAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_NAMING_INDEX_IDX, &NamingIndexConventionAdvisor{})
 }
 
 // NamingIndexConventionAdvisor is the advisor checking for index naming convention.
@@ -40,7 +40,7 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(advisor.SQLReviewRuleType(checkCtx.Rule.Type), checkCtx.Rule.Payload)
+	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(storepb.SQLReviewRule_Type(checkCtx.Rule.Type), checkCtx.Rule.Payload)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	rule := &namingIndexConventionRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		format:           format,
 		maxLength:        maxLength,

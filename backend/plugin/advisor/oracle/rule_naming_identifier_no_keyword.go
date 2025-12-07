@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleIdentifierNoKeyword, &NamingIdentifierNoKeywordAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD, &NamingIdentifierNoKeywordAdvisor{})
 }
 
 // NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier naming convention without keyword.
@@ -41,7 +41,7 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := NewNamingIdentifierNoKeywordRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
+	rule := NewNamingIdentifierNoKeywordRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

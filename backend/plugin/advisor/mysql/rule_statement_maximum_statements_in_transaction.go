@@ -15,7 +15,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementMaximumStatementsInTransaction, &StatementMaximumStatementsInTransactionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION, &StatementMaximumStatementsInTransactionAdvisor{})
 }
 
 type StatementMaximumStatementsInTransactionAdvisor struct {
@@ -38,7 +38,7 @@ func (*StatementMaximumStatementsInTransactionAdvisor) Check(_ context.Context, 
 	}
 
 	// Create the rule
-	rule := NewStatementMaximumStatementsInTransactionRule(level, string(checkCtx.Rule.Type), payload.Number)
+	rule := NewStatementMaximumStatementsInTransactionRule(level, checkCtx.Rule.Type.String(), payload.Number)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

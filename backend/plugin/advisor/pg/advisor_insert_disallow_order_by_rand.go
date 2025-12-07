@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementInsertDisallowOrderByRand, &InsertDisallowOrderByRandAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND, &InsertDisallowOrderByRandAdvisor{})
 }
 
 // InsertDisallowOrderByRandAdvisor is the advisor checking for to disallow order by rand in INSERT statements.
@@ -41,7 +41,7 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 	rule := &insertDisallowOrderByRandRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		statementsText: checkCtx.Statements,
 	}
