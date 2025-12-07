@@ -41,7 +41,7 @@
       "title": "Enforce inclusion of primary key in a table",
       "description": "Various data synchronization, comparison, and rollback tools require tables to have primary key. Suggestion error level: Error"
     },
-    "table-no-foreign-key": {
+    "TABLE_NO_FOREIGN_KEY": {
       "title": "Prohibit using foreign key constraints",
       "description": "The advantages and disadvantages of foreign key are highly controversial. Using foreign key may significantly increase the difficulty of database changes, scalability (such as sharding), etc. And may even prevent the use of some tools. Therefore, another option is to implement foreign key constraints at the application layer. Suggestion error level: Warning"
     },
@@ -354,7 +354,7 @@
         }
       }
     },
-    "column-current-time-count-limit": {
+    "COLUMN_CURRENT_TIME_COUNT_LIMIT": {
       "title": "Restrict the number of columns in the table that acquire system time",
       "description": "Only columns recording the creation time of the record with \"DEFAULT NOW()\" and recording the update time of the record with \"DEFAULT NOW() ON UPDATE\" need to call function to get system time. It is meaningless and will increase resource overhead to record system time in other columns. Suggestion error level: Error"
     },
