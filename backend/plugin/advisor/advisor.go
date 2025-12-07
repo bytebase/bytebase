@@ -23,11 +23,11 @@ const (
 )
 
 // NewStatusBySQLReviewRuleLevel returns status by SQLReviewRuleLevel.
-func NewStatusBySQLReviewRuleLevel(level storepb.SQLReviewRuleLevel) (storepb.Advice_Status, error) {
+func NewStatusBySQLReviewRuleLevel(level storepb.SQLReviewRule_Level) (storepb.Advice_Status, error) {
 	switch level {
-	case storepb.SQLReviewRuleLevel_ERROR:
+	case storepb.SQLReviewRule_ERROR:
 		return storepb.Advice_ERROR, nil
-	case storepb.SQLReviewRuleLevel_WARNING:
+	case storepb.SQLReviewRule_WARNING:
 		return storepb.Advice_WARNING, nil
 	default:
 		return storepb.Advice_STATUS_UNSPECIFIED, errors.Errorf("unexpected rule level type: %s", level)

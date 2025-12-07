@@ -103,7 +103,7 @@ func RunANTLRAdvisorRuleTest(t *testing.T, rule advisor.SQLReviewRuleType, dbTyp
 		ruleList := []*storepb.SQLReviewRule{
 			{
 				Type:    string(rule),
-				Level:   storepb.SQLReviewRuleLevel_WARNING,
+				Level:   storepb.SQLReviewRule_WARNING,
 				Payload: payload,
 			},
 		}

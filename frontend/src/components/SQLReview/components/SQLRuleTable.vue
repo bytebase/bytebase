@@ -103,7 +103,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RuleTemplateV2 } from "@/types";
 import { getRuleLocalization } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
+import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
@@ -294,7 +294,7 @@ const onRuleChanged = (update: Partial<RuleTemplateV2>) => {
   emit("rule-upsert", state.activeRule, update);
 };
 
-const updateLevel = (rule: RuleTemplateV2, level: SQLReviewRuleLevel) => {
+const updateLevel = (rule: RuleTemplateV2, level: SQLReviewRule_Level) => {
   emit("rule-upsert", rule, { level });
 };
 </script>

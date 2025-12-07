@@ -14,12 +14,12 @@ import (
 func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLReviewRule {
 	var rules []*v1pb.SQLReviewRule
 	for _, rule := range ruleList {
-		level := v1pb.SQLReviewRuleLevel_LEVEL_UNSPECIFIED
+		level := v1pb.SQLReviewRule_LEVEL_UNSPECIFIED
 		switch rule.Level {
-		case storepb.SQLReviewRuleLevel_ERROR:
-			level = v1pb.SQLReviewRuleLevel_ERROR
-		case storepb.SQLReviewRuleLevel_WARNING:
-			level = v1pb.SQLReviewRuleLevel_WARNING
+		case storepb.SQLReviewRule_ERROR:
+			level = v1pb.SQLReviewRule_ERROR
+		case storepb.SQLReviewRule_WARNING:
+			level = v1pb.SQLReviewRule_WARNING
 		default:
 		}
 		rules = append(rules, &v1pb.SQLReviewRule{
@@ -36,12 +36,12 @@ func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLR
 func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewRule, error) {
 	var ruleList []*storepb.SQLReviewRule
 	for _, rule := range rules {
-		var level storepb.SQLReviewRuleLevel
+		var level storepb.SQLReviewRule_Level
 		switch rule.Level {
-		case v1pb.SQLReviewRuleLevel_ERROR:
-			level = storepb.SQLReviewRuleLevel_ERROR
-		case v1pb.SQLReviewRuleLevel_WARNING:
-			level = storepb.SQLReviewRuleLevel_WARNING
+		case v1pb.SQLReviewRule_ERROR:
+			level = storepb.SQLReviewRule_ERROR
+		case v1pb.SQLReviewRule_WARNING:
+			level = storepb.SQLReviewRule_WARNING
 		default:
 			return nil, errors.Errorf("invalid rule level %v", rule.Level)
 		}

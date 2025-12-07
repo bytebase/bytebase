@@ -549,7 +549,7 @@
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
     - [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest)
   
-    - [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel)
+    - [SQLReviewRule.Level](#bytebase-v1-SQLReviewRule-Level)
   
     - [ReviewConfigService](#bytebase-v1-ReviewConfigService)
   
@@ -9004,7 +9004,7 @@ SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for d
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | type | [string](#string) |  | The type of SQL review rule. |
-| level | [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel) |  | The severity level of the rule. |
+| level | [SQLReviewRule.Level](#bytebase-v1-SQLReviewRule-Level) |  | The severity level of the rule. |
 | payload | [string](#string) |  | The payload is a JSON string that varies by rule type. |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine this rule applies to. |
 
@@ -9034,9 +9034,9 @@ The name field is used to identify the SQL review config to update. |
  
 
 
-<a name="bytebase-v1-SQLReviewRuleLevel"></a>
+<a name="bytebase-v1-SQLReviewRule-Level"></a>
 
-### SQLReviewRuleLevel
+### SQLReviewRule.Level
 The severity level for SQL review rules.
 
 | Name | Number | Description |

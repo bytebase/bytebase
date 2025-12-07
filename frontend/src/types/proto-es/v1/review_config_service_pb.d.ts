@@ -197,9 +197,9 @@ export declare type SQLReviewRule = Message<"bytebase.v1.SQLReviewRule"> & {
   /**
    * The severity level of the rule.
    *
-   * @generated from field: bytebase.v1.SQLReviewRuleLevel level = 2;
+   * @generated from field: bytebase.v1.SQLReviewRule.Level level = 2;
    */
-  level: SQLReviewRuleLevel;
+  level: SQLReviewRule_Level;
 
   /**
    * The payload is a JSON string that varies by rule type.
@@ -225,9 +225,9 @@ export declare const SQLReviewRuleSchema: GenMessage<SQLReviewRule>;
 /**
  * The severity level for SQL review rules.
  *
- * @generated from enum bytebase.v1.SQLReviewRuleLevel
+ * @generated from enum bytebase.v1.SQLReviewRule.Level
  */
-export enum SQLReviewRuleLevel {
+export enum SQLReviewRule_Level {
   /**
    * Unspecified level.
    *
@@ -251,9 +251,9 @@ export enum SQLReviewRuleLevel {
 }
 
 /**
- * Describes the enum bytebase.v1.SQLReviewRuleLevel.
+ * Describes the enum bytebase.v1.SQLReviewRule.Level.
  */
-export declare const SQLReviewRuleLevelSchema: GenEnum<SQLReviewRuleLevel>;
+export declare const SQLReviewRule_LevelSchema: GenEnum<SQLReviewRule_Level>;
 
 /**
  * ReviewConfigService manages approval flow configurations.

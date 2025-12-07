@@ -54,7 +54,7 @@ import { NCheckbox, NDivider } from "naive-ui";
 import { SearchBox } from "@/components/v2";
 import type { RuleTemplateV2 } from "@/types";
 import { getRuleLocalization } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
+import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import SQLReviewCategoryTabFilter from "./SQLReviewCategoryTabFilter.vue";
 import SQLReviewLevelFilter from "./SQLReviewLevelFilter.vue";
@@ -76,7 +76,7 @@ const props = withDefaults(
 );
 
 defineEmits<{
-  (event: "toggle-checked-level", level: SQLReviewRuleLevel): void;
+  (event: "toggle-checked-level", level: SQLReviewRule_Level): void;
   (event: "toggle-select-all", select: boolean): void;
   (event: "change-category", category: string): void;
   (event: "change-search-text", keyword: string): void;

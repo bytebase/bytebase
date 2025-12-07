@@ -1,9 +1,9 @@
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
+import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 
 export type SQLRuleFilterParams = {
-  checkedLevel: Set<SQLReviewRuleLevel>;
+  checkedLevel: Set<SQLReviewRule_Level>;
   selectedCategory: string;
   searchText: string;
 };
@@ -18,7 +18,7 @@ export const useSQLRuleFilter = () => {
     searchText: "",
   });
   const events = {
-    toggleCheckedLevel(level: SQLReviewRuleLevel) {
+    toggleCheckedLevel(level: SQLReviewRule_Level) {
       if (params.checkedLevel.has(level)) {
         params.checkedLevel.delete(level);
       } else {

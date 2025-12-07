@@ -21,53 +21,57 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SQLReviewRuleLevel int32
+// The severity level for SQL review rules.
+type SQLReviewRule_Level int32
 
 const (
-	SQLReviewRuleLevel_LEVEL_UNSPECIFIED SQLReviewRuleLevel = 0
-	SQLReviewRuleLevel_ERROR             SQLReviewRuleLevel = 1
-	SQLReviewRuleLevel_WARNING           SQLReviewRuleLevel = 2
+	// Unspecified level.
+	SQLReviewRule_LEVEL_UNSPECIFIED SQLReviewRule_Level = 0
+	// Rule violation is an error.
+	SQLReviewRule_ERROR SQLReviewRule_Level = 1
+	// Rule violation is a warning.
+	SQLReviewRule_WARNING SQLReviewRule_Level = 2
 )
 
-// Enum value maps for SQLReviewRuleLevel.
+// Enum value maps for SQLReviewRule_Level.
 var (
-	SQLReviewRuleLevel_name = map[int32]string{
+	SQLReviewRule_Level_name = map[int32]string{
 		0: "LEVEL_UNSPECIFIED",
 		1: "ERROR",
 		2: "WARNING",
 	}
-	SQLReviewRuleLevel_value = map[string]int32{
+	SQLReviewRule_Level_value = map[string]int32{
 		"LEVEL_UNSPECIFIED": 0,
 		"ERROR":             1,
 		"WARNING":           2,
 	}
 )
 
-func (x SQLReviewRuleLevel) Enum() *SQLReviewRuleLevel {
-	p := new(SQLReviewRuleLevel)
+func (x SQLReviewRule_Level) Enum() *SQLReviewRule_Level {
+	p := new(SQLReviewRule_Level)
 	*p = x
 	return p
 }
 
-func (x SQLReviewRuleLevel) String() string {
+func (x SQLReviewRule_Level) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (SQLReviewRuleLevel) Descriptor() protoreflect.EnumDescriptor {
+func (SQLReviewRule_Level) Descriptor() protoreflect.EnumDescriptor {
 	return file_store_review_config_proto_enumTypes[0].Descriptor()
 }
 
-func (SQLReviewRuleLevel) Type() protoreflect.EnumType {
+func (SQLReviewRule_Level) Type() protoreflect.EnumType {
 	return &file_store_review_config_proto_enumTypes[0]
 }
 
-func (x SQLReviewRuleLevel) Number() protoreflect.EnumNumber {
+func (x SQLReviewRule_Level) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use SQLReviewRuleLevel.Descriptor instead.
-func (SQLReviewRuleLevel) EnumDescriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use SQLReviewRule_Level.Descriptor instead.
+func (SQLReviewRule_Level) EnumDescriptor() ([]byte, []int) {
+	return file_store_review_config_proto_rawDescGZIP(), []int{1, 0}
 }
 
 type ReviewConfigPayload struct {
@@ -117,7 +121,7 @@ func (x *ReviewConfigPayload) GetSqlReviewRules() []*SQLReviewRule {
 type SQLReviewRule struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Type          string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Level         SQLReviewRuleLevel     `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.store.SQLReviewRuleLevel" json:"level,omitempty"`
+	Level         SQLReviewRule_Level    `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.store.SQLReviewRule_Level" json:"level,omitempty"`
 	Payload       string                 `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
 	Engine        Engine                 `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.store.Engine" json:"engine,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -161,11 +165,11 @@ func (x *SQLReviewRule) GetType() string {
 	return ""
 }
 
-func (x *SQLReviewRule) GetLevel() SQLReviewRuleLevel {
+func (x *SQLReviewRule) GetLevel() SQLReviewRule_Level {
 	if x != nil {
 		return x.Level
 	}
-	return SQLReviewRuleLevel_LEVEL_UNSPECIFIED
+	return SQLReviewRule_LEVEL_UNSPECIFIED
 }
 
 func (x *SQLReviewRule) GetPayload() string {
@@ -188,13 +192,13 @@ const file_store_review_config_proto_rawDesc = "" +
 	"\n" +
 	"\x19store/review_config.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"^\n" +
 	"\x13ReviewConfigPayload\x12G\n" +
-	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRules\"\xa7\x01\n" +
+	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRules\"\xe0\x01\n" +
 	"\rSQLReviewRule\x12\x12\n" +
-	"\x04type\x18\x01 \x01(\tR\x04type\x128\n" +
-	"\x05level\x18\x02 \x01(\x0e2\".bytebase.store.SQLReviewRuleLevelR\x05level\x12\x18\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x129\n" +
+	"\x05level\x18\x02 \x01(\x0e2#.bytebase.store.SQLReviewRule.LevelR\x05level\x12\x18\n" +
 	"\apayload\x18\x03 \x01(\tR\apayload\x12.\n" +
-	"\x06engine\x18\x04 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine*C\n" +
-	"\x12SQLReviewRuleLevel\x12\x15\n" +
+	"\x06engine\x18\x04 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\"6\n" +
+	"\x05Level\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
 	"\aWARNING\x10\x02B\x94\x01\n" +
@@ -215,14 +219,14 @@ func file_store_review_config_proto_rawDescGZIP() []byte {
 var file_store_review_config_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_review_config_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_review_config_proto_goTypes = []any{
-	(SQLReviewRuleLevel)(0),     // 0: bytebase.store.SQLReviewRuleLevel
+	(SQLReviewRule_Level)(0),    // 0: bytebase.store.SQLReviewRule.Level
 	(*ReviewConfigPayload)(nil), // 1: bytebase.store.ReviewConfigPayload
 	(*SQLReviewRule)(nil),       // 2: bytebase.store.SQLReviewRule
 	(Engine)(0),                 // 3: bytebase.store.Engine
 }
 var file_store_review_config_proto_depIdxs = []int32{
 	2, // 0: bytebase.store.ReviewConfigPayload.sql_review_rules:type_name -> bytebase.store.SQLReviewRule
-	0, // 1: bytebase.store.SQLReviewRule.level:type_name -> bytebase.store.SQLReviewRuleLevel
+	0, // 1: bytebase.store.SQLReviewRule.level:type_name -> bytebase.store.SQLReviewRule.Level
 	3, // 2: bytebase.store.SQLReviewRule.engine:type_name -> bytebase.store.Engine
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type

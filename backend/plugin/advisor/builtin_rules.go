@@ -12,7 +12,7 @@ func GetBuiltinRules(engine storepb.Engine) []*storepb.SQLReviewRule {
 		return []*storepb.SQLReviewRule{
 			{
 				Type:    string(BuiltinRulePriorBackupCheck),
-				Level:   storepb.SQLReviewRuleLevel_ERROR,
+				Level:   storepb.SQLReviewRule_ERROR,
 				Payload: "",
 				Engine:  engine,
 			},

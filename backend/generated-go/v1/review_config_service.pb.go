@@ -26,56 +26,56 @@ const (
 )
 
 // The severity level for SQL review rules.
-type SQLReviewRuleLevel int32
+type SQLReviewRule_Level int32
 
 const (
 	// Unspecified level.
-	SQLReviewRuleLevel_LEVEL_UNSPECIFIED SQLReviewRuleLevel = 0
+	SQLReviewRule_LEVEL_UNSPECIFIED SQLReviewRule_Level = 0
 	// Rule violation is an error.
-	SQLReviewRuleLevel_ERROR SQLReviewRuleLevel = 1
+	SQLReviewRule_ERROR SQLReviewRule_Level = 1
 	// Rule violation is a warning.
-	SQLReviewRuleLevel_WARNING SQLReviewRuleLevel = 2
+	SQLReviewRule_WARNING SQLReviewRule_Level = 2
 )
 
-// Enum value maps for SQLReviewRuleLevel.
+// Enum value maps for SQLReviewRule_Level.
 var (
-	SQLReviewRuleLevel_name = map[int32]string{
+	SQLReviewRule_Level_name = map[int32]string{
 		0: "LEVEL_UNSPECIFIED",
 		1: "ERROR",
 		2: "WARNING",
 	}
-	SQLReviewRuleLevel_value = map[string]int32{
+	SQLReviewRule_Level_value = map[string]int32{
 		"LEVEL_UNSPECIFIED": 0,
 		"ERROR":             1,
 		"WARNING":           2,
 	}
 )
 
-func (x SQLReviewRuleLevel) Enum() *SQLReviewRuleLevel {
-	p := new(SQLReviewRuleLevel)
+func (x SQLReviewRule_Level) Enum() *SQLReviewRule_Level {
+	p := new(SQLReviewRule_Level)
 	*p = x
 	return p
 }
 
-func (x SQLReviewRuleLevel) String() string {
+func (x SQLReviewRule_Level) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (SQLReviewRuleLevel) Descriptor() protoreflect.EnumDescriptor {
+func (SQLReviewRule_Level) Descriptor() protoreflect.EnumDescriptor {
 	return file_v1_review_config_service_proto_enumTypes[0].Descriptor()
 }
 
-func (SQLReviewRuleLevel) Type() protoreflect.EnumType {
+func (SQLReviewRule_Level) Type() protoreflect.EnumType {
 	return &file_v1_review_config_service_proto_enumTypes[0]
 }
 
-func (x SQLReviewRuleLevel) Number() protoreflect.EnumNumber {
+func (x SQLReviewRule_Level) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use SQLReviewRuleLevel.Descriptor instead.
-func (SQLReviewRuleLevel) EnumDescriptor() ([]byte, []int) {
-	return file_v1_review_config_service_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use SQLReviewRule_Level.Descriptor instead.
+func (SQLReviewRule_Level) EnumDescriptor() ([]byte, []int) {
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{7, 0}
 }
 
 type ListReviewConfigsRequest struct {
@@ -451,7 +451,7 @@ type SQLReviewRule struct {
 	// The type of SQL review rule.
 	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	// The severity level of the rule.
-	Level SQLReviewRuleLevel `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.v1.SQLReviewRuleLevel" json:"level,omitempty"`
+	Level SQLReviewRule_Level `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.v1.SQLReviewRule_Level" json:"level,omitempty"`
 	// The payload is a JSON string that varies by rule type.
 	Payload string `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
 	// The database engine this rule applies to.
@@ -497,11 +497,11 @@ func (x *SQLReviewRule) GetType() string {
 	return ""
 }
 
-func (x *SQLReviewRule) GetLevel() SQLReviewRuleLevel {
+func (x *SQLReviewRule) GetLevel() SQLReviewRule_Level {
 	if x != nil {
 		return x.Level
 	}
-	return SQLReviewRuleLevel_LEVEL_UNSPECIFIED
+	return SQLReviewRule_LEVEL_UNSPECIFIED
 }
 
 func (x *SQLReviewRule) GetPayload() string {
@@ -545,13 +545,13 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\aenabled\x18\x03 \x01(\bR\aenabled\x120\n" +
 	"\x05rules\x18\a \x03(\v2\x1a.bytebase.v1.SQLReviewRuleR\x05rules\x12\x1c\n" +
 	"\tresources\x18\b \x03(\tR\tresources:<\xeaA9\n" +
-	"\x19bytebase.com/ReviewConfig\x12\x1creviewConfigs/{reviewConfig}\"\xa1\x01\n" +
+	"\x19bytebase.com/ReviewConfig\x12\x1creviewConfigs/{reviewConfig}\"\xda\x01\n" +
 	"\rSQLReviewRule\x12\x12\n" +
-	"\x04type\x18\x01 \x01(\tR\x04type\x125\n" +
-	"\x05level\x18\x02 \x01(\x0e2\x1f.bytebase.v1.SQLReviewRuleLevelR\x05level\x12\x18\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x126\n" +
+	"\x05level\x18\x02 \x01(\x0e2 .bytebase.v1.SQLReviewRule.LevelR\x05level\x12\x18\n" +
 	"\apayload\x18\x03 \x01(\tR\apayload\x12+\n" +
-	"\x06engine\x18\x04 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine*C\n" +
-	"\x12SQLReviewRuleLevel\x12\x15\n" +
+	"\x06engine\x18\x04 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\"6\n" +
+	"\x05Level\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
 	"\aWARNING\x10\x022\xed\x06\n" +
@@ -578,7 +578,7 @@ func file_v1_review_config_service_proto_rawDescGZIP() []byte {
 var file_v1_review_config_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_v1_review_config_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_v1_review_config_service_proto_goTypes = []any{
-	(SQLReviewRuleLevel)(0),           // 0: bytebase.v1.SQLReviewRuleLevel
+	(SQLReviewRule_Level)(0),          // 0: bytebase.v1.SQLReviewRule.Level
 	(*ListReviewConfigsRequest)(nil),  // 1: bytebase.v1.ListReviewConfigsRequest
 	(*ListReviewConfigsResponse)(nil), // 2: bytebase.v1.ListReviewConfigsResponse
 	(*CreateReviewConfigRequest)(nil), // 3: bytebase.v1.CreateReviewConfigRequest
@@ -597,7 +597,7 @@ var file_v1_review_config_service_proto_depIdxs = []int32{
 	7,  // 2: bytebase.v1.UpdateReviewConfigRequest.review_config:type_name -> bytebase.v1.ReviewConfig
 	9,  // 3: bytebase.v1.UpdateReviewConfigRequest.update_mask:type_name -> google.protobuf.FieldMask
 	8,  // 4: bytebase.v1.ReviewConfig.rules:type_name -> bytebase.v1.SQLReviewRule
-	0,  // 5: bytebase.v1.SQLReviewRule.level:type_name -> bytebase.v1.SQLReviewRuleLevel
+	0,  // 5: bytebase.v1.SQLReviewRule.level:type_name -> bytebase.v1.SQLReviewRule.Level
 	10, // 6: bytebase.v1.SQLReviewRule.engine:type_name -> bytebase.v1.Engine
 	3,  // 7: bytebase.v1.ReviewConfigService.CreateReviewConfig:input_type -> bytebase.v1.CreateReviewConfigRequest
 	1,  // 8: bytebase.v1.ReviewConfigService.ListReviewConfigs:input_type -> bytebase.v1.ListReviewConfigsRequest
