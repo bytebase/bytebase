@@ -26,7 +26,6 @@ func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLR
 			Level:   level,
 			Type:    string(rule.Type),
 			Payload: rule.Payload,
-			Comment: rule.Comment,
 			Engine:  convertToEngine(rule.Engine),
 		})
 	}
@@ -50,7 +49,6 @@ func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewR
 			Level:   level,
 			Payload: rule.Payload,
 			Type:    rule.Type,
-			Comment: rule.Comment,
 			Engine:  convertEngine(rule.Engine),
 		})
 	}

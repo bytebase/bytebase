@@ -111,7 +111,6 @@ export interface SchemaPolicyRule {
     | NumberValuePayload
     | StringValuePayload
     | CasePayload;
-  comment: string;
 }
 
 // The API for SQL review policy in backend.
@@ -136,7 +135,6 @@ interface RuleTemplateV2Raw {
   engine: string; // keyof typeof Engine
   level: string; // keyof typeof SQLReviewRuleLevel
   componentList: RuleConfigComponent[];
-  comment?: string;
 }
 
 // RuleTemplateV2 is the rule template. Used by the frontend
@@ -146,7 +144,6 @@ export interface RuleTemplateV2 {
   engine: Engine;
   level: SQLReviewRuleLevel;
   componentList: RuleConfigComponent[];
-  comment?: string;
 }
 
 // SQLReviewPolicyTemplateV2 is the rule template set
@@ -305,7 +302,6 @@ export const convertPolicyRuleToRuleTemplate = (
     ...ruleTemplate,
     engine: policyRule.engine,
     level: policyRule.level,
-    comment: policyRule.comment,
   };
 
   const componentList = ruleTemplate.componentList ?? [];
@@ -771,7 +767,6 @@ const convertRuleTemplateToPolicyRule = (
     type: rule.type,
     level: rule.level,
     engine: rule.engine,
-    comment: rule.comment ?? "",
   };
   if ((rule.componentList?.length ?? 0) === 0) {
     return base;

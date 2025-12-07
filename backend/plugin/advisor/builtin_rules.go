@@ -15,7 +15,6 @@ func GetBuiltinRules(engine storepb.Engine) []*storepb.SQLReviewRule {
 				Level:   storepb.SQLReviewRuleLevel_ERROR,
 				Payload: "",
 				Engine:  engine,
-				Comment: "",
 			},
 		}
 	default:

@@ -3583,7 +3583,6 @@ QueryDataPolicy is the policy configuration for querying data.
 | level | [SQLReviewRuleLevel](#bytebase-store-SQLReviewRuleLevel) |  |  |
 | payload | [string](#string) |  |  |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
-| comment | [string](#string) |  |  |
 
 
 

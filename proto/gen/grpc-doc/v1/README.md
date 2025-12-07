@@ -7273,7 +7273,6 @@ SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for d
 | level | [SQLReviewRuleLevel](#bytebase-v1-SQLReviewRuleLevel) |  | The severity level of the rule. |
 | payload | [string](#string) |  | The payload is a JSON string that varies by rule type. |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine this rule applies to. |
-| comment | [string](#string) |  | Additional comment for the rule. |
 
 
 

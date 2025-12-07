@@ -44,18 +44,9 @@
         <h3 class="text-lg text-control font-medium">
           {{ $t("common.description") }}
         </h3>
-        <div class="flex flex-col gap-x-2">
-          <BBTextField
-            v-model:value="state.comment"
-            :disabled="disabled"
-            :placeholder="
-              getRuleLocalization(rule.type, rule.engine).description ||
-              $t('common.description')
-            "
-            type="textarea"
-            :autosize="{ minRows: 1, maxRows: 4 }"
-          />
-        </div>
+          <div class="text-sm text-gray-700">
+            {{ getRuleLocalization(rule.type, rule.engine).description || $t('common.description') }}
+          </div>
       </div>
       <RuleConfig
         ref="ruleConfig"
@@ -89,7 +80,6 @@ import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 
 type LocalState = {
   level: SQLReviewRuleLevel;
-  comment: string;
 };
 
 const props = defineProps<{
@@ -106,9 +96,6 @@ const ruleConfig = ref<InstanceType<typeof RuleConfig>>();
 
 const state = reactive<LocalState>({
   level: props.rule.level,
-  comment:
-    props.rule.comment ||
-    getRuleLocalization(props.rule.type, props.rule.engine).description,
 });
 
 watch(
@@ -125,7 +112,6 @@ const confirm = () => {
       ruleConfig.value?.payload ?? []
     ),
     level: state.level,
-    comment: state.comment,
   });
   nextTick(() => {
     emit("cancel");

@@ -73,7 +73,7 @@ const convertToSQLReviewPolicy = (
       type: r.type,
       level: r.level,
       engine: r.engine,
-      comment: r.comment,
+
     };
     if (r.payload && r.payload !== "{}") {
       rule.payload = JSON.parse(r.payload);
@@ -196,7 +196,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
             type: r.type,
             level: r.level,
             engine: r.engine,
-            comment: r.comment,
+
             payload: r.payload ? JSON.stringify(r.payload) : "{}",
           });
         });

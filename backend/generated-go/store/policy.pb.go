@@ -582,7 +582,6 @@ type SQLReviewRule struct {
 	Level         SQLReviewRuleLevel     `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.store.SQLReviewRuleLevel" json:"level,omitempty"`
 	Payload       string                 `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
 	Engine        Engine                 `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.store.Engine" json:"engine,omitempty"`
-	Comment       string                 `protobuf:"bytes,5,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -643,13 +642,6 @@ func (x *SQLReviewRule) GetEngine() Engine {
 		return x.Engine
 	}
 	return Engine_ENGINE_UNSPECIFIED
-}
-
-func (x *SQLReviewRule) GetComment() string {
-	if x != nil {
-		return x.Comment
-	}
-	return ""
 }
 
 type TagPolicy struct {
@@ -1290,13 +1282,12 @@ const file_store_policy_proto_rawDesc = "" +
 	"\vMaskingRule\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
 	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\x12#\n" +
-	"\rsemantic_type\x18\x03 \x01(\tR\fsemanticType\"\xc1\x01\n" +
+	"\rsemantic_type\x18\x03 \x01(\tR\fsemanticType\"\xa7\x01\n" +
 	"\rSQLReviewRule\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x128\n" +
 	"\x05level\x18\x02 \x01(\x0e2\".bytebase.store.SQLReviewRuleLevelR\x05level\x12\x18\n" +
 	"\apayload\x18\x03 \x01(\tR\apayload\x12.\n" +
-	"\x06engine\x18\x04 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x12\x18\n" +
-	"\acomment\x18\x05 \x01(\tR\acomment\"}\n" +
+	"\x06engine\x18\x04 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\"}\n" +
 	"\tTagPolicy\x127\n" +
 	"\x04tags\x18\x01 \x03(\v2#.bytebase.store.TagPolicy.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
