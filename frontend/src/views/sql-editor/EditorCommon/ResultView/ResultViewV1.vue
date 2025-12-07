@@ -307,11 +307,6 @@ const tabName = (index: number) => {
 };
 
 const disallowCopyingData = computed(() => {
-  if (hasWorkspacePermissionV2("bb.sql.admin")) {
-    // `disableCopyDataPolicy` is only applicable to workspace developers.
-    return false;
-  }
-
   if (
     policyStore.getQueryDataPolicyByParent(props.database.project)
       .disableCopyData

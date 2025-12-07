@@ -1504,7 +1504,7 @@
     "production-environment": "Entorno de producción",
     "access-control": {
       "title": "Control de Acceso",
-      "disable-copy-data-from-sql-editor": "Restringir la copia de datos en el editor SQL (permitido para administradores/DBA)",
+      "disable-copy-data-from-sql-editor": "Restringir la copia de datos en el editor SQL",
       "restrict-admin-connection": {
         "self": "Restringir la consulta de la fuente de datos de administración",
         "disallow": "No permitir la consulta de datos desde la fuente de datos de administración",
