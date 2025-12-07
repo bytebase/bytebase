@@ -201,7 +201,7 @@ import type {
 } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+
 import type { SQLResultViewContext } from "./context";
 import { provideSQLResultViewContext } from "./context";
 import { provideBinaryFormatContext } from "./DataTable/binary-format-store";
