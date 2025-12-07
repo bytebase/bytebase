@@ -677,6 +677,10 @@
         }
       }
     },
+    "TABLE_NO_DUPLICATE_INDEX": {
+      "title": "Prohibit duplicate indexes on table",
+      "description": "This rule requires that a table does not have duplicate indexes. Duplicate indexes consume extra storage space and can potentially reduce query performance. Suggested error level: Warning."
+    },
     "TABLE_NO_FOREIGN_KEY": {
       "title": "Prohibit using foreign key constraints",
       "description": "The advantages and disadvantages of foreign key are highly controversial. Using foreign key may significantly increase the difficulty of database changes, scalability (such as sharding), etc. And may even prevent the use of some tools. Therefore, another option is to implement foreign key constraints at the application layer. Suggestion error level: Warning"

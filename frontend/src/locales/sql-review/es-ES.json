@@ -677,6 +677,10 @@
         }
       }
     },
+    "TABLE_NO_DUPLICATE_INDEX": {
+      "title": "Prohibir índices duplicados en la tabla",
+      "description": "Esta regla requiere que una tabla no tenga índices duplicados. Los índices duplicados consumen espacio de almacenamiento adicional y pueden reducir el rendimiento de las consultas. Nivel de error sugerido: Advertencia."
+    },
     "TABLE_NO_FOREIGN_KEY": {
       "title": "Prohibir el uso de restricciones de clave externa",
       "description": "Las ventajas y desventajas de las claves externas son altamente controvertidas. El uso de claves externas puede aumentar significativamente la dificultad de los cambios en la base de datos, la escalabilidad (como la fragmentación), etc. Y incluso puede evitar el uso de algunas herramientas. Por lo tanto, otra opción es implementar restricciones de claves externas en la capa de aplicación. Nivel de sugerencia de error: Advertencia"

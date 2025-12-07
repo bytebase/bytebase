@@ -677,6 +677,10 @@
         }
       }
     },
+    "TABLE_NO_DUPLICATE_INDEX": {
+      "title": "Cấm các chỉ mục trùng lặp trên bảng",
+      "description": "Quy tắc này yêu cầu một bảng không có chỉ mục trùng lặp. Các chỉ mục trùng lặp tiêu tốn thêm không gian lưu trữ và có khả năng làm giảm hiệu suất truy vấn. Mức lỗi được đề xuất: Cảnh báo."
+    },
     "TABLE_NO_FOREIGN_KEY": {
       "title": "Cấm sử dụng ràng buộc khóa ngoại",
       "description": "Ưu điểm và nhược điểm của khóa ngoại rất gây tranh cãi. Sử dụng khóa ngoại có thể làm tăng đáng kể độ khó của việc thay đổi cơ sở dữ liệu, khả năng mở rộng (chẳng hạn như phân mảnh), v.v. Và thậm chí có thể ngăn cản việc sử dụng một số công cụ. Do đó, một tùy chọn khác là triển khai các ràng buộc khóa ngoại ở lớp ứng dụng. Mức độ lỗi gợi ý: Cảnh báo"
