@@ -1829,10 +1829,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.TagPolicy"><span class="badge">M</span>TagPolicy</a>
                 </li>
               
@@ -1863,10 +1859,6 @@
               
                 <li>
                   <a href="#bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement"><span class="badge">E</span>RolloutPolicy.Checkers.PlanCheckEnforcement</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SQLReviewRuleLevel"><span class="badge">E</span>SQLReviewRuleLevel</a>
                 </li>
               
               
@@ -2273,9 +2265,17 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateReviewConfigRequest"><span class="badge">M</span>UpdateReviewConfigRequest</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.v1.SQLReviewRuleLevel"><span class="badge">E</span>SQLReviewRuleLevel</a>
+                </li>
               
               
               
@@ -20440,51 +20440,6 @@ These checks are performed in UI workflows only. </p></td>
 
         
       
-        <h3 id="bytebase.v1.SQLReviewRule">SQLReviewRule</h3>
-        <p>SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The type of SQL review rule. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>level</td>
-                  <td><a href="#bytebase.v1.SQLReviewRuleLevel">SQLReviewRuleLevel</a></td>
-                  <td></td>
-                  <td><p>The severity level of the rule. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>payload</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The payload is a JSON string that varies by rule type. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>engine</td>
-                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
-                  <td></td>
-                  <td><p>The database engine this rule applies to. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.TagPolicy">TagPolicy</h3>
         <p>Policy for tagging resources with metadata.</p>
 
@@ -20759,35 +20714,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>STRICT</td>
                 <td>2</td>
                 <td><p>Block rollout when plan check finds errors or warnings.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.SQLReviewRuleLevel">SQLReviewRuleLevel</h3>
-        <p>The severity level for SQL review rules.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>LEVEL_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Unspecified level.</p></td>
-              </tr>
-            
-              <tr>
-                <td>ERROR</td>
-                <td>1</td>
-                <td><p>Rule violation is an error.</p></td>
-              </tr>
-            
-              <tr>
-                <td>WARNING</td>
-                <td>2</td>
-                <td><p>Rule violation is a warning.</p></td>
               </tr>
             
           </tbody>
@@ -25279,6 +25205,51 @@ Format: {resource}/{resource id}, e.g., environments/test. </p></td>
 
         
       
+        <h3 id="bytebase.v1.SQLReviewRule">SQLReviewRule</h3>
+        <p>SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The type of SQL review rule. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>level</td>
+                  <td><a href="#bytebase.v1.SQLReviewRuleLevel">SQLReviewRuleLevel</a></td>
+                  <td></td>
+                  <td><p>The severity level of the rule. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>payload</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The payload is a JSON string that varies by rule type. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>engine</td>
+                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
+                  <td></td>
+                  <td><p>The database engine this rule applies to. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UpdateReviewConfigRequest">UpdateReviewConfigRequest</h3>
         <p></p>
 
@@ -25321,6 +25292,35 @@ In this situation, `update_mask` is ignored. </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.SQLReviewRuleLevel">SQLReviewRuleLevel</h3>
+        <p>The severity level for SQL review rules.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>LEVEL_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified level.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ERROR</td>
+                <td>1</td>
+                <td><p>Rule violation is an error.</p></td>
+              </tr>
+            
+              <tr>
+                <td>WARNING</td>
+                <td>2</td>
+                <td><p>Rule violation is a warning.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       

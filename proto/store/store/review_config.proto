@@ -2,10 +2,23 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "store/policy.proto";
+import "store/common.proto";
 
 option go_package = "generated-go/store";
 
 message ReviewConfigPayload {
   repeated SQLReviewRule sql_review_rules = 1;
+}
+
+message SQLReviewRule {
+  string type = 1;
+  SQLReviewRuleLevel level = 2;
+  string payload = 3;
+  Engine engine = 4;
+}
+
+enum SQLReviewRuleLevel {
+  LEVEL_UNSPECIFIED = 0;
+  ERROR = 1;
+  WARNING = 2;
 }

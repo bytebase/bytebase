@@ -25,6 +25,59 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The severity level for SQL review rules.
+type SQLReviewRuleLevel int32
+
+const (
+	// Unspecified level.
+	SQLReviewRuleLevel_LEVEL_UNSPECIFIED SQLReviewRuleLevel = 0
+	// Rule violation is an error.
+	SQLReviewRuleLevel_ERROR SQLReviewRuleLevel = 1
+	// Rule violation is a warning.
+	SQLReviewRuleLevel_WARNING SQLReviewRuleLevel = 2
+)
+
+// Enum value maps for SQLReviewRuleLevel.
+var (
+	SQLReviewRuleLevel_name = map[int32]string{
+		0: "LEVEL_UNSPECIFIED",
+		1: "ERROR",
+		2: "WARNING",
+	}
+	SQLReviewRuleLevel_value = map[string]int32{
+		"LEVEL_UNSPECIFIED": 0,
+		"ERROR":             1,
+		"WARNING":           2,
+	}
+)
+
+func (x SQLReviewRuleLevel) Enum() *SQLReviewRuleLevel {
+	p := new(SQLReviewRuleLevel)
+	*p = x
+	return p
+}
+
+func (x SQLReviewRuleLevel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SQLReviewRuleLevel) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_review_config_service_proto_enumTypes[0].Descriptor()
+}
+
+func (SQLReviewRuleLevel) Type() protoreflect.EnumType {
+	return &file_v1_review_config_service_proto_enumTypes[0]
+}
+
+func (x SQLReviewRuleLevel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SQLReviewRuleLevel.Descriptor instead.
+func (SQLReviewRuleLevel) EnumDescriptor() ([]byte, []int) {
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{0}
+}
+
 type ListReviewConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -392,11 +445,84 @@ func (x *ReviewConfig) GetResources() []string {
 	return nil
 }
 
+// SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
+type SQLReviewRule struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The type of SQL review rule.
+	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	// The severity level of the rule.
+	Level SQLReviewRuleLevel `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.v1.SQLReviewRuleLevel" json:"level,omitempty"`
+	// The payload is a JSON string that varies by rule type.
+	Payload string `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
+	// The database engine this rule applies to.
+	Engine        Engine `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SQLReviewRule) Reset() {
+	*x = SQLReviewRule{}
+	mi := &file_v1_review_config_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SQLReviewRule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SQLReviewRule) ProtoMessage() {}
+
+func (x *SQLReviewRule) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_review_config_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SQLReviewRule.ProtoReflect.Descriptor instead.
+func (*SQLReviewRule) Descriptor() ([]byte, []int) {
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SQLReviewRule) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *SQLReviewRule) GetLevel() SQLReviewRuleLevel {
+	if x != nil {
+		return x.Level
+	}
+	return SQLReviewRuleLevel_LEVEL_UNSPECIFIED
+}
+
+func (x *SQLReviewRule) GetPayload() string {
+	if x != nil {
+		return x.Payload
+	}
+	return ""
+}
+
+func (x *SQLReviewRule) GetEngine() Engine {
+	if x != nil {
+		return x.Engine
+	}
+	return Engine_ENGINE_UNSPECIFIED
+}
+
 var File_v1_review_config_service_proto protoreflect.FileDescriptor
 
 const file_v1_review_config_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1ev1/review_config_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x1bv1/org_policy_service.proto\"\x1a\n" +
+	"\x1ev1/review_config_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\x1a\n" +
 	"\x18ListReviewConfigsRequest\"]\n" +
 	"\x19ListReviewConfigsResponse\x12@\n" +
 	"\x0ereview_configs\x18\x01 \x03(\v2\x19.bytebase.v1.ReviewConfigR\rreviewConfigs\"`\n" +
@@ -419,7 +545,16 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\aenabled\x18\x03 \x01(\bR\aenabled\x120\n" +
 	"\x05rules\x18\a \x03(\v2\x1a.bytebase.v1.SQLReviewRuleR\x05rules\x12\x1c\n" +
 	"\tresources\x18\b \x03(\tR\tresources:<\xeaA9\n" +
-	"\x19bytebase.com/ReviewConfig\x12\x1creviewConfigs/{reviewConfig}2\xed\x06\n" +
+	"\x19bytebase.com/ReviewConfig\x12\x1creviewConfigs/{reviewConfig}\"\xa1\x01\n" +
+	"\rSQLReviewRule\x12\x12\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x125\n" +
+	"\x05level\x18\x02 \x01(\x0e2\x1f.bytebase.v1.SQLReviewRuleLevelR\x05level\x12\x18\n" +
+	"\apayload\x18\x03 \x01(\tR\apayload\x12+\n" +
+	"\x06engine\x18\x04 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine*C\n" +
+	"\x12SQLReviewRuleLevel\x12\x15\n" +
+	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
+	"\x05ERROR\x10\x01\x12\v\n" +
+	"\aWARNING\x10\x022\xed\x06\n" +
 	"\x13ReviewConfigService\x12\xa3\x01\n" +
 	"\x12CreateReviewConfig\x12&.bytebase.v1.CreateReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"J\xdaA\x00\x8a\xea0\x17bb.reviewConfigs.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\":\rreview_config\"\x11/v1/reviewConfigs\x12\x9d\x01\n" +
 	"\x11ListReviewConfigs\x12%.bytebase.v1.ListReviewConfigsRequest\x1a&.bytebase.v1.ListReviewConfigsResponse\"9\xdaA\x00\x8a\xea0\x15bb.reviewConfigs.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/reviewConfigs\x12\x98\x01\n" +
@@ -440,40 +575,45 @@ func file_v1_review_config_service_proto_rawDescGZIP() []byte {
 	return file_v1_review_config_service_proto_rawDescData
 }
 
-var file_v1_review_config_service_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_v1_review_config_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_v1_review_config_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_v1_review_config_service_proto_goTypes = []any{
-	(*ListReviewConfigsRequest)(nil),  // 0: bytebase.v1.ListReviewConfigsRequest
-	(*ListReviewConfigsResponse)(nil), // 1: bytebase.v1.ListReviewConfigsResponse
-	(*CreateReviewConfigRequest)(nil), // 2: bytebase.v1.CreateReviewConfigRequest
-	(*UpdateReviewConfigRequest)(nil), // 3: bytebase.v1.UpdateReviewConfigRequest
-	(*GetReviewConfigRequest)(nil),    // 4: bytebase.v1.GetReviewConfigRequest
-	(*DeleteReviewConfigRequest)(nil), // 5: bytebase.v1.DeleteReviewConfigRequest
-	(*ReviewConfig)(nil),              // 6: bytebase.v1.ReviewConfig
-	(*fieldmaskpb.FieldMask)(nil),     // 7: google.protobuf.FieldMask
+	(SQLReviewRuleLevel)(0),           // 0: bytebase.v1.SQLReviewRuleLevel
+	(*ListReviewConfigsRequest)(nil),  // 1: bytebase.v1.ListReviewConfigsRequest
+	(*ListReviewConfigsResponse)(nil), // 2: bytebase.v1.ListReviewConfigsResponse
+	(*CreateReviewConfigRequest)(nil), // 3: bytebase.v1.CreateReviewConfigRequest
+	(*UpdateReviewConfigRequest)(nil), // 4: bytebase.v1.UpdateReviewConfigRequest
+	(*GetReviewConfigRequest)(nil),    // 5: bytebase.v1.GetReviewConfigRequest
+	(*DeleteReviewConfigRequest)(nil), // 6: bytebase.v1.DeleteReviewConfigRequest
+	(*ReviewConfig)(nil),              // 7: bytebase.v1.ReviewConfig
 	(*SQLReviewRule)(nil),             // 8: bytebase.v1.SQLReviewRule
-	(*emptypb.Empty)(nil),             // 9: google.protobuf.Empty
+	(*fieldmaskpb.FieldMask)(nil),     // 9: google.protobuf.FieldMask
+	(Engine)(0),                       // 10: bytebase.v1.Engine
+	(*emptypb.Empty)(nil),             // 11: google.protobuf.Empty
 }
 var file_v1_review_config_service_proto_depIdxs = []int32{
-	6,  // 0: bytebase.v1.ListReviewConfigsResponse.review_configs:type_name -> bytebase.v1.ReviewConfig
-	6,  // 1: bytebase.v1.CreateReviewConfigRequest.review_config:type_name -> bytebase.v1.ReviewConfig
-	6,  // 2: bytebase.v1.UpdateReviewConfigRequest.review_config:type_name -> bytebase.v1.ReviewConfig
-	7,  // 3: bytebase.v1.UpdateReviewConfigRequest.update_mask:type_name -> google.protobuf.FieldMask
+	7,  // 0: bytebase.v1.ListReviewConfigsResponse.review_configs:type_name -> bytebase.v1.ReviewConfig
+	7,  // 1: bytebase.v1.CreateReviewConfigRequest.review_config:type_name -> bytebase.v1.ReviewConfig
+	7,  // 2: bytebase.v1.UpdateReviewConfigRequest.review_config:type_name -> bytebase.v1.ReviewConfig
+	9,  // 3: bytebase.v1.UpdateReviewConfigRequest.update_mask:type_name -> google.protobuf.FieldMask
 	8,  // 4: bytebase.v1.ReviewConfig.rules:type_name -> bytebase.v1.SQLReviewRule
-	2,  // 5: bytebase.v1.ReviewConfigService.CreateReviewConfig:input_type -> bytebase.v1.CreateReviewConfigRequest
-	0,  // 6: bytebase.v1.ReviewConfigService.ListReviewConfigs:input_type -> bytebase.v1.ListReviewConfigsRequest
-	4,  // 7: bytebase.v1.ReviewConfigService.GetReviewConfig:input_type -> bytebase.v1.GetReviewConfigRequest
-	3,  // 8: bytebase.v1.ReviewConfigService.UpdateReviewConfig:input_type -> bytebase.v1.UpdateReviewConfigRequest
-	5,  // 9: bytebase.v1.ReviewConfigService.DeleteReviewConfig:input_type -> bytebase.v1.DeleteReviewConfigRequest
-	6,  // 10: bytebase.v1.ReviewConfigService.CreateReviewConfig:output_type -> bytebase.v1.ReviewConfig
-	1,  // 11: bytebase.v1.ReviewConfigService.ListReviewConfigs:output_type -> bytebase.v1.ListReviewConfigsResponse
-	6,  // 12: bytebase.v1.ReviewConfigService.GetReviewConfig:output_type -> bytebase.v1.ReviewConfig
-	6,  // 13: bytebase.v1.ReviewConfigService.UpdateReviewConfig:output_type -> bytebase.v1.ReviewConfig
-	9,  // 14: bytebase.v1.ReviewConfigService.DeleteReviewConfig:output_type -> google.protobuf.Empty
-	10, // [10:15] is the sub-list for method output_type
-	5,  // [5:10] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	0,  // 5: bytebase.v1.SQLReviewRule.level:type_name -> bytebase.v1.SQLReviewRuleLevel
+	10, // 6: bytebase.v1.SQLReviewRule.engine:type_name -> bytebase.v1.Engine
+	3,  // 7: bytebase.v1.ReviewConfigService.CreateReviewConfig:input_type -> bytebase.v1.CreateReviewConfigRequest
+	1,  // 8: bytebase.v1.ReviewConfigService.ListReviewConfigs:input_type -> bytebase.v1.ListReviewConfigsRequest
+	5,  // 9: bytebase.v1.ReviewConfigService.GetReviewConfig:input_type -> bytebase.v1.GetReviewConfigRequest
+	4,  // 10: bytebase.v1.ReviewConfigService.UpdateReviewConfig:input_type -> bytebase.v1.UpdateReviewConfigRequest
+	6,  // 11: bytebase.v1.ReviewConfigService.DeleteReviewConfig:input_type -> bytebase.v1.DeleteReviewConfigRequest
+	7,  // 12: bytebase.v1.ReviewConfigService.CreateReviewConfig:output_type -> bytebase.v1.ReviewConfig
+	2,  // 13: bytebase.v1.ReviewConfigService.ListReviewConfigs:output_type -> bytebase.v1.ListReviewConfigsResponse
+	7,  // 14: bytebase.v1.ReviewConfigService.GetReviewConfig:output_type -> bytebase.v1.ReviewConfig
+	7,  // 15: bytebase.v1.ReviewConfigService.UpdateReviewConfig:output_type -> bytebase.v1.ReviewConfig
+	11, // 16: bytebase.v1.ReviewConfigService.DeleteReviewConfig:output_type -> google.protobuf.Empty
+	12, // [12:17] is the sub-list for method output_type
+	7,  // [7:12] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_v1_review_config_service_proto_init() }
@@ -482,19 +622,20 @@ func file_v1_review_config_service_proto_init() {
 		return
 	}
 	file_v1_annotation_proto_init()
-	file_v1_org_policy_service_proto_init()
+	file_v1_common_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_review_config_service_proto_rawDesc), len(file_v1_review_config_service_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   7,
+			NumEnums:      1,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_v1_review_config_service_proto_goTypes,
 		DependencyIndexes: file_v1_review_config_service_proto_depIdxs,
+		EnumInfos:         file_v1_review_config_service_proto_enumTypes,
 		MessageInfos:      file_v1_review_config_service_proto_msgTypes,
 	}.Build()
 	File_v1_review_config_service_proto = out.File

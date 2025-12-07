@@ -4,7 +4,6 @@ package bytebase.store;
 
 import "google/protobuf/duration.proto";
 import "google/type/expr.proto";
-import "store/common.proto";
 
 option go_package = "generated-go/store";
 
@@ -93,19 +92,6 @@ message MaskingRulePolicy {
     string semantic_type = 3;
   }
   repeated MaskingRule rules = 1;
-}
-
-message SQLReviewRule {
-  string type = 1;
-  SQLReviewRuleLevel level = 2;
-  string payload = 3;
-  Engine engine = 4;
-}
-
-enum SQLReviewRuleLevel {
-  LEVEL_UNSPECIFIED = 0;
-  ERROR = 1;
-  WARNING = 2;
 }
 
 message TagPolicy {

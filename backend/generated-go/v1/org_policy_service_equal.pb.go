@@ -235,28 +235,6 @@ func (x *QueryDataPolicy) Equal(y *QueryDataPolicy) bool {
 	return true
 }
 
-func (x *SQLReviewRule) Equal(y *SQLReviewRule) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Type != y.Type {
-		return false
-	}
-	if x.Level != y.Level {
-		return false
-	}
-	if x.Payload != y.Payload {
-		return false
-	}
-	if x.Engine != y.Engine {
-		return false
-	}
-	return true
-}
-
 func (x *MaskingExceptionPolicy_MaskingException) Equal(y *MaskingExceptionPolicy_MaskingException) bool {
 	if x == y {
 		return true

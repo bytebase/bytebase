@@ -11,7 +11,6 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
-import "v1/common.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -334,29 +333,6 @@ message QueryDataPolicy {
 
   // Disable copying query results.
   bool disable_copy_data = 5;
-}
-
-// SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
-message SQLReviewRule {
-  // The type of SQL review rule.
-  string type = 1;
-  // The severity level of the rule.
-  SQLReviewRuleLevel level = 2;
-
-  // The payload is a JSON string that varies by rule type.
-  string payload = 3;
-  // The database engine this rule applies to.
-  Engine engine = 4;
-}
-
-// The severity level for SQL review rules.
-enum SQLReviewRuleLevel {
-  // Unspecified level.
-  LEVEL_UNSPECIFIED = 0;
-  // Rule violation is an error.
-  ERROR = 1;
-  // Rule violation is a warning.
-  WARNING = 2;
 }
 
 // MaskingExceptionPolicy is the allowlist of users who can access sensitive data.

@@ -256,7 +256,6 @@ import {
   ruleTemplateMapV2,
   SQLReviewPolicyErrorCode,
 } from "@/types";
-import { SQLReviewRuleLevel } from "@/types/proto-es/v1/org_policy_service_pb";
 import type {
   PlanCheckRun,
   PlanCheckRun_Result,
@@ -266,6 +265,7 @@ import {
   PlanCheckRun_ResultSchema,
   PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { SQLReviewRuleLevel } from "@/types/proto-es/v1/review_config_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { convertPositionLineToMonacoLine } from "@/utils/v1/position";
 import { usePlanCheckRunContext } from "./context";
