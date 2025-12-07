@@ -201,7 +201,7 @@ import type {
 } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
+
 import type { SQLResultViewContext } from "./context";
 import { provideSQLResultViewContext } from "./context";
 import { provideBinaryFormatContext } from "./DataTable/binary-format-store";
@@ -307,11 +307,6 @@ const tabName = (index: number) => {
 };
 
 const disallowCopyingData = computed(() => {
-  if (hasWorkspacePermissionV2("bb.sql.admin")) {
-    // `disableCopyDataPolicy` is only applicable to workspace developers.
-    return false;
-  }
-
   if (
     policyStore.getQueryDataPolicyByParent(props.database.project)
       .disableCopyData
