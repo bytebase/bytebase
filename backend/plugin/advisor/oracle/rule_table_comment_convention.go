@@ -57,7 +57,7 @@ type TableCommentConventionRule struct {
 	BaseRule
 
 	currentDatabase string
-	payload         *storepb.CommentConventionRulePayload
+	payload         *storepb.SQLReviewRule_CommentConventionRulePayload
 
 	tableNames   []string
 	tableComment map[string]string
@@ -65,7 +65,7 @@ type TableCommentConventionRule struct {
 }
 
 // NewTableCommentConventionRule creates a new TableCommentConventionRule.
-func NewTableCommentConventionRule(level storepb.Advice_Status, title string, currentDatabase string, payload *storepb.CommentConventionRulePayload) *TableCommentConventionRule {
+func NewTableCommentConventionRule(level storepb.Advice_Status, title string, currentDatabase string, payload *storepb.SQLReviewRule_CommentConventionRulePayload) *TableCommentConventionRule {
 	return &TableCommentConventionRule{
 		BaseRule:        NewBaseRule(level, title, 0),
 		currentDatabase: currentDatabase,

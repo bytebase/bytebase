@@ -57,7 +57,7 @@ type ColumnCommentConventionRule struct {
 	BaseRule
 
 	currentDatabase string
-	payload         *storepb.CommentConventionRulePayload
+	payload         *storepb.SQLReviewRule_CommentConventionRulePayload
 
 	tableName     string
 	columnNames   []string
@@ -66,7 +66,7 @@ type ColumnCommentConventionRule struct {
 }
 
 // NewColumnCommentConventionRule creates a new ColumnCommentConventionRule.
-func NewColumnCommentConventionRule(level storepb.Advice_Status, title string, currentDatabase string, payload *storepb.CommentConventionRulePayload) *ColumnCommentConventionRule {
+func NewColumnCommentConventionRule(level storepb.Advice_Status, title string, currentDatabase string, payload *storepb.SQLReviewRule_CommentConventionRulePayload) *ColumnCommentConventionRule {
 	return &ColumnCommentConventionRule{
 		BaseRule:        NewBaseRule(level, title, 0),
 		currentDatabase: currentDatabase,

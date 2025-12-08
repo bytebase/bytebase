@@ -33,45 +33,45 @@ func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLR
 		switch payload := rule.Payload.(type) {
 		case *storepb.SQLReviewRule_NamingPayload:
 			v1Rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
-				NamingPayload: &v1pb.NamingRulePayload{
+				NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
 					MaxLength: payload.NamingPayload.MaxLength,
 					Format:    payload.NamingPayload.Format,
 				},
 			}
 		case *storepb.SQLReviewRule_NumberPayload:
 			v1Rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
-				NumberPayload: &v1pb.NumberRulePayload{
+				NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
 					Number: payload.NumberPayload.Number,
 				},
 			}
 		case *storepb.SQLReviewRule_StringArrayPayload:
 			v1Rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
-				StringArrayPayload: &v1pb.StringArrayRulePayload{
+				StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
 					List: payload.StringArrayPayload.List,
 				},
 			}
 		case *storepb.SQLReviewRule_CommentConventionPayload:
 			v1Rule.Payload = &v1pb.SQLReviewRule_CommentConventionPayload{
-				CommentConventionPayload: &v1pb.CommentConventionRulePayload{
+				CommentConventionPayload: &v1pb.SQLReviewRule_CommentConventionRulePayload{
 					Required:  payload.CommentConventionPayload.Required,
 					MaxLength: payload.CommentConventionPayload.MaxLength,
 				},
 			}
 		case *storepb.SQLReviewRule_NamingCasePayload:
 			v1Rule.Payload = &v1pb.SQLReviewRule_NamingCasePayload{
-				NamingCasePayload: &v1pb.NamingCaseRulePayload{
+				NamingCasePayload: &v1pb.SQLReviewRule_NamingCaseRulePayload{
 					Upper: payload.NamingCasePayload.Upper,
 				},
 			}
 		case *storepb.SQLReviewRule_StringPayload:
 			v1Rule.Payload = &v1pb.SQLReviewRule_StringPayload{
-				StringPayload: &v1pb.StringRulePayload{
+				StringPayload: &v1pb.SQLReviewRule_StringRulePayload{
 					Value: payload.StringPayload.Value,
 				},
 			}
 		case *storepb.SQLReviewRule_RequiredColumnPayload:
 			v1Rule.Payload = &v1pb.SQLReviewRule_RequiredColumnPayload{
-				RequiredColumnPayload: &v1pb.RequiredColumnRulePayload{
+				RequiredColumnPayload: &v1pb.SQLReviewRule_RequiredColumnRulePayload{
 					ColumnList: payload.RequiredColumnPayload.ColumnList,
 				},
 			}
@@ -106,45 +106,45 @@ func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewR
 		switch payload := rule.Payload.(type) {
 		case *v1pb.SQLReviewRule_NamingPayload:
 			storeRule.Payload = &storepb.SQLReviewRule_NamingPayload{
-				NamingPayload: &storepb.NamingRulePayload{
+				NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{
 					MaxLength: payload.NamingPayload.MaxLength,
 					Format:    payload.NamingPayload.Format,
 				},
 			}
 		case *v1pb.SQLReviewRule_NumberPayload:
 			storeRule.Payload = &storepb.SQLReviewRule_NumberPayload{
-				NumberPayload: &storepb.NumberRulePayload{
+				NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
 					Number: payload.NumberPayload.Number,
 				},
 			}
 		case *v1pb.SQLReviewRule_StringArrayPayload:
 			storeRule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
-				StringArrayPayload: &storepb.StringArrayRulePayload{
+				StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
 					List: payload.StringArrayPayload.List,
 				},
 			}
 		case *v1pb.SQLReviewRule_CommentConventionPayload:
 			storeRule.Payload = &storepb.SQLReviewRule_CommentConventionPayload{
-				CommentConventionPayload: &storepb.CommentConventionRulePayload{
+				CommentConventionPayload: &storepb.SQLReviewRule_CommentConventionRulePayload{
 					Required:  payload.CommentConventionPayload.Required,
 					MaxLength: payload.CommentConventionPayload.MaxLength,
 				},
 			}
 		case *v1pb.SQLReviewRule_NamingCasePayload:
 			storeRule.Payload = &storepb.SQLReviewRule_NamingCasePayload{
-				NamingCasePayload: &storepb.NamingCaseRulePayload{
+				NamingCasePayload: &storepb.SQLReviewRule_NamingCaseRulePayload{
 					Upper: payload.NamingCasePayload.Upper,
 				},
 			}
 		case *v1pb.SQLReviewRule_StringPayload:
 			storeRule.Payload = &storepb.SQLReviewRule_StringPayload{
-				StringPayload: &storepb.StringRulePayload{
+				StringPayload: &storepb.SQLReviewRule_StringRulePayload{
 					Value: payload.StringPayload.Value,
 				},
 			}
 		case *v1pb.SQLReviewRule_RequiredColumnPayload:
 			storeRule.Payload = &storepb.SQLReviewRule_RequiredColumnPayload{
-				RequiredColumnPayload: &storepb.RequiredColumnRulePayload{
+				RequiredColumnPayload: &storepb.SQLReviewRule_RequiredColumnRulePayload{
 					ColumnList: payload.RequiredColumnPayload.ColumnList,
 				},
 			}

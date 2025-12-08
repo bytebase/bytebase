@@ -76,7 +76,7 @@ type columnCommentConventionRule struct {
 
 	level   storepb.Advice_Status
 	title   string
-	payload *storepb.CommentConventionRulePayload
+	payload *storepb.SQLReviewRule_CommentConventionRulePayload
 
 	columns  []columnInfo
 	comments []commentInfo

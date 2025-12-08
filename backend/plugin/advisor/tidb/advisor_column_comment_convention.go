@@ -62,7 +62,7 @@ type columnCommentConventionChecker struct {
 	title      string
 	text       string
 	line       int
-	payload    *storepb.CommentConventionRulePayload
+	payload    *storepb.SQLReviewRule_CommentConventionRulePayload
 }
 
 type columnCommentData struct {

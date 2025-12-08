@@ -61,7 +61,7 @@ type tableCommentConventionChecker struct {
 	title      string
 	text       string
 	line       int
-	payload    *storepb.CommentConventionRulePayload
+	payload    *storepb.SQLReviewRule_CommentConventionRulePayload
 }
 
 // Enter implements the ast.Visitor interface.

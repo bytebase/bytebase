@@ -110,7 +110,7 @@ type tableCommentInfo struct {
 type tableCommentConventionRule struct {
 	BaseRule
 
-	payload        *storepb.CommentConventionRulePayload
+	payload        *storepb.SQLReviewRule_CommentConventionRulePayload
 	statementsText string
 
 	createdTables map[string]*tableInfo

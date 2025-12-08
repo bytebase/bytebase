@@ -23,9 +23,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 var (
@@ -101,8 +99,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
 	a.NoError(err)
 
-	reviewConfig, err := prodTemplateReviewConfigForPostgreSQL()
-	a.NoError(err)
+	reviewConfig := prodTemplateReviewConfigForPostgreSQL()
 
 	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, connect.NewRequest(&v1pb.CreateReviewConfigRequest{
 		ReviewConfig: reviewConfig,
@@ -269,8 +266,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
 	a.NoError(err)
 
-	reviewConfig, err := prodTemplateReviewConfigForMySQL()
-	a.NoError(err)
+	reviewConfig := prodTemplateReviewConfigForMySQL()
 
 	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, connect.NewRequest(&v1pb.CreateReviewConfigRequest{
 		ReviewConfig: reviewConfig,
@@ -524,7 +520,7 @@ func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckR
 	}
 }
 
-func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
+func prodTemplateReviewConfigForPostgreSQL() *v1pb.ReviewConfig {
 	config := &v1pb.ReviewConfig{
 		Name:    common.FormatReviewConfig(generateRandomString("review")),
 		Title:   "Prod",
@@ -686,16 +682,12 @@ func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 	}
 
 	for _, rule := range config.Rules {
-		payload, err := advisor.SetDefaultSQLReviewRulePayload(storepb.SQLReviewRule_Type(rule.Type), storepb.Engine_POSTGRES)
-		if err != nil {
-			return nil, err
-		}
-		rule.Payload = payload
+		setV1SQLReviewRulePayload(rule, v1pb.Engine_POSTGRES)
 	}
-	return config, nil
+	return config
 }
 
-func prodTemplateReviewConfigForMySQL() (*v1pb.ReviewConfig, error) {
+func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 	config := &v1pb.ReviewConfig{
 		Name:    common.FormatReviewConfig(generateRandomString("review")),
 		Title:   "Prod",
@@ -964,11 +956,106 @@ func prodTemplateReviewConfigForMySQL() (*v1pb.ReviewConfig, error) {
 	}
 
 	for _, rule := range config.Rules {
-		payload, err := advisor.SetDefaultSQLReviewRulePayload(storepb.SQLReviewRule_Type(rule.Type), storepb.Engine_POSTGRES)
-		if err != nil {
-			return nil, err
-		}
-		rule.Payload = payload
+		setV1SQLReviewRulePayload(rule, v1pb.Engine_MYSQL)
 	}
-	return config, nil
+	return config
+}
+
+// setV1SQLReviewRulePayload sets the default payload for v1pb rules used in tests.
+func setV1SQLReviewRulePayload(rule *v1pb.SQLReviewRule, _ v1pb.Engine) {
+	switch rule.Type {
+	case v1pb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION:
+		rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
+			NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+				Format: "_delete$",
+			},
+		}
+	case v1pb.SQLReviewRule_NAMING_TABLE, v1pb.SQLReviewRule_NAMING_COLUMN:
+		rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
+			NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+				Format:    "^[a-z]+(_[a-z]+)*$",
+				MaxLength: 64,
+			},
+		}
+	case v1pb.SQLReviewRule_NAMING_INDEX_IDX:
+		rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
+			NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+				Format:    "^$|^idx_{{table}}_{{column_list}}$",
+				MaxLength: 64,
+			},
+		}
+	case v1pb.SQLReviewRule_NAMING_INDEX_PK:
+		rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
+			NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+				Format:    "^$|^pk_{{table}}_{{column_list}}$",
+				MaxLength: 64,
+			},
+		}
+	case v1pb.SQLReviewRule_NAMING_INDEX_UK:
+		rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
+			NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+				Format:    "^$|^uk_{{table}}_{{column_list}}$",
+				MaxLength: 64,
+			},
+		}
+	case v1pb.SQLReviewRule_NAMING_INDEX_FK:
+		rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
+			NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+				Format:    "^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+				MaxLength: 64,
+			},
+		}
+	case v1pb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT:
+		rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
+			NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+				Format:    "^id$",
+				MaxLength: 64,
+			},
+		}
+	case v1pb.SQLReviewRule_TABLE_COMMENT, v1pb.SQLReviewRule_COLUMN_COMMENT:
+		rule.Payload = &v1pb.SQLReviewRule_CommentConventionPayload{
+			CommentConventionPayload: &v1pb.SQLReviewRule_CommentConventionRulePayload{
+				Required:  true,
+				MaxLength: 10,
+			},
+		}
+	case v1pb.SQLReviewRule_COLUMN_REQUIRED:
+		rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"id", "created_ts", "updated_ts", "creator_id", "updater_id"},
+			},
+		}
+	case v1pb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST:
+		rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"JSON", "BINARY_FLOAT"},
+			},
+		}
+	case v1pb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH:
+		rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
+			NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+				Number: 20,
+			},
+		}
+	case v1pb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, v1pb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT:
+		rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
+			NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+				Number: 5,
+			},
+		}
+	case v1pb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST:
+		rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"utf8mb4", "UTF8"},
+			},
+		}
+	case v1pb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST:
+		rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"utf8mb4_0900_ai_ci"},
+			},
+		}
+	default:
+		// No payload for this rule type
+	}
 }

@@ -76,12 +76,13 @@ func RunPGSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbTyp
 		require.True(t, ok, "failed to clone schema metadata")
 		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, nil, nil, storepb.Engine_POSTGRES, true /* isCaseSensitive for PostgreSQL */)
 
-		// Get default payload, or use empty string for test-only rules
-		payload, err := advisor.SetDefaultSQLReviewRulePayload(rule, dbType)
-		if err != nil {
-			// For test-only rules (like "hello-world"), use empty payload
-			payload = ""
+		// Create rule and set default payload (if applicable)
+		sqlRule := &storepb.SQLReviewRule{
+			Type:  rule,
+			Level: storepb.SQLReviewRule_WARNING,
 		}
+		// Try to set default payload, ignore error for test-only rules
+		_ = advisor.SetDefaultSQLReviewRulePayload(sqlRule, dbType)
 
 		// Parse SQL using base.Parse() to get AST
 		unifiedASTs, err := base.Parse(dbType, tc.Statement)
@@ -99,13 +100,6 @@ func RunPGSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbTyp
 		// Walk through the catalog to build metadata using AST directly
 		advice := schema.WalkThrough(dbType, finalMetadata, unifiedASTs)
 		require.Nil(t, advice, "Failed to walk through final catalog: %s", tc.Statement)
-
-		sqlRule := &storepb.SQLReviewRule{
-			Type:  rule,
-			Level: storepb.SQLReviewRule_WARNING,
-		}
-		err = advisor.ConvertJSONPayloadToProto(sqlRule, payload)
-		require.NoError(t, err)
 
 		ruleList := []*storepb.SQLReviewRule{sqlRule}
 

@@ -3,7 +3,25 @@
 
 package store
 
-func (x *NamingRulePayload) Equal(y *NamingRulePayload) bool {
+func (x *ReviewConfigPayload) Equal(y *ReviewConfigPayload) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.SqlReviewRules) != len(y.SqlReviewRules) {
+		return false
+	}
+	for i := 0; i < len(x.SqlReviewRules); i++ {
+		if !x.SqlReviewRules[i].Equal(y.SqlReviewRules[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *SQLReviewRule_NamingRulePayload) Equal(y *SQLReviewRule_NamingRulePayload) bool {
 	if x == y {
 		return true
 	}
@@ -19,7 +37,7 @@ func (x *NamingRulePayload) Equal(y *NamingRulePayload) bool {
 	return true
 }
 
-func (x *NumberRulePayload) Equal(y *NumberRulePayload) bool {
+func (x *SQLReviewRule_NumberRulePayload) Equal(y *SQLReviewRule_NumberRulePayload) bool {
 	if x == y {
 		return true
 	}
@@ -32,7 +50,7 @@ func (x *NumberRulePayload) Equal(y *NumberRulePayload) bool {
 	return true
 }
 
-func (x *StringArrayRulePayload) Equal(y *StringArrayRulePayload) bool {
+func (x *SQLReviewRule_StringArrayRulePayload) Equal(y *SQLReviewRule_StringArrayRulePayload) bool {
 	if x == y {
 		return true
 	}
@@ -50,7 +68,7 @@ func (x *StringArrayRulePayload) Equal(y *StringArrayRulePayload) bool {
 	return true
 }
 
-func (x *CommentConventionRulePayload) Equal(y *CommentConventionRulePayload) bool {
+func (x *SQLReviewRule_CommentConventionRulePayload) Equal(y *SQLReviewRule_CommentConventionRulePayload) bool {
 	if x == y {
 		return true
 	}
@@ -66,7 +84,7 @@ func (x *CommentConventionRulePayload) Equal(y *CommentConventionRulePayload) bo
 	return true
 }
 
-func (x *RequiredColumnRulePayload) Equal(y *RequiredColumnRulePayload) bool {
+func (x *SQLReviewRule_RequiredColumnRulePayload) Equal(y *SQLReviewRule_RequiredColumnRulePayload) bool {
 	if x == y {
 		return true
 	}
@@ -84,7 +102,7 @@ func (x *RequiredColumnRulePayload) Equal(y *RequiredColumnRulePayload) bool {
 	return true
 }
 
-func (x *StringRulePayload) Equal(y *StringRulePayload) bool {
+func (x *SQLReviewRule_StringRulePayload) Equal(y *SQLReviewRule_StringRulePayload) bool {
 	if x == y {
 		return true
 	}
@@ -97,7 +115,7 @@ func (x *StringRulePayload) Equal(y *StringRulePayload) bool {
 	return true
 }
 
-func (x *NamingCaseRulePayload) Equal(y *NamingCaseRulePayload) bool {
+func (x *SQLReviewRule_NamingCaseRulePayload) Equal(y *SQLReviewRule_NamingCaseRulePayload) bool {
 	if x == y {
 		return true
 	}
@@ -106,24 +124,6 @@ func (x *NamingCaseRulePayload) Equal(y *NamingCaseRulePayload) bool {
 	}
 	if x.Upper != y.Upper {
 		return false
-	}
-	return true
-}
-
-func (x *ReviewConfigPayload) Equal(y *ReviewConfigPayload) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.SqlReviewRules) != len(y.SqlReviewRules) {
-		return false
-	}
-	for i := 0; i < len(x.SqlReviewRules); i++ {
-		if !x.SqlReviewRules[i].Equal(y.SqlReviewRules[i]) {
-			return false
-		}
 	}
 	return true
 }

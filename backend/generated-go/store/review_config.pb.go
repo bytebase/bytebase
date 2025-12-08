@@ -71,7 +71,7 @@ func (x SQLReviewRule_Level) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SQLReviewRule_Level.Descriptor instead.
 func (SQLReviewRule_Level) EnumDescriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{8, 0}
+	return file_store_review_config_proto_rawDescGZIP(), []int{1, 0}
 }
 
 type SQLReviewRule_Type int32
@@ -441,332 +441,7 @@ func (x SQLReviewRule_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SQLReviewRule_Type.Descriptor instead.
 func (SQLReviewRule_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{8, 1}
-}
-
-// Payload message types for SQL review rules
-type NamingRulePayload struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	MaxLength     int32                  `protobuf:"varint,1,opt,name=max_length,json=maxLength,proto3" json:"max_length,omitempty"`
-	Format        string                 `protobuf:"bytes,2,opt,name=format,proto3" json:"format,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *NamingRulePayload) Reset() {
-	*x = NamingRulePayload{}
-	mi := &file_store_review_config_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *NamingRulePayload) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*NamingRulePayload) ProtoMessage() {}
-
-func (x *NamingRulePayload) ProtoReflect() protoreflect.Message {
-	mi := &file_store_review_config_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use NamingRulePayload.ProtoReflect.Descriptor instead.
-func (*NamingRulePayload) Descriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *NamingRulePayload) GetMaxLength() int32 {
-	if x != nil {
-		return x.MaxLength
-	}
-	return 0
-}
-
-func (x *NamingRulePayload) GetFormat() string {
-	if x != nil {
-		return x.Format
-	}
-	return ""
-}
-
-type NumberRulePayload struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Number        int32                  `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *NumberRulePayload) Reset() {
-	*x = NumberRulePayload{}
-	mi := &file_store_review_config_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *NumberRulePayload) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*NumberRulePayload) ProtoMessage() {}
-
-func (x *NumberRulePayload) ProtoReflect() protoreflect.Message {
-	mi := &file_store_review_config_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use NumberRulePayload.ProtoReflect.Descriptor instead.
-func (*NumberRulePayload) Descriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *NumberRulePayload) GetNumber() int32 {
-	if x != nil {
-		return x.Number
-	}
-	return 0
-}
-
-type StringArrayRulePayload struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	List          []string               `protobuf:"bytes,1,rep,name=list,proto3" json:"list,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StringArrayRulePayload) Reset() {
-	*x = StringArrayRulePayload{}
-	mi := &file_store_review_config_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StringArrayRulePayload) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StringArrayRulePayload) ProtoMessage() {}
-
-func (x *StringArrayRulePayload) ProtoReflect() protoreflect.Message {
-	mi := &file_store_review_config_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StringArrayRulePayload.ProtoReflect.Descriptor instead.
-func (*StringArrayRulePayload) Descriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *StringArrayRulePayload) GetList() []string {
-	if x != nil {
-		return x.List
-	}
-	return nil
-}
-
-type CommentConventionRulePayload struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Required      bool                   `protobuf:"varint,1,opt,name=required,proto3" json:"required,omitempty"`
-	MaxLength     int32                  `protobuf:"varint,2,opt,name=max_length,json=maxLength,proto3" json:"max_length,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CommentConventionRulePayload) Reset() {
-	*x = CommentConventionRulePayload{}
-	mi := &file_store_review_config_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CommentConventionRulePayload) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CommentConventionRulePayload) ProtoMessage() {}
-
-func (x *CommentConventionRulePayload) ProtoReflect() protoreflect.Message {
-	mi := &file_store_review_config_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CommentConventionRulePayload.ProtoReflect.Descriptor instead.
-func (*CommentConventionRulePayload) Descriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *CommentConventionRulePayload) GetRequired() bool {
-	if x != nil {
-		return x.Required
-	}
-	return false
-}
-
-func (x *CommentConventionRulePayload) GetMaxLength() int32 {
-	if x != nil {
-		return x.MaxLength
-	}
-	return 0
-}
-
-type RequiredColumnRulePayload struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ColumnList    []string               `protobuf:"bytes,1,rep,name=column_list,json=columnList,proto3" json:"column_list,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RequiredColumnRulePayload) Reset() {
-	*x = RequiredColumnRulePayload{}
-	mi := &file_store_review_config_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RequiredColumnRulePayload) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RequiredColumnRulePayload) ProtoMessage() {}
-
-func (x *RequiredColumnRulePayload) ProtoReflect() protoreflect.Message {
-	mi := &file_store_review_config_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RequiredColumnRulePayload.ProtoReflect.Descriptor instead.
-func (*RequiredColumnRulePayload) Descriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *RequiredColumnRulePayload) GetColumnList() []string {
-	if x != nil {
-		return x.ColumnList
-	}
-	return nil
-}
-
-type StringRulePayload struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Value         string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StringRulePayload) Reset() {
-	*x = StringRulePayload{}
-	mi := &file_store_review_config_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StringRulePayload) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StringRulePayload) ProtoMessage() {}
-
-func (x *StringRulePayload) ProtoReflect() protoreflect.Message {
-	mi := &file_store_review_config_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StringRulePayload.ProtoReflect.Descriptor instead.
-func (*StringRulePayload) Descriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *StringRulePayload) GetValue() string {
-	if x != nil {
-		return x.Value
-	}
-	return ""
-}
-
-type NamingCaseRulePayload struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Upper         bool                   `protobuf:"varint,1,opt,name=upper,proto3" json:"upper,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *NamingCaseRulePayload) Reset() {
-	*x = NamingCaseRulePayload{}
-	mi := &file_store_review_config_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *NamingCaseRulePayload) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*NamingCaseRulePayload) ProtoMessage() {}
-
-func (x *NamingCaseRulePayload) ProtoReflect() protoreflect.Message {
-	mi := &file_store_review_config_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use NamingCaseRulePayload.ProtoReflect.Descriptor instead.
-func (*NamingCaseRulePayload) Descriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *NamingCaseRulePayload) GetUpper() bool {
-	if x != nil {
-		return x.Upper
-	}
-	return false
+	return file_store_review_config_proto_rawDescGZIP(), []int{1, 1}
 }
 
 type ReviewConfigPayload struct {
@@ -778,7 +453,7 @@ type ReviewConfigPayload struct {
 
 func (x *ReviewConfigPayload) Reset() {
 	*x = ReviewConfigPayload{}
-	mi := &file_store_review_config_proto_msgTypes[7]
+	mi := &file_store_review_config_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -790,7 +465,7 @@ func (x *ReviewConfigPayload) String() string {
 func (*ReviewConfigPayload) ProtoMessage() {}
 
 func (x *ReviewConfigPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_store_review_config_proto_msgTypes[7]
+	mi := &file_store_review_config_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -803,7 +478,7 @@ func (x *ReviewConfigPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReviewConfigPayload.ProtoReflect.Descriptor instead.
 func (*ReviewConfigPayload) Descriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{7}
+	return file_store_review_config_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ReviewConfigPayload) GetSqlReviewRules() []*SQLReviewRule {
@@ -834,7 +509,7 @@ type SQLReviewRule struct {
 
 func (x *SQLReviewRule) Reset() {
 	*x = SQLReviewRule{}
-	mi := &file_store_review_config_proto_msgTypes[8]
+	mi := &file_store_review_config_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -846,7 +521,7 @@ func (x *SQLReviewRule) String() string {
 func (*SQLReviewRule) ProtoMessage() {}
 
 func (x *SQLReviewRule) ProtoReflect() protoreflect.Message {
-	mi := &file_store_review_config_proto_msgTypes[8]
+	mi := &file_store_review_config_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -859,7 +534,7 @@ func (x *SQLReviewRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SQLReviewRule.ProtoReflect.Descriptor instead.
 func (*SQLReviewRule) Descriptor() ([]byte, []int) {
-	return file_store_review_config_proto_rawDescGZIP(), []int{8}
+	return file_store_review_config_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *SQLReviewRule) GetType() SQLReviewRule_Type {
@@ -883,7 +558,7 @@ func (x *SQLReviewRule) GetPayload() isSQLReviewRule_Payload {
 	return nil
 }
 
-func (x *SQLReviewRule) GetNamingPayload() *NamingRulePayload {
+func (x *SQLReviewRule) GetNamingPayload() *SQLReviewRule_NamingRulePayload {
 	if x != nil {
 		if x, ok := x.Payload.(*SQLReviewRule_NamingPayload); ok {
 			return x.NamingPayload
@@ -892,7 +567,7 @@ func (x *SQLReviewRule) GetNamingPayload() *NamingRulePayload {
 	return nil
 }
 
-func (x *SQLReviewRule) GetNumberPayload() *NumberRulePayload {
+func (x *SQLReviewRule) GetNumberPayload() *SQLReviewRule_NumberRulePayload {
 	if x != nil {
 		if x, ok := x.Payload.(*SQLReviewRule_NumberPayload); ok {
 			return x.NumberPayload
@@ -901,7 +576,7 @@ func (x *SQLReviewRule) GetNumberPayload() *NumberRulePayload {
 	return nil
 }
 
-func (x *SQLReviewRule) GetStringArrayPayload() *StringArrayRulePayload {
+func (x *SQLReviewRule) GetStringArrayPayload() *SQLReviewRule_StringArrayRulePayload {
 	if x != nil {
 		if x, ok := x.Payload.(*SQLReviewRule_StringArrayPayload); ok {
 			return x.StringArrayPayload
@@ -910,7 +585,7 @@ func (x *SQLReviewRule) GetStringArrayPayload() *StringArrayRulePayload {
 	return nil
 }
 
-func (x *SQLReviewRule) GetCommentConventionPayload() *CommentConventionRulePayload {
+func (x *SQLReviewRule) GetCommentConventionPayload() *SQLReviewRule_CommentConventionRulePayload {
 	if x != nil {
 		if x, ok := x.Payload.(*SQLReviewRule_CommentConventionPayload); ok {
 			return x.CommentConventionPayload
@@ -919,7 +594,7 @@ func (x *SQLReviewRule) GetCommentConventionPayload() *CommentConventionRulePayl
 	return nil
 }
 
-func (x *SQLReviewRule) GetRequiredColumnPayload() *RequiredColumnRulePayload {
+func (x *SQLReviewRule) GetRequiredColumnPayload() *SQLReviewRule_RequiredColumnRulePayload {
 	if x != nil {
 		if x, ok := x.Payload.(*SQLReviewRule_RequiredColumnPayload); ok {
 			return x.RequiredColumnPayload
@@ -928,7 +603,7 @@ func (x *SQLReviewRule) GetRequiredColumnPayload() *RequiredColumnRulePayload {
 	return nil
 }
 
-func (x *SQLReviewRule) GetStringPayload() *StringRulePayload {
+func (x *SQLReviewRule) GetStringPayload() *SQLReviewRule_StringRulePayload {
 	if x != nil {
 		if x, ok := x.Payload.(*SQLReviewRule_StringPayload); ok {
 			return x.StringPayload
@@ -937,7 +612,7 @@ func (x *SQLReviewRule) GetStringPayload() *StringRulePayload {
 	return nil
 }
 
-func (x *SQLReviewRule) GetNamingCasePayload() *NamingCaseRulePayload {
+func (x *SQLReviewRule) GetNamingCasePayload() *SQLReviewRule_NamingCaseRulePayload {
 	if x != nil {
 		if x, ok := x.Payload.(*SQLReviewRule_NamingCasePayload); ok {
 			return x.NamingCasePayload
@@ -958,31 +633,31 @@ type isSQLReviewRule_Payload interface {
 }
 
 type SQLReviewRule_NamingPayload struct {
-	NamingPayload *NamingRulePayload `protobuf:"bytes,3,opt,name=naming_payload,json=namingPayload,proto3,oneof"`
+	NamingPayload *SQLReviewRule_NamingRulePayload `protobuf:"bytes,3,opt,name=naming_payload,json=namingPayload,proto3,oneof"`
 }
 
 type SQLReviewRule_NumberPayload struct {
-	NumberPayload *NumberRulePayload `protobuf:"bytes,4,opt,name=number_payload,json=numberPayload,proto3,oneof"`
+	NumberPayload *SQLReviewRule_NumberRulePayload `protobuf:"bytes,4,opt,name=number_payload,json=numberPayload,proto3,oneof"`
 }
 
 type SQLReviewRule_StringArrayPayload struct {
-	StringArrayPayload *StringArrayRulePayload `protobuf:"bytes,5,opt,name=string_array_payload,json=stringArrayPayload,proto3,oneof"`
+	StringArrayPayload *SQLReviewRule_StringArrayRulePayload `protobuf:"bytes,5,opt,name=string_array_payload,json=stringArrayPayload,proto3,oneof"`
 }
 
 type SQLReviewRule_CommentConventionPayload struct {
-	CommentConventionPayload *CommentConventionRulePayload `protobuf:"bytes,6,opt,name=comment_convention_payload,json=commentConventionPayload,proto3,oneof"`
+	CommentConventionPayload *SQLReviewRule_CommentConventionRulePayload `protobuf:"bytes,6,opt,name=comment_convention_payload,json=commentConventionPayload,proto3,oneof"`
 }
 
 type SQLReviewRule_RequiredColumnPayload struct {
-	RequiredColumnPayload *RequiredColumnRulePayload `protobuf:"bytes,7,opt,name=required_column_payload,json=requiredColumnPayload,proto3,oneof"`
+	RequiredColumnPayload *SQLReviewRule_RequiredColumnRulePayload `protobuf:"bytes,7,opt,name=required_column_payload,json=requiredColumnPayload,proto3,oneof"`
 }
 
 type SQLReviewRule_StringPayload struct {
-	StringPayload *StringRulePayload `protobuf:"bytes,8,opt,name=string_payload,json=stringPayload,proto3,oneof"`
+	StringPayload *SQLReviewRule_StringRulePayload `protobuf:"bytes,8,opt,name=string_payload,json=stringPayload,proto3,oneof"`
 }
 
 type SQLReviewRule_NamingCasePayload struct {
-	NamingCasePayload *NamingCaseRulePayload `protobuf:"bytes,9,opt,name=naming_case_payload,json=namingCasePayload,proto3,oneof"`
+	NamingCasePayload *SQLReviewRule_NamingCaseRulePayload `protobuf:"bytes,9,opt,name=naming_case_payload,json=namingCasePayload,proto3,oneof"`
 }
 
 func (*SQLReviewRule_NamingPayload) isSQLReviewRule_Payload() {}
@@ -999,44 +674,369 @@ func (*SQLReviewRule_StringPayload) isSQLReviewRule_Payload() {}
 
 func (*SQLReviewRule_NamingCasePayload) isSQLReviewRule_Payload() {}
 
+// Payload message types for SQL review rules
+type SQLReviewRule_NamingRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MaxLength     int32                  `protobuf:"varint,1,opt,name=max_length,json=maxLength,proto3" json:"max_length,omitempty"`
+	Format        string                 `protobuf:"bytes,2,opt,name=format,proto3" json:"format,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SQLReviewRule_NamingRulePayload) Reset() {
+	*x = SQLReviewRule_NamingRulePayload{}
+	mi := &file_store_review_config_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SQLReviewRule_NamingRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SQLReviewRule_NamingRulePayload) ProtoMessage() {}
+
+func (x *SQLReviewRule_NamingRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_store_review_config_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SQLReviewRule_NamingRulePayload.ProtoReflect.Descriptor instead.
+func (*SQLReviewRule_NamingRulePayload) Descriptor() ([]byte, []int) {
+	return file_store_review_config_proto_rawDescGZIP(), []int{1, 0}
+}
+
+func (x *SQLReviewRule_NamingRulePayload) GetMaxLength() int32 {
+	if x != nil {
+		return x.MaxLength
+	}
+	return 0
+}
+
+func (x *SQLReviewRule_NamingRulePayload) GetFormat() string {
+	if x != nil {
+		return x.Format
+	}
+	return ""
+}
+
+type SQLReviewRule_NumberRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Number        int32                  `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SQLReviewRule_NumberRulePayload) Reset() {
+	*x = SQLReviewRule_NumberRulePayload{}
+	mi := &file_store_review_config_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SQLReviewRule_NumberRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SQLReviewRule_NumberRulePayload) ProtoMessage() {}
+
+func (x *SQLReviewRule_NumberRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_store_review_config_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SQLReviewRule_NumberRulePayload.ProtoReflect.Descriptor instead.
+func (*SQLReviewRule_NumberRulePayload) Descriptor() ([]byte, []int) {
+	return file_store_review_config_proto_rawDescGZIP(), []int{1, 1}
+}
+
+func (x *SQLReviewRule_NumberRulePayload) GetNumber() int32 {
+	if x != nil {
+		return x.Number
+	}
+	return 0
+}
+
+type SQLReviewRule_StringArrayRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	List          []string               `protobuf:"bytes,1,rep,name=list,proto3" json:"list,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SQLReviewRule_StringArrayRulePayload) Reset() {
+	*x = SQLReviewRule_StringArrayRulePayload{}
+	mi := &file_store_review_config_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SQLReviewRule_StringArrayRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SQLReviewRule_StringArrayRulePayload) ProtoMessage() {}
+
+func (x *SQLReviewRule_StringArrayRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_store_review_config_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SQLReviewRule_StringArrayRulePayload.ProtoReflect.Descriptor instead.
+func (*SQLReviewRule_StringArrayRulePayload) Descriptor() ([]byte, []int) {
+	return file_store_review_config_proto_rawDescGZIP(), []int{1, 2}
+}
+
+func (x *SQLReviewRule_StringArrayRulePayload) GetList() []string {
+	if x != nil {
+		return x.List
+	}
+	return nil
+}
+
+type SQLReviewRule_CommentConventionRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Required      bool                   `protobuf:"varint,1,opt,name=required,proto3" json:"required,omitempty"`
+	MaxLength     int32                  `protobuf:"varint,2,opt,name=max_length,json=maxLength,proto3" json:"max_length,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SQLReviewRule_CommentConventionRulePayload) Reset() {
+	*x = SQLReviewRule_CommentConventionRulePayload{}
+	mi := &file_store_review_config_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SQLReviewRule_CommentConventionRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SQLReviewRule_CommentConventionRulePayload) ProtoMessage() {}
+
+func (x *SQLReviewRule_CommentConventionRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_store_review_config_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SQLReviewRule_CommentConventionRulePayload.ProtoReflect.Descriptor instead.
+func (*SQLReviewRule_CommentConventionRulePayload) Descriptor() ([]byte, []int) {
+	return file_store_review_config_proto_rawDescGZIP(), []int{1, 3}
+}
+
+func (x *SQLReviewRule_CommentConventionRulePayload) GetRequired() bool {
+	if x != nil {
+		return x.Required
+	}
+	return false
+}
+
+func (x *SQLReviewRule_CommentConventionRulePayload) GetMaxLength() int32 {
+	if x != nil {
+		return x.MaxLength
+	}
+	return 0
+}
+
+type SQLReviewRule_RequiredColumnRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ColumnList    []string               `protobuf:"bytes,1,rep,name=column_list,json=columnList,proto3" json:"column_list,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SQLReviewRule_RequiredColumnRulePayload) Reset() {
+	*x = SQLReviewRule_RequiredColumnRulePayload{}
+	mi := &file_store_review_config_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SQLReviewRule_RequiredColumnRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SQLReviewRule_RequiredColumnRulePayload) ProtoMessage() {}
+
+func (x *SQLReviewRule_RequiredColumnRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_store_review_config_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SQLReviewRule_RequiredColumnRulePayload.ProtoReflect.Descriptor instead.
+func (*SQLReviewRule_RequiredColumnRulePayload) Descriptor() ([]byte, []int) {
+	return file_store_review_config_proto_rawDescGZIP(), []int{1, 4}
+}
+
+func (x *SQLReviewRule_RequiredColumnRulePayload) GetColumnList() []string {
+	if x != nil {
+		return x.ColumnList
+	}
+	return nil
+}
+
+type SQLReviewRule_StringRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SQLReviewRule_StringRulePayload) Reset() {
+	*x = SQLReviewRule_StringRulePayload{}
+	mi := &file_store_review_config_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SQLReviewRule_StringRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SQLReviewRule_StringRulePayload) ProtoMessage() {}
+
+func (x *SQLReviewRule_StringRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_store_review_config_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SQLReviewRule_StringRulePayload.ProtoReflect.Descriptor instead.
+func (*SQLReviewRule_StringRulePayload) Descriptor() ([]byte, []int) {
+	return file_store_review_config_proto_rawDescGZIP(), []int{1, 5}
+}
+
+func (x *SQLReviewRule_StringRulePayload) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+type SQLReviewRule_NamingCaseRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Upper         bool                   `protobuf:"varint,1,opt,name=upper,proto3" json:"upper,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SQLReviewRule_NamingCaseRulePayload) Reset() {
+	*x = SQLReviewRule_NamingCaseRulePayload{}
+	mi := &file_store_review_config_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SQLReviewRule_NamingCaseRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SQLReviewRule_NamingCaseRulePayload) ProtoMessage() {}
+
+func (x *SQLReviewRule_NamingCaseRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_store_review_config_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SQLReviewRule_NamingCaseRulePayload.ProtoReflect.Descriptor instead.
+func (*SQLReviewRule_NamingCaseRulePayload) Descriptor() ([]byte, []int) {
+	return file_store_review_config_proto_rawDescGZIP(), []int{1, 6}
+}
+
+func (x *SQLReviewRule_NamingCaseRulePayload) GetUpper() bool {
+	if x != nil {
+		return x.Upper
+	}
+	return false
+}
+
 var File_store_review_config_proto protoreflect.FileDescriptor
 
 const file_store_review_config_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/review_config.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"J\n" +
+	"\x19store/review_config.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"^\n" +
+	"\x13ReviewConfigPayload\x12G\n" +
+	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRules\"\x90'\n" +
+	"\rSQLReviewRule\x126\n" +
+	"\x04type\x18\x01 \x01(\x0e2\".bytebase.store.SQLReviewRule.TypeR\x04type\x129\n" +
+	"\x05level\x18\x02 \x01(\x0e2#.bytebase.store.SQLReviewRule.LevelR\x05level\x12X\n" +
+	"\x0enaming_payload\x18\x03 \x01(\v2/.bytebase.store.SQLReviewRule.NamingRulePayloadH\x00R\rnamingPayload\x12X\n" +
+	"\x0enumber_payload\x18\x04 \x01(\v2/.bytebase.store.SQLReviewRule.NumberRulePayloadH\x00R\rnumberPayload\x12h\n" +
+	"\x14string_array_payload\x18\x05 \x01(\v24.bytebase.store.SQLReviewRule.StringArrayRulePayloadH\x00R\x12stringArrayPayload\x12z\n" +
+	"\x1acomment_convention_payload\x18\x06 \x01(\v2:.bytebase.store.SQLReviewRule.CommentConventionRulePayloadH\x00R\x18commentConventionPayload\x12q\n" +
+	"\x17required_column_payload\x18\a \x01(\v27.bytebase.store.SQLReviewRule.RequiredColumnRulePayloadH\x00R\x15requiredColumnPayload\x12X\n" +
+	"\x0estring_payload\x18\b \x01(\v2/.bytebase.store.SQLReviewRule.StringRulePayloadH\x00R\rstringPayload\x12e\n" +
+	"\x13naming_case_payload\x18\t \x01(\v23.bytebase.store.SQLReviewRule.NamingCaseRulePayloadH\x00R\x11namingCasePayload\x12.\n" +
+	"\x06engine\x18\n" +
+	" \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x1aJ\n" +
 	"\x11NamingRulePayload\x12\x1d\n" +
 	"\n" +
 	"max_length\x18\x01 \x01(\x05R\tmaxLength\x12\x16\n" +
-	"\x06format\x18\x02 \x01(\tR\x06format\"+\n" +
+	"\x06format\x18\x02 \x01(\tR\x06format\x1a+\n" +
 	"\x11NumberRulePayload\x12\x16\n" +
-	"\x06number\x18\x01 \x01(\x05R\x06number\",\n" +
+	"\x06number\x18\x01 \x01(\x05R\x06number\x1a,\n" +
 	"\x16StringArrayRulePayload\x12\x12\n" +
-	"\x04list\x18\x01 \x03(\tR\x04list\"Y\n" +
+	"\x04list\x18\x01 \x03(\tR\x04list\x1aY\n" +
 	"\x1cCommentConventionRulePayload\x12\x1a\n" +
 	"\brequired\x18\x01 \x01(\bR\brequired\x12\x1d\n" +
 	"\n" +
-	"max_length\x18\x02 \x01(\x05R\tmaxLength\"<\n" +
+	"max_length\x18\x02 \x01(\x05R\tmaxLength\x1a<\n" +
 	"\x19RequiredColumnRulePayload\x12\x1f\n" +
 	"\vcolumn_list\x18\x01 \x03(\tR\n" +
-	"columnList\")\n" +
+	"columnList\x1a)\n" +
 	"\x11StringRulePayload\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\tR\x05value\"-\n" +
+	"\x05value\x18\x01 \x01(\tR\x05value\x1a-\n" +
 	"\x15NamingCaseRulePayload\x12\x14\n" +
-	"\x05upper\x18\x01 \x01(\bR\x05upper\"^\n" +
-	"\x13ReviewConfigPayload\x12G\n" +
-	"\x10sql_review_rules\x18\x01 \x03(\v2\x1d.bytebase.store.SQLReviewRuleR\x0esqlReviewRules\"\x94#\n" +
-	"\rSQLReviewRule\x126\n" +
-	"\x04type\x18\x01 \x01(\x0e2\".bytebase.store.SQLReviewRule.TypeR\x04type\x129\n" +
-	"\x05level\x18\x02 \x01(\x0e2#.bytebase.store.SQLReviewRule.LevelR\x05level\x12J\n" +
-	"\x0enaming_payload\x18\x03 \x01(\v2!.bytebase.store.NamingRulePayloadH\x00R\rnamingPayload\x12J\n" +
-	"\x0enumber_payload\x18\x04 \x01(\v2!.bytebase.store.NumberRulePayloadH\x00R\rnumberPayload\x12Z\n" +
-	"\x14string_array_payload\x18\x05 \x01(\v2&.bytebase.store.StringArrayRulePayloadH\x00R\x12stringArrayPayload\x12l\n" +
-	"\x1acomment_convention_payload\x18\x06 \x01(\v2,.bytebase.store.CommentConventionRulePayloadH\x00R\x18commentConventionPayload\x12c\n" +
-	"\x17required_column_payload\x18\a \x01(\v2).bytebase.store.RequiredColumnRulePayloadH\x00R\x15requiredColumnPayload\x12J\n" +
-	"\x0estring_payload\x18\b \x01(\v2!.bytebase.store.StringRulePayloadH\x00R\rstringPayload\x12W\n" +
-	"\x13naming_case_payload\x18\t \x01(\v2%.bytebase.store.NamingCaseRulePayloadH\x00R\x11namingCasePayload\x12.\n" +
-	"\x06engine\x18\n" +
-	" \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\"6\n" +
+	"\x05upper\x18\x01 \x01(\bR\x05upper\"6\n" +
 	"\x05Level\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
@@ -1171,30 +1171,30 @@ func file_store_review_config_proto_rawDescGZIP() []byte {
 var file_store_review_config_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_store_review_config_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_store_review_config_proto_goTypes = []any{
-	(SQLReviewRule_Level)(0),             // 0: bytebase.store.SQLReviewRule.Level
-	(SQLReviewRule_Type)(0),              // 1: bytebase.store.SQLReviewRule.Type
-	(*NamingRulePayload)(nil),            // 2: bytebase.store.NamingRulePayload
-	(*NumberRulePayload)(nil),            // 3: bytebase.store.NumberRulePayload
-	(*StringArrayRulePayload)(nil),       // 4: bytebase.store.StringArrayRulePayload
-	(*CommentConventionRulePayload)(nil), // 5: bytebase.store.CommentConventionRulePayload
-	(*RequiredColumnRulePayload)(nil),    // 6: bytebase.store.RequiredColumnRulePayload
-	(*StringRulePayload)(nil),            // 7: bytebase.store.StringRulePayload
-	(*NamingCaseRulePayload)(nil),        // 8: bytebase.store.NamingCaseRulePayload
-	(*ReviewConfigPayload)(nil),          // 9: bytebase.store.ReviewConfigPayload
-	(*SQLReviewRule)(nil),                // 10: bytebase.store.SQLReviewRule
-	(Engine)(0),                          // 11: bytebase.store.Engine
+	(SQLReviewRule_Level)(0),                           // 0: bytebase.store.SQLReviewRule.Level
+	(SQLReviewRule_Type)(0),                            // 1: bytebase.store.SQLReviewRule.Type
+	(*ReviewConfigPayload)(nil),                        // 2: bytebase.store.ReviewConfigPayload
+	(*SQLReviewRule)(nil),                              // 3: bytebase.store.SQLReviewRule
+	(*SQLReviewRule_NamingRulePayload)(nil),            // 4: bytebase.store.SQLReviewRule.NamingRulePayload
+	(*SQLReviewRule_NumberRulePayload)(nil),            // 5: bytebase.store.SQLReviewRule.NumberRulePayload
+	(*SQLReviewRule_StringArrayRulePayload)(nil),       // 6: bytebase.store.SQLReviewRule.StringArrayRulePayload
+	(*SQLReviewRule_CommentConventionRulePayload)(nil), // 7: bytebase.store.SQLReviewRule.CommentConventionRulePayload
+	(*SQLReviewRule_RequiredColumnRulePayload)(nil),    // 8: bytebase.store.SQLReviewRule.RequiredColumnRulePayload
+	(*SQLReviewRule_StringRulePayload)(nil),            // 9: bytebase.store.SQLReviewRule.StringRulePayload
+	(*SQLReviewRule_NamingCaseRulePayload)(nil),        // 10: bytebase.store.SQLReviewRule.NamingCaseRulePayload
+	(Engine)(0), // 11: bytebase.store.Engine
 }
 var file_store_review_config_proto_depIdxs = []int32{
-	10, // 0: bytebase.store.ReviewConfigPayload.sql_review_rules:type_name -> bytebase.store.SQLReviewRule
+	3,  // 0: bytebase.store.ReviewConfigPayload.sql_review_rules:type_name -> bytebase.store.SQLReviewRule
 	1,  // 1: bytebase.store.SQLReviewRule.type:type_name -> bytebase.store.SQLReviewRule.Type
 	0,  // 2: bytebase.store.SQLReviewRule.level:type_name -> bytebase.store.SQLReviewRule.Level
-	2,  // 3: bytebase.store.SQLReviewRule.naming_payload:type_name -> bytebase.store.NamingRulePayload
-	3,  // 4: bytebase.store.SQLReviewRule.number_payload:type_name -> bytebase.store.NumberRulePayload
-	4,  // 5: bytebase.store.SQLReviewRule.string_array_payload:type_name -> bytebase.store.StringArrayRulePayload
-	5,  // 6: bytebase.store.SQLReviewRule.comment_convention_payload:type_name -> bytebase.store.CommentConventionRulePayload
-	6,  // 7: bytebase.store.SQLReviewRule.required_column_payload:type_name -> bytebase.store.RequiredColumnRulePayload
-	7,  // 8: bytebase.store.SQLReviewRule.string_payload:type_name -> bytebase.store.StringRulePayload
-	8,  // 9: bytebase.store.SQLReviewRule.naming_case_payload:type_name -> bytebase.store.NamingCaseRulePayload
+	4,  // 3: bytebase.store.SQLReviewRule.naming_payload:type_name -> bytebase.store.SQLReviewRule.NamingRulePayload
+	5,  // 4: bytebase.store.SQLReviewRule.number_payload:type_name -> bytebase.store.SQLReviewRule.NumberRulePayload
+	6,  // 5: bytebase.store.SQLReviewRule.string_array_payload:type_name -> bytebase.store.SQLReviewRule.StringArrayRulePayload
+	7,  // 6: bytebase.store.SQLReviewRule.comment_convention_payload:type_name -> bytebase.store.SQLReviewRule.CommentConventionRulePayload
+	8,  // 7: bytebase.store.SQLReviewRule.required_column_payload:type_name -> bytebase.store.SQLReviewRule.RequiredColumnRulePayload
+	9,  // 8: bytebase.store.SQLReviewRule.string_payload:type_name -> bytebase.store.SQLReviewRule.StringRulePayload
+	10, // 9: bytebase.store.SQLReviewRule.naming_case_payload:type_name -> bytebase.store.SQLReviewRule.NamingCaseRulePayload
 	11, // 10: bytebase.store.SQLReviewRule.engine:type_name -> bytebase.store.Engine
 	11, // [11:11] is the sub-list for method output_type
 	11, // [11:11] is the sub-list for method input_type
@@ -1209,7 +1209,7 @@ func file_store_review_config_proto_init() {
 		return
 	}
 	file_store_common_proto_init()
-	file_store_review_config_proto_msgTypes[8].OneofWrappers = []any{
+	file_store_review_config_proto_msgTypes[1].OneofWrappers = []any{
 		(*SQLReviewRule_NamingPayload)(nil),
 		(*SQLReviewRule_NumberPayload)(nil),
 		(*SQLReviewRule_StringArrayPayload)(nil),

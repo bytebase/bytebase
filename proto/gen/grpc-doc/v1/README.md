@@ -540,20 +540,20 @@
     - [ReleaseService](#bytebase-v1-ReleaseService)
   
 - [v1/review_config_service.proto](#v1_review_config_service-proto)
-    - [CommentConventionRulePayload](#bytebase-v1-CommentConventionRulePayload)
     - [CreateReviewConfigRequest](#bytebase-v1-CreateReviewConfigRequest)
     - [DeleteReviewConfigRequest](#bytebase-v1-DeleteReviewConfigRequest)
     - [GetReviewConfigRequest](#bytebase-v1-GetReviewConfigRequest)
     - [ListReviewConfigsRequest](#bytebase-v1-ListReviewConfigsRequest)
     - [ListReviewConfigsResponse](#bytebase-v1-ListReviewConfigsResponse)
-    - [NamingCaseRulePayload](#bytebase-v1-NamingCaseRulePayload)
-    - [NamingRulePayload](#bytebase-v1-NamingRulePayload)
-    - [NumberRulePayload](#bytebase-v1-NumberRulePayload)
-    - [RequiredColumnRulePayload](#bytebase-v1-RequiredColumnRulePayload)
     - [ReviewConfig](#bytebase-v1-ReviewConfig)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
-    - [StringArrayRulePayload](#bytebase-v1-StringArrayRulePayload)
-    - [StringRulePayload](#bytebase-v1-StringRulePayload)
+    - [SQLReviewRule.CommentConventionRulePayload](#bytebase-v1-SQLReviewRule-CommentConventionRulePayload)
+    - [SQLReviewRule.NamingCaseRulePayload](#bytebase-v1-SQLReviewRule-NamingCaseRulePayload)
+    - [SQLReviewRule.NamingRulePayload](#bytebase-v1-SQLReviewRule-NamingRulePayload)
+    - [SQLReviewRule.NumberRulePayload](#bytebase-v1-SQLReviewRule-NumberRulePayload)
+    - [SQLReviewRule.RequiredColumnRulePayload](#bytebase-v1-SQLReviewRule-RequiredColumnRulePayload)
+    - [SQLReviewRule.StringArrayRulePayload](#bytebase-v1-SQLReviewRule-StringArrayRulePayload)
+    - [SQLReviewRule.StringRulePayload](#bytebase-v1-SQLReviewRule-StringRulePayload)
     - [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest)
   
     - [SQLReviewRule.Level](#bytebase-v1-SQLReviewRule-Level)
@@ -8914,22 +8914,6 @@ ReleaseService manages releases for coordinating deployments.
 
 
 
-<a name="bytebase-v1-CommentConventionRulePayload"></a>
-
-### CommentConventionRulePayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| required | [bool](#bool) |  |  |
-| max_length | [int32](#int32) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-CreateReviewConfigRequest"></a>
 
 ### CreateReviewConfigRequest
@@ -9000,67 +8984,6 @@ ReleaseService manages releases for coordinating deployments.
 
 
 
-<a name="bytebase-v1-NamingCaseRulePayload"></a>
-
-### NamingCaseRulePayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| upper | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-NamingRulePayload"></a>
-
-### NamingRulePayload
-Payload message types for SQL review rules
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| max_length | [int32](#int32) |  |  |
-| format | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-NumberRulePayload"></a>
-
-### NumberRulePayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| number | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-RequiredColumnRulePayload"></a>
-
-### RequiredColumnRulePayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| column_list | [string](#string) | repeated |  |
-
-
-
-
-
-
 <a name="bytebase-v1-ReviewConfig"></a>
 
 ### ReviewConfig
@@ -9090,13 +9013,13 @@ SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for d
 | ----- | ---- | ----- | ----------- |
 | type | [SQLReviewRule.Type](#bytebase-v1-SQLReviewRule-Type) |  | The type of SQL review rule. |
 | level | [SQLReviewRule.Level](#bytebase-v1-SQLReviewRule-Level) |  | The severity level of the rule. |
-| naming_payload | [NamingRulePayload](#bytebase-v1-NamingRulePayload) |  |  |
-| number_payload | [NumberRulePayload](#bytebase-v1-NumberRulePayload) |  |  |
-| string_array_payload | [StringArrayRulePayload](#bytebase-v1-StringArrayRulePayload) |  |  |
-| comment_convention_payload | [CommentConventionRulePayload](#bytebase-v1-CommentConventionRulePayload) |  |  |
-| required_column_payload | [RequiredColumnRulePayload](#bytebase-v1-RequiredColumnRulePayload) |  |  |
-| string_payload | [StringRulePayload](#bytebase-v1-StringRulePayload) |  |  |
-| naming_case_payload | [NamingCaseRulePayload](#bytebase-v1-NamingCaseRulePayload) |  |  |
+| naming_payload | [SQLReviewRule.NamingRulePayload](#bytebase-v1-SQLReviewRule-NamingRulePayload) |  |  |
+| number_payload | [SQLReviewRule.NumberRulePayload](#bytebase-v1-SQLReviewRule-NumberRulePayload) |  |  |
+| string_array_payload | [SQLReviewRule.StringArrayRulePayload](#bytebase-v1-SQLReviewRule-StringArrayRulePayload) |  |  |
+| comment_convention_payload | [SQLReviewRule.CommentConventionRulePayload](#bytebase-v1-SQLReviewRule-CommentConventionRulePayload) |  |  |
+| required_column_payload | [SQLReviewRule.RequiredColumnRulePayload](#bytebase-v1-SQLReviewRule-RequiredColumnRulePayload) |  |  |
+| string_payload | [SQLReviewRule.StringRulePayload](#bytebase-v1-SQLReviewRule-StringRulePayload) |  |  |
+| naming_case_payload | [SQLReviewRule.NamingCaseRulePayload](#bytebase-v1-SQLReviewRule-NamingCaseRulePayload) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine this rule applies to. |
 
 
@@ -9104,9 +9027,86 @@ SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for d
 
 
 
-<a name="bytebase-v1-StringArrayRulePayload"></a>
+<a name="bytebase-v1-SQLReviewRule-CommentConventionRulePayload"></a>
 
-### StringArrayRulePayload
+### SQLReviewRule.CommentConventionRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| required | [bool](#bool) |  |  |
+| max_length | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-NamingCaseRulePayload"></a>
+
+### SQLReviewRule.NamingCaseRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| upper | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-NamingRulePayload"></a>
+
+### SQLReviewRule.NamingRulePayload
+Payload message types for SQL review rules
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| max_length | [int32](#int32) |  |  |
+| format | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-NumberRulePayload"></a>
+
+### SQLReviewRule.NumberRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| number | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-RequiredColumnRulePayload"></a>
+
+### SQLReviewRule.RequiredColumnRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| column_list | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-StringArrayRulePayload"></a>
+
+### SQLReviewRule.StringArrayRulePayload
 
 
 
@@ -9119,9 +9119,9 @@ SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for d
 
 
 
-<a name="bytebase-v1-StringRulePayload"></a>
+<a name="bytebase-v1-SQLReviewRule-StringRulePayload"></a>
 
-### StringRulePayload
+### SQLReviewRule.StringRulePayload
 
 
 

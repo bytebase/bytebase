@@ -60,11 +60,11 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 // ColumnCommentConventionRule checks for column comment convention.
 type ColumnCommentConventionRule struct {
 	BaseRule
-	payload *storepb.CommentConventionRulePayload
+	payload *storepb.SQLReviewRule_CommentConventionRulePayload
 }
 
 // NewColumnCommentConventionRule creates a new ColumnCommentConventionRule.
-func NewColumnCommentConventionRule(level storepb.Advice_Status, title string, payload *storepb.CommentConventionRulePayload) *ColumnCommentConventionRule {
+func NewColumnCommentConventionRule(level storepb.Advice_Status, title string, payload *storepb.SQLReviewRule_CommentConventionRulePayload) *ColumnCommentConventionRule {
 	return &ColumnCommentConventionRule{
 		BaseRule: BaseRule{
 			level: level,

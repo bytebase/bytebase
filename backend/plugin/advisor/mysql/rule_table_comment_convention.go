@@ -60,11 +60,11 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 // TableCommentConventionRule checks for table comment convention.
 type TableCommentConventionRule struct {
 	BaseRule
-	payload *storepb.CommentConventionRulePayload
+	payload *storepb.SQLReviewRule_CommentConventionRulePayload
 }
 
 // NewTableCommentConventionRule creates a new TableCommentConventionRule.
-func NewTableCommentConventionRule(level storepb.Advice_Status, title string, payload *storepb.CommentConventionRulePayload) *TableCommentConventionRule {
+func NewTableCommentConventionRule(level storepb.Advice_Status, title string, payload *storepb.SQLReviewRule_CommentConventionRulePayload) *TableCommentConventionRule {
 	return &TableCommentConventionRule{
 		BaseRule: BaseRule{
 			level: level,
