@@ -2665,7 +2665,18 @@
         }
       }
     },
-    "risk": {},
+    "risk": {
+      "self": "风险中心",
+      "description": "风险评估会自动评估数据库变更，并根据操作类型分配风险等级。",
+      "how-it-works": "工作原理",
+      "how-it-works-description": "当您创建数据库变更时，Bytebase 会自动分析 SQL 语句，并根据预定义规则分配风险等级（低、中、高）。",
+      "risk-levels": "风险等级",
+      "risk-level-low": "低风险操作包括 SELECT 查询和不太可能造成问题的小型模式变更。",
+      "risk-level-moderate": "中风险操作包括标准 DDL 变更，如添加列或索引。",
+      "risk-level-high": "高风险操作包括破坏性变更，如 DROP TABLE、TRUNCATE 或大规模数据修改。",
+      "integration": "与审批流集成",
+      "integration-description": "风险等级与自定义审批系统集成。您可以配置审批流，根据变更的风险等级要求不同级别的审核。"
+    },
     "rule": {
       "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
     },
