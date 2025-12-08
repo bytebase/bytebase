@@ -372,7 +372,7 @@ const searchScopeOptions = computed((): ScopeOption[] => {
       description: t("sql-editor.search-scope-column-description", {
         type: column.columnType,
       }),
-    })
+    });
   }
   return options;
 });
@@ -414,7 +414,10 @@ watch(
 );
 
 const scrollToNextCandidate = () => {
-  if (state.searchCandidateActiveIndex >= (state.searchCandidateRowIndexs.length - 1)) {
+  if (
+    state.searchCandidateActiveIndex >=
+    state.searchCandidateRowIndexs.length - 1
+  ) {
     return;
   }
   state.searchCandidateActiveIndex++;
