@@ -85,82 +85,75 @@ const columns = computed((): DataTableColumn<FlattenLogEntry>[] => {
     {
       key: "batch",
       title: () => "#",
-      width: 70,
-      className: "whitespace-nowrap",
-      render: (entry) => {
-        return (
-          <div class="flex flex-row items-center gap-1">
-            <span>
-              {String(entry.batch + 1)}
-              {entry.serial > 0 ? `.${entry.serial + 1}` : ""}
-            </span>
-            {lastDeployId.value !== entry.deployId && (
-              <NTooltip>
-                {{
-                  trigger: () => (
-                    <CircleAlertIcon class="w-4 h-auto text-red-600" />
-                  ),
-                  default: () => (
-                    <div class="max-w-[20rem]">
-                      Deploy ID mismatch. Please check if there is another
-                      deployment running.
-                    </div>
-                  ),
-                }}
-              </NTooltip>
-            )}
-          </div>
-        );
-      },
+      width: 60,
+      minWidth: 60,
+      render: (entry) => (
+        <div class="flex items-center gap-1">
+          <span>
+            {String(entry.batch + 1)}
+            {entry.serial > 0 ? `.${entry.serial + 1}` : ""}
+          </span>
+          {lastDeployId.value !== entry.deployId && (
+            <NTooltip>
+              {{
+                trigger: () => (
+                  <CircleAlertIcon class="w-4 h-auto text-red-600" />
+                ),
+                default: () => (
+                  <div class="max-w-[20rem]">
+                    Deploy ID mismatch. Please check if there is another
+                    deployment running.
+                  </div>
+                ),
+              }}
+            </NTooltip>
+          )}
+        </div>
+      ),
     },
     {
       key: "type",
       title: () => t("common.type"),
-      width: 120,
-      className: "whitespace-nowrap",
+      width: 140,
+      minWidth: 140,
       render: (entry) => {
         const text = displayTaskRunLogEntryType(entry.type);
-        if (text) {
-          return <span class="text-sm">{text}</span>;
-        }
-        return <span class="text-sm text-control-placeholder">-</span>;
+        return text ? (
+          <span class="whitespace-nowrap">{text}</span>
+        ) : (
+          <span class="text-control-placeholder">-</span>
+        );
       },
     },
     {
       key: "detail",
       title: () => t("common.detail"),
-      width: "40%",
-      render: (entry) => {
-        return (
-          <div class="flex flex-row justify-start items-center">
-            <DetailCell entry={entry} sheet={props.sheet} />
-          </div>
-        );
-      },
+      minWidth: 120,
+      resizable: true,
+      ellipsis: true,
+      render: (entry) => <DetailCell entry={entry} sheet={props.sheet} />,
     },
     {
       key: "statement",
       title: () => t("common.statement"),
-      width: "60%",
-      render: (entry) => {
-        return <StatementCell entry={entry} sheet={props.sheet} />;
-      },
+      minWidth: 150,
+      resizable: true,
+      ellipsis: true,
+      render: (entry) => <StatementCell entry={entry} sheet={props.sheet} />,
     },
     {
       key: "duration",
       title: () => t("common.duration"),
-      width: 120,
-      render: (entry) => {
-        return <DurationCell entry={entry} />;
-      },
+      width: 100,
+      minWidth: 80,
+      render: (entry) => <DurationCell entry={entry} />,
     },
     {
       key: "log-time",
       title: () => t("common.time"),
-      width: 120,
-      render: (entry) => {
-        return <LogTimeCell entry={entry} />;
-      },
+      width: 100,
+      minWidth: 80,
+      render: (entry) => <LogTimeCell entry={entry} />,
     },
   ];
 });

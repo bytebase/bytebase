@@ -1,14 +1,18 @@
 <template>
   <NVirtualList
     v-if="displayItems.length > 0"
+    ref="virtualListRef"
     :items="displayItems"
     :item-size="20"
     item-resizable
     item-key="key"
-    class="w-full font-mono text-xs bg-gray-50 border border-gray-200 rounded p-2 max-h-48"
+    class="w-full font-mono text-xs bg-gray-50 border border-gray-200 p-2 max-h-48"
+    :class="isTruncated ? 'rounded-t rounded-b-none' : 'rounded'"
+    @scroll="handleScroll"
   >
     <template #default="{ item }">
-      <div class="flex items-start gap-x-2 py-0.5">
+      <div v-if="item.isSpacer" class="h-3" />
+      <div v-else class="flex items-start gap-x-2 py-0.5">
         <span class="text-gray-400 shrink-0">{{ item.time }}</span>
         <span class="shrink-0" :class="item.levelClass"
           >[{{ item.level }}]</span
@@ -22,8 +26,9 @@
 
 <script lang="ts" setup>
 import type { Timestamp as PbTimestamp } from "@bufbuild/protobuf/wkt";
+import type { VirtualListInst } from "naive-ui";
 import { NVirtualList } from "naive-ui";
-import { computed } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { TaskRunLogEntry } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -45,6 +50,7 @@ interface DisplayItem {
   typeLabel: string;
   detail: string;
   detailClass: string;
+  isSpacer?: boolean;
 }
 
 // Constants
@@ -76,11 +82,51 @@ const TXN_TYPE_LABELS: Partial<
   [TaskRunLogEntry_TransactionControl_Type.ROLLBACK]: "ROLLBACK",
 };
 
+// Auto-scroll threshold (px) for detecting if user is at bottom
+const SCROLL_THRESHOLD = 50;
+
+// Spacer item to ensure last log entry is fully visible when scrolled to bottom
+const SPACER_ITEM: DisplayItem = {
+  key: "spacer",
+  time: "",
+  level: "INF",
+  levelClass: "",
+  typeLabel: "",
+  detail: "",
+  detailClass: "",
+  isSpacer: true,
+};
+
 // Props
 const props = defineProps<{
   entries: TaskRunLogEntry[];
   sheet?: Sheet;
+  isTruncated?: boolean;
 }>();
+
+// Refs for auto-scroll
+const virtualListRef = ref<VirtualListInst>();
+const isUserAtBottom = ref(true);
+
+// Compare two protobuf timestamps for sorting (ascending)
+const compareTimestamps = (
+  a: PbTimestamp | undefined,
+  b: PbTimestamp | undefined
+): number => {
+  if (!a && !b) return 0;
+  if (!a) return -1;
+  if (!b) return 1;
+  const secondsDiff = Number(a.seconds) - Number(b.seconds);
+  if (secondsDiff !== 0) return secondsDiff;
+  return a.nanos - b.nanos;
+};
+
+// Sort entries by logTime ascending (oldest first)
+const sortedEntries = computed(() => {
+  return [...props.entries].sort((a, b) =>
+    compareTimestamps(a.logTime, b.logTime)
+  );
+});
 
 // Log display utilities
 const formatLogTime = (timestamp: PbTimestamp | undefined): string => {
@@ -249,7 +295,7 @@ const getEntryKey = (entry: TaskRunLogEntry, index: number): string => {
 
 // Pre-compute display data to avoid multiple function calls per render
 const displayItems = computed((): DisplayItem[] => {
-  return props.entries.map((entry, index) => {
+  const items: DisplayItem[] = sortedEntries.value.map((entry, index) => {
     const level = getLogLevel(entry);
     const config = LOG_LEVEL_CONFIG[level];
     return {
@@ -262,5 +308,37 @@ const displayItems = computed((): DisplayItem[] => {
       detailClass: config.detailClass,
     };
   });
+  if (items.length > 0) {
+    items.push(SPACER_ITEM);
+  }
+  return items;
 });
+
+// Scroll to bottom helper
+const scrollToBottom = () => {
+  nextTick(() => {
+    virtualListRef.value?.scrollTo({ position: "bottom" });
+  });
+};
+
+// Auto-scroll: detect if user is at bottom
+const handleScroll = (event: Event) => {
+  const el = event.target as HTMLElement;
+  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+  isUserAtBottom.value = distanceFromBottom < SCROLL_THRESHOLD;
+};
+
+// Scroll to bottom on initial mount
+onMounted(scrollToBottom);
+
+// Auto-scroll to bottom when new entries arrive (if user is at bottom)
+watch(
+  () => props.entries.length,
+  () => {
+    if (isUserAtBottom.value) {
+      scrollToBottom();
+    }
+  }
+);
 </script>
+

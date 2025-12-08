@@ -357,6 +357,8 @@
     "history": "Historial de ejecución de tareas",
     "latest-logs": "Últimos registros",
     "latest": "Última ejecución",
+    "showing-recent-logs": "Mostrando registros recientes de {count}",
+    "view-full-logs": "Ver registros completos",
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",

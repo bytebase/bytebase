@@ -197,6 +197,7 @@
           :duration="timingType !== 'scheduled' ? timingDisplay : undefined"
           :affected-rows-display="affectedRowsDisplay"
           :summary="taskRunLogSummary"
+          :task-name="task.name"
         />
       </div>
     </div>
