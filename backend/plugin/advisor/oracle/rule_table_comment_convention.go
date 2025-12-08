@@ -38,12 +38,9 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalCommentConventionRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 
-	rule := NewTableCommentConventionRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, payload)
+	rule := NewTableCommentConventionRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, commentPayload)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {
@@ -60,7 +57,7 @@ type TableCommentConventionRule struct {
 	BaseRule
 
 	currentDatabase string
-	payload         *advisor.CommentConventionRulePayload
+	payload         *storepb.CommentConventionRulePayload
 
 	tableNames   []string
 	tableComment map[string]string
@@ -68,7 +65,7 @@ type TableCommentConventionRule struct {
 }
 
 // NewTableCommentConventionRule creates a new TableCommentConventionRule.
-func NewTableCommentConventionRule(level storepb.Advice_Status, title string, currentDatabase string, payload *advisor.CommentConventionRulePayload) *TableCommentConventionRule {
+func NewTableCommentConventionRule(level storepb.Advice_Status, title string, currentDatabase string, payload *storepb.CommentConventionRulePayload) *TableCommentConventionRule {
 	return &TableCommentConventionRule{
 		BaseRule:        NewBaseRule(level, title, 0),
 		currentDatabase: currentDatabase,
@@ -135,7 +132,7 @@ func (r *TableCommentConventionRule) GetAdviceList() ([]*storepb.Advice, error) 
 				)
 			}
 		} else {
-			if r.payload.MaxLength > 0 && len(comment) > r.payload.MaxLength {
+			if r.payload.MaxLength > 0 && int32(len(comment)) > r.payload.MaxLength {
 				r.AddAdvice(
 					r.level,
 					code.CommentTooLong.Int32(),
