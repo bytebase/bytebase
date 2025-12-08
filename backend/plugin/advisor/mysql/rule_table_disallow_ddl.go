@@ -38,13 +38,10 @@ func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
 	// Create the rule
-	rule := NewTableDisallowDDLRule(level, checkCtx.Rule.Type.String(), payload.List)
+	rule := NewTableDisallowDDLRule(level, checkCtx.Rule.Type.String(), stringArrayPayload.List)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

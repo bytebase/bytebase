@@ -40,14 +40,11 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
 	// Convert disallowed types to lowercase for case-insensitive comparison
 	typeRestriction := make(map[string]bool)
-	for _, tp := range payload.List {
+	for _, tp := range stringArrayPayload.List {
 		typeRestriction[strings.ToLower(tp)] = true
 	}
 

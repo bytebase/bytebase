@@ -41,13 +41,10 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
 	// Create the rule
-	rule := NewCollationAllowlistRule(level, checkCtx.Rule.Type.String(), payload.List)
+	rule := NewCollationAllowlistRule(level, checkCtx.Rule.Type.String(), stringArrayPayload.List)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

@@ -39,14 +39,11 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, err
 	}
 
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
 	rule := &indexPrimaryKeyTypeAllowlistRule{
 		BaseRule:  BaseRule{level: level, title: checkCtx.Rule.Type.String()},
-		allowlist: payload.List,
+		allowlist: stringArrayPayload.List,
 	}
 
 	checker := NewGenericChecker([]Rule{rule})

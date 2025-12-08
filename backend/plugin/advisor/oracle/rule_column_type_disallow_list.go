@@ -41,12 +41,9 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
-	rule := NewColumnTypeDisallowListRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, payload.List)
+	rule := NewColumnTypeDisallowListRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, stringArrayPayload.List)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {
