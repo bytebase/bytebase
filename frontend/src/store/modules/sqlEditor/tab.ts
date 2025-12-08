@@ -188,7 +188,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     const { id, worksheet } = newTab;
 
     if (openTabList.value.find((tab) => tab.id === id)) {
-      return setCurrentTabId(id);
+      setCurrentTabId(id);
+      return newTab;
     }
 
     const persistentTab = pick(
