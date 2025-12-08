@@ -336,7 +336,7 @@ const handleRenameNode = useDebounceFn(async () => {
     );
 
     // update tab title
-    const tab = tabStore.tabList.find(
+    const tab = tabStore.openTabList.find(
       (t) => t.worksheet === editingNode.value?.node.worksheet?.name
     );
     if (tab) {
@@ -465,7 +465,7 @@ const deleteWorksheets = async (worksheets: string[]) => {
     )
   );
   for (const worksheet of worksheets) {
-    const tab = tabStore.tabList.find((tab) => tab.worksheet === worksheet);
+    const tab = tabStore.openTabList.find((tab) => tab.worksheet === worksheet);
     if (tab) {
       tabStore.closeTab(tab);
       removeViewState(tab.id);
