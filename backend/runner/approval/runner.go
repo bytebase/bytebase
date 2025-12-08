@@ -155,7 +155,15 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			return nil, nil, false, nil
 		}
 
-		// Step 3: Find matching approval template
+		// Step 3: Inject risk level into CEL variables for CHANGE_DATABASE issues
+		// Risk level is calculated from statement types and injected so approval rules
+		// can use conditions like: risk_level == "HIGH"
+		if approvalSource == storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE {
+			riskLevel := calculateRiskLevelFromCELVars(celVarsList)
+			injectRiskLevelIntoCELVars(celVarsList, riskLevel)
+		}
+
+		// Step 4: Find matching approval template
 		approvalTemplate, err := getApprovalTemplate(approvalSetting, approvalSource, celVarsList)
 		if err != nil {
 			return nil, nil, false, errors.Wrapf(err, "failed to get approval template for source: %v", approvalSource)
@@ -272,6 +280,29 @@ func calculateRiskLevelFromCELVars(celVarsList []map[string]any) storepb.RiskLev
 	}
 	statementTypes := collectStatementTypes(celVarsList)
 	return common.GetRiskLevelFromStatementTypes(statementTypes)
+}
+
+// injectRiskLevelIntoCELVars adds the risk level to all CEL variable maps.
+// This allows approval rules to use conditions like: risk_level == "HIGH"
+func injectRiskLevelIntoCELVars(celVarsList []map[string]any, riskLevel storepb.RiskLevel) {
+	riskLevelStr := riskLevelToString(riskLevel)
+	for _, celVars := range celVarsList {
+		celVars[common.CELAttributeRiskLevel] = riskLevelStr
+	}
+}
+
+// riskLevelToString converts a RiskLevel enum to its string representation for CEL.
+func riskLevelToString(level storepb.RiskLevel) string {
+	switch level {
+	case storepb.RiskLevel_LOW:
+		return "LOW"
+	case storepb.RiskLevel_MODERATE:
+		return "MODERATE"
+	case storepb.RiskLevel_HIGH:
+		return "HIGH"
+	default:
+		return "LOW"
+	}
 }
 
 // getApprovalTemplate finds the first matching approval template for the given source and CEL variables.

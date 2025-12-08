@@ -14,6 +14,7 @@ import {
   CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+  CEL_ATTRIBUTE_RISK_LEVEL,
   CEL_ATTRIBUTE_SOURCE,
   CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
   CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
@@ -91,6 +92,10 @@ const OperatorList: Record<Factor, Operator[]> = {
     ...CollectionOperatorList,
   ]),
   [CEL_ATTRIBUTE_SOURCE]: uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+  ]),
+  [CEL_ATTRIBUTE_RISK_LEVEL]: uniq([
     ...EqualityOperatorList,
     ...CollectionOperatorList,
   ]),

@@ -49,6 +49,12 @@ const (
 	CELAttributeRequestTime = "request.time"
 )
 
+// CEL attribute names for risk scope.
+const (
+	// CELAttributeRiskLevel is the risk level of the issue (LOW, MODERATE, HIGH).
+	CELAttributeRiskLevel = "risk.level"
+)
+
 // CEL attribute names for approval scope (deprecated, kept for backward compatibility).
 const (
 	// CELAttributeLevel is the risk level (deprecated).
