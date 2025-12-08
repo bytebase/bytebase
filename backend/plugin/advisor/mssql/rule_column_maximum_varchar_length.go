@@ -3,10 +3,11 @@ package mssql
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"log/slog"
 	"math"
 	"strconv"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 

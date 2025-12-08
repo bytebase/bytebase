@@ -3,9 +3,10 @@ package pg
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/antlr4-go/antlr/v4"
 

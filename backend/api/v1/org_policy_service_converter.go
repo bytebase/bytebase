@@ -24,32 +24,39 @@ func convertProtoPayloadToJSON(rule *storepb.SQLReviewRule) (string, error) {
 
 	switch payload := rule.Payload.(type) {
 	case *storepb.SQLReviewRule_NamingPayload:
+		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
 		jsonData, err = json.Marshal(advisor.NamingRulePayload{
 			MaxLength: int(payload.NamingPayload.MaxLength),
 			Format:    payload.NamingPayload.Format,
 		})
 	case *storepb.SQLReviewRule_NumberPayload:
+		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
 		jsonData, err = json.Marshal(advisor.NumberTypeRulePayload{
 			Number: int(payload.NumberPayload.Number),
 		})
 	case *storepb.SQLReviewRule_StringArrayPayload:
+		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
 		jsonData, err = json.Marshal(advisor.StringArrayTypeRulePayload{
 			List: payload.StringArrayPayload.List,
 		})
 	case *storepb.SQLReviewRule_CommentConventionPayload:
+		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
 		jsonData, err = json.Marshal(advisor.CommentConventionRulePayload{
 			Required:  payload.CommentConventionPayload.Required,
 			MaxLength: int(payload.CommentConventionPayload.MaxLength),
 		})
 	case *storepb.SQLReviewRule_NamingCasePayload:
+		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
 		jsonData, err = json.Marshal(advisor.NamingCaseRulePayload{
 			Upper: payload.NamingCasePayload.Upper,
 		})
 	case *storepb.SQLReviewRule_StringPayload:
+		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
 		jsonData, err = json.Marshal(advisor.StringTypeRulePayload{
 			String: payload.StringPayload.Value,
 		})
 	case *storepb.SQLReviewRule_RequiredColumnPayload:
+		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
 		jsonData, err = json.Marshal(advisor.RequiredColumnRulePayload{
 			ColumnList: payload.RequiredColumnPayload.ColumnList,
 		})

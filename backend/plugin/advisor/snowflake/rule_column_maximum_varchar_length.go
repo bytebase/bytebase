@@ -3,8 +3,9 @@ package snowflake
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"strconv"
+
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 

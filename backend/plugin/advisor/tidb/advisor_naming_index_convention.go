@@ -3,9 +3,10 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 

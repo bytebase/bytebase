@@ -3,8 +3,9 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"

@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 

@@ -3,8 +3,9 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 

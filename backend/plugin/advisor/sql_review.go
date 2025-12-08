@@ -70,6 +70,7 @@ var (
 )
 
 // NamingRulePayload is the payload for naming rule.
+//
 // Deprecated: Used only for JSON conversion. Use storepb.NamingRulePayload instead.
 type NamingRulePayload struct {
 	MaxLength int    `json:"maxLength"`
@@ -77,18 +78,21 @@ type NamingRulePayload struct {
 }
 
 // StringArrayTypeRulePayload is the payload for rules with string array value.
+//
 // Deprecated: Used only for JSON conversion. Use storepb.StringArrayRulePayload instead.
 type StringArrayTypeRulePayload struct {
 	List []string `json:"list"`
 }
 
 // RequiredColumnRulePayload is the payload for required column rule.
+//
 // Deprecated: Used only for JSON conversion. Use storepb.RequiredColumnRulePayload instead.
 type RequiredColumnRulePayload struct {
 	ColumnList []string `json:"columnList"`
 }
 
 // CommentConventionRulePayload is the payload for comment convention rule.
+//
 // Deprecated: Used only for JSON conversion. Use storepb.CommentConventionRulePayload instead.
 type CommentConventionRulePayload struct {
 	Required  bool `json:"required"`
@@ -96,18 +100,21 @@ type CommentConventionRulePayload struct {
 }
 
 // NumberTypeRulePayload is the number type payload.
+//
 // Deprecated: Used only for JSON conversion. Use storepb.NumberRulePayload instead.
 type NumberTypeRulePayload struct {
 	Number int `json:"number"`
 }
 
 // StringTypeRulePayload is the string type payload.
+//
 // Deprecated: Used only for JSON conversion. Use storepb.StringRulePayload instead.
 type StringTypeRulePayload struct {
 	String string `json:"string"`
 }
 
 // NamingCaseRulePayload is the payload for naming case rule.
+//
 // Deprecated: Used only for JSON conversion. Use storepb.NamingCaseRulePayload instead.
 type NamingCaseRulePayload struct {
 	// Upper is true means the case should be upper case, otherwise lower case.
@@ -115,6 +122,7 @@ type NamingCaseRulePayload struct {
 }
 
 // UnmarshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
+//
 // Deprecated: Use rule.GetNamingPayload() instead.
 func UnmarshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
 	var nr NamingRulePayload
@@ -139,6 +147,7 @@ func UnmarshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, er
 // UnmarshalNamingRulePayloadAsTemplate will unmarshal payload to NamingRulePayload and extract all the template keys.
 // For example, "hard_code_{{table}}_{{column}}_end" will return
 // "hard_code_{{table}}_{{column}}_end", ["{{table}}", "{{column}}"].
+//
 // Deprecated: Use rule.GetNamingPayload() instead.
 func UnmarshalNamingRulePayloadAsTemplate(ruleType storepb.SQLReviewRule_Type, payload string) (string, []string, int, error) {
 	var nr NamingRulePayload
@@ -187,6 +196,7 @@ func ParseTemplateTokens(template string) ([]string, []string) {
 }
 
 // UnmarshalRequiredColumnList will unmarshal payload and parse the required column list.
+//
 // Deprecated: Use rule.GetStringArrayPayload() instead.
 func UnmarshalRequiredColumnList(payload string) ([]string, error) {
 	stringArrayRulePayload, err := UnmarshalStringArrayTypeRulePayload(payload)
@@ -220,6 +230,7 @@ func unmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayl
 }
 
 // UnmarshalCommentConventionRulePayload will unmarshal payload to CommentConventionRulePayload.
+//
 // Deprecated: Use rule.GetCommentConventionPayload() instead.
 func UnmarshalCommentConventionRulePayload(payload string) (*CommentConventionRulePayload, error) {
 	var ccr CommentConventionRulePayload
@@ -230,6 +241,7 @@ func UnmarshalCommentConventionRulePayload(payload string) (*CommentConventionRu
 }
 
 // UnmarshalNumberTypeRulePayload will unmarshal payload to NumberTypeRulePayload.
+//
 // Deprecated: Use rule.GetNumberPayload() instead.
 func UnmarshalNumberTypeRulePayload(payload string) (*NumberTypeRulePayload, error) {
 	var nlr NumberTypeRulePayload
@@ -240,6 +252,7 @@ func UnmarshalNumberTypeRulePayload(payload string) (*NumberTypeRulePayload, err
 }
 
 // UnmarshalStringTypeRulePayload will unmarshal payload to StringTypeRulePayload.
+//
 // Deprecated: Use rule.GetStringPayload() instead.
 func UnmarshalStringTypeRulePayload(payload string) (*StringTypeRulePayload, error) {
 	var slr StringTypeRulePayload
@@ -250,6 +263,7 @@ func UnmarshalStringTypeRulePayload(payload string) (*StringTypeRulePayload, err
 }
 
 // UnmarshalStringArrayTypeRulePayload will unmarshal payload to StringArrayTypeRulePayload.
+//
 // Deprecated: Use rule.GetStringArrayPayload() instead.
 func UnmarshalStringArrayTypeRulePayload(payload string) (*StringArrayTypeRulePayload, error) {
 	var trr StringArrayTypeRulePayload
@@ -260,6 +274,7 @@ func UnmarshalStringArrayTypeRulePayload(payload string) (*StringArrayTypeRulePa
 }
 
 // UnmarshalNamingCaseRulePayload will unmarshal payload to NamingCaseRulePayload.
+//
 // Deprecated: Use rule.GetNamingCasePayload() instead.
 func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, error) {
 	var ncr NamingCaseRulePayload

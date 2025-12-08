@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
