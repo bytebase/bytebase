@@ -235,13 +235,13 @@ export function getHighlightHTMLByKeyWords(s: string, k: string) {
  * @returns HTML-safe string with highlighted matches
  */
 export function getHighlightHTMLByRegExp(
-  s: string,
+  target: string,
   pattern: string | string[],
   caseSensitive = false,
   className = "text-accent"
 ) {
   // Step 1: Escape HTML entities to prevent XSS
-  const escapedText = escapeHtml(s);
+  const escapedText = escapeHtml(target);
   if (!pattern || (Array.isArray(pattern) && pattern.length === 0)) {
     return escapedText;
   }

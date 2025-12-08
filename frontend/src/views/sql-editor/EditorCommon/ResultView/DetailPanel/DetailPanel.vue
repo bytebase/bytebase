@@ -154,16 +154,19 @@ import {
 import { NButton, NPopover, NScrollbar, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { CopyButton, DrawerContent } from "@/components/v2";
-import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
-import { extractSQLRowValuePlain } from "@/utils";
+import type { QueryResult } from "@/types/proto-es/v1/sql_service_pb";
 import { useSQLResultViewContext } from "../context";
+import BinaryFormatButton from "../DataTable/common/BinaryFormatButton.vue";
 import {
   type BinaryFormat,
-  formatBinaryValue,
   useBinaryFormatContext,
-} from "../DataTable/binary-format-store";
-import BinaryFormatButton from "../DataTable/common/BinaryFormatButton.vue";
+} from "../DataTable/common/binary-format-store";
+import { getPlainValue } from "../DataTable/common/utils";
 import PrettyJSON from "./PrettyJSON.vue";
+
+const props = defineProps<{
+  result: QueryResult;
+}>();
 
 const { dark, detail, disallowCopyingData } = useSQLResultViewContext();
 const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
@@ -183,11 +186,15 @@ const rawValue = computed(() => {
     return;
   }
 
-  const { row, col, table } = detail.value;
-  return table
-    .getPrePaginationRowModel()
-    .rows[row]?.getVisibleCells()
-    [col]?.getValue<RowValue>();
+  const { row, col } = detail.value;
+  return props.result.rows[row].values[col];
+});
+
+const columnType = computed(() => {
+  if (!detail.value) {
+    return "";
+  }
+  return props.result.columnTypeNames[detail.value.col];
 });
 
 const binaryFormat = computed(() => {
@@ -207,37 +214,8 @@ const isBinaryData = computed(() => {
   return rawValue.value.kind?.case === "bytesValue";
 });
 
-// Format the binary value based on selected format
-const formattedValue = computed(() => {
-  if (rawValue.value?.kind?.case !== "bytesValue") {
-    return rawValue.value;
-  }
-
-  // Determine the format to use - column override, cell override, or auto-detected format
-  const actualFormat = binaryFormat.value ?? "DEFAULT";
-
-  // Skip formatting for DEFAULT (auto) format
-  if (actualFormat === "DEFAULT") {
-    return rawValue.value;
-  }
-
-  const stringValue = formatBinaryValue({
-    bytesValue: rawValue.value.kind.value,
-    format: actualFormat,
-  });
-  return {
-    ...rawValue.value,
-    stringValue,
-  };
-});
-
 const content = computed(() => {
-  if (!rawValue.value) {
-    return;
-  }
-
-  // Otherwise use the raw value
-  return String(extractSQLRowValuePlain(formattedValue.value));
+  return getPlainValue(rawValue.value, columnType.value, binaryFormat.value);
 });
 
 const guessedIsJSON = computed(() => {
@@ -250,7 +228,7 @@ const guessedIsJSON = computed(() => {
 });
 
 const totalCount = computed(() => {
-  return detail.value?.table.getPrePaginationRowModel().rows.length ?? 0;
+  return props.result.rows.length;
 });
 
 const contentClass = computed(() => {

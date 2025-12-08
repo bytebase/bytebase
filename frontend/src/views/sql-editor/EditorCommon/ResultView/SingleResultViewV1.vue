@@ -13,29 +13,23 @@
       <ErrorView :error="result.error" />
     </BBAttention>
     <div
-      class="relative w-full shrink-0 flex flex-row justify-between items-center mb-2 overflow-x-auto hide-scrollbar"
+      class="result-toolbar relative w-full shrink-0 flex flex-row gap-x-4 justify-between items-center mb-2 hide-scrollbar"
     >
-      <div class="flex flex-row justify-start items-center mr-2 shrink-0">
-        <NInput
-          v-if="showSearchFeature"
-          :value="state.search"
-          class="max-w-40!"
-          size="small"
-          type="text"
-          :placeholder="t('sql-editor.search-results')"
-          @update:value="updateKeyword"
-        >
-          <template #prefix>
-            <heroicons-outline:search class="h-5 w-5 text-gray-300" />
-          </template>
-        </NInput>
+      <div class="flex flex-row justify-start items-center mr-2 flex-1">
+        <AdvancedSearch
+          v-model:params="state.searchParams"
+          placeholder=""
+          :scope-options="searchScopeOptions"
+          :cache-query="false"
+          @keyup:enter="scrollToNextCandidate"
+        />
         <span class="ml-2 whitespace-nowrap text-sm text-gray-500">{{
           resultRowsText
         }}</span>
         <span
           v-if="
             currentTab?.mode !== 'ADMIN' &&
-            dataLength === editorStore.resultRowsLimit
+            rows.length === editorStore.resultRowsLimit
           "
           class="ml-2 whitespace-nowrap text-sm text-gray-500"
         >
@@ -50,27 +44,6 @@
             {{ $t("sql-editor.vertical-display") }}
           </span>
         </div>
-        <NPagination
-          :simple="true"
-          :item-count="table.getCoreRowModel().rows.length"
-          :page="pageIndex + 1"
-          :page-size="pageSize"
-          class="pagination whitespace-nowrap"
-          style="--n-input-width: 2.5rem"
-          @update-page="handleChangePage"
-        >
-          <template #suffix>
-            <NSelect
-              v-model:value="pageSize"
-              :options="pageSizeOptions"
-              :consistent-menu-width="false"
-              :show-arrow="false"
-              class="pagesize-select"
-              placement="bottom-end"
-              size="small"
-            />
-          </template>
-        </NPagination>
         <NTooltip v-if="DISMISS_PLACEHOLDER">
           <template #trigger>
             <NButton
@@ -119,25 +92,68 @@
       <SelectionCopyTooltips />
     </div>
 
-    <div class="flex-1 w-full flex flex-col overflow-y-auto">
+    <div class="flex-1 w-full flex flex-col overflow-y-auto relative">
       <VirtualDataBlock
         v-if="state.vertical"
-        :table="table"
+        ref="dataTableRef"
+        :rows="rows"
+        :columns="columns"
         :set-index="setIndex"
-        :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
         :get-masking-reason="getMaskingReason"
         :database="database"
+        :active-row-index="activeRowIndex"
+        :search="state.searchParams"
       />
       <VirtualDataTable
         v-else
-        :table="table"
+        ref="dataTableRef"
+        :rows="rows"
+        :columns="columns"
         :set-index="setIndex"
-        :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
         :get-masking-reason="getMaskingReason"
         :database="database"
+        :sort-state="state.sortState"
+        :active-row-index="activeRowIndex"
+        :search="state.searchParams"
+        @toggle-sort="toggleSort"
       />
+      <NEmpty v-if="rows.length === 0">
+        <template #extra>
+          {{ $t("sql-editor.no-data-available") }}
+        </template>
+      </NEmpty>
+
+      <div v-if="state.searchCandidateRowIndexs.length > 0" class="flex flex-row gap-x-2 absolute bottom-2 right-2 border shadow rounded bg-white py-1 px-2">
+        <NButton
+          quaternary
+          size="small"
+          :disabled="state.searchCandidateActiveIndex <= 0"
+          @click="scrollToPreviousCandidate"
+        >
+          <template #icon>
+            <ArrowUpIcon class="x-4" />
+          </template>
+          {{ $t("sql-editor.previous-row") }}
+        </NButton>
+        <NButton
+          quaternary
+          size="small"
+          :disabled="state.searchCandidateActiveIndex >= (state.searchCandidateRowIndexs.length - 1)"
+          @click="scrollToNextCandidate"
+        >
+          <template #icon>
+            <ArrowDownIcon class="x-4" />
+          </template>
+          {{ $t("sql-editor.next-row") }}
+        </NButton>
+        <NButton quaternary size="small" style="--n-padding: 2px" @click="clearSearchCandidate">
+          <template #icon>
+            <XIcon class="x-4" />
+          </template>
+        </NButton>
+      </div>
     </div>
 
     <div
@@ -187,29 +203,16 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import type { ColumnDef } from "@tanstack/vue-table";
-import {
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useVueTable,
-} from "@tanstack/vue-table";
-import { useClipboard, useDebounceFn, useLocalStorage } from "@vueuse/core";
+import { useClipboard } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
-import {
-  NButton,
-  NFormItem,
-  NInput,
-  NPagination,
-  NSelect,
-  NSwitch,
-  NTooltip,
-  type SelectOption,
-} from "naive-ui";
+import { ArrowDownIcon, ArrowUpIcon, XIcon } from "lucide-vue-next";
+import { NButton, NEmpty, NFormItem, NSwitch, NTooltip } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
+import AdvancedSearch from "@/components/AdvancedSearch";
+import type { ScopeOption } from "@/components/AdvancedSearch/types";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import type {
   DownloadContent,
@@ -229,24 +232,27 @@ import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
 } from "@/types";
-import { DEBOUNCE_SEARCH_DELAY, isValidInstanceName } from "@/types";
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import {
   QueryOption_MSSQLExplainFormat,
   QueryOptionSchema,
   type QueryResult,
-  type QueryRow,
   type RowValue,
 } from "@/types/proto-es/v1/sql_service_pb";
 import {
   compareQueryRowValues,
   createExplainToken,
   extractSQLRowValuePlain,
-  instanceV1HasStructuredQueryResult,
   isNullOrUndefined,
+  type SearchParams,
 } from "@/utils";
 import { useSQLResultViewContext } from "./context";
 import { provideSelectionContext } from "./DataTable/common/selection-logic";
+import type {
+  ResultTableColumn,
+  ResultTableRow,
+  SortState,
+} from "./DataTable/common/types";
 import VirtualDataTable from "./DataTable/VirtualDataTable.vue";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
@@ -254,16 +260,14 @@ import SelectionCopyTooltips from "./SelectionCopyTooltips.vue";
 import VirtualDataBlock from "./VirtualDataBlock.vue";
 
 type LocalState = {
-  search: string;
   vertical: boolean;
+  sortState: SortState | undefined;
+  searchParams: SearchParams;
+  searchCandidateActiveIndex: number;
+  searchCandidateRowIndexs: number[];
 };
-type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
 
-const DEFAULT_PAGE_SIZE = 50;
-const storedPageSize = useLocalStorage<number>(
-  "bb.sql-editor.result-page-size",
-  DEFAULT_PAGE_SIZE
-);
+type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
 
 const props = defineProps<{
   params: SQLEditorQueryParams;
@@ -287,9 +291,18 @@ defineEmits<{
 }>();
 
 const state = reactive<LocalState>({
-  search: "",
   vertical: false,
+  sortState: undefined,
+  searchParams: {
+    query: "",
+    scopes: [],
+  },
+  searchCandidateActiveIndex: -1,
+  searchCandidateRowIndexs: [],
 });
+
+const dataTableRef =
+  ref<InstanceType<typeof VirtualDataTable | typeof VirtualDataBlock>>();
 
 const { copy: copyTextToClipboard, isSupported } = useClipboard({
   legacy: true,
@@ -309,7 +322,7 @@ const copyStatement = () => {
 };
 
 const { t } = useI18n();
-const { dark, keyword } = useSQLResultViewContext();
+const { dark } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
 const currentTab = computed(() => tabStore.currentTab);
@@ -317,7 +330,7 @@ const { runQuery } = useExecuteSQL();
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
-  if (result.error && dataLength.value === 0) {
+  if (result.error && rows.value.length === 0) {
     return "ERROR";
   }
   const columnNames = result.columnNames;
@@ -330,75 +343,205 @@ const viewMode = computed((): ViewMode => {
   return "RESULT";
 });
 
-const showSearchFeature = computed(() => {
-  if (!isValidInstanceName(props.database.instance)) {
-    return false;
-  }
-  return instanceV1HasStructuredQueryResult(props.database.instanceResource);
-});
-
-// use a debounced value to improve performance when typing rapidly
-const debouncedUpdateKeyword = useDebounceFn((value: string) => {
-  keyword.value = value;
-}, DEBOUNCE_SEARCH_DELAY);
-
-const updateKeyword = (value: string) => {
-  state.search = value;
-  debouncedUpdateKeyword(value);
-};
-
-const columns = computed(() => {
-  return props.result.columnNames.map<ColumnDef<QueryRow, RowValue>>(
+const columns = computed((): ResultTableColumn[] => {
+  return props.result.columnNames.map<ResultTableColumn>(
     (columnName, index) => {
       const columnType = props.result.columnTypeNames[index];
-
       return {
-        id: `${columnName}@${index}`,
-        accessorFn: (item) => item.values[index],
-        header: columnName,
-        meta: {
-          // Store column type in meta for easy access by other components
-          columnType,
-        },
-        sortingFn: (rowA, rowB) => {
-          return compareQueryRowValues(
-            columnType,
-            rowA.original.values[index],
-            rowB.original.values[index]
-          );
-        },
+        id: columnName,
+        name: columnName,
+        columnType,
       };
     }
   );
 });
 
-// Memoize the filtered data to avoid filtering on every render
-const data = computed(() => {
-  const search = keyword.value.trim().toLowerCase();
-
-  // Return original rows if no search
-  if (!search) {
-    return props.result.rows;
-  }
-
-  // Only filter when there's a search term
-  return props.result.rows.filter((item) => {
-    return item.values.some((col) => {
-      const value = extractSQLRowValuePlain(col);
-      if (isNullOrUndefined(value)) {
-        return false;
-      }
-      return String(value).toLowerCase().includes(search);
-    });
+const searchScopeOptions = computed((): ScopeOption[] => {
+  return columns.value.map((column) => {
+    return {
+      id: column.id,
+      title: column.name,
+      description: t("sql-editor.search-scope-column-description", {
+        type: column.columnType,
+      }),
+    };
   });
 });
 
-// Cache data length to avoid multiple accesses
-const dataLength = computed(() => data.value.length);
+const activeRowIndex = computed(() => {
+  return state.searchCandidateRowIndexs[state.searchCandidateActiveIndex] ?? -1;
+});
+
+watch(
+  () => state.searchParams,
+  (params) => {
+    const next = getNextCandidateRowIndex(0, params);
+    const indexs = [];
+    if (next >= 0) {
+      indexs.push(next);
+      const another = getNextCandidateRowIndex(next + 1, params);
+      if (another >= 0) {
+        indexs.push(another);
+      }
+    }
+    state.searchCandidateRowIndexs = indexs;
+    state.searchCandidateActiveIndex = 0;
+  },
+  { deep: true }
+);
+
+watch(
+  () => activeRowIndex.value,
+  () => {
+    scrollToCurrentCandidate();
+  }
+);
+
+watch(
+  () => state.vertical,
+  () => {
+    scrollToCurrentCandidate();
+  }
+);
+
+const scrollToNextCandidate = () => {
+  state.searchCandidateActiveIndex++;
+  // Append next candidate if reaches the last
+  if (
+    state.searchCandidateActiveIndex ===
+    state.searchCandidateRowIndexs.length - 1
+  ) {
+    const currentRowIndex =
+      state.searchCandidateRowIndexs[state.searchCandidateActiveIndex];
+    const next = getNextCandidateRowIndex(
+      currentRowIndex + 1,
+      state.searchParams
+    );
+    if (next >= 0) {
+      state.searchCandidateRowIndexs.push(next);
+    }
+  }
+};
+
+const scrollToPreviousCandidate = () => {
+  state.searchCandidateActiveIndex--;
+};
+
+const scrollToCurrentCandidate = () => {
+  scrollToSearchCandidate(activeRowIndex.value);
+};
+
+const scrollToSearchCandidate = (index: number | undefined) => {
+  if (index === undefined || index < 0) {
+    return;
+  }
+  nextTick(() => {
+    if (index >= 0) {
+      dataTableRef.value?.scrollTo(index);
+    }
+  });
+};
+
+const clearSearchCandidate = () => {
+  state.searchParams = {
+    query: "",
+    scopes: [],
+  };
+};
+
+const cellValueMatches = (cell: RowValue, query: string) => {
+  const value = extractSQLRowValuePlain(cell);
+  if (isNullOrUndefined(value)) {
+    return false;
+  }
+  return String(value).toLowerCase().includes(query.toLowerCase());
+};
+
+const getNextCandidateRowIndex = (from: number, params: SearchParams) => {
+  if (params.scopes.length === 0 && !params.query) {
+    return -1;
+  }
+
+  for (let i = from; i < rows.value.length; i++) {
+    const row = rows.value[i];
+
+    let checked = params.scopes.every((scope) => {
+      if (!scope.value) {
+        return false;
+      }
+      const columnIndex = columns.value.findIndex(
+        (column) => column.name === scope.id
+      );
+      if (columnIndex < 0) {
+        return false;
+      }
+      const cell = row.item.values[columnIndex];
+      return cellValueMatches(cell, scope.value);
+    });
+    if (!checked) {
+      continue;
+    }
+
+    if (params.query) {
+      checked = row.item.values.some((cell) => {
+        return cellValueMatches(cell, params.query);
+      });
+    }
+    if (checked) {
+      return i;
+    }
+  }
+
+  return -1;
+};
+
+const toggleSort = (columnIndex: number) => {
+  const currentSort = state.sortState;
+
+  if (!currentSort || currentSort.columnIndex !== columnIndex) {
+    // New column or no current sort - start with descending
+    state.sortState = { columnIndex, direction: "desc" };
+  } else if (currentSort.direction === "desc") {
+    // Currently descending - switch to ascending
+    state.sortState = { columnIndex, direction: "asc" };
+  } else {
+    // Currently ascending - clear sort
+    state.sortState = undefined;
+  }
+};
+
+// Apply sorting to filtered rows
+const rows = computed((): ResultTableRow[] => {
+  const sortState = state.sortState;
+
+  if (!sortState || !sortState.direction) {
+    return props.result.rows.map((item, index) => ({
+      key: index,
+      item,
+    }));
+  }
+
+  const { columnIndex, direction } = sortState;
+  const columnType = columns.value[columnIndex]?.columnType ?? "";
+
+  return props.result.rows
+    .map((item, index) => ({
+      key: index,
+      item,
+    }))
+    .sort((a, b) => {
+      const result = compareQueryRowValues(
+        columnType,
+        a.item.values[columnIndex],
+        b.item.values[columnIndex]
+      );
+      return direction === "asc" ? result : -result;
+    });
+});
 
 // Computed property for result rows text to avoid accessing data.length twice
 const resultRowsText = computed(() => {
-  const length = dataLength.value;
+  const length = rows.value.length;
   return `${length} ${t("sql-editor.rows", length)}`;
 });
 
@@ -425,39 +568,9 @@ const getMaskingReason = (columnIndex: number) => {
   return reason;
 };
 
-const table = useVueTable<QueryRow>({
-  get data() {
-    return data.value;
-  },
-  get columns() {
-    return columns.value;
-  },
-  getCoreRowModel: getCoreRowModel(),
-  getSortedRowModel: getSortedRowModel(),
-  getPaginationRowModel: getPaginationRowModel(),
-});
-
-table.setPageSize(storedPageSize.value);
-
-provideSelectionContext(computed(() => table));
-
-const pageIndex = computed(() => {
-  return table.getState().pagination.pageIndex;
-});
-const pageSize = computed({
-  get() {
-    return table.getState().pagination.pageSize;
-  },
-  set(ps) {
-    table.setPageSize(ps);
-    storedPageSize.value = ps;
-  },
-});
-const pageSizeOptions = computed(() => {
-  return [20, 50, 100, 200].map<SelectOption>((n) => ({
-    label: t("sql-editor.n-per-page", { n }),
-    value: n,
-  }));
+provideSelectionContext({
+  columns: columns,
+  rows: rows,
 });
 
 const engine = computed(() => props.database.instanceResource.engine);
@@ -523,10 +636,6 @@ const getExplainTokenForMSSQL = async () => {
   return getExplainToken(result);
 };
 
-const handleChangePage = (page: number) => {
-  table.setPageIndex(page - 1);
-};
-
 const queryTime = computed(() => {
   const { latency } = props.result;
   if (!latency) return "-";
@@ -553,5 +662,27 @@ const queryTime = computed(() => {
 .pagesize-select :deep(.n-base-selection) {
   --n-padding-single-left: 8px !important;
   --n-padding-single-right: 8px !important;
+}
+
+.result-toolbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.result-toolbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.result-toolbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.result-toolbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.result-toolbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
 }
 </style>

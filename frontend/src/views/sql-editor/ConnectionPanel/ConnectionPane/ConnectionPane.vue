@@ -78,7 +78,7 @@
         :autofocus="false"
         :placeholder="$t('database.filter-database')"
         :scope-options="scopeOptions"
-        :override-route-query="false"
+        :cache-query="false"
       />
     </div>
     <div

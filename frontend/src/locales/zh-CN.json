@@ -2149,7 +2149,6 @@
     "result-limit": {
       "self": "结果限制"
     },
-    "n-per-page": "{n} / 页",
     "add-a-new-instance": "添加实例",
     "web-socket": {
       "errors": {
@@ -2176,7 +2175,8 @@
     "format-default": "默认",
     "column-display-format": "列显示格式",
     "next-row": "下一行",
-    "previous-row": "上一行"
+    "previous-row": "上一行",
+    "search-scope-column-description": "{type} 类型的列。输入值后按回车键跳转到匹配的行。"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

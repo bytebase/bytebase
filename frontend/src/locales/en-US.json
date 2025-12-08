@@ -2149,7 +2149,6 @@
     "result-limit": {
       "self": "Result limit"
     },
-    "n-per-page": "{n} / page",
     "add-a-new-instance": "Add a new instance",
     "web-socket": {
       "errors": {
@@ -2176,7 +2175,8 @@
     "format-default": "Default",
     "column-display-format": "Column Display Format",
     "next-row": "Next Row",
-    "previous-row": "Previous Row"
+    "previous-row": "Previous Row",
+    "search-scope-column-description": "The column with {type} type. Input the value then press Enter to relocate to the matched row."
   },
   "schema-editor": {
     "self": "Schema Editor",

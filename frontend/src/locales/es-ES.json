@@ -2149,7 +2149,6 @@
     "result-limit": {
       "self": "Límite de resultados"
     },
-    "n-per-page": "{n} / página",
     "add-a-new-instance": "Agregar una nueva instancia",
     "web-socket": {
       "errors": {
@@ -2176,7 +2175,8 @@
     "format-default": "Por defecto",
     "column-display-format": "Formato de visualización de columna",
     "next-row": "siguiente fila",
-    "previous-row": "Fila anterior"
+    "previous-row": "Fila anterior",
+    "search-scope-column-description": "La columna con tipo {type}. Ingrese el valor y presione Enter para ir a la fila coincidente."
   },
   "schema-editor": {
     "self": "Editor de esquema",
