@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleSchemaBackwardCompatibility, &CompatibilityAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleSchemaBackwardCompatibility, &CompatibilityAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleSchemaBackwardCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.
@@ -43,7 +43,7 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 	}
 
 	// Create the rule
-	rule := NewCompatibilityRule(level, string(checkCtx.Rule.Type))
+	rule := NewCompatibilityRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

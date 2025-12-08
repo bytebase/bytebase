@@ -20,7 +20,7 @@
   want:
     - status: 2
       code: 227
-      title: statement.prior-backup-check
+      title: BUILTIN_PRIOR_BACKUP_CHECK
       content: Found 1 DELETE, 1 UPDATE on table ``.`tech_book`, disallow mixing different types of DML statements
       line: 0
       column: 0

@@ -1,6 +1,6 @@
 <template>
   <BBModal
-    :title="getRuleLocalization(rule.type, rule.engine).title"
+    :title="getRuleLocalization(ruleTypeToString(rule.type), rule.engine).title"
     @close="$emit('cancel')"
   >
     <div class="flex flex-col gap-y-4 w-[calc(100vw-5rem)] sm:w-[40rem] pb-1">
@@ -18,7 +18,7 @@
           </div>
         </div>
         <div class="textinfolabel flex items-center gap-x-2">
-          {{ getRuleLocalization(rule.type, rule.engine).title }}
+          {{ getRuleLocalization(ruleTypeToString(rule.type), rule.engine).title }}
           <a
             :href="`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`"
             target="__blank"
@@ -45,7 +45,7 @@
           {{ $t("common.description") }}
         </h3>
           <div class="text-sm text-gray-700">
-            {{ getRuleLocalization(rule.type, rule.engine).description || $t('common.description') }}
+            {{ getRuleLocalization(ruleTypeToString(rule.type), rule.engine).description || $t('common.description') }}
           </div>
       </div>
       <RuleConfig
@@ -74,7 +74,7 @@ import { payloadValueListToComponentList } from "@/components/SQLReview/componen
 import { RichEngineName } from "@/components/v2";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
-import { getRuleLocalization } from "@/types/sqlReview";
+import { getRuleLocalization, ruleTypeToString } from "@/types/sqlReview";
 import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
 

@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementWhereNoEqualNull, &StatementWhereNoEqualNullAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_WHERE_NO_EQUAL_NULL, &StatementWhereNoEqualNullAdvisor{})
 }
 
 type StatementWhereNoEqualNullAdvisor struct {
@@ -37,7 +37,7 @@ func (*StatementWhereNoEqualNullAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	// Create the rule
-	rule := NewStatementWhereNoEqualNullRule(level, string(checkCtx.Rule.Type))
+	rule := NewStatementWhereNoEqualNullRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

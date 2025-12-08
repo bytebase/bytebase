@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleProcedureDisallowCreate, &ProcedureDisallowCreateOrAlterAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_SYSTEM_PROCEDURE_DISALLOW_CREATE, &ProcedureDisallowCreateOrAlterAdvisor{})
 }
 
 type ProcedureDisallowCreateOrAlterAdvisor struct{}
@@ -31,7 +31,7 @@ func (*ProcedureDisallowCreateOrAlterAdvisor) Check(_ context.Context, checkCtx 
 	}
 
 	// Create the rule
-	rule := NewProcedureDisallowCreateOrAlterRule(level, string(checkCtx.Rule.Type))
+	rule := NewProcedureDisallowCreateOrAlterRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

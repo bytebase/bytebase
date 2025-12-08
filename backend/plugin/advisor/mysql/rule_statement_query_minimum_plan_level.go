@@ -23,7 +23,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementQueryMinumumPlanLevel, &StatementQueryMinumumPlanLevelAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_QUERY_MINIMUM_PLAN_LEVEL, &StatementQueryMinumumPlanLevelAdvisor{})
 }
 
 type StatementQueryMinumumPlanLevelAdvisor struct {
@@ -46,7 +46,7 @@ func (*StatementQueryMinumumPlanLevelAdvisor) Check(ctx context.Context, checkCt
 	}
 
 	// Create the rule
-	rule := NewStatementQueryMinumumPlanLevelRule(ctx, level, string(checkCtx.Rule.Type), checkCtx.Driver, convertExplainTypeFromString(strings.ToUpper(payload.String)))
+	rule := NewStatementQueryMinumumPlanLevelRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver, convertExplainTypeFromString(strings.ToUpper(payload.String)))
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

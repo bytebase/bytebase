@@ -14,7 +14,7 @@
   want:
     - status: 2
       code: 1032
-      title: column.comment
+      title: COLUMN_COMMENT
       content: Comment is required for column "TEST_DB"."T"."A"
       startposition:
         line: 1
@@ -27,7 +27,7 @@
   want:
     - status: 2
       code: 1032
-      title: column.comment
+      title: COLUMN_COMMENT
       content: Comment is required for column "TEST_DB"."T"."D"
       startposition:
         line: 1
@@ -41,7 +41,7 @@
   want:
     - status: 2
       code: 1032
-      title: column.comment
+      title: COLUMN_COMMENT
       content: Comment is required for column "TEST_DB"."T"."A"
       startposition:
         line: 1

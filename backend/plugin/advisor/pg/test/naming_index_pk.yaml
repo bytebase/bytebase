@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 306
-      title: naming.index.pk
+      title: NAMING_INDEX_PK
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "tech_book_id_name"
       startposition:
         line: 2
@@ -22,7 +22,7 @@
   want:
     - status: 2
       code: 306
-      title: naming.index.pk
+      title: NAMING_INDEX_PK
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "udmhjtnsaablcmjhqcznfiwtnevcehcvw"
       startposition:
         line: 2
@@ -41,7 +41,7 @@
   want:
     - status: 2
       code: 306
-      title: naming.index.pk
+      title: NAMING_INDEX_PK
       content: Primary key in table "book" mismatches the naming convention, expect "^$|^pk_book_name$" but found "tech_book_name"
       startposition:
         line: 5
@@ -62,7 +62,7 @@
   want:
     - status: 2
       code: 306
-      title: naming.index.pk
+      title: NAMING_INDEX_PK
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       startposition:
         line: 2
@@ -75,7 +75,7 @@
   want:
     - status: 2
       code: 306
-      title: naming.index.pk
+      title: NAMING_INDEX_PK
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       startposition:
         line: 1
@@ -88,7 +88,7 @@
   want:
     - status: 2
       code: 306
-      title: naming.index.pk
+      title: NAMING_INDEX_PK
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       startposition:
         line: 1

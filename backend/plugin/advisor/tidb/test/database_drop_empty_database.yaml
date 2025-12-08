@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 701
-      title: database.drop-empty-database
+      title: DATABASE_DROP_EMPTY_DATABASE
       content: Database `test` is not allowed to drop if not empty
       startposition:
         line: 1

@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST, &ColumnTypeDisallowListAdvisor{})
 }
 
 // ColumnTypeDisallowListAdvisor is the advisor checking for disallowed types for column.
@@ -49,7 +49,7 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	// Create the rule
-	rule := NewColumnTypeDisallowListRule(level, string(checkCtx.Rule.Type), disallowTypes)
+	rule := NewColumnTypeDisallowListRule(level, checkCtx.Rule.Type.String(), disallowTypes)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

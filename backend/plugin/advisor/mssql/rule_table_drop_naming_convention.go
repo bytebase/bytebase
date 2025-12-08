@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention.
@@ -46,7 +46,7 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	// Create the rule
-	rule := NewTableDropNamingConventionRule(level, string(checkCtx.Rule.Type), format)
+	rule := NewTableDropNamingConventionRule(level, checkCtx.Rule.Type.String(), format)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

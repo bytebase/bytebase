@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 802
-      title: index.key-number-limit
+      title: INDEX_KEY_NUMBER_LIMIT
       content: Index key number should be less than or equal to 5
       startposition:
         line: 1
@@ -20,7 +20,7 @@
   want:
     - status: 2
       code: 802
-      title: index.key-number-limit
+      title: INDEX_KEY_NUMBER_LIMIT
       content: Index key number should be less than or equal to 5
       startposition:
         line: 1
@@ -33,7 +33,7 @@
   want:
     - status: 2
       code: 802
-      title: index.key-number-limit
+      title: INDEX_KEY_NUMBER_LIMIT
       content: Index key number should be less than or equal to 5
       startposition:
         line: 2
@@ -46,7 +46,7 @@
   want:
     - status: 2
       code: 802
-      title: index.key-number-limit
+      title: INDEX_KEY_NUMBER_LIMIT
       content: Index key number should be less than or equal to 5
       startposition:
         line: 2
@@ -59,7 +59,7 @@
   want:
     - status: 2
       code: 802
-      title: index.key-number-limit
+      title: INDEX_KEY_NUMBER_LIMIT
       content: Index key number should be less than or equal to 5
       startposition:
         line: 2

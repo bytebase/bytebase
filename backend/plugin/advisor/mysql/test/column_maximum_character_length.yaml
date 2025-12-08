@@ -11,7 +11,7 @@
   want:
     - status: 2
       code: 415
-      title: column.maximum-character-length
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
       content: The length of the CHAR column `t2.name` is bigger than 20, please use VARCHAR instead
       startposition:
         line: 2
@@ -24,7 +24,7 @@
   want:
     - status: 2
       code: 415
-      title: column.maximum-character-length
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
       content: The length of the CHAR column `tech_book.name_2` is bigger than 20, please use VARCHAR instead
       startposition:
         line: 2
@@ -37,7 +37,7 @@
   want:
     - status: 2
       code: 415
-      title: column.maximum-character-length
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
       content: The length of the CHAR column `tech_book.name` is bigger than 20, please use VARCHAR instead
       startposition:
         line: 2
@@ -50,7 +50,7 @@
   want:
     - status: 2
       code: 415
-      title: column.maximum-character-length
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
       content: The length of the CHAR column `tech_book.name` is bigger than 20, please use VARCHAR instead
       startposition:
         line: 2

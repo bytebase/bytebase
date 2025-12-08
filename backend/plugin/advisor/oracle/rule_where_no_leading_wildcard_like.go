@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleStatementNoLeadingWildcardLike, &WhereNoLeadingWildcardLikeAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE, &WhereNoLeadingWildcardLikeAdvisor{})
 }
 
 // WhereNoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.
@@ -39,7 +39,7 @@ func (*WhereNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, err
 	}
 
-	rule := NewWhereNoLeadingWildcardLikeRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
+	rule := NewWhereNoLeadingWildcardLikeRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

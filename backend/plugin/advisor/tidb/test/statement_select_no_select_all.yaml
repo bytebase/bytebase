@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: '"SELECT * FROM t" uses SELECT all'
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: '"SELECT a, b FROM (SELECT * from t1 JOIN t2) t" uses SELECT all'
       startposition:
         line: 1

@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 213
-      title: statement.disallow-rm-tbl-cascade
+      title: STATEMENT_DISALLOW_RM_TBL_CASCADE
       content: The use of CASCADE is not permitted when removing a table
       startposition:
         line: 1
@@ -36,7 +36,7 @@
   want:
     - status: 2
       code: 213
-      title: statement.disallow-rm-tbl-cascade
+      title: STATEMENT_DISALLOW_RM_TBL_CASCADE
       content: The use of CASCADE is not permitted when removing a table
       startposition:
         line: 1
@@ -44,7 +44,7 @@
       endposition: null
     - status: 2
       code: 213
-      title: statement.disallow-rm-tbl-cascade
+      title: STATEMENT_DISALLOW_RM_TBL_CASCADE
       content: The use of CASCADE is not permitted when removing a table
       startposition:
         line: 2

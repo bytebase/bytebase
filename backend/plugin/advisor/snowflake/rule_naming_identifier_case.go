@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleIdentifierCase, &NamingIdentifierCaseAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, storepb.SQLReviewRule_NAMING_IDENTIFIER_CASE, &NamingIdentifierCaseAdvisor{})
 }
 
 // NamingIdentifierCaseAdvisor is the advisor checking for identifier case.
@@ -40,7 +40,7 @@ func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := NewNamingIdentifierCaseRule(level, string(checkCtx.Rule.Type))
+	rule := NewNamingIdentifierCaseRule(level, checkCtx.Rule.Type.String())
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, parseResult := range parseResults {

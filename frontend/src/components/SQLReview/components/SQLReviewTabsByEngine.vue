@@ -32,12 +32,13 @@ import { computed, ref, watch } from "vue";
 import { RichEngineName } from "@/components/v2";
 import type { RuleTemplateV2 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
 import { supportedEngineV1List } from "@/utils";
 
 const selectedEngine = ref<Engine>(0); // UNSPECIFIED
 
 const props = defineProps<{
-  ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
+  ruleMapByEngine: Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>;
 }>();
 
 watch(
@@ -53,12 +54,14 @@ const engineWithOrderRank = computed(() => {
   }, new Map<Engine, number>());
 });
 
-const sortedData = computed((): [Engine, Map<string, RuleTemplateV2>][] => {
-  return [...props.ruleMapByEngine.entries()].sort(([e1], [e2]) => {
-    return (
-      (engineWithOrderRank.value.get(e1) ?? 0) -
-      (engineWithOrderRank.value.get(e2) ?? 0)
-    );
-  });
-});
+const sortedData = computed(
+  (): [Engine, Map<SQLReviewRule_Type, RuleTemplateV2>][] => {
+    return [...props.ruleMapByEngine.entries()].sort(([e1], [e2]) => {
+      return (
+        (engineWithOrderRank.value.get(e1) ?? 0) -
+        (engineWithOrderRank.value.get(e2) ?? 0)
+      );
+    });
+  }
+);
 </script>

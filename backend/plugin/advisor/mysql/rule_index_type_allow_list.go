@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleIndexTypeAllowList, &IndexTypeAllowListAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_INDEX_TYPE_ALLOW_LIST, &IndexTypeAllowListAdvisor{})
 }
 
 // IndexTypeAllowListAdvisor is the advisor checking for index types.
@@ -46,7 +46,7 @@ func (*IndexTypeAllowListAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	// Create the rule
-	rule := NewIndexTypeAllowListRule(level, string(checkCtx.Rule.Type), payload.List)
+	rule := NewIndexTypeAllowListRule(level, checkCtx.Rule.Type.String(), payload.List)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

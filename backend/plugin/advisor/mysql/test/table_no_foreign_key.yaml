@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 602
-      title: table.no-foreign-key
+      title: TABLE_NO_FOREIGN_KEY
       content: Foreign key is not allowed in the table `tech_book`
       startposition:
         line: 2
@@ -18,7 +18,7 @@
   want:
     - status: 2
       code: 602
-      title: table.no-foreign-key
+      title: TABLE_NO_FOREIGN_KEY
       content: Foreign key is not allowed in the table `book`
       startposition:
         line: 2

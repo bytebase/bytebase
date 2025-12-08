@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: Column "id" in "public"."book" cannot have NULL value
       startposition:
         line: 2
@@ -15,7 +15,7 @@
       endposition: null
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: Column "name" in "public"."book" cannot have NULL value
       startposition:
         line: 3
@@ -26,7 +26,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: Column "name" in "public"."book" cannot have NULL value
       startposition:
         line: 1
@@ -37,7 +37,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: Column "name" in "public"."book" cannot have NULL value
       startposition:
         line: 1
@@ -48,7 +48,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: Column "name" in "public"."book" cannot have NULL value
       startposition:
         line: 1
@@ -61,7 +61,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: Column "reader" in "public"."tech_book" cannot have NULL value
       startposition:
         line: 1
@@ -79,7 +79,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: Column "name" in "public"."tech_book" cannot have NULL value
       startposition:
         line: 1

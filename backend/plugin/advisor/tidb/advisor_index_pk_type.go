@@ -25,7 +25,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleIndexPKTypeLimit, &IndexPkTypeAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_INDEX_PK_TYPE_LIMIT, &IndexPkTypeAdvisor{})
 }
 
 // IndexPkTypeAdvisor is the advisor checking for correct type of PK.
@@ -46,7 +46,7 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	}
 	checker := &indexPkTypeChecker{
 		level:            level,
-		title:            string(checkCtx.Rule.Type),
+		title:            checkCtx.Rule.Type.String(),
 		line:             make(map[string]int),
 		originalMetadata: checkCtx.OriginalMetadata,
 		tablesNewColumns: make(map[string]columnNameToColumnDef),

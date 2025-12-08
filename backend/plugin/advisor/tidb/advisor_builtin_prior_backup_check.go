@@ -26,7 +26,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.BuiltinRulePriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK, &StatementPriorBackupCheckAdvisor{})
 }
 
 // StatementPriorBackupCheckAdvisor is the advisor checking for no mixed DDL and DML.
@@ -50,7 +50,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	if err != nil {
 		return nil, err
 	}
-	title := string(checkCtx.Rule.Type)
+	title := checkCtx.Rule.Type.String()
 
 	var updateStatements []*ast.UpdateStmt
 	var deleteStatements []*ast.DeleteStmt
@@ -85,8 +85,8 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,
 			Title:         title,
-			Content:       fmt.Sprintf("Need database %q to do prior backup but it does not exist", databaseName),
-			Code:          code.DatabaseNotExists.Int32(),
+			Content:       fmt.Sprintf("Prior backup check failed: need database %q to do prior backup but it does not exist", databaseName),
+			Code:          code.BuiltinPriorBackupCheck.Int32(),
 			StartPosition: nil,
 		})
 	}

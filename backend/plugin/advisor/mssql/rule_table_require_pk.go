@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleTableRequirePK, &TableRequirePkAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_TABLE_REQUIRE_PK, &TableRequirePkAdvisor{})
 }
 
 // TableRequirePkAdvisor is the advisor checking for table require primary key..
@@ -40,7 +40,7 @@ func (*TableRequirePkAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	}
 
 	// Create the rule
-	rule := NewTableRequirePkRule(level, string(checkCtx.Rule.Type))
+	rule := NewTableRequirePkRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

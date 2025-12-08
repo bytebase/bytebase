@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 202
-      title: statement.where.require.select
+      title: STATEMENT_WHERE_REQUIRE_SELECT
       content: '"SELECT id FROM book;" requires WHERE clause'
       startposition:
         line: 2
@@ -31,7 +31,7 @@
   want:
     - status: 2
       code: 202
-      title: statement.where.require.select
+      title: STATEMENT_WHERE_REQUIRE_SELECT
       content: |-
         "SELECT id
         FROM book

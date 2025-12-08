@@ -4,7 +4,7 @@
   want:
     - status: 2
       code: 204
-      title: statement.where.no-leading-wildcard-like
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
       content: '"DELETE FROM tech_book WHERE name like "%abc";" uses leading wildcard LIKE'
       startposition:
         line: 1
@@ -21,7 +21,7 @@
   want:
     - status: 2
       code: 204
-      title: statement.where.no-leading-wildcard-like
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
       content: '"SELECT * FROM t WHERE a LIKE ''%abc'';" uses leading wildcard LIKE'
       startposition:
         line: 2
@@ -34,7 +34,7 @@
   want:
     - status: 2
       code: 204
-      title: statement.where.no-leading-wildcard-like
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
       content: '"SELECT * FROM t WHERE a LIKE ''abc'' OR a LIKE ''%abc'';" uses leading wildcard LIKE'
       startposition:
         line: 2
@@ -50,7 +50,7 @@
   want:
     - status: 2
       code: 204
-      title: statement.where.no-leading-wildcard-like
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
       content: |-
         "SELECT *
         FROM t
@@ -62,7 +62,7 @@
       endposition: null
     - status: 2
       code: 204
-      title: statement.where.no-leading-wildcard-like
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
       content: |-
         "SELECT *
         FROM t
@@ -84,7 +84,7 @@
   want:
     - status: 2
       code: 204
-      title: statement.where.no-leading-wildcard-like
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
       content: |-
         "SELECT * FROM
           (
@@ -98,7 +98,7 @@
       endposition: null
     - status: 2
       code: 204
-      title: statement.where.no-leading-wildcard-like
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
       content: |-
         "SELECT * FROM
           (

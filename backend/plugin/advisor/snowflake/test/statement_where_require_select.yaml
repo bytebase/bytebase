@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 202
-      title: statement.where.require.select
+      title: STATEMENT_WHERE_REQUIRE_SELECT
       content: WHERE clause is required for SELECT statement.
       startposition:
         line: 1
@@ -14,7 +14,7 @@
   want:
     - status: 2
       code: 202
-      title: statement.where.require.select
+      title: STATEMENT_WHERE_REQUIRE_SELECT
       content: WHERE clause is required for SELECT statement.
       startposition:
         line: 1
@@ -36,7 +36,7 @@
   want:
     - status: 2
       code: 202
-      title: statement.where.require.select
+      title: STATEMENT_WHERE_REQUIRE_SELECT
       content: WHERE clause is required for SELECT statement.
       startposition:
         line: 1
@@ -44,7 +44,7 @@
       endposition: null
     - status: 2
       code: 202
-      title: statement.where.require.select
+      title: STATEMENT_WHERE_REQUIRE_SELECT
       content: WHERE clause is required for SELECT statement.
       startposition:
         line: 5
@@ -60,7 +60,7 @@
   want:
     - status: 2
       code: 202
-      title: statement.where.require.select
+      title: STATEMENT_WHERE_REQUIRE_SELECT
       content: WHERE clause is required for SELECT statement.
       startposition:
         line: 2

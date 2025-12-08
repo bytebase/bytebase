@@ -12,7 +12,7 @@
   want:
     - status: 2
       code: 1701
-      title: system.function.disallow-create
+      title: SYSTEM_FUNCTION_DISALLOW_CREATE
       content: |-
         Function is forbidden, but "CREATE FUNCTION add_two_numbers(a INT, b INT)
         RETURNS INT

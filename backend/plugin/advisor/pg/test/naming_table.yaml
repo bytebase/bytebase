@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '"techBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '"_techbook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 1
@@ -31,7 +31,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '"TechBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 1
@@ -48,7 +48,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '"_techbook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 1
@@ -56,7 +56,7 @@
       endposition: null
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '"TechBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 2

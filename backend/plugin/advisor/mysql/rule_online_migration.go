@@ -25,8 +25,8 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleOnlineMigration, &OnlineMigrationAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleOnlineMigration, &OnlineMigrationAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_ADVICE_ONLINE_MIGRATION, &OnlineMigrationAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_ADVICE_ONLINE_MIGRATION, &OnlineMigrationAdvisor{})
 }
 
 // OnlineMigrationAdvisor is the advisor checking for using gh-ost to migrate large tables.
@@ -51,7 +51,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
-	title := string(checkCtx.Rule.Type)
+	title := checkCtx.Rule.Type.String()
 
 	// Check gh-ost database existence first if gh-ost is enabled.
 	if checkCtx.EnableGhost {

@@ -254,6 +254,7 @@ import {
   GeneralErrorCode,
   getRuleLocalization,
   ruleTemplateMapV2,
+  ruleTypeToString,
   SQLReviewPolicyErrorCode,
 } from "@/types";
 import type {
@@ -265,7 +266,10 @@ import {
   PlanCheckRun_ResultSchema,
   PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
+import {
+  SQLReviewRule_Level,
+  SQLReviewRule_Type,
+} from "@/types/proto-es/v1/review_config_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { convertPositionLineToMonacoLine } from "@/utils/v1/position";
 import { usePlanCheckRunContext } from "./context";
@@ -341,16 +345,23 @@ const showCancelButton = computed(
 );
 
 const getRuleTemplateByType = (type: string) => {
+  // Convert string to enum
+  const typeKey = type as keyof typeof SQLReviewRule_Type;
+  const typeEnum = SQLReviewRule_Type[typeKey];
+  if (typeEnum === undefined) {
+    return;
+  }
+
   if (props.database) {
     return ruleTemplateMapV2
       .get(props.database.instanceResource.engine)
-      ?.get(type);
+      ?.get(typeEnum);
   }
 
   // fallback
   for (const mapByType of ruleTemplateMapV2.values()) {
-    if (mapByType.has(type)) {
-      return mapByType.get(type);
+    if (mapByType.has(typeEnum)) {
+      return mapByType.get(typeEnum);
     }
   }
   return;
@@ -358,6 +369,15 @@ const getRuleTemplateByType = (type: string) => {
 
 const isBuiltinRule = (type: string) => {
   return type.startsWith("builtin.");
+};
+
+const builtinRuleType = (type: string): SQLReviewRule_Type | undefined => {
+  // Convert dot-separated to SCREAMING_SNAKE_CASE
+  const typeKey = type
+    .toUpperCase()
+    .replace(/\./g, "_")
+    .replace(/-/g, "_") as keyof typeof SQLReviewRule_Type;
+  return SQLReviewRule_Type[typeKey];
 };
 
 const builtinRuleLevel = (type: string): SQLReviewRule_Level => {
@@ -383,7 +403,10 @@ const categoryAndTitle = (
     }
     const rule = getRuleTemplateByType(checkResult.title);
     if (rule) {
-      const ruleLocalization = getRuleLocalization(rule.type, rule.engine);
+      const ruleLocalization = getRuleLocalization(
+        ruleTypeToString(rule.type),
+        rule.engine
+      );
       const key = `sql-review.category.${rule.category.toLowerCase()}`;
       const category = t(key);
       const title = messageWithCode(ruleLocalization.title, code);
@@ -492,8 +515,12 @@ const reviewPolicy = useReviewPolicyForDatabase(
 const getActiveRule = (type: string): RuleTemplateV2 | undefined => {
   const engine = props.database?.instanceResource.engine;
   if (isBuiltinRule(type) && engine) {
+    const typeEnum = builtinRuleType(type);
+    if (!typeEnum) {
+      return undefined;
+    }
     return {
-      type,
+      type: typeEnum,
       category: "BUILTIN",
       engine: engine,
       level: builtinRuleLevel(type),

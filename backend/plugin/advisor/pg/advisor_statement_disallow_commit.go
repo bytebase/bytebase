@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementDisallowCommit, &StatementDisallowCommitAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DISALLOW_COMMIT, &StatementDisallowCommitAdvisor{})
 }
 
 // StatementDisallowCommitAdvisor is the advisor checking for disallowing COMMIT statements.
@@ -38,7 +38,7 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	rule := &statementDisallowCommitRule{
-		BaseRule:       BaseRule{level: level, title: string(checkCtx.Rule.Type)},
+		BaseRule:       BaseRule{level: level, title: checkCtx.Rule.Type.String()},
 		statementsText: checkCtx.Statements,
 	}
 

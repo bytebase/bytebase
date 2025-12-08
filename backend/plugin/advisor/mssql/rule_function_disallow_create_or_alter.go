@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleFunctionDisallowCreate, &FunctionDisallowCreateOrAlterAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOW_CREATE, &FunctionDisallowCreateOrAlterAdvisor{})
 }
 
 type FunctionDisallowCreateOrAlterAdvisor struct{}
@@ -32,7 +32,7 @@ func (*FunctionDisallowCreateOrAlterAdvisor) Check(_ context.Context, checkCtx a
 	}
 
 	// Create the rule
-	rule := NewFunctionDisallowCreateOrAlterRule(level, string(checkCtx.Rule.Type))
+	rule := NewFunctionDisallowCreateOrAlterRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

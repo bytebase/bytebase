@@ -68,6 +68,7 @@ import {
   getRuleMapByEngine,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import { getTemplateId } from "./components";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
@@ -78,7 +79,7 @@ interface LocalState {
   name: string;
   resourceId: string;
   attachedResources: string[];
-  selectedRuleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
+  selectedRuleMapByEngine: Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>;
   selectedTemplateId: string | undefined;
   ruleUpdated: boolean;
   pendingApplyTemplate: SQLReviewPolicyTemplateV2 | undefined;
@@ -262,7 +263,7 @@ const upsertRule = (
   if (!state.selectedRuleMapByEngine.has(rule.engine)) {
     state.selectedRuleMapByEngine.set(
       rule.engine,
-      new Map<string, RuleTemplateV2>()
+      new Map<SQLReviewRule_Type, RuleTemplateV2>()
     );
   }
 

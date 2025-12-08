@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementDisallowOfflineDDL, &DisallowOfflineDdlAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_DISALLOW_OFFLINE_DDL, &DisallowOfflineDdlAdvisor{})
 }
 
 // DisallowOfflineDdlAdvisor is the advisor checking for disallow Offline DDL.
@@ -46,7 +46,7 @@ func (*DisallowOfflineDdlAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 
 	checker := &disallowOfflineDdlChecker{
 		level:     level,
-		title:     checkCtx.Rule.Type,
+		title:     checkCtx.Rule.Type.String(),
 		driver:    checkCtx.Driver,
 		currentDB: checkCtx.CurrentDatabase,
 	}

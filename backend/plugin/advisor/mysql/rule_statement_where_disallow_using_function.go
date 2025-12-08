@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementWhereDisallowFunctionsAndCalculations, &StatementWhereDisallowUsingFunctionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS, &StatementWhereDisallowUsingFunctionAdvisor{})
 }
 
 type StatementWhereDisallowUsingFunctionAdvisor struct {
@@ -38,7 +38,7 @@ func (*StatementWhereDisallowUsingFunctionAdvisor) Check(_ context.Context, chec
 	}
 
 	// Create the rule
-	rule := NewStatementWhereDisallowUsingFunctionRule(level, string(checkCtx.Rule.Type))
+	rule := NewStatementWhereDisallowUsingFunctionRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

@@ -22,9 +22,9 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleRequiredColumn, &ColumnRequirementAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleRequiredColumn, &ColumnRequirementAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleRequiredColumn, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_COLUMN_REQUIRED, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_COLUMN_REQUIRED, &ColumnRequirementAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_COLUMN_REQUIRED, &ColumnRequirementAdvisor{})
 }
 
 // ColumnRequirementAdvisor is the advisor checking for column requirement.
@@ -54,7 +54,7 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	}
 
 	// Create the rule
-	rule := NewColumnRequiredRule(level, string(checkCtx.Rule.Type), requiredColumns)
+	rule := NewColumnRequiredRule(level, checkCtx.Rule.Type.String(), requiredColumns)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

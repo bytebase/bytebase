@@ -157,7 +157,7 @@ type TestCase struct {
 }
 
 // RunSQLReviewRuleTest helps to test the SQL review rule.
-func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.Engine, needMetaData bool, record bool) {
+func RunSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType storepb.Engine, needMetaData bool, record bool) {
 	var tests []TestCase
 
 	fileName := strings.Map(func(r rune) rune {
@@ -167,7 +167,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		default:
 			return r
 		}
-	}, string(rule))
+	}, strings.ToLower(rule.String()))
 	filepath := filepath.Join("test", fileName+".yaml")
 	yamlFile, err := os.Open(filepath)
 	require.NoError(t, err)
@@ -229,7 +229,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 
 		ruleList := []*storepb.SQLReviewRule{
 			{
-				Type:    string(rule),
+				Type:    rule,
 				Level:   storepb.SQLReviewRule_WARNING,
 				Payload: string(payload),
 			},
@@ -343,80 +343,79 @@ func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchem
 }
 
 // SetDefaultSQLReviewRulePayload sets the default payload for this rule.
-func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Engine) (string, error) {
+func SetDefaultSQLReviewRulePayload(ruleTp storepb.SQLReviewRule_Type, dbType storepb.Engine) (string, error) {
 	var payload []byte
 	var err error
 	switch ruleTp {
-	case SchemaRuleMySQLEngine,
-		BuiltinRulePriorBackupCheck,
-		SchemaRuleFullyQualifiedObjectName,
-		SchemaRuleStatementNoSelectAll,
-		SchemaRuleStatementRequireWhereForSelect,
-		SchemaRuleStatementRequireWhereForUpdateDelete,
-		SchemaRuleStatementNoLeadingWildcardLike,
-		SchemaRuleStatementDisallowOnDelCascade,
-		SchemaRuleStatementDisallowRemoveTblCascade,
-		SchemaRuleStatementDisallowCommit,
-		SchemaRuleStatementDisallowLimit,
-		SchemaRuleStatementDisallowOrderBy,
-		SchemaRuleStatementMergeAlterTable,
-		SchemaRuleStatementInsertMustSpecifyColumn,
-		SchemaRuleStatementInsertDisallowOrderByRand,
-		SchemaRuleStatementDMLDryRun,
-		SchemaRuleStatementDisallowUsingFilesort,
-		SchemaRuleStatementDisallowUsingTemporary,
-		SchemaRuleTableRequirePK,
-		SchemaRuleTableNoFK,
-		SchemaRuleTableDisallowPartition,
-		SchemaRuleTableDisallowTrigger,
-		SchemaRuleTableNoDuplicateIndex,
-		SchemaRuleColumnNotNull,
-		SchemaRuleColumnDisallowChangeType,
-		SchemaRuleColumnSetDefaultForNotNull,
-		SchemaRuleColumnDisallowChange,
-		SchemaRuleColumnDisallowChangingOrder,
-		SchemaRuleColumnDisallowDropInIndex,
-		SchemaRuleColumnAutoIncrementMustInteger,
-		SchemaRuleColumnDisallowSetCharset,
-		SchemaRuleColumnAutoIncrementMustUnsigned,
-		SchemaRuleAddNotNullColumnRequireDefault,
-		SchemaRuleCurrentTimeColumnCountLimit,
-		SchemaRuleColumnRequireDefault,
-		SchemaRuleColumnDefaultDisallowVolatile,
-		SchemaRuleSchemaBackwardCompatibility,
-		SchemaRuleDropEmptyDatabase,
-		SchemaRuleIndexNoDuplicateColumn,
-		SchemaRuleIndexPKTypeLimit,
-		SchemaRuleStatementDisallowAddColumnWithDefault,
-		SchemaRuleStatementNonTransactional,
-		SchemaRuleCreateIndexConcurrently,
-		SchemaRuleStatementAddCheckNotValid,
-		SchemaRuleStatementAddFKNotValid,
-		SchemaRuleStatementDisallowAddNotNull,
-		SchemaRuleStatementWhereNoEqualNull,
-		SchemaRuleIndexTypeNoBlob,
-		SchemaRuleIdentifierNoKeyword,
-		SchemaRuleTableNameNoKeyword,
-		SchemaRuleProcedureDisallowCreate,
-		SchemaRuleEventDisallowCreate,
-		SchemaRuleViewDisallowCreate,
-		SchemaRuleFunctionDisallowCreate,
-		SchemaRuleStatementCreateSpecifySchema,
-		SchemaRuleStatementCheckSetRoleVariable,
-		SchemaRuleStatementWhereDisallowFunctionsAndCalculations,
-		SchemaRuleStatementPriorBackupCheck,
-		SchemaRuleStatementJoinStrictColumnAttrs,
-		SchemaRuleStatementMaxExecutionTime,
-		SchemaRuleStatementRequireAlgorithmOption,
-		SchemaRuleStatementRequireLockOption,
-		SchemaRuleTableDisallowSetCharset,
-		SchemaRuleStatementDisallowCrossDBQueries,
-		SchemaRuleIndexNotRedundant:
-	case SchemaRuleTableDropNamingConvention:
+	case storepb.SQLReviewRule_ENGINE_MYSQL_USE_INNODB,
+		storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
+		storepb.SQLReviewRule_NAMING_FULLY_QUALIFIED,
+		storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL,
+		storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT,
+		storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE,
+		storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE,
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_ON_DEL_CASCADE,
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_RM_TBL_CASCADE,
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_COMMIT,
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_LIMIT,
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_ORDER_BY,
+		storepb.SQLReviewRule_STATEMENT_MERGE_ALTER_TABLE,
+		storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN,
+		storepb.SQLReviewRule_STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND,
+		storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN,
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_USING_FILESORT,
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_USING_TEMPORARY,
+		storepb.SQLReviewRule_TABLE_REQUIRE_PK,
+		storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY,
+		storepb.SQLReviewRule_TABLE_DISALLOW_PARTITION,
+		storepb.SQLReviewRule_TABLE_DISALLOW_TRIGGER,
+		storepb.SQLReviewRule_TABLE_NO_DUPLICATE_INDEX,
+		storepb.SQLReviewRule_COLUMN_NO_NULL,
+		storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE_TYPE,
+		storepb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL,
+		storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE,
+		storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGING_ORDER,
+		storepb.SQLReviewRule_COLUMN_DISALLOW_DROP_IN_INDEX,
+		storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_INTEGER,
+		storepb.SQLReviewRule_COLUMN_DISALLOW_SET_CHARSET,
+		storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_UNSIGNED,
+		storepb.SQLReviewRule_COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT,
+		storepb.SQLReviewRule_COLUMN_CURRENT_TIME_COUNT_LIMIT,
+		storepb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT,
+		storepb.SQLReviewRule_COLUMN_DEFAULT_DISALLOW_VOLATILE,
+		storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY,
+		storepb.SQLReviewRule_DATABASE_DROP_EMPTY_DATABASE,
+		storepb.SQLReviewRule_INDEX_NO_DUPLICATE_COLUMN,
+		storepb.SQLReviewRule_INDEX_PK_TYPE_LIMIT,
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT,
+		storepb.SQLReviewRule_STATEMENT_NON_TRANSACTIONAL,
+		storepb.SQLReviewRule_INDEX_CREATE_CONCURRENTLY,
+		storepb.SQLReviewRule_STATEMENT_ADD_CHECK_NOT_VALID,
+		storepb.SQLReviewRule_STATEMENT_ADD_FOREIGN_KEY_NOT_VALID,
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_ADD_NOT_NULL,
+		storepb.SQLReviewRule_STATEMENT_WHERE_NO_EQUAL_NULL,
+		storepb.SQLReviewRule_INDEX_TYPE_NO_BLOB,
+		storepb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD,
+		storepb.SQLReviewRule_NAMING_TABLE_NO_KEYWORD,
+		storepb.SQLReviewRule_SYSTEM_PROCEDURE_DISALLOW_CREATE,
+		storepb.SQLReviewRule_SYSTEM_EVENT_DISALLOW_CREATE,
+		storepb.SQLReviewRule_SYSTEM_VIEW_DISALLOW_CREATE,
+		storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOW_CREATE,
+		storepb.SQLReviewRule_STATEMENT_CREATE_SPECIFY_SCHEMA,
+		storepb.SQLReviewRule_STATEMENT_CHECK_SET_ROLE_VARIABLE,
+		storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
+		storepb.SQLReviewRule_STATEMENT_JOIN_STRICT_COLUMN_ATTRS,
+		storepb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME,
+		storepb.SQLReviewRule_STATEMENT_REQUIRE_ALGORITHM_OPTION,
+		storepb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION,
+		storepb.SQLReviewRule_TABLE_DISALLOW_SET_CHARSET,
+		storepb.SQLReviewRule_STATEMENT_DISALLOW_CROSS_DB_QUERIES,
+		storepb.SQLReviewRule_INDEX_NOT_REDUNDANT:
+	case storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format: "_delete$",
 		})
-	case SchemaRuleTableNaming, SchemaRuleColumnNaming:
+	case storepb.SQLReviewRule_NAMING_TABLE, storepb.SQLReviewRule_NAMING_COLUMN:
 		format := "^[a-z]+(_[a-z]+)*$"
 		maxLength := 64
 		switch dbType {
@@ -431,53 +430,53 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 			Format:    format,
 			MaxLength: maxLength,
 		})
-	case SchemaRuleIDXNaming:
+	case storepb.SQLReviewRule_NAMING_INDEX_IDX:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    "^$|^idx_{{table}}_{{column_list}}$",
 			MaxLength: 64,
 		})
-	case SchemaRulePKNaming:
+	case storepb.SQLReviewRule_NAMING_INDEX_PK:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    "^$|^pk_{{table}}_{{column_list}}$",
 			MaxLength: 64,
 		})
-	case SchemaRuleUKNaming:
+	case storepb.SQLReviewRule_NAMING_INDEX_UK:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    "^$|^uk_{{table}}_{{column_list}}$",
 			MaxLength: 64,
 		})
-	case SchemaRuleFKNaming:
+	case storepb.SQLReviewRule_NAMING_INDEX_FK:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    "^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
 			MaxLength: 64,
 		})
-	case SchemaRuleAutoIncrementColumnNaming:
+	case storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format:    "^id$",
 			MaxLength: 64,
 		})
-	case SchemaRuleStatementInsertRowLimit, SchemaRuleStatementAffectedRowLimit:
+	case storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 5,
 		})
-	case SchemaRuleStatementMaximumJoinTableCount:
+	case storepb.SQLReviewRule_STATEMENT_MAXIMUM_JOIN_TABLE_COUNT:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 2,
 		})
-	case SchemaRuleStatementWhereMaximumLogicalOperatorCount:
+	case storepb.SQLReviewRule_STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 2,
 		})
-	case SchemaRuleStatementMaximumLimitValue:
+	case storepb.SQLReviewRule_STATEMENT_MAXIMUM_LIMIT_VALUE:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 1000,
 		})
-	case SchemaRuleTableCommentConvention, SchemaRuleColumnCommentConvention:
+	case storepb.SQLReviewRule_TABLE_COMMENT, storepb.SQLReviewRule_COLUMN_COMMENT:
 		payload, err = json.Marshal(CommentConventionRulePayload{
 			Required:  true,
 			MaxLength: 10,
 		})
-	case SchemaRuleRequiredColumn:
+	case storepb.SQLReviewRule_COLUMN_REQUIRED:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{
 				"id",
@@ -487,23 +486,23 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 				"updater_id",
 			},
 		})
-	case SchemaRuleColumnTypeDisallowList:
+	case storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"JSON", "BINARY_FLOAT"},
 		})
-	case SchemaRuleColumnMaximumCharacterLength:
+	case storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 20,
 		})
-	case SchemaRuleColumnMaximumVarcharLength:
+	case storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 2560,
 		})
-	case SchemaRuleColumnAutoIncrementInitialValue:
+	case storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 20,
 		})
-	case SchemaRuleTableDisallowDDL:
+	case storepb.SQLReviewRule_TABLE_DISALLOW_DDL:
 		if dbType == storepb.Engine_MSSQL {
 			payload, err = json.Marshal(StringArrayTypeRulePayload{
 				List: []string{"MySchema.Identifier"},
@@ -513,7 +512,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 				List: []string{"identifier"},
 			})
 		}
-	case SchemaRuleTableDisallowDML:
+	case storepb.SQLReviewRule_TABLE_DISALLOW_DML:
 		if dbType == storepb.Engine_MSSQL {
 			payload, err = json.Marshal(StringArrayTypeRulePayload{
 				List: []string{"MySchema.Identifier"},
@@ -523,35 +522,35 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 				List: []string{"identifier"},
 			})
 		}
-	case SchemaRuleIndexKeyNumberLimit, SchemaRuleIndexTotalNumberLimit:
+	case storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, storepb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 5,
 		})
-	case SchemaRuleCharsetAllowlist:
+	case storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"utf8mb4", "UTF8"},
 		})
-	case SchemaRuleCollationAllowlist:
+	case storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"utf8mb4_0900_ai_ci"},
 		})
-	case SchemaRuleCommentLength:
+	case storepb.SQLReviewRule_SYSTEM_COMMENT_LENGTH:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 20,
 		})
-	case SchemaRuleIndexPrimaryKeyTypeAllowlist:
+	case storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"serial", "bigserial", "int", "bigint"},
 		})
-	case SchemaRuleIndexTypeAllowList:
+	case storepb.SQLReviewRule_INDEX_TYPE_ALLOW_LIST:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"BTREE", "HASH"},
 		})
-	case SchemaRuleIdentifierCase:
+	case storepb.SQLReviewRule_NAMING_IDENTIFIER_CASE:
 		payload, err = json.Marshal(NamingCaseRulePayload{
 			Upper: true,
 		})
-	case SchemaRuleFunctionDisallowList:
+	case storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST:
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"rand", "uuid", "sleep"},
 		})

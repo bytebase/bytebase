@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 1
@@ -14,7 +14,7 @@
   want:
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '`book`.`gbhzmtchhsjzyrhdroxmyouwloxqezowdvhcbqalqcgqhfbjnvmhwrbggezmzeusx` mismatches column naming convention, its length should be within 64 characters'
       startposition:
         line: 1
@@ -29,7 +29,7 @@
   want:
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 2
@@ -49,7 +49,7 @@
   want:
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 7
@@ -70,7 +70,7 @@
   want:
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '`book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 6
@@ -90,7 +90,7 @@
   want:
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '`book`.`createdTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 3
@@ -98,7 +98,7 @@
       endposition: null
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '`book`.`updaterId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 4
@@ -106,7 +106,7 @@
       endposition: null
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '`student`.`createdTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 8
@@ -114,7 +114,7 @@
       endposition: null
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '`student`.`updatedTs` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 9

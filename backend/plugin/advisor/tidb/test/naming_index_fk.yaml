@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 305
-      title: naming.index.fk
+      title: NAMING_INDEX_FK
       content: Foreign key in table `tech_book` mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found `fk_author_id`
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 305
-      title: naming.index.fk
+      title: NAMING_INDEX_FK
       content: Foreign key `rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
       startposition:
         line: 1
@@ -24,7 +24,7 @@
       endposition: null
     - status: 2
       code: 305
-      title: naming.index.fk
+      title: NAMING_INDEX_FK
       content: Foreign key in table `tech_book` mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found `rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk`
       startposition:
         line: 1
@@ -39,7 +39,7 @@
   want:
     - status: 2
       code: 305
-      title: naming.index.fk
+      title: NAMING_INDEX_FK
       content: Foreign key in table `book` mismatches the naming convention, expect "^$|^fk_book_author_id_author_id$" but found `fk_book_author_id`
       startposition:
         line: 1

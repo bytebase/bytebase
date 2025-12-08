@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnRequireDefault, &ColumRequireDefaultAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT, &ColumRequireDefaultAdvisor{})
 }
 
 // ColumRequireDefaultAdvisor is the advisor checking for column default requirement.
@@ -42,7 +42,7 @@ func (*ColumRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	}
 	checker := &columRequireDefaultChecker{
 		level: level,
-		title: string(checkCtx.Rule.Type),
+		title: checkCtx.Rule.Type.String(),
 	}
 
 	for _, stmt := range stmtList {

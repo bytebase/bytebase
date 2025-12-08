@@ -10,7 +10,7 @@
   want:
     - status: 2
       code: 1032
-      title: table.comment
+      title: TABLE_COMMENT
       content: Comment is required for table "TEST_DB"."T"
       startposition:
         line: 1
@@ -24,7 +24,7 @@
   want:
     - status: 2
       code: 1032
-      title: table.comment
+      title: TABLE_COMMENT
       content: Comment is required for table "TEST_DB"."D"
       startposition:
         line: 2
@@ -38,7 +38,7 @@
   want:
     - status: 2
       code: 1032
-      title: table.comment
+      title: TABLE_COMMENT
       content: Comment is required for table "TEST_DB"."T"
       startposition:
         line: 1
@@ -51,7 +51,7 @@
   want:
     - status: 2
       code: 1301
-      title: table.comment
+      title: TABLE_COMMENT
       content: Table "TEST_DB"."T" comment is too long. The length of comment should be within 10 characters
       startposition:
         line: 1

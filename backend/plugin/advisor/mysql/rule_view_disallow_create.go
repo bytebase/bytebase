@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleViewDisallowCreate, &ViewDisallowCreateAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_SYSTEM_VIEW_DISALLOW_CREATE, &ViewDisallowCreateAdvisor{})
 }
 
 // ViewDisallowCreateAdvisor is the advisor checking for disallow creating view.
@@ -41,7 +41,7 @@ func (*ViewDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	// Create the rule
-	rule := NewViewDisallowCreateRule(level, string(checkCtx.Rule.Type))
+	rule := NewViewDisallowCreateRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

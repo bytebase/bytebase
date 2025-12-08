@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableDisallowTrigger, &TableDisallowTriggerAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_DISALLOW_TRIGGER, &TableDisallowTriggerAdvisor{})
 }
 
 // TableDisallowTriggerAdvisor is the advisor checking for disallow table trigger.
@@ -41,7 +41,7 @@ func (*TableDisallowTriggerAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	}
 
 	// Create the rule
-	rule := NewTableDisallowTriggerRule(level, string(checkCtx.Rule.Type))
+	rule := NewTableDisallowTriggerRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

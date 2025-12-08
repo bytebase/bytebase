@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementJoinStrictColumnAttrs, &StatementJoinStrictColumnAttrsAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_JOIN_STRICT_COLUMN_ATTRS, &StatementJoinStrictColumnAttrsAdvisor{})
 }
 
 type StatementJoinStrictColumnAttrsAdvisor struct {
@@ -40,7 +40,7 @@ func (*StatementJoinStrictColumnAttrsAdvisor) Check(_ context.Context, checkCtx 
 	}
 
 	// Create the rule
-	rule := NewStatementJoinStrictColumnAttrsRule(level, string(checkCtx.Rule.Type))
+	rule := NewStatementJoinStrictColumnAttrsRule(level, checkCtx.Rule.Type.String())
 	if checkCtx.DBSchema != nil {
 		dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
 		rule.dbMetadata = dbMetadata

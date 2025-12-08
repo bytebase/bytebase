@@ -6,7 +6,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: '`book`.`id` cannot have NULL value'
       startposition:
         line: 2
@@ -14,7 +14,7 @@
       endposition: null
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: '`book`.`name` cannot have NULL value'
       startposition:
         line: 3
@@ -25,7 +25,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: '`book`.`name` cannot have NULL value'
       startposition:
         line: 1
@@ -36,7 +36,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: '`book`.`name` cannot have NULL value'
       startposition:
         line: 1
@@ -51,7 +51,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: '`book`.`id` cannot have NULL value'
       startposition:
         line: 2
@@ -68,7 +68,7 @@
   want:
     - status: 2
       code: 402
-      title: column.no-null
+      title: COLUMN_NO_NULL
       content: '`book`.`name` cannot have NULL value'
       startposition:
         line: 2

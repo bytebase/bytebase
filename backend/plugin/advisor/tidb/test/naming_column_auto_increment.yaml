@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 307
-      title: naming.column.auto-increment
+      title: NAMING_COLUMN_AUTO_INCREMENT
       content: '`book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 307
-      title: naming.column.auto-increment
+      title: NAMING_COLUMN_AUTO_INCREMENT
       content: '`tech_book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
       startposition:
         line: 1
@@ -27,7 +27,7 @@
   want:
     - status: 2
       code: 307
-      title: naming.column.auto-increment
+      title: NAMING_COLUMN_AUTO_INCREMENT
       content: '`tech_book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
       startposition:
         line: 1
@@ -38,7 +38,7 @@
   want:
     - status: 2
       code: 307
-      title: naming.column.auto-increment
+      title: NAMING_COLUMN_AUTO_INCREMENT
       content: '`tech_book`.`name` mismatches auto_increment column naming convention, naming format should be "^id$"'
       startposition:
         line: 1

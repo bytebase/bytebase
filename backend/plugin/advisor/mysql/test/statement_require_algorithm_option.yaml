@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 236
-      title: statement.require-algorithm-option
+      title: STATEMENT_REQUIRE_ALGORITHM_OPTION
       content: ALTER TABLE statement should include ALGORITHM option
       startposition:
         line: 2

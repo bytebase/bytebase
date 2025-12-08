@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableDisallowSetCharset, &TableDisallowSetCharsetAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_DISALLOW_SET_CHARSET, &TableDisallowSetCharsetAdvisor{})
 }
 
 type TableDisallowSetCharsetAdvisor struct {
@@ -39,7 +39,7 @@ func (*TableDisallowSetCharsetAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	// Create the rule
-	rule := NewTableDisallowSetCharsetRule(level, string(checkCtx.Rule.Type))
+	rule := NewTableDisallowSetCharsetRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

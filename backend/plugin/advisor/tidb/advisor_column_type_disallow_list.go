@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST, &ColumnTypeDisallowListAdvisor{})
 }
 
 // ColumnTypeDisallowListAdvisor is the advisor checking for column type restriction.
@@ -47,7 +47,7 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 	checker := &columnTypeDisallowListChecker{
 		level:           level,
-		title:           string(checkCtx.Rule.Type),
+		title:           checkCtx.Rule.Type.String(),
 		typeRestriction: make(map[string]bool),
 	}
 	for _, tp := range paylaod.List {

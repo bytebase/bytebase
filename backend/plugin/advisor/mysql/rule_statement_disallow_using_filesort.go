@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementDisallowUsingFilesort, &StatementDisallowUsingFilesortAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_DISALLOW_USING_FILESORT, &StatementDisallowUsingFilesortAdvisor{})
 }
 
 // StatementDisallowUsingFilesortAdvisor is the advisor checking for using filesort.
@@ -42,7 +42,7 @@ func (*StatementDisallowUsingFilesortAdvisor) Check(ctx context.Context, checkCt
 	}
 
 	// Create the rule
-	rule := NewStatementDisallowUsingFilesortRule(ctx, level, string(checkCtx.Rule.Type), checkCtx.Driver)
+	rule := NewStatementDisallowUsingFilesortRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleTableRequirePK, &TableRequirePkAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, storepb.SQLReviewRule_TABLE_REQUIRE_PK, &TableRequirePkAdvisor{})
 }
 
 // TableRequirePkAdvisor is the advisor checking for table require primary key.
@@ -39,7 +39,7 @@ func (*TableRequirePkAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		return nil, err
 	}
 
-	rule := NewTableRequirePkRule(level, string(checkCtx.Rule.Type))
+	rule := NewTableRequirePkRule(level, checkCtx.Rule.Type.String())
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, parseResult := range parseResults {

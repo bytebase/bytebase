@@ -9,21 +9,21 @@ import (
 )
 
 func TestSnowflakeRules(t *testing.T) {
-	snowflakeRules := []advisor.SQLReviewRuleType{
-		advisor.SchemaRuleTableNaming,
-		advisor.SchemaRuleTableRequirePK,
-		advisor.SchemaRuleTableNoFK,
-		advisor.SchemaRuleColumnMaximumVarcharLength,
-		advisor.SchemaRuleTableNameNoKeyword,
-		advisor.SchemaRuleStatementRequireWhereForSelect,
-		advisor.SchemaRuleStatementRequireWhereForUpdateDelete,
-		advisor.SchemaRuleIdentifierNoKeyword,
-		advisor.SchemaRuleRequiredColumn,
-		advisor.SchemaRuleIdentifierCase,
-		advisor.SchemaRuleColumnNotNull,
-		advisor.SchemaRuleStatementNoSelectAll,
-		advisor.SchemaRuleTableDropNamingConvention,
-		advisor.SchemaRuleSchemaBackwardCompatibility,
+	snowflakeRules := []storepb.SQLReviewRule_Type{
+		storepb.SQLReviewRule_NAMING_TABLE,
+		storepb.SQLReviewRule_TABLE_REQUIRE_PK,
+		storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY,
+		storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH,
+		storepb.SQLReviewRule_NAMING_TABLE_NO_KEYWORD,
+		storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT,
+		storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE,
+		storepb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD,
+		storepb.SQLReviewRule_COLUMN_REQUIRED,
+		storepb.SQLReviewRule_NAMING_IDENTIFIER_CASE,
+		storepb.SQLReviewRule_COLUMN_NO_NULL,
+		storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL,
+		storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION,
+		storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY,
 	}
 
 	for _, rule := range snowflakeRules {

@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 210
-      title: statement.disallow-add-column-with-default
+      title: STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT
       content: Adding column with DEFAULT will locked the whole table and rewriting each rows
       startposition:
         line: 1

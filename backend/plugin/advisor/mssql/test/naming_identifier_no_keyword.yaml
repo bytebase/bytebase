@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier [exec] is a keyword identifier and should be avoided.
       startposition:
         line: 1
@@ -13,7 +13,7 @@
       endposition: null
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier [fillfactor] is a keyword identifier and should be avoided.
       startposition:
         line: 1
@@ -21,7 +21,7 @@
       endposition: null
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier [add] is a keyword identifier and should be avoided.
       startposition:
         line: 2
@@ -29,7 +29,7 @@
       endposition: null
     - status: 2
       code: 308
-      title: naming.identifier.no-keyword
+      title: NAMING_IDENTIFIER_NO_KEYWORD
       content: Identifier [fillfactor] is a keyword identifier and should be avoided.
       startposition:
         line: 2

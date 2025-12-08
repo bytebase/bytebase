@@ -45,13 +45,14 @@
 import { NButton, NEmpty } from "naive-ui";
 import { ref } from "vue";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
 import type { RuleTemplateV2 } from "@/types/sqlReview";
 import SQLReviewRulesSelectPanel from "./components/SQLReviewRulesSelectPanel.vue";
 import SQLReviewTabsByEngine from "./components/SQLReviewTabsByEngine.vue";
 import SQLRuleTableWithFilter from "./components/SQLRuleTableWithFilter.vue";
 
 defineProps<{
-  ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
+  ruleMapByEngine: Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>;
 }>();
 
 const emit = defineEmits<{

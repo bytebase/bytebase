@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.SchemaRuleAddNotNullColumnRequireDefault, &ColumnAddNotNullColumnRequireDefaultAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT, &ColumnAddNotNullColumnRequireDefaultAdvisor{})
 }
 
 // ColumnAddNotNullColumnRequireDefaultAdvisor is the advisor checking for adding not null column requires default.
@@ -40,7 +40,7 @@ func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(_ context.Context, che
 		return nil, err
 	}
 
-	rule := NewColumnAddNotNullColumnRequireDefaultRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
+	rule := NewColumnAddNotNullColumnRequireDefaultRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

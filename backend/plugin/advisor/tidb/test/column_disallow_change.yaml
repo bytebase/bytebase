@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 406
-      title: column.disallow-change
+      title: COLUMN_DISALLOW_CHANGE
       content: '"ALTER TABLE t CHANGE COLUMN b a int" contains CHANGE COLUMN statement'
       startposition:
         line: 2

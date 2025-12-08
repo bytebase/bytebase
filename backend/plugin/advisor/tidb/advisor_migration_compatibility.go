@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleSchemaBackwardCompatibility, &CompatibilityAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, &CompatibilityAdvisor{})
 }
 
 // CompatibilityAdvisor is the advisor checking for schema backward compatibility.
@@ -40,7 +40,7 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 
 	c := &compatibilityChecker{
 		level: level,
-		title: string(checkCtx.Rule.Type),
+		title: checkCtx.Rule.Type.String(),
 	}
 	for _, stmtNode := range root {
 		(stmtNode).Accept(c)

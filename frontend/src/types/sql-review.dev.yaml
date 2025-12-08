@@ -1,706 +1,706 @@
 id: bb.sql-review.dev
 ruleList:
-  - type: engine.mysql.use-innodb
+  - type: ENGINE_MYSQL_USE_INNODB
     level: ERROR
     engine: MYSQL
-  - type: engine.mysql.use-innodb
+  - type: ENGINE_MYSQL_USE_INNODB
     level: ERROR
     engine: MARIADB
-  - type: table.require-pk
+  - type: TABLE_REQUIRE_PK
     level: ERROR
     engine: MYSQL
-  - type: table.require-pk
+  - type: TABLE_REQUIRE_PK
     level: ERROR
     engine: TIDB
-  - type: table.require-pk
+  - type: TABLE_REQUIRE_PK
     level: ERROR
     engine: POSTGRES
-  - type: table.require-pk
+  - type: TABLE_REQUIRE_PK
     level: ERROR
     engine: ORACLE
-  - type: table.require-pk
+  - type: TABLE_REQUIRE_PK
     level: ERROR
     engine: OCEANBASE
-  - type: table.require-pk
+  - type: TABLE_REQUIRE_PK
     level: ERROR
     engine: SNOWFLAKE
-  - type: table.require-pk
+  - type: TABLE_REQUIRE_PK
     level: ERROR
     engine: MSSQL
-  - type: table.require-pk
+  - type: TABLE_REQUIRE_PK
     level: ERROR
     engine: MARIADB
-  - type: table.no-foreign-key
+  - type: TABLE_NO_FOREIGN_KEY
     level: WARNING
     engine: MYSQL
-  - type: table.no-foreign-key
+  - type: TABLE_NO_FOREIGN_KEY
     level: WARNING
     engine: TIDB
-  - type: table.no-foreign-key
+  - type: TABLE_NO_FOREIGN_KEY
     level: WARNING
     engine: POSTGRES
-  - type: table.no-foreign-key
+  - type: TABLE_NO_FOREIGN_KEY
     level: WARNING
     engine: ORACLE
-  - type: table.no-foreign-key
+  - type: TABLE_NO_FOREIGN_KEY
     level: WARNING
     engine: OCEANBASE
-  - type: table.no-foreign-key
+  - type: TABLE_NO_FOREIGN_KEY
     level: WARNING
     engine: SNOWFLAKE
-  - type: table.no-foreign-key
+  - type: TABLE_NO_FOREIGN_KEY
     level: WARNING
     engine: MSSQL
-  - type: table.no-foreign-key
+  - type: TABLE_NO_FOREIGN_KEY
     level: WARNING
     engine: MARIADB
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: MYSQL
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: TIDB
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: POSTGRES
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: OCEANBASE
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: SNOWFLAKE
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: MSSQL
-  - type: table.drop-naming-convention
+  - type: TABLE_DROP_NAMING_CONVENTION
     level: ERROR
     payload:
       format: _del$
     engine: MARIADB
-  - type: table.disallow-partition
+  - type: TABLE_DISALLOW_PARTITION
     level: ERROR
     engine: MYSQL
-  - type: table.disallow-partition
+  - type: TABLE_DISALLOW_PARTITION
     level: ERROR
     engine: TIDB
-  - type: table.disallow-partition
+  - type: TABLE_DISALLOW_PARTITION
     level: ERROR
     engine: POSTGRES
-  - type: table.disallow-partition
+  - type: TABLE_DISALLOW_PARTITION
     level: ERROR
     engine: OCEANBASE
-  - type: table.disallow-partition
+  - type: TABLE_DISALLOW_PARTITION
     level: ERROR
     engine: MARIADB
-  - type: table.disallow-trigger
+  - type: TABLE_DISALLOW_TRIGGER
     level: ERROR
     engine: MYSQL
-  - type: table.comment
+  - type: TABLE_COMMENT
     level: WARNING
     payload:
       required: true
       maxLength: 64
     engine: MYSQL
-  - type: table.comment
+  - type: TABLE_COMMENT
     level: WARNING
     payload:
       required: true
       maxLength: 64
     engine: TIDB
-  - type: table.comment
+  - type: TABLE_COMMENT
     level: WARNING
     payload:
       required: true
       maxLength: 64
     engine: OCEANBASE
-  - type: table.comment
+  - type: TABLE_COMMENT
     level: WARNING
     payload:
       required: true
       maxLength: 64
     engine: MARIADB
-  - type: table.no-duplicate-index
+  - type: TABLE_NO_DUPLICATE_INDEX
     level: WARNING
     engine: MYSQL
-  - type: table.text-fields-total-length
+  - type: TABLE_TEXT_FIELDS_TOTAL_LENGTH
     level: WARNING
     payload:
       number: 1000
     engine: MYSQL
-  - type: table.disallow-set-charset
+  - type: TABLE_DISALLOW_SET_CHARSET
     level: WARNING
     engine: MYSQL
-  - type: statement.select.no-select-all
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
     level: WARNING
     engine: MYSQL
-  - type: statement.select.no-select-all
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
     level: WARNING
     engine: TIDB
-  - type: statement.select.no-select-all
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
     level: WARNING
     engine: POSTGRES
-  - type: statement.select.no-select-all
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
     level: WARNING
     engine: ORACLE
-  - type: statement.select.no-select-all
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
     level: WARNING
     engine: OCEANBASE
-  - type: statement.select.no-select-all
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
     level: WARNING
     engine: SNOWFLAKE
-  - type: statement.select.no-select-all
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
     level: WARNING
     engine: MSSQL
-  - type: statement.select.no-select-all
+  - type: STATEMENT_SELECT_NO_SELECT_ALL
     level: WARNING
     engine: MARIADB
-  - type: statement.where.require.select
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
     level: WARNING
     engine: MYSQL
-  - type: statement.where.require.select
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
     level: WARNING
     engine: TIDB
-  - type: statement.where.require.select
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
     level: WARNING
     engine: POSTGRES
-  - type: statement.where.require.select
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
     level: WARNING
     engine: ORACLE
-  - type: statement.where.require.select
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
     level: WARNING
     engine: OCEANBASE
-  - type: statement.where.require.select
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
     level: WARNING
     engine: SNOWFLAKE
-  - type: statement.where.require.select
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
     level: WARNING
     engine: MSSQL
-  - type: statement.where.require.select
+  - type: STATEMENT_WHERE_REQUIRE_SELECT
     level: WARNING
     engine: MARIADB
-  - type: statement.where.require.update-delete
+  - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
     level: WARNING
     engine: MYSQL
-  - type: statement.where.require.update-delete
+  - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
     level: WARNING
     engine: TIDB
-  - type: statement.where.require.update-delete
+  - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
     level: WARNING
     engine: POSTGRES
-  - type: statement.where.require.update-delete
+  - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
     level: WARNING
     engine: ORACLE
-  - type: statement.where.require.update-delete
+  - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
     level: WARNING
     engine: OCEANBASE
-  - type: statement.where.require.update-delete
+  - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
     level: WARNING
     engine: SNOWFLAKE
-  - type: statement.where.require.update-delete
+  - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
     level: WARNING
     engine: MSSQL
-  - type: statement.where.require.update-delete
+  - type: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
     level: WARNING
     engine: MARIADB
-  - type: statement.where.no-leading-wildcard-like
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
     level: WARNING
     engine: MYSQL
-  - type: statement.where.no-leading-wildcard-like
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
     level: WARNING
     engine: TIDB
-  - type: statement.where.no-leading-wildcard-like
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
     level: WARNING
     engine: POSTGRES
-  - type: statement.where.no-leading-wildcard-like
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
     level: WARNING
     engine: ORACLE
-  - type: statement.where.no-leading-wildcard-like
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
     level: WARNING
     engine: OCEANBASE
-  - type: statement.where.no-leading-wildcard-like
+  - type: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
     level: WARNING
     engine: MARIADB
-  - type: statement.disallow-commit
+  - type: STATEMENT_DISALLOW_COMMIT
     level: WARNING
     engine: MYSQL
-  - type: statement.disallow-commit
+  - type: STATEMENT_DISALLOW_COMMIT
     level: WARNING
     engine: TIDB
-  - type: statement.disallow-commit
+  - type: STATEMENT_DISALLOW_COMMIT
     level: WARNING
     engine: POSTGRES
-  - type: statement.disallow-commit
+  - type: STATEMENT_DISALLOW_COMMIT
     level: WARNING
     engine: OCEANBASE
-  - type: statement.disallow-commit
+  - type: STATEMENT_DISALLOW_COMMIT
     level: WARNING
     engine: MARIADB
-  - type: statement.disallow-on-del-cascade
+  - type: STATEMENT_DISALLOW_ON_DEL_CASCADE
     level: ERROR
     engine: POSTGRES
-  - type: statement.disallow-rm-tbl-cascade
+  - type: STATEMENT_DISALLOW_RM_TBL_CASCADE
     level: ERROR
     engine: POSTGRES
-  - type: statement.disallow-limit
+  - type: STATEMENT_DISALLOW_LIMIT
     level: WARNING
     engine: MYSQL
-  - type: statement.disallow-limit
+  - type: STATEMENT_DISALLOW_LIMIT
     level: WARNING
     engine: TIDB
-  - type: statement.disallow-limit
+  - type: STATEMENT_DISALLOW_LIMIT
     level: WARNING
     engine: OCEANBASE
-  - type: statement.disallow-limit
+  - type: STATEMENT_DISALLOW_LIMIT
     level: WARNING
     engine: MARIADB
-  - type: statement.disallow-order-by
+  - type: STATEMENT_DISALLOW_ORDER_BY
     level: WARNING
     engine: MYSQL
-  - type: statement.disallow-order-by
+  - type: STATEMENT_DISALLOW_ORDER_BY
     level: WARNING
     engine: TIDB
-  - type: statement.disallow-order-by
+  - type: STATEMENT_DISALLOW_ORDER_BY
     level: WARNING
     engine: OCEANBASE
-  - type: statement.disallow-order-by
+  - type: STATEMENT_DISALLOW_ORDER_BY
     level: WARNING
     engine: MARIADB
-  - type: statement.merge-alter-table
+  - type: STATEMENT_MERGE_ALTER_TABLE
     level: WARNING
     engine: MYSQL
-  - type: statement.merge-alter-table
+  - type: STATEMENT_MERGE_ALTER_TABLE
     level: WARNING
     engine: TIDB
-  - type: statement.merge-alter-table
+  - type: STATEMENT_MERGE_ALTER_TABLE
     level: WARNING
     engine: POSTGRES
-  - type: statement.merge-alter-table
+  - type: STATEMENT_MERGE_ALTER_TABLE
     level: WARNING
     engine: OCEANBASE
-  - type: statement.merge-alter-table
+  - type: STATEMENT_MERGE_ALTER_TABLE
     level: WARNING
     engine: MARIADB
-  - type: statement.insert.must-specify-column
+  - type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
     level: WARNING
     engine: MYSQL
-  - type: statement.insert.must-specify-column
+  - type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
     level: WARNING
     engine: TIDB
-  - type: statement.insert.must-specify-column
+  - type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
     level: WARNING
     engine: POSTGRES
-  - type: statement.insert.must-specify-column
+  - type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
     level: WARNING
     engine: ORACLE
-  - type: statement.insert.must-specify-column
+  - type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
     level: WARNING
     engine: OCEANBASE
-  - type: statement.insert.must-specify-column
+  - type: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
     level: WARNING
     engine: MARIADB
-  - type: statement.insert.disallow-order-by-rand
+  - type: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
     level: WARNING
     engine: MYSQL
-  - type: statement.insert.disallow-order-by-rand
+  - type: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
     level: WARNING
     engine: TIDB
-  - type: statement.insert.disallow-order-by-rand
+  - type: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
     level: WARNING
     engine: POSTGRES
-  - type: statement.insert.disallow-order-by-rand
+  - type: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
     level: WARNING
     engine: OCEANBASE
-  - type: statement.insert.disallow-order-by-rand
+  - type: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
     level: WARNING
     engine: MARIADB
-  - type: statement.insert.row-limit
+  - type: STATEMENT_INSERT_ROW_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: MYSQL
-  - type: statement.insert.row-limit
+  - type: STATEMENT_INSERT_ROW_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: POSTGRES
-  - type: statement.insert.row-limit
+  - type: STATEMENT_INSERT_ROW_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: OCEANBASE
-  - type: statement.insert.row-limit
+  - type: STATEMENT_INSERT_ROW_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: MARIADB
-  - type: statement.affected-row-limit
+  - type: STATEMENT_AFFECTED_ROW_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: MYSQL
-  - type: statement.affected-row-limit
+  - type: STATEMENT_AFFECTED_ROW_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: POSTGRES
-  - type: statement.affected-row-limit
+  - type: STATEMENT_AFFECTED_ROW_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: OCEANBASE
-  - type: statement.affected-row-limit
+  - type: STATEMENT_AFFECTED_ROW_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: MARIADB
-  - type: statement.dml-dry-run
+  - type: STATEMENT_DML_DRY_RUN
     level: ERROR
     engine: MYSQL
-  - type: statement.dml-dry-run
+  - type: STATEMENT_DML_DRY_RUN
     level: ERROR
     engine: POSTGRES
-  - type: statement.dml-dry-run
+  - type: STATEMENT_DML_DRY_RUN
     level: ERROR
     engine: OCEANBASE
-  - type: statement.dml-dry-run
+  - type: STATEMENT_DML_DRY_RUN
     level: ERROR
     engine: MARIADB
-  - type: statement.dml-dry-run
+  - type: STATEMENT_DML_DRY_RUN
     level: ERROR
     engine: TIDB
-  - type: statement.dml-dry-run
+  - type: STATEMENT_DML_DRY_RUN
     level: ERROR
     engine: ORACLE
-  - type: statement.disallow-add-column-with-default
+  - type: STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT
     level: WARNING
     engine: POSTGRES
-  - type: statement.add-check-not-valid
+  - type: STATEMENT_ADD_CHECK_NOT_VALID
     level: WARNING
     engine: POSTGRES
-  - type: statement.disallow-add-not-null
+  - type: STATEMENT_DISALLOW_ADD_NOT_NULL
     level: WARNING
     engine: POSTGRES
-  - type: statement.select-full-table-scan
+  - type: STATEMENT_SELECT_FULL_TABLE_SCAN
     level: WARNING
     engine: MYSQL
-  - type: statement.select-full-table-scan
+  - type: STATEMENT_SELECT_FULL_TABLE_SCAN
     level: WARNING
     engine: OCEANBASE
-  - type: statement.select-full-table-scan
+  - type: STATEMENT_SELECT_FULL_TABLE_SCAN
     level: WARNING
     engine: MARIADB
-  - type: statement.create-specify-schema
+  - type: STATEMENT_CREATE_SPECIFY_SCHEMA
     level: WARNING
     engine: POSTGRES
-  - type: statement.check-set-role-variable
+  - type: STATEMENT_CHECK_SET_ROLE_VARIABLE
     level: WARNING
     engine: POSTGRES
-  - type: statement.disallow-using-filesort
+  - type: STATEMENT_DISALLOW_USING_FILESORT
     level: WARNING
     engine: MYSQL
-  - type: statement.disallow-using-temporary
+  - type: STATEMENT_DISALLOW_USING_TEMPORARY
     level: WARNING
     engine: MYSQL
-  - type: statement.where.no-equal-null
+  - type: STATEMENT_WHERE_NO_EQUAL_NULL
     level: WARNING
     engine: MYSQL
-  - type: statement.query.minimum-plan-level
+  - type: STATEMENT_QUERY_MINIMUM_PLAN_LEVEL
     level: WARNING
     payload:
       required: true
       maxLength: 64
     engine: MYSQL
-  - type: statement.where.maximum-logical-operator-count
+  - type: STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT
     level: WARNING
     payload:
       number: 10
     engine: MYSQL
-  - type: statement.maximum-limit-value
+  - type: STATEMENT_MAXIMUM_LIMIT_VALUE
     level: WARNING
     payload:
       number: 1000
     engine: MYSQL
-  - type: statement.maximum-limit-value
+  - type: STATEMENT_MAXIMUM_LIMIT_VALUE
     level: WARNING
     payload:
       number: 1000
     engine: OCEANBASE
-  - type: statement.maximum-limit-value
+  - type: STATEMENT_MAXIMUM_LIMIT_VALUE
     level: WARNING
     payload:
       number: 1000
     engine: MARIADB
-  - type: statement.maximum-limit-value
+  - type: STATEMENT_MAXIMUM_LIMIT_VALUE
     level: WARNING
     payload:
       number: 1000
     engine: TIDB
-  - type: statement.maximum-limit-value
+  - type: STATEMENT_MAXIMUM_LIMIT_VALUE
     level: WARNING
     payload:
       number: 1000
     engine: POSTGRES
-  - type: statement.maximum-join-table-count
+  - type: STATEMENT_MAXIMUM_JOIN_TABLE_COUNT
     level: WARNING
     payload:
       number: 10
     engine: MYSQL
-  - type: statement.maximum-statements-in-transaction
+  - type: STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION
     level: WARNING
     payload:
       number: 10
     engine: MYSQL
-  - type: statement.join-strict-column-attrs
+  - type: STATEMENT_JOIN_STRICT_COLUMN_ATTRS
     level: WARNING
     engine: MYSQL
-  - type: statement.disallow-cross-db-queries
+  - type: STATEMENT_DISALLOW_CROSS_DB_QUERIES
     level: WARNING
     engine: MSSQL
-  - type: naming.fully-qualified
+  - type: NAMING_FULLY_QUALIFIED
     level: WARNING
     engine: POSTGRES
-  - type: naming.table
+  - type: NAMING_TABLE
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: MYSQL
-  - type: naming.table
+  - type: NAMING_TABLE
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: TIDB
-  - type: naming.table
+  - type: NAMING_TABLE
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: POSTGRES
-  - type: naming.table
+  - type: NAMING_TABLE
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: ORACLE
-  - type: naming.table
+  - type: NAMING_TABLE
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: OCEANBASE
-  - type: naming.table
+  - type: NAMING_TABLE
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: SNOWFLAKE
-  - type: naming.table
+  - type: NAMING_TABLE
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: MSSQL
-  - type: naming.table
+  - type: NAMING_TABLE
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: MARIADB
-  - type: naming.table.no-keyword
+  - type: NAMING_TABLE_NO_KEYWORD
     level: WARNING
     engine: ORACLE
-  - type: naming.table.no-keyword
+  - type: NAMING_TABLE_NO_KEYWORD
     level: WARNING
     engine: SNOWFLAKE
-  - type: naming.table.no-keyword
+  - type: NAMING_TABLE_NO_KEYWORD
     level: WARNING
     engine: MSSQL
-  - type: naming.column
+  - type: NAMING_COLUMN
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: MYSQL
-  - type: naming.column
+  - type: NAMING_COLUMN
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: TIDB
-  - type: naming.column
+  - type: NAMING_COLUMN
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: POSTGRES
-  - type: naming.column
+  - type: NAMING_COLUMN
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: OCEANBASE
-  - type: naming.column
+  - type: NAMING_COLUMN
     level: WARNING
     payload:
       format: ^[a-z]+(_[a-z]+)*$
       maxLength: 63
     engine: MARIADB
-  - type: naming.index.uk
+  - type: NAMING_INDEX_UK
     level: WARNING
     payload:
       format: ^$|^uk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: MYSQL
-  - type: naming.index.uk
+  - type: NAMING_INDEX_UK
     level: WARNING
     payload:
       format: ^$|^uk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: TIDB
-  - type: naming.index.uk
+  - type: NAMING_INDEX_UK
     level: WARNING
     payload:
       format: ^$|^uk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: POSTGRES
-  - type: naming.index.uk
+  - type: NAMING_INDEX_UK
     level: WARNING
     payload:
       format: ^$|^uk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: OCEANBASE
-  - type: naming.index.uk
+  - type: NAMING_INDEX_UK
     level: WARNING
     payload:
       format: ^$|^uk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: MARIADB
-  - type: naming.index.pk
+  - type: NAMING_INDEX_PK
     level: WARNING
     payload:
       format: ^$|^pk_{{table}}_{{column_list}}$
       maxLength: 63
     engine: POSTGRES
-  - type: naming.index.idx
+  - type: NAMING_INDEX_IDX
     level: WARNING
     payload:
       format: ^$|^idx_{{table}}_{{column_list}}$
       maxLength: 63
     engine: MYSQL
-  - type: naming.index.idx
+  - type: NAMING_INDEX_IDX
     level: WARNING
     payload:
       format: ^$|^idx_{{table}}_{{column_list}}$
       maxLength: 63
     engine: TIDB
-  - type: naming.index.idx
+  - type: NAMING_INDEX_IDX
     level: WARNING
     payload:
       format: ^$|^idx_{{table}}_{{column_list}}$
       maxLength: 63
     engine: POSTGRES
-  - type: naming.index.idx
+  - type: NAMING_INDEX_IDX
     level: WARNING
     payload:
       format: ^$|^idx_{{table}}_{{column_list}}$
       maxLength: 63
     engine: OCEANBASE
-  - type: naming.index.idx
+  - type: NAMING_INDEX_IDX
     level: WARNING
     payload:
       format: ^$|^idx_{{table}}_{{column_list}}$
       maxLength: 63
     engine: MARIADB
-  - type: naming.index.fk
+  - type: NAMING_INDEX_FK
     level: WARNING
     payload:
       format: ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
       maxLength: 63
     engine: MYSQL
-  - type: naming.index.fk
+  - type: NAMING_INDEX_FK
     level: WARNING
     payload:
       format: ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
       maxLength: 63
     engine: TIDB
-  - type: naming.index.fk
+  - type: NAMING_INDEX_FK
     level: WARNING
     payload:
       format: ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
       maxLength: 63
     engine: POSTGRES
-  - type: naming.index.fk
+  - type: NAMING_INDEX_FK
     level: WARNING
     payload:
       format: ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
       maxLength: 63
     engine: OCEANBASE
-  - type: naming.index.fk
+  - type: NAMING_INDEX_FK
     level: WARNING
     payload:
       format: ^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$
       maxLength: 63
     engine: MARIADB
-  - type: naming.column.auto-increment
+  - type: NAMING_COLUMN_AUTO_INCREMENT
     level: WARNING
     payload:
       format: ^id$
       maxLength: 63
     engine: MYSQL
-  - type: naming.column.auto-increment
+  - type: NAMING_COLUMN_AUTO_INCREMENT
     level: WARNING
     payload:
       format: ^id$
       maxLength: 63
     engine: TIDB
-  - type: naming.column.auto-increment
+  - type: NAMING_COLUMN_AUTO_INCREMENT
     level: WARNING
     payload:
       format: ^id$
       maxLength: 63
     engine: OCEANBASE
-  - type: naming.column.auto-increment
+  - type: NAMING_COLUMN_AUTO_INCREMENT
     level: WARNING
     payload:
       format: ^id$
       maxLength: 63
     engine: MARIADB
-  - type: naming.identifier.no-keyword
+  - type: NAMING_IDENTIFIER_NO_KEYWORD
     level: WARNING
     engine: ORACLE
-  - type: naming.identifier.no-keyword
+  - type: NAMING_IDENTIFIER_NO_KEYWORD
     level: WARNING
     engine: SNOWFLAKE
-  - type: naming.identifier.no-keyword
+  - type: NAMING_IDENTIFIER_NO_KEYWORD
     level: WARNING
     engine: MSSQL
-  - type: naming.identifier.no-keyword
+  - type: NAMING_IDENTIFIER_NO_KEYWORD
     level: WARNING
     engine: MYSQL
-  - type: naming.identifier.case
+  - type: NAMING_IDENTIFIER_CASE
     level: WARNING
     payload:
       upper: true
     engine: ORACLE
-  - type: naming.identifier.case
+  - type: NAMING_IDENTIFIER_CASE
     level: WARNING
     payload:
       upper: true
     engine: SNOWFLAKE
-  - type: column.required
+  - type: COLUMN_REQUIRED
     level: WARNING
     payload:
       list:
@@ -710,7 +710,7 @@ ruleList:
         - creator_id
         - updater_id
     engine: MYSQL
-  - type: column.required
+  - type: COLUMN_REQUIRED
     level: WARNING
     payload:
       list:
@@ -720,7 +720,7 @@ ruleList:
         - creator_id
         - updater_id
     engine: TIDB
-  - type: column.required
+  - type: COLUMN_REQUIRED
     level: WARNING
     payload:
       list:
@@ -730,7 +730,7 @@ ruleList:
         - creator_id
         - updater_id
     engine: POSTGRES
-  - type: column.required
+  - type: COLUMN_REQUIRED
     level: WARNING
     payload:
       list:
@@ -740,7 +740,7 @@ ruleList:
         - creator_id
         - updater_id
     engine: ORACLE
-  - type: column.required
+  - type: COLUMN_REQUIRED
     level: WARNING
     payload:
       list:
@@ -750,7 +750,7 @@ ruleList:
         - creator_id
         - updater_id
     engine: OCEANBASE
-  - type: column.required
+  - type: COLUMN_REQUIRED
     level: WARNING
     payload:
       list:
@@ -760,7 +760,7 @@ ruleList:
         - creator_id
         - updater_id
     engine: SNOWFLAKE
-  - type: column.required
+  - type: COLUMN_REQUIRED
     level: WARNING
     payload:
       list:
@@ -770,7 +770,7 @@ ruleList:
         - creator_id
         - updater_id
     engine: MSSQL
-  - type: column.required
+  - type: COLUMN_REQUIRED
     level: WARNING
     payload:
       list:
@@ -780,456 +780,456 @@ ruleList:
         - creator_id
         - updater_id
     engine: MARIADB
-  - type: column.required
+  - type: COLUMN_REQUIRED
     level: WARNING
     engine: SNOWFLAKE
     payload:
       list:
         - ID
-  - type: column.required
+  - type: COLUMN_REQUIRED
     level: WARNING
     engine: ORACLE
     payload:
       list:
         - ID
-  - type: column.type-disallow-list
+  - type: COLUMN_TYPE_DISALLOW_LIST
     level: WARNING
     payload:
       list:
         - JSON
     engine: MYSQL
-  - type: column.type-disallow-list
+  - type: COLUMN_TYPE_DISALLOW_LIST
     level: WARNING
     payload:
       list:
         - JSON
     engine: TIDB
-  - type: column.type-disallow-list
+  - type: COLUMN_TYPE_DISALLOW_LIST
     level: WARNING
     payload:
       list:
         - JSON
     engine: POSTGRES
-  - type: column.type-disallow-list
+  - type: COLUMN_TYPE_DISALLOW_LIST
     level: WARNING
     payload:
       list:
         - JSON
     engine: ORACLE
-  - type: column.type-disallow-list
+  - type: COLUMN_TYPE_DISALLOW_LIST
     level: WARNING
     payload:
       list:
         - JSON
     engine: OCEANBASE
-  - type: column.type-disallow-list
+  - type: COLUMN_TYPE_DISALLOW_LIST
     level: WARNING
     payload:
       list:
         - JSON
     engine: MARIADB
-  - type: column.type-disallow-list
+  - type: COLUMN_TYPE_DISALLOW_LIST
     level: WARNING
     payload:
       list:
         - JSON
     engine: MSSQL
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: MYSQL
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: TIDB
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: POSTGRES
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: ORACLE
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: OCEANBASE
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: SNOWFLAKE
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: MSSQL
-  - type: column.no-null
+  - type: COLUMN_NO_NULL
     level: WARNING
     engine: MARIADB
-  - type: column.disallow-change-type
+  - type: COLUMN_DISALLOW_CHANGE_TYPE
     level: ERROR
     engine: MYSQL
-  - type: column.disallow-change-type
+  - type: COLUMN_DISALLOW_CHANGE_TYPE
     level: ERROR
     engine: TIDB
-  - type: column.disallow-change-type
+  - type: COLUMN_DISALLOW_CHANGE_TYPE
     level: ERROR
     engine: POSTGRES
-  - type: column.disallow-change-type
+  - type: COLUMN_DISALLOW_CHANGE_TYPE
     level: ERROR
     engine: OCEANBASE
-  - type: column.disallow-change-type
+  - type: COLUMN_DISALLOW_CHANGE_TYPE
     level: ERROR
     engine: MARIADB
-  - type: column.disallow-drop-in-index
+  - type: COLUMN_DISALLOW_DROP_IN_INDEX
     level: ERROR
     engine: MYSQL
-  - type: column.disallow-drop-in-index
+  - type: COLUMN_DISALLOW_DROP_IN_INDEX
     level: ERROR
     engine: TIDB
-  - type: column.disallow-drop-in-index
+  - type: COLUMN_DISALLOW_DROP_IN_INDEX
     level: ERROR
     engine: OCEANBASE
-  - type: column.disallow-drop-in-index
+  - type: COLUMN_DISALLOW_DROP_IN_INDEX
     level: ERROR
     engine: MARIADB
-  - type: column.set-default-for-not-null
+  - type: COLUMN_SET_DEFAULT_FOR_NOT_NULL
     level: ERROR
     engine: MYSQL
-  - type: column.set-default-for-not-null
+  - type: COLUMN_SET_DEFAULT_FOR_NOT_NULL
     level: ERROR
     engine: TIDB
-  - type: column.set-default-for-not-null
+  - type: COLUMN_SET_DEFAULT_FOR_NOT_NULL
     level: ERROR
     engine: OCEANBASE
-  - type: column.set-default-for-not-null
+  - type: COLUMN_SET_DEFAULT_FOR_NOT_NULL
     level: ERROR
     engine: MARIADB
-  - type: column.disallow-change
+  - type: COLUMN_DISALLOW_CHANGE
     level: ERROR
     engine: MYSQL
-  - type: column.disallow-change
+  - type: COLUMN_DISALLOW_CHANGE
     level: ERROR
     engine: TIDB
-  - type: column.disallow-change
+  - type: COLUMN_DISALLOW_CHANGE
     level: ERROR
     engine: OCEANBASE
-  - type: column.disallow-change
+  - type: COLUMN_DISALLOW_CHANGE
     level: ERROR
     engine: MARIADB
-  - type: column.disallow-changing-order
+  - type: COLUMN_DISALLOW_CHANGING_ORDER
     level: ERROR
     engine: MYSQL
-  - type: column.disallow-changing-order
+  - type: COLUMN_DISALLOW_CHANGING_ORDER
     level: ERROR
     engine: TIDB
-  - type: column.disallow-changing-order
+  - type: COLUMN_DISALLOW_CHANGING_ORDER
     level: ERROR
     engine: OCEANBASE
-  - type: column.disallow-changing-order
+  - type: COLUMN_DISALLOW_CHANGING_ORDER
     level: ERROR
     engine: MARIADB
-  - type: column.auto-increment-must-integer
+  - type: COLUMN_AUTO_INCREMENT_MUST_INTEGER
     level: ERROR
     engine: MYSQL
-  - type: column.auto-increment-must-integer
+  - type: COLUMN_AUTO_INCREMENT_MUST_INTEGER
     level: ERROR
     engine: TIDB
-  - type: column.auto-increment-must-integer
+  - type: COLUMN_AUTO_INCREMENT_MUST_INTEGER
     level: ERROR
     engine: OCEANBASE
-  - type: column.auto-increment-must-integer
+  - type: COLUMN_AUTO_INCREMENT_MUST_INTEGER
     level: ERROR
     engine: MARIADB
-  - type: column.disallow-set-charset
+  - type: COLUMN_DISALLOW_SET_CHARSET
     level: ERROR
     engine: MYSQL
-  - type: column.disallow-set-charset
+  - type: COLUMN_DISALLOW_SET_CHARSET
     level: ERROR
     engine: TIDB
-  - type: column.disallow-set-charset
+  - type: COLUMN_DISALLOW_SET_CHARSET
     level: ERROR
     engine: OCEANBASE
-  - type: column.disallow-set-charset
+  - type: COLUMN_DISALLOW_SET_CHARSET
     level: ERROR
     engine: MARIADB
-  - type: column.auto-increment-must-unsigned
+  - type: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
     level: ERROR
     engine: MYSQL
-  - type: column.auto-increment-must-unsigned
+  - type: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
     level: ERROR
     engine: TIDB
-  - type: column.auto-increment-must-unsigned
+  - type: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
     level: ERROR
     engine: OCEANBASE
-  - type: column.auto-increment-must-unsigned
+  - type: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
     level: ERROR
     engine: MARIADB
-  - type: column.comment
+  - type: COLUMN_COMMENT
     level: WARNING
     payload:
       required: true
       maxLength: 64
     engine: MYSQL
-  - type: column.comment
+  - type: COLUMN_COMMENT
     level: WARNING
     payload:
       required: true
       maxLength: 64
     engine: TIDB
-  - type: column.comment
+  - type: COLUMN_COMMENT
     level: WARNING
     payload:
       required: true
       maxLength: 64
     engine: OCEANBASE
-  - type: column.comment
+  - type: COLUMN_COMMENT
     level: WARNING
     payload:
       required: true
       maxLength: 64
     engine: MARIADB
-  - type: column.maximum-character-length
+  - type: COLUMN_MAXIMUM_CHARACTER_LENGTH
     level: WARNING
     payload:
       number: 20
     engine: MYSQL
-  - type: column.maximum-character-length
+  - type: COLUMN_MAXIMUM_CHARACTER_LENGTH
     level: WARNING
     payload:
       number: 20
     engine: TIDB
-  - type: column.maximum-character-length
+  - type: COLUMN_MAXIMUM_CHARACTER_LENGTH
     level: WARNING
     payload:
       number: 20
     engine: POSTGRES
-  - type: column.maximum-character-length
+  - type: COLUMN_MAXIMUM_CHARACTER_LENGTH
     level: WARNING
     payload:
       number: 20
     engine: ORACLE
-  - type: column.maximum-character-length
+  - type: COLUMN_MAXIMUM_CHARACTER_LENGTH
     level: WARNING
     payload:
       number: 20
     engine: OCEANBASE
-  - type: column.maximum-character-length
+  - type: COLUMN_MAXIMUM_CHARACTER_LENGTH
     level: WARNING
     payload:
       number: 20
     engine: MARIADB
-  - type: column.maximum-varchar-length
+  - type: COLUMN_MAXIMUM_VARCHAR_LENGTH
     level: WARNING
     payload:
       number: 2560
     engine: MYSQL
-  - type: column.maximum-varchar-length
+  - type: COLUMN_MAXIMUM_VARCHAR_LENGTH
     level: WARNING
     payload:
       number: 2560
     engine: OCEANBASE
-  - type: column.maximum-varchar-length
+  - type: COLUMN_MAXIMUM_VARCHAR_LENGTH
     level: WARNING
     payload:
       number: 2560
     engine: MARIADB
-  - type: column.maximum-varchar-length
+  - type: COLUMN_MAXIMUM_VARCHAR_LENGTH
     level: WARNING
     payload:
       number: 2560
     engine: ORACLE
-  - type: column.maximum-varchar-length
+  - type: COLUMN_MAXIMUM_VARCHAR_LENGTH
     level: WARNING
     payload:
       number: 2560
     engine: SNOWFLAKE
-  - type: column.maximum-varchar-length
+  - type: COLUMN_MAXIMUM_VARCHAR_LENGTH
     level: WARNING
     payload:
       number: 2560
     engine: MSSQL
-  - type: column.auto-increment-initial-value
+  - type: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
     level: WARNING
     payload:
       number: 1
     engine: MYSQL
-  - type: column.auto-increment-initial-value
+  - type: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
     level: WARNING
     payload:
       number: 1
     engine: TIDB
-  - type: column.auto-increment-initial-value
+  - type: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
     level: WARNING
     payload:
       number: 1
     engine: OCEANBASE
-  - type: column.auto-increment-initial-value
+  - type: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
     level: WARNING
     payload:
       number: 1
     engine: MARIADB
-  - type: column.current-time-count-limit
+  - type: COLUMN_CURRENT_TIME_COUNT_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: MYSQL
-  - type: column.current-time-count-limit
+  - type: COLUMN_CURRENT_TIME_COUNT_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: TIDB
-  - type: column.current-time-count-limit
+  - type: COLUMN_CURRENT_TIME_COUNT_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: OCEANBASE
-  - type: column.current-time-count-limit
+  - type: COLUMN_CURRENT_TIME_COUNT_LIMIT
     level: WARNING
     payload:
       number: 1000
     engine: MARIADB
-  - type: column.require-default
+  - type: COLUMN_REQUIRE_DEFAULT
     level: WARNING
     engine: MYSQL
-  - type: column.require-default
+  - type: COLUMN_REQUIRE_DEFAULT
     level: WARNING
     engine: TIDB
-  - type: column.require-default
+  - type: COLUMN_REQUIRE_DEFAULT
     level: WARNING
     engine: POSTGRES
-  - type: column.require-default
+  - type: COLUMN_REQUIRE_DEFAULT
     level: WARNING
     engine: ORACLE
-  - type: column.require-default
+  - type: COLUMN_REQUIRE_DEFAULT
     level: WARNING
     engine: OCEANBASE
-  - type: column.require-default
+  - type: COLUMN_REQUIRE_DEFAULT
     level: WARNING
     engine: MARIADB
-  - type: column.default-disallow-volatile
+  - type: COLUMN_DEFAULT_DISALLOW_VOLATILE
     level: WARNING
     engine: POSTGRES
-  - type: schema.backward-compatibility
+  - type: SCHEMA_BACKWARD_COMPATIBILITY
     level: WARNING
     engine: MYSQL
-  - type: schema.backward-compatibility
+  - type: SCHEMA_BACKWARD_COMPATIBILITY
     level: WARNING
     engine: TIDB
-  - type: schema.backward-compatibility
+  - type: SCHEMA_BACKWARD_COMPATIBILITY
     level: WARNING
     engine: POSTGRES
-  - type: schema.backward-compatibility
+  - type: SCHEMA_BACKWARD_COMPATIBILITY
     level: WARNING
     engine: OCEANBASE
-  - type: schema.backward-compatibility
+  - type: SCHEMA_BACKWARD_COMPATIBILITY
     level: WARNING
     engine: SNOWFLAKE
-  - type: schema.backward-compatibility
+  - type: SCHEMA_BACKWARD_COMPATIBILITY
     level: WARNING
     engine: MSSQL
-  - type: schema.backward-compatibility
+  - type: SCHEMA_BACKWARD_COMPATIBILITY
     level: WARNING
     engine: MARIADB
-  - type: database.drop-empty-database
+  - type: DATABASE_DROP_EMPTY_DATABASE
     level: ERROR
     engine: MYSQL
-  - type: database.drop-empty-database
+  - type: DATABASE_DROP_EMPTY_DATABASE
     level: ERROR
     engine: TIDB
-  - type: database.drop-empty-database
+  - type: DATABASE_DROP_EMPTY_DATABASE
     level: ERROR
     engine: OCEANBASE
-  - type: database.drop-empty-database
+  - type: DATABASE_DROP_EMPTY_DATABASE
     level: ERROR
     engine: MARIADB
-  - type: index.no-duplicate-column
+  - type: INDEX_NO_DUPLICATE_COLUMN
     level: ERROR
     engine: MYSQL
-  - type: index.no-duplicate-column
+  - type: INDEX_NO_DUPLICATE_COLUMN
     level: ERROR
     engine: TIDB
-  - type: index.no-duplicate-column
+  - type: INDEX_NO_DUPLICATE_COLUMN
     level: ERROR
     engine: POSTGRES
-  - type: index.no-duplicate-column
+  - type: INDEX_NO_DUPLICATE_COLUMN
     level: ERROR
     engine: OCEANBASE
-  - type: index.no-duplicate-column
+  - type: INDEX_NO_DUPLICATE_COLUMN
     level: ERROR
     engine: MARIADB
-  - type: index.type-no-blob
+  - type: INDEX_TYPE_NO_BLOB
     level: ERROR
     engine: MYSQL
-  - type: index.type-no-blob
+  - type: INDEX_TYPE_NO_BLOB
     level: ERROR
     engine: TIDB
-  - type: index.type-no-blob
+  - type: INDEX_TYPE_NO_BLOB
     level: ERROR
     engine: OCEANBASE
-  - type: index.type-no-blob
+  - type: INDEX_TYPE_NO_BLOB
     level: ERROR
     engine: MARIADB
-  - type: index.pk-type-limit
+  - type: INDEX_PK_TYPE_LIMIT
     level: WARNING
     engine: MYSQL
-  - type: index.pk-type-limit
+  - type: INDEX_PK_TYPE_LIMIT
     level: WARNING
     engine: TIDB
-  - type: index.pk-type-limit
+  - type: INDEX_PK_TYPE_LIMIT
     level: WARNING
     engine: OCEANBASE
-  - type: index.pk-type-limit
+  - type: INDEX_PK_TYPE_LIMIT
     level: WARNING
     engine: MARIADB
-  - type: index.key-number-limit
+  - type: INDEX_KEY_NUMBER_LIMIT
     level: WARNING
     payload:
       number: 5
     engine: MYSQL
-  - type: index.key-number-limit
+  - type: INDEX_KEY_NUMBER_LIMIT
     level: WARNING
     payload:
       number: 5
     engine: TIDB
-  - type: index.key-number-limit
+  - type: INDEX_KEY_NUMBER_LIMIT
     level: WARNING
     payload:
       number: 5
     engine: POSTGRES
-  - type: index.key-number-limit
+  - type: INDEX_KEY_NUMBER_LIMIT
     level: WARNING
     payload:
       number: 5
     engine: ORACLE
-  - type: index.key-number-limit
+  - type: INDEX_KEY_NUMBER_LIMIT
     level: WARNING
     payload:
       number: 5
     engine: OCEANBASE
-  - type: index.key-number-limit
+  - type: INDEX_KEY_NUMBER_LIMIT
     level: WARNING
     payload:
       number: 5
     engine: MARIADB
-  - type: index.total-number-limit
+  - type: INDEX_TOTAL_NUMBER_LIMIT
     level: WARNING
     payload:
       number: 5
     engine: MYSQL
-  - type: index.total-number-limit
+  - type: INDEX_TOTAL_NUMBER_LIMIT
     level: WARNING
     payload:
       number: 5
     engine: TIDB
-  - type: index.total-number-limit
+  - type: INDEX_TOTAL_NUMBER_LIMIT
     level: WARNING
     payload:
       number: 5
     engine: POSTGRES
-  - type: index.total-number-limit
+  - type: INDEX_TOTAL_NUMBER_LIMIT
     level: WARNING
     payload:
       number: 5
     engine: OCEANBASE
-  - type: index.total-number-limit
+  - type: INDEX_TOTAL_NUMBER_LIMIT
     level: WARNING
     payload:
       number: 5
     engine: MARIADB
-  - type: index.primary-key-type-allowlist
+  - type: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
     level: ERROR
     payload:
       list:
@@ -1238,7 +1238,7 @@ ruleList:
         - INT
         - BIGINT
     engine: MYSQL
-  - type: index.primary-key-type-allowlist
+  - type: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
     level: ERROR
     payload:
       list:
@@ -1247,7 +1247,7 @@ ruleList:
         - INT
         - BIGINT
     engine: TIDB
-  - type: index.primary-key-type-allowlist
+  - type: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
     level: ERROR
     payload:
       list:
@@ -1256,7 +1256,7 @@ ruleList:
         - INT
         - BIGINT
     engine: POSTGRES
-  - type: index.primary-key-type-allowlist
+  - type: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
     level: ERROR
     payload:
       list:
@@ -1265,103 +1265,103 @@ ruleList:
         - INT
         - BIGINT
     engine: OCEANBASE
-  - type: index.create-concurrently
+  - type: INDEX_CREATE_CONCURRENTLY
     level: WARNING
     engine: POSTGRES
-  - type: index.type-allow-list
+  - type: INDEX_TYPE_ALLOW_LIST
     level: WARNING
     payload:
       list:
         - BTREE
         - HASH
     engine: MYSQL
-  - type: index.not-redundant
+  - type: INDEX_NOT_REDUNDANT
     level: WARNING
     engine: MSSQL
-  - type: system.charset.allowlist
+  - type: SYSTEM_CHARSET_ALLOWLIST
     level: WARNING
     payload:
       list:
         - utf8mb4
     engine: MYSQL
-  - type: system.charset.allowlist
+  - type: SYSTEM_CHARSET_ALLOWLIST
     level: WARNING
     payload:
       list:
         - utf8mb4
     engine: TIDB
-  - type: system.charset.allowlist
+  - type: SYSTEM_CHARSET_ALLOWLIST
     level: WARNING
     payload:
       list:
         - utf8mb4
     engine: POSTGRES
-  - type: system.charset.allowlist
+  - type: SYSTEM_CHARSET_ALLOWLIST
     level: WARNING
     payload:
       list:
         - utf8mb4
     engine: OCEANBASE
-  - type: system.charset.allowlist
+  - type: SYSTEM_CHARSET_ALLOWLIST
     level: WARNING
     payload:
       list:
         - utf8mb4
     engine: MARIADB
-  - type: system.collation.allowlist
+  - type: SYSTEM_COLLATION_ALLOWLIST
     level: WARNING
     payload:
       list:
         - utf8mb4_0900_ai_ci
     engine: MYSQL
-  - type: system.collation.allowlist
+  - type: SYSTEM_COLLATION_ALLOWLIST
     level: WARNING
     payload:
       list:
         - utf8mb4_0900_ai_ci
     engine: TIDB
-  - type: system.collation.allowlist
+  - type: SYSTEM_COLLATION_ALLOWLIST
     level: WARNING
     payload:
       list:
         - utf8mb4_0900_ai_ci
     engine: POSTGRES
-  - type: system.collation.allowlist
+  - type: SYSTEM_COLLATION_ALLOWLIST
     level: WARNING
     payload:
       list:
         - utf8mb4_0900_ai_ci
     engine: OCEANBASE
-  - type: system.collation.allowlist
+  - type: SYSTEM_COLLATION_ALLOWLIST
     level: WARNING
     payload:
       list:
         - utf8mb4_0900_ai_ci
     engine: MARIADB
-  - type: system.comment.length
+  - type: SYSTEM_COMMENT_LENGTH
     level: WARNING
     payload:
       number: 64
     engine: POSTGRES
-  - type: system.procedure.disallow-create
+  - type: SYSTEM_PROCEDURE_DISALLOW_CREATE
     level: WARNING
     engine: MYSQL
-  - type: system.procedure.disallow-create
+  - type: SYSTEM_PROCEDURE_DISALLOW_CREATE
     level: WARNING
     engine: MSSQL
-  - type: system.event.disallow-create
+  - type: SYSTEM_EVENT_DISALLOW_CREATE
     level: WARNING
     engine: MYSQL
-  - type: system.view.disallow-create
+  - type: SYSTEM_VIEW_DISALLOW_CREATE
     level: WARNING
     engine: MYSQL
-  - type: system.function.disallow-create
+  - type: SYSTEM_FUNCTION_DISALLOW_CREATE
     level: WARNING
     engine: MYSQL
-  - type: system.function.disallow-create
+  - type: SYSTEM_FUNCTION_DISALLOW_CREATE
     level: WARNING
     engine: MSSQL
-  - type: system.function.disallowed-list
+  - type: SYSTEM_FUNCTION_DISALLOWED_LIST
     level: WARNING
     payload:
       list:
@@ -1369,6 +1369,6 @@ ruleList:
         - UUID
         - SLEEP
     engine: MYSQL
-  - type: statement.object-owner-check
+  - type: STATEMENT_OBJECT_OWNER_CHECK
     level: WARNING
     engine: POSTGRES

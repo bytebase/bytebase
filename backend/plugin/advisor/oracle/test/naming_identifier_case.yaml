@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 309
-      title: naming.identifier.case
+      title: NAMING_IDENTIFIER_CASE
       content: Identifier "table" should be upper case
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 309
-      title: naming.identifier.case
+      title: NAMING_IDENTIFIER_CASE
       content: Identifier "Tt" should be upper case
       startposition:
         line: 1

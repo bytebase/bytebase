@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleStatementAddColumnWithoutPosition, &StatementAddColumnWithoutPositionAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_ADD_COLUMN_WITHOUT_POSITION, &StatementAddColumnWithoutPositionAdvisor{})
 }
 
 // StatementAddColumnWithoutPositionAdvisor is the advisor checking for checking no position in ADD COLUMN clause.
@@ -40,7 +40,7 @@ func (*StatementAddColumnWithoutPositionAdvisor) Check(_ context.Context, checkC
 	}
 
 	// Create the rule
-	rule := NewStatementAddColumnWithoutPositionRule(level, string(checkCtx.Rule.Type))
+	rule := NewStatementAddColumnWithoutPositionRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

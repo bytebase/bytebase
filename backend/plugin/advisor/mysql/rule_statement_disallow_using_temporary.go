@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleStatementDisallowUsingTemporary, &StatementDisallowUsingTemporaryAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_DISALLOW_USING_TEMPORARY, &StatementDisallowUsingTemporaryAdvisor{})
 }
 
 // StatementDisallowUsingTemporaryAdvisor is the advisor checking for using temporary.
@@ -42,7 +42,7 @@ func (*StatementDisallowUsingTemporaryAdvisor) Check(ctx context.Context, checkC
 	}
 
 	// Create the rule
-	rule := NewStatementDisallowUsingTemporaryRule(ctx, level, string(checkCtx.Rule.Type), checkCtx.Driver)
+	rule := NewStatementDisallowUsingTemporaryRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

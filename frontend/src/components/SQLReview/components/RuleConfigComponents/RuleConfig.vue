@@ -59,7 +59,7 @@
       />
       <TemplateComponent
         v-else-if="config.payload.type === 'TEMPLATE'"
-        :rule-type="rule.type"
+        :rule-type="ruleTypeToString(rule.type)"
         :value="payload[index] as string"
         :config="config"
         :disabled="disabled"
@@ -75,7 +75,7 @@ import { NTooltip } from "naive-ui";
 import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RuleConfigComponent, RuleTemplateV2 } from "@/types/sqlReview";
-import { getRuleLocalizationKey } from "@/types/sqlReview";
+import { getRuleLocalizationKey, ruleTypeToString } from "@/types/sqlReview";
 import BooleanComponent from "./BooleanComponent.vue";
 import NumberComponent from "./NumberComponent.vue";
 import StringArrayComponent from "./StringArrayComponent.vue";
@@ -95,14 +95,14 @@ const payload = ref<PayloadValueType[]>([]);
 
 const configTitle = (config: RuleConfigComponent): string => {
   const key = `sql-review.rule.${getRuleLocalizationKey(
-    props.rule.type
+    ruleTypeToString(props.rule.type)
   )}.component.${config.key}.title`;
   return t(key);
 };
 
 const configTooltip = (config: RuleConfigComponent): string => {
   const key = `sql-review.rule.${getRuleLocalizationKey(
-    props.rule.type
+    ruleTypeToString(props.rule.type)
   )}.component.${config.key}.tooltip`;
   return te(key) ? t(key) : "";
 };

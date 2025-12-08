@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementNoLeadingWildcardLike, &StatementNoLeadingWildcardLikeAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE, &StatementNoLeadingWildcardLikeAdvisor{})
 }
 
 // StatementNoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.
@@ -40,7 +40,7 @@ func (*StatementNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx 
 	rule := &statementNoLeadingWildcardLikeRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		statementsText:     checkCtx.Statements,
 		reportedStatements: make(map[antlr.ParserRuleContext]bool),

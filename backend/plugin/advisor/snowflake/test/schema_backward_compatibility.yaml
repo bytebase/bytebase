@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 101
-      title: schema.backward-compatibility
+      title: SCHEMA_BACKWARD_COMPATIBILITY
       content: Drop database "DB" may cause incompatibility with the existing data and code
       startposition:
         line: 1
@@ -14,7 +14,7 @@
   want:
     - status: 2
       code: 112
-      title: schema.backward-compatibility
+      title: SCHEMA_BACKWARD_COMPATIBILITY
       content: Drop schema "TEST_DB.SCHEMA1" may cause incompatibility with the existing data and code
       startposition:
         line: 1
@@ -25,7 +25,7 @@
   want:
     - status: 2
       code: 103
-      title: schema.backward-compatibility
+      title: SCHEMA_BACKWARD_COMPATIBILITY
       content: Drop table "TEST_DB.PUBLIC.T" may cause incompatibility with the existing data and code
       startposition:
         line: 1
@@ -36,7 +36,7 @@
   want:
     - status: 2
       code: 105
-      title: schema.backward-compatibility
+      title: SCHEMA_BACKWARD_COMPATIBILITY
       content: Drop column "COL1" may cause incompatibility with the existing data and code
       startposition:
         line: 1
@@ -49,7 +49,7 @@
   want:
     - status: 2
       code: 103
-      title: schema.backward-compatibility
+      title: SCHEMA_BACKWARD_COMPATIBILITY
       content: Drop table "TEST_DB.PUBLIC.T" may cause incompatibility with the existing data and code
       startposition:
         line: 2

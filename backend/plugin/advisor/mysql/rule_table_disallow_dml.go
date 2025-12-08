@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableDisallowDML, &TableDisallowDMLAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_DISALLOW_DML, &TableDisallowDMLAdvisor{})
 }
 
 // TableDisallowDMLAdvisor is the advisor checking for disallow DML on specific tables.
@@ -44,7 +44,7 @@ func (*TableDisallowDMLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 
 	// Create the rule
-	rule := NewTableDisallowDMLRule(level, string(checkCtx.Rule.Type), payload.List)
+	rule := NewTableDisallowDMLRule(level, checkCtx.Rule.Type.String(), payload.List)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

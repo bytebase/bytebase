@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 237
-      title: statement.require-lock-option
+      title: STATEMENT_REQUIRE_LOCK_OPTION
       content: ALTER TABLE statement should include LOCK option
       startposition:
         line: 2
@@ -23,7 +23,7 @@
   want:
     - status: 2
       code: 237
-      title: statement.require-lock-option
+      title: STATEMENT_REQUIRE_LOCK_OPTION
       content: ALTER TABLE statement should include LOCK option
       startposition:
         line: 3

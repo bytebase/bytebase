@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleTableNaming, &NamingTableConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_NAMING_TABLE, &NamingTableConventionAdvisor{})
 }
 
 // NamingTableConventionAdvisor is the advisor checking for table naming convention.
@@ -44,7 +44,7 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 	checker := &namingTableConventionChecker{
 		level:     level,
-		title:     string(checkCtx.Rule.Type),
+		title:     checkCtx.Rule.Type.String(),
 		format:    format,
 		maxLength: maxLength,
 	}

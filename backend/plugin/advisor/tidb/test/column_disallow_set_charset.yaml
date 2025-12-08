@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 414
-      title: column.disallow-set-charset
+      title: COLUMN_DISALLOW_SET_CHARSET
       content: Disallow set column charset but "CREATE TABLE t(a varchar(20) CHARSET ascii)" does
       startposition:
         line: 1
@@ -20,7 +20,7 @@
   want:
     - status: 2
       code: 414
-      title: column.disallow-set-charset
+      title: COLUMN_DISALLOW_SET_CHARSET
       content: Disallow set column charset but "ALTER TABLE tech_book ADD COLUMN a varchar(20) CHARSET ascii" does
       startposition:
         line: 1
@@ -31,7 +31,7 @@
   want:
     - status: 2
       code: 414
-      title: column.disallow-set-charset
+      title: COLUMN_DISALLOW_SET_CHARSET
       content: Disallow set column charset but "ALTER TABLE tech_book MODIFY COLUMN id varchar(20) CHARSET ascii" does
       startposition:
         line: 1
@@ -42,7 +42,7 @@
   want:
     - status: 2
       code: 414
-      title: column.disallow-set-charset
+      title: COLUMN_DISALLOW_SET_CHARSET
       content: Disallow set column charset but "ALTER TABLE tech_book CHANGE COLUMN name name varchar(20) CHARSET ascii" does
       startposition:
         line: 1

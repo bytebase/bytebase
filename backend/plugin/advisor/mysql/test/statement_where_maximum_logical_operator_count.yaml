@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 225
-      title: statement.where.maximum-logical-operator-count
+      title: STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT
       content: Number of tokens (5) in IN predicate operation exceeds limit (2) in statement "SELECT * FROM employee WHERE id IN (1, 2, 3, 4, 5);".
       startposition:
         line: 1
@@ -14,7 +14,7 @@
   want:
     - status: 2
       code: 225
-      title: statement.where.maximum-logical-operator-count
+      title: STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT
       content: Number of tokens (5) in the OR predicate operation exceeds limit (2) in statement "SELECT * FROM employee WHERE id = 1 OR id = 2 OR id = 3 OR id = 4 OR id = 5;".
       startposition:
         line: 1

@@ -25,8 +25,8 @@ const (
 var _ advisor.Advisor = (*UseInnoDBAdvisor)(nil)
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleMySQLEngine, &UseInnoDBAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.SchemaRuleMySQLEngine, &UseInnoDBAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_ENGINE_MYSQL_USE_INNODB, &UseInnoDBAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_ENGINE_MYSQL_USE_INNODB, &UseInnoDBAdvisor{})
 }
 
 // UseInnoDBAdvisor is the advisor checking for using InnoDB engine.
@@ -46,7 +46,7 @@ func (*UseInnoDBAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 	}
 
 	// Create the rule
-	rule := NewUseInnoDBRule(level, string(checkCtx.Rule.Type))
+	rule := NewUseInnoDBRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

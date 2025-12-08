@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementDMLDryRun, &StatementDMLDryRunAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, &StatementDMLDryRunAdvisor{})
 }
 
 // StatementDMLDryRunAdvisor is the advisor checking for DML dry run.
@@ -41,7 +41,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	rule := &statementDMLDryRunRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		ctx:                      ctx,
 		driver:                   checkCtx.Driver,

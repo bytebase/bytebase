@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 216
-      title: statement.create-specify-schema
+      title: STATEMENT_CREATE_SPECIFY_SCHEMA
       content: Table schema should be specified.
       startposition:
         line: 1

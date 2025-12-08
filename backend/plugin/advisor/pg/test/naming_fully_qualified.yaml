@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 310
-      title: naming.fully-qualified
+      title: NAMING_FULLY_QUALIFIED
       content: 'unqualified object name: ''pokesv2'''
       startposition:
         line: 4
@@ -21,7 +21,7 @@
   want:
     - status: 2
       code: 310
-      title: naming.fully-qualified
+      title: NAMING_FULLY_QUALIFIED
       content: 'unqualified object name: ''seq'''
       startposition:
         line: 2
@@ -37,7 +37,7 @@
   want:
     - status: 2
       code: 310
-      title: naming.fully-qualified
+      title: NAMING_FULLY_QUALIFIED
       content: 'unqualified object name: ''pokesv1'''
       startposition:
         line: 4
@@ -52,7 +52,7 @@
   want:
     - status: 2
       code: 310
-      title: naming.fully-qualified
+      title: NAMING_FULLY_QUALIFIED
       content: 'unqualified object name: ''pokesv1'''
       startposition:
         line: 2
@@ -66,7 +66,7 @@
   want:
     - status: 2
       code: 310
-      title: naming.fully-qualified
+      title: NAMING_FULLY_QUALIFIED
       content: 'unqualified object name: ''pokesv1'''
       startposition:
         line: 2
@@ -82,7 +82,7 @@
   want:
     - status: 2
       code: 310
-      title: naming.fully-qualified
+      title: NAMING_FULLY_QUALIFIED
       content: 'unqualified object name: ''pokesv1'''
       startposition:
         line: 4
@@ -93,7 +93,7 @@
   want:
     - status: 2
       code: 310
-      title: naming.fully-qualified
+      title: NAMING_FULLY_QUALIFIED
       content: 'unqualified object name: ''tech_book'''
       startposition:
         line: 2

@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: Avoid using SELECT *.
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: Avoid using SELECT *.
       startposition:
         line: 1
@@ -27,7 +27,7 @@
   want:
     - status: 2
       code: 203
-      title: statement.select.no-select-all
+      title: STATEMENT_SELECT_NO_SELECT_ALL
       content: Avoid using SELECT *.
       startposition:
         line: 1

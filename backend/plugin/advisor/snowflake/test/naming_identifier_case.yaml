@@ -14,7 +14,7 @@
   want:
     - status: 2
       code: 309
-      title: naming.identifier.case
+      title: NAMING_IDENTIFIER_CASE
       content: Identifier "address" should be upper case
       startposition:
         line: 2
@@ -30,7 +30,7 @@
   want:
     - status: 2
       code: 309
-      title: naming.identifier.case
+      title: NAMING_IDENTIFIER_CASE
       content: Identifier "address" should be upper case
       startposition:
         line: 2
@@ -48,7 +48,7 @@
   want:
     - status: 2
       code: 309
-      title: naming.identifier.case
+      title: NAMING_IDENTIFIER_CASE
       content: Identifier "address" should be upper case
       startposition:
         line: 1

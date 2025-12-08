@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementDisallowOnDelCascade, &StatementDisallowOnDelCascadeAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DISALLOW_ON_DEL_CASCADE, &StatementDisallowOnDelCascadeAdvisor{})
 }
 
 // StatementDisallowOnDelCascadeAdvisor is the advisor checking for ON DELETE CASCADE.
@@ -40,7 +40,7 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx a
 	rule := &statementDisallowOnDelCascadeRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		statementsText: checkCtx.Statements,
 	}

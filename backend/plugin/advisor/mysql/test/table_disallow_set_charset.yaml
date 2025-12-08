@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 612
-      title: table.disallow-set-charset
+      title: TABLE_DISALLOW_SET_CHARSET
       content: |-
         Set charset on tables is disallowed, but "CREATE TABLE employee (
           id INT PRIMARY KEY,
@@ -27,7 +27,7 @@
   want:
     - status: 2
       code: 612
-      title: table.disallow-set-charset
+      title: TABLE_DISALLOW_SET_CHARSET
       content: Set charset on tables is disallowed, but "ALTER TABLE employee CONVERT TO CHARACTER SET utf8;" uses
       startposition:
         line: 5

@@ -33,55 +33,39 @@
     "bb-sql-review-empty-desc": "一个空的模板，需要您自行添加需要的规则。"
   },
   "rule": {
-    "engine-mysql-use-innodb": {
-      "title": "强制使用 InnoDB 存储引擎",
-      "description": "InnoDB 是 MySQL 默认的存储引擎，能够确保事务一致性，同时对高并发低延迟的场景有更好的性能表现，还可以支持在线数据备份与恢复，是 OLTP 业务的首选。建议错误等级：错误"
-    },
-    "table-require-pk": {
-      "title": "强制表包含主键",
-      "description": "各种数据同步、比对、回滚的工具往往要求表有主键。建议错误等级：错误"
-    },
-    "table-no-foreign-key": {
-      "title": "禁止使用外键约束",
-      "description": "外键的优缺点争议较大，使用外键可能导致数据库变更、扩展（如分库）等工作的难度明显增加，甚至无法使用一些工具。因此可以考虑在应用层实现外键约束。建议错误等级：警告"
-    },
-    "table-drop-naming-convention": {
-      "title": "限制待删除表的命名格式",
-      "description": "通过重命名待删除表，例如增加 _del 后缀，可以有效避免误操作发生。建议错误等级：错误",
-      "component": {
-        "format": {
-          "title": "命名规则（正则）"
-        }
-      }
-    },
-    "table-disallow-partition": {
-      "title": "禁止使用分区表",
-      "description": "在一些数据库引擎中，分区表技术并不成熟，使用与维护都较为不便，因此更倾向于通过分库分表等方式进行人工数据分区。建议错误等级：警告"
-    },
-    "table-disallow-trigger": {
-      "title": "禁止使用触发器",
-      "description": "触发器可能导致数据库的隐式行为，增加数据库的复杂性，降低可维护性。建议错误等级：警告"
-    },
-    "table-no-duplicate-index": {
-      "title": "禁止重复索引",
-      "description": "此规则禁止在表上创建重复的索引。重复索引会占用额外的存储空间并可能降低查询性能。建议错误等级：警告"
-    },
-    "table-text-fields-total-length": {
-      "title": "限制表格文本字段的总长度",
-      "description": "该规则限制了表格所能容纳的数据量，防止存储空间的使用过量。",
+    "ADVICE_ONLINE_MIGRATION": {
+      "title": "在线大表变更",
+      "description": "如果迁移的表行数超过您的设置，建议启用在线迁移。建议的错误级别: 警告",
       "component": {
         "number": {
-          "title": "最大长度"
+          "title": "阈值"
         }
       }
     },
-    "table-disallow-set-charset": {
-      "title": "禁止在表格属性中定义字符集",
-      "description": "建议在数据库层面设置字符集。在更细粒度设置字符集会带来不必要的复杂性。建议错误等级：错误。"
+    "BUILTIN_PRIOR_BACKUP_CHECK": {
+      "title": "事先备份可行性检查",
+      "description": "此规则检查是否可以在数据更改之前创建备份。它会验证备份目标数据库是否存在，并禁止不支持的方案。它是内置的，无法跳过。"
     },
-    "table-comment": {
-      "title": "表注释检查",
-      "description": "配置表是否需要注释和最大注释长度。",
+    "COLUMN_AUTO_INCREMENT_INITIAL_VALUE": {
+      "title": "限制自增列初始值",
+      "description": "结合管理要求限制自增列的初始值。建议错误等级：警告",
+      "component": {
+        "number": {
+          "title": "初始值"
+        }
+      }
+    },
+    "COLUMN_AUTO_INCREMENT_MUST_INTEGER": {
+      "title": "强制自增列使用整数类型",
+      "description": "MySQL 的自增列一般用做业务无关主键，使用整数类型占用更少的存储空间，还能让主键索引结构更紧凑，带来更好的查询与 DML 性能。建议错误等级：错误"
+    },
+    "COLUMN_AUTO_INCREMENT_MUST_UNSIGNED": {
+      "title": "强制自增列使用 \"UNSIGNED\" 类型",
+      "description": "无符号类型不存储负数，同样的类型存放的数值范围增加一倍，可以避免自增列超出上限。建议错误等级：警告"
+    },
+    "COLUMN_COMMENT": {
+      "title": "列注释检查",
+      "description": "对列添加注释是良好的开发习惯，但过长的注释将导致 Schema 易读性降低。建议错误等级：警告",
       "component": {
         "required": {
           "title": "必须注释"
@@ -95,58 +79,159 @@
         }
       }
     },
-    "table-disallow-ddl": {
-      "title": "禁止DDL",
-      "description": "配置哪些表禁止执行 DDL。建议错误级别：警告",
-      "component": {
-        "list": {
-          "title": "表名"
-        }
-      }
+    "COLUMN_CURRENT_TIME_COUNT_LIMIT": {
+      "title": "限制表中获取系统时间的列的数量",
+      "description": "列需要调用函数获取系统时间的情况一般只包括记录创建时间的 \"DEFAULT NOW()\" 与记录更新时间的 \"DEFAULT NOW() ON UPDATE NOW()\"，额外的列记录系统时间没有意义且会增加资源开销。建议错误等级：错误"
     },
-    "table-limit-size": {
-      "title": "限制对多行数表的 DDL 操作",
-      "description": "配置可以执行 DDL 的表的最大行数。推荐错误级别：警告",
+    "COLUMN_DEFAULT_DISALLOW_VOLATILE": {
+      "title": "禁止在列上设置易变的默认值",
+      "description": "易变函数（例如，clock_timestamp()）会在执行 ALTER TABLE ADD COLUMN 时更新每一行的值，可能导致更新操作时间过长。"
+    },
+    "COLUMN_DISALLOW_CHANGE": {
+      "title": "禁止使用 \"CHANGE COLUMN\" 语句",
+      "description": "\"CHANGE COLUMN\" 是 MySQL 特有的语法，可以同时修改列名与其他属性，但可能导致修改属性时误改了列名，建议仍然使用标准的 \"RENAME\",\"MODIFY\" 语句区分两类变更。建议错误等级：错误"
+    },
+    "COLUMN_DISALLOW_CHANGE_TYPE": {
+      "title": "禁止修改列类型",
+      "description": "修改列类型可能影响系统的性能、可维护性，甚至导致数据丢失。建议错误等级：警告"
+    },
+    "COLUMN_DISALLOW_CHANGING_ORDER": {
+      "title": "禁止修改表中的列顺序",
+      "description": "修改列顺序可能导致部分依赖原表默认顺序的应用或视图出现不符合预期的结果，例如 \"SELECT * \"。建议错误等级：警告"
+    },
+    "COLUMN_DISALLOW_DROP": {
+      "title": "禁止删除列",
+      "description": "禁止删除列。建议错误等级：警告"
+    },
+    "COLUMN_DISALLOW_DROP_IN_INDEX": {
+      "title": "禁止删除有索引的列",
+      "description": "禁止删除一个已经有索引的列。建议错误等级：错误"
+    },
+    "COLUMN_DISALLOW_SET_CHARSET": {
+      "title": "禁止在列属性中定义字符集",
+      "description": "字符集一般建议在数据库级别或表级别设置，更细粒度的字符集设置极易造成开发管理混乱。建议错误等级：错误"
+    },
+    "COLUMN_MAXIMUM_CHARACTER_LENGTH": {
+      "title": "限制 \"CHAR\" 类型长度",
+      "description": "\"CHAR\" 是定长类型，例如 CHAR(20) 列即便只存放1个字符也将占用20个字符空间造成浪费，当字符串过长且长度不固定时，MySQL 可考虑用 VARCHAR 替代，PostgreSQL 可考虑用 TEXT 替代。建议错误等级：错误",
       "component": {
         "number": {
-          "title": "最大行数"
+          "title": "最大长度"
         }
       }
     },
-    "table-disallow-dml": {
-      "title": "禁止 DML",
-      "description": "配置哪些表禁止执行 DML。建议错误级别：警告",
+    "COLUMN_MAXIMUM_VARCHAR_LENGTH": {
+      "title": "限制 \"VARCHAR\" 类型长度",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "最大长度"
+        }
+      }
+    },
+    "COLUMN_NO_NULL": {
+      "title": "强制非空约束",
+      "description": "表中的字段不允许存在 NULL 值。"
+    },
+    "COLUMN_REQUIRED": {
+      "title": "强制表中包含特定列",
+      "description": "部分通用列有助于更好的维护应用，例如增加 \"ID\" 作为业务无关的通用主键避免了业务变化（如业务合并）导致的主键冲突，部分场景还能带来更好的数据插入性能。建议错误等级：警告",
       "component": {
         "list": {
-          "title": "表名"
+          "title": "必须包含的字段名"
         }
       }
     },
-    "table-require-charset": {
-      "title": "需要指定字符集",
-      "description": "必须指定表格的字符集。建议错误级别：警告"
+    "COLUMN_REQUIRE_CHARSET": {
+      "title": "要求列设置字符集",
+      "description": "必须指定字符数据类型的列的字符集。建议错误级别：警告"
     },
-    "table-require-collation": {
-      "title": "需要指定排序规则",
-      "description": "必须指定表的排序规则。建议错误级别：警告"
+    "COLUMN_REQUIRE_COLLATION": {
+      "title": "要求对列设置排序规则",
+      "description": "必须指定字符数据类型的列的排序规则。建议错误级别：警告"
     },
-    "naming-fully-qualified": {
-      "title": "完全限定对象名称",
-      "description": "强制使用完全限定的对象名称。例如 “schema.table”，建议错误级别：警告"
+    "COLUMN_REQUIRE_DEFAULT": {
+      "title": "强制列设置默认值",
+      "description": "设置符合业务特点的默认值可以有效提升下游统计分析业务的数据质量，此规范不检查 \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\" 类型。建议错误等级：警告"
     },
-    "naming-table": {
-      "title": "强制表命名格式",
-      "description": "默认格式为全小写字母，单词之间以下划线分割，长度不超过 63 个字符，例如 \"abc\"，\"abc_def\"。建议错误等级：警告",
+    "COLUMN_SET_DEFAULT_FOR_NOT_NULL": {
+      "title": "强制 \"NOT NULL\" 列设置默认值",
+      "description": "对于 \"NOT NULL\" 列，在插入新行时如果不给该列赋值且该列没有默认值，数据库将会拒绝该行插入。对于新增列设置默认值也可以更好的兼容旧应用代码。建议错误等级：错误"
+    },
+    "COLUMN_TYPE_DISALLOW_LIST": {
+      "title": "禁止使用的列类型列表",
+      "description": "滥用列类型可能对系统可维护性与性能带来严重负面影响，例如使用 \"LOB\" 类列存放大量音视频数据可能导致数据库性能降低、备份恢复时间延长、数据同步工具不兼容等问题。建议错误等级：错误",
       "component": {
-        "format": {
-          "title": "表命名规则（正则）"
-        },
-        "maxLength": {
-          "title": "长度限制"
+        "list": {
+          "title": "禁止的类型"
         }
       }
     },
-    "naming-column": {
+    "DATABASE_DROP_EMPTY_DATABASE": {
+      "title": "禁止删除非空数据库",
+      "description": "只有当数据库中不包含任何表时才允许被删除，这能最大程度避免误删除的发生。建议错误等级：错误"
+    },
+    "ENGINE_MYSQL_USE_INNODB": {
+      "title": "强制使用 InnoDB 存储引擎",
+      "description": "InnoDB 是 MySQL 默认的存储引擎，能够确保事务一致性，同时对高并发低延迟的场景有更好的性能表现，还可以支持在线数据备份与恢复，是 OLTP 业务的首选。建议错误等级：错误"
+    },
+    "INDEX_CREATE_CONCURRENTLY": {
+      "title": "强制并行索引创建",
+      "description": "在 PostgreSQL 11 及以上版本中，使用普通方式创建索引将导致表锁定无法写入数据，使用 \"CONCURRENTLY\" 模式可以实现无锁创建索引，不影响表的正常访问。建议错误等级：警告"
+    },
+    "INDEX_KEY_NUMBER_LIMIT": {
+      "title": "限制单个索引中的列数量",
+      "description": "组合索引列超过 5 个对查询性能的提升并不明显，但却占用大量空间并降低 DML 性能。建议错误等级：警告",
+      "component": {
+        "number": {
+          "title": "字段数量上限"
+        }
+      }
+    },
+    "INDEX_NOT_REDUNDANT": {
+      "title": "禁止冗余索引",
+      "description": "冗余索引可能会导致性能损失并占用额外空间。例如，如果列（c1）上已经有一个索引，那么在列（c1，c2）上的索引将被视为冗余索引。建议的错误级别：警告"
+    },
+    "INDEX_NO_DUPLICATE_COLUMN": {
+      "title": "禁止索引包含重复列",
+      "description": "创建索引含重复列时语句将执行失败。建议错误等级：错误"
+    },
+    "INDEX_PK_TYPE_LIMIT": {
+      "title": "主键类型限制",
+      "description": "限制主键类型必须是 INT 或 BIGINT。"
+    },
+    "INDEX_PRIMARY_KEY_TYPE_ALLOWLIST": {
+      "title": "允许主键使用的类型列表",
+      "description": "合适的主键类型可以优化存储结构，减少空间占用并带来更好的插入与查询性能。建议错误等级：警告",
+      "component": {
+        "list": {
+          "title": "允许的主键列的类型"
+        }
+      }
+    },
+    "INDEX_TOTAL_NUMBER_LIMIT": {
+      "title": "限制单表的索引数量",
+      "description": "索引虽然能提升查询性能，但却占用大量空间并降低 DML 性能，因此不建议单个表创建的索引数量超过5个。建议错误等级：警告",
+      "component": {
+        "number": {
+          "title": "索引数量上限"
+        }
+      }
+    },
+    "INDEX_TYPE_ALLOW_LIST": {
+      "title": "可允许的索引类型列表",
+      "description": "不同的索引类型具有不同的性能特征。例如，B-tree 索引适用于范围查询，而哈希索引适用于相等查询。建议错误级别：警告",
+      "component": {
+        "list": {
+          "title": "允许的索引类型"
+        }
+      }
+    },
+    "INDEX_TYPE_NO_BLOB": {
+      "title": "禁止对 \"BLOB\" 与 \"TEXT\" 类型列创建索引",
+      "description": "\"BLOB\" 等类型一般用于存放二进制数据，并不会作为查询条件，如果误在此类列上创建索引，将占用大量资源并产生严重的性能问题。建议错误等级：错误"
+    },
+    "NAMING_COLUMN": {
       "title": "强制列命名格式",
       "description": "默认格式为全小写字母，单词之间以下划线分割，长度不超过 63 个字符，例如 \"abc\"，\"abc_def\"。建议错误等级：警告",
       "component": {
@@ -158,39 +243,36 @@
         }
       }
     },
-    "naming-index-uk": {
-      "title": "强制唯一键命名格式",
-      "description": "允许名字为空并由数据库自动命名，若非空则默认格式为 uk_<表名>_<唯一键包含的列名组合> ，且不超过 63 个字符，例如 \"uk_my_table_id_name\"。建议错误等级：警告",
+    "NAMING_COLUMN_AUTO_INCREMENT": {
+      "title": "强制自增列命名格式",
+      "description": "默认列名为 \"ID\"，且不超过 63 个字符。",
       "component": {
         "format": {
-          "title": "唯一键命名规则",
-          "template": {
-            "table": "表名",
-            "column_list": "索引包含的字段名，通过 _ 连接"
-          }
+          "title": "自增列命名规则（正则）"
         },
         "maxLength": {
           "title": "长度限制"
         }
       }
     },
-    "naming-index-pk": {
-      "title": "强制主键命名格式",
-      "description": "允许名字为空并由数据库自动命名，若非空则默认格式为 pk_<表名>_<主键包含的列名组合> ，且不超过 63 个字符，例如 \"pk_my_table_id_name\"。建议错误等级：警告",
+    "NAMING_FULLY_QUALIFIED": {
+      "title": "完全限定对象名称",
+      "description": "强制使用完全限定的对象名称。例如 “schema.table”，建议错误级别：警告"
+    },
+    "NAMING_IDENTIFIER_CASE": {
+      "title": "强制字段名大小写",
+      "description": "",
       "component": {
-        "format": {
-          "title": "主键命名规则",
-          "template": {
-            "table": "表名",
-            "column_list": "索引包含的字段名，通过 _ 连接"
-          }
-        },
-        "maxLength": {
-          "title": "长度限制"
+        "upper": {
+          "title": "大写"
         }
       }
     },
-    "naming-index-fk": {
+    "NAMING_IDENTIFIER_NO_KEYWORD": {
+      "title": "禁止使用关键字作为字段名",
+      "description": ""
+    },
+    "NAMING_INDEX_FK": {
       "title": "强制外键命名格式",
       "description": "允许名字为空并由数据库自动命名，若非空则默认格式为 fk_<目标表名>_<目标列名>_<被引用表名>_<被引用列名>，且不超过 63 个字符，例如 \"fk_my_table_id_foreign_table_id\"。",
       "component": {
@@ -208,7 +290,7 @@
         }
       }
     },
-    "naming-index-idx": {
+    "NAMING_INDEX_IDX": {
       "title": "强制索引命名格式",
       "description": "允许名字为空并由数据库自动命名，若非空则默认格式为 idx_<表名>_<索引包含的列名组合> ，且不超过 63 个字符，例如 \"idx_my_table_id_name\"。建议错误等级：警告",
       "component": {
@@ -224,96 +306,316 @@
         }
       }
     },
-    "naming-column-auto-increment": {
-      "title": "强制自增列命名格式",
-      "description": "默认列名为 \"ID\"，且不超过 63 个字符。",
+    "NAMING_INDEX_PK": {
+      "title": "强制主键命名格式",
+      "description": "允许名字为空并由数据库自动命名，若非空则默认格式为 pk_<表名>_<主键包含的列名组合> ，且不超过 63 个字符，例如 \"pk_my_table_id_name\"。建议错误等级：警告",
       "component": {
         "format": {
-          "title": "自增列命名规则（正则）"
+          "title": "主键命名规则",
+          "template": {
+            "table": "表名",
+            "column_list": "索引包含的字段名，通过 _ 连接"
+          }
         },
         "maxLength": {
           "title": "长度限制"
         }
       }
     },
-    "naming-table-no-keyword": {
+    "NAMING_INDEX_UK": {
+      "title": "强制唯一键命名格式",
+      "description": "允许名字为空并由数据库自动命名，若非空则默认格式为 uk_<表名>_<唯一键包含的列名组合> ，且不超过 63 个字符，例如 \"uk_my_table_id_name\"。建议错误等级：警告",
+      "component": {
+        "format": {
+          "title": "唯一键命名规则",
+          "template": {
+            "table": "表名",
+            "column_list": "索引包含的字段名，通过 _ 连接"
+          }
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
+    "NAMING_TABLE": {
+      "title": "强制表命名格式",
+      "description": "默认格式为全小写字母，单词之间以下划线分割，长度不超过 63 个字符，例如 \"abc\"，\"abc_def\"。建议错误等级：警告",
+      "component": {
+        "format": {
+          "title": "表命名规则（正则）"
+        },
+        "maxLength": {
+          "title": "长度限制"
+        }
+      }
+    },
+    "NAMING_TABLE_NO_KEYWORD": {
       "title": "禁止使用关键字作为表名",
       "description": ""
     },
-    "naming-identifier-no-keyword": {
-      "title": "禁止使用关键字作为字段名",
+    "SCHEMA_BACKWARD_COMPATIBILITY": {
+      "title": "检查应用向后兼容性",
+      "description": "部分变更可能影响现有应用功能，例如修改数据库对象名，增加新的约束等，此规范可避免不谨慎变更导致现有应用运行失败。建议错误等级：警告"
+    },
+    "STATEMENT_ADD_CHECK_NOT_VALID": {
+      "title": "强制添加 \"CHECK\" 约束时附带 \"NOT VALID\" 选项",
+      "description": "添加 CHECK 约束将对已有数据进行校验并要求 ACCESS EXCLUSIVE 表锁，阻塞读写，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再手动校验已有数据。建议错误等级：警告"
+    },
+    "STATEMENT_ADD_COLUMN_WITHOUT_POSITION": {
+      "title": "禁止在指定位置加列",
+      "description": "部分情况下，使用 FIRST/AFTER 在指定位置加列将引起数据重整（把原来的数据重写一遍）。建议错误级别：警告"
+    },
+    "STATEMENT_ADD_FOREIGN_KEY_NOT_VALID": {
+      "title": "强制添加外键时附带 \"NOT VALID\" 选项",
+      "description": "添加外键会校验已有数据并要求 SHARE ROW EXCLUSIVE 表锁，阻塞写入，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再校验已有数据。建议错误等级：警告"
+    },
+    "STATEMENT_AFFECTED_ROW_LIMIT": {
+      "title": "限制最大更新或删除行数(预估)",
+      "description": "通过提示更新或删除的行数辅助判断语句是否符合业务预期。建议错误等级：警告",
+      "component": {
+        "number": {
+          "title": "最大影响行数"
+        }
+      }
+    },
+    "STATEMENT_CHECK_SET_ROLE_VARIABLE": {
+      "title": "检查语句开头是否存在 SET ROLE 语句",
+      "description": "在会话开始时未正确设置角色语句可能导致未经授权的访问或权限分配不当，可能危及数据安全性和完整性。错误等级：警告"
+    },
+    "STATEMENT_CREATE_SPECIFY_SCHEMA": {
+      "title": "禁止创建未指定 schema 的对象",
+      "description": "如果未指定 schema，对象将在默认模式中创建，可能导致意外结果。"
+    },
+    "STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT": {
+      "title": "限制向表中添加带默认值的列",
+      "description": "在 PostgreSQL 11 之前的版本中，添加带有默认值的列将导致全表锁定无法读写，这可能导致业务中断。在 PostgreSQL 11 及以上版本中该问题已得到优化，无需关注此规范。建议错误等级：警告"
+    },
+    "STATEMENT_DISALLOW_ADD_NOT_NULL": {
+      "title": "限制向已有列添加 \"NOT NULL\" 约束",
+      "description": "在 PostgreSQL 11 之前添加带默认值的 NOT NULL 约束或在所有 PostgreSQL 版本中添加不带默认值的 NOT NULL 约束需要验证现有数据。这会阻塞读写，可能会导致业务中断。建议错误等级：警告"
+    },
+    "STATEMENT_DISALLOW_COMMIT": {
+      "title": "禁止显式 \"COMMIT\"",
+      "description": "部分情况要求多条语句包含在一个事务中由系统提交，只允许同时成功或同时失败，以便部分出错时快速重跑，因此不允许出现显式的 \"COMMIT\"。建议错误等级：警告"
+    },
+    "STATEMENT_DISALLOW_CROSS_DB_QUERIES": {
+      "title": "禁止跨数据库查询",
+      "description": "跨数据库查询会增加系统的耦合性，并可能导致效率问题。建议的错误级别：警告"
+    },
+    "STATEMENT_DISALLOW_LIMIT": {
+      "title": "禁止在 DML 语句中使用 \"LIMIT\"",
+      "description": "如果 DML 语句中使用 LIMIT 不伴随 ORDER BY，影响的行是不确定的，在部分复制模式下可能导致主库与从库变更了不同的行，造成数据不一致。建议错误等级：错误"
+    },
+    "STATEMENT_DISALLOW_OFFLINE_DDL": {
+      "title": "禁止离线 DDL",
+      "description": "为了防止数据库更改影响您的业务，请避免使用离线 DDL。"
+    },
+    "STATEMENT_DISALLOW_ON_DEL_CASCADE": {
+      "title": "禁止在ON DELETE子句中使用 CASCADE 选项",
+      "description": "'ON DELETE'中的'CASCADE'选项可能导致大量依赖对象被删除或修改，这可能导致意外的结果。建议的错误级别：错误"
+    },
+    "STATEMENT_DISALLOW_ORDER_BY": {
+      "title": "禁止在 \"UPDATE\",\"DELETE\" 语句中使用 \"ORDER BY\"",
+      "description": "排序操作是极为耗费资源的，对于更新与删除操作应该尽可能用确定的过滤条件，而不要使用 ORDER BY 加 LIMIT 的方式。建议错误等级：错误"
+    },
+    "STATEMENT_DISALLOW_RM_TBL_CASCADE": {
+      "title": "禁止在删除表时使用 CASCADE 选项",
+      "description": "在删除表时使用'CASCADE'选项可能导致大量依赖对象被删除或修改，这可能导致意外的结果。建议的错误级别：错误"
+    },
+    "STATEMENT_DISALLOW_USING_FILESORT": {
+      "title": "禁止 Using filesort",
+      "description": "禁止 Using filesort 可以帮助优化查询性能，减少系统资源的消耗，提高系统的稳定性和可靠性。通常，通过合适的索引、查询优化和数据模型设计，可以避免或减少文件排序的需要。建议错误等级：警告"
+    },
+    "STATEMENT_DISALLOW_USING_TEMPORARY": {
+      "title": "禁止 Using temporary",
+      "description": "禁止 Using temporary 可以帮助优化查询性能，减少系统资源的消耗，提高系统的稳定性和可靠性。建议错误等级：警告"
+    },
+    "STATEMENT_DML_DRY_RUN": {
+      "title": "验证 DML 语句可执行性",
+      "description": "当语法正确但表名错误或权限不足时，可以在正式运行前通过模拟运行发现。建议错误等级：警告"
+    },
+    "STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND": {
+      "title": "禁止在 \"INSERT\" 语句中使用 \"ORDER BY RAND()\"",
+      "description": "对待插入的数据进行随机排序是没有意义的，只会无端消耗资源。建议错误等级：错误"
+    },
+    "STATEMENT_INSERT_MUST_SPECIFY_COLUMN": {
+      "title": "强制 \"INSERT\" 语句显示指定列名",
+      "description": "\"INSERT INTO table VALUES (...)\" 语句没有显式列出列名，一旦发生列顺序变化或列增减，语句就可能失败或写入不符合预期的数据。建议错误等级：错误"
+    },
+    "STATEMENT_INSERT_ROW_LIMIT": {
+      "title": "限制最大插入行数",
+      "description": "通过提示插入的行数辅助判断语句是否符合业务预期。建议错误等级：警告",
+      "component": {
+        "number": {
+          "title": "最大插入行数"
+        }
+      }
+    },
+    "STATEMENT_JOIN_STRICT_COLUMN_ATTRS": {
+      "title": "要进行连接的字段必须具有相同的数据类型和字符集。",
+      "description": "如果连接列的数据类型、字符集不一致，数据库可能无法正确识别匹配的行，从而导致结果不准确或不完整。"
+    },
+    "STATEMENT_MAXIMUM_JOIN_TABLE_COUNT": {
+      "title": "限制语句中连接的表数量",
+      "description": "连接的表越多，查询就越复杂，执行时间也越长。 通常情况下，最好将连接数控制在最低限度。",
+      "component": {
+        "number": {
+          "title": "最大值"
+        }
+      }
+    },
+    "STATEMENT_MAXIMUM_LIMIT_VALUE": {
+      "title": "限制 LIMIT 子句的最大行数",
+      "description": "通过 LIMIT 限制行数可以确保数据库处理可管理的大小块数据，从而提高查询执行速度。 限制 LIMIT 的值可以防止过度使用内存，从而保护系统整体稳定性和防止性能下降。",
+      "component": {
+        "number": {
+          "title": "最大行数"
+        }
+      }
+    },
+    "STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION": {
+      "title": "限制事务中的语句数量",
+      "description": "巨大的事务会显著影响数据库性能。如果涉及大量语句并且其中一个语句失败，则回滚整个事务会变得复杂。限制语句数量可以最小化单个故障造成的潜在损害并简化回滚过程。",
+      "component": {
+        "number": {
+          "title": "最大行数"
+        }
+      }
+    },
+    "STATEMENT_MAX_EXECUTION_TIME": {
+      "title": "强制设置最大执行时间参数",
+      "description": "设置SQL语句的最大执行时间，如果执行时间超过限制，语句将被终止。建议错误级别：警告",
+      "mysql": {
+        "title": "强制明确设置 MAX_EXECUTION_TIME 参数",
+        "description": "在变更脚本中设置 MAX_EXECUTION_TIME 参数以显式控制语句最长执行时间。建议错误级别：警告"
+      },
+      "mariadb": {
+        "title": "强制明确设置 MAX_STATEMENT_TIME 参数",
+        "description": "在变更脚本中设置 MAX_STATEMENT_TIME 参数以显式控制语句最长执行时间。建议错误级别：警告"
+      }
+    },
+    "STATEMENT_MERGE_ALTER_TABLE": {
+      "title": "禁止对同一张表发起多次独立变更",
+      "description": "每一次对表的变更都可能造成锁表并且消耗大量资源，如果存在对同一张表的多次变更，应该合并为一个变更语句。建议错误等级：错误"
+    },
+    "STATEMENT_NON_TRANSACTIONAL": {
+      "title": "检测并报告非事务性语句",
       "description": ""
     },
-    "naming-identifier-case": {
-      "title": "强制字段名大小写",
-      "description": "",
+    "STATEMENT_OBJECT_OWNER_CHECK": {
+      "title": "对象所有者检查",
+      "description": "此规则检查 DDL 的对象所有者是否与当前用户相同。"
+    },
+    "STATEMENT_QUERY_MINIMUM_PLAN_LEVEL": {
+      "title": "限制查询访问方法的最大级别",
+      "description": "在 SQL 性能优化中，追求常量访问速度，以引用级别作为基线，区间级别的性能尚可接受。",
       "component": {
-        "upper": {
-          "title": "大写"
+        "level": {
+          "title": "最大级别"
         }
       }
     },
-    "column-required": {
-      "title": "强制表中包含特定列",
-      "description": "部分通用列有助于更好的维护应用，例如增加 \"ID\" 作为业务无关的通用主键避免了业务变化（如业务合并）导致的主键冲突，部分场景还能带来更好的数据插入性能。建议错误等级：警告",
+    "STATEMENT_REQUIRE_ALGORITHM_OPTION": {
+      "title": "需要在 ALTER TABLE 语句中指定 ALGORITHM 选项",
+      "description": "在 ALTER TABLE 语句中指定 ALGORITHM 选项可确保更好地控制表更改的应用方式，通过避免全表复制或锁定来最大限度地减少潜在的中断。它有助于优化性能并减少 ALTER TABLE 操作的停机时间。建议的错误级别：警告。"
+    },
+    "STATEMENT_REQUIRE_LOCK_OPTION": {
+      "title": "需要在 ALTER TABLE 语句中指定 LOCK 选项",
+      "description": "ALTER TABLE 语句中的 LOCK 选项允许您控制架构更改期间的锁定级别，有助于防止不必要的表锁定并确保更好的并发性。正确使用此选项可以显著减少 ALTER TABLE 操作对活动查询的影响。建议的错误级别：警告。"
+    },
+    "STATEMENT_SELECT_FULL_TABLE_SCAN": {
+      "title": "检查查询是否存在全表扫描",
+      "description": "全表扫描是一种消耗大量资源的操作，可能导致严重的性能影响。建议错误等级：错误"
+    },
+    "STATEMENT_SELECT_NO_SELECT_ALL": {
+      "title": "禁止使用 \"SELECT *\"",
+      "description": "SELECT * 拉取整行数据可能造成不必要的资源开销，同时一旦表增减列，也可能造成应用出现不符合预期的结果。建议错误等级：错误"
+    },
+    "STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS": {
+      "title": "在 WHERE 子句中避免对索引字段应用函数或执行计算",
+      "description": "如果对索引字段应用函数或执行计算，则数据库无法使用索引，而必须扫描整个表。"
+    },
+    "STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT": {
+      "title": "限制 WHERE 子句中的 IN 或 OR 子句中的值的数量",
+      "description": "这可以防止因频繁对比和资源限制导致性能下降。",
+      "component": {
+        "number": {
+          "title": "最大数量"
+        }
+      }
+    },
+    "STATEMENT_WHERE_NO_EQUAL_NULL": {
+      "title": "禁止在WHERE子句中使用NULL等式比较",
+      "description": "NULL 等式比较的结果始终是 NULL，可能导致意外的结果。建议错误级别：警告"
+    },
+    "STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE": {
+      "title": "禁止过滤条件使用左模糊匹配",
+      "description": "当使用左模糊匹配，例如 \"LIKE '%ABC'\"，数据库优化器将无法进行快速索引扫描，而只能执行全表或全索引扫描，可能造成极为严重的性能问题。建议错误等级：错误"
+    },
+    "STATEMENT_WHERE_REQUIRE_SELECT": {
+      "title": "强制要求在 SELECT 语句中带有 \"WHERE\" 条件",
+      "description": "没有 WHERE 子句的查询可能会造成巨大的不必要的资源开销。建议错误等级：错误"
+    },
+    "STATEMENT_WHERE_REQUIRE_UPDATE_DELETE": {
+      "title": "强制要求在 DML 语句中带有 \"WHERE\" 条件",
+      "description": "没有 WHERE 子句的 DML 可能会造成大规模数据丢失。建议错误等级：错误"
+    },
+    "SYSTEM_CHARSET_ALLOWLIST": {
+      "title": "允许使用的字符集（Charset）列表",
+      "description": "字符集决定了表中可以存储哪些字符，使用错误的字符集可能导致应用中的部分字符无法正确存储与显示，例如中文与 Emoji 表情。建议错误等级：错误",
       "component": {
         "list": {
-          "title": "必须包含的字段名"
+          "title": "允许的字符集"
         }
       }
     },
-    "column-type-disallow-list": {
-      "title": "禁止使用的列类型列表",
-      "description": "滥用列类型可能对系统可维护性与性能带来严重负面影响，例如使用 \"LOB\" 类列存放大量音视频数据可能导致数据库性能降低、备份恢复时间延长、数据同步工具不兼容等问题。建议错误等级：错误",
+    "SYSTEM_COLLATION_ALLOWLIST": {
+      "title": "允许使用的字符序（Collation）列表",
+      "description": "字符序决定了字符比对与排序的规则，例如使用不区分大小写的字符序时 \"ABC\" 与 \"abc\" 在查询时将被视为相同字符串。建议错误等级：错误",
       "component": {
         "list": {
-          "title": "禁止的类型"
+          "title": "允许的规则限制"
         }
       }
     },
-    "column-no-null": {
-      "title": "强制非空约束",
-      "description": "表中的字段不允许存在 NULL 值。"
+    "SYSTEM_COMMENT_LENGTH": {
+      "title": "限制注释长度",
+      "description": "过长的注释将导致 Schema 易读性降低，并可能带来潜在的性能风险。建议错误等级：警告",
+      "component": {
+        "number": {
+          "title": "注释长度上限"
+        }
+      }
     },
-    "column-disallow-set-charset": {
-      "title": "禁止在列属性中定义字符集",
-      "description": "字符集一般建议在数据库级别或表级别设置，更细粒度的字符集设置极易造成开发管理混乱。建议错误等级：错误"
+    "SYSTEM_EVENT_DISALLOW_CREATE": {
+      "title": "禁止创建事件",
+      "description": "该规则禁止在数据库中创建事件。系统事件通常执行可能影响数据库环境的自动化任务。通过禁止创建它们，有助于控制数据库操作并防止潜在的中断。建议的错误级别：警告"
     },
-    "column-disallow-change-type": {
-      "title": "禁止修改列类型",
-      "description": "修改列类型可能影响系统的性能、可维护性，甚至导致数据丢失。建议错误等级：警告"
+    "SYSTEM_FUNCTION_DISALLOWED_LIST": {
+      "title": "禁止使用的函数",
+      "description": "此规则限制数据库内特定函数的使用。通过禁止使用这些函数，有助于维护数据一致性和安全性。建议错误级别：警告",
+      "component": {
+        "list": {
+          "title": "禁止的函数"
+        }
+      }
     },
-    "column-disallow-change": {
-      "title": "禁止使用 \"CHANGE COLUMN\" 语句",
-      "description": "\"CHANGE COLUMN\" 是 MySQL 特有的语法，可以同时修改列名与其他属性，但可能导致修改属性时误改了列名，建议仍然使用标准的 \"RENAME\",\"MODIFY\" 语句区分两类变更。建议错误等级：错误"
+    "SYSTEM_FUNCTION_DISALLOW_CREATE": {
+      "title": "禁止创建函数",
+      "description": "该规则禁止在数据库中创建函数。函数提供可重用的逻辑，可以简化查询并增强数据完整性。通过禁止创建它们，有助于保持对数据库架构的控制，并预防潜在的安全风险。建议的错误级别：警告"
     },
-    "column-disallow-changing-order": {
-      "title": "禁止修改表中的列顺序",
-      "description": "修改列顺序可能导致部分依赖原表默认顺序的应用或视图出现不符合预期的结果，例如 \"SELECT * \"。建议错误等级：警告"
+    "SYSTEM_PROCEDURE_DISALLOW_CREATE": {
+      "title": "禁止创建存储过程",
+      "description": "存储过程通常会执行可能影响数据库环境稳定性和安全性的关键操作。禁止创建存储过程有助于防止意外更改和潜在漏洞。建议错误等级：警告"
     },
-    "column-disallow-drop": {
-      "title": "禁止删除列",
-      "description": "禁止删除列。建议错误等级：警告"
+    "SYSTEM_VIEW_DISALLOW_CREATE": {
+      "title": "禁止创建视图",
+      "description": "该规则禁止在数据库中创建视图。视图提供了数据的虚拟表示，可以简化查询并增强数据安全性。通过禁止创建它们，有助于维护对数据库模式的控制，并防止潜在的安全风险。建议的错误级别：警告"
     },
-    "column-disallow-drop-in-index": {
-      "title": "禁止删除有索引的列",
-      "description": "禁止删除一个已经有索引的列。建议错误等级：错误"
-    },
-    "column-set-default-for-not-null": {
-      "title": "强制 \"NOT NULL\" 列设置默认值",
-      "description": "对于 \"NOT NULL\" 列，在插入新行时如果不给该列赋值且该列没有默认值，数据库将会拒绝该行插入。对于新增列设置默认值也可以更好的兼容旧应用代码。建议错误等级：错误"
-    },
-    "column-auto-increment-must-integer": {
-      "title": "强制自增列使用整数类型",
-      "description": "MySQL 的自增列一般用做业务无关主键，使用整数类型占用更少的存储空间，还能让主键索引结构更紧凑，带来更好的查询与 DML 性能。建议错误等级：错误"
-    },
-    "column-auto-increment-must-unsigned": {
-      "title": "强制自增列使用 \"UNSIGNED\" 类型",
-      "description": "无符号类型不存储负数，同样的类型存放的数值范围增加一倍，可以避免自增列超出上限。建议错误等级：警告"
-    },
-    "column-comment": {
-      "title": "列注释检查",
-      "description": "对列添加注释是良好的开发习惯，但过长的注释将导致 Schema 易读性降低。建议错误等级：警告",
+    "TABLE_COMMENT": {
+      "title": "表注释检查",
+      "description": "配置表是否需要注释和最大注释长度。",
       "component": {
         "required": {
           "title": "必须注释"
@@ -327,388 +629,82 @@
         }
       }
     },
-    "column-maximum-character-length": {
-      "title": "限制 \"CHAR\" 类型长度",
-      "description": "\"CHAR\" 是定长类型，例如 CHAR(20) 列即便只存放1个字符也将占用20个字符空间造成浪费，当字符串过长且长度不固定时，MySQL 可考虑用 VARCHAR 替代，PostgreSQL 可考虑用 TEXT 替代。建议错误等级：错误",
+    "TABLE_DISALLOW_DDL": {
+      "title": "禁止DDL",
+      "description": "配置哪些表禁止执行 DDL。建议错误级别：警告",
       "component": {
-        "number": {
-          "title": "最大长度"
+        "list": {
+          "title": "表名"
         }
       }
     },
-    "column-maximum-varchar-length": {
-      "title": "限制 \"VARCHAR\" 类型长度",
-      "description": "",
+    "TABLE_DISALLOW_DML": {
+      "title": "禁止 DML",
+      "description": "配置哪些表禁止执行 DML。建议错误级别：警告",
       "component": {
-        "number": {
-          "title": "最大长度"
+        "list": {
+          "title": "表名"
         }
       }
     },
-    "column-auto-increment-initial-value": {
-      "title": "限制自增列初始值",
-      "description": "结合管理要求限制自增列的初始值。建议错误等级：警告",
+    "TABLE_DISALLOW_PARTITION": {
+      "title": "禁止使用分区表",
+      "description": "在一些数据库引擎中，分区表技术并不成熟，使用与维护都较为不便，因此更倾向于通过分库分表等方式进行人工数据分区。建议错误等级：警告"
+    },
+    "TABLE_DISALLOW_SET_CHARSET": {
+      "title": "禁止在表格属性中定义字符集",
+      "description": "建议在数据库层面设置字符集。在更细粒度设置字符集会带来不必要的复杂性。建议错误等级：错误。"
+    },
+    "TABLE_DISALLOW_TRIGGER": {
+      "title": "禁止使用触发器",
+      "description": "触发器可能导致数据库的隐式行为，增加数据库的复杂性，降低可维护性。建议错误等级：警告"
+    },
+    "TABLE_DROP_NAMING_CONVENTION": {
+      "title": "限制待删除表的命名格式",
+      "description": "通过重命名待删除表，例如增加 _del 后缀，可以有效避免误操作发生。建议错误等级：错误",
       "component": {
-        "number": {
-          "title": "初始值"
+        "format": {
+          "title": "命名规则（正则）"
         }
       }
     },
-    "column-current-time-count-limit": {
-      "title": "限制表中获取系统时间的列的数量",
-      "description": "列需要调用函数获取系统时间的情况一般只包括记录创建时间的 \"DEFAULT NOW()\" 与记录更新时间的 \"DEFAULT NOW() ON UPDATE NOW()\"，额外的列记录系统时间没有意义且会增加资源开销。建议错误等级：错误"
-    },
-    "column-require-default": {
-      "title": "强制列设置默认值",
-      "description": "设置符合业务特点的默认值可以有效提升下游统计分析业务的数据质量，此规范不检查 \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\" 类型。建议错误等级：警告"
-    },
-    "column-default-disallow-volatile": {
-      "title": "禁止在列上设置易变的默认值",
-      "description": "易变函数（例如，clock_timestamp()）会在执行 ALTER TABLE ADD COLUMN 时更新每一行的值，可能导致更新操作时间过长。"
-    },
-    "column-require-charset": {
-      "title": "要求列设置字符集",
-      "description": "必须指定字符数据类型的列的字符集。建议错误级别：警告"
-    },
-    "column-require-collation": {
-      "title": "要求对列设置排序规则",
-      "description": "必须指定字符数据类型的列的排序规则。建议错误级别：警告"
-    },
-    "statement-select-no-select-all": {
-      "title": "禁止使用 \"SELECT *\"",
-      "description": "SELECT * 拉取整行数据可能造成不必要的资源开销，同时一旦表增减列，也可能造成应用出现不符合预期的结果。建议错误等级：错误"
-    },
-    "statement-where-require-select": {
-      "title": "强制要求在 SELECT 语句中带有 \"WHERE\" 条件",
-      "description": "没有 WHERE 子句的查询可能会造成巨大的不必要的资源开销。建议错误等级：错误"
-    },
-    "statement-where-require-update-delete": {
-      "title": "强制要求在 DML 语句中带有 \"WHERE\" 条件",
-      "description": "没有 WHERE 子句的 DML 可能会造成大规模数据丢失。建议错误等级：错误"
-    },
-    "statement-where-no-leading-wildcard-like": {
-      "title": "禁止过滤条件使用左模糊匹配",
-      "description": "当使用左模糊匹配，例如 \"LIKE '%ABC'\"，数据库优化器将无法进行快速索引扫描，而只能执行全表或全索引扫描，可能造成极为严重的性能问题。建议错误等级：错误"
-    },
-    "statement-disallow-on-del-cascade": {
-      "title": "禁止在ON DELETE子句中使用 CASCADE 选项",
-      "description": "'ON DELETE'中的'CASCADE'选项可能导致大量依赖对象被删除或修改，这可能导致意外的结果。建议的错误级别：错误"
-    },
-    "statement-disallow-rm-tbl-cascade": {
-      "title": "禁止在删除表时使用 CASCADE 选项",
-      "description": "在删除表时使用'CASCADE'选项可能导致大量依赖对象被删除或修改，这可能导致意外的结果。建议的错误级别：错误"
-    },
-    "statement-disallow-commit": {
-      "title": "禁止显式 \"COMMIT\"",
-      "description": "部分情况要求多条语句包含在一个事务中由系统提交，只允许同时成功或同时失败，以便部分出错时快速重跑，因此不允许出现显式的 \"COMMIT\"。建议错误等级：警告"
-    },
-    "statement-disallow-limit": {
-      "title": "禁止在 DML 语句中使用 \"LIMIT\"",
-      "description": "如果 DML 语句中使用 LIMIT 不伴随 ORDER BY，影响的行是不确定的，在部分复制模式下可能导致主库与从库变更了不同的行，造成数据不一致。建议错误等级：错误"
-    },
-    "statement-disallow-order-by": {
-      "title": "禁止在 \"UPDATE\",\"DELETE\" 语句中使用 \"ORDER BY\"",
-      "description": "排序操作是极为耗费资源的，对于更新与删除操作应该尽可能用确定的过滤条件，而不要使用 ORDER BY 加 LIMIT 的方式。建议错误等级：错误"
-    },
-    "statement-merge-alter-table": {
-      "title": "禁止对同一张表发起多次独立变更",
-      "description": "每一次对表的变更都可能造成锁表并且消耗大量资源，如果存在对同一张表的多次变更，应该合并为一个变更语句。建议错误等级：错误"
-    },
-    "statement-insert-must-specify-column": {
-      "title": "强制 \"INSERT\" 语句显示指定列名",
-      "description": "\"INSERT INTO table VALUES (...)\" 语句没有显式列出列名，一旦发生列顺序变化或列增减，语句就可能失败或写入不符合预期的数据。建议错误等级：错误"
-    },
-    "statement-insert-disallow-order-by-rand": {
-      "title": "禁止在 \"INSERT\" 语句中使用 \"ORDER BY RAND()\"",
-      "description": "对待插入的数据进行随机排序是没有意义的，只会无端消耗资源。建议错误等级：错误"
-    },
-    "statement-insert-row-limit": {
-      "title": "限制最大插入行数",
-      "description": "通过提示插入的行数辅助判断语句是否符合业务预期。建议错误等级：警告",
-      "component": {
-        "number": {
-          "title": "最大插入行数"
-        }
-      }
-    },
-    "statement-affected-row-limit": {
-      "title": "限制最大更新或删除行数(预估)",
-      "description": "通过提示更新或删除的行数辅助判断语句是否符合业务预期。建议错误等级：警告",
-      "component": {
-        "number": {
-          "title": "最大影响行数"
-        }
-      }
-    },
-    "statement-dml-dry-run": {
-      "title": "验证 DML 语句可执行性",
-      "description": "当语法正确但表名错误或权限不足时，可以在正式运行前通过模拟运行发现。建议错误等级：警告"
-    },
-    "statement-disallow-add-column-with-default": {
-      "title": "限制向表中添加带默认值的列",
-      "description": "在 PostgreSQL 11 之前的版本中，添加带有默认值的列将导致全表锁定无法读写，这可能导致业务中断。在 PostgreSQL 11 及以上版本中该问题已得到优化，无需关注此规范。建议错误等级：警告"
-    },
-    "statement-add-check-not-valid": {
-      "title": "强制添加 \"CHECK\" 约束时附带 \"NOT VALID\" 选项",
-      "description": "添加 CHECK 约束将对已有数据进行校验并要求 ACCESS EXCLUSIVE 表锁，阻塞读写，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再手动校验已有数据。建议错误等级：警告"
-    },
-    "statement-disallow-add-not-null": {
-      "title": "限制向已有列添加 \"NOT NULL\" 约束",
-      "description": "在 PostgreSQL 11 之前添加带默认值的 NOT NULL 约束或在所有 PostgreSQL 版本中添加不带默认值的 NOT NULL 约束需要验证现有数据。这会阻塞读写，可能会导致业务中断。建议错误等级：警告"
-    },
-    "statement-select-full-table-scan": {
-      "title": "检查查询是否存在全表扫描",
-      "description": "全表扫描是一种消耗大量资源的操作，可能导致严重的性能影响。建议错误等级：错误"
-    },
-    "statement-create-specify-schema": {
-      "title": "禁止创建未指定 schema 的对象",
-      "description": "如果未指定 schema，对象将在默认模式中创建，可能导致意外结果。"
-    },
-    "statement-check-set-role-variable": {
-      "title": "检查语句开头是否存在 SET ROLE 语句",
-      "description": "在会话开始时未正确设置角色语句可能导致未经授权的访问或权限分配不当，可能危及数据安全性和完整性。错误等级：警告"
-    },
-    "statement-disallow-using-temporary": {
-      "title": "禁止 Using temporary",
-      "description": "禁止 Using temporary 可以帮助优化查询性能，减少系统资源的消耗，提高系统的稳定性和可靠性。建议错误等级：警告"
-    },
-    "statement-disallow-using-filesort": {
-      "title": "禁止 Using filesort",
-      "description": "禁止 Using filesort 可以帮助优化查询性能，减少系统资源的消耗，提高系统的稳定性和可靠性。通常，通过合适的索引、查询优化和数据模型设计，可以避免或减少文件排序的需要。建议错误等级：警告"
-    },
-    "statement-where-no-equal-null": {
-      "title": "禁止在WHERE子句中使用NULL等式比较",
-      "description": "NULL 等式比较的结果始终是 NULL，可能导致意外的结果。建议错误级别：警告"
-    },
-    "statement-where-disallow-functions-and-calculations": {
-      "title": "在 WHERE 子句中避免对索引字段应用函数或执行计算",
-      "description": "如果对索引字段应用函数或执行计算，则数据库无法使用索引，而必须扫描整个表。"
-    },
-    "statement-query-minimum-plan-level": {
-      "title": "限制查询访问方法的最大级别",
-      "description": "在 SQL 性能优化中，追求常量访问速度，以引用级别作为基线，区间级别的性能尚可接受。",
-      "component": {
-        "level": {
-          "title": "最大级别"
-        }
-      }
-    },
-    "statement-where-maximum-logical-operator-count": {
-      "title": "限制 WHERE 子句中的 IN 或 OR 子句中的值的数量",
-      "description": "这可以防止因频繁对比和资源限制导致性能下降。",
-      "component": {
-        "number": {
-          "title": "最大数量"
-        }
-      }
-    },
-    "statement-maximum-limit-value": {
-      "title": "限制 LIMIT 子句的最大行数",
-      "description": "通过 LIMIT 限制行数可以确保数据库处理可管理的大小块数据，从而提高查询执行速度。 限制 LIMIT 的值可以防止过度使用内存，从而保护系统整体稳定性和防止性能下降。",
+    "TABLE_LIMIT_SIZE": {
+      "title": "限制对多行数表的 DDL 操作",
+      "description": "配置可以执行 DDL 的表的最大行数。推荐错误级别：警告",
       "component": {
         "number": {
           "title": "最大行数"
         }
       }
     },
-    "statement-maximum-join-table-count": {
-      "title": "限制语句中连接的表数量",
-      "description": "连接的表越多，查询就越复杂，执行时间也越长。 通常情况下，最好将连接数控制在最低限度。",
+    "TABLE_NO_DUPLICATE_INDEX": {
+      "title": "禁止表上重复索引",
+      "description": "此规则要求表上没有重复索引。重复索引会占用额外的存储空间であり、クエリパフォーマンスを低下させる可能性があります。推奨エラーレベル：警告。"
+    },
+    "TABLE_NO_FOREIGN_KEY": {
+      "title": "禁止使用外键约束",
+      "description": "外键的优缺点争议较大，使用外键可能导致数据库变更、扩展（如分库）等工作的难度明显增加，甚至无法使用一些工具。因此可以考虑在应用层实现外键约束。建议错误等级：警告"
+    },
+    "TABLE_REQUIRE_CHARSET": {
+      "title": "需要指定字符集",
+      "description": "必须指定表格的字符集。建议错误级别：警告"
+    },
+    "TABLE_REQUIRE_COLLATION": {
+      "title": "需要指定排序规则",
+      "description": "必须指定表的排序规则。建议错误级别：警告"
+    },
+    "TABLE_REQUIRE_PK": {
+      "title": "强制表包含主键",
+      "description": "各种数据同步、比对、回滚的工具往往要求表有主键。建议错误等级：错误"
+    },
+    "TABLE_TEXT_FIELDS_TOTAL_LENGTH": {
+      "title": "限制表格文本字段的总长度",
+      "description": "该规则限制了表格所能容纳的数据量，防止存储空间的使用过量。",
       "component": {
         "number": {
-          "title": "最大值"
+          "title": "最大长度"
         }
       }
-    },
-    "statement-maximum-statements-in-transaction": {
-      "title": "限制事务中的语句数量",
-      "description": "巨大的事务会显著影响数据库性能。如果涉及大量语句并且其中一个语句失败，则回滚整个事务会变得复杂。限制语句数量可以最小化单个故障造成的潜在损害并简化回滚过程。",
-      "component": {
-        "number": {
-          "title": "最大行数"
-        }
-      }
-    },
-    "statement-join-strict-column-attrs": {
-      "title": "要进行连接的字段必须具有相同的数据类型和字符集。",
-      "description": "如果连接列的数据类型、字符集不一致，数据库可能无法正确识别匹配的行，从而导致结果不准确或不完整。"
-    },
-    "statement-prior-backup-check": {
-      "title": "检查能否预先备份数据",
-      "description": "此规则将检查是否可以在数据更改前创建备份。该规则要求备份目标数据库存在且不存在DDL语句。"
-    },
-    "statement-add-column-without-position": {
-      "title": "禁止在指定位置加列",
-      "description": "部分情况下，使用 FIRST/AFTER 在指定位置加列将引起数据重整（把原来的数据重写一遍）。建议错误级别：警告"
-    },
-    "statement-disallow-offline-ddl": {
-      "title": "禁止离线 DDL",
-      "description": "为了防止数据库更改影响您的业务，请避免使用离线 DDL。"
-    },
-    "statement-disallow-cross-db-queries": {
-      "title": "禁止跨数据库查询",
-      "description": "跨数据库查询会增加系统的耦合性，并可能导致效率问题。建议的错误级别：警告"
-    },
-    "schema-backward-compatibility": {
-      "title": "检查应用向后兼容性",
-      "description": "部分变更可能影响现有应用功能，例如修改数据库对象名，增加新的约束等，此规范可避免不谨慎变更导致现有应用运行失败。建议错误等级：警告"
-    },
-    "statement-max-execution-time": {
-      "title": "强制设置最大执行时间参数",
-      "description": "设置SQL语句的最大执行时间，如果执行时间超过限制，语句将被终止。建议错误级别：警告",
-      "mysql": {
-        "title": "强制明确设置 MAX_EXECUTION_TIME 参数",
-        "description": "在变更脚本中设置 MAX_EXECUTION_TIME 参数以显式控制语句最长执行时间。建议错误级别：警告"
-      },
-      "mariadb": {
-        "title": "强制明确设置 MAX_STATEMENT_TIME 参数",
-        "description": "在变更脚本中设置 MAX_STATEMENT_TIME 参数以显式控制语句最长执行时间。建议错误级别：警告"
-      }
-    },
-    "statement-require-algorithm-option": {
-      "title": "需要在 ALTER TABLE 语句中指定 ALGORITHM 选项",
-      "description": "在 ALTER TABLE 语句中指定 ALGORITHM 选项可确保更好地控制表更改的应用方式，通过避免全表复制或锁定来最大限度地减少潜在的中断。它有助于优化性能并减少 ALTER TABLE 操作的停机时间。建议的错误级别：警告。"
-    },
-    "statement-require-lock-option": {
-      "title": "需要在 ALTER TABLE 语句中指定 LOCK 选项",
-      "description": "ALTER TABLE 语句中的 LOCK 选项允许您控制架构更改期间的锁定级别，有助于防止不必要的表锁定并确保更好的并发性。正确使用此选项可以显著减少 ALTER TABLE 操作对活动查询的影响。建议的错误级别：警告。"
-    },
-    "database-drop-empty-database": {
-      "title": "禁止删除非空数据库",
-      "description": "只有当数据库中不包含任何表时才允许被删除，这能最大程度避免误删除的发生。建议错误等级：错误"
-    },
-    "index-no-duplicate-column": {
-      "title": "禁止索引包含重复列",
-      "description": "创建索引含重复列时语句将执行失败。建议错误等级：错误"
-    },
-    "index-type-no-blob": {
-      "title": "禁止对 \"BLOB\" 与 \"TEXT\" 类型列创建索引",
-      "description": "\"BLOB\" 等类型一般用于存放二进制数据，并不会作为查询条件，如果误在此类列上创建索引，将占用大量资源并产生严重的性能问题。建议错误等级：错误"
-    },
-    "index-pk-type-limit": {
-      "title": "主键类型限制",
-      "description": "限制主键类型必须是 INT 或 BIGINT。"
-    },
-    "index-key-number-limit": {
-      "title": "限制单个索引中的列数量",
-      "description": "组合索引列超过 5 个对查询性能的提升并不明显，但却占用大量空间并降低 DML 性能。建议错误等级：警告",
-      "component": {
-        "number": {
-          "title": "字段数量上限"
-        }
-      }
-    },
-    "index-total-number-limit": {
-      "title": "限制单表的索引数量",
-      "description": "索引虽然能提升查询性能，但却占用大量空间并降低 DML 性能，因此不建议单个表创建的索引数量超过5个。建议错误等级：警告",
-      "component": {
-        "number": {
-          "title": "索引数量上限"
-        }
-      }
-    },
-    "index-primary-key-type-allowlist": {
-      "title": "允许主键使用的类型列表",
-      "description": "合适的主键类型可以优化存储结构，减少空间占用并带来更好的插入与查询性能。建议错误等级：警告",
-      "component": {
-        "list": {
-          "title": "允许的主键列的类型"
-        }
-      }
-    },
-    "index-create-concurrently": {
-      "title": "强制并行索引创建",
-      "description": "在 PostgreSQL 11 及以上版本中，使用普通方式创建索引将导致表锁定无法写入数据，使用 \"CONCURRENTLY\" 模式可以实现无锁创建索引，不影响表的正常访问。建议错误等级：警告"
-    },
-    "index-type-allow-list": {
-      "title": "可允许的索引类型列表",
-      "description": "不同的索引类型具有不同的性能特征。例如，B-tree 索引适用于范围查询，而哈希索引适用于相等查询。建议错误级别：警告",
-      "component": {
-        "list": {
-          "title": "允许的索引类型"
-        }
-      }
-    },
-    "index-not-redundant": {
-      "title": "禁止冗余索引",
-      "description": "冗余索引可能会导致性能损失并占用额外空间。例如，如果列（c1）上已经有一个索引，那么在列（c1，c2）上的索引将被视为冗余索引。建议的错误级别：警告"
-    },
-    "system-charset-allowlist": {
-      "title": "允许使用的字符集（Charset）列表",
-      "description": "字符集决定了表中可以存储哪些字符，使用错误的字符集可能导致应用中的部分字符无法正确存储与显示，例如中文与 Emoji 表情。建议错误等级：错误",
-      "component": {
-        "list": {
-          "title": "允许的字符集"
-        }
-      }
-    },
-    "system-collation-allowlist": {
-      "title": "允许使用的字符序（Collation）列表",
-      "description": "字符序决定了字符比对与排序的规则，例如使用不区分大小写的字符序时 \"ABC\" 与 \"abc\" 在查询时将被视为相同字符串。建议错误等级：错误",
-      "component": {
-        "list": {
-          "title": "允许的规则限制"
-        }
-      }
-    },
-    "system-comment-length": {
-      "title": "限制注释长度",
-      "description": "过长的注释将导致 Schema 易读性降低，并可能带来潜在的性能风险。建议错误等级：警告",
-      "component": {
-        "number": {
-          "title": "注释长度上限"
-        }
-      }
-    },
-    "system-procedure-disallow-create": {
-      "title": "禁止创建存储过程",
-      "description": "存储过程通常会执行可能影响数据库环境稳定性和安全性的关键操作。禁止创建存储过程有助于防止意外更改和潜在漏洞。建议错误等级：警告"
-    },
-    "system-event-disallow-create": {
-      "title": "禁止创建事件",
-      "description": "该规则禁止在数据库中创建事件。系统事件通常执行可能影响数据库环境的自动化任务。通过禁止创建它们，有助于控制数据库操作并防止潜在的中断。建议的错误级别：警告"
-    },
-    "system-view-disallow-create": {
-      "title": "禁止创建视图",
-      "description": "该规则禁止在数据库中创建视图。视图提供了数据的虚拟表示，可以简化查询并增强数据安全性。通过禁止创建它们，有助于维护对数据库模式的控制，并防止潜在的安全风险。建议的错误级别：警告"
-    },
-    "system-function-disallow-create": {
-      "title": "禁止创建函数",
-      "description": "该规则禁止在数据库中创建函数。函数提供可重用的逻辑，可以简化查询并增强数据完整性。通过禁止创建它们，有助于保持对数据库架构的控制，并预防潜在的安全风险。建议的错误级别：警告"
-    },
-    "system-function-disallowed-list": {
-      "title": "禁止使用的函数",
-      "description": "此规则限制数据库内特定函数的使用。通过禁止使用这些函数，有助于维护数据一致性和安全性。建议错误级别：警告",
-      "component": {
-        "list": {
-          "title": "禁止的函数"
-        }
-      }
-    },
-    "advice-online-migration": {
-      "title": "在线大表变更",
-      "description": "如果迁移的表行数超过您的设置，建议启用在线迁移。建议的错误级别: 警告",
-      "component": {
-        "number": {
-          "title": "阈值"
-        }
-      }
-    },
-    "statement-add-foreign-key-not-valid": {
-      "title": "强制添加外键时附带 \"NOT VALID\" 选项",
-      "description": "添加外键会校验已有数据并要求 SHARE ROW EXCLUSIVE 表锁，阻塞写入，这可能导致业务中断。建议附带 \"NOT VALID\" 选项只对新数据进行校验，变更完成后再校验已有数据。建议错误等级：警告"
-    },
-    "statement-non-transactional": {
-      "title": "检测并报告非事务性语句",
-      "description": ""
-    },
-    "builtin-prior-backup-check": {
-      "title": "事先备份可行性检查",
-      "description": "此规则检查是否可以在数据更改之前创建备份。它会验证备份目标数据库是否存在，并禁止不支持的方案。它是内置的，无法跳过。"
-    },
-    "statement-object-owner-check": {
-      "title": "对象所有者检查",
-      "description": "此规则检查 DDL 的对象所有者是否与当前用户相同。"
     }
   },
   "level": {

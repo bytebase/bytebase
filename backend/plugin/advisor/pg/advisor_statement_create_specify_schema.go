@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementCreateSpecifySchema, &StatementCreateSpecifySchema{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_CREATE_SPECIFY_SCHEMA, &StatementCreateSpecifySchema{})
 }
 
 type StatementCreateSpecifySchema struct {
@@ -37,7 +37,7 @@ func (*StatementCreateSpecifySchema) Check(_ context.Context, checkCtx advisor.C
 	rule := &statementCreateSpecifySchemaRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 	}
 

@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.SchemaRuleTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking the MySQLTableDropNamingConvention rule.
@@ -46,7 +46,7 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 
 	checker := &namingDropTableConventionChecker{
 		level:  level,
-		title:  string(checkCtx.Rule.Type),
+		title:  checkCtx.Rule.Type.String(),
 		format: format,
 	}
 	for _, stmtNode := range root {

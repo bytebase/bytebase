@@ -27,7 +27,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.BuiltinRulePriorBackupCheck, &BuiltinPriorBackupCheckAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK, &BuiltinPriorBackupCheckAdvisor{})
 }
 
 // BuiltinPriorBackupCheckAdvisor is the advisor checking for disallow mix DDL and DML.
@@ -44,7 +44,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	if err != nil {
 		return nil, err
 	}
-	title := string(checkCtx.Rule.Type)
+	title := checkCtx.Rule.Type.String()
 
 	var adviceList []*storepb.Advice
 

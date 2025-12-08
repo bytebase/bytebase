@@ -31,7 +31,7 @@
   want:
     - status: 2
       code: 815
-      title: table.no-duplicate-index
+      title: TABLE_NO_DUPLICATE_INDEX
       content: '`users` has duplicate index `idx_username_duplicate`'
       startposition:
         line: 7
@@ -50,7 +50,7 @@
   want:
     - status: 2
       code: 815
-      title: table.no-duplicate-index
+      title: TABLE_NO_DUPLICATE_INDEX
       content: '`orders` has duplicate index ``'
       startposition:
         line: 7
@@ -70,7 +70,7 @@
   want:
     - status: 2
       code: 815
-      title: table.no-duplicate-index
+      title: TABLE_NO_DUPLICATE_INDEX
       content: '`orders` has duplicate index `idx_duplicate`'
       startposition:
         line: 9
@@ -88,7 +88,7 @@
   want:
     - status: 2
       code: 815
-      title: table.no-duplicate-index
+      title: TABLE_NO_DUPLICATE_INDEX
       content: '`orders` has duplicate index `idx_customer_id_duplicate`'
       startposition:
         line: 7
@@ -106,7 +106,7 @@
   want:
     - status: 2
       code: 815
-      title: table.no-duplicate-index
+      title: TABLE_NO_DUPLICATE_INDEX
       content: '`orders` has duplicate index `idx_customer_duplicate`'
       startposition:
         line: 7

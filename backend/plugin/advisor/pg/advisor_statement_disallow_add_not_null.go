@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleStatementDisallowAddNotNull, &StatementDisallowAddNotNullAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DISALLOW_ADD_NOT_NULL, &StatementDisallowAddNotNullAdvisor{})
 }
 
 // StatementDisallowAddNotNullAdvisor is the advisor checking for to disallow add not null.
@@ -41,7 +41,7 @@ func (*StatementDisallowAddNotNullAdvisor) Check(_ context.Context, checkCtx adv
 	rule := &statementDisallowAddNotNullRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 	}
 

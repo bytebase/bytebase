@@ -53,7 +53,7 @@
 import { NCheckbox, NDivider } from "naive-ui";
 import { SearchBox } from "@/components/v2";
 import type { RuleTemplateV2 } from "@/types";
-import { getRuleLocalization } from "@/types";
+import { getRuleLocalization, ruleTypeToString } from "@/types";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import SQLReviewCategoryTabFilter from "./SQLReviewCategoryTabFilter.vue";
@@ -110,8 +110,11 @@ const filterRule = (rule: RuleTemplateV2) => {
 const filterRuleByKeyword = (rule: RuleTemplateV2, searchText: string) => {
   const keyword = searchText.trim().toLowerCase();
   if (!keyword) return true;
-  if (rule.type.toLowerCase().includes(keyword)) return true;
-  const localization = getRuleLocalization(rule.type, rule.engine);
+  if (ruleTypeToString(rule.type).toLowerCase().includes(keyword)) return true;
+  const localization = getRuleLocalization(
+    ruleTypeToString(rule.type),
+    rule.engine
+  );
   if (localization.title.toLowerCase().includes(keyword)) return true;
   if (localization.description.toLowerCase().includes(keyword)) return true;
   return false;

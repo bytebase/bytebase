@@ -24,7 +24,7 @@
   want:
     - status: 2
       code: 816
-      title: index.type-allow-list
+      title: INDEX_TYPE_ALLOW_LIST
       content: Index type `SPATIAL` is not allowed
       startposition:
         line: 5
@@ -40,7 +40,7 @@
   want:
     - status: 2
       code: 816
-      title: index.type-allow-list
+      title: INDEX_TYPE_ALLOW_LIST
       content: Index type `FULLTEXT` is not allowed
       startposition:
         line: 5

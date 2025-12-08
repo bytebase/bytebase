@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleProcedureDisallowCreate, &ProcedureDisallowCreateAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_SYSTEM_PROCEDURE_DISALLOW_CREATE, &ProcedureDisallowCreateAdvisor{})
 }
 
 // ProcedureDisallowCreateAdvisor is the advisor checking for disallow create procedure.
@@ -41,7 +41,7 @@ func (*ProcedureDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	// Create the rule
-	rule := NewProcedureDisallowCreateRule(level, string(checkCtx.Rule.Type))
+	rule := NewProcedureDisallowCreateRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

@@ -1,6 +1,9 @@
 import { t, te } from "@/plugins/i18n";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
+import {
+  SQLReviewRule_Level,
+  SQLReviewRule_Type,
+} from "@/types/proto-es/v1/review_config_service_pb";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
@@ -127,10 +130,10 @@ export interface SQLReviewPolicy {
   resources: string[];
 }
 
-// engine and level are enum strings.
+// type, engine, and level are enum strings.
 // we need to convert them first.
 interface RuleTemplateV2Raw {
-  type: string;
+  type: string; // keyof typeof SQLReviewRule_Type
   category: string;
   engine: string; // keyof typeof Engine
   level: string; // keyof typeof SQLReviewRule_Level
@@ -139,7 +142,7 @@ interface RuleTemplateV2Raw {
 
 // RuleTemplateV2 is the rule template. Used by the frontend
 export interface RuleTemplateV2 {
-  type: string;
+  type: SQLReviewRule_Type;
   category: string;
   engine: Engine;
   level: SQLReviewRule_Level;
@@ -152,9 +155,14 @@ export interface SQLReviewPolicyTemplateV2 {
   ruleList: RuleTemplateV2[];
 }
 
+// Helper to convert SQLReviewRule_Type enum value to string key
+export const ruleTypeToString = (type: SQLReviewRule_Type): string => {
+  return SQLReviewRule_Type[type] as string;
+};
+
 export const getRuleMapByEngine = (
   ruleList: RuleTemplateV2[]
-): Map<Engine, Map<string, RuleTemplateV2>> => {
+): Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>> => {
   return ruleList.reduce((map, rule) => {
     const engine = rule.engine; // Engine is already numeric enum, no conversion needed
     if (!map.has(engine)) {
@@ -167,13 +175,18 @@ export const getRuleMapByEngine = (
       componentList: rule.componentList || [],
     });
     return map;
-  }, new Map<Engine, Map<string, RuleTemplateV2>>());
+  }, new Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>());
 };
 
 const convertRuleTemplateV2Raw = (
   sqlReviewSchema: RuleTemplateV2Raw[]
 ): RuleTemplateV2[] => {
   return sqlReviewSchema.map((rawRule) => {
+    // Convert type string key to enum value
+    const typeKey = rawRule.type as keyof typeof SQLReviewRule_Type;
+    const type =
+      SQLReviewRule_Type[typeKey] ?? SQLReviewRule_Type.TYPE_UNSPECIFIED;
+
     // Convert engine string key to enum value
     const engineKey = rawRule.engine as keyof typeof Engine;
     const engine = Engine[engineKey] ?? Engine.ENGINE_UNSPECIFIED;
@@ -184,6 +197,7 @@ const convertRuleTemplateV2Raw = (
 
     return {
       ...rawRule,
+      type,
       engine,
       level,
     };
@@ -217,11 +231,16 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
     const ruleList: RuleTemplateV2[] = [];
 
     for (const rule of template.ruleList) {
+      // Convert type string to enum for map lookup
+      const typeKey = rule.type as keyof typeof SQLReviewRule_Type;
+      const type =
+        SQLReviewRule_Type[typeKey] ?? SQLReviewRule_Type.TYPE_UNSPECIFIED;
+
       // Convert engine string to enum for map lookup
       const engineKey = rule.engine as keyof typeof Engine;
       const engine = Engine[engineKey] ?? Engine.ENGINE_UNSPECIFIED;
 
-      const ruleTemplate = ruleTemplateMapV2.get(engine)?.get(rule.type);
+      const ruleTemplate = ruleTemplateMapV2.get(engine)?.get(type);
       if (!ruleTemplate) {
         continue;
       }
@@ -292,9 +311,9 @@ export const convertPolicyRuleToRuleTemplate = (
   policyRule: SchemaPolicyRule,
   ruleTemplate: RuleTemplateV2
 ): RuleTemplateV2 => {
-  if (policyRule.type !== ruleTemplate.type) {
+  if (policyRule.type !== ruleTypeToString(ruleTemplate.type)) {
     throw new Error(
-      `The rule type is not same. policyRule:${ruleTemplate.type}, ruleTemplate:${ruleTemplate.type}`
+      `The rule type is not same. policyRule:${policyRule.type}, ruleTemplate:${ruleTypeToString(ruleTemplate.type)}`
     );
   }
 
@@ -328,9 +347,9 @@ export const convertPolicyRuleToRuleTemplate = (
   );
 
   switch (ruleTemplate.type) {
-    case "statement.query.minimum-plan-level":
+    case SQLReviewRule_Type.STATEMENT_QUERY_MINIMUM_PLAN_LEVEL:
       if (!stringComponent) {
-        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
 
       return {
@@ -346,9 +365,9 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     // Following rules require STRING component.
-    case "table.drop-naming-convention":
+    case SQLReviewRule_Type.TABLE_DROP_NAMING_CONVENTION:
       if (!stringComponent) {
-        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
 
       return {
@@ -364,11 +383,11 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     // Following rules require STRING and NUMBER component.
-    case "naming.column":
-    case "naming.column.auto-increment":
-    case "naming.table":
+    case SQLReviewRule_Type.NAMING_COLUMN:
+    case SQLReviewRule_Type.NAMING_COLUMN_AUTO_INCREMENT:
+    case SQLReviewRule_Type.NAMING_TABLE:
       if (!stringComponent || !numberComponent) {
-        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
 
       return {
@@ -391,9 +410,9 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     // Following rules require TEMPLATE component.
-    case "naming.index.pk":
+    case SQLReviewRule_Type.NAMING_INDEX_PK:
       if (!templateComponent) {
-        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
 
       return {
@@ -409,11 +428,11 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     // Following rules require TEMPLATE and NUMBER component.
-    case "naming.index.idx":
-    case "naming.index.uk":
-    case "naming.index.fk":
+    case SQLReviewRule_Type.NAMING_INDEX_IDX:
+    case SQLReviewRule_Type.NAMING_INDEX_UK:
+    case SQLReviewRule_Type.NAMING_INDEX_FK:
       if (!templateComponent || !numberComponent) {
-        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
 
       return {
@@ -436,9 +455,9 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
       };
     // Following rules require BOOLEAN component.
-    case "naming.identifier.case":
+    case SQLReviewRule_Type.NAMING_IDENTIFIER_CASE:
       if (!booleanComponent) {
-        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
       return {
         ...res,
@@ -449,7 +468,7 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
-    case "column.required": {
+    case SQLReviewRule_Type.COLUMN_REQUIRED: {
       const requiredColumnComponent = componentList[0];
       // The columnList payload is deprecated.
       // Just keep it to compatible with old data, we can remove this later.
@@ -472,16 +491,16 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     }
     // Following rules require STRING_ARRAY component.
-    case "column.type-disallow-list":
-    case "index.primary-key-type-allowlist":
-    case "index.type-allow-list":
-    case "system.charset.allowlist":
-    case "system.collation.allowlist":
-    case "system.function.disallowed-list":
-    case "table.disallow-dml":
-    case "table.disallow-ddl": {
+    case SQLReviewRule_Type.COLUMN_TYPE_DISALLOW_LIST:
+    case SQLReviewRule_Type.INDEX_PRIMARY_KEY_TYPE_ALLOWLIST:
+    case SQLReviewRule_Type.INDEX_TYPE_ALLOW_LIST:
+    case SQLReviewRule_Type.SYSTEM_CHARSET_ALLOWLIST:
+    case SQLReviewRule_Type.SYSTEM_COLLATION_ALLOWLIST:
+    case SQLReviewRule_Type.SYSTEM_FUNCTION_DISALLOWED_LIST:
+    case SQLReviewRule_Type.TABLE_DISALLOW_DML:
+    case SQLReviewRule_Type.TABLE_DISALLOW_DDL: {
       if (!stringArrayComponent) {
-        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
       const stringArrayPayload = {
         ...stringArrayComponent.payload,
@@ -498,8 +517,8 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     }
     // Following rules require BOOLEAN and NUMBER component.
-    case "column.comment":
-    case "table.comment": {
+    case SQLReviewRule_Type.COLUMN_COMMENT:
+    case SQLReviewRule_Type.TABLE_COMMENT: {
       const requireComponent = componentList.find((c) => c.key === "required");
       const requiredClassificationComponent = componentList.find(
         (c) => c.key === "requiredClassification"
@@ -510,7 +529,7 @@ export const convertPolicyRuleToRuleTemplate = (
         !requiredClassificationComponent ||
         !numberComponent
       ) {
-        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
 
       return {
@@ -541,23 +560,23 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     }
     // Following rules require NUMBER component.
-    case "statement.insert.row-limit":
-    case "statement.affected-row-limit":
-    case "column.maximum-character-length":
-    case "column.maximum-varchar-length":
-    case "column.auto-increment-initial-value":
-    case "index.key-number-limit":
-    case "index.total-number-limit":
-    case "system.comment.length":
-    case "advice.online-migration":
-    case "table.text-fields-total-length":
-    case "table.limit-size":
-    case "statement.where.maximum-logical-operator-count":
-    case "statement.maximum-limit-value":
-    case "statement.maximum-join-table-count":
-    case "statement.maximum-statements-in-transaction":
+    case SQLReviewRule_Type.STATEMENT_INSERT_ROW_LIMIT:
+    case SQLReviewRule_Type.STATEMENT_AFFECTED_ROW_LIMIT:
+    case SQLReviewRule_Type.COLUMN_MAXIMUM_CHARACTER_LENGTH:
+    case SQLReviewRule_Type.COLUMN_MAXIMUM_VARCHAR_LENGTH:
+    case SQLReviewRule_Type.COLUMN_AUTO_INCREMENT_INITIAL_VALUE:
+    case SQLReviewRule_Type.INDEX_KEY_NUMBER_LIMIT:
+    case SQLReviewRule_Type.INDEX_TOTAL_NUMBER_LIMIT:
+    case SQLReviewRule_Type.SYSTEM_COMMENT_LENGTH:
+    case SQLReviewRule_Type.ADVICE_ONLINE_MIGRATION:
+    case SQLReviewRule_Type.TABLE_TEXT_FIELDS_TOTAL_LENGTH:
+    case SQLReviewRule_Type.TABLE_LIMIT_SIZE:
+    case SQLReviewRule_Type.STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
+    case SQLReviewRule_Type.STATEMENT_MAXIMUM_LIMIT_VALUE:
+    case SQLReviewRule_Type.STATEMENT_MAXIMUM_JOIN_TABLE_COUNT:
+    case SQLReviewRule_Type.STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION:
       if (!numberComponent) {
-        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
 
       return {
@@ -596,9 +615,9 @@ const mergeIndividualConfigAsRule = (
   )?.payload as StringArrayPayload | undefined;
 
   switch (template.type) {
-    case "statement.query.minimum-plan-level":
+    case SQLReviewRule_Type.STATEMENT_QUERY_MINIMUM_PLAN_LEVEL:
       if (!stringPayload) {
-        throw new Error(`Invalid rule ${template.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
       }
 
       return {
@@ -608,9 +627,9 @@ const mergeIndividualConfigAsRule = (
         },
       };
     // Following rules require STRING component.
-    case "table.drop-naming-convention":
+    case SQLReviewRule_Type.TABLE_DROP_NAMING_CONVENTION:
       if (!stringPayload) {
-        throw new Error(`Invalid rule ${template.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
       }
 
       return {
@@ -620,11 +639,11 @@ const mergeIndividualConfigAsRule = (
         },
       };
     // Following rules require STRING and NUMBER component.
-    case "naming.column":
-    case "naming.column.auto-increment":
-    case "naming.table":
+    case SQLReviewRule_Type.NAMING_COLUMN:
+    case SQLReviewRule_Type.NAMING_COLUMN_AUTO_INCREMENT:
+    case SQLReviewRule_Type.NAMING_TABLE:
       if (!stringPayload || !numberPayload) {
-        throw new Error(`Invalid rule ${template.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
       }
 
       return {
@@ -635,9 +654,9 @@ const mergeIndividualConfigAsRule = (
         },
       };
     // Following rules require TEMPLATE component.
-    case "naming.index.pk":
+    case SQLReviewRule_Type.NAMING_INDEX_PK:
       if (!templatePayload) {
-        throw new Error(`Invalid rule ${template.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
       }
       return {
         ...base,
@@ -646,11 +665,11 @@ const mergeIndividualConfigAsRule = (
         },
       };
     // Following rules require TEMPLATE and NUMBER component.
-    case "naming.index.idx":
-    case "naming.index.uk":
-    case "naming.index.fk":
+    case SQLReviewRule_Type.NAMING_INDEX_IDX:
+    case SQLReviewRule_Type.NAMING_INDEX_UK:
+    case SQLReviewRule_Type.NAMING_INDEX_FK:
       if (!templatePayload || !numberPayload) {
-        throw new Error(`Invalid rule ${template.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
       }
       return {
         ...base,
@@ -660,9 +679,9 @@ const mergeIndividualConfigAsRule = (
         },
       };
     // Following rules require BOOLEAN component.
-    case "naming.identifier.case":
+    case SQLReviewRule_Type.NAMING_IDENTIFIER_CASE:
       if (!booleanPayload) {
-        throw new Error(`Invalid rule ${template.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
       }
       return {
         ...base,
@@ -671,17 +690,17 @@ const mergeIndividualConfigAsRule = (
         },
       };
     // Following rules require STRING_ARRAY component.
-    case "column.required":
-    case "column.type-disallow-list":
-    case "index.primary-key-type-allowlist":
-    case "index.type-allow-list":
-    case "system.charset.allowlist":
-    case "system.collation.allowlist":
-    case "system.function.disallowed-list":
-    case "table.disallow-dml":
-    case "table.disallow-ddl": {
+    case SQLReviewRule_Type.COLUMN_REQUIRED:
+    case SQLReviewRule_Type.COLUMN_TYPE_DISALLOW_LIST:
+    case SQLReviewRule_Type.INDEX_PRIMARY_KEY_TYPE_ALLOWLIST:
+    case SQLReviewRule_Type.INDEX_TYPE_ALLOW_LIST:
+    case SQLReviewRule_Type.SYSTEM_CHARSET_ALLOWLIST:
+    case SQLReviewRule_Type.SYSTEM_COLLATION_ALLOWLIST:
+    case SQLReviewRule_Type.SYSTEM_FUNCTION_DISALLOWED_LIST:
+    case SQLReviewRule_Type.TABLE_DISALLOW_DML:
+    case SQLReviewRule_Type.TABLE_DISALLOW_DDL: {
       if (!stringArrayPayload) {
-        throw new Error(`Invalid rule ${template.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
       }
       return {
         ...base,
@@ -691,8 +710,8 @@ const mergeIndividualConfigAsRule = (
       };
     }
     // Following rules require BOOLEAN and NUMBER component.
-    case "column.comment":
-    case "table.comment": {
+    case SQLReviewRule_Type.COLUMN_COMMENT:
+    case SQLReviewRule_Type.TABLE_COMMENT: {
       const requirePayload = componentList.find((c) => c.key === "required")
         ?.payload as BooleanPayload | undefined;
       const requiredClassificationPayload = componentList.find(
@@ -700,7 +719,7 @@ const mergeIndividualConfigAsRule = (
       )?.payload as BooleanPayload | undefined;
 
       if (!requirePayload || !numberPayload) {
-        throw new Error(`Invalid rule ${template.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
       }
       return {
         ...base,
@@ -715,23 +734,23 @@ const mergeIndividualConfigAsRule = (
       };
     }
     // Following rules require NUMBER component.
-    case "statement.insert.row-limit":
-    case "statement.affected-row-limit":
-    case "column.maximum-character-length":
-    case "column.maximum-varchar-length":
-    case "column.auto-increment-initial-value":
-    case "index.key-number-limit":
-    case "index.total-number-limit":
-    case "system.comment.length":
-    case "advice.online-migration":
-    case "table.text-fields-total-length":
-    case "table.limit-size":
-    case "statement.where.maximum-logical-operator-count":
-    case "statement.maximum-limit-value":
-    case "statement.maximum-join-table-count":
-    case "statement.maximum-statements-in-transaction":
+    case SQLReviewRule_Type.STATEMENT_INSERT_ROW_LIMIT:
+    case SQLReviewRule_Type.STATEMENT_AFFECTED_ROW_LIMIT:
+    case SQLReviewRule_Type.COLUMN_MAXIMUM_CHARACTER_LENGTH:
+    case SQLReviewRule_Type.COLUMN_MAXIMUM_VARCHAR_LENGTH:
+    case SQLReviewRule_Type.COLUMN_AUTO_INCREMENT_INITIAL_VALUE:
+    case SQLReviewRule_Type.INDEX_KEY_NUMBER_LIMIT:
+    case SQLReviewRule_Type.INDEX_TOTAL_NUMBER_LIMIT:
+    case SQLReviewRule_Type.SYSTEM_COMMENT_LENGTH:
+    case SQLReviewRule_Type.ADVICE_ONLINE_MIGRATION:
+    case SQLReviewRule_Type.TABLE_TEXT_FIELDS_TOTAL_LENGTH:
+    case SQLReviewRule_Type.TABLE_LIMIT_SIZE:
+    case SQLReviewRule_Type.STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
+    case SQLReviewRule_Type.STATEMENT_MAXIMUM_LIMIT_VALUE:
+    case SQLReviewRule_Type.STATEMENT_MAXIMUM_JOIN_TABLE_COUNT:
+    case SQLReviewRule_Type.STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION:
       if (!numberPayload) {
-        throw new Error(`Invalid rule ${template.type}`);
+        throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
       }
       return {
         ...base,
@@ -745,7 +764,7 @@ const mergeIndividualConfigAsRule = (
 };
 
 export const convertRuleMapToPolicyRuleList = (
-  ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>
+  ruleMapByEngine: Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>
 ): SchemaPolicyRule[] => {
   const resp: SchemaPolicyRule[] = [];
 
@@ -764,7 +783,7 @@ const convertRuleTemplateToPolicyRule = (
   rule: RuleTemplateV2
 ): SchemaPolicyRule => {
   const base: SchemaPolicyRule = {
-    type: rule.type,
+    type: ruleTypeToString(rule.type),
     level: rule.level,
     engine: rule.engine,
   };
@@ -776,7 +795,9 @@ const convertRuleTemplateToPolicyRule = (
 };
 
 export const getRuleLocalizationKey = (type: string): string => {
-  return type.split(".").join("-");
+  // Return the SCREAMING_SNAKE_CASE format as-is
+  // This matches the keys in the locale files (e.g., "TABLE_REQUIRE_PK")
+  return type;
 };
 
 export const getRuleLocalization = (

@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleCharsetAllowlist, &EncodingAllowlistAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST, &EncodingAllowlistAdvisor{})
 }
 
 // EncodingAllowlistAdvisor is the advisor checking for encoding allowlist.
@@ -52,7 +52,7 @@ func (*EncodingAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	rule := &encodingAllowlistRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		allowlist: allowlist,
 	}

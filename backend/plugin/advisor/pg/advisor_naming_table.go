@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleTableNaming, &NamingTableConventionAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_NAMING_TABLE, &NamingTableConventionAdvisor{})
 }
 
 // NamingTableConventionAdvisor is the advisor checking for table naming convention.
@@ -47,7 +47,7 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	rule := &namingTableConventionRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		format:    format,
 		maxLength: maxLength,
@@ -72,7 +72,7 @@ type namingTableConventionRule struct {
 }
 
 func (*namingTableConventionRule) Name() string {
-	return string(advisor.SchemaRuleTableNaming)
+	return string(storepb.SQLReviewRule_NAMING_TABLE)
 }
 
 func (r *namingTableConventionRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {

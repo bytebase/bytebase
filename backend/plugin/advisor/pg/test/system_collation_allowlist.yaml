@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 1201
-      title: system.collation.allowlist
+      title: SYSTEM_COLLATION_ALLOWLIST
       content: Use disabled collation "unknown", related statement "CREATE TABLE t(a text COLLATE "unknown")"
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 1201
-      title: system.collation.allowlist
+      title: SYSTEM_COLLATION_ALLOWLIST
       content: Use disabled collation "unknown", related statement "ALTER TABLE tech_book ADD COLUMN c1 text COLLATE "unknown""
       startposition:
         line: 1
@@ -27,7 +27,7 @@
   want:
     - status: 2
       code: 1201
-      title: system.collation.allowlist
+      title: SYSTEM_COLLATION_ALLOWLIST
       content: Use disabled collation "unknown", related statement "ALTER TABLE tech_book ALTER COLUMN id TYPE text COLLATE "unknown""
       startposition:
         line: 1

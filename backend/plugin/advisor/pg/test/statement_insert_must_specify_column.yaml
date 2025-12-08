@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 1107
-      title: statement.insert.must-specify-column
+      title: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
       content: The INSERT statement must specify columns but "INSERT INTO tech_book VALUES (1, '1')" does not
       startposition:
         line: 1

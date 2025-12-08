@@ -9,7 +9,7 @@
   want:
     - status: 2
       code: 802
-      title: index.key-number-limit
+      title: INDEX_KEY_NUMBER_LIMIT
       content: The number of keys of index "t_id_name" in table "t" should be not greater than 5
       startposition:
         line: 1
@@ -20,7 +20,7 @@
   want:
     - status: 2
       code: 802
-      title: index.key-number-limit
+      title: INDEX_KEY_NUMBER_LIMIT
       content: The number of keys of index "t_id_name" in table "t" should be not greater than 5
       startposition:
         line: 1
@@ -33,7 +33,7 @@
   want:
     - status: 2
       code: 802
-      title: index.key-number-limit
+      title: INDEX_KEY_NUMBER_LIMIT
       content: The number of keys of index "idx_address_phone" in table "address" should be not greater than 5
       startposition:
         line: 2
@@ -46,7 +46,7 @@
   want:
     - status: 2
       code: 802
-      title: index.key-number-limit
+      title: INDEX_KEY_NUMBER_LIMIT
       content: The number of keys of index "idx_address_phone" in table "address" should be not greater than 5
       startposition:
         line: 2
@@ -59,7 +59,7 @@
   want:
     - status: 2
       code: 802
-      title: index.key-number-limit
+      title: INDEX_KEY_NUMBER_LIMIT
       content: The number of keys of index "address_id_name" in table "address" should be not greater than 5
       startposition:
         line: 2

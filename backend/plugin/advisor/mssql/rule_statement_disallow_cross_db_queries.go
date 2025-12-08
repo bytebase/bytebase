@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleStatementDisallowCrossDBQueries, &DisallowCrossDBQueriesAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_STATEMENT_DISALLOW_CROSS_DB_QUERIES, &DisallowCrossDBQueriesAdvisor{})
 }
 
 type DisallowCrossDBQueriesAdvisor struct{}
@@ -34,7 +34,7 @@ func (*DisallowCrossDBQueriesAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	// Create the rule
-	rule := NewDisallowCrossDBQueriesRule(level, string(checkCtx.Rule.Type), checkCtx.CurrentDatabase)
+	rule := NewDisallowCrossDBQueriesRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

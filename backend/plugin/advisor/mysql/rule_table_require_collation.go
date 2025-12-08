@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableRequireCollation, &TableRequireCollationAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_REQUIRE_COLLATION, &TableRequireCollationAdvisor{})
 }
 
 // TableRequireCollationAdvisor is the advisor checking for require collation.
@@ -40,7 +40,7 @@ func (*TableRequireCollationAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	// Create the rule
-	rule := NewTableRequireCollationRule(level, string(checkCtx.Rule.Type))
+	rule := NewTableRequireCollationRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

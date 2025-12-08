@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableDisallowDDL, &TableDisallowDDLAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_DISALLOW_DDL, &TableDisallowDDLAdvisor{})
 }
 
 // TableDisallowDDLAdvisor is the advisor checking for disallow DDL on specific tables.
@@ -44,7 +44,7 @@ func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 
 	// Create the rule
-	rule := NewTableDisallowDDLRule(level, string(checkCtx.Rule.Type), payload.List)
+	rule := NewTableDisallowDDLRule(level, checkCtx.Rule.Type.String(), payload.List)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

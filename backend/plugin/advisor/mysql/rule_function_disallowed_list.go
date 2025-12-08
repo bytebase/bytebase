@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleFunctionDisallowList, &FunctionDisallowedListAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST, &FunctionDisallowedListAdvisor{})
 }
 
 // FunctionDisallowedListAdvisor is the advisor checking for disallowed function list.
@@ -51,7 +51,7 @@ func (*FunctionDisallowedListAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	// Create the rule
-	rule := NewFunctionDisallowedListRule(level, string(checkCtx.Rule.Type), disallowList)
+	rule := NewFunctionDisallowedListRule(level, checkCtx.Rule.Type.String(), disallowList)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

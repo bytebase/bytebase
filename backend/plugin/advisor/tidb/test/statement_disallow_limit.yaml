@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 1103
-      title: statement.disallow-limit
+      title: STATEMENT_DISALLOW_LIMIT
       content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book LIMIT 1" uses
       startposition:
         line: 1
@@ -16,7 +16,7 @@
   want:
     - status: 2
       code: 1103
-      title: statement.disallow-limit
+      title: STATEMENT_DISALLOW_LIMIT
       content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "INSERT INTO tech_book SELECT * FROM tech_book UNION SELECT * FROM tech_book LIMIT 1" uses
       startposition:
         line: 1
@@ -27,7 +27,7 @@
   want:
     - status: 2
       code: 1102
-      title: statement.disallow-limit
+      title: STATEMENT_DISALLOW_LIMIT
       content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "UPDATE tech_book SET name = 'my name' LIMIT 10" uses
       startposition:
         line: 1
@@ -38,7 +38,7 @@
   want:
     - status: 2
       code: 1106
-      title: statement.disallow-limit
+      title: STATEMENT_DISALLOW_LIMIT
       content: LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but "DELETE FROM tech_book LIMIT 10" uses
       startposition:
         line: 1

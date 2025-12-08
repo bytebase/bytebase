@@ -10,7 +10,7 @@
   want:
     - status: 2
       code: 213
-      title: statement.disallow-on-del-cascade
+      title: STATEMENT_DISALLOW_ON_DEL_CASCADE
       content: The CASCADE option is not permitted for ON DELETE clauses
       startposition:
         line: 1
@@ -36,7 +36,7 @@
   want:
     - status: 2
       code: 213
-      title: statement.disallow-on-del-cascade
+      title: STATEMENT_DISALLOW_ON_DEL_CASCADE
       content: The CASCADE option is not permitted for ON DELETE clauses
       startposition:
         line: 2

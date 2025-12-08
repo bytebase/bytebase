@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 1108
-      title: statement.insert.disallow-order-by-rand
+      title: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
       content: '"INSERT INTO tech_book SELECT * FROM tech_book ORDER BY rand()" uses ORDER BY RAND in the INSERT statement'
       startposition:
         line: 1

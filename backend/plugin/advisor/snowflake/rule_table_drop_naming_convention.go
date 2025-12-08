@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_SNOWFLAKE, advisor.SchemaRuleTableDropNamingConvention, &TableDropNamingConventionAdvisor{})
+	advisor.Register(storepb.Engine_SNOWFLAKE, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, &TableDropNamingConventionAdvisor{})
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention.
@@ -46,7 +46,7 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := NewTableDropNamingConventionRule(level, string(checkCtx.Rule.Type), format)
+	rule := NewTableDropNamingConventionRule(level, checkCtx.Rule.Type.String(), format)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, parseResult := range parseResults {

@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleTableRequireCharset, &TableRequireCharsetAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_REQUIRE_CHARSET, &TableRequireCharsetAdvisor{})
 }
 
 // TableRequireCharsetAdvisor is the advisor checking for require charset.
@@ -40,7 +40,7 @@ func (*TableRequireCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	}
 
 	// Create the rule
-	rule := NewTableRequireCharsetRule(level, string(checkCtx.Rule.Type))
+	rule := NewTableRequireCharsetRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

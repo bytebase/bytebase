@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleColumnDefaultDisallowVolatile, &ColumnDefaultDisallowVolatileAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_COLUMN_DEFAULT_DISALLOW_VOLATILE, &ColumnDefaultDisallowVolatileAdvisor{})
 }
 
 // ColumnDefaultDisallowVolatileAdvisor is the advisor checking for column default volatile functions.
@@ -43,7 +43,7 @@ func (*ColumnDefaultDisallowVolatileAdvisor) Check(_ context.Context, checkCtx a
 	rule := &columnDefaultDisallowVolatileRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		columnSet: make(map[string]columnData),
 	}
@@ -73,7 +73,7 @@ type columnDefaultDisallowVolatileRule struct {
 }
 
 func (*columnDefaultDisallowVolatileRule) Name() string {
-	return string(advisor.SchemaRuleColumnDefaultDisallowVolatile)
+	return string(storepb.SQLReviewRule_COLUMN_DEFAULT_DISALLOW_VOLATILE)
 }
 
 func (r *columnDefaultDisallowVolatileRule) OnEnter(ctx antlr.ParserRuleContext, nodeType string) error {

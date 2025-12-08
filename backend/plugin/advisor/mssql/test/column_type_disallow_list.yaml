@@ -8,7 +8,7 @@
   want:
     - status: 2
       code: 411
-      title: column.type-disallow-list
+      title: COLUMN_TYPE_DISALLOW_LIST
       content: Column type JSON is disallowed
       startposition:
         line: 4

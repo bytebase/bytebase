@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleColumnRequireCharset, &ColumnRequireCharsetAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_COLUMN_REQUIRE_CHARSET, &ColumnRequireCharsetAdvisor{})
 }
 
 // ColumnRequireCharsetAdvisor is the advisor checking for require charset.
@@ -41,7 +41,7 @@ func (*ColumnRequireCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	}
 
 	// Create the rule
-	rule := NewColumnRequireCharsetRule(level, string(checkCtx.Rule.Type))
+	rule := NewColumnRequireCharsetRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

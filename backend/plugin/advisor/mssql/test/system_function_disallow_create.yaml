@@ -17,7 +17,7 @@
   want:
     - status: 2
       code: 1701
-      title: system.function.disallow-create
+      title: SYSTEM_FUNCTION_DISALLOW_CREATE
       content: Creating or altering functions is prohibited
       startposition:
         line: 1

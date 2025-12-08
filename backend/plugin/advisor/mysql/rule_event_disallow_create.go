@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.SchemaRuleEventDisallowCreate, &EventDisallowCreateAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_SYSTEM_EVENT_DISALLOW_CREATE, &EventDisallowCreateAdvisor{})
 }
 
 // EventDisallowCreateAdvisor is the advisor checking for disallow creating event.
@@ -41,7 +41,7 @@ func (*EventDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	}
 
 	// Create the rule
-	rule := NewEventDisallowCreateRule(level, string(checkCtx.Rule.Type))
+	rule := NewEventDisallowCreateRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

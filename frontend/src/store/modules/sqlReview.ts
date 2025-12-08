@@ -22,6 +22,7 @@ import {
   GetReviewConfigRequestSchema,
   ListReviewConfigsRequestSchema,
   ReviewConfigSchema,
+  SQLReviewRule_Type,
   SQLReviewRuleSchema,
   UpdateReviewConfigRequestSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
@@ -70,7 +71,7 @@ const convertToSQLReviewPolicy = (
   const ruleList: SchemaPolicyRule[] = [];
   for (const r of reviewConfig.rules) {
     const rule: SchemaPolicyRule = {
-      type: r.type,
+      type: SQLReviewRule_Type[r.type] as string,
       level: r.level,
       engine: r.engine,
     };
@@ -192,7 +193,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         updateMask.push("rules");
         patch.rules = ruleList.map((r) => {
           return create(SQLReviewRuleSchema, {
-            type: r.type,
+            type: SQLReviewRule_Type[r.type as keyof typeof SQLReviewRule_Type],
             level: r.level,
             engine: r.engine,
             payload: r.payload ? JSON.stringify(r.payload) : "{}",

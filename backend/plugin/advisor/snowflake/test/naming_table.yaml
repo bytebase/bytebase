@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '"lower_case_table_name_without_double_quotes" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
       startposition:
         line: 1
@@ -18,7 +18,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '"lower_case_table_name_with_double_quotes" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
       startposition:
         line: 1
@@ -29,7 +29,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: "\"\U0001F608EMOJI\U0001F604\" mismatches table naming convention, naming format should be \"^[A-Z]+(_[A-Z]+)*$\""
       startposition:
         line: 1
@@ -42,7 +42,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '"lower_case_table_with_double_quotes" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
       startposition:
         line: 1
@@ -55,7 +55,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '"lower_case_table_with_double_quotes" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
       startposition:
         line: 2
@@ -68,7 +68,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '"lower_case_table_name_with_double_quotes" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
       startposition:
         line: 1
@@ -81,7 +81,7 @@
   want:
     - status: 2
       code: 301
-      title: naming.table
+      title: NAMING_TABLE
       content: '"lowercase" mismatches table naming convention, naming format should be "^[A-Z]+(_[A-Z]+)*$"'
       startposition:
         line: 1

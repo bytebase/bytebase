@@ -7,7 +7,7 @@
   want:
     - status: 2
       code: 1001
-      title: system.charset.allowlist
+      title: SYSTEM_CHARSET_ALLOWLIST
       content: '"" used disabled encoding ''latin1'''
       startposition:
         line: 0

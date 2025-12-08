@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 420
-      title: column.default-disallow-volatile
+      title: COLUMN_DEFAULT_DISALLOW_VOLATILE
       content: Column "tech_book"."b" in schema "public" has volatile DEFAULT
       startposition:
         line: 1

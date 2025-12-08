@@ -5,7 +5,7 @@
   want:
     - status: 2
       code: 217
-      title: statement.check-set-role-variable
+      title: STATEMENT_CHECK_SET_ROLE_VARIABLE
       content: No SET ROLE statement found.
       startposition: null
       endposition: null

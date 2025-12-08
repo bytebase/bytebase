@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 1
@@ -24,7 +24,7 @@
   want:
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 3
@@ -37,7 +37,7 @@
   want:
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 2
@@ -54,7 +54,7 @@
   want:
     - status: 2
       code: 302
-      title: naming.column
+      title: NAMING_COLUMN
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       startposition:
         line: 2

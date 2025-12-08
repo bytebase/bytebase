@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MSSQL, advisor.SchemaRuleStatementWhereDisallowFunctionsAndCalculations, &DisallowFuncAndCalculationsAdvisor{})
+	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS, &DisallowFuncAndCalculationsAdvisor{})
 }
 
 type DisallowFuncAndCalculationsAdvisor struct{}
@@ -34,7 +34,7 @@ func (*DisallowFuncAndCalculationsAdvisor) Check(_ context.Context, checkCtx adv
 	}
 
 	// Create the rule
-	rule := NewDisallowFuncAndCalculationsRule(level, string(checkCtx.Rule.Type))
+	rule := NewDisallowFuncAndCalculationsRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

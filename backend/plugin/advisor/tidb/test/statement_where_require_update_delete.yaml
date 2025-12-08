@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 202
-      title: statement.where.require.update-delete
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
       content: '"DELETE FROM tech_book" requires WHERE clause'
       startposition:
         line: 1
@@ -14,7 +14,7 @@
   want:
     - status: 2
       code: 202
-      title: statement.where.require.update-delete
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
       content: '"UPDATE tech_book SET id = 1" requires WHERE clause'
       startposition:
         line: 1

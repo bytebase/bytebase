@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.SchemaRuleColumnDisallowDrop, &ColumnDisallowDropAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_COLUMN_DISALLOW_DROP, &ColumnDisallowDropAdvisor{})
 }
 
 // ColumnDisallowDropAdvisor is the advisor checking for disallow DROP COLUMN statement.
@@ -42,7 +42,7 @@ func (*ColumnDisallowDropAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	// Create the rule
-	rule := NewColumnDisallowDropRule(level, string(checkCtx.Rule.Type))
+	rule := NewColumnDisallowDropRule(level, checkCtx.Rule.Type.String())
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

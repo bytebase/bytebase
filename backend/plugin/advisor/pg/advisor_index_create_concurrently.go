@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.SchemaRuleCreateIndexConcurrently, &IndexConcurrentlyAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_INDEX_CREATE_CONCURRENTLY, &IndexConcurrentlyAdvisor{})
 }
 
 // IndexConcurrentlyAdvisor is the advisor checking for to create index concurrently.
@@ -40,7 +40,7 @@ func (*IndexConcurrentlyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	rule := &indexCreateConcurrentlyRule{
 		BaseRule: BaseRule{
 			level: level,
-			title: string(checkCtx.Rule.Type),
+			title: checkCtx.Rule.Type.String(),
 		},
 		newlyCreatedTables: make(map[string]bool),
 	}
