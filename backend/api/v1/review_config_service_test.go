@@ -59,6 +59,19 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			errMsg:  "invalid rule level: LEVEL_UNSPECIFIED is not allowed for rule \"TABLE_REQUIRE_PK\"",
 		},
 		{
+			name: "invalid TYPE_UNSPECIFIED",
+			rules: []*v1pb.SQLReviewRule{
+				{
+					Type:    v1pb.SQLReviewRule_TYPE_UNSPECIFIED,
+					Level:   v1pb.SQLReviewRule_ERROR,
+					Engine:  v1pb.Engine_POSTGRES,
+					Payload: "",
+				},
+			},
+			wantErr: true,
+			errMsg:  "invalid rule type: TYPE_UNSPECIFIED is not allowed",
+		},
+		{
 			name: "multiple rules with one invalid",
 			rules: []*v1pb.SQLReviewRule{
 				{
