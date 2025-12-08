@@ -1,25 +1,20 @@
 <template>
   <NVirtualList
-    v-if="entries.length > 0"
-    :items="entries"
+    v-if="displayItems.length > 0"
+    :items="displayItems"
     :item-size="20"
     item-resizable
+    item-key="key"
     class="w-full font-mono text-xs bg-gray-50 border border-gray-200 rounded p-2 max-h-48"
   >
-    <template #default="{ item: entry }">
+    <template #default="{ item }">
       <div class="flex items-start gap-x-2 py-0.5">
-        <span class="text-gray-400 shrink-0">{{
-          formatLogTime(entry.logTime)
-        }}</span>
-        <span class="shrink-0" :class="getLogLevelClass(entry)"
-          >[{{ getLogLevel(entry) }}]</span
+        <span class="text-gray-400 shrink-0">{{ item.time }}</span>
+        <span class="shrink-0" :class="item.levelClass"
+          >[{{ item.level }}]</span
         >
-        <span class="text-blue-600 shrink-0">{{
-          getEntryTypeLabel(entry)
-        }}</span>
-        <span :class="getLogDetailClass(entry)">{{
-          getEntryDetail(entry)
-        }}</span>
+        <span class="text-blue-600 shrink-0">{{ item.typeLabel }}</span>
+        <span :class="item.detailClass">{{ item.detail }}</span>
       </div>
     </template>
   </NVirtualList>
@@ -28,6 +23,7 @@
 <script lang="ts" setup>
 import type { Timestamp as PbTimestamp } from "@bufbuild/protobuf/wkt";
 import { NVirtualList } from "naive-ui";
+import { computed } from "vue";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { TaskRunLogEntry } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -40,6 +36,16 @@ import { extractSheetCommandByIndex } from "@/utils";
 
 // Types
 type LogLevel = "ERR" | "WRN" | "INF";
+
+interface DisplayItem {
+  key: string; // Stable key based on timestamp
+  time: string;
+  level: LogLevel;
+  levelClass: string;
+  typeLabel: string;
+  detail: string;
+  detailClass: string;
+}
 
 // Constants
 const LOG_LEVEL_CONFIG: Record<
@@ -122,14 +128,6 @@ const getLogLevel = (entry: TaskRunLogEntry): LogLevel => {
       break;
   }
   return "INF";
-};
-
-const getLogLevelClass = (entry: TaskRunLogEntry): string => {
-  return LOG_LEVEL_CONFIG[getLogLevel(entry)].levelClass;
-};
-
-const getLogDetailClass = (entry: TaskRunLogEntry): string => {
-  return LOG_LEVEL_CONFIG[getLogLevel(entry)].detailClass;
 };
 
 const getEntryTypeLabel = (entry: TaskRunLogEntry): string => {
@@ -237,4 +235,32 @@ const getEntryDetail = (entry: TaskRunLogEntry): string => {
       return "";
   }
 };
+
+// Generate stable key from timestamp
+const getEntryKey = (entry: TaskRunLogEntry, index: number): string => {
+  const ts = entry.logTime;
+  if (ts) {
+    // Use seconds + nanos for uniqueness
+    return `${ts.seconds}-${ts.nanos}`;
+  }
+  // Fallback to index if no timestamp
+  return `idx-${index}`;
+};
+
+// Pre-compute display data to avoid multiple function calls per render
+const displayItems = computed((): DisplayItem[] => {
+  return props.entries.map((entry, index) => {
+    const level = getLogLevel(entry);
+    const config = LOG_LEVEL_CONFIG[level];
+    return {
+      key: getEntryKey(entry, index),
+      time: formatLogTime(entry.logTime),
+      level,
+      levelClass: config.levelClass,
+      typeLabel: getEntryTypeLabel(entry),
+      detail: getEntryDetail(entry),
+      detailClass: config.detailClass,
+    };
+  });
+});
 </script>
