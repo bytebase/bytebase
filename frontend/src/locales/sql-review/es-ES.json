@@ -70,10 +70,6 @@
         "required": {
           "title": "Comentario obligatorio"
         },
-        "requiredClassification": {
-          "title": "Requerir clasificación",
-          "tooltip": "El comentario debe seguir el formato {'{'}identificación de clasificación{'}'}-{'{'}comentario{'}'}."
-        },
         "maxLength": {
           "title": "Longitud máxima"
         }
@@ -619,10 +615,6 @@
       "component": {
         "required": {
           "title": "Requerir comentario"
-        },
-        "requiredClassification": {
-          "title": "Requerir clasificación",
-          "tooltip": "El comentario debe seguir el formato {'{'}identificación de clasificación{'}'}-{'{'}comentario{'}'}."
         },
         "maxLength": {
           "title": "Longitud máxima"

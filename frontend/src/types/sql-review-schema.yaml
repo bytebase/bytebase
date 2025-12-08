@@ -123,10 +123,6 @@
       payload:
         type: BOOLEAN
         default: false
-    - key: requiredClassification
-      payload:
-        type: BOOLEAN
-        default: false
     - key: maxLength
       payload:
         type: NUMBER
@@ -136,10 +132,6 @@
   category: TABLE
   componentList:
     - key: required
-      payload:
-        type: BOOLEAN
-        default: false
-    - key: requiredClassification
       payload:
         type: BOOLEAN
         default: false
@@ -155,10 +147,6 @@
       payload:
         type: BOOLEAN
         default: false
-    - key: requiredClassification
-      payload:
-        type: BOOLEAN
-        default: false
     - key: maxLength
       payload:
         type: NUMBER
@@ -171,10 +159,6 @@
       payload:
         type: BOOLEAN
         default: false
-    - key: requiredClassification
-      payload:
-        type: BOOLEAN
-        default: false
     - key: maxLength
       payload:
         type: NUMBER
@@ -184,10 +168,6 @@
   category: TABLE
   componentList:
     - key: required
-      payload:
-        type: BOOLEAN
-        default: false
-    - key: requiredClassification
       payload:
         type: BOOLEAN
         default: false
@@ -1375,10 +1355,6 @@
       payload:
         type: BOOLEAN
         default: false
-    - key: requiredClassification
-      payload:
-        type: BOOLEAN
-        default: false
     - key: maxLength
       payload:
         type: NUMBER
@@ -1388,10 +1364,6 @@
   category: COLUMN
   componentList:
     - key: required
-      payload:
-        type: BOOLEAN
-        default: false
-    - key: requiredClassification
       payload:
         type: BOOLEAN
         default: false
@@ -1407,10 +1379,6 @@
       payload:
         type: BOOLEAN
         default: false
-    - key: requiredClassification
-      payload:
-        type: BOOLEAN
-        default: false
     - key: maxLength
       payload:
         type: NUMBER
@@ -1423,10 +1391,6 @@
       payload:
         type: BOOLEAN
         default: false
-    - key: requiredClassification
-      payload:
-        type: BOOLEAN
-        default: false
     - key: maxLength
       payload:
         type: NUMBER
@@ -1436,10 +1400,6 @@
   category: COLUMN
   componentList:
     - key: required
-      payload:
-        type: BOOLEAN
-        default: false
-    - key: requiredClassification
       payload:
         type: BOOLEAN
         default: false

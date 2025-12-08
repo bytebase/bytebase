@@ -70,10 +70,6 @@
         "required": {
           "title": "必须注释"
         },
-        "requiredClassification": {
-          "title": "需要分类",
-          "tooltip": "评论应遵循{'{'}分类 ID{'}'}-{'{'}评论{'}'}格式。"
-        },
         "maxLength": {
           "title": "长度限制"
         }
@@ -619,10 +615,6 @@
       "component": {
         "required": {
           "title": "必须注释"
-        },
-        "requiredClassification": {
-          "title": "需要分类",
-          "tooltip": "评论应遵循{'{'}分类 ID{'}'}-{'{'}评论{'}'}格式。"
         },
         "maxLength": {
           "title": "长度限制"
