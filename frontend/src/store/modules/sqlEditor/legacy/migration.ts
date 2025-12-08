@@ -13,15 +13,10 @@ import { EXTENDED_TAB_FIELDS, useExtendedTabStore } from "./extendedTab";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
 
-const PERSISTENT_TAB_FIELDS = [
-  "id",
-  "title",
-  "connection",
-  "mode",
-  "worksheet",
-  "status",
-] as const;
-type PersistentTab = Pick<SQLEditorTab, (typeof PERSISTENT_TAB_FIELDS)[number]>;
+type PersistentTab = Pick<
+  SQLEditorTab,
+  "id" | "title" | "connection" | "mode" | "worksheet" | "status"
+>;
 
 export const migrateLegacyCache = async () => {
   const me = useCurrentUserV1();
