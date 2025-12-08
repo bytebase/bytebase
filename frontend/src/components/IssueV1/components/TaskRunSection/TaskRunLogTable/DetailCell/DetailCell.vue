@@ -1,21 +1,18 @@
 <template>
-  <NEllipsis expand-trigger="click" line-clamp="2" :tooltip="false">
-    <AffectedRowsCell v-if="view === 'AFFECTED_ROWS'" v-bind="props" />
-    <ErrorCell v-if="view === 'ERROR'" v-bind="props" />
-    <StatusUpdateCell v-if="view === 'STATUS_UPDATE'" v-bind="props" />
-    <TransactionControlCell
-      v-if="view === 'TRANSACTION_CONTROL'"
-      v-bind="props"
-    />
-    <DatabaseSyncCell v-if="view === 'DATABASE_SYNC'" v-bind="props" />
-    <PriorBackupCell v-if="view === 'PRIOR_BACKUP'" v-bind="props" />
-    <RetryInfoCell v-if="view === 'RETRY_INFO'" v-bind="props" />
-    <span v-if="view === 'N/A'">-</span>
-  </NEllipsis>
+  <AffectedRowsCell v-if="view === 'AFFECTED_ROWS'" v-bind="props" />
+  <ErrorCell v-else-if="view === 'ERROR'" v-bind="props" />
+  <StatusUpdateCell v-else-if="view === 'STATUS_UPDATE'" v-bind="props" />
+  <TransactionControlCell
+    v-else-if="view === 'TRANSACTION_CONTROL'"
+    v-bind="props"
+  />
+  <DatabaseSyncCell v-else-if="view === 'DATABASE_SYNC'" v-bind="props" />
+  <PriorBackupCell v-else-if="view === 'PRIOR_BACKUP'" v-bind="props" />
+  <RetryInfoCell v-else-if="view === 'RETRY_INFO'" v-bind="props" />
+  <span v-else class="text-control-placeholder">-</span>
 </template>
 
 <script setup lang="ts">
-import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { TaskRunLogEntry_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";

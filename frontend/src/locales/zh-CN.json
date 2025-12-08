@@ -357,6 +357,8 @@
     "history": "执行记录",
     "latest-logs": "执行日志",
     "latest": "最新执行",
+    "showing-recent-logs": "显示最近 {count} 条日志",
+    "view-full-logs": "查看完整日志",
     "status": {
       "enqueued": "等待执行。",
       "enqueued-with-rollout-time": "等待执行，{time}后执行。",

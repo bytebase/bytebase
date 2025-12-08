@@ -357,6 +357,8 @@
     "history": "タスク実行履歴",
     "latest-logs": "最新のログ",
     "latest": "最新の実行",
+    "showing-recent-logs": "最近の{count}ログを表示しています",
+    "view-full-logs": "完全なログを表示",
     "status": {
       "enqueued": "処刑を待っています。",
       "enqueued-with-rollout-time": "実行を待機しています。{time} の後に実行されます。",

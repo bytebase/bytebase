@@ -357,6 +357,8 @@
     "history": "Lịch sử thực hiện nhiệm vụ",
     "latest-logs": "Nhật ký mới nhất",
     "latest": "Thực hiện mới nhất",
+    "showing-recent-logs": "Hiển thị nhật ký {count} gần đây",
+    "view-full-logs": "Xem nhật ký đầy đủ",
     "status": {
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",

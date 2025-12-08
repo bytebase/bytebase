@@ -357,6 +357,8 @@
     "history": "Execution History",
     "latest-logs": "Latest Logs",
     "latest": "Latest Execution",
+    "showing-recent-logs": "Showing recent {count} logs",
+    "view-full-logs": "View full logs",
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
