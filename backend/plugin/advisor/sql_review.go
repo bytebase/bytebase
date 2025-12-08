@@ -38,11 +38,11 @@ const (
 	// ReferencedColumnNameTemplateToken is the token for referenced column name.
 	ReferencedColumnNameTemplateToken = "{{referenced_column}}"
 
-	// defaultNameLengthLimit is the default length limit for naming rules.
+	// DefaultNameLengthLimit is the default length limit for naming rules.
 	// PostgreSQL has it's own naming length limit, will auto slice the name to make sure its length <= 63
 	// https://www.postgresql.org/docs/current/limits.html.
 	// While MySQL does not enforce the limit, thus we use PostgreSQL's 63 as the default limit.
-	defaultNameLengthLimit = 63
+	DefaultNameLengthLimit = 63
 )
 
 var (
@@ -122,7 +122,7 @@ func UnmarshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, er
 	// We need to be compatible with existed naming rules in the database. 0 means using the default length limit.
 	maxLength := nr.MaxLength
 	if maxLength == 0 {
-		maxLength = defaultNameLengthLimit
+		maxLength = DefaultNameLengthLimit
 	}
 
 	return format, maxLength, nil
@@ -138,7 +138,7 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType storepb.SQLReviewRule_Type, p
 	}
 
 	template := nr.Format
-	keys, _ := parseTemplateTokens(template)
+	keys, _ := ParseTemplateTokens(template)
 
 	for _, key := range keys {
 		if _, ok := TemplateNamingTokens[ruleType][key]; !ok {
@@ -149,7 +149,7 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType storepb.SQLReviewRule_Type, p
 	// We need to be compatible with existed naming rules in the database. 0 means using the default length limit.
 	maxLength := nr.MaxLength
 	if maxLength == 0 {
-		maxLength = defaultNameLengthLimit
+		maxLength = DefaultNameLengthLimit
 	}
 
 	return template, keys, maxLength, nil
@@ -160,7 +160,8 @@ func UnmarshalNamingRulePayloadAsTemplate(ruleType storepb.SQLReviewRule_Type, p
 // and the delimiters will be ["_hello_"].
 // The caller will usually replace the tokens with a normal string, or a regexp. In the latter case, it will be a problem
 // if there are special regexp characters such as "$" in the delimiters. The caller should escape the delimiters in such cases.
-func parseTemplateTokens(template string) ([]string, []string) {
+// ParseTemplateTokens parses the template and returns template tokens and their delimiters.
+func ParseTemplateTokens(template string) ([]string, []string) {
 	r := regexp.MustCompile(`{{[^{}]+}}`)
 	tokens := r.FindAllString(template, -1)
 	if len(tokens) > 0 {
