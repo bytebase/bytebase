@@ -79,7 +79,6 @@ interface StringArrayLimitPayload {
 // Used by the backend.
 interface CommentFormatPayload {
   required: boolean;
-  requiredClassification: boolean;
   maxLength: number;
 }
 
@@ -520,15 +519,8 @@ export const convertPolicyRuleToRuleTemplate = (
     case SQLReviewRule_Type.COLUMN_COMMENT:
     case SQLReviewRule_Type.TABLE_COMMENT: {
       const requireComponent = componentList.find((c) => c.key === "required");
-      const requiredClassificationComponent = componentList.find(
-        (c) => c.key === "requiredClassification"
-      );
 
-      if (
-        !requireComponent ||
-        !requiredClassificationComponent ||
-        !numberComponent
-      ) {
+      if (!requireComponent || !numberComponent) {
         throw new Error(`Invalid rule ${ruleTypeToString(ruleTemplate.type)}`);
       }
 
@@ -540,13 +532,6 @@ export const convertPolicyRuleToRuleTemplate = (
             payload: {
               ...requireComponent.payload,
               value: (payload as CommentFormatPayload).required,
-            } as BooleanPayload,
-          },
-          {
-            ...requiredClassificationComponent,
-            payload: {
-              ...requiredClassificationComponent.payload,
-              value: (payload as CommentFormatPayload).requiredClassification,
             } as BooleanPayload,
           },
           {
@@ -714,9 +699,6 @@ const mergeIndividualConfigAsRule = (
     case SQLReviewRule_Type.TABLE_COMMENT: {
       const requirePayload = componentList.find((c) => c.key === "required")
         ?.payload as BooleanPayload | undefined;
-      const requiredClassificationPayload = componentList.find(
-        (c) => c.key === "requiredClassification"
-      )?.payload as BooleanPayload | undefined;
 
       if (!requirePayload || !numberPayload) {
         throw new Error(`Invalid rule ${ruleTypeToString(template.type)}`);
@@ -726,10 +708,6 @@ const mergeIndividualConfigAsRule = (
         payload: {
           required: requirePayload.value ?? requirePayload.default,
           maxLength: numberPayload.value ?? numberPayload.default,
-          requiredClassification:
-            requiredClassificationPayload?.value ??
-            requiredClassificationPayload?.default ??
-            false,
         },
       };
     }
