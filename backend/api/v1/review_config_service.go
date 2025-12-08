@@ -295,6 +295,9 @@ func validateSQLReviewRules(rules []*v1pb.SQLReviewRule) error {
 		if rule.Level == v1pb.SQLReviewRule_LEVEL_UNSPECIFIED {
 			return errors.Errorf("invalid rule level: LEVEL_UNSPECIFIED is not allowed for rule %q", rule.Type)
 		}
+		if rule.Type == v1pb.SQLReviewRule_TYPE_UNSPECIFIED {
+			return errors.Errorf("invalid rule type: TYPE_UNSPECIFIED is not allowed")
+		}
 		ruleType := storepb.SQLReviewRule_Type(rule.Type)
 		// TODO(rebelice): add other SQL review rule validation.
 		switch ruleType {
