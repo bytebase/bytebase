@@ -2664,7 +2664,18 @@
         }
       }
     },
-    "risk": {},
+    "risk": {
+      "self": "Centro de Riesgos",
+      "description": "La evaluación de riesgos evalúa automáticamente los cambios en la base de datos y asigna niveles de riesgo según el tipo de operación que se realiza.",
+      "how-it-works": "Cómo funciona",
+      "how-it-works-description": "Cuando crea un cambio en la base de datos, Bytebase analiza automáticamente las sentencias SQL y asigna un nivel de riesgo (Bajo, Moderado o Alto) basándose en reglas predefinidas.",
+      "risk-levels": "Niveles de Riesgo",
+      "risk-level-low": "Las operaciones de bajo riesgo incluyen consultas SELECT y cambios menores en el esquema que es poco probable que causen problemas.",
+      "risk-level-moderate": "Las operaciones de riesgo moderado incluyen cambios DDL estándar como agregar columnas o índices.",
+      "risk-level-high": "Las operaciones de alto riesgo incluyen cambios destructivos como DROP TABLE, TRUNCATE o modificaciones de datos a gran escala.",
+      "integration": "Integración con Flujo de Aprobación",
+      "integration-description": "Los niveles de riesgo se integran con el sistema de Aprobación Personalizada. Puede configurar flujos de aprobación que requieran diferentes niveles de revisión según el nivel de riesgo evaluado de un cambio."
+    },
     "rule": {
       "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente."
     },

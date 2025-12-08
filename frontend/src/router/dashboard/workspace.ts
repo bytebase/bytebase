@@ -16,6 +16,7 @@ import {
   WORKSPACE_ROUTE_IM,
   WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_MEMBERS,
+  WORKSPACE_ROUTE_RISK_CENTER,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SQL_REVIEW,
@@ -215,6 +216,16 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     props: true,
     children: [
+      {
+        path: "risk-center",
+        name: WORKSPACE_ROUTE_RISK_CENTER,
+        meta: {
+          title: () => t("custom-approval.risk.self"),
+          requiredPermissionList: () => ["bb.settings.get"],
+        },
+        component: () => import("@/views/SettingWorkspaceRiskCenter.vue"),
+        props: true,
+      },
       {
         path: "custom-approval",
         name: WORKSPACE_ROUTE_CUSTOM_APPROVAL,

@@ -2664,7 +2664,18 @@
         }
       }
     },
-    "risk": {},
+    "risk": {
+      "self": "Trung tâm Rủi ro",
+      "description": "Đánh giá rủi ro tự động đánh giá các thay đổi cơ sở dữ liệu và phân loại mức độ rủi ro dựa trên loại thao tác được thực hiện.",
+      "how-it-works": "Cách hoạt động",
+      "how-it-works-description": "Khi bạn tạo một thay đổi cơ sở dữ liệu, Bytebase tự động phân tích các câu lệnh SQL và phân loại mức độ rủi ro (Thấp, Trung bình hoặc Cao) dựa trên các quy tắc được xác định trước.",
+      "risk-levels": "Các Mức độ Rủi ro",
+      "risk-level-low": "Các thao tác rủi ro thấp bao gồm các truy vấn SELECT và các thay đổi schema nhỏ không có khả năng gây ra sự cố.",
+      "risk-level-moderate": "Các thao tác rủi ro trung bình bao gồm các thay đổi DDL tiêu chuẩn như thêm cột hoặc chỉ mục.",
+      "risk-level-high": "Các thao tác rủi ro cao bao gồm các thay đổi phá hủy như DROP TABLE, TRUNCATE hoặc sửa đổi dữ liệu quy mô lớn.",
+      "integration": "Tích hợp với Quy trình Phê duyệt",
+      "integration-description": "Các mức độ rủi ro tích hợp với hệ thống Phê duyệt Tùy chỉnh. Bạn có thể cấu hình các quy trình phê duyệt yêu cầu các cấp độ xem xét khác nhau dựa trên mức độ rủi ro được đánh giá của một thay đổi."
+    },
     "rule": {
       "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng."
     },

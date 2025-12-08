@@ -2664,7 +2664,18 @@
         }
       }
     },
-    "risk": {},
+    "risk": {
+      "self": "Risk Center",
+      "description": "Risk assessment automatically evaluates database changes and assigns risk levels based on the type of operation being performed.",
+      "how-it-works": "How it works",
+      "how-it-works-description": "When you create a database change, Bytebase automatically analyzes the SQL statements and assigns a risk level (Low, Moderate, or High) based on predefined rules.",
+      "risk-levels": "Risk Levels",
+      "risk-level-low": "Low risk operations include SELECT queries and minor schema changes that are unlikely to cause issues.",
+      "risk-level-moderate": "Moderate risk operations include standard DDL changes like adding columns or indexes.",
+      "risk-level-high": "High risk operations include destructive changes like DROP TABLE, TRUNCATE, or large-scale data modifications.",
+      "integration": "Integration with Approval Flow",
+      "integration-description": "Risk levels integrate with the Custom Approval system. You can configure approval flows that require different levels of review based on the assessed risk level of a change."
+    },
     "rule": {
       "first-match-wins": "Rules are evaluated in order. First matching rule applies."
     },
