@@ -357,6 +357,8 @@
     "history": "タスク実行履歴",
     "latest-logs": "最新のログ",
     "latest": "最新の実行",
+    "showing-recent-logs": "最近の{count}ログを表示しています",
+    "view-full-logs": "完全なログを表示",
     "status": {
       "enqueued": "処刑を待っています。",
       "enqueued-with-rollout-time": "実行を待機しています。{time} の後に実行されます。",
@@ -2666,7 +2668,18 @@
         }
       }
     },
-    "risk": {},
+    "risk": {
+      "self": "リスクセンター",
+      "description": "リスク評価は、データベースの変更を自動的に評価し、実行される操作の種類に基づいてリスクレベルを割り当てます。",
+      "how-it-works": "仕組み",
+      "how-it-works-description": "データベースの変更を作成すると、Bytebaseは自動的にSQL文を分析し、事前定義されたルールに基づいてリスクレベル（低、中、高）を割り当てます。",
+      "risk-levels": "リスクレベル",
+      "risk-level-low": "低リスクの操作には、SELECTクエリや問題を引き起こす可能性が低い軽微なスキーマ変更が含まれます。",
+      "risk-level-moderate": "中リスクの操作には、カラムやインデックスの追加などの標準的なDDL変更が含まれます。",
+      "risk-level-high": "高リスクの操作には、DROP TABLE、TRUNCATE、または大規模なデータ変更などの破壊的な変更が含まれます。",
+      "integration": "承認フローとの統合",
+      "integration-description": "リスクレベルはカスタム承認システムと統合されています。変更の評価されたリスクレベルに基づいて、異なるレベルのレビューを必要とする承認フローを設定できます。"
+    },
     "rule": {
       "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"
     },
