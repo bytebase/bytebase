@@ -1,5 +1,6 @@
 import type { ComputedRef, MaybeRefOrGetter } from "vue";
-import { computed, ref, toValue, watch } from "vue";
+import { computed, onUnmounted, ref, toValue, watch } from "vue";
+import { usePlanContext } from "@/components/Plan/logic/context";
 import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
 import type {
   TaskRun,
@@ -14,6 +15,9 @@ export interface TaskRunLogSummary {
   latestEntries: TaskRunLogEntry[];
 }
 
+// Limit entries to prevent performance issues with large logs
+const MAX_DISPLAY_ENTRIES = 100;
+
 export interface UseTaskRunLogSummaryReturn {
   taskRunLog: ComputedRef<TaskRunLog | undefined>;
   summary: ComputedRef<TaskRunLogSummary>;
@@ -24,28 +28,57 @@ export interface UseTaskRunLogSummaryReturn {
  * Composable for fetching and summarizing task run logs.
  * Provides affected rows count and log entries.
  * Data is cached in the store, so multiple calls with the same taskRun are efficient.
+ * Listens to poller's "resource-refresh-completed" event to refetch logs when taskRuns are updated.
  */
 export const useTaskRunLogSummary = (
   taskRun: MaybeRefOrGetter<TaskRun | undefined>,
   shouldFetch: MaybeRefOrGetter<boolean>
 ): UseTaskRunLogSummaryReturn => {
+  const { events } = usePlanContext();
   const taskRunLogStore = useTaskRunLogStore();
   const isLoading = ref(false);
 
+  const fetchLog = async (
+    taskRunName: string,
+    options?: { skipCache?: boolean }
+  ) => {
+    isLoading.value = true;
+    try {
+      await taskRunLogStore.fetchTaskRunLog(taskRunName, options);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  // Initial fetch when taskRun changes
   watch(
     [() => toValue(taskRun)?.name, () => toValue(shouldFetch)],
     async ([taskRunName, fetch]) => {
       if (fetch && taskRunName) {
-        isLoading.value = true;
-        try {
-          await taskRunLogStore.fetchTaskRunLog(taskRunName);
-        } finally {
-          isLoading.value = false;
-        }
+        await fetchLog(taskRunName);
       }
     },
     { immediate: true }
   );
+
+  // Refetch logs when poller refreshes taskRuns (skip cache to get latest)
+  const unsubscribe = events.on(
+    "resource-refresh-completed",
+    async ({ resources }) => {
+      const taskRunName = toValue(taskRun)?.name;
+      if (
+        resources.includes("taskRuns") &&
+        toValue(shouldFetch) &&
+        taskRunName
+      ) {
+        await fetchLog(taskRunName, { skipCache: true });
+      }
+    }
+  );
+
+  onUnmounted(() => {
+    unsubscribe();
+  });
 
   const taskRunLog = computed(() => {
     const run = toValue(taskRun);
@@ -73,7 +106,11 @@ export const useTaskRunLogSummary = (
       }
     }
 
-    result.latestEntries = [...log.entries].reverse();
+    // Get latest entries (reversed, limited for performance)
+    // Slice from the end to get latest entries, then reverse for display order
+    const entries = log.entries;
+    const startIndex = Math.max(0, entries.length - MAX_DISPLAY_ENTRIES);
+    result.latestEntries = entries.slice(startIndex).reverse();
     return result;
   });
 

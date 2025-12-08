@@ -6,57 +6,45 @@
       <span class="font-medium text-gray-700 shrink-0">{{
         t("task-run.latest")
       }}</span>
-      <span class="text-gray-300">·</span>
+      <Separator />
       <!-- Status badge -->
-      <span class="flex items-center gap-x-1 shrink-0" :class="statusClass">
+      <span
+        class="flex items-center gap-x-1 shrink-0"
+        :class="statusConfig.class"
+      >
         <component
-          :is="statusIcon"
+          :is="statusConfig.icon"
           class="w-4 h-4"
-          :class="{ 'animate-spin': taskStatus === Task_Status.RUNNING }"
+          :class="{ 'animate-spin': status === Task_Status.RUNNING }"
         />
-        <span>{{ statusText }}</span>
+        <span>{{ t(statusConfig.textKey) }}</span>
       </span>
-      <span class="text-gray-300">·</span>
+      <Separator />
       <!-- Timestamp -->
       <span class="text-gray-500 shrink-0">
-        <Timestamp :timestamp="taskRun.updateTime" />
+        <Timestamp :timestamp="updateTime" />
       </span>
       <!-- Metadata items -->
       <template v-if="executorEmail">
-        <span class="text-gray-300">·</span>
-        <NTooltip>
-          <template #trigger>
-            <span class="flex items-center gap-x-1 text-gray-500 min-w-0 cursor-default">
-              <UserIcon class="w-3.5 h-3.5 shrink-0" />
-              <span class="truncate">{{ executorEmail }}</span>
-            </span>
-          </template>
-          {{ t("task.executed-by") }}
-        </NTooltip>
+        <Separator />
+        <MetadataItem :tooltip="t('task.executed-by')">
+          <UserIcon class="w-3.5 h-3.5 shrink-0" />
+          <span class="truncate">{{ executorEmail }}</span>
+        </MetadataItem>
       </template>
       <template v-if="duration">
-        <span class="text-gray-300">·</span>
-        <NTooltip>
-          <template #trigger>
-            <span class="flex items-center gap-x-1 text-gray-500 shrink-0 cursor-default">
-              <ClockIcon class="w-3.5 h-3.5" />
-              {{ duration }}
-            </span>
-          </template>
-          {{ t("common.duration") }}
-        </NTooltip>
+        <Separator />
+        <MetadataItem :tooltip="t('common.duration')">
+          <ClockIcon class="w-3.5 h-3.5" />
+          {{ duration }}
+        </MetadataItem>
       </template>
       <template v-if="affectedRowsDisplay">
-        <span class="text-gray-300">·</span>
-        <NTooltip>
-          <template #trigger>
-            <span class="flex items-center gap-x-1 text-gray-500 shrink-0 cursor-default">
-              <RowsIcon class="w-3.5 h-3.5" />
-              {{ affectedRowsDisplay }}
-            </span>
-          </template>
-          {{ t("task.affected-rows") }}
-        </NTooltip>
+        <Separator />
+        <MetadataItem :tooltip="t('task.affected-rows')">
+          <RowsIcon class="w-3.5 h-3.5" />
+          {{ affectedRowsDisplay }}
+        </MetadataItem>
       </template>
     </div>
 
@@ -71,6 +59,7 @@
 </template>
 
 <script lang="ts" setup>
+import type { Timestamp as TimestampType } from "@bufbuild/protobuf/wkt";
 import {
   CheckCircle2Icon,
   CircleDotIcon,
@@ -81,14 +70,13 @@ import {
   XCircleIcon,
 } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
-import type { Component } from "vue";
-import { computed } from "vue";
+import type { Component, FunctionalComponent } from "vue";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import Timestamp from "@/components/misc/Timestamp.vue";
-import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
-import { useTaskRunLogSummary } from "./composables/useTaskRunLogSummary";
+import type { TaskRunLogSummary } from "./composables/useTaskRunLogSummary";
 import TaskRunLogEntries from "./TaskRunLogEntries.vue";
 
 // Types
@@ -98,83 +86,84 @@ interface StatusConfig {
   textKey: string;
 }
 
-// Default status config
-const DEFAULT_STATUS_CONFIG: StatusConfig = {
-  icon: CircleDotIcon,
-  class: "text-gray-500",
-  textKey: "common.unknown",
-};
+// Functional components for repeated patterns
+const Separator: FunctionalComponent = () =>
+  h("span", { class: "text-gray-300" }, "·");
 
-// Constants
-const STATUS_CONFIG: Partial<Record<Task_Status, StatusConfig>> = {
+const MetadataItem: FunctionalComponent<{ tooltip: string }> = (
+  props,
+  { slots }
+) =>
+  h(NTooltip, null, {
+    trigger: () =>
+      h(
+        "span",
+        {
+          class:
+            "flex items-center gap-x-1 text-gray-500 shrink-0 cursor-default",
+        },
+        slots.default?.()
+      ),
+    default: () => props.tooltip,
+  });
+
+// Status configuration - defined outside setup for better performance
+const STATUS_CONFIG: Record<Task_Status, StatusConfig> = {
   [Task_Status.FAILED]: {
     icon: XCircleIcon,
     class: "text-red-600",
-    textKey: "common.failed",
+    textKey: "task.status.failed",
   },
   [Task_Status.RUNNING]: {
     icon: LoaderCircleIcon,
     class: "text-blue-600",
-    textKey: "common.running",
+    textKey: "task.status.running",
   },
   [Task_Status.DONE]: {
     icon: CheckCircle2Icon,
     class: "text-green-600",
-    textKey: "common.success",
+    textKey: "task.status.done",
   },
   [Task_Status.PENDING]: {
     icon: CircleDotIcon,
     class: "text-gray-500",
-    textKey: "common.pending",
+    textKey: "task.status.pending",
   },
   [Task_Status.SKIPPED]: {
     icon: CircleDotIcon,
     class: "text-gray-500",
-    textKey: "common.skipped",
+    textKey: "task.status.skipped",
   },
   [Task_Status.CANCELED]: {
     icon: CircleDotIcon,
     class: "text-gray-500",
-    textKey: "common.canceled",
+    textKey: "task.status.canceled",
   },
   [Task_Status.NOT_STARTED]: {
     icon: CircleDotIcon,
     class: "text-gray-500",
-    textKey: "common.pending",
+    textKey: "task.status.not-started",
+  },
+  [Task_Status.STATUS_UNSPECIFIED]: {
+    icon: CircleDotIcon,
+    class: "text-gray-500",
+    textKey: "common.unknown",
   },
 };
 
-// Props
+// Props - simplified to only required fields
 const props = defineProps<{
-  task: Task;
-  taskRun: TaskRun;
+  status: Task_Status;
+  updateTime?: TimestampType;
   sheet?: Sheet;
   executorEmail?: string;
   duration?: string;
+  affectedRowsDisplay?: string;
+  summary: TaskRunLogSummary;
 }>();
 
 const { t } = useI18n();
 
-// Status display
-const taskStatus = computed(() => props.task.status);
-
-const statusConfig = computed(() => {
-  return STATUS_CONFIG[taskStatus.value] ?? DEFAULT_STATUS_CONFIG;
-});
-const statusIcon = computed(() => statusConfig.value.icon);
-const statusClass = computed(() => statusConfig.value.class);
-const statusText = computed(() => t(statusConfig.value.textKey));
-
-// Fetch and summarize task run log
-const { summary } = useTaskRunLogSummary(
-  () => props.taskRun,
-  () => true
-);
-
-const affectedRowsDisplay = computed(() => {
-  if (!summary.value.hasAffectedRows) return "";
-  const rows = summary.value.totalAffectedRows;
-  if (rows <= BigInt(0)) return "";
-  return `${rows.toLocaleString()} row${rows === BigInt(1) ? "" : "s"}`;
-});
+// Single computed for status - eliminates computed chain
+const statusConfig = computed(() => STATUS_CONFIG[props.status]);
 </script>

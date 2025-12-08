@@ -1,8 +1,8 @@
 <template>
   <Drawer
-    v-model:show="show"
-    :mask-closable="false"
     placement="right"
+    v-model:show="show"
+    :mask-closable="true"
     :resizable="true"
   >
     <DrawerContent

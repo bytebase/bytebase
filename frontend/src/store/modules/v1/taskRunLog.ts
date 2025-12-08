@@ -23,10 +23,15 @@ export const useTaskRunLogStore = defineStore("taskRunLog", () => {
     return emptyLog;
   };
 
-  const fetchTaskRunLog = async (taskRunName: string): Promise<TaskRunLog> => {
-    const existing = taskRunLogByName.get(taskRunName);
-    if (existing) {
-      return existing;
+  const fetchTaskRunLog = async (
+    taskRunName: string,
+    options?: { skipCache?: boolean }
+  ): Promise<TaskRunLog> => {
+    if (!options?.skipCache) {
+      const existing = taskRunLogByName.get(taskRunName);
+      if (existing) {
+        return existing;
+      }
     }
 
     try {

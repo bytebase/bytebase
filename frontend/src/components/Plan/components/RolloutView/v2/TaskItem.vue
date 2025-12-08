@@ -87,16 +87,16 @@
 
       <!-- Collapsed: contextual status line (time + error/skip) -->
       <div
-        v-if="!isExpanded && (latestTaskRun?.createTime || collapsedStatusText)"
+        v-if="!isExpanded && collapsedStatusText"
         class="flex items-center gap-x-2 text-xs mt-1"
       >
         <NTag v-if="latestTaskRun?.createTime" size="tiny" round>
           <Timestamp :timestamp="latestTaskRun.createTime" />
         </NTag>
         <span
-          v-if="collapsedStatusText"
-          class="truncate"
+          class="truncate cursor-pointer"
           :class="task.status === Task_Status.FAILED ? 'text-red-600' : 'text-gray-500 italic'"
+          @click.stop="emit('toggle-expand')"
         >
           {{ collapsedStatusText }}
         </span>
@@ -190,11 +190,13 @@
         <!-- Latest Task Run Info -->
         <LatestTaskRunInfo
           v-if="latestTaskRun"
-          :task="task"
-          :task-run="latestTaskRun"
+          :status="task.status"
+          :update-time="latestTaskRun.updateTime"
           :sheet="taskSheet"
           :executor-email="executorEmail"
           :duration="timingType !== 'scheduled' ? timingDisplay : undefined"
+          :affected-rows-display="affectedRowsDisplay"
+          :summary="taskRunLogSummary"
         />
       </div>
     </div>
