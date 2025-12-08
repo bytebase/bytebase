@@ -2175,7 +2175,9 @@
     "column-display-format": "列显示格式",
     "next-row": "下一行",
     "previous-row": "上一行",
-    "search-scope-column-description": "{type} 类型的列。输入值后按回车键跳转到匹配的行。"
+    "search-scope-column-description": "{type} 类型的列。输入值后按回车键跳转到匹配的行。",
+    "search-scope-row-number-title": "行号",
+    "search-scope-row-number-description": "输入行号跳转到该行。"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

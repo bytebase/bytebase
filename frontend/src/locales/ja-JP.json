@@ -2175,7 +2175,9 @@
     "column-display-format": "列表示形式",
     "next-row": "次の行",
     "previous-row": "前の行",
-    "search-scope-column-description": "{type}型の列。値を入力してEnterキーを押すと、一致する行に移動します。"
+    "search-scope-column-description": "{type}型の列。値を入力してEnterキーを押すと、一致する行に移動します。",
+    "search-scope-row-number-title": "行番号",
+    "search-scope-row-number-description": "行番号を入力してその行にジャンプします。"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

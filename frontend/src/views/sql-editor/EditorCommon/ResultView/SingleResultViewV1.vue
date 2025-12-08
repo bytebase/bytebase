@@ -357,15 +357,24 @@ const columns = computed((): ResultTableColumn[] => {
 });
 
 const searchScopeOptions = computed((): ScopeOption[] => {
-  return columns.value.map((column) => {
-    return {
+  const options: ScopeOption[] = [
+    {
+      id: "row-number",
+      title: t("sql-editor.search-scope-row-number-title"),
+      description: t("sql-editor.search-scope-row-number-description"),
+    },
+  ];
+
+  for (const column of columns.value) {
+    options.push({
       id: column.id,
       title: column.name,
       description: t("sql-editor.search-scope-column-description", {
         type: column.columnType,
       }),
-    };
-  });
+    })
+  }
+  return options;
 });
 
 const activeRowIndex = computed(() => {
@@ -405,6 +414,9 @@ watch(
 );
 
 const scrollToNextCandidate = () => {
+  if (state.searchCandidateActiveIndex >= (state.searchCandidateRowIndexs.length - 1)) {
+    return;
+  }
   state.searchCandidateActiveIndex++;
   // Append next candidate if reaches the last
   if (
@@ -424,6 +436,9 @@ const scrollToNextCandidate = () => {
 };
 
 const scrollToPreviousCandidate = () => {
+  if (state.searchCandidateActiveIndex <= 0) {
+    return;
+  }
   state.searchCandidateActiveIndex--;
 };
 
@@ -468,6 +483,9 @@ const getNextCandidateRowIndex = (from: number, params: SearchParams) => {
     let checked = params.scopes.every((scope) => {
       if (!scope.value) {
         return false;
+      }
+      if (scope.id === "row-number") {
+        return i + 1 === Number.parseInt(scope.value, 10);
       }
       const columnIndex = columns.value.findIndex(
         (column) => column.name === scope.id
