@@ -2175,9 +2175,9 @@
     "column-display-format": "Formato de visualización de columna",
     "next-row": "siguiente fila",
     "previous-row": "Fila anterior",
-    "search-scope-column-description": "La columna con tipo {type}. Ingrese el valor y presione Enter para ir a la fila coincidente.",
+    "search-scope-column-description": "Columna de tipo {type}. Ingrese un valor y presione Enter para saltar a la fila coincidente.",
     "search-scope-row-number-title": "Número de fila",
-    "search-scope-row-number-description": "Ingrese el número de fila para saltar a esa fila."
+    "search-scope-row-number-description": "Ingrese un número de fila para saltar a esa fila."
   },
   "schema-editor": {
     "self": "Editor de esquema",

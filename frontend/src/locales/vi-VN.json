@@ -2175,7 +2175,7 @@
     "column-display-format": "Định dạng hiển thị cột",
     "next-row": "Dòng tiếp theo",
     "previous-row": "Dòng trước",
-    "search-scope-column-description": "Cột có kiểu {type}. Nhập giá trị và nhấn Enter để chuyển đến dòng phù hợp.",
+    "search-scope-column-description": "Cột kiểu {type}. Nhập giá trị và nhấn Enter để chuyển đến dòng khớp.",
     "search-scope-row-number-title": "Số dòng",
     "search-scope-row-number-description": "Nhập số dòng để chuyển đến dòng đó."
   },
