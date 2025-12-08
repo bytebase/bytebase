@@ -28,16 +28,6 @@ export const allowGhostForDatabase = (database: ComposedDatabase) => {
   );
 };
 
-export const allowGhostForSpec = (spec: Plan_Spec | undefined) => {
-  const config =
-    spec?.config?.case === "changeDatabaseConfig"
-      ? spec.config.value
-      : undefined;
-  if (!config) return false;
-
-  return config.type === DatabaseChangeType.MIGRATE;
-};
-
 export const getGhostEnabledForSpec = (
   spec: Plan_Spec
 ): boolean | undefined => {
