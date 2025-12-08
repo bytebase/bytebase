@@ -43,7 +43,7 @@ import {
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
-import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration"
+import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import type { SQLEditorConnection } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
@@ -150,7 +150,7 @@ const connect = (connection: SQLEditorConnection) => {
     /* defaultTitle */ suggestedTabTitleForSQLEditorConnection(connection),
     /* ignoreMode */ true
   );
-  if (currentTab.mode === "ADMIN") {
+  if (currentTab?.mode === "ADMIN") {
     // Don't enter ADMIN mode initially
     tabStore.updateCurrentTab({
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,

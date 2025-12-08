@@ -187,6 +187,10 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     });
     const { id, worksheet } = newTab;
 
+    if (openTabList.value.find((tab) => tab.id === id)) {
+      return setCurrentTabId(id);
+    }
+
     const persistentTab = pick(
       newTab,
       ...PERSISTENT_TAB_FIELDS
@@ -199,7 +203,10 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     } else {
       openTabList.value.push(persistentTab);
     }
-    if (!worksheet) {
+    if (
+      !worksheet &&
+      !draftTabList.value.find((draft) => draft.id === newTab.id)
+    ) {
       draftTabList.value.push(newTab);
     }
 

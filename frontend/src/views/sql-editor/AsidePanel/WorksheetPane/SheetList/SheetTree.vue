@@ -440,7 +440,12 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
             e.metaKey || e.ctrlKey
           );
         } else {
-          tabStore.setCurrentTabId(node.worksheet.name);
+          const tab = tabStore.draftList.find(
+            (draft) => draft.id === node.worksheet?.name
+          );
+          if (tab) {
+            tabStore.addTab(tab);
+          }
         }
       } else {
         if (expandedKeys.value.has(node.key)) {
