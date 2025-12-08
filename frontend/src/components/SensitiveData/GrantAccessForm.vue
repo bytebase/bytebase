@@ -74,6 +74,7 @@
           :project-name="projectName"
           :include-all-users="false"
           :include-service-account="false"
+          :for-masking-exemption="true"
         />
       </div>
     </template>

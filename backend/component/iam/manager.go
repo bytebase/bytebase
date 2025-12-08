@@ -127,6 +127,18 @@ func (m *Manager) GetPermissions(role string) (map[Permission]bool, error) {
 	return permissions, nil
 }
 
+// GetRolesWithPermission returns all role names that have the given permission.
+// Role names are in format "roles/{role}".
+func (m *Manager) GetRolesWithPermission(permission string) []string {
+	var roles []string
+	for role, perms := range m.rolePermissions {
+		if perms[Permission(permission)] {
+			roles = append(roles, role)
+		}
+	}
+	return roles
+}
+
 func check(userID int, p Permission, policy *storepb.IamPolicy, rolePermissions map[string]map[Permission]bool, groupMembers map[string]map[string]bool) bool {
 	userName := common.FormatUserUID(userID)
 	for _, binding := range policy.GetBindings() {

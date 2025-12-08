@@ -67,15 +67,19 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const userStore = useUserStore();
 const expandedRowKeys = ref<string[]>([]);
+// Store children separately to persist across data recomputation
+const childrenMap = ref<Map<string, UserRoleData[]>>(new Map());
 
 const data = computed((): BindingRowData[] => {
   return props.bindings.map((binding) => {
+    const children = childrenMap.value.get(binding.binding);
     return {
       data: binding,
       key: binding.binding,
       type: "binding",
       isLeaf:
         binding.type !== "groups" || (binding.group?.members.length ?? 0) === 0,
+      children: children,
     };
   });
 });
@@ -104,7 +108,15 @@ const onGroupLoad = async (row: DataTableRowData) => {
     });
   }
 
-  row.children = orderBy(children, [(data) => data.data.name], ["desc"]);
+  const sortedChildren = orderBy(
+    children,
+    [(data) => data.data.name],
+    ["desc"]
+  );
+  // Store in childrenMap so it persists across data recomputation
+  childrenMap.value.set(binding.binding, sortedChildren);
+  // Also set on row for immediate display
+  row.children = sortedChildren;
 };
 
 const columns = computed(

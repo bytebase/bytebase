@@ -39,6 +39,11 @@ export interface UserFilter {
   types?: UserType[];
   project?: string;
   state?: State;
+  // Filter to users with this permission on the project.
+  // Example: "bb.sql.select"
+  requiredPermission?: string;
+  // Expand group members to individual users.
+  expandGroups?: boolean;
 }
 
 const getListUserFilter = (params: UserFilter) => {
@@ -57,6 +62,12 @@ const getListUserFilter = (params: UserFilter) => {
   }
   if (params.state === State.DELETED) {
     filter.push(`state == "${State[params.state]}"`);
+  }
+  if (params.requiredPermission) {
+    filter.push(`permission == "${params.requiredPermission}"`);
+  }
+  if (params.expandGroups) {
+    filter.push(`expand_groups == true`);
   }
 
   return filter.join(" && ");

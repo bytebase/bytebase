@@ -23,6 +23,12 @@ type FindGroupMessage struct {
 	Email     *string
 	ProjectID *string
 	FilterQ   *qb.Query
+	// RequiredPermission filters groups to those with this permission on the project.
+	// When set, RolesWithPermission must also be provided (computed in service layer).
+	RequiredPermission *string
+	// RolesWithPermission is the list of roles that have RequiredPermission.
+	// Used to filter groups by role. Computed in service layer from IAM.
+	RolesWithPermission []string
 
 	Limit  *int
 	Offset *int
@@ -93,16 +99,44 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 
 	// Build CTE for project filtering if needed
 	if v := find.ProjectID; v != nil {
+		// Base CTE to extract members and roles from project IAM policy
 		with.Space(`WITH all_members AS (
 			SELECT
 				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
 				jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
 			FROM policy
 			WHERE ((resource_type = ? AND resource = ?) OR resource_type = ?) AND type = ?
-		),
+		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
+
+		// Filter by role if RolesWithPermission is provided
+		if len(find.RolesWithPermission) > 0 {
+			// Only include groups with roles that have the required permission
+			// Workspace roles are excluded from permission filtering
+			projectRoles := make([]string, 0, len(find.RolesWithPermission))
+			for _, r := range find.RolesWithPermission {
+				if !strings.HasPrefix(r, "roles/workspace") {
+					projectRoles = append(projectRoles, r)
+				}
+			}
+			if len(projectRoles) == 0 {
+				// No project-level roles have this permission, return empty
+				with.Space(`,
+		project_members AS (
+			SELECT ARRAY[]::text[] AS members
+		)`)
+			} else {
+				with.Space(`,
+		project_members AS (
+			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role = ANY(?)
+		)`, projectRoles)
+			}
+		} else {
+			// No permission filter, include all non-workspace roles
+			with.Space(`,
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
-		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
+		)`)
+		}
 		from.Space(`INNER JOIN project_members ON (CONCAT('groups/', user_group.email) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
 	}
 
@@ -362,6 +396,12 @@ func GetListGroupFilter(find *FindGroupMessage, filter string) (*qb.Query, error
 				return nil, errors.Errorf("invalid project filter %q", value)
 			}
 			find.ProjectID = &projectID
+			return qb.Q().Space("TRUE"), nil
+		case "permission":
+			// Permission filtering is handled in the service layer
+			// Here we just store the permission value
+			permission := value.(string)
+			find.RequiredPermission = &permission
 			return qb.Q().Space("TRUE"), nil
 		default:
 			return nil, errors.Errorf("unsupport variable %q", variable)

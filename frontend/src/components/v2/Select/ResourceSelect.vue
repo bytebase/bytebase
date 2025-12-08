@@ -20,6 +20,30 @@
     @click="() => handleSearch('')"
     @update:value="handleValueUpdated"
   >
+    <template v-if="showHint" #header>
+      <div class="flex items-center gap-x-2 px-3 py-2">
+        <span class="flex-1 text-sm text-gray-500 truncate">{{ hint }}</span>
+        <button
+          type="button"
+          class="flex-shrink-0 text-gray-400 hover:text-gray-600"
+          @click="dismissHint"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+    </template>
     <template v-if="$slots.empty" #empty>
       <slot name="empty" />
     </template>
@@ -30,7 +54,7 @@
 import type { SelectOption, SelectProps } from "naive-ui";
 import { NCheckbox, NSelect, NTag } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
-import { computed, type VNodeChild } from "vue";
+import { computed, onMounted, ref, type VNodeChild } from "vue";
 import EllipsisText from "@/components/EllipsisText.vue";
 
 type ResourceSelectOption = SelectOption & {
@@ -54,6 +78,9 @@ const props = withDefaults(
     resourceNameClass?: string;
     customLabel?: (resource: T) => VNodeChild;
     filter?: (pattern: string, resource: T) => boolean;
+    hint?: string;
+    // Unique key to persist hint dismissal in localStorage
+    hintKey?: string;
   }>(),
   {
     customLabel: undefined,
@@ -66,8 +93,33 @@ const props = withDefaults(
     showResourceName: true,
     resourceNameClass: "",
     consistentMenuWidth: true,
+    hint: undefined,
+    hintKey: undefined,
   }
 );
+
+const hintDismissed = ref(false);
+
+const getHintStorageKey = () =>
+  props.hintKey ? `bb.hint.dismissed.${props.hintKey}` : null;
+
+const showHint = computed(() => props.hint && !hintDismissed.value);
+
+const dismissHint = (e: Event) => {
+  e.stopPropagation();
+  hintDismissed.value = true;
+  const key = getHintStorageKey();
+  if (key) {
+    localStorage.setItem(key, "true");
+  }
+};
+
+onMounted(() => {
+  const key = getHintStorageKey();
+  if (key && localStorage.getItem(key) === "true") {
+    hintDismissed.value = true;
+  }
+});
 
 const emit = defineEmits<{
   (event: "update:value", value: string | undefined): void;

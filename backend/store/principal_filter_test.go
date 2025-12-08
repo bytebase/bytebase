@@ -10,13 +10,15 @@ import (
 
 func TestGetListUserFilter(t *testing.T) {
 	tests := []struct {
-		name        string
-		filter      string
-		wantSQL     string
-		wantArgs    []any
-		wantProject *string
-		wantErr     bool
-		errContains string
+		name             string
+		filter           string
+		wantSQL          string
+		wantArgs         []any
+		wantProject      *string
+		wantPermission   *string
+		wantExpandGroups bool
+		wantErr          bool
+		errContains      string
 	}{
 		{
 			name:     "empty filter",
@@ -104,6 +106,50 @@ func TestGetListUserFilter(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name:           "permission filter",
+			filter:         `permission == "bb.sql.select"`,
+			wantSQL:        "(TRUE)",
+			wantArgs:       []any{},
+			wantPermission: func() *string { s := "bb.sql.select"; return &s }(),
+			wantErr:        false,
+		},
+		{
+			name:           "permission with project",
+			filter:         `project == "projects/sample-project" && permission == "bb.sql.select"`,
+			wantSQL:        "((TRUE AND TRUE))",
+			wantArgs:       []any{},
+			wantProject:    func() *string { s := "sample-project"; return &s }(),
+			wantPermission: func() *string { s := "bb.sql.select"; return &s }(),
+			wantErr:        false,
+		},
+		{
+			name:             "expand_groups filter",
+			filter:           `expand_groups == true`,
+			wantSQL:          "(TRUE)",
+			wantArgs:         []any{},
+			wantExpandGroups: true,
+			wantErr:          false,
+		},
+		{
+			name:             "expand_groups with project and permission",
+			filter:           `project == "projects/sample-project" && permission == "bb.sql.select" && expand_groups == true`,
+			wantSQL:          "(((TRUE AND TRUE) AND TRUE))",
+			wantArgs:         []any{},
+			wantProject:      func() *string { s := "sample-project"; return &s }(),
+			wantPermission:   func() *string { s := "bb.sql.select"; return &s }(),
+			wantExpandGroups: true,
+			wantErr:          false,
+		},
+		{
+			name:             "expand_groups with project only",
+			filter:           `project == "projects/sample-project" && expand_groups == true`,
+			wantSQL:          "((TRUE AND TRUE))",
+			wantArgs:         []any{},
+			wantProject:      func() *string { s := "sample-project"; return &s }(),
+			wantExpandGroups: true,
+			wantErr:          false,
+		},
+		{
 			name:     "AND condition",
 			filter:   `name == "ed" && email == "ed@test.com"`,
 			wantSQL:  "((principal.name = $1 AND principal.email = $2))",
@@ -177,6 +223,15 @@ func TestGetListUserFilter(t *testing.T) {
 			} else {
 				require.Nil(t, result.ProjectID)
 			}
+
+			if tt.wantPermission != nil {
+				require.NotNil(t, result.RequiredPermission)
+				require.Equal(t, *tt.wantPermission, *result.RequiredPermission)
+			} else {
+				require.Nil(t, result.RequiredPermission)
+			}
+
+			require.Equal(t, tt.wantExpandGroups, result.ExpandGroups)
 
 			sql, args, err := result.Query.ToSQL()
 			require.NoError(t, err)

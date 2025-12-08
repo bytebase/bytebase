@@ -17,8 +17,10 @@ import (
 
 // GetListUserFilterResult contains the filter query and optional project ID.
 type GetListUserFilterResult struct {
-	Query     *qb.Query
-	ProjectID *string
+	Query              *qb.Query
+	ProjectID          *string
+	RequiredPermission *string
+	ExpandGroups       bool
 }
 
 // GetListUserFilter parses a CEL filter string and returns a query for filtering users.
@@ -38,6 +40,8 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
 	var projectID *string
+	var requiredPermission *string
+	var expandGroups bool
 
 	convertToPrincipalType := func(v1UserType v1pb.UserType) (storepb.PrincipalType, error) {
 		switch v1UserType {
@@ -92,6 +96,22 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 				return nil, errors.Errorf("invalid project filter %q", value)
 			}
 			projectID = &pid
+			return qb.Q().Space("TRUE"), nil
+		case "permission":
+			// Permission validation is done in the service layer (iam package)
+			// to avoid import cycle between store and iam packages.
+			permission, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("permission filter requires string value")
+			}
+			requiredPermission = &permission
+			return qb.Q().Space("TRUE"), nil
+		case "expand_groups":
+			val, ok := value.(bool)
+			if !ok {
+				return nil, errors.Errorf("expand_groups filter requires boolean value")
+			}
+			expandGroups = val
 			return qb.Q().Space("TRUE"), nil
 		default:
 			return nil, errors.Errorf("unsupport variable %q", variable)
@@ -196,7 +216,9 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 	}
 
 	return &GetListUserFilterResult{
-		Query:     qb.Q().Space("(?)", q),
-		ProjectID: projectID,
+		Query:              qb.Q().Space("(?)", q),
+		ProjectID:          projectID,
+		RequiredPermission: requiredPermission,
+		ExpandGroups:       expandGroups,
 	}, nil
 }

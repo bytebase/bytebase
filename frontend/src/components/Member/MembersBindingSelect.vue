@@ -45,6 +45,10 @@
         :project-name="projectName"
         :include-all-users="includeAllUsers"
         :include-service-account="includeServiceAccount"
+        :required-permission="requiredPermission"
+        :expand-groups="forMaskingExemption"
+        :hint="userSelectHint"
+        hint-key="masking-exemption-user-select"
         @update:users="onMemberListUpdate"
       />
     </div>
@@ -65,6 +69,9 @@
         :disabled="disabled"
         :multiple="true"
         :project-name="projectName"
+        :required-permission="requiredPermission"
+        :hint="groupSelectHint"
+        hint-key="masking-exemption-group-select"
         @update:groups="onMemberListUpdate"
       />
     </div>
@@ -75,6 +82,7 @@
 import { uniq } from "lodash-es";
 import { NRadio, NRadioGroup } from "naive-ui";
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { GroupSelect, UserSelect } from "@/components/v2";
 import { extractGroupEmail, extractUserId, useGroupStore } from "@/store";
@@ -98,6 +106,8 @@ const props = withDefaults(
     allowChangeType?: boolean;
     includeAllUsers?: boolean;
     includeServiceAccount?: boolean;
+    // For masking exemption: filter to users with bb.sql.select permission
+    forMaskingExemption?: boolean;
   }>(),
   {
     disabled: false,
@@ -105,6 +115,7 @@ const props = withDefaults(
     allowChangeType: true,
     includeAllUsers: false,
     includeServiceAccount: false,
+    forMaskingExemption: false,
   }
 );
 
@@ -112,8 +123,25 @@ const emit = defineEmits<{
   (event: "update:value", memberList: string[]): void;
 }>();
 
+const { t } = useI18n();
 const memberType = ref<MemberType>("USERS");
 const groupStore = useGroupStore();
+
+const requiredPermission = computed(() =>
+  props.forMaskingExemption ? "bb.sql.select" : undefined
+);
+
+const userSelectHint = computed(() =>
+  props.forMaskingExemption
+    ? t("settings.sensitive-data.eligible-users-info")
+    : undefined
+);
+
+const groupSelectHint = computed(() =>
+  props.forMaskingExemption
+    ? t("settings.sensitive-data.eligible-groups-info")
+    : undefined
+);
 
 const onTypeChange = (type: MemberType) => {
   emit("update:value", []);

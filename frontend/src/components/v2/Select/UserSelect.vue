@@ -12,6 +12,8 @@
     :placeholder="$t('settings.members.select-user', multiple ? 2 : 1)"
     :filter="filterByEmail"
     :show-resource-name="false"
+    :hint="hint"
+    :hint-key="hintKey"
     @search="handleSearch"
     @update:value="(val) => $emit('update:user', val)"
     @update:values="(val) => $emit('update:users', val)"
@@ -41,6 +43,15 @@ const props = withDefaults(
     autoReset?: boolean;
     filter?: (user: User, index: number) => boolean;
     size?: "tiny" | "small" | "medium" | "large";
+    // Filter to users with this permission on the project.
+    // Example: "bb.sql.select"
+    requiredPermission?: string;
+    // Expand group members to individual users.
+    expandGroups?: boolean;
+    // Hint text shown at the top of the dropdown.
+    hint?: string;
+    // Unique key to persist hint dismissal in localStorage.
+    hintKey?: string;
   }>(),
   {
     multiple: false,
@@ -53,6 +64,10 @@ const props = withDefaults(
     autoReset: true,
     filter: (_1: User, _2: number) => true,
     size: "medium",
+    requiredPermission: undefined,
+    expandGroups: false,
+    hint: undefined,
+    hintKey: undefined,
   }
 );
 
@@ -92,6 +107,8 @@ const getFilter = (search: string): UserFilter => {
     query: search,
     project: props.projectName,
     types: allowedType,
+    requiredPermission: props.requiredPermission,
+    expandGroups: props.expandGroups,
   };
 };
 
@@ -116,7 +133,7 @@ const searchUsers = async (search: string) => {
   return users.filter(props.filter);
 };
 
-const handleSearch = useDebounceFn(async (search: string) => {
+const doSearch = async (search: string) => {
   // Skip if no search term and already initialized (lazy loading optimization)
   if (!search && state.initialized) {
     return;
@@ -141,7 +158,22 @@ const handleSearch = useDebounceFn(async (search: string) => {
   } finally {
     state.loading = false;
   }
-}, DEBOUNCE_SEARCH_DELAY);
+};
+
+const debouncedSearch = useDebounceFn(doSearch, DEBOUNCE_SEARCH_DELAY);
+
+// For initial load (empty search), fetch immediately without debounce.
+// For search queries, use debounce to avoid excessive API calls.
+const handleSearch = (search: string) => {
+  if (!search && !state.initialized) {
+    // Initial load: fetch immediately
+    doSearch(search);
+  } else if (search) {
+    // Search query: use debounce
+    debouncedSearch(search);
+  }
+  // If !search && initialized, doSearch will return early anyway
+};
 
 // Only fetch the selected user(s) on mount, not the entire user list.
 // The full list will be fetched lazily when dropdown is opened.

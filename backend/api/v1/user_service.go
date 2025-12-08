@@ -129,7 +129,29 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 	if filterResult != nil {
 		find.FilterQ = filterResult.Query
 		find.ProjectID = filterResult.ProjectID
+		find.RequiredPermission = filterResult.RequiredPermission
+		find.ExpandGroups = filterResult.ExpandGroups
 	}
+
+	// Validate and process RequiredPermission filter
+	if find.RequiredPermission != nil {
+		// Validate permission exists
+		if !iam.PermissionExist(*find.RequiredPermission) {
+			return nil, connect.NewError(connect.CodeInvalidArgument,
+				errors.Errorf("unknown permission %q", *find.RequiredPermission))
+		}
+		// Get roles that have this permission (only meaningful with project filter)
+		if find.ProjectID != nil {
+			find.RolesWithPermission = s.iamManager.GetRolesWithPermission(*find.RequiredPermission)
+			if len(find.RolesWithPermission) == 0 {
+				// No roles have this permission, return empty list
+				return connect.NewResponse(&v1pb.ListUsersResponse{}), nil
+			}
+		}
+	}
+	// Note: expand_groups and permission have no effect without project filter
+	// (no project members to expand/filter), but we don't return an error
+
 	if v := find.ProjectID; v != nil {
 		user, ok := GetUserFromContext(ctx)
 		if !ok {

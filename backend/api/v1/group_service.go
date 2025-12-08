@@ -89,6 +89,21 @@ func (s *GroupService) ListGroups(ctx context.Context, request *connect.Request[
 	}
 	find.FilterQ = filterQ
 
+	// Handle permission filter
+	if find.RequiredPermission != nil {
+		permission := *find.RequiredPermission
+		if !iam.PermissionExist(permission) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown permission %q", permission))
+		}
+		// Get roles that have this permission
+		roles := s.iamManager.GetRolesWithPermission(permission)
+		if len(roles) == 0 {
+			// No roles have this permission, return empty result
+			return connect.NewResponse(&v1pb.ListGroupsResponse{}), nil
+		}
+		find.RolesWithPermission = roles
+	}
+
 	groups, err := s.store.ListGroups(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

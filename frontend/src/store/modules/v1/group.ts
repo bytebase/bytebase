@@ -21,6 +21,9 @@ import { groupNamePrefix } from "./common";
 export interface GroupFilter {
   query?: string;
   project?: string;
+  // Filter to groups with this permission on the project.
+  // Example: "bb.sql.select"
+  requiredPermission?: string;
 }
 
 const getListGroupFilter = (params: GroupFilter) => {
@@ -31,6 +34,9 @@ const getListGroupFilter = (params: GroupFilter) => {
   }
   if (isValidProjectName(params.project)) {
     filter.push(`project == "${params.project}"`);
+  }
+  if (params.requiredPermission) {
+    filter.push(`permission == "${params.requiredPermission}"`);
   }
 
   return filter.join(" && ");

@@ -2,6 +2,7 @@
   <ResourceSelect
     v-bind="$attrs"
     :remote="true"
+    :loading="state.loading"
     :value="validSelectedGroup"
     :values="validSelectedGroups"
     :disabled="disabled"
@@ -9,6 +10,8 @@
     :options="options"
     :custom-label="renderLabel"
     :placeholder="$t('settings.members.select-group', multiple ? 2 : 1)"
+    :hint="hint"
+    :hint-key="hintKey"
     @search="handleSearch"
     @update:value="(val) => $emit('update:group', val)"
     @update:values="(val) => $emit('update:groups', val)"
@@ -34,6 +37,13 @@ const props = withDefaults(
     projectName?: string;
     selectFirstAsDefault?: boolean;
     size?: "tiny" | "small" | "medium" | "large";
+    // Filter to groups with this permission on the project.
+    // Example: "bb.sql.select"
+    requiredPermission?: string;
+    // Hint text shown at the top of the dropdown.
+    hint?: string;
+    // Unique key to persist hint dismissal in localStorage.
+    hintKey?: string;
   }>(),
   {
     group: undefined,
@@ -42,6 +52,9 @@ const props = withDefaults(
     projectName: undefined,
     selectFirstAsDefault: true,
     size: "medium",
+    requiredPermission: undefined,
+    hint: undefined,
+    hintKey: undefined,
   }
 );
 
@@ -70,6 +83,7 @@ const searchGroups = async (search: string) => {
     filter: {
       query: search,
       project: props.projectName,
+      requiredPermission: props.requiredPermission,
     },
     pageSize: getDefaultPagination(),
   });
@@ -86,7 +100,7 @@ const initSelectedGroups = async (groupNames: string[]) => {
   }
 };
 
-const handleSearch = useDebounceFn(async (search: string) => {
+const doSearch = async (search: string) => {
   // Skip if no search term and already initialized (lazy loading optimization)
   if (!search && state.initialized) {
     return;
@@ -108,7 +122,22 @@ const handleSearch = useDebounceFn(async (search: string) => {
   } finally {
     state.loading = false;
   }
-}, DEBOUNCE_SEARCH_DELAY);
+};
+
+const debouncedSearch = useDebounceFn(doSearch, DEBOUNCE_SEARCH_DELAY);
+
+// For initial load (empty search), fetch immediately without debounce.
+// For search queries, use debounce to avoid excessive API calls.
+const handleSearch = (search: string) => {
+  if (!search && !state.initialized) {
+    // Initial load: fetch immediately
+    doSearch(search);
+  } else if (search) {
+    // Search query: use debounce
+    debouncedSearch(search);
+  }
+  // If !search && initialized, doSearch will return early anyway
+};
 
 // Only fetch selected group(s) on mount, not the entire list.
 // The full list will be fetched lazily when dropdown is opened.

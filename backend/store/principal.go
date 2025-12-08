@@ -35,6 +35,15 @@ type FindUserMessage struct {
 	Offset      *int
 	FilterQ     *qb.Query
 	ProjectID   *string
+	// RequiredPermission filters users to those with this permission on the project.
+	// When set, RolesWithPermission must also be provided (computed in service layer).
+	RequiredPermission *string
+	// RolesWithPermission is the list of roles that have RequiredPermission.
+	// Used to filter members in the CTE. Computed in service layer from IAM.
+	RolesWithPermission []string
+	// ExpandGroups expands group members to individual users.
+	// Only effective when ProjectID is set.
+	ExpandGroups bool
 }
 
 // UpdateUserMessage is the message to update a user.
@@ -215,16 +224,62 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 
 	// Build CTE for project filtering if needed
 	if v := find.ProjectID; v != nil {
-		with.Space(`WITH all_members AS (
-			SELECT
-				jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
-				jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
-			FROM policy
-			WHERE ((resource_type = ? AND resource = ?) OR resource_type = ?) AND type = ?
-		),
-		project_members AS (
-			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
-		),`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
+		// Determine role filter based on RequiredPermission
+		var roleFilter string
+		if len(find.RolesWithPermission) > 0 {
+			// Filter to specific roles that have the required permission
+			// Exclude workspace roles - only project-level role assignments count
+			var projectRoles []string
+			for _, role := range find.RolesWithPermission {
+				if !strings.HasPrefix(role, "roles/workspace") {
+					projectRoles = append(projectRoles, "'"+role+"'")
+				}
+			}
+			if len(projectRoles) == 0 {
+				// No project-level roles have this permission, return empty
+				return []*UserMessage{}, nil
+			}
+			roleFilter = "role = ANY(ARRAY[" + strings.Join(projectRoles, ",") + "])"
+		} else {
+			// Original behavior: exclude workspace roles
+			roleFilter = "role NOT LIKE 'roles/workspace%'"
+		}
+
+		// Build CTE based on ExpandGroups (independent of permission filter)
+		if find.ExpandGroups {
+			// WITH EXPANSION: all_members -> expanded_members -> project_members
+			with.Space(`WITH all_members AS (
+				SELECT
+					jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
+					jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
+				FROM policy
+				WHERE ((resource_type = ? AND resource = ?) OR resource_type = ?) AND type = ?
+			),
+			expanded_members AS (
+				SELECT member, role FROM all_members
+				UNION ALL
+				SELECT
+					jsonb_array_elements(ug.payload->'members')->>'member' AS member,
+					am.role
+				FROM all_members am
+				INNER JOIN user_group ug ON am.member = CONCAT('groups/', ug.email)
+			),
+			project_members AS (
+				SELECT ARRAY_AGG(DISTINCT member) AS members FROM expanded_members WHERE `+roleFilter+`
+			),`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
+		} else {
+			// WITHOUT EXPANSION: all_members -> project_members (original behavior)
+			with.Space(`WITH all_members AS (
+				SELECT
+					jsonb_array_elements_text(jsonb_array_elements(policy.payload->'bindings')->'members') AS member,
+					jsonb_array_elements(policy.payload->'bindings')->>'role' AS role
+				FROM policy
+				WHERE ((resource_type = ? AND resource = ?) OR resource_type = ?) AND type = ?
+			),
+			project_members AS (
+				SELECT ARRAY_AGG(member) AS members FROM all_members WHERE `+roleFilter+`
+			),`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
+		}
 		from.Space(`INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
 	} else {
 		with.Space(`WITH`)

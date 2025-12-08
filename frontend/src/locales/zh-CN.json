@@ -831,6 +831,14 @@
         "query": "查询",
         "export": "导出"
       },
+      "eligible-users-info": "仅显示具有查询权限的项目成员。",
+      "eligible-users-tooltip-title": "可授予脱敏豁免的用户",
+      "eligible-users-tooltip-body": "此列表显示可以查询数据的项目成员（具有项目级别 bb.sql.select 权限的用户）。包括通过直接分配或组分配获得项目所有者或 SQL 编辑器用户角色的用户。",
+      "via-groups": "通过 {groups}",
+      "no-eligible-users": "未找到具有查询权限的项目成员",
+      "no-eligible-users-hint": "要授予脱敏豁免，请先为此项目分配具有项目所有者或 SQL 编辑器用户角色的用户或组。",
+      "group-exemption-note": "豁免适用于具有查询权限的组成员。新成员加入组后也将获得此豁免。",
+      "eligible-groups-info": "仅显示具有查询权限的组。",
       "classification": {
         "upload": "导入分类分级",
         "upload-label": "您可以上传数据分类分级的 JSON 格式文件。",
