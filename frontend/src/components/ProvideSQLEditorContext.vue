@@ -43,6 +43,7 @@ import {
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
+import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration"
 import type { SQLEditorConnection } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
@@ -432,6 +433,7 @@ onMounted(async () => {
     initializeProject(),
   ]);
 
+  await migrateLegacyCache();
   await tabStore.maybeInitProject();
   await initializeConnectionFromQuery();
   syncURLWithConnection();
