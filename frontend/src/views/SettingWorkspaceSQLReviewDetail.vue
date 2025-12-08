@@ -52,9 +52,9 @@
       <BBAttention
         v-if="reviewPolicy.resources.length === 0"
         type="warning"
-        title="sql-review.attach-resource.no-linked-resources"
-        description="sql-review.attach-resource.label"
-        action-text="sql-review.attach-resource.self"
+        :title="$t('sql-review.attach-resource.no-linked-resources')"
+        :description="$t('sql-review.attach-resource.label')"
+        :action-text="$t('sql-review.attach-resource.self')"
         @click="state.showResourcePanel = true"
       />
       <div class="flex flex-col gap-y-2 gap-x-2">
