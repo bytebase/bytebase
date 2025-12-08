@@ -831,6 +831,8 @@
         "query": "クエリ",
         "export": "出力"
       },
+      "eligible-users-info": "クエリ権限を持つプロジェクトメンバーのみ表示されます。",
+      "eligible-groups-info": "クエリ権限を持つグループのみ表示されます。",
       "classification": {
         "upload": "分類をアップロード",
         "upload-label": "データを分類・分類したJSON形式ファイルをアップロードできます。",

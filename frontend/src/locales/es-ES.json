@@ -831,6 +831,8 @@
         "query": "Consulta",
         "export": "Exportar"
       },
+      "eligible-users-info": "Solo se muestran los miembros del proyecto con permiso de consulta.",
+      "eligible-groups-info": "Solo se muestran los grupos con permiso de consulta.",
       "classification": {
         "upload": "Subir clasificación",
         "upload-label": "Puede cargar un archivo de clasificación con formato JSON.",

@@ -832,12 +832,6 @@
         "export": "Export"
       },
       "eligible-users-info": "Only project members with query permission are shown.",
-      "eligible-users-tooltip-title": "Users Eligible for Masking Exemption",
-      "eligible-users-tooltip-body": "This list shows project members who can query data (users with bb.sql.select permission at project level). Includes users with Project Owner or SQL Editor User role, assigned directly or via groups.",
-      "via-groups": "via {groups}",
-      "no-eligible-users": "No project members with query permission found",
-      "no-eligible-users-hint": "To grant masking exemptions, first assign users or groups with Project Owner or SQL Editor User role to this project.",
-      "group-exemption-note": "Exemption applies to group members who have query permission. Future members will also receive this exemption once they join the group.",
       "eligible-groups-info": "Only groups with query permission are shown.",
       "classification": {
         "upload": "Upload classification",

@@ -831,6 +831,8 @@
         "query": "Truy vấn",
         "export": "Xuất"
       },
+      "eligible-users-info": "Chỉ hiển thị thành viên dự án có quyền truy vấn.",
+      "eligible-groups-info": "Chỉ hiển thị các nhóm có quyền truy vấn.",
       "classification": {
         "upload": "Tải lên phân loại",
         "upload-label": "Bạn có thể tải lên tệp phân loại với định dạng JSON.",
