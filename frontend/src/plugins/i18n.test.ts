@@ -1,7 +1,11 @@
 import { describe, expect, test } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
-import { getRuleLocalizationKey, TEMPLATE_LIST_V2 } from "../types/sqlReview";
+import {
+  getRuleLocalizationKey,
+  ruleTypeToString,
+  TEMPLATE_LIST_V2,
+} from "../types/sqlReview";
 import { mergedLocalMessage } from "./i18n-messages";
 
 describe("Test i18n messages", () => {
@@ -45,8 +49,8 @@ describe("Test i18n for SQL review", () => {
       expect(!!i18nForSQLReview["template"][`${key}-desc`]).toBe(true);
 
       for (const rule of template.ruleList) {
-        test(`check i18n for rule ${rule.type}`, () => {
-          const key = getRuleLocalizationKey(rule.type);
+        test(`check i18n for rule ${ruleTypeToString(rule.type)}`, () => {
+          const key = getRuleLocalizationKey(ruleTypeToString(rule.type));
           expect(!!i18nForSQLReview["rule"][key], "rule-key").toBe(true);
           expect(
             !!i18nForSQLReview["rule"][key]["title"],

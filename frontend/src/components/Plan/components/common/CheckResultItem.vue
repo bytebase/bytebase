@@ -41,7 +41,12 @@
 import { AlertCircleIcon, CheckCircleIcon, XCircleIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed } from "vue";
-import { getRuleLocalization, ruleTemplateMapV2 } from "@/types";
+import {
+  getRuleLocalization,
+  ruleTemplateMapV2,
+  ruleTypeToString,
+} from "@/types";
+import { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
 
 export interface CheckResultPosition {
   line: number;
@@ -85,9 +90,16 @@ const statusColor = computed(() => {
 });
 
 const getRuleTemplateByType = (type: string) => {
+  // Convert string to enum
+  const typeKey = type as keyof typeof SQLReviewRule_Type;
+  const typeEnum = SQLReviewRule_Type[typeKey];
+  if (typeEnum === undefined) {
+    return;
+  }
+
   for (const mapByType of ruleTemplateMapV2.values()) {
-    if (mapByType.has(type)) {
-      return mapByType.get(type);
+    if (mapByType.has(typeEnum)) {
+      return mapByType.get(typeEnum);
     }
   }
   return;
@@ -115,7 +127,10 @@ const displayTitle = computed(() => {
 
     const rule = getRuleTemplateByType(props.title);
     if (rule) {
-      const ruleLocalization = getRuleLocalization(rule.type, rule.engine);
+      const ruleLocalization = getRuleLocalization(
+        ruleTypeToString(rule.type),
+        rule.engine
+      );
       const title = messageWithCode(ruleLocalization.title, code);
       return title;
     } else if (props.title.startsWith("builtin.")) {

@@ -7,7 +7,7 @@
         <div v-if="description" class="text-sm">
           <p class="whitespace-pre-wrap">
             {{ $te(description) ? $t(description) : description }}
-            <LearnMoreLink :url="link" class="ml-1 text-sm" />
+            <LearnMoreLink v-if="link" :url="link" class="ml-1 text-sm" />
           </p>
         </div>
       </slot>

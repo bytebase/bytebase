@@ -39,7 +39,7 @@
           <div class="flex justify-between items-center gap-x-2">
             <div class="flex items-center gap-x-1">
               <span>
-                {{ getRuleLocalization(rule.type, rule.engine).title }}
+                {{ getRuleLocalization(ruleTypeToString(rule.type), rule.engine).title }}
                 <a
                   :href="`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`"
                   target="_blank"
@@ -79,7 +79,7 @@
             @level-change="updateLevel(rule, $event)"
           />
           <p class="textinfolabel">
-            {{ getRuleLocalization(rule.type, rule.engine).description }}
+            {{ getRuleLocalization(ruleTypeToString(rule.type), rule.engine).description }}
           </p>
         </div>
       </div>
@@ -102,7 +102,7 @@ import { NButton, NCheckbox, NDataTable, NDivider } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RuleTemplateV2 } from "@/types";
-import { getRuleLocalization } from "@/types";
+import { getRuleLocalization, ruleTypeToString } from "@/types";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 import RuleConfig from "./RuleConfigComponents/RuleConfig.vue";
 import RuleLevelSwitch from "./RuleLevelSwitch.vue";
@@ -165,12 +165,15 @@ const columns = computed(() => {
       type: "expand",
       expandable: (rule: RuleTemplateV2) => {
         return !!(
-          getRuleLocalization(rule.type, rule.engine).description ||
-          rule.componentList.length > 0
+          getRuleLocalization(ruleTypeToString(rule.type), rule.engine)
+            .description || rule.componentList.length > 0
         );
       },
       renderExpand: (rule: RuleTemplateV2) => {
-        const comment = getRuleLocalization(rule.type, rule.engine).description;
+        const comment = getRuleLocalization(
+          ruleTypeToString(rule.type),
+          rule.engine
+        ).description;
         return (
           <div class="px-10">
             <p class="w-full text-left text-gray-500">{comment}</p>
@@ -203,7 +206,12 @@ const columns = computed(() => {
       render: (rule: RuleTemplateV2) => {
         return (
           <div class="flex items-center gap-x-2">
-            <span>{getRuleLocalization(rule.type, rule.engine).title}</span>
+            <span>
+              {
+                getRuleLocalization(ruleTypeToString(rule.type), rule.engine)
+                  .title
+              }
+            </span>
             <a
               href={`https://docs.bytebase.com/sql-review/review-rules#${rule.type}`}
               target="_blank"

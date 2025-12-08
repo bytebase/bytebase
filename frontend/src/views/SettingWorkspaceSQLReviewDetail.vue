@@ -52,9 +52,9 @@
       <BBAttention
         v-if="reviewPolicy.resources.length === 0"
         type="warning"
-        :title="$t('sql-review.attach-resource.no-linked-resources')"
-        :description="$t('sql-review.attach-resource.label')"
-        :action-text="$t('sql-review.attach-resource.self')"
+        title="sql-review.attach-resource.no-linked-resources"
+        description="sql-review.attach-resource.label"
+        action-text="sql-review.attach-resource.self"
         @click="state.showResourcePanel = true"
       />
       <div class="flex flex-col gap-y-2 gap-x-2">
@@ -180,6 +180,7 @@ import {
   unknown,
 } from "@/types";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { SQLReviewRule_Type } from "@/types/proto-es/v1/review_config_service_pb";
 import { hasWorkspacePermissionV2, sqlReviewNameFromSlug } from "@/utils";
 
 const props = defineProps<{
@@ -191,7 +192,7 @@ interface LocalState {
   showEnableModal: boolean;
   selectedCategory?: string;
   editMode: boolean;
-  ruleMapByEngine: Map<Engine, Map<string, RuleTemplateV2>>;
+  ruleMapByEngine: Map<Engine, Map<SQLReviewRule_Type, RuleTemplateV2>>;
   rulesUpdated: boolean;
   updating: boolean;
   editingTitle: boolean;
