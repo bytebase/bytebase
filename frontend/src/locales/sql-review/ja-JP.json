@@ -70,10 +70,6 @@
         "required": {
           "title": "コメントの必須化"
         },
-        "requiredClassification": {
-          "title": "分類が必要",
-          "tooltip": "コメントは、{'{'}分類 ID{'}'}-{'{'}コメント{'}'} の形式に従う必要があります。"
-        },
         "maxLength": {
           "title": "最大長"
         }
@@ -619,10 +615,6 @@
       "component": {
         "required": {
           "title": "コメントの必須化"
-        },
-        "requiredClassification": {
-          "title": "分類が必要",
-          "tooltip": "コメントは、{'{'}分類 ID{'}'}-{'{'}コメント{'}'} の形式に従う必要があります。"
         },
         "maxLength": {
           "title": "最大長"

@@ -13,7 +13,6 @@ import { isDatabaseChangeSpec, targetsForSpec } from "@/components/Plan/logic";
 import { planServiceClientConnect } from "@/grpcweb";
 import { extractUserId, useCurrentUserV1, useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import { type Issue, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import {
   type Plan,
@@ -25,14 +24,6 @@ import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { flattenTaskV1List, hasProjectPermissionV2 } from "@/utils";
 import { BACKUP_AVAILABLE_ENGINES } from "./common";
-
-export const PRE_BACKUP_AVAILABLE_ENGINES = [
-  Engine.MYSQL,
-  Engine.TIDB,
-  Engine.MSSQL,
-  Engine.ORACLE,
-  Engine.POSTGRES,
-];
 
 const KEY = Symbol(
   "bb.plan.setting.pre-backup"

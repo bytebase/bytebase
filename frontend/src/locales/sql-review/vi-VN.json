@@ -70,10 +70,6 @@
         "required": {
           "title": "Yêu cầu bình luận"
         },
-        "requiredClassification": {
-          "title": "Yêu cầu phân loại",
-          "tooltip": "Bình luận phải tuân theo định dạng {'{'}id phân loại{'}'}-{'{'}bình luận{'}'}."
-        },
         "maxLength": {
           "title": "Độ dài tối đa"
         }
@@ -619,10 +615,6 @@
       "component": {
         "required": {
           "title": "Yêu cầu bình luận"
-        },
-        "requiredClassification": {
-          "title": "Yêu cầu phân loại",
-          "tooltip": "Bình luận phải tuân theo định dạng {'{'}id phân loại{'}'}-{'{'}bình luận{'}'}."
         },
         "maxLength": {
           "title": "Độ dài tối đa"

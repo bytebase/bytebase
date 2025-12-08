@@ -70,10 +70,6 @@
         "required": {
           "title": "Require comment"
         },
-        "requiredClassification": {
-          "title": "Require classification",
-          "tooltip": "The comment should follow {'{'}classification id{'}'}-{'{'}comment{'}'} format."
-        },
         "maxLength": {
           "title": "Max length"
         }
@@ -619,10 +615,6 @@
       "component": {
         "required": {
           "title": "Require comment"
-        },
-        "requiredClassification": {
-          "title": "Require classification",
-          "tooltip": "The comment should follow {'{'}classification id{'}'}-{'{'}comment{'}'} format."
         },
         "maxLength": {
           "title": "Max length"

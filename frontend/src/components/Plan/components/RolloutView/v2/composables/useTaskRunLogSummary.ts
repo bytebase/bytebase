@@ -13,10 +13,12 @@ export interface TaskRunLogSummary {
   totalAffectedRows: bigint;
   hasAffectedRows: boolean;
   latestEntries: TaskRunLogEntry[];
+  totalEntryCount: number;
+  isTruncated: boolean;
 }
 
 // Limit entries to prevent performance issues with large logs
-const MAX_DISPLAY_ENTRIES = 100;
+export const MAX_DISPLAY_ENTRIES = 100;
 
 export interface UseTaskRunLogSummaryReturn {
   taskRunLog: ComputedRef<TaskRunLog | undefined>;
@@ -92,11 +94,17 @@ export const useTaskRunLogSummary = (
       totalAffectedRows: BigInt(0),
       hasAffectedRows: false,
       latestEntries: [],
+      totalEntryCount: 0,
+      isTruncated: false,
     };
 
     if (!log?.entries?.length) return result;
 
-    for (const entry of log.entries) {
+    const entries = log.entries;
+    result.totalEntryCount = entries.length;
+    result.isTruncated = entries.length > MAX_DISPLAY_ENTRIES;
+
+    for (const entry of entries) {
       if (entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE) {
         const affectedRows = entry.commandExecute?.response?.affectedRows;
         if (affectedRows !== undefined) {
@@ -106,11 +114,9 @@ export const useTaskRunLogSummary = (
       }
     }
 
-    // Get latest entries (reversed, limited for performance)
-    // Slice from the end to get latest entries, then reverse for display order
-    const entries = log.entries;
+    // Get latest entries (limited for performance)
     const startIndex = Math.max(0, entries.length - MAX_DISPLAY_ENTRIES);
-    result.latestEntries = entries.slice(startIndex).reverse();
+    result.latestEntries = entries.slice(startIndex);
     return result;
   });
 

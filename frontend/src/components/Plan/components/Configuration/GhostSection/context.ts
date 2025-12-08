@@ -15,11 +15,7 @@ import {
   hasProjectPermissionV2,
   isNullOrUndefined,
 } from "@/utils";
-import {
-  allowGhostForSpec,
-  GHOST_AVAILABLE_ENGINES,
-  getGhostEnabledForSpec,
-} from "./common";
+import { GHOST_AVAILABLE_ENGINES, getGhostEnabledForSpec } from "./common";
 
 export const KEY = Symbol(
   "bb.plan.setting.gh-ost"
@@ -69,7 +65,6 @@ export const provideGhostSettingContext = (refs: {
   const shouldShow = computed(() => {
     return (
       selectedSpec.value &&
-      allowGhostForSpec(selectedSpec.value) &&
       databases.value.every((db) =>
         GHOST_AVAILABLE_ENGINES.includes(db.instanceResource.engine)
       ) &&

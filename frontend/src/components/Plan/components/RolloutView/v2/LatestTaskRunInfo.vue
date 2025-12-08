@@ -49,12 +49,26 @@
     </div>
 
     <!-- Line 2: Task run logs -->
-    <TaskRunLogEntries
-      v-if="summary.latestEntries.length > 0"
-      :entries="summary.latestEntries"
-      :sheet="sheet"
-      class="pt-1"
-    />
+    <div v-if="summary.latestEntries.length > 0">
+      <TaskRunLogEntries
+        :entries="summary.latestEntries"
+        :sheet="sheet"
+        :is-truncated="summary.isTruncated"
+      />
+      <div
+        v-if="summary.isTruncated"
+        class="flex items-center justify-between px-3 py-1.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 border-t-0 rounded-b"
+      >
+        <span>{{
+          t("task-run.showing-recent-logs", { count: MAX_DISPLAY_ENTRIES })
+        }}</span>
+        <RouterLink v-if="taskName" :to="`/${taskName}`">
+          <NButton text size="tiny" type="info">
+            {{ t("task-run.view-full-logs") }}
+          </NButton>
+        </RouterLink>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -69,14 +83,18 @@ import {
   UserIcon,
   XCircleIcon,
 } from "lucide-vue-next";
-import { NTooltip } from "naive-ui";
+import { NButton, NTooltip } from "naive-ui";
 import type { Component, FunctionalComponent } from "vue";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
+import { RouterLink } from "vue-router";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
-import type { TaskRunLogSummary } from "./composables/useTaskRunLogSummary";
+import {
+  MAX_DISPLAY_ENTRIES,
+  type TaskRunLogSummary,
+} from "./composables/useTaskRunLogSummary";
 import TaskRunLogEntries from "./TaskRunLogEntries.vue";
 
 // Types
@@ -151,7 +169,7 @@ const STATUS_CONFIG: Record<Task_Status, StatusConfig> = {
   },
 };
 
-// Props - simplified to only required fields
+// Props
 const props = defineProps<{
   status: Task_Status;
   updateTime?: TimestampType;
@@ -160,6 +178,7 @@ const props = defineProps<{
   duration?: string;
   affectedRowsDisplay?: string;
   summary: TaskRunLogSummary;
+  taskName?: string;
 }>();
 
 const { t } = useI18n();
