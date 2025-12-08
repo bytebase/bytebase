@@ -2179,7 +2179,9 @@
     "previous-row": "前の行",
     "search-scope-column-description": "{type}型の列。値を入力してEnterを押すと一致する行にジャンプします。",
     "search-scope-row-number-title": "行番号",
-    "search-scope-row-number-description": "行番号を入力してその行にジャンプします。"
+    "search-scope-row-number-description": "行番号を入力してその行にジャンプします。",
+    "scroll-to-top": "先頭へスクロール",
+    "scroll-to-bottom": "末尾へスクロール"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

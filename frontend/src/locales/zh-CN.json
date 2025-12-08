@@ -2179,7 +2179,9 @@
     "previous-row": "上一行",
     "search-scope-column-description": "{type} 类型的列。输入值并按回车跳转到匹配行。",
     "search-scope-row-number-title": "行号",
-    "search-scope-row-number-description": "输入行号跳转到指定行。"
+    "search-scope-row-number-description": "输入行号跳转到指定行。",
+    "scroll-to-top": "滚动到顶部",
+    "scroll-to-bottom": "滚动到底部"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

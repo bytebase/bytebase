@@ -125,34 +125,69 @@
         </template>
       </NEmpty>
 
-      <div v-if="state.searchCandidateRowIndexs.length > 0" class="flex flex-row gap-x-2 absolute bottom-2 right-2 border shadow rounded bg-white py-1 px-2">
-        <NButton
-          quaternary
-          size="small"
-          :disabled="state.searchCandidateActiveIndex <= 0"
-          @click="scrollToPreviousCandidate"
-        >
-          <template #icon>
-            <ArrowUpIcon class="x-4" />
-          </template>
-          {{ $t("sql-editor.previous-row") }}
-        </NButton>
-        <NButton
-          quaternary
-          size="small"
-          :disabled="state.searchCandidateActiveIndex >= (state.searchCandidateRowIndexs.length - 1)"
-          @click="scrollToNextCandidate"
-        >
-          <template #icon>
-            <ArrowDownIcon class="x-4" />
-          </template>
-          {{ $t("sql-editor.next-row") }}
-        </NButton>
-        <NButton quaternary size="small" style="--n-padding: 2px" @click="clearSearchCandidate">
-          <template #icon>
-            <XIcon class="x-4" />
-          </template>
-        </NButton>
+      <div class="absolute bottom-2 right-2 flex items-end gap-x-2">
+        <div v-if="state.searchCandidateRowIndexs.length > 0" class="flex flex-row gap-x-2 border shadow rounded bg-white py-1 px-2">
+          <NButton
+            quaternary
+            size="small"
+            :disabled="state.searchCandidateActiveIndex <= 0"
+            @click="scrollToPreviousCandidate"
+          >
+            <template #icon>
+              <ArrowUpIcon class="x-4" />
+            </template>
+            {{ $t("sql-editor.previous-row") }}
+          </NButton>
+          <NButton
+            quaternary
+            size="small"
+            :disabled="state.searchCandidateActiveIndex >= (state.searchCandidateRowIndexs.length - 1)"
+            @click="scrollToNextCandidate"
+          >
+            <template #icon>
+              <ArrowDownIcon class="x-4" />
+            </template>
+            {{ $t("sql-editor.next-row") }}
+          </NButton>
+          <NButton quaternary size="small" style="--n-padding: 2px" @click="clearSearchCandidate">
+            <template #icon>
+              <XIcon class="x-4" />
+            </template>
+          </NButton>
+        </div>
+
+        <div class="flex flex-col gap-y-2">
+          <NTooltip>
+            <template #trigger>
+              <NButton
+                circle
+                size="medium"
+                class="shadow"
+                @click="() => scrollToRow(0)"
+              >
+                <template #icon>
+                  <ArrowUpIcon class="x-4" />
+                </template>
+              </NButton>
+            </template>
+            {{ $t("sql-editor.scroll-to-top") }}
+          </NTooltip>
+          <NTooltip>
+            <template #trigger>
+              <NButton
+                circle
+                size="medium"
+                class="shadow"
+                @click="() => scrollToRow(rows.length - 1)"
+              >
+                <template #icon>
+                  <ArrowDownIcon class="x-4" />
+                </template>
+              </NButton>
+            </template>
+            {{ $t("sql-editor.scroll-to-bottom") }}
+          </NTooltip>
+        </div>
       </div>
     </div>
 
@@ -446,10 +481,10 @@ const scrollToPreviousCandidate = () => {
 };
 
 const scrollToCurrentCandidate = () => {
-  scrollToSearchCandidate(activeRowIndex.value);
+  scrollToRow(activeRowIndex.value);
 };
 
-const scrollToSearchCandidate = (index: number | undefined) => {
+const scrollToRow = (index: number | undefined) => {
   if (index === undefined || index < 0) {
     return;
   }
