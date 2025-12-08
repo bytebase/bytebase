@@ -4,8 +4,6 @@ import { useI18n } from "vue-i18n";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 
-const MAX_ERROR_PREVIEW_LENGTH = 100;
-
 export interface UseTaskDisplayReturn {
   taskTypeDisplay: ComputedRef<string>;
   executorEmail: ComputedRef<string>;
@@ -60,16 +58,12 @@ export const useTaskDisplay = (
 
   // Collapsed view: error or skip reason
   const collapsedStatusText = computed(() => {
-    const currentTask = task();
-
-    if (currentTask.status === Task_Status.FAILED) {
-      const detail = latestTaskRun()?.detail || "";
-      const firstLine = detail.split("\n")[0];
-      return firstLine.length > MAX_ERROR_PREVIEW_LENGTH
-        ? `${firstLine.substring(0, MAX_ERROR_PREVIEW_LENGTH)}...`
-        : firstLine;
+    const detail = latestTaskRun()?.detail || "";
+    if (detail) {
+      return detail;
     }
 
+    const currentTask = task();
     if (
       currentTask.status === Task_Status.SKIPPED &&
       currentTask.skippedReason
