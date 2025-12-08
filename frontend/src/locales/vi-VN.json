@@ -2670,7 +2670,7 @@
         }
       }
     },
-     "risk": {
+    "risk": {
       "self": "Trung tâm Rủi ro",
       "description": "Đánh giá rủi ro tự động đánh giá các thay đổi cơ sở dữ liệu và phân loại mức độ rủi ro dựa trên loại thao tác được thực hiện.",
       "how-it-works": "Cách hoạt động",
