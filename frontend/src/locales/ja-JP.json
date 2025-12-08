@@ -2028,7 +2028,6 @@
   "sql-editor": {
     "self": "SQLエディタ",
     "select-connection": "データ接続を選択してください",
-    "search-results": "の検索結果",
     "loading-databases": "データベース情報をロードしています...",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
     "loading-data": "データのロード...",
@@ -2149,7 +2148,6 @@
     "result-limit": {
       "self": "結果の制限"
     },
-    "n-per-page": "{n} / ページ",
     "add-a-new-instance": "新しいインスタンスを追加する",
     "web-socket": {
       "errors": {
@@ -2176,7 +2174,8 @@
     "format-default": "デフォルト",
     "column-display-format": "列表示形式",
     "next-row": "次の行",
-    "previous-row": "前の行"
+    "previous-row": "前の行",
+    "search-scope-column-description": "{type}型の列。値を入力してEnterキーを押すと、一致する行に移動します。"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

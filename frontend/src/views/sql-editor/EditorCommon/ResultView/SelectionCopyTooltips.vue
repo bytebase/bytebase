@@ -11,18 +11,18 @@
       class="text-sm flex flex-row justify-start items-center gap-1"
     >
       <template #action>
-        <kbd
-          class="w-auto h-5 flex items-center justify-center bg-black dark:bg-zinc-700 dark:text-zinc-300 bg-opacity-10 rounded-sm px-1.5 text-control overflow-y-hidden"
-        >
-          <span v-if="isMac" class="text-base leading-none">⌘</span>
-          <span
-            v-else
-            class="tracking-tighter text-xs transform scale-x-90 leading-none"
-          >
-            Ctrl
-          </span>
-          <span class="pl-1 text-xs leading-none">C</span>
-        </kbd>
+        <NButton size="tiny" type="primary" secondary>
+          <template #icon>
+            <span v-if="isMac" class="text-base leading-none">⌘</span>
+            <span
+              v-else
+              class="tracking-tighter text-xs transform scale-x-90 leading-none"
+            >
+              Ctrl
+            </span>
+          </template>
+          C
+        </NButton>
       </template>
       <template #button>
         <NButton size="tiny" @click="copySelection" type="primary" secondary>
@@ -34,7 +34,7 @@
       </template>
     </i18n-t>
     <div class="ml-1">
-      <NButton size="tiny" secondary @click="deselect">
+      <NButton size="tiny" quaternary @click="deselect">
         {{ $t("sql-editor.cancel-selection") }}
       </NButton>
     </div>

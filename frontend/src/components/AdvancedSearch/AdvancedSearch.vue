@@ -12,9 +12,6 @@
       <template #prefix>
         <div
           class="flex flex-row items-center justify-start gap-x-2"
-          :style="{
-            'max-width': `calc(${containerWidth}px - 14rem)`,
-          }"
         >
           <div class="flex items-center gap-x-2">
             <FilterIcon class="w-4 h-4 text-control-placeholder" />
@@ -83,7 +80,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onClickOutside, useDebounceFn, useElementSize } from "@vueuse/core";
+import { onClickOutside, useDebounceFn } from "@vueuse/core";
 import { cloneDeep, last } from "lodash-es";
 import { FilterIcon, XIcon } from "lucide-vue-next";
 import { type InputInst, NButton, NInput } from "naive-ui";
@@ -115,7 +112,7 @@ const props = withDefaults(
     scopeOptions?: ScopeOption[];
     placeholder?: string | undefined;
     autofocus?: boolean;
-    overrideRouteQuery?: boolean;
+    cacheQuery?: boolean;
     // Fallback params when no URL params and no cache.
     // Precedence: URL params > cache > defaultParams.
     // Readonly scopes from props.params are always preserved.
@@ -125,18 +122,18 @@ const props = withDefaults(
     scopeOptions: () => [],
     autofocus: false,
     placeholder: undefined,
-    overrideRouteQuery: true,
+    cacheQuery: true,
     defaultParams: undefined,
   }
 );
 
 const emit = defineEmits<{
+  (event: "keyup:enter"): void;
   (event: "update:params", params: SearchParams): void;
   (event: "select-unsupported-scope", id: SearchScopeId): void;
 }>();
 
 interface LocalState {
-  searchText: string;
   currentScope?: SearchScopeId;
   menuView?: "value" | "scope";
   scopeOptions: ScopeOption[];
@@ -170,19 +167,7 @@ const defaultSearchParams = () => {
   return params;
 };
 
-const buildSearchTextByParams = (params: SearchParams | undefined): string => {
-  const prefix = (params?.scopes ?? [])
-    .map((scope) => `${scope.id}:${scope.value}`)
-    .join(" ");
-  const query = params?.query ?? "";
-  if (!prefix && !query) {
-    return "";
-  }
-  return `${prefix} ${query}`;
-};
-
 const state = reactive<LocalState>({
-  searchText: buildSearchTextByParams(props.params),
   scopeOptions: [],
   fetchDataStateMap: new Map(),
 });
@@ -199,20 +184,12 @@ const containerRef = ref<HTMLElement>();
 const tagsContainerRef = ref<HTMLElement>();
 const inputText = ref(props.params.query);
 const inputRef = ref<InputInst>();
-const menuIndex = ref(-1);
-const { width: containerWidth } = useElementSize(containerRef);
+const menuIndex = ref(0);
 const focusedTagId = ref<SearchScopeId>();
 
 const editableScopes = computed(() => {
   return props.params.scopes.filter((s) => !s.readonly);
 });
-
-watch(
-  () => props.params,
-  (params) => {
-    state.searchText = buildSearchTextByParams(params);
-  }
-);
 
 const valueOptions = computed(() => {
   if (state.menuView === "value" && currentScopeOption.value) {
@@ -565,42 +542,35 @@ const handleKeyUp = (e: KeyboardEvent) => {
       return;
     }
   }
-  if (maybeSelectMatchedScope()) {
-    maybeEmitIncompleteValue();
-    return;
-  }
-  if (maybeDeselectMismatchedScope()) {
-    maybeEmitIncompleteValue();
-    return;
-  }
   if (key === "Enter") {
     // Press enter to select scope (dive into the next step)
     // or select value
     const index = menuIndex.value;
-    if (index < 0) {
-      hideMenu();
-      return;
-    }
     if (state.menuView === "scope") {
       const option = visibleScopeOptions.value[index];
       if (option) {
         selectScope(option.id);
-        maybeEmitIncompleteValue();
-        return;
+        return maybeEmitIncompleteValue();
       }
     }
     if (state.menuView === "value") {
       if (visibleValueOptions.value.length === 0) {
         const val = extractValue();
         if (val) {
-          selectValue(val);
-          return;
+          return selectValue(val);
         }
       } else if (visibleValueOptions.value[index]) {
-        selectValue(visibleValueOptions.value[index].value);
-        return;
+        return selectValue(visibleValueOptions.value[index].value);
       }
     }
+    return emit("keyup:enter");
+  }
+
+  if (maybeSelectMatchedScope()) {
+    return maybeEmitIncompleteValue();
+  }
+  if (maybeDeselectMismatchedScope()) {
+    return maybeEmitIncompleteValue();
   }
 
   maybeEmitIncompleteValue();
@@ -682,7 +652,7 @@ watch(
   () => state.menuView,
   () => {
     focusedTagId.value = undefined;
-    menuIndex.value = -1;
+    menuIndex.value = 0;
     if (state.menuView === "value" && state.currentScope) {
       const value = getValueFromSearchParams(props.params, state.currentScope);
       if (value) {
@@ -725,10 +695,8 @@ watch(visibleValueOptions, (newOptions, oldOptions) => {
 watch(
   () => props.params,
   (params) => {
-    if (!inputText.value) {
-      inputText.value = params.query;
-    }
-    if (props.overrideRouteQuery) {
+    inputText.value = params.query;
+    if (props.cacheQuery) {
       cachedQuery.value = buildSearchTextBySearchParams(params);
     }
   },

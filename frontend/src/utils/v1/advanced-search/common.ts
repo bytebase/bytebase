@@ -38,7 +38,8 @@ export const AllSearchScopeIdList = [
 
 export type SearchScopeId =
   | (typeof AllSearchScopeIdList)[number]
-  | CommonFilterScopeId;
+  | CommonFilterScopeId
+  | string;
 
 export type SearchScope = {
   id: SearchScopeId;

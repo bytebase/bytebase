@@ -2028,7 +2028,6 @@
   "sql-editor": {
     "self": "SQL 编辑器",
     "select-connection": "请选择数据连接",
-    "search-results": "搜索结果",
     "loading-databases": "加载数据库信息...",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "loading-data": "加载数据中...",
@@ -2149,7 +2148,6 @@
     "result-limit": {
       "self": "结果限制"
     },
-    "n-per-page": "{n} / 页",
     "add-a-new-instance": "添加实例",
     "web-socket": {
       "errors": {
@@ -2176,7 +2174,8 @@
     "format-default": "默认",
     "column-display-format": "列显示格式",
     "next-row": "下一行",
-    "previous-row": "上一行"
+    "previous-row": "上一行",
+    "search-scope-column-description": "{type} 类型的列。输入值后按回车键跳转到匹配的行。"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

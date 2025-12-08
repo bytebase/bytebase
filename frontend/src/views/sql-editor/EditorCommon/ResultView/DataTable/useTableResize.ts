@@ -1,7 +1,7 @@
 import { useEventListener, usePointer } from "@vueuse/core";
 import { sumBy } from "lodash-es";
 import type { Ref } from "vue";
-import { computed, onBeforeUnmount, reactive, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, reactive, watch } from "vue";
 
 export type TableResizeOptions = {
   tableRef: Ref<HTMLTableElement | undefined>;
@@ -34,7 +34,7 @@ const useTableResize = (options: TableResizeOptions) => {
   });
   const pointer = usePointer();
 
-  const table = computed(() => options.tableRef.value!);
+  const table = computed(() => options.tableRef.value);
 
   const containerWidth = computed(() => {
     return options.containerRef?.value?.scrollWidth || 0;
@@ -71,7 +71,12 @@ const useTableResize = (options: TableResizeOptions) => {
       )
       .map((width) => ({ width }));
     // After calculating the width, use fixed layout to keep the width stable.
-    table.value.style.tableLayout = "fixed";
+    nextTick(() => {
+      if (!table.value) {
+        return;
+      }
+      table.value.style.tableLayout = "fixed";
+    });
   };
 
   // Record the initial state of dragging.
@@ -120,14 +125,22 @@ const useTableResize = (options: TableResizeOptions) => {
     };
   };
 
-  const getTableProps = () => {
-    const totalWidth = sumBy(state.columns, (col) => col.width);
+  const getColumnWidth = (index: number): number => {
+    const column = state.columns[index];
+    return column?.width ?? 0;
+  };
+
+  const totalWidth = computed(() => {
+    return sumBy(state.columns, (col) => col.width);
+  });
+
+  const tableProps = computed(() => {
     return {
       style: {
-        width: state.isAutoAdjusting ? "auto" : `${totalWidth}px`,
+        width: state.isAutoAdjusting ? "auto" : `${totalWidth.value}px`,
       },
     };
-  };
+  });
 
   onBeforeUnmount(() => {
     toggleDragStyle(table, false);
@@ -136,7 +149,9 @@ const useTableResize = (options: TableResizeOptions) => {
   return {
     reset,
     getColumnProps,
-    getTableProps,
+    getColumnWidth,
+    tableProps,
+    totalWidth,
     startResizing,
   };
 };

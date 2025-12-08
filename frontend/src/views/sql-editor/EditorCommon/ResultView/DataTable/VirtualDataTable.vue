@@ -2,74 +2,87 @@
   <div
     ref="containerRef"
     class="relative w-full flex-1 overflow-auto flex flex-col rounded-sm border dark:border-zinc-500"
-    :style="{
-      maxHeight: maxHeight ? `${maxHeight}px` : undefined,
-    }"
   >
     <table
       ref="tableRef"
       class="relative border-collapse w-full -mx-px table-fixed"
-      v-bind="tableResize.getTableProps()"
+      v-bind="tableResize.tableProps"
     >
       <thead
         class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-1 drop-shadow-xs"
       >
         <tr>
+          <!-- header for the index -->
           <th
-            v-for="header of columns"
-            :key="`${setIndex}-${header.id}`"
+            :key="`${setIndex}-0-index`"
+            class="`group relative px-1 py-2 tracking-wider border-x border-block-border dark:border-zinc-500"
+            v-bind="tableResize.getColumnProps(0)"
+          >
+            <!-- Use the max index to calculate the cell width -->
+            <div
+              :class="[
+                'textinfolabel opacity-0',
+              ]"
+            >{{ rows.length }}</div>
+            <div
+              class="absolute w-2 right-0 top-0 bottom-0 cursor-col-resize"
+              @pointerdown="tableResize.startResizing(0)"
+              @click.stop.prevent
+            />
+          </th>
+          <!-- header for columns -->
+          <th
+            v-for="(header, columnIndex) of columns"
+            :key="`${setIndex}-${columnIndex + 1}-${header.id}`"
             class="group relative px-2 py-2 min-w-8 text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-x border-block-border dark:border-zinc-500"
             :class="{
               'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800':
                 !selectionDisabled,
               'bg-accent/10! dark:bg-accent/40!':
                 selectionState.rows.length === 0 &&
-                selectionState.columns.includes(header.index),
-              'pl-6': header.index === 0 && !selectionDisabled,
+                selectionState.columns.includes(columnIndex),
             }"
-            v-bind="tableResize.getColumnProps(header.index)"
-            @click.stop="selectColumn(header.index)"
+            v-bind="tableResize.getColumnProps(columnIndex + 1)"
+            @click.stop="selectColumn(columnIndex)"
           >
             <div class="flex items-center overflow-hidden">
               <span class="flex flex-row items-center select-none">
                 <template
-                  v-if="String(header.column.columnDef.header).length > 0"
+                  v-if="String(header.name).length > 0"
                 >
-                  {{ header.column.columnDef.header }}
+                  {{ header.name }}
                 </template>
                 <br v-else class="min-h-4 inline-flex" />
               </span>
 
               <MaskingReasonPopover
-                v-if="getMaskingReason && getMaskingReason(header.index)"
-                :reason="getMaskingReason(header.index)"
+                v-if="getMaskingReason && getMaskingReason(columnIndex)"
+                :reason="getMaskingReason(columnIndex)"
                 class="ml-0.5 shrink-0"
               />
               <SensitiveDataIcon
-                v-else-if="isSensitiveColumn(header.index)"
+                v-else-if="isSensitiveColumn(columnIndex)"
                 class="ml-0.5 shrink-0"
               />
 
               <ColumnSortedIcon
-                :is-sorted="header.column.getIsSorted()"
-                @click.stop.prevent="
-                  header.column.getToggleSortingHandler()?.($event)
-                "
+                :is-sorted="getColumnSortDirection(columnIndex)"
+                @click.stop.prevent="handleHeaderClick(columnIndex)"
               />
 
               <!-- Add binary format button if this column has binary data -->
               <BinaryFormatButton
-                v-if="existBinaryValue(header.index)"
+                v-if="existBinaryValue(columnIndex)"
                 :format="
                   getBinaryFormat({
-                    colIndex: header.index,
+                    colIndex: columnIndex,
                     setIndex,
                   })
                 "
                 @update:format="
                   (format: BinaryFormat) =>
                     setBinaryFormat({
-                      colIndex: header.index,
+                      colIndex: columnIndex,
                       setIndex,
                       format,
                     })
@@ -81,153 +94,167 @@
             <!-- The drag-to-resize handler -->
             <div
               class="absolute w-2 right-0 top-0 bottom-0 cursor-col-resize"
-              @pointerdown="tableResize.startResizing(header.index)"
+              @pointerdown="tableResize.startResizing(columnIndex + 1)"
               @click.stop.prevent
             />
           </th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Virtual scrolling container -->
-        <tr>
-          <td :colspan="columns.length" class="p-0! border-0!">
-            <div
-              ref="scrollerRef"
-              class="relative w-full"
-              :style="{
-                height: `${virtualizer.getTotalSize()}px`,
-              }"
-            >
-              <div
-                class="absolute top-0 left-0 w-full"
-                :style="{
-                  transform: `translateY(${virtualItems[0]?.start ?? 0}px)`,
-                }"
-              >
-                <table
-                  class="w-full border-collapse table-fixed"
-                  :style="{ tableLayout: 'fixed' }"
-                >
-                  <colgroup>
-                    <col
-                      v-for="(_, index) in columns"
-                      :key="`col-${index}`"
-                      v-bind="tableResize.getColumnProps(index)"
-                    />
-                  </colgroup>
-                  <tbody>
-                    <tr
-                      v-for="virtualRow in virtualItems"
-                      :key="`${setIndex}-${virtualRow.index}`"
-                      class="group"
-                      :data-row-index="offset + virtualRow.index"
-                      :style="{
-                        height: `${virtualRow.size}px`,
-                      }"
-                    >
-                      <td
-                        v-for="(cell, columnIndex) of rows[
-                          virtualRow.index
-                        ].getVisibleCells()"
-                        :key="`${setIndex}-${virtualRow.index}-${columnIndex}`"
-                        class="relative max-w-[50vw] p-0! text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-x border-b border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
-                        :data-col-index="columnIndex"
-                        :style="{
-                          height: `${virtualRow.size}px`,
-                        }"
-                      >
-                        <div
-                          :class="[
-                            'h-full flex items-center',
-                            columnIndex === 0 && !selectionDisabled
-                              ? 'ml-3'
-                              : '',
-                          ]"
-                        >
-                          <TableCell
-                            :table="table"
-                            :value="cell.getValue<RowValue>()"
-                            :keyword="keyword"
-                            :set-index="setIndex"
-                            :row-index="offset + virtualRow.index"
-                            :col-index="columnIndex"
-                            :allow-select="true"
-                            :column-type="getColumnTypeByIndex(columnIndex)"
-                            :class="{
-                              // 'ml-3': columnIndex === 0 && !selectionDisabled,
-                              'h-full': true,
-                              'w-full': true,
-                            }"
-                            :database="database"
-                          />
-                        </div>
-                        <div
-                          v-if="columnIndex === 0 && !selectionDisabled"
-                          class="absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 dark:bg-white/10 hover:bg-accent/10 dark:hover:bg-accent/40"
-                          :class="{
-                            'bg-accent/10! dark:bg-accent/40!':
-                              selectionState.columns.length === 0 &&
-                              selectionState.rows.includes(
-                                offset + virtualRow.index
-                              ),
-                          }"
-                          @click.prevent.stop="
-                            selectRow(offset + virtualRow.index)
-                          "
-                        ></div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </td>
-        </tr>
-      </tbody>
     </table>
-    <div
-      class="w-full sticky left-0 flex justify-center items-center py-12"
-      v-if="rows.length === 0"
+    <NVirtualList
+      ref="virtualListRef"
+      :items="rows"
+      :item-size="ROW_HEIGHT"
+      :style="{ width: `${tableResize.totalWidth.value}px` }"
     >
-      <NEmpty />
-    </div>
+      <template #default="{ item: row, index: rowIndex }: { item: { item: QueryRow; }; index: number; }">
+        <div
+          :key="`${setIndex}-${rowIndex}`"
+          class="flex group"
+          :data-row-index="rowIndex"
+          :style="{
+            height: `${ROW_HEIGHT}px`,
+          }"
+        >
+          <!-- the index cell  -->
+          <div
+            :key="`${setIndex}-${rowIndex}-0`"
+            class="relative flex items-center pl-3 shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
+            :class="{
+              'border-r': true,
+              'border-b': rowIndex < (rows.length - 1),
+              'bg-accent/10! dark:bg-accent/40!': activeRowIndex === rowIndex,
+              'bg-accent/20! dark:bg-accent/40!': selectionState.rows.includes(rowIndex)
+            }"
+            :data-col-index="0"
+            :style="{
+              height: `${ROW_HEIGHT}px`,
+              width: `${tableResize.getColumnWidth(0)}px`,
+            }"
+          >
+            <NPerformantEllipsis
+              :class="[
+                'overflow-hidden textinfolabel',
+                selectionDisabled
+                  ? ''
+                  : 'ml-2',
+              ]"
+            >
+              {{ rowIndex + 1 }}
+            </NPerformantEllipsis>
+
+            <div
+              v-if="!selectionDisabled"
+              class="absolute inset-y-0 left-0 w-3 cursor-pointer bg-accent/5 dark:bg-white/10 hover:bg-accent/10 dark:hover:bg-accent/40"
+              :class="{
+                'bg-accent/20! dark:bg-accent/40!':
+                  selectionState.columns.length === 0 &&
+                  selectionState.rows.includes(
+                    rowIndex
+                  ),
+              }"
+              @click.prevent.stop="
+                selectRow(rowIndex)
+              "
+            ></div>
+          </div>
+
+          <!-- other cells -->
+          <div
+            v-for="(cell, columnIndex) of row.item.values"
+            :key="`${setIndex}-${rowIndex}-${columnIndex + 1}`"
+            class="relative shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
+            :class="{
+              'border-r': columnIndex < (row.item.values.length - 1),
+              'border-b': rowIndex < (rows.length - 1),
+            }"
+            :data-col-index="columnIndex + 1"
+            :style="{
+              height: `${ROW_HEIGHT}px`,
+              width: `${tableResize.getColumnWidth(columnIndex + 1)}px`,
+            }"
+          >
+            <div
+              class="h-full flex items-center overflow-hidden"
+            >
+              <TableCell
+                :value="cell"
+                :keyword="search.query"
+                :scope="search.scopes.find(scope => scope.id === columns[columnIndex]?.id)"
+                :set-index="setIndex"
+                :row-index="rowIndex"
+                :col-index="columnIndex"
+                :allow-select="true"
+                :column-type="getColumnTypeByIndex(columnIndex)"
+                class="h-full w-full truncate"
+                :database="database"
+                :class="{
+                  'bg-accent/10! dark:bg-accent/40!': activeRowIndex === rowIndex
+                }"
+              />
+            </div>
+          </div>
+        </div>
+      </template>
+    </NVirtualList>
   </div>
 </template>
 
 <script lang="ts" setup>
-import type { Table } from "@tanstack/vue-table";
-import { useVirtualizer } from "@tanstack/vue-virtual";
-import { NEmpty } from "naive-ui";
-import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { type ComposedDatabase } from "@/types";
-import {
-  type QueryRow,
-  type RowValue,
-} from "@/types/proto-es/v1/sql_service_pb";
-import { useSQLResultViewContext } from "../context";
+import { useWindowSize, watchDebounced } from "@vueuse/core";
+import { NPerformantEllipsis, NVirtualList } from "naive-ui";
+import { nextTick, ref } from "vue";
+import { type ComposedDatabase, DEBOUNCE_SEARCH_DELAY } from "@/types";
+import { type QueryRow } from "@/types/proto-es/v1/sql_service_pb";
+import { type SearchParams } from "@/utils";
+import BinaryFormatButton from "./common/BinaryFormatButton.vue";
 import {
   type BinaryFormat,
   getBinaryFormatByColumnType,
   useBinaryFormatContext,
-} from "./binary-format-store";
-import BinaryFormatButton from "./common/BinaryFormatButton.vue";
+} from "./common/binary-format-store";
 import ColumnSortedIcon from "./common/ColumnSortedIcon.vue";
 import MaskingReasonPopover from "./common/MaskingReasonPopover.vue";
 import SensitiveDataIcon from "./common/SensitiveDataIcon.vue";
 import { useSelectionContext } from "./common/selection-logic";
-import { getColumnType } from "./common/utils";
+import type {
+  ResultTableColumn,
+  ResultTableRow,
+  SortDirection,
+  SortState,
+} from "./common/types";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
 
 const props = defineProps<{
-  table: Table<QueryRow>;
+  rows: ResultTableRow[];
+  columns: ResultTableColumn[];
   setIndex: number;
-  offset: number;
+  activeRowIndex: number;
   isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => any;
-  maxHeight?: number;
   database: ComposedDatabase;
+  sortState?: SortState;
+  search: SearchParams;
 }>();
+
+const emit = defineEmits<{
+  (event: "toggle-sort", columnIndex: number): void;
+}>();
+
+const ROW_HEIGHT = 35; // 35px height for every row
+const { width: windowWidth } = useWindowSize();
+
+const getColumnSortDirection = (columnIndex: number): SortDirection => {
+  if (!props.sortState || props.sortState.columnIndex !== columnIndex) {
+    return false;
+  }
+  return props.sortState.direction;
+};
+
+const handleHeaderClick = (columnIndex: number) => {
+  emit("toggle-sort", columnIndex);
+};
 
 const {
   state: selectionState,
@@ -237,7 +264,7 @@ const {
 } = useSelectionContext();
 const containerRef = ref<HTMLDivElement>();
 const tableRef = ref<HTMLTableElement>();
-const scrollerRef = ref<HTMLDivElement>();
+const virtualListRef = ref<InstanceType<typeof NVirtualList>>();
 
 const tableResize = useTableColumnWidthLogic({
   tableRef,
@@ -248,13 +275,8 @@ const tableResize = useTableColumnWidthLogic({
 
 const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
 
-const { keyword } = useSQLResultViewContext();
-
-const rows = computed(() => props.table.getRowModel().rows);
-const columns = computed(() => props.table.getFlatHeaders());
-
 const getColumnTypeByIndex = (columnIndex: number) => {
-  return getColumnType(columns.value[columnIndex]);
+  return props.columns[columnIndex].columnType;
 };
 
 const existBinaryValue = (columnIndex: number) => {
@@ -263,12 +285,11 @@ const existBinaryValue = (columnIndex: number) => {
   }
 
   // Check each row in the column for binary data (proto-es oneof pattern)
-  for (const row of rows.value) {
-    const cell = row.getVisibleCells()[columnIndex];
+  for (const row of props.rows) {
+    const cell = row.item.values[columnIndex];
     if (!cell) continue;
 
-    const value = cell.getValue<RowValue>();
-    if (value?.kind?.case === "bytesValue") {
+    if (cell.kind?.case === "bytesValue") {
       return true;
     }
   }
@@ -276,44 +297,33 @@ const existBinaryValue = (columnIndex: number) => {
   return false;
 };
 
-// Virtual scrolling setup
-const virtualizer = useVirtualizer(
-  computed(() => ({
-    count: rows.value.length,
-    getScrollElement: () => containerRef.value ?? null,
-    estimateSize: () => 35, // Estimated row height
-    overscan: 10, // Number of items to render outside visible area
-  }))
-);
-
-const virtualItems = computed(() => virtualizer.value.getVirtualItems());
-
-onMounted(() => {
-  nextTick(() => {
-    tableResize.reset();
-  });
-});
-
 // Re-initialize column widths when data changes
-watch(
-  () => [rows.value.length, columns.value.length],
+watchDebounced(
+  () => props.columns,
   () => {
     nextTick(() => {
       tableResize.reset();
     });
-  }
+  },
+  { immediate: true, deep: true, debounce: DEBOUNCE_SEARCH_DELAY }
 );
 
-const scrollTo = (x: number, y: number) => {
-  containerRef.value?.scroll(x, y);
-};
-
-watch(
-  () => props.offset,
+watchDebounced(
+  () => windowWidth.value,
   () => {
-    // When the offset changed, we need to reset the scroll position.
-    scrollTo(0, 0);
-    virtualizer.value.scrollToOffset(0);
-  }
+    nextTick(() => {
+      tableResize.reset();
+    });
+  },
+  { debounce: DEBOUNCE_SEARCH_DELAY }
 );
+
+defineExpose({
+  scrollTo: (index: number) =>
+    virtualListRef.value?.scrollTo({
+      top: Math.max(0, (index - 1) * ROW_HEIGHT),
+      debounce: true,
+      behavior: "smooth",
+    }),
+});
 </script>

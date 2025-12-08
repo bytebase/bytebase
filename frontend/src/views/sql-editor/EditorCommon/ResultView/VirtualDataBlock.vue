@@ -1,158 +1,129 @@
 <template>
-  <div ref="containerRef" class="h-full overflow-auto">
-    <div
-      class="relative"
-      :style="{
-        height: `${virtualizer.getTotalSize()}px`,
-      }"
-    >
+  <NVirtualList
+    ref="virtualListRef"
+    item-resizable
+    :items="rows"
+    :item-size="estimateRowHeight"
+  >
+    <template #default="{ item: row, index: rowIndex }: { item: { item: QueryRow; }; index: number; }">
       <div
-        class="absolute top-0 left-0 w-full"
+        :key="`row-${rowIndex}`"
+        class="font-mono mb-2 mx-2"
         :style="{
-          transform: `translateY(${virtualItems[0]?.start ?? 0}px)`,
+          height: `${estimateRowHeight}px`,
         }"
       >
+        <p
+          class="font-bold text-gray-500 dark:text-gray-300 overflow-hidden whitespace-nowrap mb-1"
+        >
+          ********************************
+          {{ rowIndex + 1 }}. row
+          ********************************
+        </p>
         <div
-          v-for="(virtualRow, i) in virtualItems"
-          :key="`row-${offset + virtualRow.index}`"
-          class="font-mono mb-5 mx-2"
-          :style="{
-            height: `${virtualRow.size}px`,
+          class="py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded relative"
+          :class="{
+            'border-2 border-accent/20 bg-accent/10!': activeRowIndex === rowIndex
           }"
         >
-          <p
-            class="font-medium text-gray-500 dark:text-gray-300 overflow-hidden whitespace-nowrap"
-          >
-            ********************************
-            {{ offset + virtualRow.index + 1 }}. row
-            ********************************
-          </p>
           <div
-            class="py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-xs relative"
+            class="absolute right-2 top-2 z-50 opacity-70 hover:opacity-100"
           >
-            <div
-              class="absolute right-2 top-2 z-50 opacity-70 hover:opacity-100"
-            >
-              <CopyButton size="small" :content="() => getContent(i)" />
+            <CopyButton size="small" :content="() => getContent(rowIndex)" />
+          </div>
+          <div
+            v-for="(column, columnIndex) in columns"
+            :key="column.id"
+            class="flex items-start text-gray-500 dark:text-gray-300 text-sm"
+          >
+            <div class="min-w-28 text-left flex items-start font-medium pt-1">
+              {{ column.name }}
+              <MaskingReasonPopover
+                v-if="getMaskingReason && getMaskingReason(columnIndex)"
+                :reason="getMaskingReason(columnIndex)"
+                class="ml-0.5 shrink-0"
+              />
+              <SensitiveDataIcon
+                v-else-if="isSensitiveColumn(columnIndex)"
+                class="ml-0.5 shrink-0"
+              />
+              :
             </div>
-            <div
-              v-for="header in columnHeaders"
-              :key="`${virtualRow.index}-${header.index}`"
-              class="flex items-start text-gray-500 dark:text-gray-300 text-sm"
-            >
-              <div class="min-w-28 text-left flex items-start font-medium pt-1">
-                {{ header.column.columnDef.header }}
-                <MaskingReasonPopover
-                  v-if="getMaskingReason && getMaskingReason(header.index)"
-                  :reason="getMaskingReason(header.index)"
-                  class="ml-0.5 shrink-0"
-                />
-                <SensitiveDataIcon
-                  v-else-if="isSensitiveColumn(header.index)"
-                  class="ml-0.5 shrink-0"
-                />
-                :
-              </div>
-              <div class="flex-1">
-                <TableCell
-                  ref="cellRefs"
-                  :table="table"
-                  :value="
-                    rows[virtualRow.index]
-                      .getVisibleCells()
-                      [header.index].getValue() as RowValue
-                  "
-                  :keyword="keyword"
-                  :set-index="setIndex"
-                  :row-index="offset + virtualRow.index"
-                  :col-index="header.index"
-                  :column-type="getColumnType(header)"
-                  :allow-select="true"
-                  :database="database"
-                />
-              </div>
+            <div class="flex-1">
+              <TableCell
+                :value="row.item.values[columnIndex]"
+                :keyword="search.query"
+                :scope="search.scopes.find(scope => scope.id === columns[columnIndex]?.id)"
+                :set-index="setIndex"
+                :row-index="rowIndex"
+                :col-index="columnIndex"
+                :column-type="column.columnType"
+                :allow-select="true"
+                :database="database"
+              />
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <div
-      v-if="rows.length === 0"
-      class="text-center w-full my-12 textinfolabel"
-    >
-      {{ $t("sql-editor.no-data-available") }}
-    </div>
-  </div>
+    </template>
+  </NVirtualList>
 </template>
 
 <script setup lang="ts">
-import type { Table } from "@tanstack/vue-table";
-import { useVirtualizer } from "@tanstack/vue-virtual";
-import { computed, ref, watch } from "vue";
+import { NVirtualList } from "naive-ui";
+import { computed, ref } from "vue";
 import { CopyButton } from "@/components/v2";
 import { type ComposedDatabase } from "@/types";
-import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
-import { useSQLResultViewContext } from "./context";
+import type { QueryRow } from "@/types/proto-es/v1/sql_service_pb";
+import { type SearchParams } from "@/utils";
+import { useBinaryFormatContext } from "./DataTable/common/binary-format-store";
 import MaskingReasonPopover from "./DataTable/common/MaskingReasonPopover.vue";
 import SensitiveDataIcon from "./DataTable/common/SensitiveDataIcon.vue";
-import { getColumnType } from "./DataTable/common/utils";
+import type {
+  ResultTableColumn,
+  ResultTableRow,
+} from "./DataTable/common/types";
+import { getPlainValue } from "./DataTable/common/utils";
 import TableCell from "./DataTable/TableCell.vue";
 
 const props = defineProps<{
-  table: Table<QueryRow>;
+  rows: ResultTableRow[];
+  columns: ResultTableColumn[];
   setIndex: number;
-  offset: number;
+  activeRowIndex: number;
   isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => any;
   database: ComposedDatabase;
+  search: SearchParams;
 }>();
 
-const { keyword } = useSQLResultViewContext();
-const containerRef = ref<HTMLDivElement>();
-const cellRefs = ref<InstanceType<typeof TableCell>[]>([]);
-
-const rows = computed(() => props.table.getRowModel().rows);
-
-// Cache column headers to avoid recalculation
-const columnHeaders = computed(() => props.table.getFlatHeaders());
+const { getBinaryFormat } = useBinaryFormatContext();
+const virtualListRef = ref<InstanceType<typeof NVirtualList>>();
 
 // Calculate the height of each row block
-const estimateRowHeight = () => {
+const estimateRowHeight = computed(() => {
   // Estimate based on number of columns
   // Each column is roughly 28px, plus padding and header
-  const columnCount = columnHeaders.value.length;
+  const columnCount = props.columns.length;
   return 60 + columnCount * 28; // Header + columns
-};
+});
 
-// Virtual scrolling setup
-const virtualizer = useVirtualizer(
-  computed(() => ({
-    count: rows.value.length,
-    getScrollElement: () => containerRef.value ?? null,
-    estimateSize: estimateRowHeight,
-    overscan: 3, // Fewer items in overscan since each item is larger
-  }))
-);
-
-const virtualItems = computed(() => virtualizer.value.getVirtualItems());
-
-// Reset scroll position when offset changes
-watch(
-  () => props.offset,
-  () => {
-    containerRef.value?.scrollTo({ top: 0 });
-    virtualizer.value.scrollToOffset(0);
-  }
-);
-
-const getContent = (index: number): string => {
-  const object = columnHeaders.value.reduce(
-    (obj, header, j) => {
-      if (!header.column.columnDef.header) {
+const getContent = (rowIndex: number): string => {
+  const object = props.columns.reduce(
+    (obj, column, columnIndex) => {
+      if (!column.name) {
         return obj;
       }
-      obj[`${header.column.columnDef.header}`] =
-        cellRefs.value[index * columnHeaders.value.length + j]?.plainValue;
+      const binaryFormat = getBinaryFormat({
+        rowIndex: rowIndex,
+        colIndex: columnIndex,
+        setIndex: props.setIndex,
+      });
+      obj[`${column.name}`] = getPlainValue(
+        props.rows[rowIndex].item.values[columnIndex],
+        column.columnType,
+        binaryFormat
+      );
       return obj;
     },
     {} as Record<string, any>
@@ -160,4 +131,13 @@ const getContent = (index: number): string => {
 
   return JSON.stringify(object, null, 4);
 };
+
+defineExpose({
+  scrollTo: (index: number) =>
+    virtualListRef.value?.scrollTo({
+      top: index * estimateRowHeight.value,
+      debounce: true,
+      behavior: "smooth",
+    }),
+});
 </script>

@@ -40,7 +40,7 @@
         @click.stop="showDetail"
       >
         <template #icon>
-          <heroicons:arrows-pointing-out class="w-3 h-3" />
+          <ExpandIcon class="w-3 h-3" />
         </template>
       </NButton>
     </div>
@@ -48,28 +48,26 @@
 </template>
 
 <script setup lang="ts">
-import { type Table } from "@tanstack/vue-table";
 import { useResizeObserver } from "@vueuse/core";
 import { escape } from "lodash-es";
+import { ExpandIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { twMerge } from "tailwind-merge";
 import { computed, ref } from "vue";
 import { type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
-import { extractSQLRowValuePlain, getHighlightHTMLByRegExp } from "@/utils";
+import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
+import { getHighlightHTMLByRegExp, type SearchScope } from "@/utils";
 import { useSQLResultViewContext } from "../context";
+import BinaryFormatButton from "./common/BinaryFormatButton.vue";
 import {
   type BinaryFormat,
-  detectBinaryFormat,
-  formatBinaryValue,
   useBinaryFormatContext,
-} from "./binary-format-store";
-import BinaryFormatButton from "./common/BinaryFormatButton.vue";
+} from "./common/binary-format-store";
 import { useSelectionContext } from "./common/selection-logic";
+import { getPlainValue } from "./common/utils";
 
 const props = defineProps<{
-  table: Table<QueryRow>;
   value: RowValue;
   setIndex: number;
   rowIndex: number;
@@ -77,9 +75,11 @@ const props = defineProps<{
   allowSelect?: boolean;
   columnType: string; // Column type from QueryResult
   database: ComposedDatabase;
+  scope?: SearchScope;
+  keyword: string;
 }>();
 
-const { detail, keyword } = useSQLResultViewContext();
+const { detail } = useSQLResultViewContext();
 const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
 
 const {
@@ -109,17 +109,22 @@ const binaryFormat = computed(() => {
   });
 });
 
-useResizeObserver(wrapperRef, (entries) => {
-  const div = entries[0].target as HTMLDivElement;
-  const contentHeight = div.scrollHeight;
-  const visibleHeight = div.offsetHeight;
+useResizeObserver(cellRef, () => {
+  const cell = cellRef.value;
+  const wrapper = wrapperRef.value;
+  if (!cell || !wrapper) return;
+
   // Check if content is truncated vertically (due to line-clamp)
-  if (contentHeight > visibleHeight + 2) {
-    // +2 for minor pixel differences
-    truncated.value = true;
-  } else {
-    truncated.value = false;
-  }
+  const contentHeight = wrapper.scrollHeight;
+  const visibleHeight = wrapper.offsetHeight;
+  const verticalTruncated = contentHeight > visibleHeight + 2; // +2 for minor pixel differences
+
+  // Check if content is truncated horizontally
+  const contentWidth = wrapper.scrollWidth;
+  const visibleWidth = cell.offsetWidth;
+  const horizontalTruncated = contentWidth > visibleWidth + 2;
+
+  truncated.value = verticalTruncated || horizontalTruncated;
 });
 
 const clickable = computed(() => {
@@ -135,30 +140,36 @@ const clickable = computed(() => {
   return false;
 });
 
+const selected = computed(() => {
+  if (!allowSelect.value) {
+    return false;
+  }
+  if (
+    selectionState.value.columns.length === 1 &&
+    selectionState.value.rows.length === 1
+  ) {
+    if (
+      selectionState.value.columns[0] === props.colIndex &&
+      selectionState.value.rows[0] === props.rowIndex
+    ) {
+      return true;
+    }
+  } else if (
+    selectionState.value.columns.includes(props.colIndex) ||
+    selectionState.value.rows.includes(props.rowIndex)
+  ) {
+    return true;
+  }
+  return false;
+});
+
 const classes = computed(() => {
   const classes: string[] = [];
   if (allowSelect.value) {
     classes.push("cursor-pointer");
-    classes.push("hover:bg-white/20 dark:hover:bg-black/5");
-    if (props.colIndex === 0) {
-      classes.push("pl-3");
-    }
-    if (
-      selectionState.value.columns.length === 1 &&
-      selectionState.value.rows.length === 1
-    ) {
-      if (
-        selectionState.value.columns[0] === props.colIndex &&
-        selectionState.value.rows[0] === props.rowIndex
-      ) {
-        classes.push("bg-accent/10! dark:bg-accent/40!");
-      }
-    } else if (
-      selectionState.value.columns.includes(props.colIndex) ||
-      selectionState.value.rows.includes(props.rowIndex)
-    ) {
-      classes.push("bg-accent/10! dark:bg-accent/40!");
-    } else {
+    classes.push("hover:bg-accent/10 dark:hover:bg-accent/20");
+    if (selected.value) {
+      classes.push("bg-accent/20! dark:bg-accent/40!");
     }
   } else {
     classes.push("select-none");
@@ -166,48 +177,8 @@ const classes = computed(() => {
   return twMerge(classes);
 });
 
-// Format the binary value based on selected format (proto-es oneof pattern)
-const formattedValue = computed(() => {
-  const bytesValue =
-    props.value.kind?.case === "bytesValue"
-      ? props.value.kind.value
-      : undefined;
-  if (!bytesValue) {
-    return props.value;
-  }
-
-  // Determine the format to use - column override, cell override, or auto-detected format
-  let actualFormat = binaryFormat.value ?? "DEFAULT";
-
-  // If format is DEFAULT or undefined, auto-detect based on column type and content
-  if (actualFormat === "DEFAULT") {
-    actualFormat = detectBinaryFormat({
-      bytesValue,
-      columnType: props.columnType,
-    });
-  }
-
-  const stringValue = formatBinaryValue({
-    bytesValue,
-    format: actualFormat,
-  });
-
-  // Return proto-es oneof structure with stringValue
-  return {
-    ...props.value,
-    kind: {
-      case: "stringValue" as const,
-      value: stringValue,
-    },
-  };
-});
-
 const plainValue = computed(() => {
-  const value = extractSQLRowValuePlain(formattedValue.value);
-  if (value === undefined || value === null) {
-    return value;
-  }
-  return String(value);
+  return getPlainValue(props.value, props.columnType, binaryFormat.value);
 });
 
 const html = computed(() => {
@@ -224,13 +195,16 @@ const html = computed(() => {
     return `<br style="min-width: 1rem; display: inline-flex;" />`;
   }
 
-  const kw = keyword.value.trim();
+  let kw = props.scope?.value.trim();
+  if (!kw) {
+    kw = props.keyword.trim();
+  }
   if (!kw) {
     return escape(value);
   }
 
   return getHighlightHTMLByRegExp(
-    escape(value),
+    value,
     escape(kw),
     false /* !caseSensitive */
   );
@@ -258,11 +232,6 @@ const showDetail = () => {
     set: props.setIndex,
     row: props.rowIndex,
     col: props.colIndex,
-    table: props.table,
   };
 };
-
-defineExpose({
-  plainValue,
-});
 </script>

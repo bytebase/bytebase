@@ -84,6 +84,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useClipboard } from "@vueuse/core";
 import { LockKeyholeIcon, UsersIcon } from "lucide-vue-next";
 import { NInput, NInputGroup, NInputGroupLabel, NPopover } from "naive-ui";
 import { computed, h, onMounted, ref } from "vue";
@@ -103,11 +104,7 @@ import {
   type Worksheet,
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import {
-  extractProjectResourceName,
-  extractWorksheetUID,
-  toClipboard,
-} from "@/utils";
+import { extractProjectResourceName, extractWorksheetUID } from "@/utils";
 
 const props = defineProps<{
   worksheet?: Worksheet;
@@ -124,6 +121,10 @@ const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
 const settingStore = useSettingV1Store();
 const me = useCurrentUserV1();
+
+const { copy: copyTextToClipboard, isSupported } = useClipboard({
+  legacy: true,
+});
 
 const workspaceExternalURL = computed(
   () => settingStore.workspaceProfileSetting?.externalUrl
@@ -171,8 +172,8 @@ const handleChangeAccess = async (option: AccessOption) => {
       ["visibility"]
     );
 
-    if (sharedTabLink.value) {
-      await toClipboard(sharedTabLink.value);
+    if (sharedTabLink.value && isSupported.value) {
+      await copyTextToClipboard(sharedTabLink.value);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

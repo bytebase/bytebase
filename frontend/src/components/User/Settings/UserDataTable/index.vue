@@ -23,6 +23,7 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import { useClipboard } from "@vueuse/core";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, h, reactive, watchEffect } from "vue";
@@ -40,7 +41,6 @@ import {
   UpdateUserRequestSchema,
   type User,
 } from "@/types/proto-es/v1/user_service_pb";
-import { toClipboard } from "@/utils";
 import GroupsCell from "./cells/GroupsCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";
@@ -70,6 +70,10 @@ const { t } = useI18n();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
 const workspaceStore = useWorkspaceV1Store();
+
+const { copy: copyTextToClipboard, isSupported } = useClipboard({
+  legacy: true,
+});
 
 watchEffect(async () => {
   const groupNames = new Set<string>();
@@ -171,8 +175,8 @@ const resetServiceKey = () => {
     )
     .then((updatedUser) => {
       emit("update-user", updatedUser);
-      if (updatedUser.serviceKey) {
-        toClipboard(updatedUser.serviceKey).then(() => {
+      if (updatedUser.serviceKey && isSupported.value) {
+        copyTextToClipboard(updatedUser.serviceKey).then(() => {
           pushNotification({
             module: "bytebase",
             style: "INFO",

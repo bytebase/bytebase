@@ -2028,7 +2028,6 @@
   "sql-editor": {
     "self": "Trình soạn thảo SQL",
     "select-connection": "Vui lòng chọn kết nối",
-    "search-results": "Kết quả tìm kiếm",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
     "loading-data": "Đang tải Dữ liệu...",
@@ -2149,7 +2148,6 @@
     "result-limit": {
       "self": "Giới hạn kết quả"
     },
-    "n-per-page": "{n} / trang",
     "add-a-new-instance": "Thêm một phiên bản mới",
     "web-socket": {
       "errors": {
@@ -2176,7 +2174,8 @@
     "format-default": "Mặc định",
     "column-display-format": "Định dạng hiển thị cột",
     "next-row": "Dòng tiếp theo",
-    "previous-row": "Dòng trước"
+    "previous-row": "Dòng trước",
+    "search-scope-column-description": "Cột có kiểu {type}. Nhập giá trị và nhấn Enter để chuyển đến dòng phù hợp."
   },
   "schema-editor": {
     "self": "Trình soạn thảo lược đồ",

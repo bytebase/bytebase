@@ -2,6 +2,7 @@ import type { InjectionKey, Ref } from "vue";
 import { inject, provide, ref } from "vue";
 
 export type BinaryFormat = "DEFAULT" | "BINARY" | "HEX" | "TEXT" | "BOOLEAN";
+
 interface ColumnKeyParams {
   colIndex: number;
   setIndex?: number;
