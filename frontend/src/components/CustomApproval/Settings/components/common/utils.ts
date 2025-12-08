@@ -40,6 +40,7 @@ import {
   CEL_ATTRIBUTE_RESOURCE_PROJECT_ID,
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+  CEL_ATTRIBUTE_RISK_LEVEL,
   CEL_ATTRIBUTE_STATEMENT_AFFECTED_ROWS,
   CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
   CEL_ATTRIBUTE_STATEMENT_TABLE_ROWS,
@@ -173,6 +174,25 @@ const getLevelOptions = () => {
   }));
 };
 
+const getRiskLevelOptions = () => {
+  // Risk level values as strings for CEL conditions (e.g., risk_level == "HIGH")
+  const levels = [
+    { label: t("custom-approval.risk-rule.risk.risk-level.low"), value: "LOW" },
+    {
+      label: t("custom-approval.risk-rule.risk.risk-level.moderate"),
+      value: "MODERATE",
+    },
+    {
+      label: t("custom-approval.risk-rule.risk.risk-level.high"),
+      value: "HIGH",
+    },
+  ];
+  return levels.map<SelectOption>(({ label, value }) => ({
+    label,
+    value,
+  }));
+};
+
 const getSQLTypeOptions = (source: WorkspaceApprovalSetting_Rule_Source) => {
   const mapOptions = (values: readonly string[]) => {
     return values.map<SelectOption>((v) => ({
@@ -228,6 +248,7 @@ export const ApprovalSourceFactorMap: Map<
       ...commonFactorList,
       ...schemaObjectNameFactorList,
       ...migrationFactorList,
+      CEL_ATTRIBUTE_RISK_LEVEL,
     ],
   ],
   [
@@ -314,6 +335,9 @@ export const getApprovalOptionConfigMap = (
         break;
       case CEL_ATTRIBUTE_REQUEST_ROLE:
         options = getRoleOptions();
+        break;
+      case CEL_ATTRIBUTE_RISK_LEVEL:
+        options = getRiskLevelOptions();
         break;
       default:
         break;

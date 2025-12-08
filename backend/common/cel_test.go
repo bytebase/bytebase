@@ -188,3 +188,36 @@ func TestValidateFallbackApprovalExpr(t *testing.T) {
 		})
 	}
 }
+
+func TestApprovalFactorsIncludesRiskLevel(t *testing.T) {
+	a := require.New(t)
+
+	// Create env with approval factors
+	e, err := cel.NewEnv(ApprovalFactors...)
+	a.NoError(err)
+
+	// risk.level should compile with equality operator
+	_, issues := e.Compile(`risk.level == "HIGH"`)
+	a.Nil(issues)
+
+	// risk.level should compile with in operator
+	_, issues = e.Compile(`risk.level in ["HIGH", "MODERATE"]`)
+	a.Nil(issues)
+
+	// risk.level combined with other factors should compile
+	_, issues = e.Compile(`risk.level == "HIGH" && resource.environment_id == "prod"`)
+	a.Nil(issues)
+}
+
+func TestFallbackFactorsDoNotIncludeRiskLevel(t *testing.T) {
+	a := require.New(t)
+
+	// Create env with fallback factors
+	e, err := cel.NewEnv(FallbackApprovalFactors...)
+	a.NoError(err)
+
+	// risk.level should NOT compile in fallback factors
+	_, issues := e.Compile(`risk.level == "HIGH"`)
+	a.NotNil(issues)
+	a.Error(issues.Err())
+}
