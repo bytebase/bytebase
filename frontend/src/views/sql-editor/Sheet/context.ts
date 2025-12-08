@@ -561,7 +561,7 @@ export const openWorksheetByName = async (
 
   await editorContext.maybeSwitchProject(worksheet.project);
   const tabStore = useSQLEditorTabStore();
-  const openingSheetTab = tabStore.tabList.find(
+  const openingSheetTab = tabStore.openTabList.find(
     (tab) => tab.worksheet === worksheet.name
   );
 

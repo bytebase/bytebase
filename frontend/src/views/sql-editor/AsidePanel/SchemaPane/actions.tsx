@@ -132,7 +132,7 @@ export const useActions = () => {
     clonedTab.status = "CLEAN";
     clonedTab.title = params.title ?? "";
 
-    for (const tab of tabStore.tabList) {
+    for (const tab of tabStore.openTabList) {
       if (tab.id === fromTab?.id) {
         continue;
       }
