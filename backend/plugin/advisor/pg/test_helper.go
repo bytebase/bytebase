@@ -100,13 +100,14 @@ func RunPGSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbTyp
 		advice := schema.WalkThrough(dbType, finalMetadata, unifiedASTs)
 		require.Nil(t, advice, "Failed to walk through final catalog: %s", tc.Statement)
 
-		ruleList := []*storepb.SQLReviewRule{
-			{
-				Type:    rule,
-				Level:   storepb.SQLReviewRule_WARNING,
-				Payload: payload,
-			},
+		sqlRule := &storepb.SQLReviewRule{
+			Type:  rule,
+			Level: storepb.SQLReviewRule_WARNING,
 		}
+		err = advisor.ConvertJSONPayloadToProto(sqlRule, payload)
+		require.NoError(t, err)
+
+		ruleList := []*storepb.SQLReviewRule{sqlRule}
 
 		// Call the advisor directly with ANTLR AST
 		adviceList, err := advisor.Check(

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -38,13 +40,13 @@ func (*TableDisallowDMLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
+	if stringArrayPayload == nil {
+		return nil, errors.New("string_array_payload is required for table disallow DML rule")
 	}
 
 	// Create the rule
-	rule := NewTableDisallowDMLRule(level, checkCtx.Rule.Type.String(), payload.List)
+	rule := NewTableDisallowDMLRule(level, checkCtx.Rule.Type.String(), stringArrayPayload.List)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

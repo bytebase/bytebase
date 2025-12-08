@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -40,13 +42,13 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 	if err != nil {
 		return nil, err
 	}
-	columnList, err := advisor.UnmarshalRequiredColumnList(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
+	if stringArrayPayload == nil {
+		return nil, errors.New("string_array_payload is required for column required rule")
 	}
 
 	requireColumns := make(map[string]any)
-	for _, column := range columnList {
+	for _, column := range stringArrayPayload.List {
 		requireColumns[column] = true
 	}
 
