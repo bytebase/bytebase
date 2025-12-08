@@ -182,6 +182,130 @@ export declare type ReviewConfig = Message<"bytebase.v1.ReviewConfig"> & {
 export declare const ReviewConfigSchema: GenMessage<ReviewConfig>;
 
 /**
+ * Payload message types for SQL review rules
+ *
+ * @generated from message bytebase.v1.NamingRulePayload
+ */
+export declare type NamingRulePayload = Message<"bytebase.v1.NamingRulePayload"> & {
+  /**
+   * @generated from field: int32 max_length = 1;
+   */
+  maxLength: number;
+
+  /**
+   * @generated from field: string format = 2;
+   */
+  format: string;
+};
+
+/**
+ * Describes the message bytebase.v1.NamingRulePayload.
+ * Use `create(NamingRulePayloadSchema)` to create a new message.
+ */
+export declare const NamingRulePayloadSchema: GenMessage<NamingRulePayload>;
+
+/**
+ * @generated from message bytebase.v1.NumberRulePayload
+ */
+export declare type NumberRulePayload = Message<"bytebase.v1.NumberRulePayload"> & {
+  /**
+   * @generated from field: int32 number = 1;
+   */
+  number: number;
+};
+
+/**
+ * Describes the message bytebase.v1.NumberRulePayload.
+ * Use `create(NumberRulePayloadSchema)` to create a new message.
+ */
+export declare const NumberRulePayloadSchema: GenMessage<NumberRulePayload>;
+
+/**
+ * @generated from message bytebase.v1.StringArrayRulePayload
+ */
+export declare type StringArrayRulePayload = Message<"bytebase.v1.StringArrayRulePayload"> & {
+  /**
+   * @generated from field: repeated string list = 1;
+   */
+  list: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.StringArrayRulePayload.
+ * Use `create(StringArrayRulePayloadSchema)` to create a new message.
+ */
+export declare const StringArrayRulePayloadSchema: GenMessage<StringArrayRulePayload>;
+
+/**
+ * @generated from message bytebase.v1.CommentConventionRulePayload
+ */
+export declare type CommentConventionRulePayload = Message<"bytebase.v1.CommentConventionRulePayload"> & {
+  /**
+   * @generated from field: bool required = 1;
+   */
+  required: boolean;
+
+  /**
+   * @generated from field: int32 max_length = 2;
+   */
+  maxLength: number;
+};
+
+/**
+ * Describes the message bytebase.v1.CommentConventionRulePayload.
+ * Use `create(CommentConventionRulePayloadSchema)` to create a new message.
+ */
+export declare const CommentConventionRulePayloadSchema: GenMessage<CommentConventionRulePayload>;
+
+/**
+ * @generated from message bytebase.v1.RequiredColumnRulePayload
+ */
+export declare type RequiredColumnRulePayload = Message<"bytebase.v1.RequiredColumnRulePayload"> & {
+  /**
+   * @generated from field: repeated string column_list = 1;
+   */
+  columnList: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.RequiredColumnRulePayload.
+ * Use `create(RequiredColumnRulePayloadSchema)` to create a new message.
+ */
+export declare const RequiredColumnRulePayloadSchema: GenMessage<RequiredColumnRulePayload>;
+
+/**
+ * @generated from message bytebase.v1.StringRulePayload
+ */
+export declare type StringRulePayload = Message<"bytebase.v1.StringRulePayload"> & {
+  /**
+   * @generated from field: string value = 1;
+   */
+  value: string;
+};
+
+/**
+ * Describes the message bytebase.v1.StringRulePayload.
+ * Use `create(StringRulePayloadSchema)` to create a new message.
+ */
+export declare const StringRulePayloadSchema: GenMessage<StringRulePayload>;
+
+/**
+ * @generated from message bytebase.v1.NamingCaseRulePayload
+ */
+export declare type NamingCaseRulePayload = Message<"bytebase.v1.NamingCaseRulePayload"> & {
+  /**
+   * @generated from field: bool upper = 1;
+   */
+  upper: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.NamingCaseRulePayload.
+ * Use `create(NamingCaseRulePayloadSchema)` to create a new message.
+ */
+export declare const NamingCaseRulePayloadSchema: GenMessage<NamingCaseRulePayload>;
+
+/**
  * SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
  *
  * @generated from message bytebase.v1.SQLReviewRule
@@ -202,16 +326,58 @@ export declare type SQLReviewRule = Message<"bytebase.v1.SQLReviewRule"> & {
   level: SQLReviewRule_Level;
 
   /**
-   * The payload is a JSON string that varies by rule type.
+   * The payload is a typed message that varies by rule type.
    *
-   * @generated from field: string payload = 3;
+   * @generated from oneof bytebase.v1.SQLReviewRule.payload
    */
-  payload: string;
+  payload: {
+    /**
+     * @generated from field: bytebase.v1.NamingRulePayload naming_payload = 3;
+     */
+    value: NamingRulePayload;
+    case: "namingPayload";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.NumberRulePayload number_payload = 4;
+     */
+    value: NumberRulePayload;
+    case: "numberPayload";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.StringArrayRulePayload string_array_payload = 5;
+     */
+    value: StringArrayRulePayload;
+    case: "stringArrayPayload";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.CommentConventionRulePayload comment_convention_payload = 6;
+     */
+    value: CommentConventionRulePayload;
+    case: "commentConventionPayload";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.RequiredColumnRulePayload required_column_payload = 7;
+     */
+    value: RequiredColumnRulePayload;
+    case: "requiredColumnPayload";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.StringRulePayload string_payload = 8;
+     */
+    value: StringRulePayload;
+    case: "stringPayload";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.NamingCaseRulePayload naming_case_payload = 9;
+     */
+    value: NamingCaseRulePayload;
+    case: "namingCasePayload";
+  } | { case: undefined; value?: undefined };
 
   /**
    * The database engine this rule applies to.
    *
-   * @generated from field: bytebase.v1.Engine engine = 4;
+   * @generated from field: bytebase.v1.Engine engine = 10;
    */
   engine: Engine;
 };

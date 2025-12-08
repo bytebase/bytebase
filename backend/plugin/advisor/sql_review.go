@@ -286,6 +286,8 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 
 // GetPayloadTypeForRule returns the expected payload type for a given rule type.
 // This is used for validation and conversion between JSON and proto formats.
+//
+// Deprecated: Used only for test backward compatibility.
 func GetPayloadTypeForRule(ruleType storepb.SQLReviewRule_Type) string {
 	switch ruleType {
 	// Naming rules use NamingRulePayload
@@ -351,6 +353,8 @@ func GetPayloadTypeForRule(ruleType storepb.SQLReviewRule_Type) string {
 }
 
 // ConvertJSONPayloadToProto converts a JSON string payload to the appropriate proto payload type.
+//
+// Deprecated: Used only for test backward compatibility. Use typed proto payloads directly.
 func ConvertJSONPayloadToProto(rule *storepb.SQLReviewRule, jsonPayload string) error {
 	if jsonPayload == "" || jsonPayload == "{}" {
 		return nil
@@ -437,6 +441,7 @@ func ConvertJSONPayloadToProto(rule *storepb.SQLReviewRule, jsonPayload string) 
 
 	return nil
 }
+
 
 // SQLReviewCheck checks the statements with sql review rules.
 func SQLReviewCheck(

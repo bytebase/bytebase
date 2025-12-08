@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"regexp"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -302,41 +303,35 @@ func validateSQLReviewRules(rules []*v1pb.SQLReviewRule) error {
 		// TODO(rebelice): add other SQL review rule validation.
 		switch ruleType {
 		case storepb.SQLReviewRule_NAMING_TABLE, storepb.SQLReviewRule_NAMING_COLUMN, storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT:
-			//nolint:staticcheck // Validation uses deprecated unmarshal for JSON string payloads
-			if _, _, err := advisor.UnmarshalNamingRulePayloadAsRegexp(rule.Payload); err != nil {
-				return err
+			if payload := rule.GetNamingPayload(); payload != nil {
+				if _, err := regexp.Compile(payload.Format); err != nil {
+					return errors.Wrapf(err, "invalid naming rule format pattern %q", payload.Format)
+				}
 			}
 		case storepb.SQLReviewRule_NAMING_INDEX_FK, storepb.SQLReviewRule_NAMING_INDEX_IDX, storepb.SQLReviewRule_NAMING_INDEX_UK:
-			//nolint:staticcheck // Validation uses deprecated unmarshal for JSON string payloads
-			if _, _, _, err := advisor.UnmarshalNamingRulePayloadAsTemplate(ruleType, rule.Payload); err != nil {
-				return err
+			if payload := rule.GetNamingPayload(); payload != nil {
+				tokens, _ := advisor.ParseTemplateTokens(payload.Format)
+				for _, token := range tokens {
+					if _, ok := advisor.TemplateNamingTokens[ruleType][token]; !ok {
+						return errors.Errorf("invalid template token %s for rule %s", token, ruleType)
+					}
+				}
 			}
 		case storepb.SQLReviewRule_COLUMN_REQUIRED:
-			//nolint:staticcheck // Validation uses deprecated unmarshal for JSON string payloads
-			if _, err := advisor.UnmarshalRequiredColumnList(rule.Payload); err != nil {
-				return err
+			if payload := rule.GetStringArrayPayload(); payload != nil {
+				if len(payload.List) == 0 {
+					return errors.Errorf("column required rule must have at least one column")
+				}
 			}
 		case storepb.SQLReviewRule_COLUMN_COMMENT, storepb.SQLReviewRule_TABLE_COMMENT:
-			//nolint:staticcheck // Validation uses deprecated unmarshal for JSON string payloads
-			if _, err := advisor.UnmarshalCommentConventionRulePayload(rule.Payload); err != nil {
-				return err
-			}
+			// Comment convention payload is valid by structure
 		case storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT,
 			storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH, storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH, storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT:
-			//nolint:staticcheck // Validation uses deprecated unmarshal for JSON string payloads
-			if _, err := advisor.UnmarshalNumberTypeRulePayload(rule.Payload); err != nil {
-				return err
-			}
+			// Number payload is valid by structure
 		case storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST, storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST, storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST, storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST:
-			//nolint:staticcheck // Validation uses deprecated unmarshal for JSON string payloads
-			if _, err := advisor.UnmarshalStringArrayTypeRulePayload(rule.Payload); err != nil {
-				return err
-			}
+			// String array payload is valid by structure
 		case storepb.SQLReviewRule_NAMING_IDENTIFIER_CASE:
-			//nolint:staticcheck // Validation uses deprecated unmarshal for JSON string payloads
-			if _, err := advisor.UnmarshalNamingCaseRulePayload(rule.Payload); err != nil {
-				return err
-			}
+			// Naming case payload is valid by structure
 		default:
 		}
 	}

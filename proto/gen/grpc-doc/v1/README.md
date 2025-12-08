@@ -540,13 +540,20 @@
     - [ReleaseService](#bytebase-v1-ReleaseService)
   
 - [v1/review_config_service.proto](#v1_review_config_service-proto)
+    - [CommentConventionRulePayload](#bytebase-v1-CommentConventionRulePayload)
     - [CreateReviewConfigRequest](#bytebase-v1-CreateReviewConfigRequest)
     - [DeleteReviewConfigRequest](#bytebase-v1-DeleteReviewConfigRequest)
     - [GetReviewConfigRequest](#bytebase-v1-GetReviewConfigRequest)
     - [ListReviewConfigsRequest](#bytebase-v1-ListReviewConfigsRequest)
     - [ListReviewConfigsResponse](#bytebase-v1-ListReviewConfigsResponse)
+    - [NamingCaseRulePayload](#bytebase-v1-NamingCaseRulePayload)
+    - [NamingRulePayload](#bytebase-v1-NamingRulePayload)
+    - [NumberRulePayload](#bytebase-v1-NumberRulePayload)
+    - [RequiredColumnRulePayload](#bytebase-v1-RequiredColumnRulePayload)
     - [ReviewConfig](#bytebase-v1-ReviewConfig)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
+    - [StringArrayRulePayload](#bytebase-v1-StringArrayRulePayload)
+    - [StringRulePayload](#bytebase-v1-StringRulePayload)
     - [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest)
   
     - [SQLReviewRule.Level](#bytebase-v1-SQLReviewRule-Level)
@@ -8907,6 +8914,22 @@ ReleaseService manages releases for coordinating deployments.
 
 
 
+<a name="bytebase-v1-CommentConventionRulePayload"></a>
+
+### CommentConventionRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| required | [bool](#bool) |  |  |
+| max_length | [int32](#int32) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateReviewConfigRequest"></a>
 
 ### CreateReviewConfigRequest
@@ -8977,6 +9000,67 @@ ReleaseService manages releases for coordinating deployments.
 
 
 
+<a name="bytebase-v1-NamingCaseRulePayload"></a>
+
+### NamingCaseRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| upper | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-NamingRulePayload"></a>
+
+### NamingRulePayload
+Payload message types for SQL review rules
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| max_length | [int32](#int32) |  |  |
+| format | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-NumberRulePayload"></a>
+
+### NumberRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| number | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-RequiredColumnRulePayload"></a>
+
+### RequiredColumnRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| column_list | [string](#string) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-v1-ReviewConfig"></a>
 
 ### ReviewConfig
@@ -9006,8 +9090,44 @@ SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for d
 | ----- | ---- | ----- | ----------- |
 | type | [SQLReviewRule.Type](#bytebase-v1-SQLReviewRule-Type) |  | The type of SQL review rule. |
 | level | [SQLReviewRule.Level](#bytebase-v1-SQLReviewRule-Level) |  | The severity level of the rule. |
-| payload | [string](#string) |  | The payload is a JSON string that varies by rule type. |
+| naming_payload | [NamingRulePayload](#bytebase-v1-NamingRulePayload) |  |  |
+| number_payload | [NumberRulePayload](#bytebase-v1-NumberRulePayload) |  |  |
+| string_array_payload | [StringArrayRulePayload](#bytebase-v1-StringArrayRulePayload) |  |  |
+| comment_convention_payload | [CommentConventionRulePayload](#bytebase-v1-CommentConventionRulePayload) |  |  |
+| required_column_payload | [RequiredColumnRulePayload](#bytebase-v1-RequiredColumnRulePayload) |  |  |
+| string_payload | [StringRulePayload](#bytebase-v1-StringRulePayload) |  |  |
+| naming_case_payload | [NamingCaseRulePayload](#bytebase-v1-NamingCaseRulePayload) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine this rule applies to. |
+
+
+
+
+
+
+<a name="bytebase-v1-StringArrayRulePayload"></a>
+
+### StringArrayRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| list | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-StringRulePayload"></a>
+
+### StringRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| value | [string](#string) |  |  |
 
 
 

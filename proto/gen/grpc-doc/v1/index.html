@@ -2241,6 +2241,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.CommentConventionRulePayload"><span class="badge">M</span>CommentConventionRulePayload</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.CreateReviewConfigRequest"><span class="badge">M</span>CreateReviewConfigRequest</a>
                 </li>
               
@@ -2261,11 +2265,35 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.NamingCaseRulePayload"><span class="badge">M</span>NamingCaseRulePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.NamingRulePayload"><span class="badge">M</span>NamingRulePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.NumberRulePayload"><span class="badge">M</span>NumberRulePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RequiredColumnRulePayload"><span class="badge">M</span>RequiredColumnRulePayload</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ReviewConfig"><span class="badge">M</span>ReviewConfig</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.StringArrayRulePayload"><span class="badge">M</span>StringArrayRulePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.StringRulePayload"><span class="badge">M</span>StringRulePayload</a>
                 </li>
               
                 <li>
@@ -25050,6 +25078,37 @@ Permissions required: bb.releases.check</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.CommentConventionRulePayload">CommentConventionRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>required</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>max_length</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.CreateReviewConfigRequest">CreateReviewConfigRequest</h3>
         <p></p>
 
@@ -25155,6 +25214,109 @@ Format: reviewConfigs/{reviewConfig} </p></td>
 
         
       
+        <h3 id="bytebase.v1.NamingCaseRulePayload">NamingCaseRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>upper</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.NamingRulePayload">NamingRulePayload</h3>
+        <p>Payload message types for SQL review rules</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>max_length</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>format</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.NumberRulePayload">NumberRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>number</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.RequiredColumnRulePayload">RequiredColumnRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>column_list</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ReviewConfig">ReviewConfig</h3>
         <p></p>
 
@@ -25234,10 +25396,52 @@ Format: {resource}/{resource id}, e.g., environments/test. </p></td>
                 </tr>
               
                 <tr>
-                  <td>payload</td>
-                  <td><a href="#string">string</a></td>
+                  <td>naming_payload</td>
+                  <td><a href="#bytebase.v1.NamingRulePayload">NamingRulePayload</a></td>
                   <td></td>
-                  <td><p>The payload is a JSON string that varies by rule type. </p></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>number_payload</td>
+                  <td><a href="#bytebase.v1.NumberRulePayload">NumberRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>string_array_payload</td>
+                  <td><a href="#bytebase.v1.StringArrayRulePayload">StringArrayRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment_convention_payload</td>
+                  <td><a href="#bytebase.v1.CommentConventionRulePayload">CommentConventionRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>required_column_payload</td>
+                  <td><a href="#bytebase.v1.RequiredColumnRulePayload">RequiredColumnRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>string_payload</td>
+                  <td><a href="#bytebase.v1.StringRulePayload">StringRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>naming_case_payload</td>
+                  <td><a href="#bytebase.v1.NamingCaseRulePayload">NamingCaseRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -25245,6 +25449,54 @@ Format: {resource}/{resource id}, e.g., environments/test. </p></td>
                   <td><a href="#bytebase.v1.Engine">Engine</a></td>
                   <td></td>
                   <td><p>The database engine this rule applies to. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.StringArrayRulePayload">StringArrayRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>list</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.StringRulePayload">StringRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>

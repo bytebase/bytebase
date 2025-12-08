@@ -75,7 +75,7 @@ func (x SQLReviewRule_Level) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SQLReviewRule_Level.Descriptor instead.
 func (SQLReviewRule_Level) EnumDescriptor() ([]byte, []int) {
-	return file_v1_review_config_service_proto_rawDescGZIP(), []int{7, 0}
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{14, 0}
 }
 
 type SQLReviewRule_Type int32
@@ -445,7 +445,7 @@ func (x SQLReviewRule_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SQLReviewRule_Type.Descriptor instead.
 func (SQLReviewRule_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_review_config_service_proto_rawDescGZIP(), []int{7, 1}
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{14, 1}
 }
 
 type ListReviewConfigsRequest struct {
@@ -815,6 +815,331 @@ func (x *ReviewConfig) GetResources() []string {
 	return nil
 }
 
+// Payload message types for SQL review rules
+type NamingRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MaxLength     int32                  `protobuf:"varint,1,opt,name=max_length,json=maxLength,proto3" json:"max_length,omitempty"`
+	Format        string                 `protobuf:"bytes,2,opt,name=format,proto3" json:"format,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NamingRulePayload) Reset() {
+	*x = NamingRulePayload{}
+	mi := &file_v1_review_config_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NamingRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NamingRulePayload) ProtoMessage() {}
+
+func (x *NamingRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_review_config_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NamingRulePayload.ProtoReflect.Descriptor instead.
+func (*NamingRulePayload) Descriptor() ([]byte, []int) {
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *NamingRulePayload) GetMaxLength() int32 {
+	if x != nil {
+		return x.MaxLength
+	}
+	return 0
+}
+
+func (x *NamingRulePayload) GetFormat() string {
+	if x != nil {
+		return x.Format
+	}
+	return ""
+}
+
+type NumberRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Number        int32                  `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NumberRulePayload) Reset() {
+	*x = NumberRulePayload{}
+	mi := &file_v1_review_config_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NumberRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NumberRulePayload) ProtoMessage() {}
+
+func (x *NumberRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_review_config_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NumberRulePayload.ProtoReflect.Descriptor instead.
+func (*NumberRulePayload) Descriptor() ([]byte, []int) {
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *NumberRulePayload) GetNumber() int32 {
+	if x != nil {
+		return x.Number
+	}
+	return 0
+}
+
+type StringArrayRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	List          []string               `protobuf:"bytes,1,rep,name=list,proto3" json:"list,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StringArrayRulePayload) Reset() {
+	*x = StringArrayRulePayload{}
+	mi := &file_v1_review_config_service_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StringArrayRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StringArrayRulePayload) ProtoMessage() {}
+
+func (x *StringArrayRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_review_config_service_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StringArrayRulePayload.ProtoReflect.Descriptor instead.
+func (*StringArrayRulePayload) Descriptor() ([]byte, []int) {
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *StringArrayRulePayload) GetList() []string {
+	if x != nil {
+		return x.List
+	}
+	return nil
+}
+
+type CommentConventionRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Required      bool                   `protobuf:"varint,1,opt,name=required,proto3" json:"required,omitempty"`
+	MaxLength     int32                  `protobuf:"varint,2,opt,name=max_length,json=maxLength,proto3" json:"max_length,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommentConventionRulePayload) Reset() {
+	*x = CommentConventionRulePayload{}
+	mi := &file_v1_review_config_service_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommentConventionRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommentConventionRulePayload) ProtoMessage() {}
+
+func (x *CommentConventionRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_review_config_service_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommentConventionRulePayload.ProtoReflect.Descriptor instead.
+func (*CommentConventionRulePayload) Descriptor() ([]byte, []int) {
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *CommentConventionRulePayload) GetRequired() bool {
+	if x != nil {
+		return x.Required
+	}
+	return false
+}
+
+func (x *CommentConventionRulePayload) GetMaxLength() int32 {
+	if x != nil {
+		return x.MaxLength
+	}
+	return 0
+}
+
+type RequiredColumnRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ColumnList    []string               `protobuf:"bytes,1,rep,name=column_list,json=columnList,proto3" json:"column_list,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RequiredColumnRulePayload) Reset() {
+	*x = RequiredColumnRulePayload{}
+	mi := &file_v1_review_config_service_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RequiredColumnRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequiredColumnRulePayload) ProtoMessage() {}
+
+func (x *RequiredColumnRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_review_config_service_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequiredColumnRulePayload.ProtoReflect.Descriptor instead.
+func (*RequiredColumnRulePayload) Descriptor() ([]byte, []int) {
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RequiredColumnRulePayload) GetColumnList() []string {
+	if x != nil {
+		return x.ColumnList
+	}
+	return nil
+}
+
+type StringRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StringRulePayload) Reset() {
+	*x = StringRulePayload{}
+	mi := &file_v1_review_config_service_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StringRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StringRulePayload) ProtoMessage() {}
+
+func (x *StringRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_review_config_service_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StringRulePayload.ProtoReflect.Descriptor instead.
+func (*StringRulePayload) Descriptor() ([]byte, []int) {
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *StringRulePayload) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+type NamingCaseRulePayload struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Upper         bool                   `protobuf:"varint,1,opt,name=upper,proto3" json:"upper,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NamingCaseRulePayload) Reset() {
+	*x = NamingCaseRulePayload{}
+	mi := &file_v1_review_config_service_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NamingCaseRulePayload) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NamingCaseRulePayload) ProtoMessage() {}
+
+func (x *NamingCaseRulePayload) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_review_config_service_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NamingCaseRulePayload.ProtoReflect.Descriptor instead.
+func (*NamingCaseRulePayload) Descriptor() ([]byte, []int) {
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *NamingCaseRulePayload) GetUpper() bool {
+	if x != nil {
+		return x.Upper
+	}
+	return false
+}
+
 // SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
 type SQLReviewRule struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -822,17 +1147,27 @@ type SQLReviewRule struct {
 	Type SQLReviewRule_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.SQLReviewRule_Type" json:"type,omitempty"`
 	// The severity level of the rule.
 	Level SQLReviewRule_Level `protobuf:"varint,2,opt,name=level,proto3,enum=bytebase.v1.SQLReviewRule_Level" json:"level,omitempty"`
-	// The payload is a JSON string that varies by rule type.
-	Payload string `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
+	// The payload is a typed message that varies by rule type.
+	//
+	// Types that are valid to be assigned to Payload:
+	//
+	//	*SQLReviewRule_NamingPayload
+	//	*SQLReviewRule_NumberPayload
+	//	*SQLReviewRule_StringArrayPayload
+	//	*SQLReviewRule_CommentConventionPayload
+	//	*SQLReviewRule_RequiredColumnPayload
+	//	*SQLReviewRule_StringPayload
+	//	*SQLReviewRule_NamingCasePayload
+	Payload isSQLReviewRule_Payload `protobuf_oneof:"payload"`
 	// The database engine this rule applies to.
-	Engine        Engine `protobuf:"varint,4,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	Engine        Engine `protobuf:"varint,10,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SQLReviewRule) Reset() {
 	*x = SQLReviewRule{}
-	mi := &file_v1_review_config_service_proto_msgTypes[7]
+	mi := &file_v1_review_config_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -844,7 +1179,7 @@ func (x *SQLReviewRule) String() string {
 func (*SQLReviewRule) ProtoMessage() {}
 
 func (x *SQLReviewRule) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_review_config_service_proto_msgTypes[7]
+	mi := &file_v1_review_config_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -857,7 +1192,7 @@ func (x *SQLReviewRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SQLReviewRule.ProtoReflect.Descriptor instead.
 func (*SQLReviewRule) Descriptor() ([]byte, []int) {
-	return file_v1_review_config_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_review_config_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SQLReviewRule) GetType() SQLReviewRule_Type {
@@ -874,11 +1209,74 @@ func (x *SQLReviewRule) GetLevel() SQLReviewRule_Level {
 	return SQLReviewRule_LEVEL_UNSPECIFIED
 }
 
-func (x *SQLReviewRule) GetPayload() string {
+func (x *SQLReviewRule) GetPayload() isSQLReviewRule_Payload {
 	if x != nil {
 		return x.Payload
 	}
-	return ""
+	return nil
+}
+
+func (x *SQLReviewRule) GetNamingPayload() *NamingRulePayload {
+	if x != nil {
+		if x, ok := x.Payload.(*SQLReviewRule_NamingPayload); ok {
+			return x.NamingPayload
+		}
+	}
+	return nil
+}
+
+func (x *SQLReviewRule) GetNumberPayload() *NumberRulePayload {
+	if x != nil {
+		if x, ok := x.Payload.(*SQLReviewRule_NumberPayload); ok {
+			return x.NumberPayload
+		}
+	}
+	return nil
+}
+
+func (x *SQLReviewRule) GetStringArrayPayload() *StringArrayRulePayload {
+	if x != nil {
+		if x, ok := x.Payload.(*SQLReviewRule_StringArrayPayload); ok {
+			return x.StringArrayPayload
+		}
+	}
+	return nil
+}
+
+func (x *SQLReviewRule) GetCommentConventionPayload() *CommentConventionRulePayload {
+	if x != nil {
+		if x, ok := x.Payload.(*SQLReviewRule_CommentConventionPayload); ok {
+			return x.CommentConventionPayload
+		}
+	}
+	return nil
+}
+
+func (x *SQLReviewRule) GetRequiredColumnPayload() *RequiredColumnRulePayload {
+	if x != nil {
+		if x, ok := x.Payload.(*SQLReviewRule_RequiredColumnPayload); ok {
+			return x.RequiredColumnPayload
+		}
+	}
+	return nil
+}
+
+func (x *SQLReviewRule) GetStringPayload() *StringRulePayload {
+	if x != nil {
+		if x, ok := x.Payload.(*SQLReviewRule_StringPayload); ok {
+			return x.StringPayload
+		}
+	}
+	return nil
+}
+
+func (x *SQLReviewRule) GetNamingCasePayload() *NamingCaseRulePayload {
+	if x != nil {
+		if x, ok := x.Payload.(*SQLReviewRule_NamingCasePayload); ok {
+			return x.NamingCasePayload
+		}
+	}
+	return nil
 }
 
 func (x *SQLReviewRule) GetEngine() Engine {
@@ -887,6 +1285,52 @@ func (x *SQLReviewRule) GetEngine() Engine {
 	}
 	return Engine_ENGINE_UNSPECIFIED
 }
+
+type isSQLReviewRule_Payload interface {
+	isSQLReviewRule_Payload()
+}
+
+type SQLReviewRule_NamingPayload struct {
+	NamingPayload *NamingRulePayload `protobuf:"bytes,3,opt,name=naming_payload,json=namingPayload,proto3,oneof"`
+}
+
+type SQLReviewRule_NumberPayload struct {
+	NumberPayload *NumberRulePayload `protobuf:"bytes,4,opt,name=number_payload,json=numberPayload,proto3,oneof"`
+}
+
+type SQLReviewRule_StringArrayPayload struct {
+	StringArrayPayload *StringArrayRulePayload `protobuf:"bytes,5,opt,name=string_array_payload,json=stringArrayPayload,proto3,oneof"`
+}
+
+type SQLReviewRule_CommentConventionPayload struct {
+	CommentConventionPayload *CommentConventionRulePayload `protobuf:"bytes,6,opt,name=comment_convention_payload,json=commentConventionPayload,proto3,oneof"`
+}
+
+type SQLReviewRule_RequiredColumnPayload struct {
+	RequiredColumnPayload *RequiredColumnRulePayload `protobuf:"bytes,7,opt,name=required_column_payload,json=requiredColumnPayload,proto3,oneof"`
+}
+
+type SQLReviewRule_StringPayload struct {
+	StringPayload *StringRulePayload `protobuf:"bytes,8,opt,name=string_payload,json=stringPayload,proto3,oneof"`
+}
+
+type SQLReviewRule_NamingCasePayload struct {
+	NamingCasePayload *NamingCaseRulePayload `protobuf:"bytes,9,opt,name=naming_case_payload,json=namingCasePayload,proto3,oneof"`
+}
+
+func (*SQLReviewRule_NamingPayload) isSQLReviewRule_Payload() {}
+
+func (*SQLReviewRule_NumberPayload) isSQLReviewRule_Payload() {}
+
+func (*SQLReviewRule_StringArrayPayload) isSQLReviewRule_Payload() {}
+
+func (*SQLReviewRule_CommentConventionPayload) isSQLReviewRule_Payload() {}
+
+func (*SQLReviewRule_RequiredColumnPayload) isSQLReviewRule_Payload() {}
+
+func (*SQLReviewRule_StringPayload) isSQLReviewRule_Payload() {}
+
+func (*SQLReviewRule_NamingCasePayload) isSQLReviewRule_Payload() {}
 
 var File_v1_review_config_service_proto protoreflect.FileDescriptor
 
@@ -915,12 +1359,38 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\aenabled\x18\x03 \x01(\bR\aenabled\x120\n" +
 	"\x05rules\x18\a \x03(\v2\x1a.bytebase.v1.SQLReviewRuleR\x05rules\x12\x1c\n" +
 	"\tresources\x18\b \x03(\tR\tresources:<\xeaA9\n" +
-	"\x19bytebase.com/ReviewConfig\x12\x1creviewConfigs/{reviewConfig}\"\xae\x1e\n" +
+	"\x19bytebase.com/ReviewConfig\x12\x1creviewConfigs/{reviewConfig}\"J\n" +
+	"\x11NamingRulePayload\x12\x1d\n" +
+	"\n" +
+	"max_length\x18\x01 \x01(\x05R\tmaxLength\x12\x16\n" +
+	"\x06format\x18\x02 \x01(\tR\x06format\"+\n" +
+	"\x11NumberRulePayload\x12\x16\n" +
+	"\x06number\x18\x01 \x01(\x05R\x06number\",\n" +
+	"\x16StringArrayRulePayload\x12\x12\n" +
+	"\x04list\x18\x01 \x03(\tR\x04list\"Y\n" +
+	"\x1cCommentConventionRulePayload\x12\x1a\n" +
+	"\brequired\x18\x01 \x01(\bR\brequired\x12\x1d\n" +
+	"\n" +
+	"max_length\x18\x02 \x01(\x05R\tmaxLength\"<\n" +
+	"\x19RequiredColumnRulePayload\x12\x1f\n" +
+	"\vcolumn_list\x18\x01 \x03(\tR\n" +
+	"columnList\")\n" +
+	"\x11StringRulePayload\x12\x14\n" +
+	"\x05value\x18\x01 \x01(\tR\x05value\"-\n" +
+	"\x15NamingCaseRulePayload\x12\x14\n" +
+	"\x05upper\x18\x01 \x01(\bR\x05upper\"\xf6\"\n" +
 	"\rSQLReviewRule\x123\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1f.bytebase.v1.SQLReviewRule.TypeR\x04type\x126\n" +
-	"\x05level\x18\x02 \x01(\x0e2 .bytebase.v1.SQLReviewRule.LevelR\x05level\x12\x18\n" +
-	"\apayload\x18\x03 \x01(\tR\apayload\x12+\n" +
-	"\x06engine\x18\x04 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\"6\n" +
+	"\x05level\x18\x02 \x01(\x0e2 .bytebase.v1.SQLReviewRule.LevelR\x05level\x12G\n" +
+	"\x0enaming_payload\x18\x03 \x01(\v2\x1e.bytebase.v1.NamingRulePayloadH\x00R\rnamingPayload\x12G\n" +
+	"\x0enumber_payload\x18\x04 \x01(\v2\x1e.bytebase.v1.NumberRulePayloadH\x00R\rnumberPayload\x12W\n" +
+	"\x14string_array_payload\x18\x05 \x01(\v2#.bytebase.v1.StringArrayRulePayloadH\x00R\x12stringArrayPayload\x12i\n" +
+	"\x1acomment_convention_payload\x18\x06 \x01(\v2).bytebase.v1.CommentConventionRulePayloadH\x00R\x18commentConventionPayload\x12`\n" +
+	"\x17required_column_payload\x18\a \x01(\v2&.bytebase.v1.RequiredColumnRulePayloadH\x00R\x15requiredColumnPayload\x12G\n" +
+	"\x0estring_payload\x18\b \x01(\v2\x1e.bytebase.v1.StringRulePayloadH\x00R\rstringPayload\x12T\n" +
+	"\x13naming_case_payload\x18\t \x01(\v2\".bytebase.v1.NamingCaseRulePayloadH\x00R\x11namingCasePayload\x12+\n" +
+	"\x06engine\x18\n" +
+	" \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\"6\n" +
 	"\x05Level\x12\x15\n" +
 	"\x11LEVEL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ERROR\x10\x01\x12\v\n" +
@@ -1036,7 +1506,8 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\x1fSYSTEM_FUNCTION_DISALLOW_CREATE\x10j\x12#\n" +
 	"\x1fSYSTEM_FUNCTION_DISALLOWED_LIST\x10k\x12\x1b\n" +
 	"\x17ADVICE_ONLINE_MIGRATION\x10l\x12\x1e\n" +
-	"\x1aBUILTIN_PRIOR_BACKUP_CHECK\x10m2\xed\x06\n" +
+	"\x1aBUILTIN_PRIOR_BACKUP_CHECK\x10mB\t\n" +
+	"\apayload2\xed\x06\n" +
 	"\x13ReviewConfigService\x12\xa3\x01\n" +
 	"\x12CreateReviewConfig\x12&.bytebase.v1.CreateReviewConfigRequest\x1a\x19.bytebase.v1.ReviewConfig\"J\xdaA\x00\x8a\xea0\x17bb.reviewConfigs.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\":\rreview_config\"\x11/v1/reviewConfigs\x12\x9d\x01\n" +
 	"\x11ListReviewConfigs\x12%.bytebase.v1.ListReviewConfigsRequest\x1a&.bytebase.v1.ListReviewConfigsResponse\"9\xdaA\x00\x8a\xea0\x15bb.reviewConfigs.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/reviewConfigs\x12\x98\x01\n" +
@@ -1058,46 +1529,60 @@ func file_v1_review_config_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_review_config_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_v1_review_config_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_v1_review_config_service_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_v1_review_config_service_proto_goTypes = []any{
-	(SQLReviewRule_Level)(0),          // 0: bytebase.v1.SQLReviewRule.Level
-	(SQLReviewRule_Type)(0),           // 1: bytebase.v1.SQLReviewRule.Type
-	(*ListReviewConfigsRequest)(nil),  // 2: bytebase.v1.ListReviewConfigsRequest
-	(*ListReviewConfigsResponse)(nil), // 3: bytebase.v1.ListReviewConfigsResponse
-	(*CreateReviewConfigRequest)(nil), // 4: bytebase.v1.CreateReviewConfigRequest
-	(*UpdateReviewConfigRequest)(nil), // 5: bytebase.v1.UpdateReviewConfigRequest
-	(*GetReviewConfigRequest)(nil),    // 6: bytebase.v1.GetReviewConfigRequest
-	(*DeleteReviewConfigRequest)(nil), // 7: bytebase.v1.DeleteReviewConfigRequest
-	(*ReviewConfig)(nil),              // 8: bytebase.v1.ReviewConfig
-	(*SQLReviewRule)(nil),             // 9: bytebase.v1.SQLReviewRule
-	(*fieldmaskpb.FieldMask)(nil),     // 10: google.protobuf.FieldMask
-	(Engine)(0),                       // 11: bytebase.v1.Engine
-	(*emptypb.Empty)(nil),             // 12: google.protobuf.Empty
+	(SQLReviewRule_Level)(0),             // 0: bytebase.v1.SQLReviewRule.Level
+	(SQLReviewRule_Type)(0),              // 1: bytebase.v1.SQLReviewRule.Type
+	(*ListReviewConfigsRequest)(nil),     // 2: bytebase.v1.ListReviewConfigsRequest
+	(*ListReviewConfigsResponse)(nil),    // 3: bytebase.v1.ListReviewConfigsResponse
+	(*CreateReviewConfigRequest)(nil),    // 4: bytebase.v1.CreateReviewConfigRequest
+	(*UpdateReviewConfigRequest)(nil),    // 5: bytebase.v1.UpdateReviewConfigRequest
+	(*GetReviewConfigRequest)(nil),       // 6: bytebase.v1.GetReviewConfigRequest
+	(*DeleteReviewConfigRequest)(nil),    // 7: bytebase.v1.DeleteReviewConfigRequest
+	(*ReviewConfig)(nil),                 // 8: bytebase.v1.ReviewConfig
+	(*NamingRulePayload)(nil),            // 9: bytebase.v1.NamingRulePayload
+	(*NumberRulePayload)(nil),            // 10: bytebase.v1.NumberRulePayload
+	(*StringArrayRulePayload)(nil),       // 11: bytebase.v1.StringArrayRulePayload
+	(*CommentConventionRulePayload)(nil), // 12: bytebase.v1.CommentConventionRulePayload
+	(*RequiredColumnRulePayload)(nil),    // 13: bytebase.v1.RequiredColumnRulePayload
+	(*StringRulePayload)(nil),            // 14: bytebase.v1.StringRulePayload
+	(*NamingCaseRulePayload)(nil),        // 15: bytebase.v1.NamingCaseRulePayload
+	(*SQLReviewRule)(nil),                // 16: bytebase.v1.SQLReviewRule
+	(*fieldmaskpb.FieldMask)(nil),        // 17: google.protobuf.FieldMask
+	(Engine)(0),                          // 18: bytebase.v1.Engine
+	(*emptypb.Empty)(nil),                // 19: google.protobuf.Empty
 }
 var file_v1_review_config_service_proto_depIdxs = []int32{
 	8,  // 0: bytebase.v1.ListReviewConfigsResponse.review_configs:type_name -> bytebase.v1.ReviewConfig
 	8,  // 1: bytebase.v1.CreateReviewConfigRequest.review_config:type_name -> bytebase.v1.ReviewConfig
 	8,  // 2: bytebase.v1.UpdateReviewConfigRequest.review_config:type_name -> bytebase.v1.ReviewConfig
-	10, // 3: bytebase.v1.UpdateReviewConfigRequest.update_mask:type_name -> google.protobuf.FieldMask
-	9,  // 4: bytebase.v1.ReviewConfig.rules:type_name -> bytebase.v1.SQLReviewRule
+	17, // 3: bytebase.v1.UpdateReviewConfigRequest.update_mask:type_name -> google.protobuf.FieldMask
+	16, // 4: bytebase.v1.ReviewConfig.rules:type_name -> bytebase.v1.SQLReviewRule
 	1,  // 5: bytebase.v1.SQLReviewRule.type:type_name -> bytebase.v1.SQLReviewRule.Type
 	0,  // 6: bytebase.v1.SQLReviewRule.level:type_name -> bytebase.v1.SQLReviewRule.Level
-	11, // 7: bytebase.v1.SQLReviewRule.engine:type_name -> bytebase.v1.Engine
-	4,  // 8: bytebase.v1.ReviewConfigService.CreateReviewConfig:input_type -> bytebase.v1.CreateReviewConfigRequest
-	2,  // 9: bytebase.v1.ReviewConfigService.ListReviewConfigs:input_type -> bytebase.v1.ListReviewConfigsRequest
-	6,  // 10: bytebase.v1.ReviewConfigService.GetReviewConfig:input_type -> bytebase.v1.GetReviewConfigRequest
-	5,  // 11: bytebase.v1.ReviewConfigService.UpdateReviewConfig:input_type -> bytebase.v1.UpdateReviewConfigRequest
-	7,  // 12: bytebase.v1.ReviewConfigService.DeleteReviewConfig:input_type -> bytebase.v1.DeleteReviewConfigRequest
-	8,  // 13: bytebase.v1.ReviewConfigService.CreateReviewConfig:output_type -> bytebase.v1.ReviewConfig
-	3,  // 14: bytebase.v1.ReviewConfigService.ListReviewConfigs:output_type -> bytebase.v1.ListReviewConfigsResponse
-	8,  // 15: bytebase.v1.ReviewConfigService.GetReviewConfig:output_type -> bytebase.v1.ReviewConfig
-	8,  // 16: bytebase.v1.ReviewConfigService.UpdateReviewConfig:output_type -> bytebase.v1.ReviewConfig
-	12, // 17: bytebase.v1.ReviewConfigService.DeleteReviewConfig:output_type -> google.protobuf.Empty
-	13, // [13:18] is the sub-list for method output_type
-	8,  // [8:13] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	9,  // 7: bytebase.v1.SQLReviewRule.naming_payload:type_name -> bytebase.v1.NamingRulePayload
+	10, // 8: bytebase.v1.SQLReviewRule.number_payload:type_name -> bytebase.v1.NumberRulePayload
+	11, // 9: bytebase.v1.SQLReviewRule.string_array_payload:type_name -> bytebase.v1.StringArrayRulePayload
+	12, // 10: bytebase.v1.SQLReviewRule.comment_convention_payload:type_name -> bytebase.v1.CommentConventionRulePayload
+	13, // 11: bytebase.v1.SQLReviewRule.required_column_payload:type_name -> bytebase.v1.RequiredColumnRulePayload
+	14, // 12: bytebase.v1.SQLReviewRule.string_payload:type_name -> bytebase.v1.StringRulePayload
+	15, // 13: bytebase.v1.SQLReviewRule.naming_case_payload:type_name -> bytebase.v1.NamingCaseRulePayload
+	18, // 14: bytebase.v1.SQLReviewRule.engine:type_name -> bytebase.v1.Engine
+	4,  // 15: bytebase.v1.ReviewConfigService.CreateReviewConfig:input_type -> bytebase.v1.CreateReviewConfigRequest
+	2,  // 16: bytebase.v1.ReviewConfigService.ListReviewConfigs:input_type -> bytebase.v1.ListReviewConfigsRequest
+	6,  // 17: bytebase.v1.ReviewConfigService.GetReviewConfig:input_type -> bytebase.v1.GetReviewConfigRequest
+	5,  // 18: bytebase.v1.ReviewConfigService.UpdateReviewConfig:input_type -> bytebase.v1.UpdateReviewConfigRequest
+	7,  // 19: bytebase.v1.ReviewConfigService.DeleteReviewConfig:input_type -> bytebase.v1.DeleteReviewConfigRequest
+	8,  // 20: bytebase.v1.ReviewConfigService.CreateReviewConfig:output_type -> bytebase.v1.ReviewConfig
+	3,  // 21: bytebase.v1.ReviewConfigService.ListReviewConfigs:output_type -> bytebase.v1.ListReviewConfigsResponse
+	8,  // 22: bytebase.v1.ReviewConfigService.GetReviewConfig:output_type -> bytebase.v1.ReviewConfig
+	8,  // 23: bytebase.v1.ReviewConfigService.UpdateReviewConfig:output_type -> bytebase.v1.ReviewConfig
+	19, // 24: bytebase.v1.ReviewConfigService.DeleteReviewConfig:output_type -> google.protobuf.Empty
+	20, // [20:25] is the sub-list for method output_type
+	15, // [15:20] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_v1_review_config_service_proto_init() }
@@ -1107,13 +1592,22 @@ func file_v1_review_config_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
+	file_v1_review_config_service_proto_msgTypes[14].OneofWrappers = []any{
+		(*SQLReviewRule_NamingPayload)(nil),
+		(*SQLReviewRule_NumberPayload)(nil),
+		(*SQLReviewRule_StringArrayPayload)(nil),
+		(*SQLReviewRule_CommentConventionPayload)(nil),
+		(*SQLReviewRule_RequiredColumnPayload)(nil),
+		(*SQLReviewRule_StringPayload)(nil),
+		(*SQLReviewRule_NamingCasePayload)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_review_config_service_proto_rawDesc), len(file_v1_review_config_service_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   8,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

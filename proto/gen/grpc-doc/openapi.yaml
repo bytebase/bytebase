@@ -9149,6 +9149,14 @@ components:
                         `all_affected_rows` is the affected rows of each command.
                          `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.
             description: Command execution response.
+        CommentConventionRulePayload:
+            type: object
+            properties:
+                required:
+                    type: boolean
+                maxLength:
+                    type: integer
+                    format: int32
         Constant:
             type: object
             properties:
@@ -11833,6 +11841,26 @@ components:
                 skipDump:
                     type: boolean
             description: MaterializedViewMetadata is the metadata for materialized views.
+        NamingCaseRulePayload:
+            type: object
+            properties:
+                upper:
+                    type: boolean
+        NamingRulePayload:
+            type: object
+            properties:
+                maxLength:
+                    type: integer
+                    format: int32
+                format:
+                    type: string
+            description: Payload message types for SQL review rules
+        NumberRulePayload:
+            type: object
+            properties:
+                number:
+                    type: integer
+                    format: int32
         OAuth2IdentityProviderConfig:
             type: object
             properties:
@@ -13030,6 +13058,13 @@ components:
                         The user agent string provided by the caller.
                          This is supplied by the client and is not authenticated.
             description: Metadata about the incoming request.
+        RequiredColumnRulePayload:
+            type: object
+            properties:
+                columnList:
+                    type: array
+                    items:
+                        type: string
         ResourcePackage:
             type: object
             properties:
@@ -13489,9 +13524,20 @@ components:
                     type: string
                     description: The severity level of the rule.
                     format: enum
-                payload:
-                    type: string
-                    description: The payload is a JSON string that varies by rule type.
+                namingPayload:
+                    $ref: '#/components/schemas/NamingRulePayload'
+                numberPayload:
+                    $ref: '#/components/schemas/NumberRulePayload'
+                stringArrayPayload:
+                    $ref: '#/components/schemas/StringArrayRulePayload'
+                commentConventionPayload:
+                    $ref: '#/components/schemas/CommentConventionRulePayload'
+                requiredColumnPayload:
+                    $ref: '#/components/schemas/RequiredColumnRulePayload'
+                stringPayload:
+                    $ref: '#/components/schemas/StringRulePayload'
+                namingCasePayload:
+                    $ref: '#/components/schemas/NamingCaseRulePayload'
                 engine:
                     enum:
                         - ENGINE_UNSPECIFIED
@@ -14314,6 +14360,18 @@ components:
                 definition:
                     type: string
                     description: The definition of the stream.
+        StringArrayRulePayload:
+            type: object
+            properties:
+                list:
+                    type: array
+                    items:
+                        type: string
+        StringRulePayload:
+            type: object
+            properties:
+                value:
+                    type: string
         Subscription:
             type: object
             properties:

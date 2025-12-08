@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -10,66 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
-
-// convertProtoPayloadToJSON converts a proto payload to JSON string for v1 API compatibility.
-func convertProtoPayloadToJSON(rule *storepb.SQLReviewRule) (string, error) {
-	if rule.Payload == nil {
-		return "", nil
-	}
-
-	var jsonData []byte
-	var err error
-
-	switch payload := rule.Payload.(type) {
-	case *storepb.SQLReviewRule_NamingPayload:
-		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
-		jsonData, err = json.Marshal(advisor.NamingRulePayload{
-			MaxLength: int(payload.NamingPayload.MaxLength),
-			Format:    payload.NamingPayload.Format,
-		})
-	case *storepb.SQLReviewRule_NumberPayload:
-		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
-		jsonData, err = json.Marshal(advisor.NumberTypeRulePayload{
-			Number: int(payload.NumberPayload.Number),
-		})
-	case *storepb.SQLReviewRule_StringArrayPayload:
-		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
-		jsonData, err = json.Marshal(advisor.StringArrayTypeRulePayload{
-			List: payload.StringArrayPayload.List,
-		})
-	case *storepb.SQLReviewRule_CommentConventionPayload:
-		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
-		jsonData, err = json.Marshal(advisor.CommentConventionRulePayload{
-			Required:  payload.CommentConventionPayload.Required,
-			MaxLength: int(payload.CommentConventionPayload.MaxLength),
-		})
-	case *storepb.SQLReviewRule_NamingCasePayload:
-		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
-		jsonData, err = json.Marshal(advisor.NamingCaseRulePayload{
-			Upper: payload.NamingCasePayload.Upper,
-		})
-	case *storepb.SQLReviewRule_StringPayload:
-		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
-		jsonData, err = json.Marshal(advisor.StringTypeRulePayload{
-			String: payload.StringPayload.Value,
-		})
-	case *storepb.SQLReviewRule_RequiredColumnPayload:
-		//nolint:staticcheck // Intentional use of deprecated type for JSON conversion
-		jsonData, err = json.Marshal(advisor.RequiredColumnRulePayload{
-			ColumnList: payload.RequiredColumnPayload.ColumnList,
-		})
-	default:
-		return "", nil
-	}
-
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal payload to JSON")
-	}
-
-	return string(jsonData), nil
-}
 
 func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLReviewRule {
 	var rules []*v1pb.SQLReviewRule
@@ -83,18 +23,61 @@ func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLR
 		default:
 		}
 
-		payloadJSON, err := convertProtoPayloadToJSON(rule)
-		if err != nil {
-			// Log error but continue - backward compatibility
-			payloadJSON = ""
+		v1Rule := &v1pb.SQLReviewRule{
+			Level:  level,
+			Type:   v1pb.SQLReviewRule_Type(rule.Type),
+			Engine: convertToEngine(rule.Engine),
 		}
 
-		rules = append(rules, &v1pb.SQLReviewRule{
-			Level:   level,
-			Type:    v1pb.SQLReviewRule_Type(rule.Type),
-			Payload: payloadJSON,
-			Engine:  convertToEngine(rule.Engine),
-		})
+		// Convert typed payload from store to v1 API
+		switch payload := rule.Payload.(type) {
+		case *storepb.SQLReviewRule_NamingPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
+				NamingPayload: &v1pb.NamingRulePayload{
+					MaxLength: payload.NamingPayload.MaxLength,
+					Format:    payload.NamingPayload.Format,
+				},
+			}
+		case *storepb.SQLReviewRule_NumberPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
+				NumberPayload: &v1pb.NumberRulePayload{
+					Number: payload.NumberPayload.Number,
+				},
+			}
+		case *storepb.SQLReviewRule_StringArrayPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &v1pb.StringArrayRulePayload{
+					List: payload.StringArrayPayload.List,
+				},
+			}
+		case *storepb.SQLReviewRule_CommentConventionPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_CommentConventionPayload{
+				CommentConventionPayload: &v1pb.CommentConventionRulePayload{
+					Required:  payload.CommentConventionPayload.Required,
+					MaxLength: payload.CommentConventionPayload.MaxLength,
+				},
+			}
+		case *storepb.SQLReviewRule_NamingCasePayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_NamingCasePayload{
+				NamingCasePayload: &v1pb.NamingCaseRulePayload{
+					Upper: payload.NamingCasePayload.Upper,
+				},
+			}
+		case *storepb.SQLReviewRule_StringPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_StringPayload{
+				StringPayload: &v1pb.StringRulePayload{
+					Value: payload.StringPayload.Value,
+				},
+			}
+		case *storepb.SQLReviewRule_RequiredColumnPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_RequiredColumnPayload{
+				RequiredColumnPayload: &v1pb.RequiredColumnRulePayload{
+					ColumnList: payload.RequiredColumnPayload.ColumnList,
+				},
+			}
+		}
+
+		rules = append(rules, v1Rule)
 	}
 
 	return rules
@@ -119,8 +102,52 @@ func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewR
 			Engine: convertEngine(rule.Engine),
 		}
 
-		if err := advisor.ConvertJSONPayloadToProto(storeRule, rule.Payload); err != nil {
-			return nil, errors.Wrapf(err, "failed to convert payload for rule type %s", rule.Type)
+		// Convert typed payload from v1 API to store
+		switch payload := rule.Payload.(type) {
+		case *v1pb.SQLReviewRule_NamingPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_NamingPayload{
+				NamingPayload: &storepb.NamingRulePayload{
+					MaxLength: payload.NamingPayload.MaxLength,
+					Format:    payload.NamingPayload.Format,
+				},
+			}
+		case *v1pb.SQLReviewRule_NumberPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_NumberPayload{
+				NumberPayload: &storepb.NumberRulePayload{
+					Number: payload.NumberPayload.Number,
+				},
+			}
+		case *v1pb.SQLReviewRule_StringArrayPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &storepb.StringArrayRulePayload{
+					List: payload.StringArrayPayload.List,
+				},
+			}
+		case *v1pb.SQLReviewRule_CommentConventionPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_CommentConventionPayload{
+				CommentConventionPayload: &storepb.CommentConventionRulePayload{
+					Required:  payload.CommentConventionPayload.Required,
+					MaxLength: payload.CommentConventionPayload.MaxLength,
+				},
+			}
+		case *v1pb.SQLReviewRule_NamingCasePayload:
+			storeRule.Payload = &storepb.SQLReviewRule_NamingCasePayload{
+				NamingCasePayload: &storepb.NamingCaseRulePayload{
+					Upper: payload.NamingCasePayload.Upper,
+				},
+			}
+		case *v1pb.SQLReviewRule_StringPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_StringPayload{
+				StringPayload: &storepb.StringRulePayload{
+					Value: payload.StringPayload.Value,
+				},
+			}
+		case *v1pb.SQLReviewRule_RequiredColumnPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_RequiredColumnPayload{
+				RequiredColumnPayload: &storepb.RequiredColumnRulePayload{
+					ColumnList: payload.RequiredColumnPayload.ColumnList,
+				},
+			}
 		}
 
 		ruleList = append(ruleList, storeRule)
