@@ -2028,7 +2028,6 @@
   "sql-editor": {
     "self": "Editor de SQL",
     "select-connection": "Por favor seleccione conexiones",
-    "search-results": "Resultados de búsqueda",
     "loading-databases": "Cargando bases de datos...",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
     "loading-data": "Cargando datos...",

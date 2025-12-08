@@ -8,6 +8,7 @@
     >
       <div
         v-for="option, index in options"
+        :key="`${option.id}-${index}`"
         class="flex gap-x-2 gap-y-0.5 px-3 py-2 cursor-pointer border-t text-sm"
         :class="[
           index === menuIndex && 'bg-gray-200/75',
