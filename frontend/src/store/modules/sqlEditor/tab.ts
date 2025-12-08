@@ -87,7 +87,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     const validOpenTabMap: Map<string, PersistentTab> = new Map();
     for (const tab of openTmpTabList.value) {
       if (validOpenTabMap.has(tab.id)) {
-        continue
+        continue;
       }
       let fullTab: SQLEditorTab | undefined;
       if (tab.worksheet) {
@@ -134,7 +134,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
 
   const maybeInitProject = async () => {
     tabsById.clear();
-    draftTabList.value = uniqBy(draftTabList.value, (draft) => draft.id)
+    draftTabList.value = uniqBy(draftTabList.value, (draft) => draft.id);
     await loadStoredTabs();
     currentTabId.value = head(openTmpTabList.value)?.id ?? "";
   };
@@ -190,6 +190,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
 
     if (openTmpTabList.value.find((tab) => tab.id === id)) {
       setCurrentTabId(id);
+      const response = tabsById.get(id) ?? newTab;
+      tabsById.set(id, response);
       return newTab;
     }
 

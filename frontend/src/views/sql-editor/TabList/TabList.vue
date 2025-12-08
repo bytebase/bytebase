@@ -13,7 +13,7 @@
       <Draggable
         id="tab-list"
         ref="tabListRef"
-        v-model="tabStore.tabList"
+        v-model="tabStore.openTabList"
         item-key="id"
         animation="300"
         class="relative flex flex-nowrap overflow-hidden h-9 pt-0.5 hide-scrollbar"
@@ -230,7 +230,7 @@ useEmitteryEventListener(
   context.events,
   "close-tab",
   async ({ tab, index, action }) => {
-    const { tabList } = tabStore;
+    const { openTabList } = tabStore;
 
     const remove = async (tab: SQLEditorTab) => {
       await handleRemoveTab(tab, true);
@@ -241,25 +241,25 @@ useEmitteryEventListener(
       await remove(tab);
       return;
     }
-    const max = tabList.length - 1;
+    const max = openTabList.length - 1;
     if (action === "CLOSE_OTHERS") {
       for (let i = max; i > index; i--) {
-        await remove(tabList[i]);
+        await remove(openTabList[i]);
       }
       for (let i = index - 1; i >= 0; i--) {
-        await remove(tabList[i]);
+        await remove(openTabList[i]);
       }
       return;
     }
     if (action === "CLOSE_TO_THE_RIGHT") {
       for (let i = max; i > index; i--) {
-        await remove(tabList[i]);
+        await remove(openTabList[i]);
       }
       return;
     }
     if (action === "CLOSE_SAVED") {
       for (let i = max; i >= 0; i--) {
-        const tab = tabList[i];
+        const tab = openTabList[i];
         if (tab.status === "CLEAN") {
           await remove(tab);
         }
@@ -268,7 +268,7 @@ useEmitteryEventListener(
     }
     if (action === "CLOSE_ALL") {
       for (let i = max; i >= 0; i--) {
-        await remove(tabList[i]);
+        await remove(openTabList[i]);
       }
     }
   }
