@@ -253,6 +253,160 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 	return &ncr, nil
 }
 
+// GetPayloadTypeForRule returns the expected payload type for a given rule type.
+// This is used for validation and conversion between JSON and proto formats.
+func GetPayloadTypeForRule(ruleType storepb.SQLReviewRule_Type) string {
+	switch ruleType {
+	// Naming rules use NamingRulePayload
+	case storepb.SQLReviewRule_NAMING_TABLE,
+		storepb.SQLReviewRule_NAMING_COLUMN,
+		storepb.SQLReviewRule_NAMING_INDEX_PK,
+		storepb.SQLReviewRule_NAMING_INDEX_UK,
+		storepb.SQLReviewRule_NAMING_INDEX_FK,
+		storepb.SQLReviewRule_NAMING_INDEX_IDX,
+		storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT,
+		storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION:
+		return "naming"
+
+	// Number rules use NumberRulePayload
+	case storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
+		storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
+		storepb.SQLReviewRule_STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT,
+		storepb.SQLReviewRule_STATEMENT_MAXIMUM_LIMIT_VALUE,
+		storepb.SQLReviewRule_STATEMENT_MAXIMUM_JOIN_TABLE_COUNT,
+		storepb.SQLReviewRule_STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION,
+		storepb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME,
+		storepb.SQLReviewRule_STATEMENT_QUERY_MINIMUM_PLAN_LEVEL,
+		storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH,
+		storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH,
+		storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE,
+		storepb.SQLReviewRule_COLUMN_CURRENT_TIME_COUNT_LIMIT,
+		storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT,
+		storepb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT,
+		storepb.SQLReviewRule_TABLE_TEXT_FIELDS_TOTAL_LENGTH,
+		storepb.SQLReviewRule_TABLE_LIMIT_SIZE,
+		storepb.SQLReviewRule_SYSTEM_COMMENT_LENGTH:
+		return "number"
+
+	// String array rules use StringArrayRulePayload
+	case storepb.SQLReviewRule_COLUMN_REQUIRED,
+		storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST,
+		storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST,
+		storepb.SQLReviewRule_INDEX_TYPE_ALLOW_LIST,
+		storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST,
+		storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST,
+		storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST,
+		storepb.SQLReviewRule_TABLE_DISALLOW_DDL,
+		storepb.SQLReviewRule_TABLE_DISALLOW_DML:
+		return "string_array"
+
+	// Comment convention rules use CommentConventionRulePayload
+	case storepb.SQLReviewRule_TABLE_COMMENT,
+		storepb.SQLReviewRule_COLUMN_COMMENT:
+		return "comment_convention"
+
+	// Naming case rule uses NamingCaseRulePayload
+	case storepb.SQLReviewRule_NAMING_IDENTIFIER_CASE:
+		return "naming_case"
+
+	// String rules use StringRulePayload
+	case storepb.SQLReviewRule_NAMING_FULLY_QUALIFIED:
+		return "string"
+
+	// Rules with no payload
+	default:
+		return "none"
+	}
+}
+
+// ConvertJSONPayloadToProto converts a JSON string payload to the appropriate proto payload type.
+func ConvertJSONPayloadToProto(rule *storepb.SQLReviewRule, jsonPayload string) error {
+	if jsonPayload == "" || jsonPayload == "{}" {
+		return nil
+	}
+
+	payloadType := GetPayloadTypeForRule(rule.Type)
+
+	switch payloadType {
+	case "naming":
+		var payload NamingRulePayload
+		if err := json.Unmarshal([]byte(jsonPayload), &payload); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal naming payload for rule %s", rule.Type)
+		}
+		rule.Payload = &storepb.SQLReviewRule_NamingPayload{
+			NamingPayload: &storepb.NamingRulePayload{
+				MaxLength: int32(payload.MaxLength),
+				Format:    payload.Format,
+			},
+		}
+
+	case "number":
+		var payload NumberTypeRulePayload
+		if err := json.Unmarshal([]byte(jsonPayload), &payload); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal number payload for rule %s", rule.Type)
+		}
+		rule.Payload = &storepb.SQLReviewRule_NumberPayload{
+			NumberPayload: &storepb.NumberRulePayload{
+				Number: int32(payload.Number),
+			},
+		}
+
+	case "string_array":
+		var payload StringArrayTypeRulePayload
+		if err := json.Unmarshal([]byte(jsonPayload), &payload); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal string array payload for rule %s", rule.Type)
+		}
+		rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &storepb.StringArrayRulePayload{
+				List: payload.List,
+			},
+		}
+
+	case "comment_convention":
+		var payload CommentConventionRulePayload
+		if err := json.Unmarshal([]byte(jsonPayload), &payload); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal comment convention payload for rule %s", rule.Type)
+		}
+		rule.Payload = &storepb.SQLReviewRule_CommentConventionPayload{
+			CommentConventionPayload: &storepb.CommentConventionRulePayload{
+				Required:  payload.Required,
+				MaxLength: int32(payload.MaxLength),
+			},
+		}
+
+	case "naming_case":
+		var payload NamingCaseRulePayload
+		if err := json.Unmarshal([]byte(jsonPayload), &payload); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal naming case payload for rule %s", rule.Type)
+		}
+		rule.Payload = &storepb.SQLReviewRule_NamingCasePayload{
+			NamingCasePayload: &storepb.NamingCaseRulePayload{
+				Upper: payload.Upper,
+			},
+		}
+
+	case "string":
+		var payload StringTypeRulePayload
+		if err := json.Unmarshal([]byte(jsonPayload), &payload); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal string payload for rule %s", rule.Type)
+		}
+		rule.Payload = &storepb.SQLReviewRule_StringPayload{
+			StringPayload: &storepb.StringRulePayload{
+				Value: payload.String,
+			},
+		}
+
+	case "none":
+		// No payload for this rule type
+		return nil
+
+	default:
+		return errors.Errorf("unknown payload type %s for rule %s", payloadType, rule.Type)
+	}
+
+	return nil
+}
+
 // SQLReviewCheck checks the statements with sql review rules.
 func SQLReviewCheck(
 	ctx context.Context,

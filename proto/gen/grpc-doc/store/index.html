@@ -1138,11 +1138,39 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.store.CommentConventionRulePayload"><span class="badge">M</span>CommentConventionRulePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.NamingCaseRulePayload"><span class="badge">M</span>NamingCaseRulePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.NamingRulePayload"><span class="badge">M</span>NamingRulePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.NumberRulePayload"><span class="badge">M</span>NumberRulePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.RequiredColumnRulePayload"><span class="badge">M</span>RequiredColumnRulePayload</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ReviewConfigPayload"><span class="badge">M</span>ReviewConfigPayload</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.store.SQLReviewRule"><span class="badge">M</span>SQLReviewRule</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.StringArrayRulePayload"><span class="badge">M</span>StringArrayRulePayload</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.StringRulePayload"><span class="badge">M</span>StringRulePayload</a>
                 </li>
               
               
@@ -10790,6 +10818,140 @@ Format: projects/{project}/sheets/{sheet} </p></td>
       <p></p>
 
       
+        <h3 id="bytebase.store.CommentConventionRulePayload">CommentConventionRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>required</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>max_length</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.NamingCaseRulePayload">NamingCaseRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>upper</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.NamingRulePayload">NamingRulePayload</h3>
+        <p>Payload message types for SQL review rules</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>max_length</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>format</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.NumberRulePayload">NumberRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>number</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.RequiredColumnRulePayload">RequiredColumnRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>column_list</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.ReviewConfigPayload">ReviewConfigPayload</h3>
         <p></p>
 
@@ -10839,8 +11001,50 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
-                  <td>payload</td>
-                  <td><a href="#string">string</a></td>
+                  <td>naming_payload</td>
+                  <td><a href="#bytebase.store.NamingRulePayload">NamingRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>number_payload</td>
+                  <td><a href="#bytebase.store.NumberRulePayload">NumberRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>string_array_payload</td>
+                  <td><a href="#bytebase.store.StringArrayRulePayload">StringArrayRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment_convention_payload</td>
+                  <td><a href="#bytebase.store.CommentConventionRulePayload">CommentConventionRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>required_column_payload</td>
+                  <td><a href="#bytebase.store.RequiredColumnRulePayload">RequiredColumnRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>string_payload</td>
+                  <td><a href="#bytebase.store.StringRulePayload">StringRulePayload</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>naming_case_payload</td>
+                  <td><a href="#bytebase.store.NamingCaseRulePayload">NamingCaseRulePayload</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -10848,6 +11052,54 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 <tr>
                   <td>engine</td>
                   <td><a href="#bytebase.store.Engine">Engine</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.StringArrayRulePayload">StringArrayRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>list</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.StringRulePayload">StringRulePayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

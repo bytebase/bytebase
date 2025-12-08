@@ -227,13 +227,14 @@ func RunSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType 
 		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
 		require.NoError(t, err)
 
-		ruleList := []*storepb.SQLReviewRule{
-			{
-				Type:    rule,
-				Level:   storepb.SQLReviewRule_WARNING,
-				Payload: string(payload),
-			},
+		sqlRule := &storepb.SQLReviewRule{
+			Type:  rule,
+			Level: storepb.SQLReviewRule_WARNING,
 		}
+		err = ConvertJSONPayloadToProto(sqlRule, payload)
+		require.NoError(t, err)
+
+		ruleList := []*storepb.SQLReviewRule{sqlRule}
 
 		checkCtx := Context{
 			Charset:                  "",

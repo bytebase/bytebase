@@ -242,8 +242,15 @@
     - [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource)
   
 - [store/review_config.proto](#store_review_config-proto)
+    - [CommentConventionRulePayload](#bytebase-store-CommentConventionRulePayload)
+    - [NamingCaseRulePayload](#bytebase-store-NamingCaseRulePayload)
+    - [NamingRulePayload](#bytebase-store-NamingRulePayload)
+    - [NumberRulePayload](#bytebase-store-NumberRulePayload)
+    - [RequiredColumnRulePayload](#bytebase-store-RequiredColumnRulePayload)
     - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
     - [SQLReviewRule](#bytebase-store-SQLReviewRule)
+    - [StringArrayRulePayload](#bytebase-store-StringArrayRulePayload)
+    - [StringRulePayload](#bytebase-store-StringRulePayload)
   
     - [SQLReviewRule.Level](#bytebase-store-SQLReviewRule-Level)
     - [SQLReviewRule.Type](#bytebase-store-SQLReviewRule-Type)
@@ -3985,6 +3992,83 @@ ISSUE_CREATE represents creating an issue. |
 
 
 
+<a name="bytebase-store-CommentConventionRulePayload"></a>
+
+### CommentConventionRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| required | [bool](#bool) |  |  |
+| max_length | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-NamingCaseRulePayload"></a>
+
+### NamingCaseRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| upper | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-NamingRulePayload"></a>
+
+### NamingRulePayload
+Payload message types for SQL review rules
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| max_length | [int32](#int32) |  |  |
+| format | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-NumberRulePayload"></a>
+
+### NumberRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| number | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-RequiredColumnRulePayload"></a>
+
+### RequiredColumnRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| column_list | [string](#string) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-store-ReviewConfigPayload"></a>
 
 ### ReviewConfigPayload
@@ -4010,8 +4094,44 @@ ISSUE_CREATE represents creating an issue. |
 | ----- | ---- | ----- | ----------- |
 | type | [SQLReviewRule.Type](#bytebase-store-SQLReviewRule-Type) |  |  |
 | level | [SQLReviewRule.Level](#bytebase-store-SQLReviewRule-Level) |  |  |
-| payload | [string](#string) |  |  |
+| naming_payload | [NamingRulePayload](#bytebase-store-NamingRulePayload) |  |  |
+| number_payload | [NumberRulePayload](#bytebase-store-NumberRulePayload) |  |  |
+| string_array_payload | [StringArrayRulePayload](#bytebase-store-StringArrayRulePayload) |  |  |
+| comment_convention_payload | [CommentConventionRulePayload](#bytebase-store-CommentConventionRulePayload) |  |  |
+| required_column_payload | [RequiredColumnRulePayload](#bytebase-store-RequiredColumnRulePayload) |  |  |
+| string_payload | [StringRulePayload](#bytebase-store-StringRulePayload) |  |  |
+| naming_case_payload | [NamingCaseRulePayload](#bytebase-store-NamingCaseRulePayload) |  |  |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-StringArrayRulePayload"></a>
+
+### StringArrayRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| list | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-StringRulePayload"></a>
+
+### StringRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| value | [string](#string) |  |  |
 
 
 
