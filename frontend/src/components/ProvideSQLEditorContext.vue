@@ -90,7 +90,7 @@ const {
 useRouteChangeGuard(
   computed(() => {
     return (
-      tabStore.tabList.find(
+      tabStore.openTabList.find(
         (tab) => !!tab?.worksheet && tab.status === "DIRTY"
       ) !== undefined
     );
@@ -159,7 +159,7 @@ const connect = (connection: SQLEditorConnection) => {
 };
 
 const switchWorksheet = async (sheetName: string) => {
-  const openingSheetTab = tabStore.tabList.find(
+  const openingSheetTab = tabStore.openTabList.find(
     (tab) => tab.worksheet == sheetName
   );
 
@@ -255,7 +255,7 @@ const prepareConnectionParams = async () => {
     await useDatabaseV1Store().getOrFetchDatabaseByName(databaseName);
   await maybeSwitchProject(database.project);
   if (!isDatabaseV1Queryable(database)) {
-    const tabs = tabStore.tabList.filter(
+    const tabs = tabStore.openTabList.filter(
       (tab) => tab.connection.database === database.name
     );
     for (const tab of tabs) {
