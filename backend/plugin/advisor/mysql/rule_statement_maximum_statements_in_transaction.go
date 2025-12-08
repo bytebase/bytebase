@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"github.com/pkg/errors"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
@@ -32,13 +33,13 @@ func (*StatementMaximumStatementsInTransactionAdvisor) Check(_ context.Context, 
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for this rule")
 	}
 
 	// Create the rule
-	rule := NewStatementMaximumStatementsInTransactionRule(level, checkCtx.Rule.Type.String(), payload.Number)
+	rule := NewStatementMaximumStatementsInTransactionRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

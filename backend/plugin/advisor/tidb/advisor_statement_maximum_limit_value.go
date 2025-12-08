@@ -8,6 +8,7 @@ import (
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	driver "github.com/pingcap/tidb/pkg/types/parser_driver"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -40,15 +41,15 @@ func (*StatementMaximumLimitValueAdvisor) Check(_ context.Context, checkCtx advi
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for maximum limit value rule")
 	}
 
 	checker := &statementMaximumLimitValueChecker{
 		level:         level,
 		title:         checkCtx.Rule.Type.String(),
-		limitMaxValue: payload.Number,
+		limitMaxValue: int(numberPayload.Number),
 	}
 
 	for _, stmt := range stmtList {

@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
@@ -38,12 +39,12 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	if payload.Number <= 0 {
+	if int(numberPayload.Number) <= 0 {
 		return nil, nil
 	}
 
@@ -52,7 +53,7 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 			level: level,
 			title: checkCtx.Rule.Type.String(),
 		},
-		maximum: payload.Number,
+		maximum: int(numberPayload.Number),
 	}
 
 	checker := NewGenericChecker([]Rule{rule})

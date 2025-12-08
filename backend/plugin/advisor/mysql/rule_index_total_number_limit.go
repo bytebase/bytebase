@@ -3,6 +3,7 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"slices"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
@@ -43,13 +44,13 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for this rule")
 	}
 
 	// Create the rule
-	rule := NewIndexTotalNumberLimitRule(level, checkCtx.Rule.Type.String(), payload.Number, checkCtx.FinalMetadata)
+	rule := NewIndexTotalNumberLimitRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number), checkCtx.FinalMetadata)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

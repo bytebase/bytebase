@@ -4,6 +4,7 @@ package oracle
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
@@ -39,16 +40,16 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	if payload.Number <= 0 {
+	if int(numberPayload.Number) <= 0 {
 		return nil, nil
 	}
 
-	rule := NewIndexKeyNumberLimitRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, payload.Number)
+	rule := NewIndexKeyNumberLimitRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, int(numberPayload.Number))
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

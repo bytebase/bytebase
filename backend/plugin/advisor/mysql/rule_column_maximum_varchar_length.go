@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/pkg/errors"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
@@ -42,13 +43,13 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for column maximum varchar length rule")
 	}
 
 	// Create the rule
-	rule := NewVarcharLengthRule(level, checkCtx.Rule.Type.String(), payload.Number)
+	rule := NewVarcharLengthRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

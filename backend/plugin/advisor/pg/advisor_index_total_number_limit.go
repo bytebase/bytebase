@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"slices"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
@@ -39,14 +40,14 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for this rule")
 	}
 
 	rule := &indexTotalNumberLimitRule{
 		BaseRule:      BaseRule{level: level, title: checkCtx.Rule.Type.String()},
-		max:           payload.Number,
+		max:           int(numberPayload.Number),
 		finalMetadata: checkCtx.FinalMetadata,
 		tableLine:     make(tableLineMap),
 	}

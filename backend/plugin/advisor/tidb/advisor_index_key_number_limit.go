@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/pkg/errors"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
 
@@ -40,14 +41,14 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for index key number limit rule")
 	}
 	checker := &indexKeyNumberLimitChecker{
 		level: level,
 		title: checkCtx.Rule.Type.String(),
-		max:   payload.Number,
+		max:   int(numberPayload.Number),
 	}
 
 	for _, stmt := range stmtList {

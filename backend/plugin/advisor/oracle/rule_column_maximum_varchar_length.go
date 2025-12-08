@@ -4,6 +4,7 @@ package oracle
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"strconv"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
@@ -40,16 +41,16 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	if payload.Number <= 0 {
+	if int(numberPayload.Number) <= 0 {
 		return nil, nil
 	}
 
-	rule := NewColumnMaximumVarcharLengthRule(level, checkCtx.Rule.Type.String(), payload.Number)
+	rule := NewColumnMaximumVarcharLengthRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

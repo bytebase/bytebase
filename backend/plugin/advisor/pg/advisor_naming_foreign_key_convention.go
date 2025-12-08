@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"regexp"
 	"strings"
 

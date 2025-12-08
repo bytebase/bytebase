@@ -41,9 +41,9 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for this rule")
 	}
 
 	rule := &insertRowLimitRule{
@@ -51,14 +51,14 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 			level: level,
 			title: checkCtx.Rule.Type.String(),
 		},
-		maxRow:                   payload.Number,
+		maxRow:                   int(numberPayload.Number),
 		driver:                   checkCtx.Driver,
 		ctx:                      ctx,
 		statementsText:           checkCtx.Statements,
 		UsePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
 	}
 
-	if payload.Number > 0 {
+	if int(numberPayload.Number) > 0 {
 		checker := NewGenericChecker([]Rule{rule})
 
 		for _, parseResult := range parseResults {

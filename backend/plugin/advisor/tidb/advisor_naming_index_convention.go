@@ -3,6 +3,7 @@ package tidb
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"regexp"
 	"strings"
 
