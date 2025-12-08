@@ -400,7 +400,10 @@ func GetListGroupFilter(find *FindGroupMessage, filter string) (*qb.Query, error
 		case "permission":
 			// Permission filtering is handled in the service layer
 			// Here we just store the permission value
-			permission := value.(string)
+			permission, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid permission filter value type")
+			}
 			find.RequiredPermission = &permission
 			return qb.Q().Space("TRUE"), nil
 		default:
