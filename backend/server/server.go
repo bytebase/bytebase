@@ -17,6 +17,7 @@ import (
 
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
+	mcpserver "github.com/bytebase/bytebase/backend/api/mcp"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -215,12 +216,23 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
 
+	// MCP server.
+	mcpInvoker := mcpserver.NewInvoker(fmt.Sprintf("http://localhost:%d", profile.Port))
+	mcpRegistry, err := mcpserver.NewRegistry("proto/gen/jsonschema", mcpInvoker)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create MCP registry")
+	}
+	mcpServer, err := mcpserver.NewServer(mcpRegistry)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create MCP server")
+	}
+
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager, profile)
 
 	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
-	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, profile)
+	configureEchoRouters(s.echoServer, s.lspServer, mcpServer, directorySyncServer, profile)
 
 	serverStarted = true
 	return s, nil

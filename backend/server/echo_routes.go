@@ -14,6 +14,7 @@ import (
 
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
+	mcpserver "github.com/bytebase/bytebase/backend/api/mcp"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -22,6 +23,7 @@ import (
 func configureEchoRouters(
 	e *echo.Echo,
 	lspServer *lsp.Server,
+	mcpServer *mcpserver.Server,
 	directorySyncServer *directorysync.Service,
 	profile *config.Profile,
 ) {
@@ -73,6 +75,10 @@ func configureEchoRouters(
 
 	// LSP server.
 	e.GET(lspAPI, lspServer.Router)
+
+	// MCP server endpoint.
+	e.Any("/mcp", echo.WrapHandler(mcpServer.Handler()))
+	e.Any("/mcp/*", echo.WrapHandler(mcpServer.Handler()))
 
 	hookGroup := e.Group(webhookAPIPrefix)
 	scimGroup := hookGroup.Group(scimAPIPrefix)
