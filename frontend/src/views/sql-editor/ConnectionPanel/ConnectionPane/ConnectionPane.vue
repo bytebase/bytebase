@@ -217,12 +217,10 @@ import {
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import type {
   ComposedDatabase,
-  CoreSQLEditorTab,
   QueryDataSourceType,
   SQLEditorTreeNode,
 } from "@/types";
 import {
-  DEFAULT_SQL_EDITOR_TAB_MODE,
   getDataSourceTypeI18n,
   isValidDatabaseGroupName,
   isValidDatabaseName,
@@ -243,7 +241,6 @@ import {
   getValuesFromSearchParams,
   isDatabaseV1Queryable,
   isDescendantOf,
-  tryConnectToCoreSQLEditorTab,
   useDynamicLocalStorage,
 } from "@/utils";
 import { useSQLEditorContext } from "../../context";
@@ -391,16 +388,10 @@ watch(
       selectedDatabases.length > 0
     ) {
       const database = databaseStore.getDatabaseByName(selectedDatabases[0]);
-      const coreTab: CoreSQLEditorTab = {
-        connection: {
-          ...emptySQLEditorConnection(),
-          instance: database.instance,
-          database: database.name,
-        },
-        worksheet: "",
-        mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-      };
-      tryConnectToCoreSQLEditorTab(coreTab);
+      setConnection(database, {
+        newTab: false,
+        context: editorContext,
+      });
     }
     tabStore.updateBatchQueryContext({
       databases: selectedDatabases,
@@ -479,15 +470,20 @@ const connectedDatabases = computed(() =>
   resolveOpeningDatabaseListFromSQLEditorTabList()
 );
 
+// The connection panel should:
+// - change the connection for the current tab
+// - connect to a new tab, this will create a new worksheet
 const connect = (node: SQLEditorTreeNode) => {
-  if (!isDatabaseV1Queryable(node.meta.target as ComposedDatabase)) {
+  if (node.disabled || node.meta.type !== "database") {
     return;
   }
-  setConnection(node, {
-    extra: {
-      worksheet: tabStore.currentTab?.worksheet ?? "",
-      mode: tabStore.currentTab?.mode ?? DEFAULT_SQL_EDITOR_TAB_MODE,
-    },
+  const database = node.meta.target as ComposedDatabase;
+  if (!isDatabaseV1Queryable(database)) {
+    return;
+  }
+  setConnection(database, {
+    mode: tabStore.currentTab?.mode,
+    newTab: false,
     context: editorContext,
   });
   if (tabStore.currentTab?.batchQueryContext?.databases.length === 1) {

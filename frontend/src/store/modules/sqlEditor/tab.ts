@@ -124,6 +124,9 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       if (!fullTab) {
         continue;
       }
+      if (!fullTab.mode) {
+        fullTab.mode = "WORKSHEET";
+      }
 
       validOpenTabMap.set(tab.id, tab);
       tabsById.set(tab.id, fullTab);
@@ -394,6 +397,13 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     currentTabId.value = id;
   };
 
+  // TODO(ed): deprecate
+  // The similar tab should not consider the worksheet
+  // What we should do:
+  // When load the SQL Editor page in the URL like /instances/{instance}/databases/{database},
+  // get the connection, check if exist opening tab with the same connection
+  // - exist: set the current tab id
+  // - not exist: we still have to provide a draft worksheet, but the draft can only exist in the memory, not in the local storage
   const selectOrAddSimilarNewTab = (
     tab: CoreSQLEditorTab,
     beside = false,

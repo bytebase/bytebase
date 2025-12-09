@@ -9,13 +9,14 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
+import { useSQLEditorTabStore } from "@/store";
 import {
   type ComposedDatabase,
-  type CoreSQLEditorTab,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   instanceOfSQLEditorTreeNode,
   isConnectableSQLEditorTreeNode,
   type Position,
+  type SQLEditorConnection,
   type SQLEditorTabMode as TabMode,
   type SQLEditorTreeNode as TreeNode,
 } from "@/types";
@@ -26,7 +27,7 @@ import {
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
   setDefaultDataSourceForConn,
-  tryConnectToCoreSQLEditorTab,
+  suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
 import { type SQLEditorContext, useSQLEditorContext } from "../../context";
 
@@ -66,6 +67,7 @@ export const useDropdown = () => {
       const items: DropdownOptionWithTreeNode[] = [];
 
       if (isConnectableSQLEditorTreeNode(node)) {
+        const database = node.meta.target as ComposedDatabase;
         const instance = instanceOfSQLEditorTreeNode(node);
         if (instance && instanceV1HasReadonlyMode(instance)) {
           items.push({
@@ -73,8 +75,9 @@ export const useDropdown = () => {
             label: t("sql-editor.connect"),
             icon: () => <LinkIcon class="w-4 h-4" />,
             onSelect: () => {
-              setConnection(node, {
+              setConnection(database, {
                 context: editorContext,
+                newTab: false,
               });
               showConnectionPanel.value = false;
             },
@@ -84,8 +87,7 @@ export const useDropdown = () => {
             label: t("sql-editor.connect-in-new-tab"),
             icon: () => <LinkIcon class="w-4 h-4" />,
             onSelect: () => {
-              setConnection(node, {
-                extra: { worksheet: "", mode: DEFAULT_SQL_EDITOR_TAB_MODE },
+              setConnection(database, {
                 newTab: true,
                 context: editorContext,
               });
@@ -99,9 +101,10 @@ export const useDropdown = () => {
             label: t("sql-editor.connect-in-admin-mode"),
             icon: () => <WrenchIcon class="w-4 h-4" />,
             onSelect: () => {
-              setConnection(node, {
-                extra: { worksheet: "", mode: "ADMIN" },
+              setConnection(database, {
+                mode: "ADMIN",
                 context: editorContext,
+                newTab: false,
               });
               showConnectionPanel.value = false;
             },
@@ -164,41 +167,48 @@ export const useDropdown = () => {
   return { show, position, context, options, handleSelect, handleClickoutside };
 };
 
+// setConnection will:
+// - when newTab == false && exist current tab: connect to the current tab
+// - otherwise create a new worksheet then open the tab
 export const setConnection = (
-  node: TreeNode<"database">,
+  database: ComposedDatabase,
   options: {
-    extra?: { worksheet: string; mode: TabMode };
-    newTab?: boolean;
+    mode?: TabMode;
+    newTab: boolean;
     context: SQLEditorContext;
   }
 ) => {
-  if (!node) {
-    return;
-  }
-  if (!isConnectableSQLEditorTreeNode(node)) {
-    // one more guard
-    return;
-  }
   const {
-    extra = {
-      worksheet: "",
-      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-    },
+    mode = DEFAULT_SQL_EDITOR_TAB_MODE,
     newTab = false,
     context,
   } = options;
-  const database = node.meta.target;
-  const coreTab: CoreSQLEditorTab = {
-    connection: {
-      instance: database.instance,
-      database: database.name,
-    },
-    ...extra,
+  const connection: SQLEditorConnection = {
+    instance: database.instance,
+    database: database.name,
   };
-  setDefaultDataSourceForConn(coreTab.connection, database);
-  tryConnectToCoreSQLEditorTab(coreTab, /* overrideTitle */ true, newTab);
+  setDefaultDataSourceForConn(connection, database);
 
-  if (context) {
+  const tabStore = useSQLEditorTabStore();
+  if (!newTab && tabStore.currentTab) {
+    tabStore.updateCurrentTab({
+      mode,
+      connection,
+      status: "DIRTY",
+    });
     context.asidePanelTab.value = "SCHEMA";
+  } else {
+    // create new worksheet and set connection
+    context
+      .createWorksheet({
+        title: suggestedTabTitleForSQLEditorConnection(connection),
+        database: connection.database,
+      })
+      .then((tab) => {
+        if (tab) {
+          tabStore.updateTab(tab.id, { mode });
+          context.asidePanelTab.value = "SCHEMA";
+        }
+      });
   }
 };

@@ -14,18 +14,16 @@ import {
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
-import type { SQLEditorTab } from "@/types";
+import type { SQLEditorTab, SQLEditorTabMode } from "@/types";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import {
   type Worksheet,
   Worksheet_Visibility,
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
-  emptySQLEditorConnection,
   extractWorksheetConnection,
   getSheetStatement,
   isWorksheetReadableV1,
-  suggestedTabTitleForSQLEditorConnection,
   useDynamicLocalStorage,
 } from "@/utils";
 import { useFolderByView } from "./folder";
@@ -539,62 +537,53 @@ export const provideSheetContext = () => {
   return context;
 };
 
-export const openWorksheetByName = async (
-  name: string,
-  forceNewTab = false
-) => {
-  const worksheet = await useWorkSheetStore().getOrFetchWorksheetByName(name);
-  if (!worksheet) {
-    return false;
+export const openWorksheetByName = async ({
+  worksheet,
+  forceNewTab,
+  mode,
+}: {
+  worksheet: string;
+  forceNewTab: boolean;
+  mode?: SQLEditorTabMode;
+}) => {
+  const sheet = await useWorkSheetStore().getOrFetchWorksheetByName(worksheet);
+  if (!sheet) {
+    return undefined;
   }
 
-  if (!isWorksheetReadableV1(worksheet)) {
+  if (!isWorksheetReadableV1(sheet)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("common.access-denied"),
     });
-    return false;
+    return undefined;
   }
 
   const tabStore = useSQLEditorTabStore();
   const openingSheetTab = tabStore.openTabList.find(
-    (tab) => tab.worksheet === worksheet.name
+    (tab) => tab.worksheet === sheet.name
   );
 
-  const statement = getSheetStatement(worksheet);
-  const connection = await extractWorksheetConnection(worksheet);
-
-  const newTab: Partial<SQLEditorTab> = {
-    connection,
-    worksheet: worksheet.name,
-    title: worksheet.title,
-    statement,
-    status: "CLEAN",
-  };
-
-  if (openingSheetTab) {
+  if (openingSheetTab && !forceNewTab) {
     // Switch to a sheet tab if it's open already.
     tabStore.setCurrentTabId(openingSheetTab.id);
-    return true;
-  } else if (forceNewTab) {
-    tabStore.addTab(newTab, true /* beside */);
-  } else {
-    // Open the sheet in a "temp" tab otherwise.
-    tabStore.addTab(newTab);
+    if (mode && mode !== openingSheetTab.mode) {
+      tabStore.updateTab(openingSheetTab.id, { mode });
+    }
+    return openingSheetTab;
   }
 
-  return true;
-};
-
-export const addNewSheet = () => {
-  const tabStore = useSQLEditorTabStore();
-  const curr = tabStore.currentTab;
-  const connection = curr ? { ...curr.connection } : emptySQLEditorConnection();
-  const title = suggestedTabTitleForSQLEditorConnection(connection);
-  tabStore.addTab({
-    title,
+  const statement = getSheetStatement(sheet);
+  const connection = await extractWorksheetConnection(sheet);
+  const newTab: Partial<SQLEditorTab> = {
     connection,
+    worksheet: sheet.name,
+    title: sheet.title,
+    statement,
     status: "CLEAN",
-  });
+    mode: mode ?? "WORKSHEET",
+  };
+
+  return tabStore.addTab(newTab, forceNewTab /* beside */);
 };

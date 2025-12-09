@@ -375,7 +375,10 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       }
       if (node.worksheet) {
         if (node.worksheet.type === "worksheet") {
-          openWorksheetByName(node.worksheet.name, e.metaKey || e.ctrlKey);
+          openWorksheetByName({
+            worksheet: node.worksheet.name,
+            forceNewTab: e.metaKey || e.ctrlKey,
+          });
         } else {
           const tab = tabStore.draftList.find(
             (draft) => draft.id === node.worksheet?.name
