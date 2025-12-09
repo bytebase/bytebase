@@ -2061,7 +2061,7 @@
     },
     "copy-url": "Copy URL",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",
-    "connect-to-a-database": "Connect to a database",
+    "connect-to-a-database": "Connect to database",
     "link-access": "Link access",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
@@ -2150,7 +2150,7 @@
     "result-limit": {
       "self": "Result limit"
     },
-    "add-a-new-instance": "Add a new instance",
+    "add-a-new-instance": "Add new instance",
     "web-socket": {
       "errors": {
         "title": "WebSocket connection failed",

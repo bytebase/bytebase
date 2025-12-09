@@ -17,7 +17,7 @@ import {
   emptySQLEditorConnection,
   extractWorksheetConnection,
   getSheetStatement,
-  isDisconnectedSQLEditorTab,
+  isConnectedSQLEditorTab,
   isSimilarSQLEditorTab,
   useDynamicLocalStorage,
 } from "@/utils";
@@ -403,7 +403,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     const curr = currentTab.value;
     if (curr) {
       if (
-        isDisconnectedSQLEditorTab(curr) ||
+        !isConnectedSQLEditorTab(curr) ||
         isSimilarSQLEditorTab(tab, curr, ignoreMode)
       ) {
         updateTab(curr.id, {
@@ -442,7 +442,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const isDisconnected = computed(() => {
     const tab = currentTab.value;
     if (!tab) return true;
-    return isDisconnectedSQLEditorTab(tab);
+    return !isConnectedSQLEditorTab(tab);
   });
 
   return {

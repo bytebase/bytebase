@@ -25,26 +25,121 @@
         </NButton>
       </NDropdown>
     </div>
-    <div class="flex-1 flex flex-col gap-y-2 overflow-y-auto worksheet-scroll">
+    <div class="relative flex-1 flex flex-col gap-y-2 overflow-y-auto worksheet-scroll">
+      <div v-if="multiSelectMode && filter.showMine" class="sticky top-0 z-10 px-1 flex items-center justify-start flex-wrap gap-y-1 gap-x-1 bg-blue-100 py-2">
+        <NButton
+          quaternary
+          size="tiny"
+          type="error"
+          :disabled="checkedNodes.length === 0 || loading"
+          @click="handleMultiDelete"
+        >
+          <template #icon>
+            <TrashIcon />
+          </template>
+          {{ t("common.delete") }}
+        </NButton>
+        <NButton
+          quaternary
+          size="tiny"
+          :disabled="checkedWorksheets.length === 0 || loading"
+          @click="showReorgModal = true"
+        >
+          <template #icon>
+            <FolderInputIcon />
+          </template>
+          {{ $t('sheet.move-worksheets') }}
+        </NButton>
+        <NButton
+          quaternary
+          size="tiny"
+          :disabled="loading"
+          @click="multiSelectMode = false"
+        >
+          <template #icon>
+            <XIcon />
+          </template>
+          {{$t("common.cancel")}}
+        </NButton>
+      </div>
+      <SheetTree
+        v-if="filter.showMine"
+        ref="mineSheetTreeRef"
+        key="my"
+        :view="'my'"
+        v-model:multi-select-mode="multiSelectMode"
+        v-model:checked-nodes="checkedNodes"
+      />
       <SheetTree v-for="view in views" :key="view" :view="view" />
       <NEmpty v-if="views.length === 0" class="mt-10" />
     </div>
   </div>
+
+  <BBModal
+    :show="showReorgModal"
+    :title="$t('sheet.move-worksheets')"
+    @close="() => showReorgModal = false"
+  >
+    <div class="flex flex-col gap-y-3 w-lg max-w-[calc(100vw-8rem)]">
+      <FolderForm ref="folderFormRef" :folder="''" />
+      <div class="flex justify-end gap-x-2 mt-4">
+        <NButton @click="showReorgModal = false">{{ $t("common.close") }}</NButton>
+        <NButton
+          type="primary"
+          @click="handleMoveWorksheets"
+        >
+          {{ $t("common.save") }}
+        </NButton>
+      </div>
+    </div>
+  </BBModal>
 </template>
 
 <script setup lang="tsx">
-import { FunnelIcon } from "lucide-vue-next";
+import { FolderInputIcon, FunnelIcon, TrashIcon, XIcon } from "lucide-vue-next";
 import { type DropdownOption, NButton, NDropdown, NEmpty } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
+import { BBModal } from "@/bbkit";
 import { SearchBox } from "@/components/v2";
 import { t } from "@/plugins/i18n";
-import { type SheetViewMode } from "@/views/sql-editor/Sheet";
+import type {
+  SheetViewMode,
+  WorksheetFolderNode,
+} from "@/views/sql-editor/Sheet";
 import { useSheetContext } from "../../Sheet";
 import FilterMenuItem from "./FilterMenuItem.vue";
 import { SheetTree } from "./SheetList";
+import FolderForm from "./SheetList/FolderForm.vue";
 
-const { filter, filterChanged } = useSheetContext();
+const { filter, filterChanged, batchUpdateWorksheetFolders } =
+  useSheetContext();
 const showDropdown = ref<boolean>(false);
+const mineSheetTreeRef = ref<InstanceType<typeof SheetTree>>();
+
+// multi-select operations
+const checkedNodes = ref<WorksheetFolderNode[]>([]);
+const multiSelectMode = ref(false);
+const showReorgModal = ref(false);
+const loading = ref(false);
+const checkedWorksheets = computed(() => {
+  const worksheets: string[] = [];
+  for (const node of checkedNodes.value) {
+    if (node.worksheet) {
+      worksheets.push(node.worksheet.name);
+    }
+  }
+  return worksheets;
+});
+const folderFormRef = ref<InstanceType<typeof FolderForm>>();
+
+watch(
+  [() => multiSelectMode.value, () => filter.value.showMine],
+  ([multiSelectMode, showMine]) => {
+    if (!multiSelectMode || !showMine) {
+      checkedNodes.value = [];
+    }
+  }
+);
 
 const options = computed((): DropdownOption[] => {
   return [
@@ -98,10 +193,8 @@ const options = computed((): DropdownOption[] => {
 });
 
 const views = computed((): SheetViewMode[] => {
+  // do not push the "my" view
   const results: SheetViewMode[] = [];
-  if (filter.value.showMine) {
-    results.push("my");
-  }
   if (filter.value.showShared) {
     results.push("shared");
   }
@@ -110,6 +203,32 @@ const views = computed((): SheetViewMode[] => {
   }
   return results;
 });
+
+const handleMoveWorksheets = async () => {
+  loading.value = true;
+  try {
+    const folders = folderFormRef.value?.folders ?? [];
+    await batchUpdateWorksheetFolders(
+      checkedWorksheets.value.map((worksheet) => ({
+        name: worksheet,
+        folders,
+      }))
+    );
+    showReorgModal.value = false;
+    multiSelectMode.value = false;
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleMultiDelete = async () => {
+  loading.value = true;
+  try {
+    await mineSheetTreeRef.value?.handleMultiDelete(checkedNodes.value);
+  } finally {
+    loading.value = false;
+  }
+};
 </script>
 
 <style lang="postcss" scoped>

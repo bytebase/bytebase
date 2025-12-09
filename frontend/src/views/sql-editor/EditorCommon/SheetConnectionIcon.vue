@@ -1,5 +1,5 @@
 <template>
-  <EngineIcon v-if="instance" :engine="instance.engine" />
+  <EngineIcon v-if="connected && instance" :engine="instance.engine" />
   <UnlinkIcon v-else />
 </template>
 
@@ -7,25 +7,14 @@
 import { UnlinkIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { EngineIcon } from "@/components/Icon";
-import { isValidInstanceName, type SQLEditorTab } from "@/types";
-import { connectionForSQLEditorTab } from "@/utils";
+import { type SQLEditorTab } from "@/types";
+import { connectionForSQLEditorTab, isConnectedSQLEditorTab } from "@/utils";
 
 const props = defineProps<{
-  tab?: SQLEditorTab;
+  tab: SQLEditorTab;
 }>();
 
-const instance = computed(() => {
-  const { tab } = props;
-  if (!tab) {
-    return;
-  }
-  const { instance } = connectionForSQLEditorTab(tab);
-  if (!instance) {
-    return;
-  }
-  if (!isValidInstanceName(instance.name)) {
-    return;
-  }
-  return instance;
-});
+const connected = computed(() => isConnectedSQLEditorTab(props.tab));
+
+const instance = computed(() => connectionForSQLEditorTab(props.tab).instance);
 </script>

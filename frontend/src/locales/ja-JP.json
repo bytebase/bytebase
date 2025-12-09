@@ -2061,7 +2061,7 @@
     },
     "copy-url": "URLをコピー",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
-    "connect-to-a-database": "データベースに接続する",
+    "connect-to-a-database": "データベースに接続",
     "link-access": "リンクアクセス",
     "private": "プライベート",
     "private-desc": "このシートにアクセスできるのはあなただけです",
@@ -2150,7 +2150,7 @@
     "result-limit": {
       "self": "結果の制限"
     },
-    "add-a-new-instance": "新しいインスタンスを追加する",
+    "add-a-new-instance": "新しいインスタンスを追加",
     "web-socket": {
       "errors": {
         "title": "WebSocket接続に失敗しました",

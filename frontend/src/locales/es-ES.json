@@ -2061,7 +2061,7 @@
     },
     "copy-url": "Copiar URL",
     "url-copied-to-clipboard": "La URL se copia al portapapeles.",
-    "connect-to-a-database": "Conectarse a una base de datos",
+    "connect-to-a-database": "Conectar a base de datos",
     "link-access": "Acceso al enlace",
     "private": "Privado",
     "private-desc": "Solo tú puedes acceder a esta hoja",
@@ -2150,7 +2150,7 @@
     "result-limit": {
       "self": "Límite de resultados"
     },
-    "add-a-new-instance": "Agregar una nueva instancia",
+    "add-a-new-instance": "Agregar nueva instancia",
     "web-socket": {
       "errors": {
         "title": "La conexión WebSocket falló",

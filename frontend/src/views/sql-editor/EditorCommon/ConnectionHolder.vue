@@ -12,7 +12,7 @@
         @click="changeConnection"
       >
         <template #icon>
-          <heroicons-outline:lightning-bolt class="w-5 h-5" />
+          <LinkIcon class="w-5 h-5" />
         </template>
         {{ $t("sql-editor.connect-to-a-database") }}
       </NButton>
@@ -21,6 +21,7 @@
 </template>
 
 <script setup lang="ts">
+import { LinkIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { useSQLEditorContext } from "../context";
 

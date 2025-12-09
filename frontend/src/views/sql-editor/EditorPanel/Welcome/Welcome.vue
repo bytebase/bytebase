@@ -10,6 +10,7 @@
       <Button
         v-if="showCreateInstanceButton"
         type="default"
+        class="px-4!"
         @click="gotoInstanceCreatePage"
       >
         <template #icon>
@@ -17,7 +18,13 @@
         </template>
         {{ $t("sql-editor.add-a-new-instance") }}
       </Button>
-      <Button v-if="showConnectButton" type="primary" secondary @click="changeConnection">
+      <Button
+        v-if="showConnectButton"
+        secondary
+        type="primary"
+        class="px-4!"
+        @click="changeConnection"
+      >
         <template #icon>
           <LinkIcon :stroke-width="1.5" class="w-8 h-8" />
         </template>

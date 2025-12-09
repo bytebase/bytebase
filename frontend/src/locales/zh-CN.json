@@ -2061,7 +2061,7 @@
     },
     "copy-url": "复制 URL",
     "url-copied-to-clipboard": "URL 已复制到剪贴板",
-    "connect-to-a-database": "连接到数据库",
+    "connect-to-a-database": "连接数据库",
     "link-access": "链接访问权限",
     "private": "私有",
     "private-desc": "只有您自己可以访问此工作表",
@@ -2150,7 +2150,7 @@
     "result-limit": {
       "self": "结果限制"
     },
-    "add-a-new-instance": "添加实例",
+    "add-a-new-instance": "添加新实例",
     "web-socket": {
       "errors": {
         "title": "WebSocket 连接失败",
