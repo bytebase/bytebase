@@ -75,7 +75,9 @@ export type SQLEditorContext = {
   }: {
     title?: string;
     folders?: string[];
-  }) => Promise<void>;
+    statement?: string;
+    database?: string;
+  }) => Promise<SQLEditorTab | undefined>;
 };
 
 export const KEY = Symbol(
@@ -116,14 +118,17 @@ export const provideSQLEditorContext = () => {
     title = "new worksheet",
     statement = "",
     folders = [],
+    database = "",
   }: {
     title?: string;
     statement?: string;
     folders?: string[];
+    database?: string;
   }) => {
     const newWorksheet = await worksheetStore.createWorksheet(
       create(WorksheetSchema, {
-        title: title,
+        title,
+        database,
         content: new TextEncoder().encode(statement),
         project: editorStore.project,
         visibility: Worksheet_Visibility.PRIVATE,
@@ -140,10 +145,17 @@ export const provideSQLEditorContext = () => {
       );
     }
 
-    nextTick(() => {
-      openWorksheetByName(newWorksheet.name, true);
-      showConnectionPanel.value = true;
+    const tab = await openWorksheetByName({
+      worksheet: newWorksheet.name,
+      forceNewTab: true,
     });
+    nextTick(() => {
+      if (tab && !tab.connection?.database) {
+        showConnectionPanel.value = true;
+      }
+    });
+
+    return tab;
   };
 
   const context: SQLEditorContext = {

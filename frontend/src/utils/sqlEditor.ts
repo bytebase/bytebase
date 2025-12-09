@@ -1,11 +1,7 @@
 import dayjs from "dayjs";
 import { head } from "lodash-es";
 import { v1 as uuidv1 } from "uuid";
-import {
-  useDatabaseV1Store,
-  usePolicyV1Store,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useDatabaseV1Store, usePolicyV1Store } from "@/store";
 import type {
   ComposedDatabase,
   CoreSQLEditorTab,
@@ -54,6 +50,7 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
 export const defaultSQLEditorTabTitle = () => {
   return dayjs().format("YYYY-MM-DD HH:mm");
 };
+
 export const emptySQLEditorConnection = (): SQLEditorConnection => {
   return {
     instance: "",
@@ -61,7 +58,7 @@ export const emptySQLEditorConnection = (): SQLEditorConnection => {
   };
 };
 
-export const connectionForSQLEditorTab = (tab: SQLEditorTab) => {
+export const getConnectionForSQLEditorTab = (tab: SQLEditorTab) => {
   const target: {
     instance: InstanceResource | undefined;
     database: ComposedDatabase | undefined;
@@ -98,11 +95,6 @@ export const isSimilarSQLEditorTab = (
   return true;
 };
 
-export const isSimilarToDefaultSQLEditorTabTitle = (title: string) => {
-  const regex = /(^|\s)(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/;
-  return regex.test(title);
-};
-
 export const suggestedTabTitleForSQLEditorConnection = (
   conn: SQLEditorConnection
 ) => {
@@ -118,7 +110,7 @@ export const suggestedTabTitleForSQLEditorConnection = (
 };
 
 export const isConnectedSQLEditorTab = (tab: SQLEditorTab) => {
-  const { instance, database } = connectionForSQLEditorTab(tab);
+  const { instance, database } = getConnectionForSQLEditorTab(tab);
   if (!instance) {
     return false;
   }
@@ -131,45 +123,6 @@ export const isConnectedSQLEditorTab = (tab: SQLEditorTab) => {
     return true;
   }
   return database && isValidDatabaseName(database.name);
-};
-
-export const tryConnectToCoreSQLEditorTab = (
-  tab: CoreSQLEditorTab,
-  overrideTitle = true,
-  newTab = false
-) => {
-  const tabStore = useSQLEditorTabStore();
-  if (newTab) {
-    tabStore.addTab({}, true);
-  }
-
-  const currentTab = tabStore.currentTab;
-  if (currentTab) {
-    if (isSimilarSQLEditorTab(tab, currentTab)) {
-      // Don't go further if the connection doesn't change.
-      return;
-    }
-    tabStore.updateCurrentTab(tab);
-    if (
-      overrideTitle &&
-      isSimilarToDefaultSQLEditorTabTitle(currentTab.title)
-    ) {
-      const title = suggestedTabTitleForSQLEditorConnection(tab.connection);
-      tabStore.updateCurrentTab({
-        title,
-      });
-    }
-    return;
-  }
-
-  // Otherwise select or add a new tab and set its connection.
-  const title = suggestedTabTitleForSQLEditorConnection(tab.connection);
-  tabStore.selectOrAddSimilarNewTab(
-    tab,
-    false /* beside */,
-    title /* defaultTabTitle */
-  );
-  tabStore.updateCurrentTab(tab);
 };
 
 export const getAdminDataSourceRestrictionOfDatabase = (

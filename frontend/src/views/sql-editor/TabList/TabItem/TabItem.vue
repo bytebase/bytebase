@@ -36,7 +36,7 @@
 import { computed, reactive } from "vue";
 import { useSQLEditorTabStore } from "@/store";
 import { type SQLEditorTab, UNKNOWN_ID } from "@/types";
-import { connectionForSQLEditorTab, hexToRgb } from "@/utils";
+import { getConnectionForSQLEditorTab, hexToRgb } from "@/utils";
 import AdminLabel from "./AdminLabel.vue";
 import Label from "./Label.vue";
 import Prefix from "./Prefix.vue";
@@ -65,7 +65,7 @@ const tabStore = useSQLEditorTabStore();
 const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
 
 const environment = computed(() => {
-  const { database } = connectionForSQLEditorTab(props.tab);
+  const { database } = getConnectionForSQLEditorTab(props.tab);
   const environment = database?.effectiveEnvironmentEntity;
   if (environment?.id === String(UNKNOWN_ID)) {
     return;

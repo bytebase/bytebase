@@ -8,7 +8,7 @@ import { UnlinkIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import { type SQLEditorTab } from "@/types";
-import { connectionForSQLEditorTab, isConnectedSQLEditorTab } from "@/utils";
+import { getConnectionForSQLEditorTab, isConnectedSQLEditorTab } from "@/utils";
 
 const props = defineProps<{
   tab: SQLEditorTab;
@@ -16,5 +16,7 @@ const props = defineProps<{
 
 const connected = computed(() => isConnectedSQLEditorTab(props.tab));
 
-const instance = computed(() => connectionForSQLEditorTab(props.tab).instance);
+const instance = computed(
+  () => getConnectionForSQLEditorTab(props.tab).instance
+);
 </script>

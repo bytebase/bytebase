@@ -256,9 +256,6 @@ const allowSave = computed(() => {
   if (!showSheetsFeature.value) {
     return false;
   }
-  if (isEmptyStatement.value) {
-    return false;
-  }
   const tab = currentTab.value;
   if (!tab) {
     return false;
@@ -274,9 +271,6 @@ const allowSave = computed(() => {
     }
   }
   if (tab.status === "CLEAN") {
-    return false;
-  }
-  if (!tab.connection.database) {
     return false;
   }
 
