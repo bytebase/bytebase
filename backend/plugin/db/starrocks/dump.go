@@ -98,7 +98,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSch
 
 	// Table and view statement.
 	// We have to dump the table before views because of the structure dependency.
-	tables, err := getTablesTx(db, database, dbType)
+	tables, err := getTables(db, database, dbType)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get tables of database %q", database)
 	}
@@ -236,8 +236,8 @@ type eventSchema struct {
 	statement string
 }
 
-// getTablesTx gets all tables of a database using the provided transaction.
-func getTablesTx(db *sql.DB, dbName string, dbType storepb.Engine) ([]*TableSchema, error) {
+// getTables gets all tables of a database using the provided database instance.
+func getTables(db *sql.DB, dbName string, dbType storepb.Engine) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := fmt.Sprintf("SELECT TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA = '%s';", dbName)
 	rows, err := db.Query(query)
