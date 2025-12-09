@@ -20,7 +20,6 @@ import {
   type SQLEditorTreeNode as TreeNode,
 } from "@/types";
 import {
-  emptySQLEditorConnection,
   extractInstanceResourceName,
   extractProjectResourceName,
   hasWorkspacePermissionV2,
@@ -170,8 +169,8 @@ export const setConnection = (
   options: {
     extra?: { worksheet: string; mode: TabMode };
     newTab?: boolean;
-    context?: SQLEditorContext;
-  } = {}
+    context: SQLEditorContext;
+  }
 ) => {
   if (!node) {
     return;
@@ -188,15 +187,15 @@ export const setConnection = (
     newTab = false,
     context,
   } = options;
+  const database = node.meta.target;
   const coreTab: CoreSQLEditorTab = {
-    connection: emptySQLEditorConnection(),
+    connection: {
+      instance: database.instance,
+      database: database.name,
+    },
     ...extra,
   };
-  const conn = coreTab.connection;
-  const database = node.meta.target;
-  conn.instance = database.instance;
-  conn.database = database.name;
-  setDefaultDataSourceForConn(conn, database);
+  setDefaultDataSourceForConn(coreTab.connection, database);
   tryConnectToCoreSQLEditorTab(coreTab, /* overrideTitle */ true, newTab);
 
   if (context) {

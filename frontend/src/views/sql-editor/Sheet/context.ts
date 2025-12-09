@@ -28,7 +28,6 @@ import {
   suggestedTabTitleForSQLEditorConnection,
   useDynamicLocalStorage,
 } from "@/utils";
-import type { SQLEditorContext } from "../context";
 import { useFolderByView } from "./folder";
 import type { SheetViewMode } from "./types";
 
@@ -542,7 +541,6 @@ export const provideSheetContext = () => {
 
 export const openWorksheetByName = async (
   name: string,
-  editorContext: SQLEditorContext,
   forceNewTab = false
 ) => {
   const worksheet = await useWorkSheetStore().getOrFetchWorksheetByName(name);
@@ -559,7 +557,6 @@ export const openWorksheetByName = async (
     return false;
   }
 
-  await editorContext.maybeSwitchProject(worksheet.project);
   const tabStore = useSQLEditorTabStore();
   const openingSheetTab = tabStore.openTabList.find(
     (tab) => tab.worksheet === worksheet.name

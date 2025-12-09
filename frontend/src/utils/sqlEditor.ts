@@ -3,7 +3,6 @@ import { head } from "lodash-es";
 import { v1 as uuidv1 } from "uuid";
 import {
   useDatabaseV1Store,
-  useInstanceResourceByName,
   usePolicyV1Store,
   useSQLEditorTabStore,
 } from "@/store";
@@ -118,17 +117,20 @@ export const suggestedTabTitleForSQLEditorConnection = (
   return parts.join(" ");
 };
 
-export const isDisconnectedSQLEditorTab = (tab: SQLEditorTab) => {
-  const { connection } = tab;
-  if (!connection.instance) {
-    return true;
-  }
-  const { instance } = useInstanceResourceByName(connection.instance);
-  if (instanceV1AllowsCrossDatabaseQuery(instance.value)) {
-    // Connecting to instance directly.
+export const isConnectedSQLEditorTab = (tab: SQLEditorTab) => {
+  const { instance, database } = connectionForSQLEditorTab(tab);
+  if (!instance) {
     return false;
   }
-  return connection.database === "";
+  if (!isValidInstanceName(instance.name)) {
+    return false;
+  }
+
+  if (instanceV1AllowsCrossDatabaseQuery(instance)) {
+    // Connecting to instance directly.
+    return true;
+  }
+  return database && isValidDatabaseName(database.name);
 };
 
 export const tryConnectToCoreSQLEditorTab = (

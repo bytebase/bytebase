@@ -150,6 +150,11 @@ export const useDropdown = (
           }
         );
       }
+      items.push({
+        icon: ListCheckIcon,
+        key: "multi-select",
+        label: t("sql-editor.tab.context-menu.actions.multi-select"),
+      });
     } else {
       if (allowCreateNew.value) {
         items.push({
