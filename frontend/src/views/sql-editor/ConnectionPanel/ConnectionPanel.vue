@@ -19,12 +19,12 @@
           <template #trigger>
             <NButton
               quaternary
-              size="tiny"
+              size="small"
               style="--n-padding: 0 4px"
               @click="$router.push({ name: INSTANCE_ROUTE_DASHBOARD })"
             >
               <template #icon>
-                <SettingsIcon class="w-4 h-4" />
+                <SettingsIcon class="w-4" />
               </template>
             </NButton>
           </template>
