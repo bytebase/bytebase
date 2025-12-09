@@ -9,7 +9,7 @@ import (
 )
 
 func TestSnowflakeRules(t *testing.T) {
-	snowflakeRules := []storepb.SQLReviewRule_Type{
+	for _, rule := range []storepb.SQLReviewRule_Type{
 		storepb.SQLReviewRule_NAMING_TABLE,
 		storepb.SQLReviewRule_TABLE_REQUIRE_PK,
 		storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY,
@@ -24,9 +24,7 @@ func TestSnowflakeRules(t *testing.T) {
 		storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL,
 		storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION,
 		storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY,
-	}
-
-	for _, rule := range snowflakeRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_SNOWFLAKE, false, false /* record */)
+	} {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_SNOWFLAKE, false /* record */)
 	}
 }

@@ -9,7 +9,7 @@ import (
 )
 
 func TestMSSQLRules(t *testing.T) {
-	mssqlRules := []storepb.SQLReviewRule_Type{
+	for _, rule := range []storepb.SQLReviewRule_Type{
 		storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL,
 		storepb.SQLReviewRule_NAMING_TABLE,
 		storepb.SQLReviewRule_NAMING_TABLE_NO_KEYWORD,
@@ -31,17 +31,7 @@ func TestMSSQLRules(t *testing.T) {
 		storepb.SQLReviewRule_STATEMENT_DISALLOW_CROSS_DB_QUERIES,
 		storepb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
 		storepb.SQLReviewRule_INDEX_NOT_REDUNDANT,
+	} {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MSSQL, false /* record */)
 	}
-
-	for _, rule := range mssqlRules {
-		_, needMockData := advisorNeedMockData[rule]
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MSSQL, needMockData, false /* record */)
-	}
-}
-
-// Add SQL review type here if you need metadata for test.
-var advisorNeedMockData = map[storepb.SQLReviewRule_Type]bool{
-	storepb.SQLReviewRule_STATEMENT_DISALLOW_CROSS_DB_QUERIES: true,
-	storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY:       true,
-	storepb.SQLReviewRule_INDEX_NOT_REDUNDANT:                 true,
 }

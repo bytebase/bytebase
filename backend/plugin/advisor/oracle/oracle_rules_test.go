@@ -9,7 +9,7 @@ import (
 )
 
 func TestOracleRules(t *testing.T) {
-	oracleRules := []storepb.SQLReviewRule_Type{
+	for _, rule := range []storepb.SQLReviewRule_Type{
 		storepb.SQLReviewRule_TABLE_REQUIRE_PK,
 		storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY,
 		storepb.SQLReviewRule_NAMING_TABLE,
@@ -31,9 +31,7 @@ func TestOracleRules(t *testing.T) {
 		storepb.SQLReviewRule_NAMING_IDENTIFIER_CASE,
 		storepb.SQLReviewRule_TABLE_COMMENT,
 		storepb.SQLReviewRule_COLUMN_COMMENT,
-	}
-
-	for _, rule := range oracleRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ORACLE, false, false /* record */)
+	} {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_ORACLE, false /* record */)
 	}
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func TestPostgreSQLRules(t *testing.T) {
-	postgresRules := []storepb.SQLReviewRule_Type{
+	for _, rule := range []storepb.SQLReviewRule_Type{
 		storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
 		storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST,
 		storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST,
@@ -61,9 +61,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY,
 		storepb.SQLReviewRule_TABLE_REQUIRE_PK,
 		storepb.SQLReviewRule_NAMING_INDEX_UK,
-	}
-
-	for _, rule := range postgresRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_POSTGRES, true /* needMetaData */, false /* record */)
+	} {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_POSTGRES, false /* record */)
 	}
 }
