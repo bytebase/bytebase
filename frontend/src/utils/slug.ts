@@ -1,8 +1,6 @@
 import {
   getReviewConfigId,
-  projectNamePrefix,
   reviewConfigNamePrefix,
-  worksheetNamePrefix,
 } from "@/store/modules/v1/common";
 import type { SQLReviewPolicy } from "../types";
 import type { IdType } from "../types/id";
@@ -25,17 +23,6 @@ export const idFromSlug = (slug: string): string => {
   const parts = slug.split("-");
   return parts[parts.length - 1];
 };
-
-export function projectNameFromSheetSlug(slug: string): string {
-  const parts = slug.split("-");
-  parts.pop();
-  return `${projectNamePrefix}${parts.join("-")}`;
-}
-
-export function worksheetNameFromSlug(slug: string): string {
-  const parts = slug.split("-");
-  return `${worksheetNamePrefix}${parts[parts.length - 1]}`;
-}
 
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
   return getReviewConfigId(reviewPolicy.id);

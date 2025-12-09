@@ -14,13 +14,6 @@ export const DEBOUNCE_SEARCH_DELAY = 300;
 export const ENTERPRISE_INQUIRE_LINK =
   "https://www.bytebase.com/contact-us?source=console";
 
-// Router
-export type RouterSlug = {
-  issueSlug?: string;
-  connectionSlug?: string;
-  sheetSlug?: string;
-};
-
 // Quick Action Type
 export type Command = {
   id: CommandId;

@@ -245,19 +245,6 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  // === DYNAMIC ROUTE HANDLING ===
-
-  const routerSlug = routerStore.routeSlug(to);
-  if (
-    routerSlug.issueSlug ||
-    routerSlug.sheetSlug ||
-    routerSlug.connectionSlug
-  ) {
-    // Data fetching is handled by respective components
-    next();
-    return;
-  }
-
   // === FALLBACK ===
 
   // Log unexpected route for debugging

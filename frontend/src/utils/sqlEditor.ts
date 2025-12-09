@@ -4,7 +4,6 @@ import { v1 as uuidv1 } from "uuid";
 import { useDatabaseV1Store, usePolicyV1Store } from "@/store";
 import type {
   ComposedDatabase,
-  CoreSQLEditorTab,
   QueryDataSourceType,
   SQLEditorConnection,
   SQLEditorTab,
@@ -77,22 +76,11 @@ export const getConnectionForSQLEditorTab = (tab: SQLEditorTab) => {
   return target;
 };
 
-const isSameSQLEditorConnection = (
+export const isSameSQLEditorConnection = (
   a: SQLEditorConnection,
   b: SQLEditorConnection
 ): boolean => {
   return a.instance === b.instance && a.database === b.database;
-};
-
-export const isSimilarSQLEditorTab = (
-  a: CoreSQLEditorTab,
-  b: CoreSQLEditorTab,
-  ignoreMode?: boolean
-): boolean => {
-  if (!isSameSQLEditorConnection(a.connection, b.connection)) return false;
-  if (a.worksheet !== b.worksheet) return false;
-  if (!ignoreMode && a.mode !== b.mode) return false;
-  return true;
 };
 
 export const suggestedTabTitleForSQLEditorConnection = (
