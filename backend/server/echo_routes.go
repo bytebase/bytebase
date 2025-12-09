@@ -99,6 +99,7 @@ func configureEchoRouters(
 
 	// OAuth login endpoints.
 	e.GET("/oauth/login", echo.WrapHandler(http.HandlerFunc(oauthLogin.ServeLogin)))
+	e.POST("/oauth/login", echo.WrapHandler(http.HandlerFunc(oauthLogin.ServeLoginPost)))
 	e.GET("/oauth/login/:idp", func(c echo.Context) error {
 		oauthLogin.ServeLoginWithIDP(c.Response(), c.Request(), c.Param("idp"))
 		return nil

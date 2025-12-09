@@ -2,12 +2,12 @@ package oauth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
@@ -33,7 +33,7 @@ func NewLoginHandler(store *store.Store, codeStore *AuthCodeStore, authorizeHand
 	}
 }
 
-// ServeLogin handles GET /oauth/login - shows IdP selection or redirects to IdP.
+// ServeLogin handles GET /oauth/login - shows login page with IdP options.
 func (h *LoginHandler) ServeLogin(w http.ResponseWriter, r *http.Request) {
 	state := r.URL.Query().Get("state")
 	if state == "" {
@@ -49,14 +49,7 @@ func (h *LoginHandler) ServeLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If only one IdP, redirect directly
-	if len(idps) == 1 {
-		h.redirectToIDP(w, r, idps[0], state)
-		return
-	}
-
-	// If multiple IdPs, return JSON list for client to choose
-	// (In a full implementation, this would render an HTML page)
+	// Build IdP list for the login page
 	idpList := make([]map[string]string, 0, len(idps))
 	for _, idp := range idps {
 		idpList = append(idpList, map[string]string{
@@ -67,11 +60,136 @@ func (h *LoginHandler) ServeLogin(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]any{
-		"identity_providers": idpList,
-		"message":            "Select an identity provider to continue",
-	})
+	// Render HTML login page
+	h.renderLoginPage(w, state, idpList, "")
+}
+
+// ServeLoginPost handles POST /oauth/login - email/password authentication.
+func (h *LoginHandler) ServeLoginPost(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	state := r.FormValue("state")
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+
+	if state == "" || email == "" || password == "" {
+		http.Error(w, "missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+
+	// Find user by email
+	user, err := h.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		h.renderLoginPageWithError(w, r, state, "Invalid email or password")
+		return
+	}
+	if user == nil {
+		h.renderLoginPageWithError(w, r, state, "Invalid email or password")
+		return
+	}
+
+	// Verify password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		h.renderLoginPageWithError(w, r, state, "Invalid email or password")
+		return
+	}
+
+	// Complete the OAuth flow
+	if err := h.authorizeHandler.CompleteAuthorization(w, r, state, user.ID, user.Email); err != nil {
+		h.renderLoginPageWithError(w, r, state, err.Error())
+	}
+}
+
+func (h *LoginHandler) renderLoginPageWithError(w http.ResponseWriter, r *http.Request, state, errorMsg string) {
+	ctx := r.Context()
+	idps, _ := h.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
+
+	idpList := make([]map[string]string, 0, len(idps))
+	for _, idp := range idps {
+		idpList = append(idpList, map[string]string{
+			"name":  idp.ResourceID,
+			"title": idp.Title,
+			"type":  string(idp.Type),
+			"url":   fmt.Sprintf("%s/oauth/login/%s?state=%s", h.issuer, idp.ResourceID, url.QueryEscape(state)),
+		})
+	}
+
+	h.renderLoginPage(w, state, idpList, errorMsg)
+}
+
+// renderLoginPage renders an HTML login page with email/password form and IdP options.
+func (*LoginHandler) renderLoginPage(w http.ResponseWriter, state string, idps []map[string]string, errorMsg string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	// Build IdP buttons HTML
+	idpButtons := ""
+	for _, idp := range idps {
+		idpButtons += fmt.Sprintf(`<a href="%s" class="idp-btn">Sign in with %s</a>`, idp["url"], idp["title"])
+	}
+
+	divider := ""
+	if len(idps) > 0 {
+		divider = `<div class="divider"><span>or</span></div>`
+	}
+
+	errorHTML := ""
+	if errorMsg != "" {
+		errorHTML = fmt.Sprintf(`<div class="error" style="display:block">%s</div>`, errorMsg)
+	}
+
+	html := fmt.Sprintf(`<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in to Bytebase</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 100%%; max-width: 400px; }
+        h1 { font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center; color: #333; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #555; }
+        input { width: 100%%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+        input:focus { outline: none; border-color: #5865f2; }
+        button { width: 100%%; padding: 0.75rem; background: #5865f2; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; margin-top: 0.5rem; }
+        button:hover { background: #4752c4; }
+        .divider { display: flex; align-items: center; margin: 1.5rem 0; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #ddd; }
+        .divider span { padding: 0 1rem; color: #888; font-size: 0.875rem; }
+        .idp-btn { display: block; width: 100%%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; text-align: center; text-decoration: none; color: #333; margin-bottom: 0.5rem; }
+        .idp-btn:hover { background: #f5f5f5; }
+        .error { color: #dc3545; margin-top: 1rem; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sign in to Bytebase</h1>
+        <form id="loginForm" method="POST" action="/oauth/login">
+            <input type="hidden" name="state" value="%s">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="••••••••">
+            </div>
+            <button type="submit">Sign in</button>
+        </form>
+        %s
+        %s
+        %s
+    </div>
+</body>
+</html>`, state, divider, idpButtons, errorHTML)
+
+	_, _ = w.Write([]byte(html))
 }
 
 // ServeLoginWithIDP handles GET /oauth/login/{idp} - redirects to specific IdP.
