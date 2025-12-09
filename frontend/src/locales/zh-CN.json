@@ -106,7 +106,6 @@
     "learn-more": "了解更多",
     "troubleshoot": "排查问题",
     "schema-version": "Schema 版本",
-    "time": "时间",
     "Default": "默认",
     "definition": "定义",
     "empty": "空",
@@ -357,8 +356,6 @@
     "history": "执行记录",
     "latest-logs": "执行日志",
     "latest": "最新执行",
-    "showing-recent-logs": "显示最近 {count} 条日志",
-    "view-full-logs": "查看完整日志",
     "status": {
       "enqueued": "等待执行。",
       "enqueued-with-rollout-time": "等待执行，{time}后执行。",
@@ -373,6 +370,27 @@
         "description": "Bytebase 根据任务运行情况生成回滚语句，您可以在执行回滚前查看该语句。"
       },
       "no-statement-generated": "生成的回滚语句为空"
+    },
+    "log-type": {
+      "schema-dump": "结构导出",
+      "command-execute": "命令执行",
+      "database-sync": "数据库同步",
+      "status-update": "状态更新",
+      "transaction": "事务",
+      "prior-backup": "预备份",
+      "retry": "重试",
+      "compute-diff": "计算差异"
+    },
+    "log-detail": {
+      "dumping": "导出中...",
+      "syncing": "同步中...",
+      "waiting-to-execute": "等待执行",
+      "executing": "执行中",
+      "status-changed": "状态变更",
+      "backup-completed": "已完成（{count} 个表）",
+      "backing-up": "备份中...",
+      "retry-attempt": "第 {current}/{max} 次尝试",
+      "computing": "计算中..."
     }
   },
   "banner": {
@@ -1068,14 +1086,7 @@
           "prior-backup": "数据预备份",
           "retry-info": "重试信息",
           "compute-diff": "计算差异"
-        },
-        "affected-rows-n": "影响行数：{n}",
-        "prior-backup-tables": "数据预备份相关的表",
-        "status-update": {
-          "waiting": "准备就绪，等待执行",
-          "running": "开始执行"
-        },
-        "retry-info": "锁超时重试（尝试{n}/{m}）。"
+        }
       },
       "task-run-session": {
         "blocking-sessions": {

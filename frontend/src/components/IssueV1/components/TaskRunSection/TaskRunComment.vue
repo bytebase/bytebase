@@ -50,8 +50,8 @@ import {
   flattenTaskV1List,
 } from "@/utils";
 import { extractChangelogUID } from "@/utils/v1/changelog";
+import { displayTaskRunLogEntryType } from "@/utils/v1/taskRunLog";
 import { useIssueContext } from "../../logic";
-import { displayTaskRunLogEntryType } from "./TaskRunLogTable/common";
 
 export type CommentLink = {
   title: string;

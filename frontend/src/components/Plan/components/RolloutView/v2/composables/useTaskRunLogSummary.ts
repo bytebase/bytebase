@@ -12,13 +12,8 @@ import { TaskRunLogEntry_Type } from "@/types/proto-es/v1/rollout_service_pb";
 export interface TaskRunLogSummary {
   totalAffectedRows: bigint;
   hasAffectedRows: boolean;
-  latestEntries: TaskRunLogEntry[];
-  totalEntryCount: number;
-  isTruncated: boolean;
+  entries: TaskRunLogEntry[];
 }
-
-// Limit entries to prevent performance issues with large logs
-export const MAX_DISPLAY_ENTRIES = 100;
 
 export interface UseTaskRunLogSummaryReturn {
   taskRunLog: ComputedRef<TaskRunLog | undefined>;
@@ -93,18 +88,14 @@ export const useTaskRunLogSummary = (
     const result: TaskRunLogSummary = {
       totalAffectedRows: BigInt(0),
       hasAffectedRows: false,
-      latestEntries: [],
-      totalEntryCount: 0,
-      isTruncated: false,
+      entries: [],
     };
 
     if (!log?.entries?.length) return result;
 
-    const entries = log.entries;
-    result.totalEntryCount = entries.length;
-    result.isTruncated = entries.length > MAX_DISPLAY_ENTRIES;
+    result.entries = log.entries;
 
-    for (const entry of entries) {
+    for (const entry of log.entries) {
       if (entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE) {
         const affectedRows = entry.commandExecute?.response?.affectedRows;
         if (affectedRows !== undefined) {
@@ -114,9 +105,6 @@ export const useTaskRunLogSummary = (
       }
     }
 
-    // Get latest entries (limited for performance)
-    const startIndex = Math.max(0, entries.length - MAX_DISPLAY_ENTRIES);
-    result.latestEntries = entries.slice(startIndex);
     return result;
   });
 

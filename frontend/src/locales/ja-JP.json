@@ -106,7 +106,6 @@
     "learn-more": "もっと詳しく知る",
     "troubleshoot": "トラブルシューティング",
     "schema-version": "スキーマのバージョン",
-    "time": "時間",
     "Default": "デフォルト",
     "definition": "意味",
     "empty": "空欄",
@@ -357,8 +356,6 @@
     "history": "タスク実行履歴",
     "latest-logs": "最新のログ",
     "latest": "最新の実行",
-    "showing-recent-logs": "最近の{count}ログを表示しています",
-    "view-full-logs": "完全なログを表示",
     "status": {
       "enqueued": "処刑を待っています。",
       "enqueued-with-rollout-time": "実行を待機しています。{time} の後に実行されます。",
@@ -373,6 +370,27 @@
         "description": "Bytebaseはタスク実行に基づいてロールバックステートメントを生成します。ロールバックを実行する前にステートメントを確認できます。"
       },
       "no-statement-generated": "ロールバックステートメントは生成されません"
+    },
+    "log-type": {
+      "schema-dump": "スキーマダンプ",
+      "command-execute": "コマンド実行",
+      "database-sync": "データベース同期",
+      "status-update": "ステータスアップデート",
+      "transaction": "取引",
+      "prior-backup": "事前のバックアップ",
+      "retry": "リトライ",
+      "compute-diff": "差分計算"
+    },
+    "log-detail": {
+      "dumping": "ダンピング...",
+      "syncing": "同期中...",
+      "waiting-to-execute": "実行待ち",
+      "executing": "実行中",
+      "status-changed": "ステータスが変更されました",
+      "backup-completed": "完了しました（{count} テーブル）",
+      "backing-up": "バックアップ中...",
+      "retry-attempt": "試行 {current}/{max}",
+      "computing": "コンピューティング..."
     }
   },
   "banner": {
@@ -1068,14 +1086,7 @@
           "prior-backup": "事前のバックアップ",
           "retry-info": "情報を再試行します",
           "compute-diff": "Diffを計算します"
-        },
-        "affected-rows-n": "影響行数: {n}",
-        "prior-backup-tables": "以前のバックアップテーブル",
-        "status-update": {
-          "waiting": "実行の準備完了",
-          "running": "処刑される"
-        },
-        "retry-info": "ロックタイムアウトのためにretrying（{n}/{m}を試行）。"
+        }
       },
       "task-run-session": {
         "blocking-sessions": {

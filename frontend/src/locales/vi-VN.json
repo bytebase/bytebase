@@ -106,7 +106,6 @@
     "learn-more": "Tìm hiểu thêm",
     "troubleshoot": "Khắc phục sự cố",
     "schema-version": "Phiên bản lược đồ",
-    "time": "Thời gian",
     "Default": "Mặc định",
     "definition": "Định nghĩa",
     "empty": "Trống",
@@ -357,8 +356,6 @@
     "history": "Lịch sử thực hiện nhiệm vụ",
     "latest-logs": "Nhật ký mới nhất",
     "latest": "Thực hiện mới nhất",
-    "showing-recent-logs": "Hiển thị nhật ký {count} gần đây",
-    "view-full-logs": "Xem nhật ký đầy đủ",
     "status": {
       "enqueued": "Đang chờ thực thi.",
       "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",
@@ -373,6 +370,27 @@
         "description": "Bytebase tạo ra một câu lệnh khôi phục dựa trên tác vụ đang chạy. Bạn có thể xem lại câu lệnh này trước khi thực hiện khôi phục."
       },
       "no-statement-generated": "Không có câu lệnh khôi phục nào được tạo ra"
+    },
+    "log-type": {
+      "schema-dump": "Sơ đồ đổ",
+      "command-execute": "Lệnh thực thi",
+      "database-sync": "Đồng bộ cơ sở dữ liệu",
+      "status-update": "Cập nhật trạng thái",
+      "transaction": "Giao dịch",
+      "prior-backup": "Sao lưu trước",
+      "retry": "Thử lại",
+      "compute-diff": "Tính toán chênh lệch"
+    },
+    "log-detail": {
+      "dumping": "đổ rác...",
+      "syncing": "đang đồng bộ hóa...",
+      "waiting-to-execute": "chờ đợi để thực hiện",
+      "executing": "thực hiện",
+      "status-changed": "trạng thái đã thay đổi",
+      "backup-completed": "đã hoàn thành ({count} bảng)",
+      "backing-up": "đang sao lưu...",
+      "retry-attempt": "nỗ lực {current}/{max}",
+      "computing": "tính toán..."
     }
   },
   "banner": {
@@ -1068,14 +1086,7 @@
           "prior-backup": "Sao lưu trước",
           "retry-info": "Thông tin thử lại",
           "compute-diff": "Tính toán khác"
-        },
-        "affected-rows-n": "Số dòng bị ảnh hưởng: {n}",
-        "prior-backup-tables": "Bảng sao lưu trước",
-        "status-update": {
-          "waiting": "Sẵn sàng để thực thi",
-          "running": "Đang được thực thi"
-        },
-        "retry-info": "Thử lại (cố gắng {n}/{m}) do thời gian chờ khóa."
+        }
       },
       "task-run-session": {
         "blocking-sessions": {
