@@ -22,8 +22,6 @@ import {
   GetReviewConfigRequestSchema,
   ListReviewConfigsRequestSchema,
   ReviewConfigSchema,
-  SQLReviewRule_Type,
-  SQLReviewRuleSchema,
   UpdateReviewConfigRequestSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
 import { usePolicyV1Store } from "./v1/policy";
