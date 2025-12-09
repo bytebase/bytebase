@@ -120,8 +120,7 @@ const handleAddTab = async () => {
     return;
   }
 
-  state.loading;
-
+  state.loading = true;
   try {
     await editorContext.createWorksheet({});
     nextTick(() => {
