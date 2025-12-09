@@ -106,7 +106,6 @@
     "learn-more": "Aprender más",
     "troubleshoot": "Solucionar problemas",
     "schema-version": "Versión de esquema",
-    "time": "Tiempo",
     "Default": "Predeterminado",
     "definition": "Definición",
     "empty": "Vacío",
@@ -357,8 +356,6 @@
     "history": "Historial de ejecución de tareas",
     "latest-logs": "Últimos registros",
     "latest": "Última ejecución",
-    "showing-recent-logs": "Mostrando registros recientes de {count}",
-    "view-full-logs": "Ver registros completos",
     "status": {
       "enqueued": "Esperando a ser ejecutada.",
       "enqueued-with-rollout-time": "Esperando para ejecutar, {time} para ejecutar.",
@@ -373,6 +370,27 @@
         "description": "Bytebase genera una sentencia de reversión según la ejecución de la tarea. Puede revisar la sentencia antes de ejecutar la reversión."
       },
       "no-statement-generated": "No se generó ninguna declaración de reversión"
+    },
+    "log-type": {
+      "schema-dump": "Volcado de esquema",
+      "command-execute": "Comando Ejecutar",
+      "database-sync": "Sincronización de bases de datos",
+      "status-update": "Actualización de estado",
+      "transaction": "Transacción",
+      "prior-backup": "Copia de seguridad previa",
+      "retry": "Rever",
+      "compute-diff": "Calcular diferencia"
+    },
+    "log-detail": {
+      "dumping": "dumping...",
+      "syncing": "sincronizando...",
+      "waiting-to-execute": "esperando para ejecutar",
+      "executing": "ejecutando",
+      "status-changed": "estado cambiado",
+      "backup-completed": "completadas ({count} tablas)",
+      "backing-up": "haciendo copia de seguridad...",
+      "retry-attempt": "intento {current}/{max}",
+      "computing": "computación..."
     }
   },
   "banner": {
@@ -1068,14 +1086,7 @@
           "prior-backup": "Copia de seguridad previa",
           "retry-info": "Reintento de información",
           "compute-diff": "Calcular diff"
-        },
-        "affected-rows-n": "Filas afectadas: {n}",
-        "prior-backup-tables": "Tablas de respaldo anteriores",
-        "status-update": {
-          "waiting": "Listo para ser ejecutado",
-          "running": "Ser ejecutado"
-        },
-        "retry-info": "Vuelto (intento {n}/{m}) debido al tiempo de espera de bloqueo."
+        }
       },
       "task-run-session": {
         "blocking-sessions": {
