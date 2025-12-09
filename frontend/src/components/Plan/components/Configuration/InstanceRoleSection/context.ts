@@ -58,12 +58,12 @@ export const provideInstanceRoleSettingContext = (refs: {
     );
     if (!allDatabasesArePostgres) return false;
 
-    // Check if this is a DDL or DML change
+    // Check if this is a database change spec.
     if (selectedSpec.value.config?.case !== "changeDatabaseConfig") {
       return false;
     }
     const config = selectedSpec.value.config.value;
-    // Show for all MIGRATE types (DDL, DML, Ghost), but not SDL
+    // Show for MIGRATE type, but not SDL.
     return config.type === DatabaseChangeType.MIGRATE;
   });
 

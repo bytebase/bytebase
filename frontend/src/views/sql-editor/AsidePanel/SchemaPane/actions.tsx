@@ -1,3 +1,4 @@
+import { useClipboard } from "@vueuse/core";
 import { cloneDeep, head } from "lodash-es";
 import {
   CodeIcon,
@@ -53,7 +54,6 @@ import {
   isSimilarSQLEditorTab,
   sortByDictionary,
   supportGetStringSchema,
-  toClipboard,
 } from "@/utils";
 import { type SQLEditorEvents, useSQLEditorContext } from "../../context";
 import { keyWithPosition } from "../../EditorCommon";
@@ -132,7 +132,7 @@ export const useActions = () => {
     clonedTab.status = "CLEAN";
     clonedTab.title = params.title ?? "";
 
-    for (const tab of tabStore.tabList) {
+    for (const tab of tabStore.openTabList) {
       if (tab.id === fromTab?.id) {
         continue;
       }
@@ -570,7 +570,13 @@ const applyContentToCurrentTabOrCopyToClipboard = async (
 };
 
 const copyToClipboard = (content: string) => {
-  toClipboard(content).then(() => {
+  const { copy: copyTextToClipboard, isSupported } = useClipboard({
+    legacy: true,
+  });
+  if (!isSupported.value) {
+    return;
+  }
+  copyTextToClipboard(content).then(() => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

@@ -24,6 +24,9 @@ export const CEL_ATTRIBUTE_REQUEST_EXPIRATION_DAYS = "request.expiration_days";
 export const CEL_ATTRIBUTE_REQUEST_ROLE = "request.role";
 export const CEL_ATTRIBUTE_REQUEST_TIME = "request.time";
 
+// CEL attribute names for risk scope.
+export const CEL_ATTRIBUTE_RISK_LEVEL = "risk.level";
+
 // CEL attribute names for approval scope (deprecated, kept for backward compatibility).
 export const CEL_ATTRIBUTE_LEVEL = "level";
 export const CEL_ATTRIBUTE_SOURCE = "source";

@@ -49,11 +49,10 @@
     </div>
 
     <!-- Line 2: Task run logs -->
-    <TaskRunLogEntries
-      v-if="summary.latestEntries.length > 0"
-      :entries="summary.latestEntries"
+    <TaskRunLogViewer
+      v-if="summary.entries.length > 0"
+      :entries="summary.entries"
       :sheet="sheet"
-      class="pt-1"
     />
   </div>
 </template>
@@ -77,7 +76,7 @@ import Timestamp from "@/components/misc/Timestamp.vue";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type { TaskRunLogSummary } from "./composables/useTaskRunLogSummary";
-import TaskRunLogEntries from "./TaskRunLogEntries.vue";
+import TaskRunLogViewer from "./TaskRunLogViewer.vue";
 
 // Types
 interface StatusConfig {
@@ -151,7 +150,7 @@ const STATUS_CONFIG: Record<Task_Status, StatusConfig> = {
   },
 };
 
-// Props - simplified to only required fields
+// Props
 const props = defineProps<{
   status: Task_Status;
   updateTime?: TimestampType;
@@ -160,6 +159,7 @@ const props = defineProps<{
   duration?: string;
   affectedRowsDisplay?: string;
   summary: TaskRunLogSummary;
+  taskName?: string;
 }>();
 
 const { t } = useI18n();

@@ -106,7 +106,6 @@
     "learn-more": "Learn more",
     "troubleshoot": "Troubleshoot",
     "schema-version": "Schema version",
-    "time": "Time",
     "Default": "Default",
     "definition": "Definition",
     "empty": "Empty",
@@ -371,6 +370,27 @@
         "description": "Bytebase generates a rollback statement based on the task run. You can review the statement before executing the rollback."
       },
       "no-statement-generated": "No rollback statement generated"
+    },
+    "log-type": {
+      "schema-dump": "Schema Dump",
+      "command-execute": "Command Execute",
+      "database-sync": "Database Sync",
+      "status-update": "Status Update",
+      "transaction": "Transaction",
+      "prior-backup": "Prior Backup",
+      "retry": "Retry",
+      "compute-diff": "Compute Diff"
+    },
+    "log-detail": {
+      "dumping": "dumping...",
+      "syncing": "syncing...",
+      "waiting-to-execute": "waiting to execute",
+      "executing": "executing",
+      "status-changed": "status changed",
+      "backup-completed": "completed ({count} tables)",
+      "backing-up": "backing up...",
+      "retry-attempt": "attempt {current}/{max}",
+      "computing": "computing..."
     }
   },
   "banner": {
@@ -1066,14 +1086,7 @@
           "prior-backup": "Prior backup",
           "retry-info": "Retry information",
           "compute-diff": "Compute diff"
-        },
-        "affected-rows-n": "Affected rows: {n}",
-        "prior-backup-tables": "Prior backup tables",
-        "status-update": {
-          "waiting": "Ready to be executed",
-          "running": "Being executed"
-        },
-        "retry-info": "Retrying (attempt {n}/{m}) due to lock timeout."
+        }
       },
       "task-run-session": {
         "blocking-sessions": {
@@ -2028,7 +2041,6 @@
   "sql-editor": {
     "self": "SQL Editor",
     "select-connection": "Please select connections",
-    "search-results": "Search Results",
     "loading-databases": "Loading Databases...",
     "show-databases-without-query-permission": "Show databases without query permissions",
     "loading-data": "Loading Data...",
@@ -2060,7 +2072,7 @@
     },
     "copy-url": "Copy URL",
     "url-copied-to-clipboard": "The URL is copied to your clipboard",
-    "connect-to-a-database": "Connect to a database",
+    "connect-to-a-database": "Connect to database",
     "link-access": "Link access",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
@@ -2149,8 +2161,7 @@
     "result-limit": {
       "self": "Result limit"
     },
-    "n-per-page": "{n} / page",
-    "add-a-new-instance": "Add a new instance",
+    "add-a-new-instance": "Add new instance",
     "web-socket": {
       "errors": {
         "title": "WebSocket connection failed",
@@ -2176,7 +2187,12 @@
     "format-default": "Default",
     "column-display-format": "Column Display Format",
     "next-row": "Next Row",
-    "previous-row": "Previous Row"
+    "previous-row": "Previous Row",
+    "search-scope-column-description": "Column with {type} type. Enter a value and press Enter to jump to the matching row.",
+    "search-scope-row-number-title": "Row number",
+    "search-scope-row-number-description": "Enter a row number to jump to that row.",
+    "scroll-to-top": "Scroll to the top",
+    "scroll-to-bottom": "Scroll to the bottom"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2665,7 +2681,18 @@
         }
       }
     },
-    "risk": {},
+    "risk": {
+      "self": "Risk Center",
+      "description": "Risk assessment automatically evaluates database changes and assigns risk levels based on the type of operation being performed.",
+      "how-it-works": "How it works",
+      "how-it-works-description": "When you create a database change, Bytebase automatically analyzes the SQL statements and assigns a risk level (Low, Moderate, or High) based on predefined rules.",
+      "risk-levels": "Risk Levels",
+      "risk-level-low": "Low risk operations include SELECT queries and minor schema changes that are unlikely to cause issues.",
+      "risk-level-moderate": "Moderate risk operations include standard DDL changes like adding columns or indexes.",
+      "risk-level-high": "High risk operations include destructive changes like DROP TABLE, TRUNCATE, or large-scale data modifications.",
+      "integration": "Integration with Approval Flow",
+      "integration-description": "Risk levels integrate with the Custom Approval system. You can configure approval flows that require different levels of review based on the assessed risk level of a change."
+    },
     "rule": {
       "first-match-wins": "Rules are evaluated in order. First matching rule applies."
     },

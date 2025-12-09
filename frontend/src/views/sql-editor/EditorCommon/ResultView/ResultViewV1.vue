@@ -155,8 +155,8 @@
       </template>
     </div>
 
-    <Drawer :show="!!detail" @close="detail = undefined">
-      <DetailPanel />
+    <Drawer v-if="detail" :show="!!detail" @close="detail = undefined">
+      <DetailPanel :result="viewMode === 'SINGLE-RESULT' ? resultSet.results[0] : filteredResults[detail.set]" />
     </Drawer>
   </NConfigProvider>
 </template>
@@ -204,7 +204,7 @@ import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 
 import type { SQLResultViewContext } from "./context";
 import { provideSQLResultViewContext } from "./context";
-import { provideBinaryFormatContext } from "./DataTable/binary-format-store";
+import { provideBinaryFormatContext } from "./DataTable/common/binary-format-store";
 import DetailPanel from "./DetailPanel";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
@@ -243,7 +243,6 @@ const effectiveQueryDataPolicy = computed(() => {
   return policyStore.getEffectiveQueryDataPolicyForProject(project.value);
 });
 
-const keyword = ref("");
 const detail: SQLResultViewContext["detail"] = ref(undefined);
 
 provideBinaryFormatContext(computed(() => props.contextId));
@@ -339,7 +338,6 @@ const filteredResults = computed(() => {
 provideSQLResultViewContext({
   dark: toRef(props, "dark"),
   disallowCopyingData,
-  keyword,
   detail,
 });
 

@@ -106,7 +106,6 @@
     "learn-more": "Aprender más",
     "troubleshoot": "Solucionar problemas",
     "schema-version": "Versión de esquema",
-    "time": "Tiempo",
     "Default": "Predeterminado",
     "definition": "Definición",
     "empty": "Vacío",
@@ -371,6 +370,27 @@
         "description": "Bytebase genera una sentencia de reversión según la ejecución de la tarea. Puede revisar la sentencia antes de ejecutar la reversión."
       },
       "no-statement-generated": "No se generó ninguna declaración de reversión"
+    },
+    "log-type": {
+      "schema-dump": "Volcado de esquema",
+      "command-execute": "Comando Ejecutar",
+      "database-sync": "Sincronización de bases de datos",
+      "status-update": "Actualización de estado",
+      "transaction": "Transacción",
+      "prior-backup": "Copia de seguridad previa",
+      "retry": "Rever",
+      "compute-diff": "Calcular diferencia"
+    },
+    "log-detail": {
+      "dumping": "dumping...",
+      "syncing": "sincronizando...",
+      "waiting-to-execute": "esperando para ejecutar",
+      "executing": "ejecutando",
+      "status-changed": "estado cambiado",
+      "backup-completed": "completadas ({count} tablas)",
+      "backing-up": "haciendo copia de seguridad...",
+      "retry-attempt": "intento {current}/{max}",
+      "computing": "computación..."
     }
   },
   "banner": {
@@ -1066,14 +1086,7 @@
           "prior-backup": "Copia de seguridad previa",
           "retry-info": "Reintento de información",
           "compute-diff": "Calcular diff"
-        },
-        "affected-rows-n": "Filas afectadas: {n}",
-        "prior-backup-tables": "Tablas de respaldo anteriores",
-        "status-update": {
-          "waiting": "Listo para ser ejecutado",
-          "running": "Ser ejecutado"
-        },
-        "retry-info": "Vuelto (intento {n}/{m}) debido al tiempo de espera de bloqueo."
+        }
       },
       "task-run-session": {
         "blocking-sessions": {
@@ -2028,7 +2041,6 @@
   "sql-editor": {
     "self": "Editor de SQL",
     "select-connection": "Por favor seleccione conexiones",
-    "search-results": "Resultados de búsqueda",
     "loading-databases": "Cargando bases de datos...",
     "show-databases-without-query-permission": "Muestra las bases de datos que no tienen permisos de consulta",
     "loading-data": "Cargando datos...",
@@ -2060,7 +2072,7 @@
     },
     "copy-url": "Copiar URL",
     "url-copied-to-clipboard": "La URL se copia al portapapeles.",
-    "connect-to-a-database": "Conectarse a una base de datos",
+    "connect-to-a-database": "Conectar a base de datos",
     "link-access": "Acceso al enlace",
     "private": "Privado",
     "private-desc": "Solo tú puedes acceder a esta hoja",
@@ -2149,8 +2161,7 @@
     "result-limit": {
       "self": "Límite de resultados"
     },
-    "n-per-page": "{n} / página",
-    "add-a-new-instance": "Agregar una nueva instancia",
+    "add-a-new-instance": "Agregar nueva instancia",
     "web-socket": {
       "errors": {
         "title": "La conexión WebSocket falló",
@@ -2176,7 +2187,12 @@
     "format-default": "Por defecto",
     "column-display-format": "Formato de visualización de columna",
     "next-row": "siguiente fila",
-    "previous-row": "Fila anterior"
+    "previous-row": "Fila anterior",
+    "search-scope-column-description": "Columna de tipo {type}. Ingrese un valor y presione Enter para saltar a la fila coincidente.",
+    "search-scope-row-number-title": "Número de fila",
+    "search-scope-row-number-description": "Ingrese un número de fila para saltar a esa fila.",
+    "scroll-to-top": "Desplazarse hacia arriba",
+    "scroll-to-bottom": "Desplazarse hacia abajo"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2665,7 +2681,18 @@
         }
       }
     },
-    "risk": {},
+    "risk": {
+      "self": "Centro de Riesgos",
+      "description": "La evaluación de riesgos evalúa automáticamente los cambios en la base de datos y asigna niveles de riesgo según el tipo de operación que se realiza.",
+      "how-it-works": "Cómo funciona",
+      "how-it-works-description": "Cuando crea un cambio en la base de datos, Bytebase analiza automáticamente las sentencias SQL y asigna un nivel de riesgo (Bajo, Moderado o Alto) basándose en reglas predefinidas.",
+      "risk-levels": "Niveles de Riesgo",
+      "risk-level-low": "Las operaciones de bajo riesgo incluyen consultas SELECT y cambios menores en el esquema que es poco probable que causen problemas.",
+      "risk-level-moderate": "Las operaciones de riesgo moderado incluyen cambios DDL estándar como agregar columnas o índices.",
+      "risk-level-high": "Las operaciones de alto riesgo incluyen cambios destructivos como DROP TABLE, TRUNCATE o modificaciones de datos a gran escala.",
+      "integration": "Integración con Flujo de Aprobación",
+      "integration-description": "Los niveles de riesgo se integran con el sistema de Aprobación Personalizada. Puede configurar flujos de aprobación que requieran diferentes niveles de revisión según el nivel de riesgo evaluado de un cambio."
+    },
     "rule": {
       "first-match-wins": "Las reglas se evalúan en orden. Se aplica la primera regla coincidente."
     },

@@ -106,7 +106,6 @@
     "learn-more": "もっと詳しく知る",
     "troubleshoot": "トラブルシューティング",
     "schema-version": "スキーマのバージョン",
-    "time": "時間",
     "Default": "デフォルト",
     "definition": "意味",
     "empty": "空欄",
@@ -371,6 +370,27 @@
         "description": "Bytebaseはタスク実行に基づいてロールバックステートメントを生成します。ロールバックを実行する前にステートメントを確認できます。"
       },
       "no-statement-generated": "ロールバックステートメントは生成されません"
+    },
+    "log-type": {
+      "schema-dump": "スキーマダンプ",
+      "command-execute": "コマンド実行",
+      "database-sync": "データベース同期",
+      "status-update": "ステータスアップデート",
+      "transaction": "取引",
+      "prior-backup": "事前のバックアップ",
+      "retry": "リトライ",
+      "compute-diff": "差分計算"
+    },
+    "log-detail": {
+      "dumping": "ダンピング...",
+      "syncing": "同期中...",
+      "waiting-to-execute": "実行待ち",
+      "executing": "実行中",
+      "status-changed": "ステータスが変更されました",
+      "backup-completed": "完了しました（{count} テーブル）",
+      "backing-up": "バックアップ中...",
+      "retry-attempt": "試行 {current}/{max}",
+      "computing": "コンピューティング..."
     }
   },
   "banner": {
@@ -1066,14 +1086,7 @@
           "prior-backup": "事前のバックアップ",
           "retry-info": "情報を再試行します",
           "compute-diff": "Diffを計算します"
-        },
-        "affected-rows-n": "影響行数: {n}",
-        "prior-backup-tables": "以前のバックアップテーブル",
-        "status-update": {
-          "waiting": "実行の準備完了",
-          "running": "処刑される"
-        },
-        "retry-info": "ロックタイムアウトのためにretrying（{n}/{m}を試行）。"
+        }
       },
       "task-run-session": {
         "blocking-sessions": {
@@ -2028,7 +2041,6 @@
   "sql-editor": {
     "self": "SQLエディタ",
     "select-connection": "データ接続を選択してください",
-    "search-results": "の検索結果",
     "loading-databases": "データベース情報をロードしています...",
     "show-databases-without-query-permission": "クエリ権限のないデータベースを表示します",
     "loading-data": "データのロード...",
@@ -2060,7 +2072,7 @@
     },
     "copy-url": "URLをコピー",
     "url-copied-to-clipboard": "URLがクリップボードにコピーされました",
-    "connect-to-a-database": "データベースに接続する",
+    "connect-to-a-database": "データベースに接続",
     "link-access": "リンクアクセス",
     "private": "プライベート",
     "private-desc": "このシートにアクセスできるのはあなただけです",
@@ -2149,8 +2161,7 @@
     "result-limit": {
       "self": "結果の制限"
     },
-    "n-per-page": "{n} / ページ",
-    "add-a-new-instance": "新しいインスタンスを追加する",
+    "add-a-new-instance": "新しいインスタンスを追加",
     "web-socket": {
       "errors": {
         "title": "WebSocket接続に失敗しました",
@@ -2176,7 +2187,12 @@
     "format-default": "デフォルト",
     "column-display-format": "列表示形式",
     "next-row": "次の行",
-    "previous-row": "前の行"
+    "previous-row": "前の行",
+    "search-scope-column-description": "{type}型の列。値を入力してEnterを押すと一致する行にジャンプします。",
+    "search-scope-row-number-title": "行番号",
+    "search-scope-row-number-description": "行番号を入力してその行にジャンプします。",
+    "scroll-to-top": "先頭へスクロール",
+    "scroll-to-bottom": "末尾へスクロール"
   },
   "schema-editor": {
     "self": "スキーマエディタ",
@@ -2665,7 +2681,18 @@
         }
       }
     },
-    "risk": {},
+    "risk": {
+      "self": "リスクセンター",
+      "description": "リスク評価は、データベースの変更を自動的に評価し、実行される操作の種類に基づいてリスクレベルを割り当てます。",
+      "how-it-works": "仕組み",
+      "how-it-works-description": "データベースの変更を作成すると、Bytebaseは自動的にSQL文を分析し、事前定義されたルールに基づいてリスクレベル（低、中、高）を割り当てます。",
+      "risk-levels": "リスクレベル",
+      "risk-level-low": "低リスクの操作には、SELECTクエリや問題を引き起こす可能性が低い軽微なスキーマ変更が含まれます。",
+      "risk-level-moderate": "中リスクの操作には、カラムやインデックスの追加などの標準的なDDL変更が含まれます。",
+      "risk-level-high": "高リスクの操作には、DROP TABLE、TRUNCATE、または大規模なデータ変更などの破壊的な変更が含まれます。",
+      "integration": "承認フローとの統合",
+      "integration-description": "リスクレベルはカスタム承認システムと統合されています。変更の評価されたリスクレベルに基づいて、異なるレベルのレビューを必要とする承認フローを設定できます。"
+    },
     "rule": {
       "first-match-wins": "ルールは順番に評価されます。最初に一致するルールが適用されます。"
     },

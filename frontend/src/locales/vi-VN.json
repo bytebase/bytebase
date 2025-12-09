@@ -106,7 +106,6 @@
     "learn-more": "Tìm hiểu thêm",
     "troubleshoot": "Khắc phục sự cố",
     "schema-version": "Phiên bản lược đồ",
-    "time": "Thời gian",
     "Default": "Mặc định",
     "definition": "Định nghĩa",
     "empty": "Trống",
@@ -371,6 +370,27 @@
         "description": "Bytebase tạo ra một câu lệnh khôi phục dựa trên tác vụ đang chạy. Bạn có thể xem lại câu lệnh này trước khi thực hiện khôi phục."
       },
       "no-statement-generated": "Không có câu lệnh khôi phục nào được tạo ra"
+    },
+    "log-type": {
+      "schema-dump": "Sơ đồ đổ",
+      "command-execute": "Lệnh thực thi",
+      "database-sync": "Đồng bộ cơ sở dữ liệu",
+      "status-update": "Cập nhật trạng thái",
+      "transaction": "Giao dịch",
+      "prior-backup": "Sao lưu trước",
+      "retry": "Thử lại",
+      "compute-diff": "Tính toán chênh lệch"
+    },
+    "log-detail": {
+      "dumping": "đổ rác...",
+      "syncing": "đang đồng bộ hóa...",
+      "waiting-to-execute": "chờ đợi để thực hiện",
+      "executing": "thực hiện",
+      "status-changed": "trạng thái đã thay đổi",
+      "backup-completed": "đã hoàn thành ({count} bảng)",
+      "backing-up": "đang sao lưu...",
+      "retry-attempt": "nỗ lực {current}/{max}",
+      "computing": "tính toán..."
     }
   },
   "banner": {
@@ -1066,14 +1086,7 @@
           "prior-backup": "Sao lưu trước",
           "retry-info": "Thông tin thử lại",
           "compute-diff": "Tính toán khác"
-        },
-        "affected-rows-n": "Số dòng bị ảnh hưởng: {n}",
-        "prior-backup-tables": "Bảng sao lưu trước",
-        "status-update": {
-          "waiting": "Sẵn sàng để thực thi",
-          "running": "Đang được thực thi"
-        },
-        "retry-info": "Thử lại (cố gắng {n}/{m}) do thời gian chờ khóa."
+        }
       },
       "task-run-session": {
         "blocking-sessions": {
@@ -2028,7 +2041,6 @@
   "sql-editor": {
     "self": "Trình soạn thảo SQL",
     "select-connection": "Vui lòng chọn kết nối",
-    "search-results": "Kết quả tìm kiếm",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",
     "show-databases-without-query-permission": "Hiển thị cơ sở dữ liệu không có quyền truy vấn",
     "loading-data": "Đang tải Dữ liệu...",
@@ -2060,7 +2072,7 @@
     },
     "copy-url": "Sao chép URL",
     "url-copied-to-clipboard": "URL đã được sao chép vào bảng nhớ tạm của bạn",
-    "connect-to-a-database": "Kết nối với cơ sở dữ liệu",
+    "connect-to-a-database": "Kết nối cơ sở dữ liệu",
     "link-access": "Truy cập liên kết",
     "private": "Riêng tư",
     "private-desc": "Chỉ bạn mới có thể truy cập trang tính này",
@@ -2149,8 +2161,7 @@
     "result-limit": {
       "self": "Giới hạn kết quả"
     },
-    "n-per-page": "{n} / trang",
-    "add-a-new-instance": "Thêm một phiên bản mới",
+    "add-a-new-instance": "Thêm phiên bản mới",
     "web-socket": {
       "errors": {
         "title": "Kết nối WebSocket không thành công",
@@ -2176,7 +2187,12 @@
     "format-default": "Mặc định",
     "column-display-format": "Định dạng hiển thị cột",
     "next-row": "Dòng tiếp theo",
-    "previous-row": "Dòng trước"
+    "previous-row": "Dòng trước",
+    "search-scope-column-description": "Cột kiểu {type}. Nhập giá trị và nhấn Enter để chuyển đến dòng khớp.",
+    "search-scope-row-number-title": "Số dòng",
+    "search-scope-row-number-description": "Nhập số dòng để chuyển đến dòng đó.",
+    "scroll-to-top": "Cuộn lên đầu",
+    "scroll-to-bottom": "Cuộn xuống cuối"
   },
   "schema-editor": {
     "self": "Trình soạn thảo lược đồ",
@@ -2665,7 +2681,18 @@
         }
       }
     },
-    "risk": {},
+    "risk": {
+      "self": "Trung tâm Rủi ro",
+      "description": "Đánh giá rủi ro tự động đánh giá các thay đổi cơ sở dữ liệu và phân loại mức độ rủi ro dựa trên loại thao tác được thực hiện.",
+      "how-it-works": "Cách hoạt động",
+      "how-it-works-description": "Khi bạn tạo một thay đổi cơ sở dữ liệu, Bytebase tự động phân tích các câu lệnh SQL và phân loại mức độ rủi ro (Thấp, Trung bình hoặc Cao) dựa trên các quy tắc được xác định trước.",
+      "risk-levels": "Các Mức độ Rủi ro",
+      "risk-level-low": "Các thao tác rủi ro thấp bao gồm các truy vấn SELECT và các thay đổi schema nhỏ không có khả năng gây ra sự cố.",
+      "risk-level-moderate": "Các thao tác rủi ro trung bình bao gồm các thay đổi DDL tiêu chuẩn như thêm cột hoặc chỉ mục.",
+      "risk-level-high": "Các thao tác rủi ro cao bao gồm các thay đổi phá hủy như DROP TABLE, TRUNCATE hoặc sửa đổi dữ liệu quy mô lớn.",
+      "integration": "Tích hợp với Quy trình Phê duyệt",
+      "integration-description": "Các mức độ rủi ro tích hợp với hệ thống Phê duyệt Tùy chỉnh. Bạn có thể cấu hình các quy trình phê duyệt yêu cầu các cấp độ xem xét khác nhau dựa trên mức độ rủi ro được đánh giá của một thay đổi."
+    },
     "rule": {
       "first-match-wins": "Các quy tắc được đánh giá theo thứ tự. Quy tắc phù hợp đầu tiên sẽ được áp dụng."
     },

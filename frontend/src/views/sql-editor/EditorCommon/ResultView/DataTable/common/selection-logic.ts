@@ -1,7 +1,7 @@
-import type { Cell, Row, Table } from "@tanstack/vue-table";
-import { useEventListener } from "@vueuse/core";
+import { useClipboard, useEventListener } from "@vueuse/core";
 import { sortBy } from "lodash-es";
 import {
+  type ComputedRef,
   computed,
   type InjectionKey,
   inject,
@@ -9,19 +9,18 @@ import {
   provide,
   type Ref,
   ref,
-  watch,
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto-es/v1/sql_service_pb";
-import { extractSQLRowValuePlain, isDescendantOf, toClipboard } from "@/utils";
+import { extractSQLRowValuePlain, isDescendantOf } from "@/utils";
 import { useSQLResultViewContext } from "../../context";
 import {
   detectBinaryFormat,
   formatBinaryValue,
   useBinaryFormatContext,
-} from "../binary-format-store";
-import { getColumnType } from "./utils";
+} from "./binary-format-store";
+import type { ResultTableColumn, ResultTableRow } from "./types";
 
 const PREVENT_DISMISS_SELECTION = "bb-prevent-dismiss-selection";
 
@@ -44,9 +43,19 @@ export const KEY = Symbol(
   "bb.sql-editor.result-view.selection"
 ) as InjectionKey<SelectionContext>;
 
-export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
+export const provideSelectionContext = ({
+  rows,
+  columns,
+}: {
+  rows: ComputedRef<ResultTableRow[]>;
+  columns: ComputedRef<ResultTableColumn[]>;
+}) => {
   const { t } = useI18n();
   const { getBinaryFormat } = useBinaryFormatContext();
+
+  const { copy: copyTextToClipboard, isSupported } = useClipboard({
+    legacy: true,
+  });
 
   const copying = ref(false);
   const state = ref<SelectionState>({
@@ -125,11 +134,6 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
     deselect();
   });
 
-  watch(table, deselect, {
-    immediate: true,
-    deep: false,
-  });
-
   const getFormattedValue = ({
     value,
     colIndex,
@@ -158,10 +162,9 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
         });
       }
 
-      const header = table.value.getFlatHeaders()[colIndex];
       const detectedFormat = detectBinaryFormat({
         bytesValue: value.kind.value,
-        columnType: getColumnType(header),
+        columnType: columns.value[colIndex].columnType,
       });
       return formatBinaryValue({
         bytesValue: value.kind.value,
@@ -175,41 +178,39 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
 
   const getValues = () => {
     if (state.value.rows.length === 1 && state.value.columns.length === 1) {
-      const row =
-        table.value.getPrePaginationRowModel().rows[state.value.rows[0]];
+      const row = rows.value[state.value.rows[0]];
       if (!row) {
         return "";
       }
-      const cell = row.getVisibleCells()[state.value.columns[0]];
+      const cell = row.item.values[state.value.columns[0]];
       if (!cell) {
         return "";
       }
 
       // Get the cell value
       return getFormattedValue({
-        value: cell.getValue<RowValue>(),
+        value: cell,
         colIndex: state.value.columns[0],
         rowIndex: state.value.rows[0],
       });
     } else if (state.value.rows.length > 0) {
-      const rows: Row<QueryRow>[] = [];
-      for (const row of state.value.rows) {
-        const d = table.value.getPrePaginationRowModel().rows[row];
+      const data: QueryRow[] = [];
+      for (const rowIndex of state.value.rows) {
+        const d = rows.value[rowIndex].item;
         if (!d) {
           continue;
         }
-        rows.push(d);
+        data.push(d);
       }
-      if (rows.length === 0) {
+      if (data.length === 0) {
         return "";
       }
-      return rows
+      return data
         .map((row, rowIdx) => {
-          const cells = row.getVisibleCells();
-          return cells
+          return row.values
             .map((cell, colIdx) => {
               return getFormattedValue({
-                value: cell.getValue<RowValue>(),
+                value: cell,
                 colIndex: colIdx,
                 rowIndex: state.value.rows[rowIdx],
               });
@@ -218,12 +219,11 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
         })
         .join("\n");
     } else if (state.value.columns.length > 0) {
-      const rows = table.value.getRowModel().rows;
-      const values: Cell<QueryRow, unknown>[][] = [];
-      for (const row of rows) {
-        const cells: Cell<QueryRow, unknown>[] = [];
+      const values: RowValue[][] = [];
+      for (const row of rows.value) {
+        const cells: RowValue[] = [];
         for (const column of state.value.columns) {
-          const cell = row.getVisibleCells()[column];
+          const cell = row.item.values[column];
           if (!cell) continue;
           cells.push(cell);
         }
@@ -237,7 +237,7 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
           cells
             .map((cell, colIdx) => {
               return getFormattedValue({
-                value: cell.getValue<RowValue>(),
+                value: cell,
                 rowIndex: rowIdx,
                 colIndex: state.value.columns[colIdx],
               });
@@ -251,7 +251,7 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
   };
 
   const copy = () => {
-    if (disabled.value) {
+    if (disabled.value || !isSupported.value) {
       return false;
     }
     const values = getValues();
@@ -259,7 +259,7 @@ export const provideSelectionContext = (table: Ref<Table<QueryRow>>) => {
       return false;
     }
     copying.value = true;
-    toClipboard(values)
+    copyTextToClipboard(values)
       .catch((err: any) => {
         const errors = [t("common.failed")];
         if (err && err instanceof Error) {

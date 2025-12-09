@@ -106,7 +106,6 @@
     "learn-more": "了解更多",
     "troubleshoot": "排查问题",
     "schema-version": "Schema 版本",
-    "time": "时间",
     "Default": "默认",
     "definition": "定义",
     "empty": "空",
@@ -371,6 +370,27 @@
         "description": "Bytebase 根据任务运行情况生成回滚语句，您可以在执行回滚前查看该语句。"
       },
       "no-statement-generated": "生成的回滚语句为空"
+    },
+    "log-type": {
+      "schema-dump": "结构导出",
+      "command-execute": "命令执行",
+      "database-sync": "数据库同步",
+      "status-update": "状态更新",
+      "transaction": "事务",
+      "prior-backup": "预备份",
+      "retry": "重试",
+      "compute-diff": "计算差异"
+    },
+    "log-detail": {
+      "dumping": "导出中...",
+      "syncing": "同步中...",
+      "waiting-to-execute": "等待执行",
+      "executing": "执行中",
+      "status-changed": "状态变更",
+      "backup-completed": "已完成（{count} 个表）",
+      "backing-up": "备份中...",
+      "retry-attempt": "第 {current}/{max} 次尝试",
+      "computing": "计算中..."
     }
   },
   "banner": {
@@ -1066,14 +1086,7 @@
           "prior-backup": "数据预备份",
           "retry-info": "重试信息",
           "compute-diff": "计算差异"
-        },
-        "affected-rows-n": "影响行数：{n}",
-        "prior-backup-tables": "数据预备份相关的表",
-        "status-update": {
-          "waiting": "准备就绪，等待执行",
-          "running": "开始执行"
-        },
-        "retry-info": "锁超时重试（尝试{n}/{m}）。"
+        }
       },
       "task-run-session": {
         "blocking-sessions": {
@@ -2028,7 +2041,6 @@
   "sql-editor": {
     "self": "SQL 编辑器",
     "select-connection": "请选择数据连接",
-    "search-results": "搜索结果",
     "loading-databases": "加载数据库信息...",
     "show-databases-without-query-permission": "显示没有查询权限的数据库",
     "loading-data": "加载数据中...",
@@ -2060,7 +2072,7 @@
     },
     "copy-url": "复制 URL",
     "url-copied-to-clipboard": "URL 已复制到剪贴板",
-    "connect-to-a-database": "连接到数据库",
+    "connect-to-a-database": "连接数据库",
     "link-access": "链接访问权限",
     "private": "私有",
     "private-desc": "只有您自己可以访问此工作表",
@@ -2149,8 +2161,7 @@
     "result-limit": {
       "self": "结果限制"
     },
-    "n-per-page": "{n} / 页",
-    "add-a-new-instance": "添加实例",
+    "add-a-new-instance": "添加新实例",
     "web-socket": {
       "errors": {
         "title": "WebSocket 连接失败",
@@ -2176,7 +2187,12 @@
     "format-default": "默认",
     "column-display-format": "列显示格式",
     "next-row": "下一行",
-    "previous-row": "上一行"
+    "previous-row": "上一行",
+    "search-scope-column-description": "{type} 类型的列。输入值并按回车跳转到匹配行。",
+    "search-scope-row-number-title": "行号",
+    "search-scope-row-number-description": "输入行号跳转到指定行。",
+    "scroll-to-top": "滚动到顶部",
+    "scroll-to-bottom": "滚动到底部"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2665,7 +2681,18 @@
         }
       }
     },
-    "risk": {},
+    "risk": {
+      "self": "风险中心",
+      "description": "风险评估会自动评估数据库变更，并根据操作类型分配风险等级。",
+      "how-it-works": "工作原理",
+      "how-it-works-description": "当您创建数据库变更时，Bytebase 会自动分析 SQL 语句，并根据预定义规则分配风险等级（低、中、高）。",
+      "risk-levels": "风险等级",
+      "risk-level-low": "低风险操作包括 SELECT 查询和不太可能造成问题的小型模式变更。",
+      "risk-level-moderate": "中风险操作包括标准 DDL 变更，如添加列或索引。",
+      "risk-level-high": "高风险操作包括破坏性变更，如 DROP TABLE、TRUNCATE 或大规模数据修改。",
+      "integration": "与审批流集成",
+      "integration-description": "风险等级与自定义审批系统集成。您可以配置审批流，根据变更的风险等级要求不同级别的审核。"
+    },
     "rule": {
       "first-match-wins": "规则按顺序评估，第一个匹配的规则将被应用。"
     },

@@ -52,7 +52,7 @@
 import { CodeIcon } from "lucide-vue-next";
 import { NButton, NPopover, NRadio, NRadioGroup } from "naive-ui";
 import { computed } from "vue";
-import { type BinaryFormat } from "../binary-format-store";
+import { type BinaryFormat } from "../common/binary-format-store";
 
 const emit = defineEmits<{
   (e: "update:format", format: BinaryFormat): void;

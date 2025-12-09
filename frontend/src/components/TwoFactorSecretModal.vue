@@ -12,7 +12,7 @@
       <NButton @click="dismissModal">
         {{ $t("common.close") }}
       </NButton>
-      <NButton type="primary" @click="copySecret">
+      <NButton v-if="isSupported" type="primary" @click="copySecret">
         {{ $t("common.copy") }}
       </NButton>
     </div>
@@ -20,11 +20,11 @@
 </template>
 
 <script lang="ts" setup>
+import { useClipboard } from "@vueuse/core";
 import { NButton } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
 import { pushNotification } from "@/store";
-import { toClipboard } from "@/utils";
 
 const props = defineProps({
   secret: {
@@ -43,8 +43,12 @@ const dismissModal = () => {
   emit("close");
 };
 
+const { copy: copyTextToClipboard, isSupported } = useClipboard({
+  legacy: true,
+});
+
 const copySecret = () => {
-  toClipboard(props.secret).then(() => {
+  copyTextToClipboard(props.secret).then(() => {
     pushNotification({
       module: "bytebase",
       style: "INFO",

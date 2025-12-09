@@ -1,12 +1,22 @@
+import { create } from "@bufbuild/protobuf";
 import { useLocalStorage } from "@vueuse/core";
 import Emittery from "emittery";
 import { type IRange } from "monaco-editor";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
-import { computed, inject, provide, ref } from "vue";
-import { useProjectV1Store, useSQLEditorStore } from "@/store";
+import { computed, inject, nextTick, provide, ref } from "vue";
+import {
+  useProjectV1Store,
+  useSQLEditorStore,
+  useWorkSheetStore,
+} from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { isValidProjectName } from "@/types";
 import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
+import {
+  Worksheet_Visibility,
+  WorksheetSchema,
+} from "@/types/proto-es/v1/worksheet_service_pb";
+import { openWorksheetByName } from "@/views/sql-editor/Sheet";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
 
@@ -59,6 +69,13 @@ export type SQLEditorContext = {
 
   maybeSwitchProject: (project: string) => Promise<string | undefined>;
   handleEditorPanelResize: (size: number) => void;
+  createWorksheet: ({
+    title,
+    folders,
+  }: {
+    title?: string;
+    folders?: string[];
+  }) => Promise<void>;
 };
 
 export const KEY = Symbol(
@@ -72,6 +89,8 @@ export const useSQLEditorContext = () => {
 export const provideSQLEditorContext = () => {
   const editorStore = useSQLEditorStore();
   const projectStore = useProjectV1Store();
+  const worksheetStore = useWorkSheetStore();
+  const showConnectionPanel = ref(false);
 
   const aiPanelSize = useLocalStorage(
     "bb.plugin.editor.ai-panel-size",
@@ -93,9 +112,43 @@ export const provideSQLEditorContext = () => {
     };
   });
 
+  const createWorksheet = async ({
+    title = "new worksheet",
+    statement = "",
+    folders = [],
+  }: {
+    title?: string;
+    statement?: string;
+    folders?: string[];
+  }) => {
+    const newWorksheet = await worksheetStore.createWorksheet(
+      create(WorksheetSchema, {
+        title: title,
+        content: new TextEncoder().encode(statement),
+        project: editorStore.project,
+        visibility: Worksheet_Visibility.PRIVATE,
+      })
+    );
+
+    if (folders.length > 0) {
+      await worksheetStore.upsertWorksheetOrganizer(
+        {
+          worksheet: newWorksheet.name,
+          folders: folders,
+        },
+        ["folders"]
+      );
+    }
+
+    nextTick(() => {
+      openWorksheetByName(newWorksheet.name, true);
+      showConnectionPanel.value = true;
+    });
+  };
+
   const context: SQLEditorContext = {
     asidePanelTab: ref("WORKSHEET"),
-    showConnectionPanel: ref(false),
+    showConnectionPanel,
     showAIPanel,
     editorPanelSize,
     schemaViewer: ref(undefined),
@@ -124,6 +177,7 @@ export const provideSQLEditorContext = () => {
       }
       aiPanelSize.value = 1 - size;
     },
+    createWorksheet,
   };
 
   provide(KEY, context);

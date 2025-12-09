@@ -13,7 +13,7 @@
       <Draggable
         id="tab-list"
         ref="tabListRef"
-        v-model="tabStore.tabList"
+        v-model="tabStore.openTabList"
         item-key="id"
         animation="300"
         class="relative flex flex-nowrap overflow-hidden h-9 pt-0.5 hide-scrollbar"
@@ -46,6 +46,7 @@
       >
         <button
           class="bg-gray-200/20 hover:bg-accent/10py-1 px-1.5 border-t border-x rounded-t hover:border-accent"
+          :disabled="state.loading"
           @click="handleAddTab"
         >
           <PlusIcon class="h-5 w-5" stroke-width="2.5" />
@@ -80,22 +81,24 @@ import { useSQLEditorContext } from "../context";
 import BrandingLogoWrapper from "./BrandingLogoWrapper.vue";
 import ContextMenu from "./ContextMenu.vue";
 import { provideTabListContext } from "./context";
-import TabItem from "./TabItem";
+import TabItem from "./TabItem/TabItem.vue";
 
 type LocalState = {
   dragging: boolean;
   hoverTabId: string;
+  loading: boolean;
 };
 
 const tabStore = useSQLEditorTabStore();
+const editorContext = useSQLEditorContext();
 
 const { t } = useI18n();
 const dialog = useDialog();
-const { showConnectionPanel } = useSQLEditorContext();
 
 const state = reactive<LocalState>({
   dragging: false,
   hoverTabId: "",
+  loading: false,
 });
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
@@ -112,21 +115,28 @@ const scrollElement = computed((): HTMLElement | null | undefined => {
   return scrollbarRef.value?.scrollbarInstRef?.containerRef;
 });
 
-const handleAddTab = () => {
-  tabStore.addTab();
+const handleAddTab = async () => {
+  if (state.loading) {
+    return;
+  }
 
-  nextTick(() => {
-    showConnectionPanel.value = true;
-    requestAnimationFrame(() => {
-      const elem = scrollElement.value;
-      if (elem) {
-        elem.scrollTo(elem.scrollWidth, 0);
-      }
+  state.loading = true;
+  try {
+    await editorContext.createWorksheet({});
+    nextTick(() => {
       requestAnimationFrame(() => {
-        recalculateScrollState();
+        const elem = scrollElement.value;
+        if (elem) {
+          elem.scrollTo(elem.scrollWidth, 0);
+        }
+        requestAnimationFrame(() => {
+          recalculateScrollState();
+        });
       });
     });
-  });
+  } finally {
+    state.loading = false;
+  }
 };
 
 const handleRemoveTab = async (tab: SQLEditorTab, focusWhenConfirm = false) => {
@@ -230,7 +240,7 @@ useEmitteryEventListener(
   context.events,
   "close-tab",
   async ({ tab, index, action }) => {
-    const { tabList } = tabStore;
+    const { openTabList } = tabStore;
 
     const remove = async (tab: SQLEditorTab) => {
       await handleRemoveTab(tab, true);
@@ -241,25 +251,25 @@ useEmitteryEventListener(
       await remove(tab);
       return;
     }
-    const max = tabList.length - 1;
+    const max = openTabList.length - 1;
     if (action === "CLOSE_OTHERS") {
       for (let i = max; i > index; i--) {
-        await remove(tabList[i]);
+        await remove(openTabList[i]);
       }
       for (let i = index - 1; i >= 0; i--) {
-        await remove(tabList[i]);
+        await remove(openTabList[i]);
       }
       return;
     }
     if (action === "CLOSE_TO_THE_RIGHT") {
       for (let i = max; i > index; i--) {
-        await remove(tabList[i]);
+        await remove(openTabList[i]);
       }
       return;
     }
     if (action === "CLOSE_SAVED") {
       for (let i = max; i >= 0; i--) {
-        const tab = tabList[i];
+        const tab = openTabList[i];
         if (tab.status === "CLEAN") {
           await remove(tab);
         }
@@ -268,7 +278,7 @@ useEmitteryEventListener(
     }
     if (action === "CLOSE_ALL") {
       for (let i = max; i >= 0; i--) {
-        await remove(tabList[i]);
+        await remove(openTabList[i]);
       }
     }
   }

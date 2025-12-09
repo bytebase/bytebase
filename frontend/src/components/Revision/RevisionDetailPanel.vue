@@ -37,16 +37,17 @@
     />
   </div>
 
-  <div v-if="taskRun" class="my-4">
+  <div v-if="logEntries.length > 0" class="my-4">
     <p class="w-auto flex items-center text-base text-main mb-2">
       {{ $t("issue.task-run.logs") }}
     </p>
-    <TaskRunLogTable :task-run="taskRun" :sheet="sheet" />
+    <TaskRunLogViewer :entries="logEntries" :sheet="sheet" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
+import { computedAsync } from "@vueuse/core";
 import { computed, reactive, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
@@ -54,10 +55,13 @@ import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useRevisionStore, useSheetV1Store } from "@/store";
 import { type ComposedDatabase, getDateForPbTimestampProtoEs } from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import { GetTaskRunRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  GetTaskRunLogRequestSchema,
+  GetTaskRunRequestSchema,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { extractIssueUID, getSheetStatement } from "@/utils";
-import TaskRunLogTable from "../IssueV1/components/TaskRunSection/TaskRunLogTable/TaskRunLogTable.vue";
 import HumanizeDate from "../misc/HumanizeDate.vue";
+import TaskRunLogViewer from "../Plan/components/RolloutView/v2/TaskRunLogViewer.vue";
 
 interface LocalState {
   loading: boolean;
@@ -103,6 +107,17 @@ watch(
   },
   { immediate: true }
 );
+
+// Fetch task run log
+const taskRunLog = computedAsync(async () => {
+  if (!taskRun.value?.name) return undefined;
+  const request = create(GetTaskRunLogRequestSchema, {
+    parent: taskRun.value.name,
+  });
+  return await rolloutServiceClientConnect.getTaskRunLog(request);
+}, undefined);
+
+const logEntries = computed(() => taskRunLog.value?.entries ?? []);
 
 const revision = computed(() =>
   revisionStore.getRevisionByName(props.revisionName)

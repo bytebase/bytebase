@@ -12,11 +12,8 @@ import { TaskRunLogEntry_Type } from "@/types/proto-es/v1/rollout_service_pb";
 export interface TaskRunLogSummary {
   totalAffectedRows: bigint;
   hasAffectedRows: boolean;
-  latestEntries: TaskRunLogEntry[];
+  entries: TaskRunLogEntry[];
 }
-
-// Limit entries to prevent performance issues with large logs
-const MAX_DISPLAY_ENTRIES = 100;
 
 export interface UseTaskRunLogSummaryReturn {
   taskRunLog: ComputedRef<TaskRunLog | undefined>;
@@ -91,10 +88,12 @@ export const useTaskRunLogSummary = (
     const result: TaskRunLogSummary = {
       totalAffectedRows: BigInt(0),
       hasAffectedRows: false,
-      latestEntries: [],
+      entries: [],
     };
 
     if (!log?.entries?.length) return result;
+
+    result.entries = log.entries;
 
     for (const entry of log.entries) {
       if (entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE) {
@@ -106,11 +105,6 @@ export const useTaskRunLogSummary = (
       }
     }
 
-    // Get latest entries (reversed, limited for performance)
-    // Slice from the end to get latest entries, then reverse for display order
-    const entries = log.entries;
-    const startIndex = Math.max(0, entries.length - MAX_DISPLAY_ENTRIES);
-    result.latestEntries = entries.slice(startIndex).reverse();
     return result;
   });
 

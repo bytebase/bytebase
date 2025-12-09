@@ -143,14 +143,6 @@ export const instanceV1HasCreateDatabase = (
   return enginesSupportCreateDatabase().includes(engine);
 };
 
-export const instanceV1HasStructuredQueryResult = (
-  instanceOrEngine: Instance | InstanceResource | Engine
-): boolean => {
-  const engine = engineOfInstanceV1(instanceOrEngine);
-  if (engine === Engine.REDIS) return false;
-  return true;
-};
-
 export const instanceV1HasSSL = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ): boolean => {

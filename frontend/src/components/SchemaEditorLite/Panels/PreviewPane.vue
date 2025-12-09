@@ -89,7 +89,6 @@ const panelHeight = computed(() => {
 
 const mocked = toRef(props, "mocked");
 
-// Simple replacement for useQuery to avoid @tanstack/vue-query dependency
 const status = ref<"pending" | "success" | "error">("success");
 const data = ref<string>("");
 const error = ref<Error | null>(null);

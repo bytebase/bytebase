@@ -43,6 +43,7 @@ import {
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
+import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
 import type { SQLEditorConnection } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
@@ -89,7 +90,7 @@ const {
 useRouteChangeGuard(
   computed(() => {
     return (
-      tabStore.tabList.find(
+      tabStore.openTabList.find(
         (tab) => !!tab?.worksheet && tab.status === "DIRTY"
       ) !== undefined
     );
@@ -149,7 +150,7 @@ const connect = (connection: SQLEditorConnection) => {
     /* defaultTitle */ suggestedTabTitleForSQLEditorConnection(connection),
     /* ignoreMode */ true
   );
-  if (currentTab.mode === "ADMIN") {
+  if (currentTab?.mode === "ADMIN") {
     // Don't enter ADMIN mode initially
     tabStore.updateCurrentTab({
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -158,7 +159,7 @@ const connect = (connection: SQLEditorConnection) => {
 };
 
 const switchWorksheet = async (sheetName: string) => {
-  const openingSheetTab = tabStore.tabList.find(
+  const openingSheetTab = tabStore.openTabList.find(
     (tab) => tab.worksheet == sheetName
   );
 
@@ -254,7 +255,7 @@ const prepareConnectionParams = async () => {
     await useDatabaseV1Store().getOrFetchDatabaseByName(databaseName);
   await maybeSwitchProject(database.project);
   if (!isDatabaseV1Queryable(database)) {
-    const tabs = tabStore.tabList.filter(
+    const tabs = tabStore.openTabList.filter(
       (tab) => tab.connection.database === database.name
     );
     for (const tab of tabs) {
@@ -432,6 +433,7 @@ onMounted(async () => {
     initializeProject(),
   ]);
 
+  await migrateLegacyCache();
   await tabStore.maybeInitProject();
   await initializeConnectionFromQuery();
   syncURLWithConnection();

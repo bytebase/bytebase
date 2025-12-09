@@ -24,15 +24,12 @@
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
 import { type Duration, DurationSchema } from "@bufbuild/protobuf/wkt";
-import { computedAsync } from "@vueuse/core";
-import { last } from "lodash-es";
 import { type DataTableColumn, NButton, NDataTable } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useCurrentProjectV1, useSheetV1Store } from "@/store";
-import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
+import { useCurrentProjectV1 } from "@/store";
 import {
   getDateForPbTimestampProtoEs,
   getTimeForPbTimestampProtoEs,
@@ -41,16 +38,10 @@ import {
   type TaskRun,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  databaseForTask,
-  humanizeDurationV1,
-  sheetNameOfTaskV1,
-} from "@/utils";
+import { databaseForTask, humanizeDurationV1 } from "@/utils";
 import { useIssueContext } from "../../logic";
 import TaskRunComment from "./TaskRunComment.vue";
 import TaskRunDetail from "./TaskRunDetail.vue";
-import { convertTaskRunLogEntryToFlattenLogEntries } from "./TaskRunLogTable/common";
-import DetailCell from "./TaskRunLogTable/DetailCell";
 import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 
 defineOptions({
@@ -63,14 +54,7 @@ defineProps<{
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
-const taskRunLogStore = useTaskRunLogStore();
 const { selectedTask } = useIssueContext();
-
-const sheet = computedAsync(async () => {
-  return useSheetV1Store().getOrFetchSheetByName(
-    sheetNameOfTaskV1(selectedTask.value)
-  );
-});
 
 const taskRunDetailContext = ref<{
   show: boolean;
@@ -105,24 +89,6 @@ const columnList = computed((): DataTableColumn<TaskRun>[] => {
           <TaskRunComment taskRun={taskRun} />
         </div>
       ),
-    },
-    {
-      key: "detail",
-      title: () => t("common.detail"),
-      width: "20%",
-      className: "",
-      minWidth: 100,
-      resizable: true,
-      render: (taskRun) => {
-        const entry = getFlattenLogEntry(taskRun);
-        return entry ? (
-          <div class="flex flex-row justify-start items-center">
-            <DetailCell entry={entry} sheet={sheet.value} />
-          </div>
-        ) : (
-          "-"
-        );
-      },
     },
     {
       key: "createTime",
@@ -200,15 +166,5 @@ const showDetail = (taskRun: TaskRun) => {
     show: true,
     taskRun,
   };
-};
-
-const getFlattenLogEntry = (taskRun: TaskRun) => {
-  const taskRunLog = taskRunLogStore.getTaskRunLog(taskRun.name);
-  const entry = last(taskRunLog.entries);
-  if (!entry) {
-    return undefined;
-  }
-  const flattenEntry = convertTaskRunLogEntryToFlattenLogEntries(entry, 0);
-  return last(flattenEntry);
 };
 </script>
