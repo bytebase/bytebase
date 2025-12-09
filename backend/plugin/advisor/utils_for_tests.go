@@ -155,7 +155,11 @@ type TestCase struct {
 }
 
 // RunSQLReviewRuleTest helps to test the SQL review rule.
-func RunSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType storepb.Engine, record bool) {
+// The rule parameter should be a complete rule with Type, Level, and Payload already set.
+func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType storepb.Engine, record bool) {
+	require.NotNil(t, rule, "rule must not be nil")
+	require.NotEqual(t, storepb.SQLReviewRule_TYPE_UNSPECIFIED, rule.Type, "rule type must be specified")
+
 	var tests []TestCase
 
 	fileName := strings.Map(func(r rune) rune {
@@ -165,7 +169,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType 
 		default:
 			return r
 		}
-	}, strings.ToLower(rule.String()))
+	}, strings.ToLower(rule.Type.String()))
 	filepath := filepath.Join("test", fileName+".yaml")
 	yamlFile, err := os.Open(filepath)
 	require.NoError(t, err)
@@ -174,7 +178,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType 
 	byteValue, err := io.ReadAll(yamlFile)
 	require.NoError(t, err)
 	err = yaml.Unmarshal(byteValue, &tests)
-	require.NoError(t, err, rule)
+	require.NoError(t, err, rule.Type)
 
 	sm := sheet.NewManager(nil)
 	for i, tc := range tests {
@@ -209,14 +213,8 @@ func RunSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType 
 		require.True(t, ok, "failed to clone metadata")
 		finalMetadata := model.NewDatabaseMetadata(metadata, nil, nil, dbType, isCaseSensitive)
 
-		sqlRule := &storepb.SQLReviewRule{
-			Type:  rule,
-			Level: storepb.SQLReviewRule_WARNING,
-		}
-		err := SetDefaultSQLReviewRulePayload(sqlRule, dbType)
-		require.NoError(t, err)
-
-		ruleList := []*storepb.SQLReviewRule{sqlRule}
+		// Use the rule provided by the caller (already has Type, Level, and Payload set)
+		ruleList := []*storepb.SQLReviewRule{rule}
 
 		checkCtx := Context{
 			Charset:                  "",
@@ -262,7 +260,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType 
 		if record {
 			tests[i].Want = adviceList
 		} else {
-			require.Equalf(t, tc.Want, adviceList, "rule: %s, statements: %s", rule, tc.Statement)
+			require.Equalf(t, tc.Want, adviceList, "rule: %s, statements: %s", rule.Type, tc.Statement)
 		}
 	}
 
