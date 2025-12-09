@@ -962,8 +962,74 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 }
 
 // setV1SQLReviewRulePayload sets the default payload for v1pb rules used in tests.
-func setV1SQLReviewRulePayload(rule *v1pb.SQLReviewRule, _ v1pb.Engine) {
+func setV1SQLReviewRulePayload(rule *v1pb.SQLReviewRule, engine v1pb.Engine) {
 	switch rule.Type {
+	// Rules that don't need payload - no action needed
+	case v1pb.SQLReviewRule_ENGINE_MYSQL_USE_INNODB,
+		v1pb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
+		v1pb.SQLReviewRule_NAMING_FULLY_QUALIFIED,
+		v1pb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL,
+		v1pb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_SELECT,
+		v1pb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE,
+		v1pb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE,
+		v1pb.SQLReviewRule_STATEMENT_DISALLOW_ON_DEL_CASCADE,
+		v1pb.SQLReviewRule_STATEMENT_DISALLOW_RM_TBL_CASCADE,
+		v1pb.SQLReviewRule_STATEMENT_DISALLOW_COMMIT,
+		v1pb.SQLReviewRule_STATEMENT_DISALLOW_LIMIT,
+		v1pb.SQLReviewRule_STATEMENT_DISALLOW_ORDER_BY,
+		v1pb.SQLReviewRule_STATEMENT_MERGE_ALTER_TABLE,
+		v1pb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN,
+		v1pb.SQLReviewRule_STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND,
+		v1pb.SQLReviewRule_STATEMENT_DML_DRY_RUN,
+		v1pb.SQLReviewRule_STATEMENT_DISALLOW_USING_FILESORT,
+		v1pb.SQLReviewRule_STATEMENT_DISALLOW_USING_TEMPORARY,
+		v1pb.SQLReviewRule_TABLE_REQUIRE_PK,
+		v1pb.SQLReviewRule_TABLE_NO_FOREIGN_KEY,
+		v1pb.SQLReviewRule_TABLE_DISALLOW_PARTITION,
+		v1pb.SQLReviewRule_TABLE_DISALLOW_TRIGGER,
+		v1pb.SQLReviewRule_TABLE_NO_DUPLICATE_INDEX,
+		v1pb.SQLReviewRule_COLUMN_NO_NULL,
+		v1pb.SQLReviewRule_COLUMN_DISALLOW_CHANGE_TYPE,
+		v1pb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL,
+		v1pb.SQLReviewRule_COLUMN_DISALLOW_CHANGE,
+		v1pb.SQLReviewRule_COLUMN_DISALLOW_CHANGING_ORDER,
+		v1pb.SQLReviewRule_COLUMN_DISALLOW_DROP_IN_INDEX,
+		v1pb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_INTEGER,
+		v1pb.SQLReviewRule_COLUMN_DISALLOW_SET_CHARSET,
+		v1pb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_UNSIGNED,
+		v1pb.SQLReviewRule_COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT,
+		v1pb.SQLReviewRule_COLUMN_CURRENT_TIME_COUNT_LIMIT,
+		v1pb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT,
+		v1pb.SQLReviewRule_COLUMN_DEFAULT_DISALLOW_VOLATILE,
+		v1pb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY,
+		v1pb.SQLReviewRule_DATABASE_DROP_EMPTY_DATABASE,
+		v1pb.SQLReviewRule_INDEX_NO_DUPLICATE_COLUMN,
+		v1pb.SQLReviewRule_INDEX_PK_TYPE_LIMIT,
+		v1pb.SQLReviewRule_STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT,
+		v1pb.SQLReviewRule_STATEMENT_NON_TRANSACTIONAL,
+		v1pb.SQLReviewRule_INDEX_CREATE_CONCURRENTLY,
+		v1pb.SQLReviewRule_STATEMENT_ADD_CHECK_NOT_VALID,
+		v1pb.SQLReviewRule_STATEMENT_ADD_FOREIGN_KEY_NOT_VALID,
+		v1pb.SQLReviewRule_STATEMENT_DISALLOW_ADD_NOT_NULL,
+		v1pb.SQLReviewRule_STATEMENT_WHERE_NO_EQUAL_NULL,
+		v1pb.SQLReviewRule_INDEX_TYPE_NO_BLOB,
+		v1pb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD,
+		v1pb.SQLReviewRule_NAMING_TABLE_NO_KEYWORD,
+		v1pb.SQLReviewRule_SYSTEM_PROCEDURE_DISALLOW_CREATE,
+		v1pb.SQLReviewRule_SYSTEM_EVENT_DISALLOW_CREATE,
+		v1pb.SQLReviewRule_SYSTEM_VIEW_DISALLOW_CREATE,
+		v1pb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOW_CREATE,
+		v1pb.SQLReviewRule_STATEMENT_CREATE_SPECIFY_SCHEMA,
+		v1pb.SQLReviewRule_STATEMENT_CHECK_SET_ROLE_VARIABLE,
+		v1pb.SQLReviewRule_STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS,
+		v1pb.SQLReviewRule_STATEMENT_JOIN_STRICT_COLUMN_ATTRS,
+		v1pb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME,
+		v1pb.SQLReviewRule_STATEMENT_REQUIRE_ALGORITHM_OPTION,
+		v1pb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION,
+		v1pb.SQLReviewRule_TABLE_DISALLOW_SET_CHARSET,
+		v1pb.SQLReviewRule_STATEMENT_DISALLOW_CROSS_DB_QUERIES,
+		v1pb.SQLReviewRule_INDEX_NOT_REDUNDANT:
+		// No payload needed for these rules
 	case v1pb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION:
 		rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
 			NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
@@ -971,10 +1037,18 @@ func setV1SQLReviewRulePayload(rule *v1pb.SQLReviewRule, _ v1pb.Engine) {
 			},
 		}
 	case v1pb.SQLReviewRule_NAMING_TABLE, v1pb.SQLReviewRule_NAMING_COLUMN:
+		format := "^[a-z]+(_[a-z]+)*$"
+		maxLength := int32(64)
+		switch engine {
+		case v1pb.Engine_SNOWFLAKE:
+			format = "^[A-Z]+(_[A-Z]+)*$"
+		case v1pb.Engine_MSSQL:
+			format = "^[A-Z]([_A-Za-z])*$"
+		}
 		rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
 			NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
-				Format:    "^[a-z]+(_[a-z]+)*$",
-				MaxLength: 64,
+				Format:    format,
+				MaxLength: maxLength,
 			},
 		}
 	case v1pb.SQLReviewRule_NAMING_INDEX_IDX:
@@ -1012,6 +1086,30 @@ func setV1SQLReviewRulePayload(rule *v1pb.SQLReviewRule, _ v1pb.Engine) {
 				MaxLength: 64,
 			},
 		}
+	case v1pb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, v1pb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT:
+		rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
+			NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+				Number: 5,
+			},
+		}
+	case v1pb.SQLReviewRule_STATEMENT_MAXIMUM_JOIN_TABLE_COUNT:
+		rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
+			NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+				Number: 2,
+			},
+		}
+	case v1pb.SQLReviewRule_STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
+		rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
+			NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+				Number: 2,
+			},
+		}
+	case v1pb.SQLReviewRule_STATEMENT_MAXIMUM_LIMIT_VALUE:
+		rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
+			NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+				Number: 1000,
+			},
+		}
 	case v1pb.SQLReviewRule_TABLE_COMMENT, v1pb.SQLReviewRule_COLUMN_COMMENT:
 		rule.Payload = &v1pb.SQLReviewRule_CommentConventionPayload{
 			CommentConventionPayload: &v1pb.SQLReviewRule_CommentConventionRulePayload{
@@ -1037,6 +1135,46 @@ func setV1SQLReviewRulePayload(rule *v1pb.SQLReviewRule, _ v1pb.Engine) {
 				Number: 20,
 			},
 		}
+	case v1pb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH:
+		rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
+			NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+				Number: 2560,
+			},
+		}
+	case v1pb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE:
+		rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
+			NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+				Number: 20,
+			},
+		}
+	case v1pb.SQLReviewRule_TABLE_DISALLOW_DDL:
+		if engine == v1pb.Engine_MSSQL {
+			rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+					List: []string{"MySchema.Identifier"},
+				},
+			}
+		} else {
+			rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+					List: []string{"identifier"},
+				},
+			}
+		}
+	case v1pb.SQLReviewRule_TABLE_DISALLOW_DML:
+		if engine == v1pb.Engine_MSSQL {
+			rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+					List: []string{"MySchema.Identifier"},
+				},
+			}
+		} else {
+			rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+					List: []string{"identifier"},
+				},
+			}
+		}
 	case v1pb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, v1pb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT:
 		rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
 			NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
@@ -1055,7 +1193,35 @@ func setV1SQLReviewRulePayload(rule *v1pb.SQLReviewRule, _ v1pb.Engine) {
 				List: []string{"utf8mb4_0900_ai_ci"},
 			},
 		}
-	default:
-		// No payload for this rule type
+	case v1pb.SQLReviewRule_SYSTEM_COMMENT_LENGTH:
+		rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
+			NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+				Number: 20,
+			},
+		}
+	case v1pb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST:
+		rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"serial", "bigserial", "int", "bigint"},
+			},
+		}
+	case v1pb.SQLReviewRule_INDEX_TYPE_ALLOW_LIST:
+		rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"BTREE", "HASH"},
+			},
+		}
+	case v1pb.SQLReviewRule_NAMING_IDENTIFIER_CASE:
+		rule.Payload = &v1pb.SQLReviewRule_NamingCasePayload{
+			NamingCasePayload: &v1pb.SQLReviewRule_NamingCaseRulePayload{
+				Upper: true,
+			},
+		}
+	case v1pb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST:
+		rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"rand", "uuid", "sleep"},
+			},
+		}
 	}
 }
