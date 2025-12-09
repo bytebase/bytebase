@@ -84,16 +84,26 @@ func (h *AuthorizeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // CompleteAuthorization is called after successful IdP authentication.
 func (h *AuthorizeHandler) CompleteAuthorization(w http.ResponseWriter, r *http.Request, state string, userID int, userEmail string) error {
+	redirectURL, err := h.CompleteAuthorizationURL(state, userID, userEmail)
+	if err != nil {
+		return err
+	}
+	http.Redirect(w, r, redirectURL, http.StatusFound)
+	return nil
+}
+
+// CompleteAuthorizationURL generates the redirect URL with authorization code.
+func (h *AuthorizeHandler) CompleteAuthorizationURL(state string, userID int, userEmail string) (string, error) {
 	// Retrieve pending authorization
 	pending, ok := h.codeStore.ConsumePending(state)
 	if !ok {
-		return errors.New("invalid or expired state")
+		return "", errors.New("invalid or expired state")
 	}
 
 	// Generate authorization code
 	code, err := h.codeStore.GenerateCode()
 	if err != nil {
-		return errors.Wrap(err, "failed to generate code")
+		return "", errors.Wrap(err, "failed to generate code")
 	}
 
 	// Store the authorization code with user info
@@ -110,15 +120,14 @@ func (h *AuthorizeHandler) CompleteAuthorization(w http.ResponseWriter, r *http.
 	}
 	h.codeStore.Store(authCode)
 
-	// Redirect back to client with authorization code
+	// Build redirect URL with authorization code
 	redirectURL, _ := url.Parse(pending.RedirectURI)
 	q := redirectURL.Query()
 	q.Set("code", code)
 	q.Set("state", state)
 	redirectURL.RawQuery = q.Encode()
 
-	http.Redirect(w, r, redirectURL.String(), http.StatusFound)
-	return nil
+	return redirectURL.String(), nil
 }
 
 func (*AuthorizeHandler) errorRedirect(w http.ResponseWriter, _ *http.Request, redirectURI, state, errorCode, errorDesc string) {

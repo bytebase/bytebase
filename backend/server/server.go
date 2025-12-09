@@ -239,7 +239,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	oauthMetadata := mcpoauth.NewMetadataServer(issuer)
 	oauthAuthorize := mcpoauth.NewAuthorizeHandler(stores, oauthCodeStore, issuer)
 	oauthToken := mcpoauth.NewTokenHandler(stores, oauthCodeStore, secret, profile.Mode)
-	oauthLogin := mcpoauth.NewLoginHandler(stores, oauthCodeStore, oauthAuthorize, issuer)
+	oauthLogin := mcpoauth.NewLoginHandler(stores, oauthCodeStore, oauthAuthorize, authInterceptor, issuer)
 	oauthRegister := mcpoauth.NewRegisterHandler(oauthClientStore)
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager, profile)
