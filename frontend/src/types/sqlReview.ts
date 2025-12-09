@@ -8,10 +8,10 @@ import {
   SQLReviewRule_NamingCaseRulePayloadSchema,
   SQLReviewRule_NamingRulePayloadSchema,
   SQLReviewRule_NumberRulePayloadSchema,
-  SQLReviewRuleSchema,
   SQLReviewRule_StringArrayRulePayloadSchema,
   SQLReviewRule_StringRulePayloadSchema,
   SQLReviewRule_Type,
+  SQLReviewRuleSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
