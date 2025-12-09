@@ -1044,6 +1044,8 @@ func setV1SQLReviewRulePayload(rule *v1pb.SQLReviewRule, engine v1pb.Engine) {
 			format = "^[A-Z]+(_[A-Z]+)*$"
 		case v1pb.Engine_MSSQL:
 			format = "^[A-Z]([_A-Za-z])*$"
+		default:
+			// Use default format for other databases
 		}
 		rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
 			NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
@@ -1223,5 +1225,7 @@ func setV1SQLReviewRulePayload(rule *v1pb.SQLReviewRule, engine v1pb.Engine) {
 				List: []string{"rand", "uuid", "sleep"},
 			},
 		}
+	default:
+		// Other rule types don't need payloads or aren't used in tests
 	}
 }
