@@ -30,7 +30,9 @@
         <NButton
           quaternary
           size="tiny"
-          :disabled="checkedNodes.length === 0" @click="handleMultiDelete"
+          type="error"
+          :disabled="checkedNodes.length === 0 || loading"
+          @click="handleMultiDelete"
         >
           <template #icon>
             <TrashIcon />
@@ -40,7 +42,7 @@
         <NButton
           quaternary
           size="tiny"
-          :disabled="checkedWorksheets.length === 0"
+          :disabled="checkedWorksheets.length === 0 || loading"
           @click="showReorgModal = true"
         >
           <template #icon>
@@ -48,7 +50,12 @@
           </template>
           {{ $t('sheet.move-worksheets') }}
         </NButton>
-        <NButton quaternary size="tiny" @click="multiSelectMode = false">
+        <NButton
+          quaternary
+          size="tiny"
+          :disabled="loading"
+          @click="multiSelectMode = false"
+        >
           <template #icon>
             <XIcon />
           </template>
@@ -113,6 +120,7 @@ const mineSheetTreeRef = ref<InstanceType<typeof SheetTree>>();
 const checkedNodes = ref<WorksheetFolderNode[]>([]);
 const multiSelectMode = ref(false);
 const showReorgModal = ref(false);
+const loading = ref(false);
 const checkedWorksheets = computed(() => {
   const worksheets: string[] = [];
   for (const node of checkedNodes.value) {
@@ -197,19 +205,29 @@ const views = computed((): SheetViewMode[] => {
 });
 
 const handleMoveWorksheets = async () => {
-  const folders = folderFormRef.value?.folders ?? [];
-  await batchUpdateWorksheetFolders(
-    checkedWorksheets.value.map((worksheet) => ({
-      name: worksheet,
-      folders,
-    }))
-  );
-  showReorgModal.value = false;
-  multiSelectMode.value = false;
+  loading.value = true;
+  try {
+    const folders = folderFormRef.value?.folders ?? [];
+    await batchUpdateWorksheetFolders(
+      checkedWorksheets.value.map((worksheet) => ({
+        name: worksheet,
+        folders,
+      }))
+    );
+    showReorgModal.value = false;
+    multiSelectMode.value = false;
+  } finally {
+    loading.value = false;
+  }
 };
 
 const handleMultiDelete = async () => {
-  mineSheetTreeRef.value?.handleMultiDelete(checkedNodes.value);
+  loading.value = true;
+  try {
+    await mineSheetTreeRef.value?.handleMultiDelete(checkedNodes.value);
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
