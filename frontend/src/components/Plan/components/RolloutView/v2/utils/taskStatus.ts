@@ -1,93 +1,75 @@
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 
 /**
- * Task statuses that are considered "unfinished"
+ * Task statuses that are considered "actionable" - not yet completed successfully.
+ * Used for filtering unfinished tasks and determining if bulk actions are available.
  */
-export const UNFINISHED_TASK_STATUSES: Task_Status[] = [
+const ACTIONABLE_STATUSES = new Set<Task_Status>([
   Task_Status.NOT_STARTED,
   Task_Status.PENDING,
   Task_Status.RUNNING,
   Task_Status.FAILED,
   Task_Status.CANCELED,
-];
+]);
 
 /**
- * Task statuses that allow task selection for bulk actions
+ * Priority map for task status sorting.
+ * Built from TASK_STATUS_FILTERS to maintain single source of truth.
  */
-export const SELECTABLE_TASK_STATUSES: Task_Status[] = [
-  Task_Status.NOT_STARTED,
-  Task_Status.PENDING,
-  Task_Status.RUNNING,
-  Task_Status.FAILED,
-  Task_Status.CANCELED,
-];
+const STATUS_PRIORITY = new Map<Task_Status, number>(
+  TASK_STATUS_FILTERS.map((status, index) => [status, index])
+);
 
 /**
- * Check if a task is in an unfinished state
+ * Check if a task status is actionable (not completed).
  */
-export const isTaskUnfinished = (task: Task): boolean => {
-  return UNFINISHED_TASK_STATUSES.includes(task.status);
-};
+const isActionableStatus = (status: Task_Status): boolean =>
+  ACTIONABLE_STATUSES.has(status);
 
 /**
- * Check if a task is selectable for bulk actions
+ * Check if a task is in an unfinished/actionable state.
  */
-export const isTaskSelectable = (task: Task): boolean => {
-  return SELECTABLE_TASK_STATUSES.includes(task.status);
-};
+export const isTaskUnfinished = (task: Task): boolean =>
+  isActionableStatus(task.status);
 
 /**
- * Check if a task is running
+ * Check if a task is selectable for bulk actions.
+ * Currently same as unfinished - tasks that aren't done can be acted upon.
  */
-export const isTaskRunning = (task: Task): boolean => {
-  return task.status === Task_Status.RUNNING;
-};
+export const isTaskSelectable = (task: Task): boolean =>
+  isActionableStatus(task.status);
 
 /**
- * Create a Map of task status to sort priority based on TASK_STATUS_FILTERS order.
- * This ensures a single source of truth for task ordering.
- *
- * @returns Map where keys are Task_Status and values are their sort priority (lower = higher priority)
+ * Check if a task is currently running.
  */
-const createTaskStatusPriorityMap = (): Map<Task_Status, number> => {
-  const priorityMap = new Map<Task_Status, number>();
-  TASK_STATUS_FILTERS.forEach((status, index) => {
-    priorityMap.set(status, index);
-  });
-  return priorityMap;
-};
-
-/**
- * Cached task status priority map
- */
-const taskStatusPriorityMap = createTaskStatusPriorityMap();
+export const isTaskRunning = (task: Task): boolean =>
+  task.status === Task_Status.RUNNING;
 
 /**
  * Get the sort priority for a task status.
- * Lower values indicate higher priority in the display order.
- *
- * @param status - The task status
- * @returns The sort priority (0-based index from TASK_STATUS_FILTERS)
+ * Lower values = higher priority in display order.
  */
-export const getTaskStatusPriority = (status: Task_Status): number => {
-  return taskStatusPriorityMap.get(status) ?? Number.MAX_SAFE_INTEGER;
-};
+export const getTaskStatusPriority = (status: Task_Status): number =>
+  STATUS_PRIORITY.get(status) ?? Number.MAX_SAFE_INTEGER;
 
 /**
- * Comparator function for sorting tasks by status priority.
- * Use with Array.sort() to order tasks according to TASK_STATUS_FILTERS.
+ * Compare tasks for sorting: first by status priority, then by update time.
+ * Tasks with same status are sorted most recently updated first.
  *
  * @example
- * const sortedTasks = tasks.slice().sort(compareTasksByStatus);
- *
- * @param a - First task to compare
- * @param b - Second task to compare
- * @returns Negative if a should come before b, positive if b should come before a, 0 if equal
+ * const sorted = [...tasks].sort(compareTasksByStatus);
  */
 export const compareTasksByStatus = (a: Task, b: Task): number => {
-  const priorityA = getTaskStatusPriority(a.status);
-  const priorityB = getTaskStatusPriority(b.status);
-  return priorityA - priorityB;
+  // Primary: status priority (lower = first)
+  const statusDiff =
+    getTaskStatusPriority(a.status) - getTaskStatusPriority(b.status);
+  if (statusDiff !== 0) return statusDiff;
+
+  // Secondary: update time (newer = first)
+  const timeA = getTimeForPbTimestampProtoEs(a.updateTime, 0);
+  const timeB = getTimeForPbTimestampProtoEs(b.updateTime, 0);
+  return timeB - timeA;
 };

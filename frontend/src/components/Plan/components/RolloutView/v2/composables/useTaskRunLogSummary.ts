@@ -21,11 +21,46 @@ export interface UseTaskRunLogSummaryReturn {
   isLoading: ComputedRef<boolean>;
 }
 
+const EMPTY_SUMMARY: TaskRunLogSummary = {
+  totalAffectedRows: BigInt(0),
+  hasAffectedRows: false,
+  entries: [],
+};
+
+const calculateSummary = (log: TaskRunLog | undefined): TaskRunLogSummary => {
+  if (!log?.entries?.length) return EMPTY_SUMMARY;
+
+  let totalAffectedRows = BigInt(0);
+  let hasAffectedRows = false;
+
+  for (const entry of log.entries) {
+    if (entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE) {
+      const affectedRows = entry.commandExecute?.response?.affectedRows;
+      if (affectedRows !== undefined) {
+        totalAffectedRows += affectedRows;
+        hasAffectedRows = true;
+      }
+    }
+  }
+
+  return {
+    totalAffectedRows,
+    hasAffectedRows,
+    entries: log.entries,
+  };
+};
+
 /**
  * Composable for fetching and summarizing task run logs.
- * Provides affected rows count and log entries.
- * Data is cached in the store, so multiple calls with the same taskRun are efficient.
- * Listens to poller's "resource-refresh-completed" event to refetch logs when taskRuns are updated.
+ *
+ * Features:
+ * - Fetches logs when taskRun changes or shouldFetch becomes true
+ * - Auto-refetches when taskRun status changes (to get final results)
+ * - Auto-refetches when poller refreshes taskRuns
+ * - Calculates total affected rows from command executions
+ *
+ * @param taskRun - The task run to fetch logs for
+ * @param shouldFetch - Whether to actively fetch (e.g., only when UI is visible)
  */
 export const useTaskRunLogSummary = (
   taskRun: MaybeRefOrGetter<TaskRun | undefined>,
@@ -35,78 +70,62 @@ export const useTaskRunLogSummary = (
   const taskRunLogStore = useTaskRunLogStore();
   const isLoading = ref(false);
 
-  const fetchLog = async (
-    taskRunName: string,
-    options?: { skipCache?: boolean }
-  ) => {
+  // Helper to get current values
+  const getTaskRunName = () => toValue(taskRun)?.name;
+  const canFetch = () => toValue(shouldFetch) && !!getTaskRunName();
+
+  const fetchLog = async (skipCache = false) => {
+    const taskRunName = getTaskRunName();
+    if (!taskRunName) return;
+
     isLoading.value = true;
     try {
-      await taskRunLogStore.fetchTaskRunLog(taskRunName, options);
+      await taskRunLogStore.fetchTaskRunLog(taskRunName, { skipCache });
     } finally {
       isLoading.value = false;
     }
   };
 
-  // Initial fetch when taskRun changes
+  // Fetch when taskRun name changes or shouldFetch becomes true
   watch(
-    [() => toValue(taskRun)?.name, () => toValue(shouldFetch)],
-    async ([taskRunName, fetch]) => {
-      if (fetch && taskRunName) {
-        await fetchLog(taskRunName);
-      }
+    [getTaskRunName, () => toValue(shouldFetch)],
+    async ([taskRunName, fetch], [, oldFetch]) => {
+      if (!fetch || !taskRunName) return;
+      // Skip cache when transitioning to fetch mode (e.g., item expanded)
+      const skipCache = !oldFetch && fetch;
+      await fetchLog(skipCache);
     },
     { immediate: true }
   );
 
-  // Refetch logs when poller refreshes taskRuns (skip cache to get latest)
-  const unsubscribe = events.on(
-    "resource-refresh-completed",
-    async ({ resources }) => {
-      const taskRunName = toValue(taskRun)?.name;
-      if (
-        resources.includes("taskRuns") &&
-        toValue(shouldFetch) &&
-        taskRunName
-      ) {
-        await fetchLog(taskRunName, { skipCache: true });
+  // Refetch when taskRun status changes to get final results
+  watch(
+    () => toValue(taskRun)?.status,
+    async (newStatus, oldStatus) => {
+      if (newStatus !== oldStatus && canFetch()) {
+        await fetchLog(true);
       }
     }
   );
 
-  onUnmounted(() => {
-    unsubscribe();
-  });
-
-  const taskRunLog = computed(() => {
-    const run = toValue(taskRun);
-    if (!run?.name) return undefined;
-    return taskRunLogStore.getTaskRunLog(run.name);
-  });
-
-  const summary = computed((): TaskRunLogSummary => {
-    const log = taskRunLog.value;
-    const result: TaskRunLogSummary = {
-      totalAffectedRows: BigInt(0),
-      hasAffectedRows: false,
-      entries: [],
-    };
-
-    if (!log?.entries?.length) return result;
-
-    result.entries = log.entries;
-
-    for (const entry of log.entries) {
-      if (entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE) {
-        const affectedRows = entry.commandExecute?.response?.affectedRows;
-        if (affectedRows !== undefined) {
-          result.totalAffectedRows += affectedRows;
-          result.hasAffectedRows = true;
-        }
+  // Refetch when poller refreshes taskRuns
+  const unsubscribe = events.on(
+    "resource-refresh-completed",
+    async ({ resources }) => {
+      if (resources.includes("taskRuns") && canFetch()) {
+        await fetchLog(true);
       }
     }
+  );
 
-    return result;
+  onUnmounted(unsubscribe);
+
+  const taskRunLog = computed(() => {
+    const name = getTaskRunName();
+    return name ? taskRunLogStore.getTaskRunLog(name) : undefined;
   });
+
+  const summary = computed(() => calculateSummary(taskRunLog.value));
 
   return {
     taskRunLog,

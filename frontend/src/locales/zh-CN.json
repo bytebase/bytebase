@@ -89,7 +89,6 @@
     "unassigned": "未指派",
     "new": "创建",
     "add": "添加",
-    "confirm-and-add": "确认并添加",
     "confirm-and-update": "确认并更新",
     "query": "查询",
     "transfer": "转移",
@@ -230,7 +229,6 @@
     "errors": "错误",
     "removed": "已移除",
     "submit": "提交",
-    "start": "开始",
     "draft": "草稿",
     "import": "导入",
     "hard-delete": {
@@ -307,7 +305,6 @@
       "description": "设置任务自动开始运行的特定时间。"
     },
     "select-task": "选择任务 | 选择任务",
-    "selected-n-tasks": "已选择 {n} 个任务",
     "no-tasks-selected": "未选择任何任务",
     "no-runnable-tasks": "没有可运行的任务",
     "no-skippable-tasks": "没有可跳过的任务",
@@ -1218,14 +1215,10 @@
     },
     "stage": {
       "self": "阶段 | 阶段",
-      "start-stage": "开始该阶段",
       "run-stage": "运行阶段",
       "confirm-create": "确定要为此阶段创建任务吗？",
       "back-to-stage": "返回阶段 {stage}",
-      "no-stages": {
-        "self": "没有阶段",
-        "description": "本次发布任务未定义任何阶段。"
-      }
+      "no-stages": {}
     },
     "task": {
       "selected-count": "已选择 {count} 个任务",

@@ -89,7 +89,6 @@
     "unassigned": "割り当てられていない",
     "new": "作成する",
     "add": "追加",
-    "confirm-and-add": "確認して追加",
     "confirm-and-update": "確認して更新する",
     "query": "お問い合わせ",
     "transfer": "移行",
@@ -230,7 +229,6 @@
     "errors": "エラー",
     "removed": "削除されました",
     "submit": "提出する",
-    "start": "始める",
     "draft": "下書き",
     "import": "輸入",
     "hard-delete": {
@@ -307,7 +305,6 @@
       "description": "タスクを自動的に実行開始する日時を指定します。メンテナンス期間やオフピーク時に便利です。"
     },
     "select-task": "タスクを選択 | タスクを選択",
-    "selected-n-tasks": "{n} 個のタスクが選択されました | {n} 個のタスクが選択されました",
     "no-tasks-selected": "タスクが選択されていません",
     "no-runnable-tasks": "実行可能なタスクはありません",
     "no-skippable-tasks": "スキップ可能なタスクはありません",
@@ -1218,14 +1215,10 @@
     },
     "stage": {
       "self": "ステージ | ステージ",
-      "start-stage": "スタートステージ",
       "run-stage": "ランステージ",
       "confirm-create": "このステージのタスクを作成してもよろしいですか？",
       "back-to-stage": "ステージに戻る {stage}",
-      "no-stages": {
-        "self": "ステージなし",
-        "description": "このロールアウトにはステージが定義されていません。"
-      }
+      "no-stages": {}
     },
     "task": {
       "selected-count": "{count} 個のタスクが選択されました | {count} 個のタスクが選択されました",
