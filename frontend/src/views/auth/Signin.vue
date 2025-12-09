@@ -280,6 +280,42 @@ watchEffect(() => {
   }
 });
 
+// MCP OAuth flow support
+const mcpState = computed(() => route.query.mcp_state as string | undefined);
+
+const completeMCPOAuth = async () => {
+  if (!mcpState.value) return;
+
+  try {
+    const response = await fetch("/oauth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ state: mcpState.value }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to complete MCP OAuth");
+    }
+
+    const data = await response.json();
+    if (data.redirectUrl) {
+      // Redirect to MCP client callback
+      window.location.href = data.redirectUrl;
+    }
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "MCP OAuth Error",
+      description: (error as Error).message,
+    });
+  }
+};
+
 onMounted(async () => {
   try {
     // Prepare all identity providers.
@@ -292,6 +328,13 @@ onMounted(async () => {
       description: (error as ConnectError).message,
     });
   }
+
+  // If MCP OAuth flow and user is already logged in, complete the flow immediately
+  if (route.query.mcp_state && authStore.isLoggedIn) {
+    await completeMCPOAuth();
+    return;
+  }
+
   // Check if there is an identity provider in the query string and try to sign in with it.
   if (route.query["idp"]) {
     const idpName = `${idpNamePrefix}${route.query["idp"] as string}`;
@@ -328,9 +371,14 @@ const trySignin = async (request: LoginRequest) => {
   try {
     await authStore.login({
       request,
-      redirect: props.redirect,
+      redirect: !mcpState.value, // Don't redirect if MCP OAuth flow
       redirectUrl: props.redirectUrl,
     });
+
+    // If MCP OAuth flow, complete it
+    if (mcpState.value) {
+      await completeMCPOAuth();
+    }
   } finally {
     state.isLoading = false;
   }
