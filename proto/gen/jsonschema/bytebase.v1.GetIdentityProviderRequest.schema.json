@@ -1,0 +1,14 @@
+{
+  "$id": "bytebase.v1.GetIdentityProviderRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "default": "",
+      "description": "The name of the identity provider to retrieve.\n Format: idps/{idp}",
+      "type": "string"
+    }
+  },
+  "title": "Get Identity Provider Request",
+  "type": "object"
+}

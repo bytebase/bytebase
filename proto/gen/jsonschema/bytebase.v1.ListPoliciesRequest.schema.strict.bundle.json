@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "bytebase.v1.ListPoliciesRequest.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "parent": {
+          "description": "The parent, which owns this collection of policies.\n Format: {resource type}/{resource id}",
+          "type": "string"
+        },
+        "policy_type": {
+          "description": "Filter by specific policy type.",
+          "enum": [
+            "POLICY_TYPE_UNSPECIFIED",
+            "ROLLOUT_POLICY",
+            "MASKING_RULE",
+            "MASKING_EXCEPTION",
+            "TAG",
+            "DATA_SOURCE_QUERY",
+            "DATA_QUERY"
+          ],
+          "title": "Policy Type",
+          "type": "string"
+        },
+        "show_deleted": {
+          "description": "Show deleted policies if specified.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "parent",
+        "show_deleted"
+      ],
+      "title": "List Policies Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.ListPoliciesRequest.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ListPoliciesRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

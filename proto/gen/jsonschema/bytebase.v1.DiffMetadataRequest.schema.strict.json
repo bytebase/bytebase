@@ -1,0 +1,59 @@
+{
+  "$id": "bytebase.v1.DiffMetadataRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "engine": {
+      "description": "The database engine of the schema.",
+      "enum": [
+        "ENGINE_UNSPECIFIED",
+        "CLICKHOUSE",
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "SQLITE",
+        "TIDB",
+        "MONGODB",
+        "REDIS",
+        "ORACLE",
+        "SPANNER",
+        "MSSQL",
+        "REDSHIFT",
+        "MARIADB",
+        "OCEANBASE",
+        "STARROCKS",
+        "DORIS",
+        "HIVE",
+        "ELASTICSEARCH",
+        "BIGQUERY",
+        "DYNAMODB",
+        "DATABRICKS",
+        "COCKROACHDB",
+        "COSMOSDB",
+        "TRINO",
+        "CASSANDRA"
+      ],
+      "title": "Engine",
+      "type": "string"
+    },
+    "source_catalog": {
+      "$ref": "bytebase.v1.DatabaseCatalog.schema.strict.json"
+    },
+    "source_metadata": {
+      "$ref": "bytebase.v1.DatabaseMetadata.schema.strict.json",
+      "description": "The metadata of the source schema."
+    },
+    "target_catalog": {
+      "$ref": "bytebase.v1.DatabaseCatalog.schema.strict.json"
+    },
+    "target_metadata": {
+      "$ref": "bytebase.v1.DatabaseMetadata.schema.strict.json",
+      "description": "The metadata of the target schema."
+    }
+  },
+  "required": [
+    "engine"
+  ],
+  "title": "Diff Metadata Request",
+  "type": "object"
+}

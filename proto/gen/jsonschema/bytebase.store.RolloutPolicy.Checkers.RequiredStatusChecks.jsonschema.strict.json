@@ -1,0 +1,22 @@
+{
+  "$id": "bytebase.store.RolloutPolicy.Checkers.RequiredStatusChecks.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "planCheckEnforcement": {
+      "description": "Enforcement level for plan check results during rollout validation.",
+      "enum": [
+        "PLAN_CHECK_ENFORCEMENT_UNSPECIFIED",
+        "ERROR_ONLY",
+        "STRICT"
+      ],
+      "title": "Plan Check Enforcement",
+      "type": "string"
+    }
+  },
+  "required": [
+    "planCheckEnforcement"
+  ],
+  "title": "Required Status Checks",
+  "type": "object"
+}

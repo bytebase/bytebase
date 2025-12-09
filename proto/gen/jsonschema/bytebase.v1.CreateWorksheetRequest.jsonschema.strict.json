@@ -1,0 +1,13 @@
+{
+  "$id": "bytebase.v1.CreateWorksheetRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "worksheet": {
+      "$ref": "bytebase.v1.Worksheet.jsonschema.strict.json",
+      "description": "The worksheet to create."
+    }
+  },
+  "title": "Create Worksheet Request",
+  "type": "object"
+}

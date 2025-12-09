@@ -1,0 +1,68 @@
+{
+  "$id": "bytebase.store.PlanCheckRunResult.Result.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(sqlReviewReport)$": {
+      "$ref": "bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.schema.json"
+    },
+    "^(sqlSummaryReport)$": {
+      "$ref": "bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.schema.json"
+    }
+  },
+  "properties": {
+    "code": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "content": {
+      "default": "",
+      "type": "string"
+    },
+    "sql_review_report": {
+      "$ref": "bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.schema.json"
+    },
+    "sql_summary_report": {
+      "$ref": "bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.schema.json"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "pattern": "^STATUS_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "SUCCESS",
+            "WARNING",
+            "ERROR"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Status"
+    },
+    "title": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Result",
+  "type": "object"
+}

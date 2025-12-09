@@ -1,0 +1,92 @@
+{
+  "$defs": {
+    "bytebase.v1.ListChangelogsRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(pageSize)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The maximum number of changelogs to return. The service may return fewer\n than this value. If unspecified, at most 10 changelogs will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000."
+        },
+        "^(pageToken)$": {
+          "default": "",
+          "description": "When paginating, all other parameters provided must match\n the call that provided the page token.",
+          "title": "A page token, received from the previous call.\n Provide this to retrieve the subsequent page.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "filter": {
+          "default": "",
+          "description": "The table filter follow the CEL syntax.\n currently, we have one function for CEL:\n - tableExists(database, schema, table): return true if the table exists in\n changed resources.\n\n examples:\n Use\n   tableExists(\"db\", \"public\", \"table1\")\n to filter the changelogs which have the table \"table1\" in the schema\n \"public\" of the database \"db\". For MySQL, the schema is always \"\", such as\n tableExists(\"db\", \"\", \"table1\").\n\n Combine multiple functions with \"\u0026\u0026\" and \"||\", we MUST use the Disjunctive\n Normal Form(DNF). In other words, the CEL expression consists of several\n parts connected by OR operators. For example, the following expression is\n valid:\n (\n  tableExists(\"db\", \"public\", \"table1\") \u0026\u0026\n  tableExists(\"db\", \"public\", \"table2\")\n ) || (\n  tableExists(\"db\", \"public\", \"table3\")\n )",
+          "title": "The filter of the changelogs.\n follow the\n [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)\n syntax. Support filter by type, source or table. For example: table =\n \"tableExists('{database}', '{schema}', '{table}')\" table =\n \"tableExists('db', 'public', 'table1') || tableExists('db', 'public',\n 'table2')\"",
+          "type": "string"
+        },
+        "page_size": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The maximum number of changelogs to return. The service may return fewer\n than this value. If unspecified, at most 10 changelogs will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000."
+        },
+        "page_token": {
+          "default": "",
+          "description": "When paginating, all other parameters provided must match\n the call that provided the page token.",
+          "title": "A page token, received from the previous call.\n Provide this to retrieve the subsequent page.",
+          "type": "string"
+        },
+        "parent": {
+          "default": "",
+          "description": "The parent of the changelogs.\n Format: instances/{instance}/databases/{database}",
+          "type": "string"
+        },
+        "view": {
+          "anyOf": [
+            {
+              "pattern": "^CHANGELOG_VIEW_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "CHANGELOG_VIEW_BASIC",
+                "CHANGELOG_VIEW_FULL"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Changelog View"
+        }
+      },
+      "title": "List Changelogs Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.ListChangelogsRequest.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ListChangelogsRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

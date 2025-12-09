@@ -1,0 +1,13 @@
+{
+  "$id": "bytebase.v1.CreateUserRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "user": {
+      "$ref": "bytebase.v1.User.jsonschema.strict.json",
+      "description": "The user to create."
+    }
+  },
+  "title": "Create User Request",
+  "type": "object"
+}

@@ -1,0 +1,20 @@
+{
+  "$defs": {
+    "bytebase.v1.DeleteUserRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "The name of the user to delete.\n Format: users/{user}",
+          "type": "string"
+        }
+      },
+      "title": "Delete User Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.DeleteUserRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.DeleteUserRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

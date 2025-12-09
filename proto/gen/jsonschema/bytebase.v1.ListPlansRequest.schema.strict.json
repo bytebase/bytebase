@@ -1,0 +1,29 @@
+{
+  "$id": "bytebase.v1.ListPlansRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "page_size": {
+      "description": "The maximum number of plans to return. The service may return fewer than\n this value.\n If unspecified, at most 10 plans will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "page_token": {
+      "description": "When paginating, all other parameters provided to `ListPlans` must match\n the call that provided the page token.",
+      "title": "A page token, received from a previous `ListPlans` call.\n Provide this to retrieve the subsequent page.",
+      "type": "string"
+    },
+    "parent": {
+      "description": "The parent, which owns this collection of plans.\n Format: projects/{project}\n Use \"projects/-\" to list all plans from all projects.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "parent",
+    "page_size",
+    "page_token"
+  ],
+  "title": "List Plans Request",
+  "type": "object"
+}

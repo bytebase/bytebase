@@ -1,0 +1,28 @@
+{
+  "$id": "bytebase.v1.SearchPlansResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(next_page_token)$": {
+      "default": "",
+      "description": "A token, which can be sent as `page_token` to retrieve the next page.\n If this field is omitted, there are no subsequent pages.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "nextPageToken": {
+      "default": "",
+      "description": "A token, which can be sent as `page_token` to retrieve the next page.\n If this field is omitted, there are no subsequent pages.",
+      "type": "string"
+    },
+    "plans": {
+      "description": "The plans from the specified request.",
+      "items": {
+        "$ref": "bytebase.v1.Plan.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Search Plans Response",
+  "type": "object"
+}

@@ -1,0 +1,20 @@
+{
+  "$id": "bytebase.v1.RunPlanChecksRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "description": "The plan to run plan checks.\n Format: projects/{project}/plans/{plan}",
+      "type": "string"
+    },
+    "specId": {
+      "description": "The UUID of the specific spec to run plan checks for.\n This should match the spec.id field in Plan.Spec.\n If not set, all specs in the plan will be used.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "Run Plan Checks Request",
+  "type": "object"
+}

@@ -1,0 +1,154 @@
+{
+  "$defs": {
+    "bytebase.v1.RowValue.Timestamp.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "accuracy": {
+          "description": "The accuracy is the number of digits after the decimal point.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "google_timestamp": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json"
+        }
+      },
+      "required": [
+        "accuracy"
+      ],
+      "title": "Timestamp",
+      "type": "object"
+    },
+    "bytebase.v1.RowValue.TimestampTZ.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "accuracy": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "google_timestamp": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json"
+        },
+        "offset": {
+          "description": "The offset is in seconds east of UTC",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "zone": {
+          "description": "Zone is the time zone abbreviations in timezone database such as \"PDT\",\n \"PST\". https://en.wikipedia.org/wiki/List_of_tz_database_time_zones We\n retrieve the time zone information from the timestamptz field in the\n database. A timestamp is in UTC or epoch time, and with zone info, we can\n convert it to a local time string. Zone and offset are returned by\n time.Time.Zone()",
+          "type": "string"
+        }
+      },
+      "required": [
+        "zone",
+        "offset",
+        "accuracy"
+      ],
+      "title": "TimestampTZ",
+      "type": "object"
+    },
+    "bytebase.v1.RowValue.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "bool_value": {
+          "type": "boolean"
+        },
+        "bytes_value": {
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        },
+        "double_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "float_value": {
+          "anyOf": [
+            {
+              "maximum": 3.4028234663852886e+38,
+              "minimum": -3.4028234663852886e+38,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "int32_value": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "int64_value": {
+          "type": "integer"
+        },
+        "null_value": {
+          "enum": [
+            "NULL_VALUE"
+          ],
+          "title": "Null Value",
+          "type": "string"
+        },
+        "string_value": {
+          "type": "string"
+        },
+        "timestamp_tz_value": {
+          "$ref": "#/$defs/bytebase.v1.RowValue.TimestampTZ.schema.strict.json",
+          "description": "timestamp_tz_value is used for the timestamptz data type, which\n accurately represents the timestamp with location information."
+        },
+        "timestamp_value": {
+          "$ref": "#/$defs/bytebase.v1.RowValue.Timestamp.schema.strict.json",
+          "description": "timestamp_value is used for the timestamp without time zone data type,\n meaning it only includes the timestamp without any time zone or location\n info. Although it may be expressed as a UTC value, it should be seen as a\n timestamp missing location context."
+        },
+        "uint32_value": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "uint64_value": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "value_value": {
+          "$ref": "#/$defs/google.protobuf.Value.schema.strict.json",
+          "description": "value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only."
+        }
+      },
+      "title": "Row Value",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "google.protobuf.Value.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Value"
+    }
+  },
+  "$id": "bytebase.v1.RowValue.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.RowValue.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

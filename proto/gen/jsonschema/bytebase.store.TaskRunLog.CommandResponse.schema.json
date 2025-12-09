@@ -1,0 +1,69 @@
+{
+  "$id": "bytebase.store.TaskRunLog.CommandResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(affectedRows)$": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "^(allAffectedRows)$": {
+      "description": "`all_affected_rows` is the affected rows of each command.\n `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.",
+      "items": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          }
+        ]
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "affected_rows": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "all_affected_rows": {
+      "description": "`all_affected_rows` is the affected rows of each command.\n `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.",
+      "items": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "error": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Command Response",
+  "type": "object"
+}

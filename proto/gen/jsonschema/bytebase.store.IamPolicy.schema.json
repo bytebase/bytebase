@@ -1,0 +1,16 @@
+{
+  "$id": "bytebase.store.IamPolicy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bindings": {
+      "description": "Collection of binding.\n A binding binds one or more members or groups to a single role.",
+      "items": {
+        "$ref": "bytebase.store.Binding.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Iam Policy",
+  "type": "object"
+}

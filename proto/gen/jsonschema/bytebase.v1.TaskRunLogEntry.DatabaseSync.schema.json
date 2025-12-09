@@ -1,0 +1,33 @@
+{
+  "$id": "bytebase.v1.TaskRunLogEntry.DatabaseSync.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Database synchronization details.",
+  "patternProperties": {
+    "^(endTime)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "When the database sync ended."
+    },
+    "^(startTime)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "When the database sync started."
+    }
+  },
+  "properties": {
+    "end_time": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "When the database sync ended."
+    },
+    "error": {
+      "default": "",
+      "description": "Error message if sync failed.",
+      "type": "string"
+    },
+    "start_time": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "When the database sync started."
+    }
+  },
+  "title": "Database Sync",
+  "type": "object"
+}

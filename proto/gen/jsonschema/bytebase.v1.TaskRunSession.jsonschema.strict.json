@@ -1,0 +1,20 @@
+{
+  "$id": "bytebase.v1.TaskRunSession.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "description": "Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session",
+      "type": "string"
+    },
+    "postgres": {
+      "$ref": "bytebase.v1.TaskRunSession.Postgres.jsonschema.strict.json",
+      "description": "PostgreSQL session information."
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "Task Run Session",
+  "type": "object"
+}

@@ -1,0 +1,195 @@
+{
+  "$id": "bytebase.store.WorkspaceProfileSetting.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(brandingLogo)$": {
+      "default": "",
+      "description": "The branding logo as a data URI (e.g. data:image/png;base64,...).",
+      "type": "string"
+    },
+    "^(databaseChangeMode)$": {
+      "anyOf": [
+        {
+          "pattern": "^DATABASE_CHANGE_MODE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "PIPELINE",
+            "EDITOR"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The workspace database change mode.",
+      "title": "Database Change Mode"
+    },
+    "^(directorySyncToken)$": {
+      "default": "",
+      "description": "The token for directory sync authentication.",
+      "type": "string"
+    },
+    "^(disallowPasswordSignin)$": {
+      "default": false,
+      "description": "Whether to disallow password signin. (Except workspace admins)",
+      "type": "boolean"
+    },
+    "^(disallowSignup)$": {
+      "default": false,
+      "description": "Disallow self-service signup, users can only be invited by the owner.",
+      "type": "boolean"
+    },
+    "^(enableAuditLogStdout)$": {
+      "default": false,
+      "description": "Whether to enable audit logging to stdout in structured JSON format.\n Requires TEAM or ENTERPRISE license.",
+      "type": "boolean"
+    },
+    "^(enableMetricCollection)$": {
+      "default": false,
+      "description": "Whether to enable metric collection for the workspace.",
+      "type": "boolean"
+    },
+    "^(enforceIdentityDomain)$": {
+      "default": false,
+      "description": "Only user and group from the domains can be created and login.",
+      "type": "boolean"
+    },
+    "^(externalUrl)$": {
+      "default": "",
+      "description": "The external URL is used for sso authentication callback.",
+      "type": "string"
+    },
+    "^(inactiveSessionTimeout)$": {
+      "$ref": "google.protobuf.Duration.schema.json",
+      "description": "The session expiration time if not activity detected for the user. Value \u003c= 0 means no limit."
+    },
+    "^(maximumRoleExpiration)$": {
+      "$ref": "google.protobuf.Duration.schema.json",
+      "description": "The max duration for role expired."
+    },
+    "^(passwordRestriction)$": {
+      "$ref": "bytebase.store.WorkspaceProfileSetting.PasswordRestriction.schema.json",
+      "description": "Password restriction settings."
+    },
+    "^(require2fa)$": {
+      "default": false,
+      "description": "Require 2FA for all users.",
+      "type": "boolean"
+    },
+    "^(tokenDuration)$": {
+      "$ref": "google.protobuf.Duration.schema.json",
+      "description": "The duration for token."
+    }
+  },
+  "properties": {
+    "announcement": {
+      "$ref": "bytebase.store.WorkspaceProfileSetting.Announcement.schema.json",
+      "description": "The setting of custom announcement"
+    },
+    "branding_logo": {
+      "default": "",
+      "description": "The branding logo as a data URI (e.g. data:image/png;base64,...).",
+      "type": "string"
+    },
+    "database_change_mode": {
+      "anyOf": [
+        {
+          "pattern": "^DATABASE_CHANGE_MODE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "PIPELINE",
+            "EDITOR"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The workspace database change mode.",
+      "title": "Database Change Mode"
+    },
+    "directory_sync_token": {
+      "default": "",
+      "description": "The token for directory sync authentication.",
+      "type": "string"
+    },
+    "disallow_password_signin": {
+      "default": false,
+      "description": "Whether to disallow password signin. (Except workspace admins)",
+      "type": "boolean"
+    },
+    "disallow_signup": {
+      "default": false,
+      "description": "Disallow self-service signup, users can only be invited by the owner.",
+      "type": "boolean"
+    },
+    "domains": {
+      "description": "The workspace domain, e.g., bytebase.com.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "enable_audit_log_stdout": {
+      "default": false,
+      "description": "Whether to enable audit logging to stdout in structured JSON format.\n Requires TEAM or ENTERPRISE license.",
+      "type": "boolean"
+    },
+    "enable_metric_collection": {
+      "default": false,
+      "description": "Whether to enable metric collection for the workspace.",
+      "type": "boolean"
+    },
+    "enforce_identity_domain": {
+      "default": false,
+      "description": "Only user and group from the domains can be created and login.",
+      "type": "boolean"
+    },
+    "external_url": {
+      "default": "",
+      "description": "The external URL is used for sso authentication callback.",
+      "type": "string"
+    },
+    "inactive_session_timeout": {
+      "$ref": "google.protobuf.Duration.schema.json",
+      "description": "The session expiration time if not activity detected for the user. Value \u003c= 0 means no limit."
+    },
+    "maximum_role_expiration": {
+      "$ref": "google.protobuf.Duration.schema.json",
+      "description": "The max duration for role expired."
+    },
+    "password_restriction": {
+      "$ref": "bytebase.store.WorkspaceProfileSetting.PasswordRestriction.schema.json",
+      "description": "Password restriction settings."
+    },
+    "require_2fa": {
+      "default": false,
+      "description": "Require 2FA for all users.",
+      "type": "boolean"
+    },
+    "token_duration": {
+      "$ref": "google.protobuf.Duration.schema.json",
+      "description": "The duration for token."
+    },
+    "watermark": {
+      "default": false,
+      "description": "Whether to display watermark on pages.\n Requires ENTERPRISE license.",
+      "type": "boolean"
+    }
+  },
+  "title": "Workspace Profile Setting",
+  "type": "object"
+}

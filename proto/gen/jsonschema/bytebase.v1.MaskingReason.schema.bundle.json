@@ -1,0 +1,77 @@
+{
+  "$defs": {
+    "bytebase.v1.MaskingReason.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(classificationLevel)$": {
+          "default": "",
+          "description": "Whether masking was due to classification level.",
+          "type": "string"
+        },
+        "^(maskingRuleId)$": {
+          "default": "",
+          "description": "The masking rule ID that matched (if applicable).",
+          "type": "string"
+        },
+        "^(semanticTypeIcon)$": {
+          "default": "",
+          "description": "Icon associated with the semantic type (if any).",
+          "type": "string"
+        },
+        "^(semanticTypeId)$": {
+          "default": "",
+          "description": "The semantic type that triggered masking (e.g., \"SSN\", \"email\", \"phone\").",
+          "type": "string"
+        },
+        "^(semanticTypeTitle)$": {
+          "default": "",
+          "description": "Human-readable semantic type title.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "algorithm": {
+          "default": "",
+          "description": "The masking algorithm used.",
+          "type": "string"
+        },
+        "classification_level": {
+          "default": "",
+          "description": "Whether masking was due to classification level.",
+          "type": "string"
+        },
+        "context": {
+          "default": "",
+          "description": "Additional context (e.g., \"Matched global rule: PII Protection\").",
+          "type": "string"
+        },
+        "masking_rule_id": {
+          "default": "",
+          "description": "The masking rule ID that matched (if applicable).",
+          "type": "string"
+        },
+        "semantic_type_icon": {
+          "default": "",
+          "description": "Icon associated with the semantic type (if any).",
+          "type": "string"
+        },
+        "semantic_type_id": {
+          "default": "",
+          "description": "The semantic type that triggered masking (e.g., \"SSN\", \"email\", \"phone\").",
+          "type": "string"
+        },
+        "semantic_type_title": {
+          "default": "",
+          "description": "Human-readable semantic type title.",
+          "type": "string"
+        }
+      },
+      "title": "Masking Reason",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.MaskingReason.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.MaskingReason.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,161 @@
+{
+  "$defs": {
+    "bytebase.v1.BatchCreateRevisionsResponse.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "revisions": {
+          "description": "The created revisions.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Revision.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Batch Create Revisions Response",
+      "type": "object"
+    },
+    "bytebase.v1.Revision.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(createTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "^(deleteTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "Can be empty."
+        },
+        "^(sheetSha256)$": {
+          "default": "",
+          "description": "The SHA256 hash value of the sheet.",
+          "type": "string"
+        },
+        "^(statementSize)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The size of the statement in bytes."
+        },
+        "^(taskRun)$": {
+          "default": "",
+          "description": "The task run associated with the revision.\n Can be empty.\n Format:\n projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "create_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "delete_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "Can be empty."
+        },
+        "deleter": {
+          "default": "",
+          "description": "Format: users/hello@world.com\n Can be empty.",
+          "type": "string"
+        },
+        "file": {
+          "default": "",
+          "description": "Format: projects/{project}/releases/{release}/files/{id}\n Can be empty.",
+          "type": "string"
+        },
+        "issue": {
+          "default": "",
+          "description": "The issue associated with the revision.\n Can be empty.\n Format: projects/{project}/issues/{issue}",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "Format: instances/{instance}/databases/{database}/revisions/{revision}",
+          "type": "string"
+        },
+        "release": {
+          "default": "",
+          "description": "Format: projects/{project}/releases/{release}\n Can be empty.",
+          "type": "string"
+        },
+        "sheet": {
+          "default": "",
+          "description": "The sheet that holds the content.\n Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "sheet_sha256": {
+          "default": "",
+          "description": "The SHA256 hash value of the sheet.",
+          "type": "string"
+        },
+        "statement": {
+          "default": "",
+          "description": "The statement is used for preview purpose.",
+          "type": "string"
+        },
+        "statement_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The size of the statement in bytes."
+        },
+        "task_run": {
+          "default": "",
+          "description": "The task run associated with the revision.\n Can be empty.\n Format:\n projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "VERSIONED",
+                "DECLARATIVE"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of the revision.",
+          "title": "Type"
+        },
+        "version": {
+          "default": "",
+          "description": "The schema version string for this revision.",
+          "type": "string"
+        }
+      },
+      "title": "Revision",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.BatchCreateRevisionsResponse.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.BatchCreateRevisionsResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

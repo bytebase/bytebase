@@ -1,0 +1,27 @@
+{
+  "$id": "bytebase.v1.AppIMSetting.Feishu.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(appId)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(appSecret)$": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "app_id": {
+      "default": "",
+      "type": "string"
+    },
+    "app_secret": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Feishu",
+  "type": "object"
+}

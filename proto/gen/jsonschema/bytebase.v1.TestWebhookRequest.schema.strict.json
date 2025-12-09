@@ -1,0 +1,20 @@
+{
+  "$id": "bytebase.v1.TestWebhookRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "project": {
+      "description": "The name of the project which owns the webhook to test.\n Format: projects/{project}",
+      "type": "string"
+    },
+    "webhook": {
+      "$ref": "bytebase.v1.Webhook.schema.strict.json",
+      "description": "The webhook to test. Identified by its url."
+    }
+  },
+  "required": [
+    "project"
+  ],
+  "title": "Test Webhook Request",
+  "type": "object"
+}

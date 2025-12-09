@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.v1.BatchParseRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Request message for batch parsing CEL expressions.",
+  "properties": {
+    "expressions": {
+      "description": "The CEL expression strings to parse.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Batch Parse Request",
+  "type": "object"
+}

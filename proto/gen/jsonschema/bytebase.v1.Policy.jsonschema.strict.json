@@ -1,0 +1,71 @@
+{
+  "$id": "bytebase.v1.Policy.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "dataSourceQueryPolicy": {
+      "$ref": "bytebase.v1.DataSourceQueryPolicy.jsonschema.strict.json"
+    },
+    "enforce": {
+      "description": "Whether the policy is enforced.",
+      "type": "boolean"
+    },
+    "inheritFromParent": {
+      "description": "Whether this policy inherits from its parent resource.",
+      "type": "boolean"
+    },
+    "maskingExceptionPolicy": {
+      "$ref": "bytebase.v1.MaskingExceptionPolicy.jsonschema.strict.json"
+    },
+    "maskingRulePolicy": {
+      "$ref": "bytebase.v1.MaskingRulePolicy.jsonschema.strict.json"
+    },
+    "name": {
+      "description": "The name of the policy.\n Format: {resource name}/policies/{policy type}\n Workspace resource name: \"\".\n Environment resource name: environments/environment-id.\n Instance resource name: instances/instance-id.\n Database resource name: instances/instance-id/databases/database-name.",
+      "type": "string"
+    },
+    "queryDataPolicy": {
+      "$ref": "bytebase.v1.QueryDataPolicy.jsonschema.strict.json"
+    },
+    "resourceType": {
+      "description": "The resource type for the policy.",
+      "enum": [
+        "RESOURCE_TYPE_UNSPECIFIED",
+        "WORKSPACE",
+        "ENVIRONMENT",
+        "PROJECT"
+      ],
+      "title": "Policy Resource Type",
+      "type": "string"
+    },
+    "rolloutPolicy": {
+      "$ref": "bytebase.v1.RolloutPolicy.jsonschema.strict.json"
+    },
+    "tagPolicy": {
+      "$ref": "bytebase.v1.TagPolicy.jsonschema.strict.json"
+    },
+    "type": {
+      "description": "The type of policy.",
+      "enum": [
+        "POLICY_TYPE_UNSPECIFIED",
+        "ROLLOUT_POLICY",
+        "MASKING_RULE",
+        "MASKING_EXCEPTION",
+        "TAG",
+        "DATA_SOURCE_QUERY",
+        "DATA_QUERY"
+      ],
+      "title": "Policy Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "inheritFromParent",
+    "type",
+    "enforce",
+    "resourceType"
+  ],
+  "title": "Policy",
+  "type": "object"
+}

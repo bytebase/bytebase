@@ -1,0 +1,14 @@
+{
+  "$id": "bytebase.v1.QueryResult.SyntaxError.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Syntax error with position information for editor highlighting",
+  "properties": {
+    "start_position": {
+      "$ref": "bytebase.v1.Position.schema.strict.json",
+      "description": "Position information for highlighting in editor"
+    }
+  },
+  "title": "Syntax Error",
+  "type": "object"
+}

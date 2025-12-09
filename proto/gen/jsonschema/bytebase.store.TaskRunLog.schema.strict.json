@@ -1,0 +1,75 @@
+{
+  "$id": "bytebase.store.TaskRunLog.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "command_execute": {
+      "$ref": "bytebase.store.TaskRunLog.CommandExecute.schema.strict.json"
+    },
+    "command_response": {
+      "$ref": "bytebase.store.TaskRunLog.CommandResponse.schema.strict.json"
+    },
+    "compute_diff_end": {
+      "$ref": "bytebase.store.TaskRunLog.ComputeDiffEnd.schema.strict.json"
+    },
+    "compute_diff_start": {
+      "$ref": "bytebase.store.TaskRunLog.ComputeDiffStart.schema.strict.json"
+    },
+    "database_sync_end": {
+      "$ref": "bytebase.store.TaskRunLog.DatabaseSyncEnd.schema.strict.json"
+    },
+    "database_sync_start": {
+      "$ref": "bytebase.store.TaskRunLog.DatabaseSyncStart.schema.strict.json"
+    },
+    "deploy_id": {
+      "type": "string"
+    },
+    "prior_backup_end": {
+      "$ref": "bytebase.store.TaskRunLog.PriorBackupEnd.schema.strict.json"
+    },
+    "prior_backup_start": {
+      "$ref": "bytebase.store.TaskRunLog.PriorBackupStart.schema.strict.json"
+    },
+    "retry_info": {
+      "$ref": "bytebase.store.TaskRunLog.RetryInfo.schema.strict.json"
+    },
+    "schema_dump_end": {
+      "$ref": "bytebase.store.TaskRunLog.SchemaDumpEnd.schema.strict.json"
+    },
+    "schema_dump_start": {
+      "$ref": "bytebase.store.TaskRunLog.SchemaDumpStart.schema.strict.json"
+    },
+    "task_run_status_update": {
+      "$ref": "bytebase.store.TaskRunLog.TaskRunStatusUpdate.schema.strict.json"
+    },
+    "transaction_control": {
+      "$ref": "bytebase.store.TaskRunLog.TransactionControl.schema.strict.json"
+    },
+    "type": {
+      "enum": [
+        "TYPE_UNSPECIFIED",
+        "SCHEMA_DUMP_START",
+        "SCHEMA_DUMP_END",
+        "COMMAND_EXECUTE",
+        "COMMAND_RESPONSE",
+        "DATABASE_SYNC_START",
+        "DATABASE_SYNC_END",
+        "TASK_RUN_STATUS_UPDATE",
+        "TRANSACTION_CONTROL",
+        "PRIOR_BACKUP_START",
+        "PRIOR_BACKUP_END",
+        "RETRY_INFO",
+        "COMPUTE_DIFF_START",
+        "COMPUTE_DIFF_END"
+      ],
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "deploy_id"
+  ],
+  "title": "Task Run Log",
+  "type": "object"
+}

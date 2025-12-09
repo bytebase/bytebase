@@ -1,0 +1,33 @@
+{
+  "$defs": {
+    "bytebase.store.Label.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Label represents a categorization tag that can be applied to issues.",
+      "properties": {
+        "color": {
+          "description": "The color for the label in hex format (e.g., \"#FF0000\").",
+          "type": "string"
+        },
+        "group": {
+          "description": "Optional group name for organizing related labels.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The display text of the label.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "color",
+        "group"
+      ],
+      "title": "Label",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.Label.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.Label.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

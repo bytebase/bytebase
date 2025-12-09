@@ -1,0 +1,26 @@
+{
+  "$defs": {
+    "bytebase.v1.BatchGetIamPolicyRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "names": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "scope": {
+          "default": "",
+          "description": "The scope of the batch get. Typically it's \"projects/-\".",
+          "type": "string"
+        }
+      },
+      "title": "Batch Get Iam Policy Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.BatchGetIamPolicyRequest.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.BatchGetIamPolicyRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

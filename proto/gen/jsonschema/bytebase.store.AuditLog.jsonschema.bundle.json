@@ -1,0 +1,181 @@
+{
+  "$defs": {
+    "bytebase.store.AuditLog.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(request_metadata)$": {
+          "$ref": "#/$defs/bytebase.store.RequestMetadata.jsonschema.json",
+          "description": "Metadata about the operation."
+        },
+        "^(service_data)$": {
+          "$ref": "#/$defs/google.protobuf.Any.jsonschema.json",
+          "description": "The service-specific data about the request, response, and other activities."
+        }
+      },
+      "properties": {
+        "latency": {
+          "$ref": "#/$defs/google.protobuf.Duration.jsonschema.json",
+          "description": "The latency of the RPC."
+        },
+        "method": {
+          "default": "",
+          "description": "Example: /bytebase.v1.SQLService/Query",
+          "type": "string"
+        },
+        "parent": {
+          "default": "",
+          "description": "The project or workspace the audit log belongs to.\n Formats:\n - projects/{project}\n - workspaces/{workspace}",
+          "type": "string"
+        },
+        "request": {
+          "default": "",
+          "description": "Marshalled request.",
+          "type": "string"
+        },
+        "requestMetadata": {
+          "$ref": "#/$defs/bytebase.store.RequestMetadata.jsonschema.json",
+          "description": "Metadata about the operation."
+        },
+        "resource": {
+          "default": "",
+          "description": "The resource name.\n Example: projects/{project}",
+          "type": "string"
+        },
+        "response": {
+          "default": "",
+          "description": "Marshalled response.\n Some fields are omitted because they are too large or contain sensitive information.",
+          "type": "string"
+        },
+        "serviceData": {
+          "$ref": "#/$defs/google.protobuf.Any.jsonschema.json",
+          "description": "The service-specific data about the request, response, and other activities."
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "pattern": "^SEVERITY_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "DEBUG",
+                "INFO",
+                "NOTICE",
+                "WARNING",
+                "ERROR",
+                "CRITICAL",
+                "ALERT",
+                "EMERGENCY"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Severity"
+        },
+        "status": {
+          "$ref": "#/$defs/google.rpc.Status.jsonschema.json"
+        },
+        "user": {
+          "default": "",
+          "description": "Format: users/{userUID}.",
+          "type": "string"
+        }
+      },
+      "title": "Audit Log",
+      "type": "object"
+    },
+    "bytebase.store.RequestMetadata.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Metadata about the request.",
+      "patternProperties": {
+        "^(caller_ip)$": {
+          "default": "",
+          "description": "The IP address of the caller.",
+          "type": "string"
+        },
+        "^(caller_supplied_user_agent)$": {
+          "default": "",
+          "description": "The user agent of the caller.\n This information is not authenticated and should be treated accordingly.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "callerIp": {
+          "default": "",
+          "description": "The IP address of the caller.",
+          "type": "string"
+        },
+        "callerSuppliedUserAgent": {
+          "default": "",
+          "description": "The user agent of the caller.\n This information is not authenticated and should be treated accordingly.",
+          "type": "string"
+        }
+      },
+      "title": "Request Metadata",
+      "type": "object"
+    },
+    "google.protobuf.Any.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "title": "Any",
+      "type": "object"
+    },
+    "google.protobuf.Duration.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "duration",
+      "title": "Duration",
+      "type": "string"
+    },
+    "google.rpc.Status.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "You can find out more about this error model and how to work with it in the\n [API Design Guide](https://cloud.google.com/apis/design/errors).",
+      "properties": {
+        "code": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The status code, which should be an enum value of\n [google.rpc.Code][google.rpc.Code]."
+        },
+        "details": {
+          "description": "A list of messages that carry the error details.  There is a common set of\n message types for APIs to use.",
+          "items": {
+            "$ref": "#/$defs/google.protobuf.Any.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "message": {
+          "default": "",
+          "description": "A developer-facing error message, which should be in English. Any\n user-facing error message should be localized and sent in the\n [google.rpc.Status.details][google.rpc.Status.details] field, or localized\n by the client.",
+          "type": "string"
+        }
+      },
+      "title": "The `Status` type defines a logical error model that is suitable for\n different programming environments, including REST APIs and RPC APIs. It is\n used by [gRPC](https://github.com/grpc). Each `Status` message contains\n three pieces of data: error code, error message, and error details.",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.AuditLog.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.AuditLog.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

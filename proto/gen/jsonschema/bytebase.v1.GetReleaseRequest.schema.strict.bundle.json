@@ -1,0 +1,22 @@
+{
+  "$defs": {
+    "bytebase.v1.GetReleaseRequest.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "Format: projects/{project}/releases/{release}",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Get Release Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GetReleaseRequest.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GetReleaseRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

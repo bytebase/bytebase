@@ -1,0 +1,47 @@
+{
+  "$id": "bytebase.store.OIDCIdentityProviderConfig.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "OIDCIdentityProviderConfig is the structure for OIDC identity provider config.",
+  "properties": {
+    "authStyle": {
+      "enum": [
+        "OAUTH2_AUTH_STYLE_UNSPECIFIED",
+        "IN_PARAMS",
+        "IN_HEADER"
+      ],
+      "title": "O Auth2 Auth Style",
+      "type": "string"
+    },
+    "clientId": {
+      "type": "string"
+    },
+    "clientSecret": {
+      "type": "string"
+    },
+    "fieldMapping": {
+      "$ref": "bytebase.store.FieldMapping.jsonschema.strict.json"
+    },
+    "issuer": {
+      "type": "string"
+    },
+    "scopes": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "skipTlsVerify": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "issuer",
+    "clientId",
+    "clientSecret",
+    "skipTlsVerify",
+    "authStyle"
+  ],
+  "title": "OIDC Identity Provider Config",
+  "type": "object"
+}

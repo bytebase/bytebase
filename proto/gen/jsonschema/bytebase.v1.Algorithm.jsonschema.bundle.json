@@ -1,0 +1,217 @@
+{
+  "$defs": {
+    "bytebase.v1.Algorithm.FullMask.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "substitution": {
+          "default": "",
+          "description": "substitution is the string used to replace the original value, the\n max length of the string is 16 bytes.",
+          "type": "string"
+        }
+      },
+      "title": "Full Mask",
+      "type": "object"
+    },
+    "bytebase.v1.Algorithm.InnerOuterMask.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(prefix_len)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(suffix_len)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "properties": {
+        "prefixLen": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "substitution": {
+          "default": "",
+          "type": "string"
+        },
+        "suffixLen": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^MASK_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "INNER",
+                "OUTER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Mask Type"
+        }
+      },
+      "title": "Inner Outer Mask",
+      "type": "object"
+    },
+    "bytebase.v1.Algorithm.MD5Mask.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "salt": {
+          "default": "",
+          "description": "salt is the salt value to generate a different hash that with the word alone.",
+          "type": "string"
+        }
+      },
+      "title": "M D5 Mask",
+      "type": "object"
+    },
+    "bytebase.v1.Algorithm.RangeMask.Slice.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "stop is the stop index of the original value, should be less than the length of the original value."
+        },
+        "start": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "start is the start index of the original value, start from 0 and should be less than stop."
+        },
+        "substitution": {
+          "default": "",
+          "description": "substitution is the string used to replace the OriginalValue[start:end).",
+          "type": "string"
+        }
+      },
+      "title": "Slice",
+      "type": "object"
+    },
+    "bytebase.v1.Algorithm.RangeMask.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "slices": {
+          "description": "We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.\n But frontend can be started with a single rule easily.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Algorithm.RangeMask.Slice.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Range Mask",
+      "type": "object"
+    },
+    "bytebase.v1.Algorithm.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(full_mask)$": {
+          "$ref": "#/$defs/bytebase.v1.Algorithm.FullMask.jsonschema.json"
+        },
+        "^(inner_outer_mask)$": {
+          "$ref": "#/$defs/bytebase.v1.Algorithm.InnerOuterMask.jsonschema.json"
+        },
+        "^(md5_mask)$": {
+          "$ref": "#/$defs/bytebase.v1.Algorithm.MD5Mask.jsonschema.json"
+        },
+        "^(range_mask)$": {
+          "$ref": "#/$defs/bytebase.v1.Algorithm.RangeMask.jsonschema.json"
+        }
+      },
+      "properties": {
+        "fullMask": {
+          "$ref": "#/$defs/bytebase.v1.Algorithm.FullMask.jsonschema.json"
+        },
+        "innerOuterMask": {
+          "$ref": "#/$defs/bytebase.v1.Algorithm.InnerOuterMask.jsonschema.json"
+        },
+        "md5Mask": {
+          "$ref": "#/$defs/bytebase.v1.Algorithm.MD5Mask.jsonschema.json"
+        },
+        "rangeMask": {
+          "$ref": "#/$defs/bytebase.v1.Algorithm.RangeMask.jsonschema.json"
+        }
+      },
+      "title": "Algorithm",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.Algorithm.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.Algorithm.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

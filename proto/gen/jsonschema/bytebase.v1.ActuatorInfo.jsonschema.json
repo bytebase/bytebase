@@ -1,0 +1,246 @@
+{
+  "$id": "bytebase.v1.ActuatorInfo.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "System information and configuration for the Bytebase instance.\n Actuator concept is similar to the Spring Boot Actuator.",
+  "patternProperties": {
+    "^(activated_instance_count)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The number of activated database instances."
+    },
+    "^(disallow_password_signin)$": {
+      "default": false,
+      "description": "Whether password-based signin is disabled (except for workspace admins).",
+      "type": "boolean"
+    },
+    "^(disallow_signup)$": {
+      "default": false,
+      "description": "Whether self-service user signup is disabled.",
+      "type": "boolean"
+    },
+    "^(enable_sample)$": {
+      "default": false,
+      "description": "Whether sample data setup is enabled.",
+      "type": "boolean"
+    },
+    "^(external_url)$": {
+      "default": "",
+      "description": "The external URL where users or webhook callbacks access Bytebase.",
+      "type": "string"
+    },
+    "^(external_url_from_flag)$": {
+      "default": false,
+      "description": "Whether the external URL is set via command-line flag (and thus cannot be changed via UI).",
+      "type": "boolean"
+    },
+    "^(git_commit)$": {
+      "default": "",
+      "description": "The git commit hash of the build.",
+      "type": "string"
+    },
+    "^(last_active_time)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "The last time any API call was made, refreshed on each request."
+    },
+    "^(need_admin_setup)$": {
+      "default": false,
+      "description": "Whether the Bytebase instance requires initial admin setup.",
+      "type": "boolean"
+    },
+    "^(password_restriction)$": {
+      "$ref": "bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.jsonschema.json",
+      "description": "Password complexity and restriction requirements."
+    },
+    "^(require_2fa)$": {
+      "default": false,
+      "description": "Whether two-factor authentication is required for all users.",
+      "type": "boolean"
+    },
+    "^(total_instance_count)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The total number of database instances."
+    },
+    "^(unlicensed_features)$": {
+      "description": "List of features that are not licensed.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "^(user_stats)$": {
+      "description": "Statistics about users in the system.",
+      "items": {
+        "$ref": "bytebase.v1.ActuatorInfo.StatUser.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "^(workspace_id)$": {
+      "default": "",
+      "description": "The unique identifier for the workspace.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "activatedInstanceCount": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The number of activated database instances."
+    },
+    "debug": {
+      "default": false,
+      "description": "Whether debug mode is enabled.",
+      "type": "boolean"
+    },
+    "demo": {
+      "default": false,
+      "description": "Whether the Bytebase instance is running in demo mode.",
+      "type": "boolean"
+    },
+    "disallowPasswordSignin": {
+      "default": false,
+      "description": "Whether password-based signin is disabled (except for workspace admins).",
+      "type": "boolean"
+    },
+    "disallowSignup": {
+      "default": false,
+      "description": "Whether self-service user signup is disabled.",
+      "type": "boolean"
+    },
+    "docker": {
+      "default": false,
+      "description": "Whether the Bytebase instance is running in Docker.",
+      "type": "boolean"
+    },
+    "enableSample": {
+      "default": false,
+      "description": "Whether sample data setup is enabled.",
+      "type": "boolean"
+    },
+    "externalUrl": {
+      "default": "",
+      "description": "The external URL where users or webhook callbacks access Bytebase.",
+      "type": "string"
+    },
+    "externalUrlFromFlag": {
+      "default": false,
+      "description": "Whether the external URL is set via command-line flag (and thus cannot be changed via UI).",
+      "type": "boolean"
+    },
+    "gitCommit": {
+      "default": "",
+      "description": "The git commit hash of the build.",
+      "type": "string"
+    },
+    "host": {
+      "default": "",
+      "description": "The host address of the Bytebase instance.",
+      "type": "string"
+    },
+    "lastActiveTime": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "The last time any API call was made, refreshed on each request."
+    },
+    "needAdminSetup": {
+      "default": false,
+      "description": "Whether the Bytebase instance requires initial admin setup.",
+      "type": "boolean"
+    },
+    "passwordRestriction": {
+      "$ref": "bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.jsonschema.json",
+      "description": "Password complexity and restriction requirements."
+    },
+    "port": {
+      "default": "",
+      "description": "The port number of the Bytebase instance.",
+      "type": "string"
+    },
+    "readonly": {
+      "default": false,
+      "description": "Whether the Bytebase instance is running in read-only mode.",
+      "type": "boolean"
+    },
+    "require2fa": {
+      "default": false,
+      "description": "Whether two-factor authentication is required for all users.",
+      "type": "boolean"
+    },
+    "saas": {
+      "default": false,
+      "description": "Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.",
+      "type": "boolean"
+    },
+    "totalInstanceCount": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The total number of database instances."
+    },
+    "unlicensedFeatures": {
+      "description": "List of features that are not licensed.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "userStats": {
+      "description": "Statistics about users in the system.",
+      "items": {
+        "$ref": "bytebase.v1.ActuatorInfo.StatUser.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "version": {
+      "default": "",
+      "description": "The Bytebase server version.",
+      "type": "string"
+    },
+    "workspaceId": {
+      "default": "",
+      "description": "The unique identifier for the workspace.",
+      "type": "string"
+    }
+  },
+  "title": "Actuator Info",
+  "type": "object"
+}

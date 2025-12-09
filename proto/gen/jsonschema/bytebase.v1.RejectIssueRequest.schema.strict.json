@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.RejectIssueRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "comment": {
+      "description": "The comment explaining the rejection decision.",
+      "type": "string"
+    },
+    "name": {
+      "description": "The name of the issue to add a rejection.\n Format: projects/{project}/issues/{issue}",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "comment"
+  ],
+  "title": "Reject Issue Request",
+  "type": "object"
+}

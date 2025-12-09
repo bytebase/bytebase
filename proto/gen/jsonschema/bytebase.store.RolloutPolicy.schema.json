@@ -1,0 +1,23 @@
+{
+  "$id": "bytebase.store.RolloutPolicy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "automatic": {
+      "default": false,
+      "type": "boolean"
+    },
+    "checkers": {
+      "$ref": "bytebase.store.RolloutPolicy.Checkers.schema.json",
+      "description": "Checkers that must pass before rollout execution.\n These checks are performed in UI workflows only."
+    },
+    "roles": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Rollout Policy",
+  "type": "object"
+}

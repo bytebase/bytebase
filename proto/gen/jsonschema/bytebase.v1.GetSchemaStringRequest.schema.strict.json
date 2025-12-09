@@ -1,0 +1,46 @@
+{
+  "$id": "bytebase.v1.GetSchemaStringRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "$ref": "bytebase.v1.DatabaseMetadata.schema.strict.json",
+      "description": "If use the metadata to generate the schema string, the type is OBJECT_TYPE_UNSPECIFIED.\n Also the schema and object are empty."
+    },
+    "name": {
+      "description": "The name of the database.\n Format: instances/{instance}/databases/{database}",
+      "type": "string"
+    },
+    "object": {
+      "description": "It's empty for DATABASE and SCHEMA.",
+      "type": "string"
+    },
+    "schema": {
+      "description": "It's empty for DATABASE.",
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "OBJECT_TYPE_UNSPECIFIED",
+        "DATABASE",
+        "SCHEMA",
+        "TABLE",
+        "VIEW",
+        "MATERIALIZED_VIEW",
+        "FUNCTION",
+        "PROCEDURE",
+        "SEQUENCE"
+      ],
+      "title": "Object Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "schema",
+    "object"
+  ],
+  "title": "Get Schema String Request",
+  "type": "object"
+}

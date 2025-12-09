@@ -1,0 +1,103 @@
+{
+  "$id": "bytebase.v1.ColumnMetadata.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ColumnMetadata is the metadata for columns.",
+  "properties": {
+    "character_set": {
+      "description": "The character_set is the character_set of a column.",
+      "type": "string"
+    },
+    "collation": {
+      "description": "The collation is the collation of a column.",
+      "type": "string"
+    },
+    "comment": {
+      "description": "The comment is the comment of a column.",
+      "type": "string"
+    },
+    "default": {
+      "description": "The default value of column.",
+      "type": "string"
+    },
+    "default_constraint_name": {
+      "description": "Example: A column definition like:\n   CREATE TABLE employees (\n     status NVARCHAR(20) DEFAULT 'active'\n   )\n\n Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'\n or a user-defined name if specified:\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status\n\n To modify the default, you must first drop the existing constraint by name:\n   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status\n\n This field is populated when syncing from the database. When empty (e.g., when parsing\n from SQL files), the system cannot automatically drop the constraint.",
+      "title": "The default_constraint_name is the name of the default constraint, MSSQL only.\n In MSSQL, default values are implemented as named constraints. When modifying or\n dropping a column's default value, you must reference the constraint by name.\n This field stores the actual constraint name from the database.",
+      "type": "string"
+    },
+    "default_on_null": {
+      "description": "Oracle specific metadata.\n The default_on_null is the default on null of a column.",
+      "type": "boolean"
+    },
+    "generation": {
+      "$ref": "bytebase.v1.GenerationMetadata.schema.strict.json",
+      "description": "The generation is the generation of a column."
+    },
+    "has_default": {
+      "type": "boolean"
+    },
+    "identity_generation": {
+      "description": "The identity_generation is for identity columns, PG only.",
+      "enum": [
+        "IDENTITY_GENERATION_UNSPECIFIED",
+        "ALWAYS",
+        "BY_DEFAULT"
+      ],
+      "title": "Identity Generation",
+      "type": "string"
+    },
+    "identity_increment": {
+      "description": "The identity_increment is for identity columns, MSSQL only.",
+      "type": "integer"
+    },
+    "identity_seed": {
+      "description": "The identity_seed is for identity columns, MSSQL only.",
+      "type": "integer"
+    },
+    "is_identity": {
+      "type": "boolean"
+    },
+    "name": {
+      "description": "The name is the name of a column.",
+      "type": "string"
+    },
+    "nullable": {
+      "description": "The nullable is the nullable of a column.",
+      "type": "boolean"
+    },
+    "on_update": {
+      "description": "The on_update is the on update action of a column.\n For MySQL like databases, it's only supported for TIMESTAMP columns with\n CURRENT_TIMESTAMP as on update value.",
+      "type": "string"
+    },
+    "position": {
+      "description": "The position is the position in columns.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "type": {
+      "description": "The type is the type of a column.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "position",
+    "has_default",
+    "default",
+    "default_on_null",
+    "on_update",
+    "nullable",
+    "type",
+    "character_set",
+    "collation",
+    "comment",
+    "is_identity",
+    "identity_generation",
+    "identity_seed",
+    "identity_increment",
+    "default_constraint_name"
+  ],
+  "title": "Column Metadata",
+  "type": "object"
+}

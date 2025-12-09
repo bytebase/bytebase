@@ -1,0 +1,60 @@
+{
+  "$id": "bytebase.store.EnvironmentTierPolicy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "EnvironmentTierPolicy is the tier of an environment.",
+  "patternProperties": {
+    "^(environmentTier)$": {
+      "anyOf": [
+        {
+          "pattern": "^ENVIRONMENT_TIER_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "PROTECTED",
+            "UNPROTECTED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Environment Tier"
+    }
+  },
+  "properties": {
+    "color": {
+      "default": "",
+      "type": "string"
+    },
+    "environment_tier": {
+      "anyOf": [
+        {
+          "pattern": "^ENVIRONMENT_TIER_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "PROTECTED",
+            "UNPROTECTED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Environment Tier"
+    }
+  },
+  "title": "Environment Tier Policy",
+  "type": "object"
+}

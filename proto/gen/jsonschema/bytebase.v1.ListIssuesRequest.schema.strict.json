@@ -1,0 +1,40 @@
+{
+  "$id": "bytebase.v1.ListIssuesRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "filter": {
+      "description": "Supported filters:\n - creator: issue creator full name in \"users/{email or id}\" format, support \"==\" operator.\n - status: the issue status, support \"==\" and \"in\" operator, check the IssueStatus enum for the values.\n - create_time: issue create time in \"2006-01-02T15:04:05Z07:00\" format, support \"\u003e=\" or \"\u003c=\" operator.\n - type: the issue type, support \"==\" and \"in\" operator, check the Type enum in the Issue message for the values.\n - task_type: support \"==\" operator, the value can be \"DDL\", \"DML\" or \"DATA_EXPORT\"\n - instance: the instance full name in the \"instances/{id}\" format, support \"==\" operator.\n - database: the database full name in the \"instances/{id}/databases/{name}\" format, support \"==\" operator.\n - environment: the database full name in the \"environments/{name}\" format, support \"==\" operator.\n - labels: the issue labels, support \"==\" and \"in\" operator.\n - approval_status: issue approval status, support \"==\" operator.\n - current_approver: the issue approver, should in \"users/{email} format\", support \"==\" operator.\n\n For example:\n creator == \"users/ed@bytebase.com\" \u0026\u0026 status in [\"OPEN\", \"DONE\"]\n status == \"CANCELED\" \u0026\u0026 type == \"DATABASE_CHANGE\"\n instance == \"instances/sample\" \u0026\u0026 labels in [\"label1\", \"label2\"]\n create_time \u003e= \"2025-01-02T15:04:05Z07:00\"\n environment == \"environments/test\"",
+      "title": "Filter is used to filter issues returned in the list.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec",
+      "type": "string"
+    },
+    "page_size": {
+      "description": "The maximum number of issues to return. The service may return fewer than\n this value.\n If unspecified, at most 10 issues will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "page_token": {
+      "description": "When paginating, all other parameters provided to `ListIssues` must match\n the call that provided the page token.",
+      "title": "A page token, received from a previous `ListIssues` call.\n Provide this to retrieve the subsequent page.",
+      "type": "string"
+    },
+    "parent": {
+      "description": "The parent, which owns this collection of issues.\n Format: projects/{project}",
+      "type": "string"
+    },
+    "query": {
+      "description": "Query is the query statement.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "parent",
+    "page_size",
+    "page_token",
+    "filter",
+    "query"
+  ],
+  "title": "List Issues Request",
+  "type": "object"
+}

@@ -1,0 +1,14 @@
+{
+  "$defs": {
+    "bytebase.store.Policy.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "title": "Policy",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.Policy.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.Policy.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

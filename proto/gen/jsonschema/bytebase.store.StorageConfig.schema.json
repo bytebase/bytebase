@@ -1,0 +1,168 @@
+{
+  "$id": "bytebase.store.StorageConfig.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "StorageConfig defines storage and performance parameters for spatial indexes.",
+  "patternProperties": {
+    "^(allowPageLocks)$": {
+      "default": false,
+      "type": "boolean"
+    },
+    "^(allowRowLocks)$": {
+      "default": false,
+      "type": "boolean"
+    },
+    "^(commitInterval)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "^(dataCompression)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(dropExisting)$": {
+      "default": false,
+      "type": "boolean"
+    },
+    "^(padIndex)$": {
+      "default": false,
+      "description": "SQL Server parameters",
+      "type": "boolean"
+    },
+    "^(sdoLevel)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "^(sortInTempdb)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(workTablespace)$": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "allow_page_locks": {
+      "default": false,
+      "type": "boolean"
+    },
+    "allow_row_locks": {
+      "default": false,
+      "type": "boolean"
+    },
+    "buffering": {
+      "default": "",
+      "type": "string"
+    },
+    "commit_interval": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "data_compression": {
+      "default": "",
+      "type": "string"
+    },
+    "drop_existing": {
+      "default": false,
+      "type": "boolean"
+    },
+    "fillfactor": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "PostgreSQL parameters"
+    },
+    "maxdop": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "online": {
+      "default": false,
+      "type": "boolean"
+    },
+    "pad_index": {
+      "default": false,
+      "description": "SQL Server parameters",
+      "type": "boolean"
+    },
+    "sdo_level": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "sort_in_tempdb": {
+      "default": "",
+      "type": "string"
+    },
+    "tablespace": {
+      "default": "",
+      "description": "Oracle parameters",
+      "type": "string"
+    },
+    "work_tablespace": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Storage Config",
+  "type": "object"
+}

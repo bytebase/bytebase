@@ -1,0 +1,23 @@
+{
+  "$id": "bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Task run status update details.",
+  "properties": {
+    "status": {
+      "description": "The new status.",
+      "enum": [
+        "STATUS_UNSPECIFIED",
+        "RUNNING_WAITING",
+        "RUNNING_RUNNING"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status"
+  ],
+  "title": "Task Run Status Update",
+  "type": "object"
+}

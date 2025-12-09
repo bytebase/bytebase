@@ -1,0 +1,43 @@
+{
+  "$defs": {
+    "bytebase.v1.GetDatabaseSDLSchemaRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "anyOf": [
+            {
+              "pattern": "^SDL_FORMAT_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "SINGLE_FILE",
+                "MULTI_FILE"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The format of the SDL schema output.",
+          "title": "SDL Format"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the database to retrieve SDL schema.\n Format: instances/{instance}/databases/{database}/sdlSchema",
+          "type": "string"
+        }
+      },
+      "title": "Get DatabaseSDL Schema Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GetDatabaseSDLSchemaRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GetDatabaseSDLSchemaRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

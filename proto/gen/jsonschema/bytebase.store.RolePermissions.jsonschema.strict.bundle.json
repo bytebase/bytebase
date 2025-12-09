@@ -1,0 +1,21 @@
+{
+  "$defs": {
+    "bytebase.store.RolePermissions.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Role Permissions",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.RolePermissions.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.RolePermissions.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

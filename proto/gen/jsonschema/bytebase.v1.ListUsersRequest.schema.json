@@ -1,0 +1,69 @@
+{
+  "$id": "bytebase.v1.ListUsersRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(pageSize)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The maximum number of users to return. The service may return fewer than\n this value.\n If unspecified, at most 10 users will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000."
+    },
+    "^(pageToken)$": {
+      "default": "",
+      "description": "When paginating, all other parameters provided to `ListUsers` must match\n the call that provided the page token.",
+      "title": "A page token, received from a previous `ListUsers` call.\n Provide this to retrieve the subsequent page.",
+      "type": "string"
+    },
+    "^(showDeleted)$": {
+      "default": false,
+      "description": "Show deleted users if specified.",
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "filter": {
+      "default": "",
+      "description": "Supported filter:\n - name: the user name, support \"==\" and \".matches()\" operator.\n - email: the user email, support \"==\" and \".matches()\" operator.\n - user_type: the type, check UserType enum for values, support \"==\", \"in [xx]\", \"!(in [xx])\" operator.\n - state: check State enum for values, support \"==\" operator.\n - project: the project full name in \"projects/{id}\" format, support \"==\" operator.\n\n For example:\n name == \"ed\"\n name.matches(\"ed\")\n email == \"ed@bytebase.com\"\n email.matches(\"ed\")\n user_type == \"SERVICE_ACCOUNT\"\n user_type in [\"SERVICE_ACCOUNT\", \"USER\"]\n !(user_type in [\"SERVICE_ACCOUNT\", \"USER\"])\n state == \"DELETED\"\n project == \"projects/sample-project\"\n You can combine filter conditions like:\n name.matches(\"ed\") \u0026\u0026 project == \"projects/sample-project\"\n (name == \"ed\" || email == \"ed@bytebase.com\") \u0026\u0026 project == \"projects/sample-project\"",
+      "title": "Filter is used to filter users returned in the list.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec",
+      "type": "string"
+    },
+    "page_size": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The maximum number of users to return. The service may return fewer than\n this value.\n If unspecified, at most 10 users will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000."
+    },
+    "page_token": {
+      "default": "",
+      "description": "When paginating, all other parameters provided to `ListUsers` must match\n the call that provided the page token.",
+      "title": "A page token, received from a previous `ListUsers` call.\n Provide this to retrieve the subsequent page.",
+      "type": "string"
+    },
+    "show_deleted": {
+      "default": false,
+      "description": "Show deleted users if specified.",
+      "type": "boolean"
+    }
+  },
+  "title": "List Users Request",
+  "type": "object"
+}

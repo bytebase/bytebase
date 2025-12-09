@@ -1,0 +1,20 @@
+{
+  "$defs": {
+    "bytebase.v1.GetDatabaseRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "The name of the database to retrieve.\n Format: instances/{instance}/databases/{database}",
+          "type": "string"
+        }
+      },
+      "title": "Get Database Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GetDatabaseRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GetDatabaseRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,60 @@
+{
+  "$id": "bytebase.store.ChangelogPayload.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "changed_resources": {
+      "$ref": "bytebase.store.ChangedResources.schema.strict.json"
+    },
+    "dump_version": {
+      "description": "Dump format version for drift detection reliability.\n Engine-specific version stored when baseline/migration is created.\n 0 = legacy changelog (pre-versioning).",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "git_commit": {
+      "type": "string"
+    },
+    "issue": {
+      "description": "Format: projects/{project}/issues/{issue}",
+      "type": "string"
+    },
+    "revision": {
+      "description": "The revision uid.\n optional",
+      "type": "integer"
+    },
+    "sheet": {
+      "description": "The sheet that holds the content.\n Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "task_run": {
+      "description": "Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}",
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "TYPE_UNSPECIFIED",
+        "BASELINE",
+        "MIGRATE",
+        "SDL"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "task_run",
+    "issue",
+    "revision",
+    "sheet",
+    "version",
+    "type",
+    "git_commit",
+    "dump_version"
+  ],
+  "title": "Changelog Payload",
+  "type": "object"
+}

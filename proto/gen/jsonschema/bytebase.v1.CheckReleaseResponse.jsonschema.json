@@ -1,0 +1,92 @@
+{
+  "$id": "bytebase.v1.CheckReleaseResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(affected_rows)$": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The total affected rows across all checks."
+    },
+    "^(risk_level)$": {
+      "anyOf": [
+        {
+          "pattern": "^RISK_LEVEL_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "LOW",
+            "MODERATE",
+            "HIGH"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The aggregated risk level of the check.",
+      "title": "Risk Level"
+    }
+  },
+  "properties": {
+    "affectedRows": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The total affected rows across all checks."
+    },
+    "results": {
+      "description": "The check results for each file and target combination.",
+      "items": {
+        "$ref": "bytebase.v1.CheckReleaseResponse.CheckResult.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "riskLevel": {
+      "anyOf": [
+        {
+          "pattern": "^RISK_LEVEL_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "LOW",
+            "MODERATE",
+            "HIGH"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The aggregated risk level of the check.",
+      "title": "Risk Level"
+    }
+  },
+  "title": "Check Release Response",
+  "type": "object"
+}

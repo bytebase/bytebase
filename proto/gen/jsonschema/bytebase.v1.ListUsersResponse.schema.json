@@ -1,0 +1,28 @@
+{
+  "$id": "bytebase.v1.ListUsersResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(nextPageToken)$": {
+      "default": "",
+      "description": "A token, which can be sent as `page_token` to retrieve the next page.\n If this field is omitted, there are no subsequent pages.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "next_page_token": {
+      "default": "",
+      "description": "A token, which can be sent as `page_token` to retrieve the next page.\n If this field is omitted, there are no subsequent pages.",
+      "type": "string"
+    },
+    "users": {
+      "description": "The users from the specified request.",
+      "items": {
+        "$ref": "bytebase.v1.User.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "List Users Response",
+  "type": "object"
+}

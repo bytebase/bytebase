@@ -1,0 +1,347 @@
+{
+  "$defs": {
+    "bytebase.v1.Announcement.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "anyOf": [
+            {
+              "pattern": "^ALERT_LEVEL_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "INFO",
+                "WARNING",
+                "CRITICAL"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The alert level of announcement",
+          "title": "Alert Level"
+        },
+        "link": {
+          "default": "",
+          "description": "The optional link, user can follow the link to check extra details",
+          "type": "string"
+        },
+        "text": {
+          "default": "",
+          "description": "The text of announcement",
+          "type": "string"
+        }
+      },
+      "title": "Announcement",
+      "type": "object"
+    },
+    "bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(minLength)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "min_length is the minimum length for password, should no less than 8."
+        },
+        "^(passwordRotation)$": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "password_rotation requires users to reset their password after the duration."
+        },
+        "^(requireLetter)$": {
+          "default": false,
+          "description": "require_letter requires the password must contains at least one letter, regardless of upper case or lower case",
+          "type": "boolean"
+        },
+        "^(requireNumber)$": {
+          "default": false,
+          "description": "require_number requires the password must contains at least one number.",
+          "type": "boolean"
+        },
+        "^(requireResetPasswordForFirstLogin)$": {
+          "default": false,
+          "description": "require_reset_password_for_first_login requires users to reset their password after the 1st login.",
+          "type": "boolean"
+        },
+        "^(requireSpecialCharacter)$": {
+          "default": false,
+          "description": "require_special_character requires the password must contains at least one special character.",
+          "type": "boolean"
+        },
+        "^(requireUppercaseLetter)$": {
+          "default": false,
+          "description": "require_uppercase_letter requires the password must contains at least one upper case letter.",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "min_length": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "min_length is the minimum length for password, should no less than 8."
+        },
+        "password_rotation": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "password_rotation requires users to reset their password after the duration."
+        },
+        "require_letter": {
+          "default": false,
+          "description": "require_letter requires the password must contains at least one letter, regardless of upper case or lower case",
+          "type": "boolean"
+        },
+        "require_number": {
+          "default": false,
+          "description": "require_number requires the password must contains at least one number.",
+          "type": "boolean"
+        },
+        "require_reset_password_for_first_login": {
+          "default": false,
+          "description": "require_reset_password_for_first_login requires users to reset their password after the 1st login.",
+          "type": "boolean"
+        },
+        "require_special_character": {
+          "default": false,
+          "description": "require_special_character requires the password must contains at least one special character.",
+          "type": "boolean"
+        },
+        "require_uppercase_letter": {
+          "default": false,
+          "description": "require_uppercase_letter requires the password must contains at least one upper case letter.",
+          "type": "boolean"
+        }
+      },
+      "title": "Password Restriction",
+      "type": "object"
+    },
+    "bytebase.v1.WorkspaceProfileSetting.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(brandingLogo)$": {
+          "default": "",
+          "description": "The branding logo as a data URI (e.g. data:image/png;base64,...).",
+          "type": "string"
+        },
+        "^(databaseChangeMode)$": {
+          "anyOf": [
+            {
+              "pattern": "^DATABASE_CHANGE_MODE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "PIPELINE",
+                "EDITOR"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The workspace database change mode.",
+          "title": "Database Change Mode"
+        },
+        "^(directorySyncToken)$": {
+          "default": "",
+          "description": "The token for directory sync authentication.",
+          "type": "string"
+        },
+        "^(disallowPasswordSignin)$": {
+          "default": false,
+          "description": "Whether to disallow password signin. (Except workspace admins)",
+          "type": "boolean"
+        },
+        "^(disallowSignup)$": {
+          "default": false,
+          "description": "Disallow self-service signup, users can only be invited by the owner.",
+          "type": "boolean"
+        },
+        "^(enableAuditLogStdout)$": {
+          "default": false,
+          "description": "Whether to enable audit logging to stdout in structured JSON format.\n Requires TEAM or ENTERPRISE license.",
+          "type": "boolean"
+        },
+        "^(enableMetricCollection)$": {
+          "default": false,
+          "description": "Whether to enable metric collection for the workspace.",
+          "type": "boolean"
+        },
+        "^(enforceIdentityDomain)$": {
+          "default": false,
+          "description": "Only user and group from the domains can be created and login.",
+          "type": "boolean"
+        },
+        "^(externalUrl)$": {
+          "default": "",
+          "description": "The external URL is used for sso authentication callback.",
+          "type": "string"
+        },
+        "^(inactiveSessionTimeout)$": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "The session expiration time if not activity detected for the user. Value \u003c= 0 means no limit."
+        },
+        "^(maximumRoleExpiration)$": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "The max duration for role expired."
+        },
+        "^(passwordRestriction)$": {
+          "$ref": "#/$defs/bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.schema.json",
+          "description": "Password restriction settings."
+        },
+        "^(require2fa)$": {
+          "default": false,
+          "description": "Require 2FA for all users.",
+          "type": "boolean"
+        },
+        "^(tokenDuration)$": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "The duration for token."
+        }
+      },
+      "properties": {
+        "announcement": {
+          "$ref": "#/$defs/bytebase.v1.Announcement.schema.json",
+          "description": "The setting of custom announcement"
+        },
+        "branding_logo": {
+          "default": "",
+          "description": "The branding logo as a data URI (e.g. data:image/png;base64,...).",
+          "type": "string"
+        },
+        "database_change_mode": {
+          "anyOf": [
+            {
+              "pattern": "^DATABASE_CHANGE_MODE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "PIPELINE",
+                "EDITOR"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The workspace database change mode.",
+          "title": "Database Change Mode"
+        },
+        "directory_sync_token": {
+          "default": "",
+          "description": "The token for directory sync authentication.",
+          "type": "string"
+        },
+        "disallow_password_signin": {
+          "default": false,
+          "description": "Whether to disallow password signin. (Except workspace admins)",
+          "type": "boolean"
+        },
+        "disallow_signup": {
+          "default": false,
+          "description": "Disallow self-service signup, users can only be invited by the owner.",
+          "type": "boolean"
+        },
+        "domains": {
+          "description": "The workspace domain, e.g., bytebase.com.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "enable_audit_log_stdout": {
+          "default": false,
+          "description": "Whether to enable audit logging to stdout in structured JSON format.\n Requires TEAM or ENTERPRISE license.",
+          "type": "boolean"
+        },
+        "enable_metric_collection": {
+          "default": false,
+          "description": "Whether to enable metric collection for the workspace.",
+          "type": "boolean"
+        },
+        "enforce_identity_domain": {
+          "default": false,
+          "description": "Only user and group from the domains can be created and login.",
+          "type": "boolean"
+        },
+        "external_url": {
+          "default": "",
+          "description": "The external URL is used for sso authentication callback.",
+          "type": "string"
+        },
+        "inactive_session_timeout": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "The session expiration time if not activity detected for the user. Value \u003c= 0 means no limit."
+        },
+        "maximum_role_expiration": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "The max duration for role expired."
+        },
+        "password_restriction": {
+          "$ref": "#/$defs/bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.schema.json",
+          "description": "Password restriction settings."
+        },
+        "require_2fa": {
+          "default": false,
+          "description": "Require 2FA for all users.",
+          "type": "boolean"
+        },
+        "token_duration": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "The duration for token."
+        },
+        "watermark": {
+          "default": false,
+          "description": "Whether to display watermark on pages.\n Requires ENTERPRISE license.",
+          "type": "boolean"
+        }
+      },
+      "title": "Workspace Profile Setting",
+      "type": "object"
+    },
+    "google.protobuf.Duration.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "duration",
+      "title": "Duration",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.WorkspaceProfileSetting.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.WorkspaceProfileSetting.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,170 @@
+{
+  "$id": "bytebase.store.IndexMetadata.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "IndexMetadata is the metadata for indexes.",
+  "patternProperties": {
+    "^(is_constraint)$": {
+      "default": false,
+      "description": "It's a PostgreSQL specific field.\n The unique constraint and unique index are not the same thing in PostgreSQL.",
+      "type": "boolean"
+    },
+    "^(key_length)$": {
+      "description": "The ordered list of key lengths for the index.\n If the key length is not specified, it is -1.",
+      "items": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "^(opclass_defaults)$": {
+      "description": "True if the operator class is the default. (PostgreSQL specific).",
+      "items": {
+        "type": "boolean"
+      },
+      "type": "array"
+    },
+    "^(opclass_names)$": {
+      "description": "https://www.postgresql.org/docs/current/catalog-pg-opclass.html\n Name of the operator class for each column. (PostgreSQL specific).",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "^(parent_index_name)$": {
+      "default": "",
+      "description": "The index name of the parent index.",
+      "type": "string"
+    },
+    "^(parent_index_schema)$": {
+      "default": "",
+      "description": "The schema name of the parent index.",
+      "type": "string"
+    },
+    "^(spatial_config)$": {
+      "$ref": "bytebase.store.SpatialIndexConfig.jsonschema.json",
+      "description": "Spatial index specific configuration"
+    }
+  },
+  "properties": {
+    "comment": {
+      "default": "",
+      "description": "The comment is the comment of an index.",
+      "type": "string"
+    },
+    "definition": {
+      "default": "",
+      "description": "The definition of an index.",
+      "type": "string"
+    },
+    "descending": {
+      "description": "The ordered list of descending flags for the index columns.",
+      "items": {
+        "type": "boolean"
+      },
+      "type": "array"
+    },
+    "expressions": {
+      "description": "The expressions are the ordered columns or expressions of an index.\n This could refer to a column or an expression.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "granularity": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The number of granules in the block. It's a ClickHouse specific field."
+    },
+    "isConstraint": {
+      "default": false,
+      "description": "It's a PostgreSQL specific field.\n The unique constraint and unique index are not the same thing in PostgreSQL.",
+      "type": "boolean"
+    },
+    "keyLength": {
+      "description": "The ordered list of key lengths for the index.\n If the key length is not specified, it is -1.",
+      "items": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "name": {
+      "default": "",
+      "description": "The name of the index.",
+      "type": "string"
+    },
+    "opclassDefaults": {
+      "description": "True if the operator class is the default. (PostgreSQL specific).",
+      "items": {
+        "type": "boolean"
+      },
+      "type": "array"
+    },
+    "opclassNames": {
+      "description": "https://www.postgresql.org/docs/current/catalog-pg-opclass.html\n Name of the operator class for each column. (PostgreSQL specific).",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "parentIndexName": {
+      "default": "",
+      "description": "The index name of the parent index.",
+      "type": "string"
+    },
+    "parentIndexSchema": {
+      "default": "",
+      "description": "The schema name of the parent index.",
+      "type": "string"
+    },
+    "primary": {
+      "default": false,
+      "description": "The primary is whether the index is a primary key index.",
+      "type": "boolean"
+    },
+    "spatialConfig": {
+      "$ref": "bytebase.store.SpatialIndexConfig.jsonschema.json",
+      "description": "Spatial index specific configuration"
+    },
+    "type": {
+      "default": "",
+      "description": "The type is the type of an index.",
+      "type": "string"
+    },
+    "unique": {
+      "default": false,
+      "description": "The unique is whether the index is unique.",
+      "type": "boolean"
+    },
+    "visible": {
+      "default": false,
+      "description": "The visible is whether the index is visible.",
+      "type": "boolean"
+    }
+  },
+  "title": "Index Metadata",
+  "type": "object"
+}

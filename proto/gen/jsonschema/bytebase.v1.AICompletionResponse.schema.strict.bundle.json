@@ -1,0 +1,62 @@
+{
+  "$defs": {
+    "bytebase.v1.AICompletionResponse.Candidate.Content.Part.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "Part",
+      "type": "object"
+    },
+    "bytebase.v1.AICompletionResponse.Candidate.Content.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "parts": {
+          "description": "parts is used for a result content with multiple parts.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.AICompletionResponse.Candidate.Content.Part.schema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Content",
+      "type": "object"
+    },
+    "bytebase.v1.AICompletionResponse.Candidate.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/bytebase.v1.AICompletionResponse.Candidate.Content.schema.strict.json"
+        }
+      },
+      "title": "Candidate",
+      "type": "object"
+    },
+    "bytebase.v1.AICompletionResponse.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "candidates": {
+          "description": "candidates is used for results with multiple choices and candidates. Used\n for OpenAI and Gemini.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.AICompletionResponse.Candidate.schema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "AI Completion Response",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.AICompletionResponse.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.AICompletionResponse.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

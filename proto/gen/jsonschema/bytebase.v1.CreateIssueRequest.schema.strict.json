@@ -1,0 +1,20 @@
+{
+  "$id": "bytebase.v1.CreateIssueRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "issue": {
+      "$ref": "bytebase.v1.Issue.schema.strict.json",
+      "description": "The issue to create."
+    },
+    "parent": {
+      "description": "The parent, which owns this collection of issues.\n Format: projects/{project}",
+      "type": "string"
+    }
+  },
+  "required": [
+    "parent"
+  ],
+  "title": "Create Issue Request",
+  "type": "object"
+}

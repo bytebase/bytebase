@@ -1,0 +1,158 @@
+{
+  "$defs": {
+    "bytebase.store.FieldMapping.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "FieldMapping saves the field names from user info API of identity provider.\n As we save all raw json string of user info response data into `principal.idp_user_info`,\n we can extract the relevant data based with `FieldMapping`.",
+      "patternProperties": {
+        "^(display_name)$": {
+          "default": "",
+          "description": "DisplayName is the field name of display name in 3rd-party idp user info. Optional.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "displayName": {
+          "default": "",
+          "description": "DisplayName is the field name of display name in 3rd-party idp user info. Optional.",
+          "type": "string"
+        },
+        "groups": {
+          "default": "",
+          "description": "Groups is the field name of groups in 3rd-party idp user info. Optional.\n Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/",
+          "type": "string"
+        },
+        "identifier": {
+          "default": "",
+          "description": "Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.",
+          "type": "string"
+        },
+        "phone": {
+          "default": "",
+          "description": "Phone is the field name of primary phone in 3rd-party idp user info. Optional.",
+          "type": "string"
+        }
+      },
+      "title": "Field Mapping",
+      "type": "object"
+    },
+    "bytebase.store.OAuth2IdentityProviderConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.",
+      "patternProperties": {
+        "^(auth_style)$": {
+          "anyOf": [
+            {
+              "pattern": "^OAUTH2_AUTH_STYLE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "IN_PARAMS",
+                "IN_HEADER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "O Auth2 Auth Style"
+        },
+        "^(auth_url)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(client_id)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(client_secret)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(field_mapping)$": {
+          "$ref": "#/$defs/bytebase.store.FieldMapping.jsonschema.json"
+        },
+        "^(skip_tls_verify)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(token_url)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(user_info_url)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "authStyle": {
+          "anyOf": [
+            {
+              "pattern": "^OAUTH2_AUTH_STYLE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "IN_PARAMS",
+                "IN_HEADER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "O Auth2 Auth Style"
+        },
+        "authUrl": {
+          "default": "",
+          "type": "string"
+        },
+        "clientId": {
+          "default": "",
+          "type": "string"
+        },
+        "clientSecret": {
+          "default": "",
+          "type": "string"
+        },
+        "fieldMapping": {
+          "$ref": "#/$defs/bytebase.store.FieldMapping.jsonschema.json"
+        },
+        "scopes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "skipTlsVerify": {
+          "default": false,
+          "type": "boolean"
+        },
+        "tokenUrl": {
+          "default": "",
+          "type": "string"
+        },
+        "userInfoUrl": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "O Auth2 Identity Provider Config",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.OAuth2IdentityProviderConfig.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.OAuth2IdentityProviderConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

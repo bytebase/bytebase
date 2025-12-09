@@ -1,0 +1,62 @@
+{
+  "$defs": {
+    "bytebase.store.GroupMember.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "member": {
+          "default": "",
+          "description": "Format: users/{userUID}.",
+          "title": "Member is the principal who belongs to this group.",
+          "type": "string"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "pattern": "^ROLE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "OWNER",
+                "MEMBER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Role"
+        }
+      },
+      "title": "Group Member",
+      "type": "object"
+    },
+    "bytebase.store.GroupPayload.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "members": {
+          "items": {
+            "$ref": "#/$defs/bytebase.store.GroupMember.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "source": {
+          "default": "",
+          "description": "The source indicates where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.",
+          "type": "string"
+        }
+      },
+      "title": "Group Payload",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.GroupPayload.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.GroupPayload.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

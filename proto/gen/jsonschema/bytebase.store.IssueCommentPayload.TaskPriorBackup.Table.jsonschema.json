@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.store.IssueCommentPayload.TaskPriorBackup.Table.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "default": "",
+      "type": "string"
+    },
+    "table": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Table",
+  "type": "object"
+}

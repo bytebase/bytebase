@@ -1,0 +1,25 @@
+{
+  "$id": "bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(end_position)$": {
+      "$ref": "bytebase.store.Position.jsonschema.json"
+    },
+    "^(start_position)$": {
+      "$ref": "bytebase.store.Position.jsonschema.json",
+      "description": "Position of the SQL statement."
+    }
+  },
+  "properties": {
+    "endPosition": {
+      "$ref": "bytebase.store.Position.jsonschema.json"
+    },
+    "startPosition": {
+      "$ref": "bytebase.store.Position.jsonschema.json",
+      "description": "Position of the SQL statement."
+    }
+  },
+  "title": "Sql Review Report",
+  "type": "object"
+}

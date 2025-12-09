@@ -1,0 +1,49 @@
+{
+  "$defs": {
+    "bytebase.v1.BatchRunTasksRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(runTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The task run should run after run_time."
+        }
+      },
+      "properties": {
+        "parent": {
+          "default": "",
+          "description": "The name of the parent of the tasks.\n Format: projects/{project}/rollouts/{rollout}/stages/{stage}",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "description": "The reason for running the tasks.",
+          "maxLength": 1000,
+          "type": "string"
+        },
+        "run_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The task run should run after run_time."
+        },
+        "tasks": {
+          "description": "The tasks to run.\n Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Batch Run Tasks Request",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.BatchRunTasksRequest.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.BatchRunTasksRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

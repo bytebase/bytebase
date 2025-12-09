@@ -1,0 +1,25 @@
+{
+  "$id": "bytebase.v1.SetIamPolicyRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Request message for setting an IAM policy.",
+  "properties": {
+    "etag": {
+      "description": "The current etag of the policy.",
+      "type": "string"
+    },
+    "policy": {
+      "$ref": "bytebase.v1.IamPolicy.jsonschema.strict.json"
+    },
+    "resource": {
+      "description": "The name of the resource to set the IAM policy.\n Format: projects/{project}\n Format: workspaces/{workspace}",
+      "type": "string"
+    }
+  },
+  "required": [
+    "resource",
+    "etag"
+  ],
+  "title": "Set Iam Policy Request",
+  "type": "object"
+}

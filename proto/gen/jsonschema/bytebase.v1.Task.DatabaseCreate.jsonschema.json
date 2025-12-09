@@ -1,0 +1,52 @@
+{
+  "$id": "bytebase.v1.Task.DatabaseCreate.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Payload for creating a new database.",
+  "patternProperties": {
+    "^(character_set)$": {
+      "default": "",
+      "description": "The character set for the database.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "characterSet": {
+      "default": "",
+      "description": "The character set for the database.",
+      "type": "string"
+    },
+    "collation": {
+      "default": "",
+      "description": "The collation for the database.",
+      "type": "string"
+    },
+    "database": {
+      "default": "",
+      "description": "Database name.",
+      "type": "string"
+    },
+    "environment": {
+      "default": "",
+      "description": "The environment the database belongs to.",
+      "type": "string"
+    },
+    "project": {
+      "default": "",
+      "description": "The project owning the database.\n Format: projects/{project}",
+      "type": "string"
+    },
+    "sheet": {
+      "default": "",
+      "description": "Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "table": {
+      "default": "",
+      "description": "Table name.",
+      "type": "string"
+    }
+  },
+  "title": "Database Create",
+  "type": "object"
+}

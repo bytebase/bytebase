@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.BatchGetIamPolicyResponse.PolicyResult.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Result for a single project's IAM policy.",
+  "properties": {
+    "policy": {
+      "$ref": "bytebase.v1.IamPolicy.jsonschema.strict.json",
+      "description": "The IAM policy for the project."
+    },
+    "project": {
+      "description": "The project resource name.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "project"
+  ],
+  "title": "Policy Result",
+  "type": "object"
+}

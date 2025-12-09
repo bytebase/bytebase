@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.CreateGroupRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Request message for creating a group.",
+  "properties": {
+    "group": {
+      "$ref": "bytebase.v1.Group.schema.strict.json",
+      "description": "The group to create."
+    },
+    "group_email": {
+      "description": "The email to use for the group, which will become the final component\n of the group's resource name.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "group_email"
+  ],
+  "title": "Create Group Request",
+  "type": "object"
+}

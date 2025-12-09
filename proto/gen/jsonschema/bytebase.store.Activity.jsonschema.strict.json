@@ -1,0 +1,9 @@
+{
+  "$id": "bytebase.store.Activity.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Activity types for webhook notifications.",
+  "properties": {},
+  "title": "Activity",
+  "type": "object"
+}

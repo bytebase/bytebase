@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.v1.OIDCIdentityProviderContext.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "OpenID Connect authentication context.",
+  "properties": {
+    "code": {
+      "description": "Authorization code from OIDC provider.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "title": "OIDC Identity Provider Context",
+  "type": "object"
+}

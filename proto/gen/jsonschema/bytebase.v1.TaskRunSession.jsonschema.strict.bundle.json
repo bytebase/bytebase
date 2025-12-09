@@ -1,0 +1,132 @@
+{
+  "$defs": {
+    "bytebase.v1.TaskRunSession.Postgres.Session.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "PostgreSQL session information read from `pg_stat_activity`.",
+      "properties": {
+        "applicationName": {
+          "description": "Application name.",
+          "type": "string"
+        },
+        "backendStart": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json",
+          "description": "When the backend process started."
+        },
+        "blockedByPids": {
+          "description": "PIDs of sessions blocking this session.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "clientAddr": {
+          "description": "Client IP address.",
+          "type": "string"
+        },
+        "clientPort": {
+          "description": "Client port number.",
+          "type": "string"
+        },
+        "datname": {
+          "description": "Database name.",
+          "type": "string"
+        },
+        "pid": {
+          "description": "Process ID of the session.",
+          "type": "string"
+        },
+        "query": {
+          "description": "Current query being executed.",
+          "type": "string"
+        },
+        "queryStart": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json",
+          "description": "When the current query started."
+        },
+        "state": {
+          "description": "Session state (active, idle, etc.).",
+          "type": "string"
+        },
+        "usename": {
+          "description": "User name.",
+          "type": "string"
+        },
+        "waitEvent": {
+          "description": "Specific wait event if session is waiting.",
+          "type": "string"
+        },
+        "waitEventType": {
+          "description": "Wait event type if session is waiting.",
+          "type": "string"
+        },
+        "xactStart": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json",
+          "description": "When the current transaction started."
+        }
+      },
+      "required": [
+        "pid",
+        "query",
+        "applicationName"
+      ],
+      "title": "Session",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunSession.Postgres.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "PostgreSQL session information.",
+      "properties": {
+        "blockedSessions": {
+          "description": "`blocked_sessions` are blocked by `session`.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TaskRunSession.Postgres.Session.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "blockingSessions": {
+          "description": "`blocking_sessions` block `session`.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TaskRunSession.Postgres.Session.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "session": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunSession.Postgres.Session.jsonschema.strict.json",
+          "description": "`session` is the session of the task run executing commands."
+        }
+      },
+      "title": "Postgres",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunSession.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session",
+          "type": "string"
+        },
+        "postgres": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunSession.Postgres.jsonschema.strict.json",
+          "description": "PostgreSQL session information."
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Task Run Session",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.TaskRunSession.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.TaskRunSession.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

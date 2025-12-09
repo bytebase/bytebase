@@ -1,0 +1,204 @@
+{
+  "$defs": {
+    "bytebase.store.ColumnCatalog.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(object_schema)$": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.jsonschema.json"
+        },
+        "^(semantic_type)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "classification": {
+          "default": "",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "The user labels for a column.",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the column.",
+          "type": "string"
+        },
+        "objectSchema": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.jsonschema.json"
+        },
+        "semanticType": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Column Catalog",
+      "type": "object"
+    },
+    "bytebase.store.DatabaseConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "schemas": {
+          "description": "The schema_configs is the list of configs for schemas in a database.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.SchemaCatalog.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Database Config",
+      "type": "object"
+    },
+    "bytebase.store.ObjectSchema.ArrayKind.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.jsonschema.json"
+        }
+      },
+      "title": "Array Kind",
+      "type": "object"
+    },
+    "bytebase.store.ObjectSchema.StructKind.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "properties": {
+          "additionalProperties": {
+            "$ref": "#/$defs/bytebase.store.ObjectSchema.jsonschema.json"
+          },
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "title": "Struct Kind",
+      "type": "object"
+    },
+    "bytebase.store.ObjectSchema.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(array_kind)$": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.ArrayKind.jsonschema.json"
+        },
+        "^(semantic_type)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(struct_kind)$": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.StructKind.jsonschema.json"
+        }
+      },
+      "properties": {
+        "arrayKind": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.ArrayKind.jsonschema.json"
+        },
+        "semanticType": {
+          "default": "",
+          "type": "string"
+        },
+        "structKind": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.StructKind.jsonschema.json"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "STRING",
+                "NUMBER",
+                "BOOLEAN",
+                "OBJECT",
+                "ARRAY"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Type"
+        }
+      },
+      "title": "Object Schema",
+      "type": "object"
+    },
+    "bytebase.store.SchemaCatalog.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "The schema name.\n It is an empty string for databases without such concept such as MySQL.",
+          "type": "string"
+        },
+        "tables": {
+          "description": "The table_configs is the list of configs for tables in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.TableCatalog.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Schema Catalog",
+      "type": "object"
+    },
+    "bytebase.store.TableCatalog.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(object_schema)$": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.jsonschema.json"
+        }
+      },
+      "properties": {
+        "classification": {
+          "default": "",
+          "type": "string"
+        },
+        "columns": {
+          "description": "The column_configs is the ordered list of configs for columns in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.ColumnCatalog.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the table.",
+          "type": "string"
+        },
+        "objectSchema": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.jsonschema.json"
+        }
+      },
+      "title": "Table Catalog",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.DatabaseConfig.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.DatabaseConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

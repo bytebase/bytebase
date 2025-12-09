@@ -1,0 +1,22 @@
+{
+  "$id": "bytebase.store.GridLevel.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "GridLevel defines a grid level for spatial tessellation.",
+  "properties": {
+    "density": {
+      "type": "string"
+    },
+    "level": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "level",
+    "density"
+  ],
+  "title": "Grid Level",
+  "type": "object"
+}

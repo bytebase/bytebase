@@ -1,0 +1,47 @@
+{
+  "$id": "bytebase.v1.KerberosConfig.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "instance": {
+      "description": "The instance component of the Kerberos principal.",
+      "type": "string"
+    },
+    "kdc_host": {
+      "description": "The hostname of the Key Distribution Center (KDC).",
+      "type": "string"
+    },
+    "kdc_port": {
+      "description": "The port of the Key Distribution Center (KDC).",
+      "type": "string"
+    },
+    "kdc_transport_protocol": {
+      "description": "The transport protocol for KDC communication (tcp or udp).",
+      "type": "string"
+    },
+    "keytab": {
+      "description": "The keytab file contents for authentication.",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "primary": {
+      "description": "The primary component of the Kerberos principal.",
+      "type": "string"
+    },
+    "realm": {
+      "description": "The Kerberos realm.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "primary",
+    "instance",
+    "realm",
+    "keytab",
+    "kdc_host",
+    "kdc_port",
+    "kdc_transport_protocol"
+  ],
+  "title": "Kerberos Config",
+  "type": "object"
+}

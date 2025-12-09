@@ -1,0 +1,472 @@
+{
+  "$defs": {
+    "bytebase.v1.ChangedResourceDatabase.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "schemas": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceSchema.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource Database",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResourceFunction.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "ranges": {
+          "description": "The ranges of sub-strings correspond to the statements on the sheet.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Range.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource Function",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResourceProcedure.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "ranges": {
+          "description": "The ranges of sub-strings correspond to the statements on the sheet.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Range.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource Procedure",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResourceSchema.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "functions": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceFunction.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "procedures": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceProcedure.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "tables": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceTable.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "views": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceView.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource Schema",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResourceTable.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "ranges": {
+          "description": "The ranges of sub-strings correspond to the statements on the sheet.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Range.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource Table",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResourceView.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "ranges": {
+          "description": "The ranges of sub-strings correspond to the statements on the sheet.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Range.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource View",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResources.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "databases": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceDatabase.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resources",
+      "type": "object"
+    },
+    "bytebase.v1.PlanCheckRun.Result.SqlReviewReport.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(end_position)$": {
+          "$ref": "#/$defs/bytebase.v1.Position.jsonschema.json"
+        },
+        "^(start_position)$": {
+          "$ref": "#/$defs/bytebase.v1.Position.jsonschema.json",
+          "description": "Position of the SQL statement."
+        }
+      },
+      "properties": {
+        "endPosition": {
+          "$ref": "#/$defs/bytebase.v1.Position.jsonschema.json"
+        },
+        "startPosition": {
+          "$ref": "#/$defs/bytebase.v1.Position.jsonschema.json",
+          "description": "Position of the SQL statement."
+        }
+      },
+      "title": "Sql Review Report",
+      "type": "object"
+    },
+    "bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(affected_rows)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(changed_resources)$": {
+          "$ref": "#/$defs/bytebase.v1.ChangedResources.jsonschema.json"
+        },
+        "^(statement_types)$": {
+          "description": "statement_types are the types of statements that are found in the sql.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "properties": {
+        "affectedRows": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "changedResources": {
+          "$ref": "#/$defs/bytebase.v1.ChangedResources.jsonschema.json"
+        },
+        "statementTypes": {
+          "description": "statement_types are the types of statements that are found in the sql.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Sql Summary Report",
+      "type": "object"
+    },
+    "bytebase.v1.PlanCheckRun.Result.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(sql_review_report)$": {
+          "$ref": "#/$defs/bytebase.v1.PlanCheckRun.Result.SqlReviewReport.jsonschema.json"
+        },
+        "^(sql_summary_report)$": {
+          "$ref": "#/$defs/bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.jsonschema.json"
+        }
+      },
+      "properties": {
+        "code": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "content": {
+          "default": "",
+          "type": "string"
+        },
+        "sqlReviewReport": {
+          "$ref": "#/$defs/bytebase.v1.PlanCheckRun.Result.SqlReviewReport.jsonschema.json"
+        },
+        "sqlSummaryReport": {
+          "$ref": "#/$defs/bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.jsonschema.json"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "pattern": "^ADVICE_LEVEL_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "SUCCESS",
+                "WARNING",
+                "ERROR"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Level"
+        },
+        "title": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Result",
+      "type": "object"
+    },
+    "bytebase.v1.PlanCheckRun.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(create_time)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json"
+        }
+      },
+      "properties": {
+        "createTime": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json"
+        },
+        "error": {
+          "default": "",
+          "description": "error is set if the Status is FAILED.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}",
+          "type": "string"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.PlanCheckRun.Result.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "sheet": {
+          "default": "",
+          "description": "Format: project/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "pattern": "^STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "RUNNING",
+                "DONE",
+                "FAILED",
+                "CANCELED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Status"
+        },
+        "target": {
+          "default": "",
+          "description": "Format: instances/{instance}/databases/{database}",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "DATABASE_STATEMENT_FAKE_ADVISE",
+                "DATABASE_STATEMENT_ADVISE",
+                "DATABASE_STATEMENT_SUMMARY_REPORT",
+                "DATABASE_CONNECT",
+                "DATABASE_GHOST_SYNC"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Type"
+        }
+      },
+      "title": "Plan Check Run",
+      "type": "object"
+    },
+    "bytebase.v1.Position.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Handling unknown positions:\n - If the entire position is unknown, leave this field as nil/undefined\n - If only line is known, set line and leave column as 0 (e.g., line=5, column=0)\n - If only column is known (rare), set column and leave line as 0\n Frontends should check for nil/undefined/zero values and handle them appropriately.",
+      "properties": {
+        "column": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Examples:\n - \"SELECT * FROM t\" - column 8 is '*'\n - \"SELECT 你好 FROM t\" - column 8 is '你' (even though it's at byte offset 7)\n - \"SELECT 😀 FROM t\" - column 8 is '😀' (even though it's 4 bytes in UTF-8)",
+          "title": "Column position in a text (one-based).\n Column is measured in Unicode code points (characters/runes), not bytes or grapheme clusters.\n First character of the line is column 1.\n A value of 0 indicates the column information is unknown."
+        },
+        "line": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Line position in a text (one-based).\n First line of the text is line 1.\n A value of 0 indicates the line information is unknown."
+        }
+      },
+      "title": "Position in a text expressed as one-based line and one-based column.\n We use 1-based numbering to match the majority of industry standards:\n - Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)\n - GitHub Actions uses 1-based (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message)\n - Most text editors display 1-based positions to users\n Note: LSP uses 0-based (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position),\n but we follow the canonical user-facing standards.",
+      "type": "object"
+    },
+    "bytebase.v1.Range.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Range of positions in text or sequence.",
+      "properties": {
+        "end": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "End position (exclusive)."
+        },
+        "start": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Start position (inclusive)."
+        }
+      },
+      "title": "Range",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.PlanCheckRun.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.PlanCheckRun.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

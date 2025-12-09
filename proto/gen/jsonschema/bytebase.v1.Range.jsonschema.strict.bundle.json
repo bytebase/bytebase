@@ -1,0 +1,32 @@
+{
+  "$defs": {
+    "bytebase.v1.Range.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Range of positions in text or sequence.",
+      "properties": {
+        "end": {
+          "description": "End position (exclusive).",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "start": {
+          "description": "Start position (inclusive).",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Range",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.Range.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.Range.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

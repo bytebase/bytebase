@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.SyncInstanceRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "enableFullSync": {
+      "description": "When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only\n the instance metadata (such as the database list) and any newly discovered databases will be synced.",
+      "type": "boolean"
+    },
+    "name": {
+      "description": "The name of instance.\n Format: instances/{instance}",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "enableFullSync"
+  ],
+  "title": "Sync Instance Request",
+  "type": "object"
+}

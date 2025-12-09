@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.store.PriorBackupDetail.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "PriorBackupDetail contains information about automatic backups created before migration.",
+  "properties": {
+    "items": {
+      "description": "List of backup operations performed.",
+      "items": {
+        "$ref": "bytebase.store.PriorBackupDetail.Item.jsonschema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Prior Backup Detail",
+  "type": "object"
+}

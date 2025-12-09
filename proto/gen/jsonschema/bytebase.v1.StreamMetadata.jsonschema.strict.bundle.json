@@ -1,0 +1,69 @@
+{
+  "$defs": {
+    "bytebase.v1.StreamMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "description": "The comment of the stream.",
+          "type": "string"
+        },
+        "definition": {
+          "description": "The definition of the stream.",
+          "type": "string"
+        },
+        "mode": {
+          "description": "The mode of the stream.",
+          "enum": [
+            "MODE_UNSPECIFIED",
+            "DEFAULT",
+            "APPEND_ONLY",
+            "INSERT_ONLY"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name is the name of a stream.",
+          "type": "string"
+        },
+        "owner": {
+          "description": "The owner of the stream.",
+          "type": "string"
+        },
+        "stale": {
+          "description": "Indicates whether the stream was last read before the `stale_after` time.",
+          "type": "boolean"
+        },
+        "tableName": {
+          "description": "The table_name is the name of the table/view that the stream is created on.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of the stream.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "DELTA"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "tableName",
+        "owner",
+        "comment",
+        "type",
+        "stale",
+        "mode",
+        "definition"
+      ],
+      "title": "Stream Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.StreamMetadata.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.StreamMetadata.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,59 @@
+{
+  "$id": "bytebase.v1.OIDCIdentityProviderConfig.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "OIDCIdentityProviderConfig is the structure for OIDC identity provider config.",
+  "properties": {
+    "auth_endpoint": {
+      "description": "The authorization endpoint of the OIDC provider.\n Should be fetched from the well-known configuration file of the OIDC provider.",
+      "type": "string"
+    },
+    "auth_style": {
+      "description": "The authentication style for client credentials.",
+      "enum": [
+        "OAUTH2_AUTH_STYLE_UNSPECIFIED",
+        "IN_PARAMS",
+        "IN_HEADER"
+      ],
+      "title": "O Auth2 Auth Style",
+      "type": "string"
+    },
+    "client_id": {
+      "description": "The OIDC client identifier.",
+      "type": "string"
+    },
+    "client_secret": {
+      "description": "The OIDC client secret for authentication.",
+      "type": "string"
+    },
+    "field_mapping": {
+      "$ref": "bytebase.v1.FieldMapping.schema.strict.json",
+      "description": "Mapping configuration for user attributes from OIDC claims."
+    },
+    "issuer": {
+      "description": "The OIDC issuer URL for the identity provider.",
+      "type": "string"
+    },
+    "scopes": {
+      "description": "The scopes that the OIDC provider supports.\n Should be fetched from the well-known configuration file of the OIDC provider.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "skip_tls_verify": {
+      "description": "Whether to skip TLS certificate verification.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "issuer",
+    "client_id",
+    "client_secret",
+    "skip_tls_verify",
+    "auth_style",
+    "auth_endpoint"
+  ],
+  "title": "OIDC Identity Provider Config",
+  "type": "object"
+}

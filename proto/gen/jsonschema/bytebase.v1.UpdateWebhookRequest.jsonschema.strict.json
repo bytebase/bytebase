@@ -1,0 +1,24 @@
+{
+  "$id": "bytebase.v1.UpdateWebhookRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allowMissing": {
+      "description": "If set to true, and the webhook is not found, a new webhook will be created.\n In this situation, `update_mask` is ignored.",
+      "type": "boolean"
+    },
+    "updateMask": {
+      "$ref": "google.protobuf.FieldMask.jsonschema.strict.json",
+      "description": "The list of fields to update."
+    },
+    "webhook": {
+      "$ref": "bytebase.v1.Webhook.jsonschema.strict.json",
+      "description": "The webhook to modify."
+    }
+  },
+  "required": [
+    "allowMissing"
+  ],
+  "title": "Update Webhook Request",
+  "type": "object"
+}

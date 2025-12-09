@@ -1,0 +1,25 @@
+{
+  "$id": "bytebase.v1.TaskRun.PriorBackupDetail.Item.Table.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Table information.",
+  "properties": {
+    "database": {
+      "default": "",
+      "description": "The database information.\n Format: instances/{instance}/databases/{database}",
+      "type": "string"
+    },
+    "schema": {
+      "default": "",
+      "description": "The schema name.",
+      "type": "string"
+    },
+    "table": {
+      "default": "",
+      "description": "The table name.",
+      "type": "string"
+    }
+  },
+  "title": "Table",
+  "type": "object"
+}

@@ -1,0 +1,46 @@
+{
+  "$defs": {
+    "bytebase.v1.ApprovalFlow.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "roles": {
+          "description": "The roles required for approval in order.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Approval Flow",
+      "type": "object"
+    },
+    "bytebase.v1.ApprovalTemplate.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "The description of the approval template.",
+          "type": "string"
+        },
+        "flow": {
+          "$ref": "#/$defs/bytebase.v1.ApprovalFlow.schema.strict.json",
+          "description": "The approval flow definition."
+        },
+        "title": {
+          "description": "The title of the approval template.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "description"
+      ],
+      "title": "Approval Template",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.ApprovalTemplate.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ApprovalTemplate.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,61 @@
+{
+  "$id": "bytebase.store.ExportArchivePayload.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(fileFormat)$": {
+      "anyOf": [
+        {
+          "pattern": "^FORMAT_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "CSV",
+            "JSON",
+            "SQL",
+            "XLSX"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The exported file format. e.g. JSON, CSV, SQL",
+      "title": "Export Format"
+    }
+  },
+  "properties": {
+    "file_format": {
+      "anyOf": [
+        {
+          "pattern": "^FORMAT_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "CSV",
+            "JSON",
+            "SQL",
+            "XLSX"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The exported file format. e.g. JSON, CSV, SQL",
+      "title": "Export Format"
+    }
+  },
+  "title": "Export Archive Payload",
+  "type": "object"
+}

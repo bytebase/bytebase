@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.store.ChangedResourceDatabase.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "schemas": {
+      "items": {
+        "$ref": "bytebase.store.ChangedResourceSchema.jsonschema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "Changed Resource Database",
+  "type": "object"
+}

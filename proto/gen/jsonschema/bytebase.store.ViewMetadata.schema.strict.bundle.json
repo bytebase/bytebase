@@ -1,0 +1,309 @@
+{
+  "$defs": {
+    "bytebase.store.ColumnMetadata.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ColumnMetadata is the metadata for columns.",
+      "properties": {
+        "character_set": {
+          "description": "The character_set is the character_set of a column.",
+          "type": "string"
+        },
+        "collation": {
+          "description": "The collation is the collation of a column.",
+          "type": "string"
+        },
+        "comment": {
+          "description": "The comment is the comment of a column.",
+          "type": "string"
+        },
+        "default": {
+          "description": "The default value of the column.",
+          "type": "string"
+        },
+        "default_constraint_name": {
+          "description": "Example: A column definition like:\n   CREATE TABLE employees (\n     status NVARCHAR(20) DEFAULT 'active'\n   )\n\n Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'\n or a user-defined name if specified:\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status\n\n To modify the default, you must first drop the existing constraint by name:\n   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status\n\n This field is populated when syncing from the database. When empty (e.g., when parsing\n from SQL files), the system cannot automatically drop the constraint.",
+          "title": "The default_constraint_name is the name of the default constraint, MSSQL only.\n In MSSQL, default values are implemented as named constraints. When modifying or\n dropping a column's default value, you must reference the constraint by name.\n This field stores the actual constraint name from the database.",
+          "type": "string"
+        },
+        "default_on_null": {
+          "description": "Oracle specific metadata.\n The default_on_null is the default on null of a column.",
+          "type": "boolean"
+        },
+        "generation": {
+          "$ref": "#/$defs/bytebase.store.GenerationMetadata.schema.strict.json",
+          "description": "The generation is for generated columns."
+        },
+        "identity_generation": {
+          "description": "The identity_generation is for identity columns, PG only.",
+          "enum": [
+            "IDENTITY_GENERATION_UNSPECIFIED",
+            "ALWAYS",
+            "BY_DEFAULT"
+          ],
+          "title": "Identity Generation",
+          "type": "string"
+        },
+        "identity_increment": {
+          "description": "The identity_increment is for identity columns, MSSQL only.",
+          "type": "integer"
+        },
+        "identity_seed": {
+          "description": "The identity_seed is for identity columns, MSSQL only.",
+          "type": "integer"
+        },
+        "is_identity": {
+          "type": "boolean"
+        },
+        "name": {
+          "description": "The name of the column.",
+          "type": "string"
+        },
+        "nullable": {
+          "description": "The nullable is the nullable of a column.",
+          "type": "boolean"
+        },
+        "on_update": {
+          "description": "The on_update is the on update action of a column.\n For MySQL like databases, it's only supported for TIMESTAMP columns with\n CURRENT_TIMESTAMP as on update value.",
+          "type": "string"
+        },
+        "position": {
+          "description": "The position is the position in columns.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "type": {
+          "description": "The type is the type of a column.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "position",
+        "default",
+        "default_on_null",
+        "on_update",
+        "nullable",
+        "type",
+        "character_set",
+        "collation",
+        "comment",
+        "is_identity",
+        "identity_generation",
+        "identity_seed",
+        "identity_increment",
+        "default_constraint_name"
+      ],
+      "title": "Column Metadata",
+      "type": "object"
+    },
+    "bytebase.store.DependencyColumn.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DependencyColumn is the metadata for dependency columns.",
+      "properties": {
+        "column": {
+          "description": "The column is the name of a reference column.",
+          "type": "string"
+        },
+        "schema": {
+          "description": "The schema is the schema of a reference column.",
+          "type": "string"
+        },
+        "table": {
+          "description": "The table is the table of a reference column.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "table",
+        "column"
+      ],
+      "title": "Dependency Column",
+      "type": "object"
+    },
+    "bytebase.store.GenerationMetadata.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "expression": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "TYPE_VIRTUAL",
+            "TYPE_STORED"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "expression"
+      ],
+      "title": "Generation Metadata",
+      "type": "object"
+    },
+    "bytebase.store.RuleMetadata.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "RuleMetadata is the metadata for PostgreSQL rules.",
+      "properties": {
+        "action": {
+          "description": "The command(s) to execute when the rule fires.",
+          "type": "string"
+        },
+        "condition": {
+          "description": "The WHERE condition of the rule (optional).",
+          "type": "string"
+        },
+        "definition": {
+          "description": "The full CREATE RULE statement.",
+          "type": "string"
+        },
+        "event": {
+          "description": "The event type of the rule: SELECT, INSERT, UPDATE, or DELETE.",
+          "type": "string"
+        },
+        "is_enabled": {
+          "description": "The is_enabled indicates whether the rule is enabled.",
+          "type": "boolean"
+        },
+        "is_instead": {
+          "description": "The is_instead indicates whether this is an INSTEAD rule.",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "The name of the rule.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "event",
+        "condition",
+        "action",
+        "is_instead",
+        "is_enabled",
+        "definition"
+      ],
+      "title": "Rule Metadata",
+      "type": "object"
+    },
+    "bytebase.store.TriggerMetadata.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "body": {
+          "description": "The body of the trigger.",
+          "type": "string"
+        },
+        "character_set_client": {
+          "type": "string"
+        },
+        "collation_connection": {
+          "type": "string"
+        },
+        "comment": {
+          "type": "string"
+        },
+        "event": {
+          "description": "The event that triggers this action, such as INSERT, UPDATE, DELETE, or TRUNCATE.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the trigger.",
+          "type": "string"
+        },
+        "skip_dump": {
+          "type": "boolean"
+        },
+        "sql_mode": {
+          "type": "string"
+        },
+        "timing": {
+          "description": "The timing of when the trigger fires, such as BEFORE or AFTER.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "event",
+        "timing",
+        "body",
+        "sql_mode",
+        "character_set_client",
+        "collation_connection",
+        "comment",
+        "skip_dump"
+      ],
+      "title": "Trigger Metadata",
+      "type": "object"
+    },
+    "bytebase.store.ViewMetadata.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ViewMetadata is the metadata for views.",
+      "properties": {
+        "columns": {
+          "description": "The ordered list of columns in the view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.ColumnMetadata.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "comment": {
+          "description": "The comment is the comment of a view.",
+          "type": "string"
+        },
+        "definition": {
+          "description": "The definition is the definition of a view.",
+          "type": "string"
+        },
+        "dependency_columns": {
+          "description": "The list of dependency columns of a view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.DependencyColumn.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the view.",
+          "type": "string"
+        },
+        "rules": {
+          "description": "The rules is the list of rules in a view (PostgreSQL specific).",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.RuleMetadata.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "skip_dump": {
+          "type": "boolean"
+        },
+        "triggers": {
+          "description": "The list of triggers in the view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.TriggerMetadata.schema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "definition",
+        "comment",
+        "skip_dump"
+      ],
+      "title": "View Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.ViewMetadata.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.ViewMetadata.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.v1.IssueComment.StageEnd.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Stage end event information.",
+  "properties": {
+    "stage": {
+      "description": "The stage that ended.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "stage"
+  ],
+  "title": "Stage End",
+  "type": "object"
+}

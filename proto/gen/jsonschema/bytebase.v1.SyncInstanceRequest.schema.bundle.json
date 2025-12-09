@@ -1,0 +1,32 @@
+{
+  "$defs": {
+    "bytebase.v1.SyncInstanceRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(enableFullSync)$": {
+          "default": false,
+          "description": "When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only\n the instance metadata (such as the database list) and any newly discovered databases will be synced.",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "enable_full_sync": {
+          "default": false,
+          "description": "When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only\n the instance metadata (such as the database list) and any newly discovered databases will be synced.",
+          "type": "boolean"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of instance.\n Format: instances/{instance}",
+          "type": "string"
+        }
+      },
+      "title": "Sync Instance Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.SyncInstanceRequest.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.SyncInstanceRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

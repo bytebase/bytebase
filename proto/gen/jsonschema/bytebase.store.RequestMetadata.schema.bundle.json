@@ -1,0 +1,38 @@
+{
+  "$defs": {
+    "bytebase.store.RequestMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Metadata about the request.",
+      "patternProperties": {
+        "^(callerIp)$": {
+          "default": "",
+          "description": "The IP address of the caller.",
+          "type": "string"
+        },
+        "^(callerSuppliedUserAgent)$": {
+          "default": "",
+          "description": "The user agent of the caller.\n This information is not authenticated and should be treated accordingly.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "caller_ip": {
+          "default": "",
+          "description": "The IP address of the caller.",
+          "type": "string"
+        },
+        "caller_supplied_user_agent": {
+          "default": "",
+          "description": "The user agent of the caller.\n This information is not authenticated and should be treated accordingly.",
+          "type": "string"
+        }
+      },
+      "title": "Request Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.RequestMetadata.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.RequestMetadata.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

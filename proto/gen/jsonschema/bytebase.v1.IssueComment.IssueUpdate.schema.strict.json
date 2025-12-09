@@ -1,0 +1,54 @@
+{
+  "$id": "bytebase.v1.IssueComment.IssueUpdate.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Issue update event information.",
+  "properties": {
+    "from_description": {
+      "type": "string"
+    },
+    "from_labels": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "from_status": {
+      "enum": [
+        "ISSUE_STATUS_UNSPECIFIED",
+        "OPEN",
+        "DONE",
+        "CANCELED"
+      ],
+      "title": "Issue Status",
+      "type": "string"
+    },
+    "from_title": {
+      "type": "string"
+    },
+    "to_description": {
+      "type": "string"
+    },
+    "to_labels": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "to_status": {
+      "enum": [
+        "ISSUE_STATUS_UNSPECIFIED",
+        "OPEN",
+        "DONE",
+        "CANCELED"
+      ],
+      "title": "Issue Status",
+      "type": "string"
+    },
+    "to_title": {
+      "type": "string"
+    }
+  },
+  "title": "Issue Update",
+  "type": "object"
+}

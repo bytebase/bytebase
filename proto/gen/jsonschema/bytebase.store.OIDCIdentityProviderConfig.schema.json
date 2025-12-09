@@ -1,0 +1,96 @@
+{
+  "$id": "bytebase.store.OIDCIdentityProviderConfig.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "OIDCIdentityProviderConfig is the structure for OIDC identity provider config.",
+  "patternProperties": {
+    "^(authStyle)$": {
+      "anyOf": [
+        {
+          "pattern": "^OAUTH2_AUTH_STYLE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "IN_PARAMS",
+            "IN_HEADER"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "O Auth2 Auth Style"
+    },
+    "^(clientId)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(clientSecret)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(fieldMapping)$": {
+      "$ref": "bytebase.store.FieldMapping.schema.json"
+    },
+    "^(skipTlsVerify)$": {
+      "default": false,
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "auth_style": {
+      "anyOf": [
+        {
+          "pattern": "^OAUTH2_AUTH_STYLE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "IN_PARAMS",
+            "IN_HEADER"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "O Auth2 Auth Style"
+    },
+    "client_id": {
+      "default": "",
+      "type": "string"
+    },
+    "client_secret": {
+      "default": "",
+      "type": "string"
+    },
+    "field_mapping": {
+      "$ref": "bytebase.store.FieldMapping.schema.json"
+    },
+    "issuer": {
+      "default": "",
+      "type": "string"
+    },
+    "scopes": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "skip_tls_verify": {
+      "default": false,
+      "type": "boolean"
+    }
+  },
+  "title": "OIDC Identity Provider Config",
+  "type": "object"
+}

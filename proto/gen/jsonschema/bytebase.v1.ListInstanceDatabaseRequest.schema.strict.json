@@ -1,0 +1,20 @@
+{
+  "$id": "bytebase.v1.ListInstanceDatabaseRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "instance": {
+      "$ref": "bytebase.v1.Instance.schema.strict.json",
+      "description": "The target instance. We need to set this field if the target instance is not created yet."
+    },
+    "name": {
+      "description": "The name of the instance.\n Format: instances/{instance}",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "List Instance Database Request",
+  "type": "object"
+}

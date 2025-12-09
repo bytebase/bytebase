@@ -1,0 +1,25 @@
+{
+  "$id": "bytebase.v1.ListPlanCheckRunsResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(plan_check_runs)$": {
+      "description": "The plan check runs from the specified request.",
+      "items": {
+        "$ref": "bytebase.v1.PlanCheckRun.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "planCheckRuns": {
+      "description": "The plan check runs from the specified request.",
+      "items": {
+        "$ref": "bytebase.v1.PlanCheckRun.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "List Plan Check Runs Response",
+  "type": "object"
+}

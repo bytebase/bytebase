@@ -1,0 +1,23 @@
+{
+  "$id": "bytebase.store.ReviewConfigPayload.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(sqlReviewRules)$": {
+      "items": {
+        "$ref": "bytebase.store.SQLReviewRule.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "sql_review_rules": {
+      "items": {
+        "$ref": "bytebase.store.SQLReviewRule.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Review Config Payload",
+  "type": "object"
+}

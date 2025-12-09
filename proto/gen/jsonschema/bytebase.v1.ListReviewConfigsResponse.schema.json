@@ -1,0 +1,25 @@
+{
+  "$id": "bytebase.v1.ListReviewConfigsResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(reviewConfigs)$": {
+      "description": "The SQL review configs from the specified request.",
+      "items": {
+        "$ref": "bytebase.v1.ReviewConfig.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "review_configs": {
+      "description": "The SQL review configs from the specified request.",
+      "items": {
+        "$ref": "bytebase.v1.ReviewConfig.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "List Review Configs Response",
+  "type": "object"
+}

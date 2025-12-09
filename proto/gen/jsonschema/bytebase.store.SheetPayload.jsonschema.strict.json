@@ -1,0 +1,52 @@
+{
+  "$id": "bytebase.store.SheetPayload.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "commands": {
+      "description": "The start and end position of each command in the sheet statement.",
+      "items": {
+        "$ref": "bytebase.store.Range.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "engine": {
+      "description": "The SQL dialect.",
+      "enum": [
+        "ENGINE_UNSPECIFIED",
+        "CLICKHOUSE",
+        "MYSQL",
+        "POSTGRES",
+        "SNOWFLAKE",
+        "SQLITE",
+        "TIDB",
+        "MONGODB",
+        "REDIS",
+        "ORACLE",
+        "SPANNER",
+        "MSSQL",
+        "REDSHIFT",
+        "MARIADB",
+        "OCEANBASE",
+        "STARROCKS",
+        "DORIS",
+        "HIVE",
+        "ELASTICSEARCH",
+        "BIGQUERY",
+        "DYNAMODB",
+        "DATABRICKS",
+        "COCKROACHDB",
+        "COSMOSDB",
+        "TRINO",
+        "CASSANDRA"
+      ],
+      "title": "Engine",
+      "type": "string"
+    }
+  },
+  "required": [
+    "engine"
+  ],
+  "title": "Sheet Payload",
+  "type": "object"
+}

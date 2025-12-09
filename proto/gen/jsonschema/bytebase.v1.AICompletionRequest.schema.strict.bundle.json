@@ -1,0 +1,39 @@
+{
+  "$defs": {
+    "bytebase.v1.AICompletionRequest.Message.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "content"
+      ],
+      "title": "Message",
+      "type": "object"
+    },
+    "bytebase.v1.AICompletionRequest.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "messages": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.AICompletionRequest.Message.schema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "AI Completion Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.AICompletionRequest.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.AICompletionRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

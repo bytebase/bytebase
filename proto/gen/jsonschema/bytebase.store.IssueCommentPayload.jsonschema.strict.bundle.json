@@ -1,0 +1,210 @@
+{
+  "$defs": {
+    "bytebase.store.IssueCommentPayload.Approval.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "STATUS_UNSPECIFIED",
+            "PENDING",
+            "APPROVED",
+            "REJECTED"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "Approval",
+      "type": "object"
+    },
+    "bytebase.store.IssueCommentPayload.IssueUpdate.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "fromDescription": {
+          "type": "string"
+        },
+        "fromLabels": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "fromStatus": {
+          "enum": [
+            "ISSUE_STATUS_UNSPECIFIED",
+            "OPEN",
+            "DONE",
+            "CANCELED"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "fromTitle": {
+          "type": "string"
+        },
+        "toDescription": {
+          "type": "string"
+        },
+        "toLabels": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "toStatus": {
+          "enum": [
+            "ISSUE_STATUS_UNSPECIFIED",
+            "OPEN",
+            "DONE",
+            "CANCELED"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "toTitle": {
+          "type": "string"
+        }
+      },
+      "title": "Issue Update",
+      "type": "object"
+    },
+    "bytebase.store.IssueCommentPayload.StageEnd.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "stage": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "stage"
+      ],
+      "title": "Stage End",
+      "type": "object"
+    },
+    "bytebase.store.IssueCommentPayload.TaskPriorBackup.Table.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "type": "string"
+        },
+        "table": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "table"
+      ],
+      "title": "Table",
+      "type": "object"
+    },
+    "bytebase.store.IssueCommentPayload.TaskPriorBackup.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "database": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "originalLine": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "tables": {
+          "items": {
+            "$ref": "#/$defs/bytebase.store.IssueCommentPayload.TaskPriorBackup.Table.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "task": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "task",
+        "database",
+        "error"
+      ],
+      "title": "Task Prior Backup",
+      "type": "object"
+    },
+    "bytebase.store.IssueCommentPayload.TaskUpdate.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "fromSheet": {
+          "description": "Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "tasks": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "toSheet": {
+          "description": "Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "toStatus": {
+          "enum": [
+            "STATUS_UNSPECIFIED",
+            "PENDING",
+            "RUNNING",
+            "DONE",
+            "FAILED",
+            "CANCELED",
+            "NOT_STARTED",
+            "SKIPPED"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "title": "Task Update",
+      "type": "object"
+    },
+    "bytebase.store.IssueCommentPayload.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "approval": {
+          "$ref": "#/$defs/bytebase.store.IssueCommentPayload.Approval.jsonschema.strict.json"
+        },
+        "comment": {
+          "type": "string"
+        },
+        "issueUpdate": {
+          "$ref": "#/$defs/bytebase.store.IssueCommentPayload.IssueUpdate.jsonschema.strict.json"
+        },
+        "stageEnd": {
+          "$ref": "#/$defs/bytebase.store.IssueCommentPayload.StageEnd.jsonschema.strict.json"
+        },
+        "taskPriorBackup": {
+          "$ref": "#/$defs/bytebase.store.IssueCommentPayload.TaskPriorBackup.jsonschema.strict.json"
+        },
+        "taskUpdate": {
+          "$ref": "#/$defs/bytebase.store.IssueCommentPayload.TaskUpdate.jsonschema.strict.json"
+        }
+      },
+      "required": [
+        "comment"
+      ],
+      "title": "Issue Comment Payload",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.IssueCommentPayload.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.IssueCommentPayload.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,30 @@
+{
+  "$id": "bytebase.store.TableCatalog.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "classification": {
+      "type": "string"
+    },
+    "columns": {
+      "description": "The column_configs is the ordered list of configs for columns in a table.",
+      "items": {
+        "$ref": "bytebase.store.ColumnCatalog.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "description": "The name of the table.",
+      "type": "string"
+    },
+    "object_schema": {
+      "$ref": "bytebase.store.ObjectSchema.schema.strict.json"
+    }
+  },
+  "required": [
+    "name",
+    "classification"
+  ],
+  "title": "Table Catalog",
+  "type": "object"
+}

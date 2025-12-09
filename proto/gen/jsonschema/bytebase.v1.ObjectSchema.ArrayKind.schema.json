@@ -1,0 +1,14 @@
+{
+  "$id": "bytebase.v1.ObjectSchema.ArrayKind.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Array type with element schema.",
+  "properties": {
+    "kind": {
+      "$ref": "bytebase.v1.ObjectSchema.schema.json",
+      "description": "The schema of array elements."
+    }
+  },
+  "title": "Array Kind",
+  "type": "object"
+}

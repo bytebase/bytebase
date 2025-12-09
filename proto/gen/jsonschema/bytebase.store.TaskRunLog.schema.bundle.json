@@ -1,0 +1,595 @@
+{
+  "$defs": {
+    "bytebase.store.Position.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Handling unknown positions:\n - If the entire position is unknown, leave this field as nil/undefined\n - If only line is known, set line and leave column as 0 (e.g., line=5, column=0)\n - If only column is known (rare), set column and leave line as 0\n Frontends should check for nil/undefined/zero values and handle them appropriately.",
+      "properties": {
+        "column": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Examples:\n - \"SELECT * FROM t\" - column 8 is '*'\n - \"SELECT 你好 FROM t\" - column 8 is '你' (even though it's at byte offset 7)\n - \"SELECT 😀 FROM t\" - column 8 is '😀' (even though it's 4 bytes in UTF-8)",
+          "title": "Column position in a text (one-based).\n Column is measured in Unicode code points (characters/runes), not bytes or grapheme clusters.\n First character of the line is column 1.\n A value of 0 indicates the column information is unknown."
+        },
+        "line": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Line position in a text (one-based).\n First line of the text is line 1.\n A value of 0 indicates the line information is unknown."
+        }
+      },
+      "title": "Position in a text expressed as one-based line and one-based column.\n We use 1-based numbering to match the majority of industry standards:\n - Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)\n - GitHub Actions uses 1-based (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message)\n - Most text editors display 1-based positions to users\n Note: LSP uses 0-based (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position),\n but we follow the canonical user-facing standards.",
+      "type": "object"
+    },
+    "bytebase.store.PriorBackupDetail.Item.Table.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Table identifies a database table.",
+      "properties": {
+        "database": {
+          "default": "",
+          "description": "The database containing the table.\n Format: instances/{instance}/databases/{database}",
+          "type": "string"
+        },
+        "schema": {
+          "default": "",
+          "description": "Schema name (for databases that support schemas).",
+          "type": "string"
+        },
+        "table": {
+          "default": "",
+          "description": "Table name.",
+          "type": "string"
+        }
+      },
+      "title": "Table",
+      "type": "object"
+    },
+    "bytebase.store.PriorBackupDetail.Item.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Item represents a single backup operation for a table.",
+      "patternProperties": {
+        "^(endPosition)$": {
+          "$ref": "#/$defs/bytebase.store.Position.schema.json",
+          "description": "Ending position in SQL for this backup operation."
+        },
+        "^(sourceTable)$": {
+          "$ref": "#/$defs/bytebase.store.PriorBackupDetail.Item.Table.schema.json",
+          "description": "The original table that was backed up."
+        },
+        "^(startPosition)$": {
+          "$ref": "#/$defs/bytebase.store.Position.schema.json",
+          "description": "Starting position in SQL for this backup operation."
+        },
+        "^(targetTable)$": {
+          "$ref": "#/$defs/bytebase.store.PriorBackupDetail.Item.Table.schema.json",
+          "description": "The backup table where data was copied."
+        }
+      },
+      "properties": {
+        "end_position": {
+          "$ref": "#/$defs/bytebase.store.Position.schema.json",
+          "description": "Ending position in SQL for this backup operation."
+        },
+        "source_table": {
+          "$ref": "#/$defs/bytebase.store.PriorBackupDetail.Item.Table.schema.json",
+          "description": "The original table that was backed up."
+        },
+        "start_position": {
+          "$ref": "#/$defs/bytebase.store.Position.schema.json",
+          "description": "Starting position in SQL for this backup operation."
+        },
+        "target_table": {
+          "$ref": "#/$defs/bytebase.store.PriorBackupDetail.Item.Table.schema.json",
+          "description": "The backup table where data was copied."
+        }
+      },
+      "title": "Item",
+      "type": "object"
+    },
+    "bytebase.store.PriorBackupDetail.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "PriorBackupDetail contains information about automatic backups created before migration.",
+      "properties": {
+        "items": {
+          "description": "List of backup operations performed.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.PriorBackupDetail.Item.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Prior Backup Detail",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.CommandExecute.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(commandIndexes)$": {
+          "description": "Either `command_indexes` or `statement` is set.\n The indexes of the executed commands.",
+          "items": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "properties": {
+        "command_indexes": {
+          "description": "Either `command_indexes` or `statement` is set.\n The indexes of the executed commands.",
+          "items": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "statement": {
+          "default": "",
+          "description": "The statement to be executed.",
+          "type": "string"
+        }
+      },
+      "title": "Command Execute",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.CommandResponse.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(affectedRows)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(allAffectedRows)$": {
+          "description": "`all_affected_rows` is the affected rows of each command.\n `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "properties": {
+        "affected_rows": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "all_affected_rows": {
+          "description": "`all_affected_rows` is the affected rows of each command.\n `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "error": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Command Response",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.ComputeDiffEnd.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Compute Diff End",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.ComputeDiffStart.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "title": "Compute Diff Start",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.DatabaseSyncEnd.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Database Sync End",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.DatabaseSyncStart.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "title": "Database Sync Start",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.PriorBackupEnd.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(priorBackupDetail)$": {
+          "$ref": "#/$defs/bytebase.store.PriorBackupDetail.schema.json"
+        }
+      },
+      "properties": {
+        "error": {
+          "default": "",
+          "type": "string"
+        },
+        "prior_backup_detail": {
+          "$ref": "#/$defs/bytebase.store.PriorBackupDetail.schema.json"
+        }
+      },
+      "title": "Prior Backup End",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.PriorBackupStart.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "title": "Prior Backup Start",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.RetryInfo.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(maximumRetries)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(retryCount)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "properties": {
+        "error": {
+          "default": "",
+          "type": "string"
+        },
+        "maximum_retries": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "retry_count": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "title": "Retry Info",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.SchemaDumpEnd.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Schema Dump End",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.SchemaDumpStart.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "title": "Schema Dump Start",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.TaskRunStatusUpdate.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "anyOf": [
+            {
+              "pattern": "^STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "RUNNING_WAITING",
+                "RUNNING_RUNNING"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Status"
+        }
+      },
+      "title": "Task Run Status Update",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.TransactionControl.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "default": "",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "BEGIN",
+                "COMMIT",
+                "ROLLBACK"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Type"
+        }
+      },
+      "title": "Transaction Control",
+      "type": "object"
+    },
+    "bytebase.store.TaskRunLog.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(commandExecute)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.CommandExecute.schema.json"
+        },
+        "^(commandResponse)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.CommandResponse.schema.json"
+        },
+        "^(computeDiffEnd)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.ComputeDiffEnd.schema.json"
+        },
+        "^(computeDiffStart)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.ComputeDiffStart.schema.json"
+        },
+        "^(databaseSyncEnd)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.DatabaseSyncEnd.schema.json"
+        },
+        "^(databaseSyncStart)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.DatabaseSyncStart.schema.json"
+        },
+        "^(deployId)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(priorBackupEnd)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.PriorBackupEnd.schema.json"
+        },
+        "^(priorBackupStart)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.PriorBackupStart.schema.json"
+        },
+        "^(retryInfo)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.RetryInfo.schema.json"
+        },
+        "^(schemaDumpEnd)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.SchemaDumpEnd.schema.json"
+        },
+        "^(schemaDumpStart)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.SchemaDumpStart.schema.json"
+        },
+        "^(taskRunStatusUpdate)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.TaskRunStatusUpdate.schema.json"
+        },
+        "^(transactionControl)$": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.TransactionControl.schema.json"
+        }
+      },
+      "properties": {
+        "command_execute": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.CommandExecute.schema.json"
+        },
+        "command_response": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.CommandResponse.schema.json"
+        },
+        "compute_diff_end": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.ComputeDiffEnd.schema.json"
+        },
+        "compute_diff_start": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.ComputeDiffStart.schema.json"
+        },
+        "database_sync_end": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.DatabaseSyncEnd.schema.json"
+        },
+        "database_sync_start": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.DatabaseSyncStart.schema.json"
+        },
+        "deploy_id": {
+          "default": "",
+          "type": "string"
+        },
+        "prior_backup_end": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.PriorBackupEnd.schema.json"
+        },
+        "prior_backup_start": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.PriorBackupStart.schema.json"
+        },
+        "retry_info": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.RetryInfo.schema.json"
+        },
+        "schema_dump_end": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.SchemaDumpEnd.schema.json"
+        },
+        "schema_dump_start": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.SchemaDumpStart.schema.json"
+        },
+        "task_run_status_update": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.TaskRunStatusUpdate.schema.json"
+        },
+        "transaction_control": {
+          "$ref": "#/$defs/bytebase.store.TaskRunLog.TransactionControl.schema.json"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "SCHEMA_DUMP_START",
+                "SCHEMA_DUMP_END",
+                "COMMAND_EXECUTE",
+                "COMMAND_RESPONSE",
+                "DATABASE_SYNC_START",
+                "DATABASE_SYNC_END",
+                "TASK_RUN_STATUS_UPDATE",
+                "TRANSACTION_CONTROL",
+                "PRIOR_BACKUP_START",
+                "PRIOR_BACKUP_END",
+                "RETRY_INFO",
+                "COMPUTE_DIFF_START",
+                "COMPUTE_DIFF_END"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Type"
+        }
+      },
+      "title": "Task Run Log",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.TaskRunLog.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.TaskRunLog.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

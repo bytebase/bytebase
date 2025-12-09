@@ -1,0 +1,29 @@
+{
+  "$defs": {
+    "bytebase.v1.BatchSyncDatabasesRequest.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "names": {
+          "description": "The list of database names to sync.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parent": {
+          "description": "The parent resource shared by all databases being updated.\n Format: instances/{instance}\n If the operation spans parents, a dash (-) may be accepted as a wildcard.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "parent"
+      ],
+      "title": "Batch Sync Databases Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.BatchSyncDatabasesRequest.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.BatchSyncDatabasesRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

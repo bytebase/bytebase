@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.RowValue.Timestamp.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accuracy": {
+      "description": "The accuracy is the number of digits after the decimal point.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "googleTimestamp": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    }
+  },
+  "required": [
+    "accuracy"
+  ],
+  "title": "Timestamp",
+  "type": "object"
+}

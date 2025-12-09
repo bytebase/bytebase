@@ -1,0 +1,42 @@
+{
+  "$defs": {
+    "bytebase.store.SystemSetting.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(auth_secret)$": {
+          "default": "",
+          "description": "Authentication secret for token signing (32-character random string).",
+          "type": "string"
+        },
+        "^(workspace_id)$": {
+          "default": "",
+          "description": "Unique workspace identifier (UUID).",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "authSecret": {
+          "default": "",
+          "description": "Authentication secret for token signing (32-character random string).",
+          "type": "string"
+        },
+        "license": {
+          "default": "",
+          "description": "Enterprise license JWT token.",
+          "type": "string"
+        },
+        "workspaceId": {
+          "default": "",
+          "description": "Unique workspace identifier (UUID).",
+          "type": "string"
+        }
+      },
+      "title": "System Setting",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.SystemSetting.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.SystemSetting.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

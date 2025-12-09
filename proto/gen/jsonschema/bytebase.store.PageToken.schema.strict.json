@@ -1,0 +1,26 @@
+{
+  "$id": "bytebase.store.PageToken.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "PageToken is used internally for obfuscating pagination tokens.",
+  "properties": {
+    "limit": {
+      "description": "Maximum number of items to return.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "offset": {
+      "description": "Number of items to skip before starting to return results.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "limit",
+    "offset"
+  ],
+  "title": "Page Token",
+  "type": "object"
+}

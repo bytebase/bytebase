@@ -1,0 +1,26 @@
+{
+  "$id": "bytebase.store.TaskRunLog.CommandResponse.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "affected_rows": {
+      "type": "integer"
+    },
+    "all_affected_rows": {
+      "description": "`all_affected_rows` is the affected rows of each command.\n `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.",
+      "items": {
+        "type": "integer"
+      },
+      "type": "array"
+    },
+    "error": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "error",
+    "affected_rows"
+  ],
+  "title": "Command Response",
+  "type": "object"
+}

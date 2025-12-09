@@ -1,0 +1,923 @@
+{
+  "$defs": {
+    "bytebase.store.BoundingBox.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "BoundingBox defines the bounding box for spatial indexes.",
+      "properties": {
+        "xmax": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "xmin": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "ymax": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "ymin": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax"
+      ],
+      "title": "Bounding Box",
+      "type": "object"
+    },
+    "bytebase.store.CheckConstraintMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "expression": {
+          "description": "The expression is the expression of a check constraint.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the check constraint.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "expression"
+      ],
+      "title": "Check Constraint Metadata",
+      "type": "object"
+    },
+    "bytebase.store.ColumnMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ColumnMetadata is the metadata for columns.",
+      "properties": {
+        "characterSet": {
+          "description": "The character_set is the character_set of a column.",
+          "type": "string"
+        },
+        "collation": {
+          "description": "The collation is the collation of a column.",
+          "type": "string"
+        },
+        "comment": {
+          "description": "The comment is the comment of a column.",
+          "type": "string"
+        },
+        "default": {
+          "description": "The default value of the column.",
+          "type": "string"
+        },
+        "defaultConstraintName": {
+          "description": "Example: A column definition like:\n   CREATE TABLE employees (\n     status NVARCHAR(20) DEFAULT 'active'\n   )\n\n Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'\n or a user-defined name if specified:\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status\n\n To modify the default, you must first drop the existing constraint by name:\n   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status\n\n This field is populated when syncing from the database. When empty (e.g., when parsing\n from SQL files), the system cannot automatically drop the constraint.",
+          "title": "The default_constraint_name is the name of the default constraint, MSSQL only.\n In MSSQL, default values are implemented as named constraints. When modifying or\n dropping a column's default value, you must reference the constraint by name.\n This field stores the actual constraint name from the database.",
+          "type": "string"
+        },
+        "defaultOnNull": {
+          "description": "Oracle specific metadata.\n The default_on_null is the default on null of a column.",
+          "type": "boolean"
+        },
+        "generation": {
+          "$ref": "#/$defs/bytebase.store.GenerationMetadata.jsonschema.strict.json",
+          "description": "The generation is for generated columns."
+        },
+        "identityGeneration": {
+          "description": "The identity_generation is for identity columns, PG only.",
+          "enum": [
+            "IDENTITY_GENERATION_UNSPECIFIED",
+            "ALWAYS",
+            "BY_DEFAULT"
+          ],
+          "title": "Identity Generation",
+          "type": "string"
+        },
+        "identityIncrement": {
+          "description": "The identity_increment is for identity columns, MSSQL only.",
+          "type": "integer"
+        },
+        "identitySeed": {
+          "description": "The identity_seed is for identity columns, MSSQL only.",
+          "type": "integer"
+        },
+        "isIdentity": {
+          "type": "boolean"
+        },
+        "name": {
+          "description": "The name of the column.",
+          "type": "string"
+        },
+        "nullable": {
+          "description": "The nullable is the nullable of a column.",
+          "type": "boolean"
+        },
+        "onUpdate": {
+          "description": "The on_update is the on update action of a column.\n For MySQL like databases, it's only supported for TIMESTAMP columns with\n CURRENT_TIMESTAMP as on update value.",
+          "type": "string"
+        },
+        "position": {
+          "description": "The position is the position in columns.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "type": {
+          "description": "The type is the type of a column.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "position",
+        "default",
+        "defaultOnNull",
+        "onUpdate",
+        "nullable",
+        "type",
+        "characterSet",
+        "collation",
+        "comment",
+        "isIdentity",
+        "identityGeneration",
+        "identitySeed",
+        "identityIncrement",
+        "defaultConstraintName"
+      ],
+      "title": "Column Metadata",
+      "type": "object"
+    },
+    "bytebase.store.DimensionalConfig.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DimensionalConfig defines dimensional and constraint parameters for spatial indexes.",
+      "properties": {
+        "dataType": {
+          "description": "Spatial data type\n Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.",
+          "type": "string"
+        },
+        "dimensions": {
+          "description": "Number of dimensions (2-4, default 2)",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "layerGtype": {
+          "description": "Oracle geometry type constraint\n Examples: POINT, LINE, POLYGON, COLLECTION",
+          "type": "string"
+        },
+        "operatorClass": {
+          "description": "PostgreSQL operator class\n Examples: gist_geometry_ops_2d, gist_geometry_ops_nd, etc.",
+          "type": "string"
+        },
+        "parallelBuild": {
+          "description": "Parallel index creation",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "dimensions",
+        "dataType",
+        "operatorClass",
+        "layerGtype",
+        "parallelBuild"
+      ],
+      "title": "Dimensional Config",
+      "type": "object"
+    },
+    "bytebase.store.ExcludeConstraintMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "expression": {
+          "description": "The expression is the full EXCLUDE constraint definition including \"EXCLUDE\" keyword.\n Example: \"EXCLUDE USING gist (room_id WITH =, during WITH \u0026\u0026)\"",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the EXCLUDE constraint.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "expression"
+      ],
+      "title": "Exclude Constraint Metadata",
+      "type": "object"
+    },
+    "bytebase.store.ForeignKeyMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ForeignKeyMetadata is the metadata for foreign keys.",
+      "properties": {
+        "columns": {
+          "description": "The columns are the ordered referencing columns of a foreign key.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "matchType": {
+          "description": "The match_type is the match type of a foreign key.\n The match_type is the PostgreSQL specific field.\n It's empty string for other databases.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the foreign key.",
+          "type": "string"
+        },
+        "onDelete": {
+          "description": "The on_delete is the on delete action of a foreign key.",
+          "type": "string"
+        },
+        "onUpdate": {
+          "description": "The on_update is the on update action of a foreign key.",
+          "type": "string"
+        },
+        "referencedColumns": {
+          "description": "The referenced_columns are the ordered referenced columns of a foreign key.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "referencedSchema": {
+          "description": "The referenced_schema is the referenced schema name of a foreign key.\n It is an empty string for databases without such concept such as MySQL.",
+          "type": "string"
+        },
+        "referencedTable": {
+          "description": "The referenced_table is the referenced table name of a foreign key.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "referencedSchema",
+        "referencedTable",
+        "onDelete",
+        "onUpdate",
+        "matchType"
+      ],
+      "title": "Foreign Key Metadata",
+      "type": "object"
+    },
+    "bytebase.store.GenerationMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "expression": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "TYPE_VIRTUAL",
+            "TYPE_STORED"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "expression"
+      ],
+      "title": "Generation Metadata",
+      "type": "object"
+    },
+    "bytebase.store.GridLevel.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "GridLevel defines a grid level for spatial tessellation.",
+      "properties": {
+        "density": {
+          "type": "string"
+        },
+        "level": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "level",
+        "density"
+      ],
+      "title": "Grid Level",
+      "type": "object"
+    },
+    "bytebase.store.IndexMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "IndexMetadata is the metadata for indexes.",
+      "properties": {
+        "comment": {
+          "description": "The comment is the comment of an index.",
+          "type": "string"
+        },
+        "definition": {
+          "description": "The definition of an index.",
+          "type": "string"
+        },
+        "descending": {
+          "description": "The ordered list of descending flags for the index columns.",
+          "items": {
+            "type": "boolean"
+          },
+          "type": "array"
+        },
+        "expressions": {
+          "description": "The expressions are the ordered columns or expressions of an index.\n This could refer to a column or an expression.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "granularity": {
+          "description": "The number of granules in the block. It's a ClickHouse specific field.",
+          "type": "integer"
+        },
+        "isConstraint": {
+          "description": "It's a PostgreSQL specific field.\n The unique constraint and unique index are not the same thing in PostgreSQL.",
+          "type": "boolean"
+        },
+        "keyLength": {
+          "description": "The ordered list of key lengths for the index.\n If the key length is not specified, it is -1.",
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the index.",
+          "type": "string"
+        },
+        "opclassDefaults": {
+          "description": "True if the operator class is the default. (PostgreSQL specific).",
+          "items": {
+            "type": "boolean"
+          },
+          "type": "array"
+        },
+        "opclassNames": {
+          "description": "https://www.postgresql.org/docs/current/catalog-pg-opclass.html\n Name of the operator class for each column. (PostgreSQL specific).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parentIndexName": {
+          "description": "The index name of the parent index.",
+          "type": "string"
+        },
+        "parentIndexSchema": {
+          "description": "The schema name of the parent index.",
+          "type": "string"
+        },
+        "primary": {
+          "description": "The primary is whether the index is a primary key index.",
+          "type": "boolean"
+        },
+        "spatialConfig": {
+          "$ref": "#/$defs/bytebase.store.SpatialIndexConfig.jsonschema.strict.json",
+          "description": "Spatial index specific configuration"
+        },
+        "type": {
+          "description": "The type is the type of an index.",
+          "type": "string"
+        },
+        "unique": {
+          "description": "The unique is whether the index is unique.",
+          "type": "boolean"
+        },
+        "visible": {
+          "description": "The visible is whether the index is visible.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "unique",
+        "primary",
+        "visible",
+        "comment",
+        "definition",
+        "parentIndexSchema",
+        "parentIndexName",
+        "granularity",
+        "isConstraint"
+      ],
+      "title": "Index Metadata",
+      "type": "object"
+    },
+    "bytebase.store.RuleMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "RuleMetadata is the metadata for PostgreSQL rules.",
+      "properties": {
+        "action": {
+          "description": "The command(s) to execute when the rule fires.",
+          "type": "string"
+        },
+        "condition": {
+          "description": "The WHERE condition of the rule (optional).",
+          "type": "string"
+        },
+        "definition": {
+          "description": "The full CREATE RULE statement.",
+          "type": "string"
+        },
+        "event": {
+          "description": "The event type of the rule: SELECT, INSERT, UPDATE, or DELETE.",
+          "type": "string"
+        },
+        "isEnabled": {
+          "description": "The is_enabled indicates whether the rule is enabled.",
+          "type": "boolean"
+        },
+        "isInstead": {
+          "description": "The is_instead indicates whether this is an INSTEAD rule.",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "The name of the rule.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "event",
+        "condition",
+        "action",
+        "isInstead",
+        "isEnabled",
+        "definition"
+      ],
+      "title": "Rule Metadata",
+      "type": "object"
+    },
+    "bytebase.store.SpatialIndexConfig.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "SpatialIndexConfig is the configuration for spatial indexes across different database engines.",
+      "properties": {
+        "dimensional": {
+          "$ref": "#/$defs/bytebase.store.DimensionalConfig.jsonschema.strict.json",
+          "description": "Dimensional and constraint parameters"
+        },
+        "engineSpecific": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Database-specific parameters (stored as key-value pairs for extensibility)",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "method": {
+          "description": "Index method/type (database-specific)\n Examples: \"SPATIAL\" (MySQL/SQL Server), \"GIST\"/\"SPGIST\" (PostgreSQL), \"MDSYS.SPATIAL_INDEX_V2\" (Oracle)",
+          "type": "string"
+        },
+        "storage": {
+          "$ref": "#/$defs/bytebase.store.StorageConfig.jsonschema.strict.json",
+          "description": "Storage and performance parameters"
+        },
+        "tessellation": {
+          "$ref": "#/$defs/bytebase.store.TessellationConfig.jsonschema.strict.json",
+          "description": "Tessellation configuration (primarily SQL Server)"
+        }
+      },
+      "required": [
+        "method"
+      ],
+      "title": "Spatial Index Config",
+      "type": "object"
+    },
+    "bytebase.store.StorageConfig.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "StorageConfig defines storage and performance parameters for spatial indexes.",
+      "properties": {
+        "allowPageLocks": {
+          "type": "boolean"
+        },
+        "allowRowLocks": {
+          "type": "boolean"
+        },
+        "buffering": {
+          "type": "string"
+        },
+        "commitInterval": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "dataCompression": {
+          "type": "string"
+        },
+        "dropExisting": {
+          "type": "boolean"
+        },
+        "fillfactor": {
+          "description": "PostgreSQL parameters",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "maxdop": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "online": {
+          "type": "boolean"
+        },
+        "padIndex": {
+          "description": "SQL Server parameters",
+          "type": "boolean"
+        },
+        "sdoLevel": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "sortInTempdb": {
+          "type": "string"
+        },
+        "tablespace": {
+          "description": "Oracle parameters",
+          "type": "string"
+        },
+        "workTablespace": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "fillfactor",
+        "buffering",
+        "tablespace",
+        "workTablespace",
+        "sdoLevel",
+        "commitInterval",
+        "padIndex",
+        "sortInTempdb",
+        "dropExisting",
+        "online",
+        "allowRowLocks",
+        "allowPageLocks",
+        "maxdop",
+        "dataCompression"
+      ],
+      "title": "Storage Config",
+      "type": "object"
+    },
+    "bytebase.store.TableMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "TableMetadata is the metadata for tables.",
+      "properties": {
+        "charset": {
+          "description": "The character set of the table.",
+          "type": "string"
+        },
+        "checkConstraints": {
+          "description": "The check_constraints is the list of check constraints in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.CheckConstraintMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "collation": {
+          "description": "The collation is the collation of a table.",
+          "type": "string"
+        },
+        "columns": {
+          "description": "The columns is the ordered list of columns in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.ColumnMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "comment": {
+          "description": "The comment is the comment of a table.",
+          "type": "string"
+        },
+        "createOptions": {
+          "description": "The create_options is the create option of a table.",
+          "type": "string"
+        },
+        "dataFree": {
+          "description": "The data_free is the estimated free data size of a table.",
+          "type": "integer"
+        },
+        "dataSize": {
+          "description": "The data_size is the estimated data size of a table.",
+          "type": "integer"
+        },
+        "engine": {
+          "description": "The engine is the engine of a table.",
+          "type": "string"
+        },
+        "excludeConstraints": {
+          "description": "The exclude_constraints is the list of EXCLUDE constraints in a table (PostgreSQL specific).",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.ExcludeConstraintMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "foreignKeys": {
+          "description": "The foreign_keys is the list of foreign keys in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.ForeignKeyMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "indexSize": {
+          "description": "The index_size is the estimated index size of a table.",
+          "type": "integer"
+        },
+        "indexes": {
+          "description": "The indexes is the list of indexes in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.IndexMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the table.",
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "partitions": {
+          "description": "The partitions is the list of partitions in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.TablePartitionMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "primaryKeyType": {
+          "description": "https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes\n CLUSTERED or NONCLUSTERED.",
+          "type": "string"
+        },
+        "rowCount": {
+          "description": "The row_count is the estimated number of rows of a table.",
+          "type": "integer"
+        },
+        "rules": {
+          "description": "The rules is the list of rules in a table (PostgreSQL specific).",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.RuleMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "shardingInfo": {
+          "description": "https://docs.pingcap.com/tidb/stable/information-schema-tables/",
+          "type": "string"
+        },
+        "skipDump": {
+          "type": "boolean"
+        },
+        "sortingKeys": {
+          "description": "The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.\n Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "triggers": {
+          "items": {
+            "$ref": "#/$defs/bytebase.store.TriggerMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "engine",
+        "collation",
+        "charset",
+        "rowCount",
+        "dataSize",
+        "indexSize",
+        "dataFree",
+        "createOptions",
+        "comment",
+        "owner",
+        "skipDump",
+        "shardingInfo",
+        "primaryKeyType"
+      ],
+      "title": "Table Metadata",
+      "type": "object"
+    },
+    "bytebase.store.TablePartitionMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "TablePartitionMetadata is the metadata for table partitions.",
+      "properties": {
+        "checkConstraints": {
+          "items": {
+            "$ref": "#/$defs/bytebase.store.CheckConstraintMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "excludeConstraints": {
+          "items": {
+            "$ref": "#/$defs/bytebase.store.ExcludeConstraintMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "expression": {
+          "description": "The expression is the expression of a table partition.\n For PostgreSQL, the expression is the text of {FOR VALUES\n partition_bound_spec}, see\n https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL,\n the expression is the `expr` or `column_list` of the following syntax.\n PARTITION BY\n    { [LINEAR] HASH(expr)\n    | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)\n    | RANGE{(expr) | COLUMNS(column_list)}\n    | LIST{(expr) | COLUMNS(column_list)} }.",
+          "type": "string"
+        },
+        "indexes": {
+          "items": {
+            "$ref": "#/$defs/bytebase.store.IndexMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the table partition.",
+          "type": "string"
+        },
+        "subpartitions": {
+          "description": "The subpartitions is the list of subpartitions in a table partition.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.TablePartitionMetadata.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "type": {
+          "description": "The type of a table partition.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "RANGE",
+            "RANGE_COLUMNS",
+            "LIST",
+            "LIST_COLUMNS",
+            "HASH",
+            "LINEAR_HASH",
+            "KEY",
+            "LINEAR_KEY"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "useDefault": {
+          "description": "The use_default is whether the users use the default partition, it stores\n the different value for different database engines. For MySQL, it's [INT]\n type, 0 means not use default partition, otherwise, it's equals to number\n in syntax [SUB]PARTITION {number}.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value is the value of a table partition.\n For MySQL, the value is for RANGE and LIST partition types,\n - For a RANGE partition, it contains the value set in the partition's\n VALUES LESS THAN clause, which can be either an integer or MAXVALUE.\n - For a LIST partition, this column contains the values defined in the\n partition's VALUES IN clause, which is a list of comma-separated integer\n values.\n - For others, it's an empty string.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "expression",
+        "value",
+        "useDefault"
+      ],
+      "title": "Table Partition Metadata",
+      "type": "object"
+    },
+    "bytebase.store.TessellationConfig.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "TessellationConfig defines tessellation parameters for spatial indexes.",
+      "properties": {
+        "boundingBox": {
+          "$ref": "#/$defs/bytebase.store.BoundingBox.jsonschema.strict.json",
+          "description": "Bounding box for GEOMETRY indexes (SQL Server)"
+        },
+        "cellsPerObject": {
+          "description": "Cells per object (SQL Server)",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "gridLevels": {
+          "description": "Grid level configuration (SQL Server)",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.GridLevel.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "scheme": {
+          "description": "Tessellation scheme\n Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scheme",
+        "cellsPerObject"
+      ],
+      "title": "Tessellation Config",
+      "type": "object"
+    },
+    "bytebase.store.TriggerMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "body": {
+          "description": "The body of the trigger.",
+          "type": "string"
+        },
+        "characterSetClient": {
+          "type": "string"
+        },
+        "collationConnection": {
+          "type": "string"
+        },
+        "comment": {
+          "type": "string"
+        },
+        "event": {
+          "description": "The event that triggers this action, such as INSERT, UPDATE, DELETE, or TRUNCATE.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the trigger.",
+          "type": "string"
+        },
+        "skipDump": {
+          "type": "boolean"
+        },
+        "sqlMode": {
+          "type": "string"
+        },
+        "timing": {
+          "description": "The timing of when the trigger fires, such as BEFORE or AFTER.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "event",
+        "timing",
+        "body",
+        "sqlMode",
+        "characterSetClient",
+        "collationConnection",
+        "comment",
+        "skipDump"
+      ],
+      "title": "Trigger Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.TableMetadata.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.TableMetadata.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

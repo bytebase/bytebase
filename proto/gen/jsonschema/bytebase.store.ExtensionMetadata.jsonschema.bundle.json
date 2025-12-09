@@ -1,0 +1,36 @@
+{
+  "$defs": {
+    "bytebase.store.ExtensionMetadata.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ExtensionMetadata is the metadata for extensions.",
+      "properties": {
+        "description": {
+          "default": "",
+          "description": "The description is the description of an extension.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the extension.",
+          "type": "string"
+        },
+        "schema": {
+          "default": "",
+          "description": "The schema where the extension is installed. However, the extension usage\n is not limited to the schema.",
+          "type": "string"
+        },
+        "version": {
+          "default": "",
+          "description": "The version is the version of an extension.",
+          "type": "string"
+        }
+      },
+      "title": "Extension Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.ExtensionMetadata.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.ExtensionMetadata.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

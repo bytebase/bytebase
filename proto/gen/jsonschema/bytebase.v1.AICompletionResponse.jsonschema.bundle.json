@@ -1,0 +1,60 @@
+{
+  "$defs": {
+    "bytebase.v1.AICompletionResponse.Candidate.Content.Part.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Part",
+      "type": "object"
+    },
+    "bytebase.v1.AICompletionResponse.Candidate.Content.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "parts": {
+          "description": "parts is used for a result content with multiple parts.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.AICompletionResponse.Candidate.Content.Part.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Content",
+      "type": "object"
+    },
+    "bytebase.v1.AICompletionResponse.Candidate.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/bytebase.v1.AICompletionResponse.Candidate.Content.jsonschema.json"
+        }
+      },
+      "title": "Candidate",
+      "type": "object"
+    },
+    "bytebase.v1.AICompletionResponse.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "candidates": {
+          "description": "candidates is used for results with multiple choices and candidates. Used\n for OpenAI and Gemini.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.AICompletionResponse.Candidate.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "AI Completion Response",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.AICompletionResponse.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.AICompletionResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

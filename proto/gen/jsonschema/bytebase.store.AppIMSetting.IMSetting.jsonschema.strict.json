@@ -1,0 +1,44 @@
+{
+  "$id": "bytebase.store.AppIMSetting.IMSetting.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "dingtalk": {
+      "$ref": "bytebase.store.AppIMSetting.DingTalk.jsonschema.strict.json"
+    },
+    "feishu": {
+      "$ref": "bytebase.store.AppIMSetting.Feishu.jsonschema.strict.json"
+    },
+    "lark": {
+      "$ref": "bytebase.store.AppIMSetting.Lark.jsonschema.strict.json"
+    },
+    "slack": {
+      "$ref": "bytebase.store.AppIMSetting.Slack.jsonschema.strict.json"
+    },
+    "teams": {
+      "$ref": "bytebase.store.AppIMSetting.Teams.jsonschema.strict.json"
+    },
+    "type": {
+      "enum": [
+        "TYPE_UNSPECIFIED",
+        "SLACK",
+        "DISCORD",
+        "TEAMS",
+        "DINGTALK",
+        "FEISHU",
+        "WECOM",
+        "LARK"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "wecom": {
+      "$ref": "bytebase.store.AppIMSetting.Wecom.jsonschema.strict.json"
+    }
+  },
+  "required": [
+    "type"
+  ],
+  "title": "IM Setting",
+  "type": "object"
+}

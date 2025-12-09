@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.v1.BatchDeparseResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Response message for batch deparsing CEL expressions.",
+  "properties": {
+    "expressions": {
+      "description": "The deparsed CEL expressions as strings.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Batch Deparse Response",
+  "type": "object"
+}

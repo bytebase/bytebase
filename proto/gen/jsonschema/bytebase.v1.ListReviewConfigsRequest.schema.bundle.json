@@ -1,0 +1,14 @@
+{
+  "$defs": {
+    "bytebase.v1.ListReviewConfigsRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {},
+      "title": "List Review Configs Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.ListReviewConfigsRequest.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ListReviewConfigsRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

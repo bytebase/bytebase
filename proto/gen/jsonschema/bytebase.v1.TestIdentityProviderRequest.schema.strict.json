@@ -1,0 +1,20 @@
+{
+  "$id": "bytebase.v1.TestIdentityProviderRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "identity_provider": {
+      "$ref": "bytebase.v1.IdentityProvider.schema.strict.json",
+      "description": "The identity provider to test connection including uncreated."
+    },
+    "oauth2_context": {
+      "$ref": "bytebase.v1.OAuth2IdentityProviderTestRequestContext.schema.strict.json"
+    },
+    "oidc_context": {
+      "$ref": "bytebase.v1.OIDCIdentityProviderTestRequestContext.schema.strict.json",
+      "description": "OIDC authentication context for test connection."
+    }
+  },
+  "title": "Test Identity Provider Request",
+  "type": "object"
+}

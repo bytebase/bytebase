@@ -1,0 +1,20 @@
+{
+  "$id": "bytebase.v1.CreateReleaseRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "description": "Format: projects/{project}",
+      "type": "string"
+    },
+    "release": {
+      "$ref": "bytebase.v1.Release.jsonschema.strict.json",
+      "description": "The release to create."
+    }
+  },
+  "required": [
+    "parent"
+  ],
+  "title": "Create Release Request",
+  "type": "object"
+}

@@ -1,0 +1,24 @@
+{
+  "$id": "bytebase.v1.SchemaCatalog.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Schema metadata within a database.",
+  "properties": {
+    "name": {
+      "description": "The schema name.",
+      "type": "string"
+    },
+    "tables": {
+      "description": "The tables in the schema.",
+      "items": {
+        "$ref": "bytebase.v1.TableCatalog.schema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "Schema Catalog",
+  "type": "object"
+}

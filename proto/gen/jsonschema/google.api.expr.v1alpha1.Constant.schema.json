@@ -1,0 +1,180 @@
+{
+  "$id": "google.api.expr.v1alpha1.Constant.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Named 'Constant' here for backwards compatibility.\n\n This is similar as the primitives supported in the well-known type\n `google.protobuf.Value`, but richer so it can represent CEL's full range of\n primitives.\n\n Lists and structs are not included as constants as these aggregate types may\n contain [Expr][google.api.expr.v1alpha1.Expr] elements which require\n evaluation and are thus not constant.\n\n Examples of literals include: `\"hello\"`, `b'bytes'`, `1u`, `4.2`, `-2`,\n `true`, `null`.",
+  "patternProperties": {
+    "^(boolValue)$": {
+      "description": "boolean value.",
+      "type": "boolean"
+    },
+    "^(bytesValue)$": {
+      "description": "bytes value.",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "^(doubleValue)$": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "double value."
+    },
+    "^(durationValue)$": {
+      "$ref": "google.protobuf.Duration.schema.json",
+      "description": "Deprecated: duration is no longer considered a builtin cel type.",
+      "title": "protobuf.Duration value."
+    },
+    "^(int64Value)$": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "int64 value."
+    },
+    "^(nullValue)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "NULL_VALUE"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "null value.",
+      "title": "Null Value"
+    },
+    "^(stringValue)$": {
+      "description": "string value.",
+      "type": "string"
+    },
+    "^(timestampValue)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Deprecated: timestamp is no longer considered a builtin cel type.",
+      "title": "protobuf.Timestamp value."
+    },
+    "^(uint64Value)$": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "pattern": "^[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "uint64 value."
+    }
+  },
+  "properties": {
+    "bool_value": {
+      "description": "boolean value.",
+      "type": "boolean"
+    },
+    "bytes_value": {
+      "description": "bytes value.",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "double_value": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "double value."
+    },
+    "duration_value": {
+      "$ref": "google.protobuf.Duration.schema.json",
+      "description": "Deprecated: duration is no longer considered a builtin cel type.",
+      "title": "protobuf.Duration value."
+    },
+    "int64_value": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "int64 value."
+    },
+    "null_value": {
+      "anyOf": [
+        {
+          "enum": [
+            "NULL_VALUE"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "null value.",
+      "title": "Null Value"
+    },
+    "string_value": {
+      "description": "string value.",
+      "type": "string"
+    },
+    "timestamp_value": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Deprecated: timestamp is no longer considered a builtin cel type.",
+      "title": "protobuf.Timestamp value."
+    },
+    "uint64_value": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "pattern": "^[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "uint64 value."
+    }
+  },
+  "title": "Represents a primitive literal.",
+  "type": "object"
+}

@@ -1,0 +1,29 @@
+{
+  "$id": "bytebase.store.WorkspaceApprovalSetting.Rule.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "condition": {
+      "$ref": "google.type.Expr.schema.strict.json"
+    },
+    "source": {
+      "enum": [
+        "SOURCE_UNSPECIFIED",
+        "CHANGE_DATABASE",
+        "CREATE_DATABASE",
+        "EXPORT_DATA",
+        "REQUEST_ROLE"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "template": {
+      "$ref": "bytebase.store.ApprovalTemplate.schema.strict.json"
+    }
+  },
+  "required": [
+    "source"
+  ],
+  "title": "Rule",
+  "type": "object"
+}

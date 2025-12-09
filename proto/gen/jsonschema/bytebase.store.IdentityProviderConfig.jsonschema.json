@@ -1,0 +1,29 @@
+{
+  "$id": "bytebase.store.IdentityProviderConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(ldap_config)$": {
+      "$ref": "bytebase.store.LDAPIdentityProviderConfig.jsonschema.json"
+    },
+    "^(oauth2_config)$": {
+      "$ref": "bytebase.store.OAuth2IdentityProviderConfig.jsonschema.json"
+    },
+    "^(oidc_config)$": {
+      "$ref": "bytebase.store.OIDCIdentityProviderConfig.jsonschema.json"
+    }
+  },
+  "properties": {
+    "ldapConfig": {
+      "$ref": "bytebase.store.LDAPIdentityProviderConfig.jsonschema.json"
+    },
+    "oauth2Config": {
+      "$ref": "bytebase.store.OAuth2IdentityProviderConfig.jsonschema.json"
+    },
+    "oidcConfig": {
+      "$ref": "bytebase.store.OIDCIdentityProviderConfig.jsonschema.json"
+    }
+  },
+  "title": "Identity Provider Config",
+  "type": "object"
+}

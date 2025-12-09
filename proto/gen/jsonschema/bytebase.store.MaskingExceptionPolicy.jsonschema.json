@@ -1,0 +1,24 @@
+{
+  "$id": "bytebase.store.MaskingExceptionPolicy.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "MaskingExceptionPolicy is the allowlist of users who can access sensitive data.",
+  "patternProperties": {
+    "^(masking_exceptions)$": {
+      "items": {
+        "$ref": "bytebase.store.MaskingExceptionPolicy.MaskingException.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "maskingExceptions": {
+      "items": {
+        "$ref": "bytebase.store.MaskingExceptionPolicy.MaskingException.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Masking Exception Policy",
+  "type": "object"
+}

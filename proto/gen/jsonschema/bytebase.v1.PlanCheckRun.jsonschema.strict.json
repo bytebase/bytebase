@@ -1,0 +1,65 @@
+{
+  "$id": "bytebase.v1.PlanCheckRun.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "createTime": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    },
+    "error": {
+      "description": "error is set if the Status is FAILED.",
+      "type": "string"
+    },
+    "name": {
+      "description": "Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}",
+      "type": "string"
+    },
+    "results": {
+      "items": {
+        "$ref": "bytebase.v1.PlanCheckRun.Result.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "sheet": {
+      "description": "Format: project/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "STATUS_UNSPECIFIED",
+        "RUNNING",
+        "DONE",
+        "FAILED",
+        "CANCELED"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "target": {
+      "description": "Format: instances/{instance}/databases/{database}",
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "TYPE_UNSPECIFIED",
+        "DATABASE_STATEMENT_FAKE_ADVISE",
+        "DATABASE_STATEMENT_ADVISE",
+        "DATABASE_STATEMENT_SUMMARY_REPORT",
+        "DATABASE_CONNECT",
+        "DATABASE_GHOST_SYNC"
+      ],
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "status",
+    "target",
+    "sheet",
+    "error"
+  ],
+  "title": "Plan Check Run",
+  "type": "object"
+}

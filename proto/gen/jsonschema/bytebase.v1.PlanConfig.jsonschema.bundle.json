@@ -1,0 +1,384 @@
+{
+  "$defs": {
+    "bytebase.v1.PlanConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "PlanConfig represents the configuration for all plans loaded from plan.yaml",
+      "patternProperties": {
+        "^(instance_features)$": {
+          "items": {
+            "anyOf": [
+              {
+                "enum": [
+                  "FEATURE_UNSPECIFIED",
+                  "FEATURE_DATABASE_CHANGE",
+                  "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL",
+                  "FEATURE_DECLARATIVE_SCHEMA_MIGRATION",
+                  "FEATURE_COMPARE_AND_SYNC_SCHEMA",
+                  "FEATURE_ONLINE_SCHEMA_CHANGE",
+                  "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW",
+                  "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES",
+                  "FEATURE_ONE_CLICK_DATA_ROLLBACK",
+                  "FEATURE_MULTI_DATABASE_BATCH_CHANGES",
+                  "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT",
+                  "FEATURE_SCHEDULED_ROLLOUT_TIME",
+                  "FEATURE_DATABASE_CHANGELOG",
+                  "FEATURE_SCHEMA_DRIFT_DETECTION",
+                  "FEATURE_SCHEMA_TEMPLATE",
+                  "FEATURE_ROLLOUT_POLICY",
+                  "FEATURE_WEB_BASED_SQL_EDITOR",
+                  "FEATURE_SQL_EDITOR_ADMIN_MODE",
+                  "FEATURE_NATURAL_LANGUAGE_TO_SQL",
+                  "FEATURE_AI_QUERY_EXPLANATION",
+                  "FEATURE_AI_QUERY_SUGGESTIONS",
+                  "FEATURE_AUTO_COMPLETE",
+                  "FEATURE_SCHEMA_DIAGRAM",
+                  "FEATURE_SCHEMA_EDITOR",
+                  "FEATURE_DATA_EXPORT",
+                  "FEATURE_DATA_OFFLINE_EXPORT",
+                  "FEATURE_QUERY_HISTORY",
+                  "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS",
+                  "FEATURE_BATCH_QUERY",
+                  "FEATURE_INSTANCE_READ_ONLY_CONNECTION",
+                  "FEATURE_QUERY_POLICY",
+                  "FEATURE_RESTRICT_COPYING_DATA",
+                  "FEATURE_IAM",
+                  "FEATURE_INSTANCE_SSL_CONNECTION",
+                  "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL",
+                  "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION",
+                  "FEATURE_GOOGLE_AND_GITHUB_SSO",
+                  "FEATURE_USER_GROUPS",
+                  "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP",
+                  "FEATURE_CUSTOM_INSTANCE_SYNC_TIME",
+                  "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT",
+                  "FEATURE_RISK_ASSESSMENT",
+                  "FEATURE_APPROVAL_WORKFLOW",
+                  "FEATURE_AUDIT_LOG",
+                  "FEATURE_ENTERPRISE_SSO",
+                  "FEATURE_TWO_FA",
+                  "FEATURE_PASSWORD_RESTRICTIONS",
+                  "FEATURE_DISALLOW_PASSWORD_SIGNIN",
+                  "FEATURE_CUSTOM_ROLES",
+                  "FEATURE_REQUEST_ROLE_WORKFLOW",
+                  "FEATURE_DATA_MASKING",
+                  "FEATURE_DATA_CLASSIFICATION",
+                  "FEATURE_SCIM",
+                  "FEATURE_DIRECTORY_SYNC",
+                  "FEATURE_SIGN_IN_FREQUENCY_CONTROL",
+                  "FEATURE_EXTERNAL_SECRET_MANAGER",
+                  "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION",
+                  "FEATURE_PROJECT_MANAGEMENT",
+                  "FEATURE_ENVIRONMENT_MANAGEMENT",
+                  "FEATURE_IM_NOTIFICATIONS",
+                  "FEATURE_TERRAFORM_PROVIDER",
+                  "FEATURE_DATABASE_GROUPS",
+                  "FEATURE_ENVIRONMENT_TIERS",
+                  "FEATURE_DASHBOARD_ANNOUNCEMENT",
+                  "FEATURE_API_INTEGRATION_GUIDANCE",
+                  "FEATURE_CUSTOM_LOGO",
+                  "FEATURE_WATERMARK",
+                  "FEATURE_ROADMAP_PRIORITIZATION",
+                  "FEATURE_CUSTOM_MSA",
+                  "FEATURE_COMMUNITY_SUPPORT",
+                  "FEATURE_EMAIL_SUPPORT",
+                  "FEATURE_DEDICATED_SUPPORT_WITH_SLA"
+                ],
+                "type": "string"
+              },
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              }
+            ],
+            "title": "Plan Feature"
+          },
+          "type": "array"
+        }
+      },
+      "properties": {
+        "instanceFeatures": {
+          "items": {
+            "anyOf": [
+              {
+                "enum": [
+                  "FEATURE_UNSPECIFIED",
+                  "FEATURE_DATABASE_CHANGE",
+                  "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL",
+                  "FEATURE_DECLARATIVE_SCHEMA_MIGRATION",
+                  "FEATURE_COMPARE_AND_SYNC_SCHEMA",
+                  "FEATURE_ONLINE_SCHEMA_CHANGE",
+                  "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW",
+                  "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES",
+                  "FEATURE_ONE_CLICK_DATA_ROLLBACK",
+                  "FEATURE_MULTI_DATABASE_BATCH_CHANGES",
+                  "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT",
+                  "FEATURE_SCHEDULED_ROLLOUT_TIME",
+                  "FEATURE_DATABASE_CHANGELOG",
+                  "FEATURE_SCHEMA_DRIFT_DETECTION",
+                  "FEATURE_SCHEMA_TEMPLATE",
+                  "FEATURE_ROLLOUT_POLICY",
+                  "FEATURE_WEB_BASED_SQL_EDITOR",
+                  "FEATURE_SQL_EDITOR_ADMIN_MODE",
+                  "FEATURE_NATURAL_LANGUAGE_TO_SQL",
+                  "FEATURE_AI_QUERY_EXPLANATION",
+                  "FEATURE_AI_QUERY_SUGGESTIONS",
+                  "FEATURE_AUTO_COMPLETE",
+                  "FEATURE_SCHEMA_DIAGRAM",
+                  "FEATURE_SCHEMA_EDITOR",
+                  "FEATURE_DATA_EXPORT",
+                  "FEATURE_DATA_OFFLINE_EXPORT",
+                  "FEATURE_QUERY_HISTORY",
+                  "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS",
+                  "FEATURE_BATCH_QUERY",
+                  "FEATURE_INSTANCE_READ_ONLY_CONNECTION",
+                  "FEATURE_QUERY_POLICY",
+                  "FEATURE_RESTRICT_COPYING_DATA",
+                  "FEATURE_IAM",
+                  "FEATURE_INSTANCE_SSL_CONNECTION",
+                  "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL",
+                  "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION",
+                  "FEATURE_GOOGLE_AND_GITHUB_SSO",
+                  "FEATURE_USER_GROUPS",
+                  "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP",
+                  "FEATURE_CUSTOM_INSTANCE_SYNC_TIME",
+                  "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT",
+                  "FEATURE_RISK_ASSESSMENT",
+                  "FEATURE_APPROVAL_WORKFLOW",
+                  "FEATURE_AUDIT_LOG",
+                  "FEATURE_ENTERPRISE_SSO",
+                  "FEATURE_TWO_FA",
+                  "FEATURE_PASSWORD_RESTRICTIONS",
+                  "FEATURE_DISALLOW_PASSWORD_SIGNIN",
+                  "FEATURE_CUSTOM_ROLES",
+                  "FEATURE_REQUEST_ROLE_WORKFLOW",
+                  "FEATURE_DATA_MASKING",
+                  "FEATURE_DATA_CLASSIFICATION",
+                  "FEATURE_SCIM",
+                  "FEATURE_DIRECTORY_SYNC",
+                  "FEATURE_SIGN_IN_FREQUENCY_CONTROL",
+                  "FEATURE_EXTERNAL_SECRET_MANAGER",
+                  "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION",
+                  "FEATURE_PROJECT_MANAGEMENT",
+                  "FEATURE_ENVIRONMENT_MANAGEMENT",
+                  "FEATURE_IM_NOTIFICATIONS",
+                  "FEATURE_TERRAFORM_PROVIDER",
+                  "FEATURE_DATABASE_GROUPS",
+                  "FEATURE_ENVIRONMENT_TIERS",
+                  "FEATURE_DASHBOARD_ANNOUNCEMENT",
+                  "FEATURE_API_INTEGRATION_GUIDANCE",
+                  "FEATURE_CUSTOM_LOGO",
+                  "FEATURE_WATERMARK",
+                  "FEATURE_ROADMAP_PRIORITIZATION",
+                  "FEATURE_CUSTOM_MSA",
+                  "FEATURE_COMMUNITY_SUPPORT",
+                  "FEATURE_EMAIL_SUPPORT",
+                  "FEATURE_DEDICATED_SUPPORT_WITH_SLA"
+                ],
+                "type": "string"
+              },
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              }
+            ],
+            "title": "Plan Feature"
+          },
+          "type": "array"
+        },
+        "plans": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.PlanLimitConfig.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Plan Config",
+      "type": "object"
+    },
+    "bytebase.v1.PlanLimitConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "PlanLimitConfig represents a single plan's configuration",
+      "patternProperties": {
+        "^(maximum_instance_count)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(maximum_seat_count)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "properties": {
+        "features": {
+          "items": {
+            "anyOf": [
+              {
+                "enum": [
+                  "FEATURE_UNSPECIFIED",
+                  "FEATURE_DATABASE_CHANGE",
+                  "FEATURE_GIT_BASED_SCHEMA_VERSION_CONTROL",
+                  "FEATURE_DECLARATIVE_SCHEMA_MIGRATION",
+                  "FEATURE_COMPARE_AND_SYNC_SCHEMA",
+                  "FEATURE_ONLINE_SCHEMA_CHANGE",
+                  "FEATURE_PRE_DEPLOYMENT_SQL_REVIEW",
+                  "FEATURE_AUTOMATIC_BACKUP_BEFORE_DATA_CHANGES",
+                  "FEATURE_ONE_CLICK_DATA_ROLLBACK",
+                  "FEATURE_MULTI_DATABASE_BATCH_CHANGES",
+                  "FEATURE_PROGRESSIVE_ENVIRONMENT_DEPLOYMENT",
+                  "FEATURE_SCHEDULED_ROLLOUT_TIME",
+                  "FEATURE_DATABASE_CHANGELOG",
+                  "FEATURE_SCHEMA_DRIFT_DETECTION",
+                  "FEATURE_SCHEMA_TEMPLATE",
+                  "FEATURE_ROLLOUT_POLICY",
+                  "FEATURE_WEB_BASED_SQL_EDITOR",
+                  "FEATURE_SQL_EDITOR_ADMIN_MODE",
+                  "FEATURE_NATURAL_LANGUAGE_TO_SQL",
+                  "FEATURE_AI_QUERY_EXPLANATION",
+                  "FEATURE_AI_QUERY_SUGGESTIONS",
+                  "FEATURE_AUTO_COMPLETE",
+                  "FEATURE_SCHEMA_DIAGRAM",
+                  "FEATURE_SCHEMA_EDITOR",
+                  "FEATURE_DATA_EXPORT",
+                  "FEATURE_DATA_OFFLINE_EXPORT",
+                  "FEATURE_QUERY_HISTORY",
+                  "FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS",
+                  "FEATURE_BATCH_QUERY",
+                  "FEATURE_INSTANCE_READ_ONLY_CONNECTION",
+                  "FEATURE_QUERY_POLICY",
+                  "FEATURE_RESTRICT_COPYING_DATA",
+                  "FEATURE_IAM",
+                  "FEATURE_INSTANCE_SSL_CONNECTION",
+                  "FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL",
+                  "FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION",
+                  "FEATURE_GOOGLE_AND_GITHUB_SSO",
+                  "FEATURE_USER_GROUPS",
+                  "FEATURE_DISALLOW_SELF_SERVICE_SIGNUP",
+                  "FEATURE_CUSTOM_INSTANCE_SYNC_TIME",
+                  "FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT",
+                  "FEATURE_RISK_ASSESSMENT",
+                  "FEATURE_APPROVAL_WORKFLOW",
+                  "FEATURE_AUDIT_LOG",
+                  "FEATURE_ENTERPRISE_SSO",
+                  "FEATURE_TWO_FA",
+                  "FEATURE_PASSWORD_RESTRICTIONS",
+                  "FEATURE_DISALLOW_PASSWORD_SIGNIN",
+                  "FEATURE_CUSTOM_ROLES",
+                  "FEATURE_REQUEST_ROLE_WORKFLOW",
+                  "FEATURE_DATA_MASKING",
+                  "FEATURE_DATA_CLASSIFICATION",
+                  "FEATURE_SCIM",
+                  "FEATURE_DIRECTORY_SYNC",
+                  "FEATURE_SIGN_IN_FREQUENCY_CONTROL",
+                  "FEATURE_EXTERNAL_SECRET_MANAGER",
+                  "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION",
+                  "FEATURE_PROJECT_MANAGEMENT",
+                  "FEATURE_ENVIRONMENT_MANAGEMENT",
+                  "FEATURE_IM_NOTIFICATIONS",
+                  "FEATURE_TERRAFORM_PROVIDER",
+                  "FEATURE_DATABASE_GROUPS",
+                  "FEATURE_ENVIRONMENT_TIERS",
+                  "FEATURE_DASHBOARD_ANNOUNCEMENT",
+                  "FEATURE_API_INTEGRATION_GUIDANCE",
+                  "FEATURE_CUSTOM_LOGO",
+                  "FEATURE_WATERMARK",
+                  "FEATURE_ROADMAP_PRIORITIZATION",
+                  "FEATURE_CUSTOM_MSA",
+                  "FEATURE_COMMUNITY_SUPPORT",
+                  "FEATURE_EMAIL_SUPPORT",
+                  "FEATURE_DEDICATED_SUPPORT_WITH_SLA"
+                ],
+                "type": "string"
+              },
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              }
+            ],
+            "title": "Plan Feature"
+          },
+          "type": "array"
+        },
+        "maximumInstanceCount": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "maximumSeatCount": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^PLAN_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "FREE",
+                "TEAM",
+                "ENTERPRISE"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Plan Type"
+        }
+      },
+      "title": "Plan Limit Config",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.PlanConfig.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.PlanConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

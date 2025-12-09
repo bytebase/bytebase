@@ -1,0 +1,19 @@
+{
+  "$id": "bytebase.v1.Setting.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The schema of setting.",
+  "properties": {
+    "name": {
+      "default": "",
+      "description": "The resource name of the setting.\n Format: settings/{setting}\n Example: \"settings/SEMANTIC_TYPES\"",
+      "type": "string"
+    },
+    "value": {
+      "$ref": "bytebase.v1.SettingValue.jsonschema.json",
+      "description": "The configuration value of the setting."
+    }
+  },
+  "title": "Setting",
+  "type": "object"
+}

@@ -1,0 +1,33 @@
+{
+  "$id": "bytebase.v1.Task.DatabaseUpdate.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Payload for updating a database schema.",
+  "properties": {
+    "databaseChangeType": {
+      "description": "The type of database change (MIGRATE or SDL).",
+      "enum": [
+        "DATABASE_CHANGE_TYPE_UNSPECIFIED",
+        "MIGRATE",
+        "SDL"
+      ],
+      "title": "Database Change Type",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "description": "The target schema version after this update.",
+      "type": "string"
+    },
+    "sheet": {
+      "description": "Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sheet",
+    "schemaVersion",
+    "databaseChangeType"
+  ],
+  "title": "Database Update",
+  "type": "object"
+}

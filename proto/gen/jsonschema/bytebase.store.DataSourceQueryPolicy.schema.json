@@ -1,0 +1,76 @@
+{
+  "$id": "bytebase.store.DataSourceQueryPolicy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.",
+  "patternProperties": {
+    "^(adminDataSourceRestriction)$": {
+      "anyOf": [
+        {
+          "pattern": "^RESTRICTION_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "FALLBACK",
+            "DISALLOW"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Restriction"
+    },
+    "^(disallowDdl)$": {
+      "default": false,
+      "description": "Disallow running DDL statements in the SQL editor.",
+      "type": "boolean"
+    },
+    "^(disallowDml)$": {
+      "default": false,
+      "description": "Disallow running DML statements in the SQL editor.",
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "admin_data_source_restriction": {
+      "anyOf": [
+        {
+          "pattern": "^RESTRICTION_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "FALLBACK",
+            "DISALLOW"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Restriction"
+    },
+    "disallow_ddl": {
+      "default": false,
+      "description": "Disallow running DDL statements in the SQL editor.",
+      "type": "boolean"
+    },
+    "disallow_dml": {
+      "default": false,
+      "description": "Disallow running DML statements in the SQL editor.",
+      "type": "boolean"
+    }
+  },
+  "title": "Data Source Query Policy",
+  "type": "object"
+}

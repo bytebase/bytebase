@@ -1,0 +1,30 @@
+{
+  "$id": "bytebase.v1.BatchCancelPlanCheckRunsRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(planCheckRuns)$": {
+      "description": "TODO(d): update this API.\n The planCheckRuns to cancel.\n Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "parent": {
+      "default": "",
+      "description": "The name of the parent of the planChecks.\n Format: projects/{project}/plans/{plan}",
+      "type": "string"
+    },
+    "plan_check_runs": {
+      "description": "TODO(d): update this API.\n The planCheckRuns to cancel.\n Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Batch Cancel Plan Check Runs Request",
+  "type": "object"
+}

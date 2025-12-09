@@ -1,0 +1,100 @@
+{
+  "$id": "bytebase.store.DatabaseSchemaMetadata.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "DatabaseSchemaMetadata is the schema metadata for databases.",
+  "patternProperties": {
+    "^(character_set)$": {
+      "default": "",
+      "description": "The character set of the database.",
+      "type": "string"
+    },
+    "^(event_triggers)$": {
+      "description": "The list of event triggers in a database (PostgreSQL specific).\n Event triggers are database-level objects, not schema-scoped.",
+      "items": {
+        "$ref": "bytebase.store.EventTriggerMetadata.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "^(linked_databases)$": {
+      "items": {
+        "$ref": "bytebase.store.LinkedDatabaseMetadata.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "^(search_path)$": {
+      "default": "",
+      "description": "The search_path is the search path of a PostgreSQL database.",
+      "type": "string"
+    },
+    "^(service_name)$": {
+      "default": "",
+      "description": "The service name of the database. It's an Oracle-specific concept.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "characterSet": {
+      "default": "",
+      "description": "The character set of the database.",
+      "type": "string"
+    },
+    "collation": {
+      "default": "",
+      "description": "The collation of the database.",
+      "type": "string"
+    },
+    "datashare": {
+      "default": false,
+      "description": "The database belongs to a datashare.",
+      "type": "boolean"
+    },
+    "eventTriggers": {
+      "description": "The list of event triggers in a database (PostgreSQL specific).\n Event triggers are database-level objects, not schema-scoped.",
+      "items": {
+        "$ref": "bytebase.store.EventTriggerMetadata.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "extensions": {
+      "description": "The list of extensions in a database.",
+      "items": {
+        "$ref": "bytebase.store.ExtensionMetadata.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "linkedDatabases": {
+      "items": {
+        "$ref": "bytebase.store.LinkedDatabaseMetadata.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "default": "",
+      "type": "string"
+    },
+    "owner": {
+      "default": "",
+      "type": "string"
+    },
+    "schemas": {
+      "description": "The list of schemas in a database.",
+      "items": {
+        "$ref": "bytebase.store.SchemaMetadata.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "searchPath": {
+      "default": "",
+      "description": "The search_path is the search path of a PostgreSQL database.",
+      "type": "string"
+    },
+    "serviceName": {
+      "default": "",
+      "description": "The service name of the database. It's an Oracle-specific concept.",
+      "type": "string"
+    }
+  },
+  "title": "Database Schema Metadata",
+  "type": "object"
+}

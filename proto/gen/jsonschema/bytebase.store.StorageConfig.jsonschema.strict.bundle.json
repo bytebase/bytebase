@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "bytebase.store.StorageConfig.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "StorageConfig defines storage and performance parameters for spatial indexes.",
+      "properties": {
+        "allowPageLocks": {
+          "type": "boolean"
+        },
+        "allowRowLocks": {
+          "type": "boolean"
+        },
+        "buffering": {
+          "type": "string"
+        },
+        "commitInterval": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "dataCompression": {
+          "type": "string"
+        },
+        "dropExisting": {
+          "type": "boolean"
+        },
+        "fillfactor": {
+          "description": "PostgreSQL parameters",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "maxdop": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "online": {
+          "type": "boolean"
+        },
+        "padIndex": {
+          "description": "SQL Server parameters",
+          "type": "boolean"
+        },
+        "sdoLevel": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "sortInTempdb": {
+          "type": "string"
+        },
+        "tablespace": {
+          "description": "Oracle parameters",
+          "type": "string"
+        },
+        "workTablespace": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "fillfactor",
+        "buffering",
+        "tablespace",
+        "workTablespace",
+        "sdoLevel",
+        "commitInterval",
+        "padIndex",
+        "sortInTempdb",
+        "dropExisting",
+        "online",
+        "allowRowLocks",
+        "allowPageLocks",
+        "maxdop",
+        "dataCompression"
+      ],
+      "title": "Storage Config",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.StorageConfig.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.StorageConfig.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

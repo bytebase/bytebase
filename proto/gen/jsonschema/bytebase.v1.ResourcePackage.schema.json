@@ -1,0 +1,16 @@
+{
+  "$id": "bytebase.v1.ResourcePackage.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Custom branding resources for the Bytebase instance.",
+  "properties": {
+    "logo": {
+      "default": null,
+      "description": "The branding logo.",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    }
+  },
+  "title": "Resource Package",
+  "type": "object"
+}

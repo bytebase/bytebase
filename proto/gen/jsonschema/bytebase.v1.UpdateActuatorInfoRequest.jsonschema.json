@@ -1,0 +1,34 @@
+{
+  "$id": "bytebase.v1.UpdateActuatorInfoRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Request message for updating actuator information.",
+  "patternProperties": {
+    "^(allow_missing)$": {
+      "default": false,
+      "description": "If set to true, and the actuator is not found, a new actuator will be created.\n In this situation, `update_mask` is ignored.",
+      "type": "boolean"
+    },
+    "^(update_mask)$": {
+      "$ref": "google.protobuf.FieldMask.jsonschema.json",
+      "description": "The list of fields to update."
+    }
+  },
+  "properties": {
+    "actuator": {
+      "$ref": "bytebase.v1.ActuatorInfo.jsonschema.json",
+      "description": "The actuator to update."
+    },
+    "allowMissing": {
+      "default": false,
+      "description": "If set to true, and the actuator is not found, a new actuator will be created.\n In this situation, `update_mask` is ignored.",
+      "type": "boolean"
+    },
+    "updateMask": {
+      "$ref": "google.protobuf.FieldMask.jsonschema.json",
+      "description": "The list of fields to update."
+    }
+  },
+  "title": "Update Actuator Info Request",
+  "type": "object"
+}

@@ -1,0 +1,30 @@
+{
+  "$id": "bytebase.store.IssueCommentPayload.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval": {
+      "$ref": "bytebase.store.IssueCommentPayload.Approval.jsonschema.strict.json"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "issueUpdate": {
+      "$ref": "bytebase.store.IssueCommentPayload.IssueUpdate.jsonschema.strict.json"
+    },
+    "stageEnd": {
+      "$ref": "bytebase.store.IssueCommentPayload.StageEnd.jsonschema.strict.json"
+    },
+    "taskPriorBackup": {
+      "$ref": "bytebase.store.IssueCommentPayload.TaskPriorBackup.jsonschema.strict.json"
+    },
+    "taskUpdate": {
+      "$ref": "bytebase.store.IssueCommentPayload.TaskUpdate.jsonschema.strict.json"
+    }
+  },
+  "required": [
+    "comment"
+  ],
+  "title": "Issue Comment Payload",
+  "type": "object"
+}

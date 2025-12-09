@@ -1,0 +1,20 @@
+{
+  "$defs": {
+    "bytebase.v1.OIDCIdentityProviderTestRequestContext.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "default": "",
+          "description": "Authorize code from OIDC provider.",
+          "type": "string"
+        }
+      },
+      "title": "OIDC Identity Provider Test Request Context",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.OIDCIdentityProviderTestRequestContext.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.OIDCIdentityProviderTestRequestContext.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

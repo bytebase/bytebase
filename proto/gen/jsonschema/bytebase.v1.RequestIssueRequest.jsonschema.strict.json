@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.RequestIssueRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "comment": {
+      "description": "The comment explaining the request.",
+      "type": "string"
+    },
+    "name": {
+      "description": "The name of the issue to request a issue.\n Format: projects/{project}/issues/{issue}",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "comment"
+  ],
+  "title": "Request Issue Request",
+  "type": "object"
+}

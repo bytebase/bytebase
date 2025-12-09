@@ -1,0 +1,26 @@
+{
+  "$id": "bytebase.v1.ListDatabaseGroupsResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Response message for listing database groups.",
+  "patternProperties": {
+    "^(database_groups)$": {
+      "description": "The database groups from the specified request.",
+      "items": {
+        "$ref": "bytebase.v1.DatabaseGroup.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "databaseGroups": {
+      "description": "The database groups from the specified request.",
+      "items": {
+        "$ref": "bytebase.v1.DatabaseGroup.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "List Database Groups Response",
+  "type": "object"
+}

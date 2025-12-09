@@ -1,0 +1,657 @@
+{
+  "$defs": {
+    "bytebase.v1.Binding.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Binding associates members with a role and optional conditions.",
+      "patternProperties": {
+        "^(parsedExpr)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "The parsed expression of the condition."
+        }
+      },
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/google.type.Expr.schema.json",
+          "description": "Support variables:\n resource.database: the database full name in \"instances/{instance}/databases/{database}\" format, used by the \"roles/sqlEditorUser\" role, support \"==\" operator.\n resource.schema_name: the schema name, used by the \"roles/sqlEditorUser\" role, support \"==\" operator.\n resource.table_name: the table name, used by the \"roles/sqlEditorUser\" role, support \"==\" operator.\n request.time: the expiration. Only support \"\u003c\" operation in `request.time \u003c timestamp(\"{ISO datetime string format}\")`.\n\n For example:\n resource.database == \"instances/local-pg/databases/postgres\" \u0026\u0026 resource.schema_name in [\"public\",\"another_schema\"]\n resource.database == \"instances/local-pg/databases/bytebase\" \u0026\u0026 resource.schema_name == \"public\" \u0026\u0026 resource.table_name in [\"audit_log\"]\n request.time \u003c timestamp(\"2025-04-26T11:24:48.655Z\")",
+          "title": "The condition that is associated with this binding, only used in the project IAM policy.\n If the condition evaluates to true, then this binding applies to the current request.\n If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec"
+        },
+        "members": {
+          "description": "Specifies the principals requesting access for a Bytebase resource.\n For users, the member should be: user:{email}\n For groups, the member should be: group:{email}",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parsed_expr": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "The parsed expression of the condition."
+        },
+        "role": {
+          "default": "",
+          "description": "The role that is assigned to the members.\n Format: roles/{role}",
+          "type": "string"
+        }
+      },
+      "title": "Binding",
+      "type": "object"
+    },
+    "bytebase.v1.IamPolicy.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "IAM policy that binds members to roles.",
+      "properties": {
+        "bindings": {
+          "description": "Collection of binding.\n A binding binds one or more project members to a single project role.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Binding.schema.json"
+          },
+          "type": "array"
+        },
+        "etag": {
+          "default": "",
+          "description": "The current etag of the policy.\n If an etag is provided and does not match the current etag of the policy,\n the call will be blocked and an ABORTED error will be returned.",
+          "type": "string"
+        }
+      },
+      "title": "Iam Policy",
+      "type": "object"
+    },
+    "google.api.expr.v1alpha1.Constant.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Named 'Constant' here for backwards compatibility.\n\n This is similar as the primitives supported in the well-known type\n `google.protobuf.Value`, but richer so it can represent CEL's full range of\n primitives.\n\n Lists and structs are not included as constants as these aggregate types may\n contain [Expr][google.api.expr.v1alpha1.Expr] elements which require\n evaluation and are thus not constant.\n\n Examples of literals include: `\"hello\"`, `b'bytes'`, `1u`, `4.2`, `-2`,\n `true`, `null`.",
+      "patternProperties": {
+        "^(boolValue)$": {
+          "description": "boolean value.",
+          "type": "boolean"
+        },
+        "^(bytesValue)$": {
+          "description": "bytes value.",
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        },
+        "^(doubleValue)$": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "double value."
+        },
+        "^(durationValue)$": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "Deprecated: duration is no longer considered a builtin cel type.",
+          "title": "protobuf.Duration value."
+        },
+        "^(int64Value)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "int64 value."
+        },
+        "^(nullValue)$": {
+          "anyOf": [
+            {
+              "enum": [
+                "NULL_VALUE"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "description": "null value.",
+          "title": "Null Value"
+        },
+        "^(stringValue)$": {
+          "description": "string value.",
+          "type": "string"
+        },
+        "^(timestampValue)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "Deprecated: timestamp is no longer considered a builtin cel type.",
+          "title": "protobuf.Timestamp value."
+        },
+        "^(uint64Value)$": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "uint64 value."
+        }
+      },
+      "properties": {
+        "bool_value": {
+          "description": "boolean value.",
+          "type": "boolean"
+        },
+        "bytes_value": {
+          "description": "bytes value.",
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        },
+        "double_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "double value."
+        },
+        "duration_value": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "Deprecated: duration is no longer considered a builtin cel type.",
+          "title": "protobuf.Duration value."
+        },
+        "int64_value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "int64 value."
+        },
+        "null_value": {
+          "anyOf": [
+            {
+              "enum": [
+                "NULL_VALUE"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "description": "null value.",
+          "title": "Null Value"
+        },
+        "string_value": {
+          "description": "string value.",
+          "type": "string"
+        },
+        "timestamp_value": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "Deprecated: timestamp is no longer considered a builtin cel type.",
+          "title": "protobuf.Timestamp value."
+        },
+        "uint64_value": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "uint64 value."
+        }
+      },
+      "title": "Represents a primitive literal.",
+      "type": "object"
+    },
+    "google.api.expr.v1alpha1.Expr.Call.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "For example, `value == 10`, `size(map_value)`.",
+      "properties": {
+        "args": {
+          "description": "The arguments.",
+          "items": {
+            "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json"
+          },
+          "type": "array"
+        },
+        "function": {
+          "default": "",
+          "description": "Required. The name of the function or method being called.",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "The target of an method call-style expression. For example, `x` in\n `x.f()`."
+        }
+      },
+      "title": "A call expression, including calls to predefined functions and operators.",
+      "type": "object"
+    },
+    "google.api.expr.v1alpha1.Expr.Comprehension.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Comprehensions are not part of the core syntax, but enabled with macros.\n A macro matches a specific call signature within a parsed AST and replaces\n the call with an alternate AST block. Macro expansion happens at parse\n time.\n\n The following macros are supported within CEL:\n\n Aggregate type macros may be applied to all elements in a list or all keys\n in a map:\n\n *  `all`, `exists`, `exists_one` -  test a predicate expression against\n    the inputs and return `true` if the predicate is satisfied for all,\n    any, or only one value `list.all(x, x \u003c 10)`.\n *  `filter` - test a predicate expression against the inputs and return\n    the subset of elements which satisfy the predicate:\n    `payments.filter(p, p \u003e 1000)`.\n *  `map` - apply an expression to all elements in the input and return the\n    output aggregate type: `[1, 2, 3].map(i, i * i)`.\n\n The `has(m.x)` macro tests whether the property `x` is present in struct\n `m`. The semantics of this macro depend on the type of `m`. For proto2\n messages `has(m.x)` is defined as 'defined, but not set`. For proto3, the\n macro tests whether the property is set to its default. For map and struct\n types, the macro tests whether the property `x` is defined on `m`.\n\n Comprehensions for the standard environment macros evaluation can be best\n visualized as the following pseudocode:\n\n ```\n let `accu_var` = `accu_init`\n for (let `iter_var` in `iter_range`) {\n   if (!`loop_condition`) {\n     break\n   }\n   `accu_var` = `loop_step`\n }\n return `result`\n ```\n\n Comprehensions for the optional V2 macros which support map-to-map\n translation differ slightly from the standard environment macros in that\n they expose both the key or index in addition to the value for each list\n or map entry:\n\n ```\n let `accu_var` = `accu_init`\n for (let `iter_var`, `iter_var2` in `iter_range`) {\n   if (!`loop_condition`) {\n     break\n   }\n   `accu_var` = `loop_step`\n }\n return `result`\n ```",
+      "patternProperties": {
+        "^(accuInit)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "The initial value of the accumulator."
+        },
+        "^(accuVar)$": {
+          "default": "",
+          "description": "The name of the variable used for accumulation of the result.",
+          "type": "string"
+        },
+        "^(iterRange)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "The range over which the comprehension iterates."
+        },
+        "^(iterVar)$": {
+          "default": "",
+          "description": "The name of the first iteration variable.\n When the iter_range is a list, this variable is the list element.\n When the iter_range is a map, this variable is the map entry key.",
+          "type": "string"
+        },
+        "^(iterVar2)$": {
+          "default": "",
+          "description": "The name of the second iteration variable, empty if not set.\n When the iter_range is a list, this variable is the integer index.\n When the iter_range is a map, this variable is the map entry value.\n This field is only set for comprehension v2 macros.",
+          "type": "string"
+        },
+        "^(loopCondition)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "Returns false when the result has been computed and may be used as\n a hint to short-circuit the remainder of the comprehension.",
+          "title": "An expression which can contain iter_var, iter_var2, and accu_var."
+        },
+        "^(loopStep)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "Computes the next value of accu_var.",
+          "title": "An expression which can contain iter_var, iter_var2, and accu_var."
+        }
+      },
+      "properties": {
+        "accu_init": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "The initial value of the accumulator."
+        },
+        "accu_var": {
+          "default": "",
+          "description": "The name of the variable used for accumulation of the result.",
+          "type": "string"
+        },
+        "iter_range": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "The range over which the comprehension iterates."
+        },
+        "iter_var": {
+          "default": "",
+          "description": "The name of the first iteration variable.\n When the iter_range is a list, this variable is the list element.\n When the iter_range is a map, this variable is the map entry key.",
+          "type": "string"
+        },
+        "iter_var2": {
+          "default": "",
+          "description": "The name of the second iteration variable, empty if not set.\n When the iter_range is a list, this variable is the integer index.\n When the iter_range is a map, this variable is the map entry value.\n This field is only set for comprehension v2 macros.",
+          "type": "string"
+        },
+        "loop_condition": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "Returns false when the result has been computed and may be used as\n a hint to short-circuit the remainder of the comprehension.",
+          "title": "An expression which can contain iter_var, iter_var2, and accu_var."
+        },
+        "loop_step": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "Computes the next value of accu_var.",
+          "title": "An expression which can contain iter_var, iter_var2, and accu_var."
+        },
+        "result": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "Computes the result.",
+          "title": "An expression which can contain accu_var."
+        }
+      },
+      "title": "A comprehension expression applied to a list or map.",
+      "type": "object"
+    },
+    "google.api.expr.v1alpha1.Expr.CreateList.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Lists may either be homogenous, e.g. `[1, 2, 3]`, or heterogeneous, e.g.\n `dyn([1, 'hello', 2.0])`",
+      "patternProperties": {
+        "^(optionalIndices)$": {
+          "description": "When an optional-typed value is present, the value it contains\n is included in the list. If the optional-typed value is absent, the list\n element is omitted from the CreateList result.",
+          "items": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "title": "The indices within the elements list which are marked as optional\n elements.",
+          "type": "array"
+        }
+      },
+      "properties": {
+        "elements": {
+          "description": "The elements part of the list.",
+          "items": {
+            "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json"
+          },
+          "type": "array"
+        },
+        "optional_indices": {
+          "description": "When an optional-typed value is present, the value it contains\n is included in the list. If the optional-typed value is absent, the list\n element is omitted from the CreateList result.",
+          "items": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "title": "The indices within the elements list which are marked as optional\n elements.",
+          "type": "array"
+        }
+      },
+      "title": "A list creation expression.",
+      "type": "object"
+    },
+    "google.api.expr.v1alpha1.Expr.CreateStruct.Entry.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Represents an entry.",
+      "patternProperties": {
+        "^(fieldKey)$": {
+          "description": "The field key for a message creator statement.",
+          "type": "string"
+        },
+        "^(mapKey)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "The key expression for a map creation statement."
+        },
+        "^(optionalEntry)$": {
+          "default": false,
+          "description": "Whether the key-value pair is optional.",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "field_key": {
+          "description": "The field key for a message creator statement.",
+          "type": "string"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Required. An id assigned to this node by the parser which is unique\n in a given expression tree. This is used to associate type\n information and other attributes to the node."
+        },
+        "map_key": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "The key expression for a map creation statement."
+        },
+        "optional_entry": {
+          "default": false,
+          "description": "Whether the key-value pair is optional.",
+          "type": "boolean"
+        },
+        "value": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "If the optional_entry field is true, the expression must resolve to an\n optional-typed value. If the optional value is present, the key will be\n set; however, if the optional value is absent, the key will be unset.",
+          "title": "Required. The value assigned to the key."
+        }
+      },
+      "title": "Entry",
+      "type": "object"
+    },
+    "google.api.expr.v1alpha1.Expr.CreateStruct.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Maps are constructed as `{'key_name': 'value'}`. Message construction is\n similar, but prefixed with a type name and composed of field ids:\n `types.MyType{field_id: 'value'}`.",
+      "patternProperties": {
+        "^(messageName)$": {
+          "default": "",
+          "description": "The type name of the message to be created, empty when creating map\n literals.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "entries": {
+          "description": "The entries in the creation expression.",
+          "items": {
+            "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.CreateStruct.Entry.schema.json"
+          },
+          "type": "array"
+        },
+        "message_name": {
+          "default": "",
+          "description": "The type name of the message to be created, empty when creating map\n literals.",
+          "type": "string"
+        }
+      },
+      "title": "A map or message creation expression.",
+      "type": "object"
+    },
+    "google.api.expr.v1alpha1.Expr.Ident.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "An identifier expression. e.g. `request`.",
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "Qualified names are represented by the\n [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression.",
+          "title": "Required. Holds a single, unqualified identifier, possibly preceded by a\n '.'.",
+          "type": "string"
+        }
+      },
+      "title": "Ident",
+      "type": "object"
+    },
+    "google.api.expr.v1alpha1.Expr.Select.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A field selection expression. e.g. `request.auth`.",
+      "patternProperties": {
+        "^(testOnly)$": {
+          "default": false,
+          "description": "This results from the macro `has(request.auth)`.",
+          "title": "Whether the select is to be interpreted as a field presence test.",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "field": {
+          "default": "",
+          "description": "For example, in the select expression `request.auth`, the `auth` portion\n of the expression would be the `field`.",
+          "title": "Required. The name of the field to select.",
+          "type": "string"
+        },
+        "operand": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.schema.json",
+          "description": "For example, in the select expression `request.auth`, the `request`\n portion of the expression is the `operand`.",
+          "title": "Required. The target of the selection expression."
+        },
+        "test_only": {
+          "default": false,
+          "description": "This results from the macro `has(request.auth)`.",
+          "title": "Whether the select is to be interpreted as a field presence test.",
+          "type": "boolean"
+        }
+      },
+      "title": "Select",
+      "type": "object"
+    },
+    "google.api.expr.v1alpha1.Expr.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Expressions are abstractly represented as a collection of identifiers,\n select statements, function calls, literals, and comprehensions. All\n operators with the exception of the '.' operator are modelled as function\n calls. This makes it easy to represent new operators into the existing AST.\n\n All references within expressions must resolve to a\n [Decl][google.api.expr.v1alpha1.Decl] provided at type-check for an\n expression to be valid. A reference may either be a bare identifier `name` or\n a qualified identifier `google.api.name`. References may either refer to a\n value or a function declaration.\n\n For example, the expression `google.api.name.startsWith('expr')` references\n the declaration `google.api.name` within a\n [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression, and the\n function declaration `startsWith`.",
+      "patternProperties": {
+        "^(callExpr)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.Call.schema.json",
+          "description": "A call expression, including calls to predefined functions and operators."
+        },
+        "^(comprehensionExpr)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.Comprehension.schema.json",
+          "description": "A comprehension expression."
+        },
+        "^(constExpr)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Constant.schema.json",
+          "description": "A literal expression."
+        },
+        "^(identExpr)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.Ident.schema.json",
+          "description": "An identifier expression."
+        },
+        "^(listExpr)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.CreateList.schema.json",
+          "description": "A list creation expression."
+        },
+        "^(selectExpr)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.Select.schema.json",
+          "description": "A field selection expression, e.g. `request.auth`."
+        },
+        "^(structExpr)$": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.CreateStruct.schema.json",
+          "description": "A map or message creation expression."
+        }
+      },
+      "properties": {
+        "call_expr": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.Call.schema.json",
+          "description": "A call expression, including calls to predefined functions and operators."
+        },
+        "comprehension_expr": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.Comprehension.schema.json",
+          "description": "A comprehension expression."
+        },
+        "const_expr": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Constant.schema.json",
+          "description": "A literal expression."
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Required. An id assigned to this node by the parser which is unique in a\n given expression tree. This is used to associate type information and other\n attributes to a node in the parse tree."
+        },
+        "ident_expr": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.Ident.schema.json",
+          "description": "An identifier expression."
+        },
+        "list_expr": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.CreateList.schema.json",
+          "description": "A list creation expression."
+        },
+        "select_expr": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.Select.schema.json",
+          "description": "A field selection expression, e.g. `request.auth`."
+        },
+        "struct_expr": {
+          "$ref": "#/$defs/google.api.expr.v1alpha1.Expr.CreateStruct.schema.json",
+          "description": "A map or message creation expression."
+        }
+      },
+      "title": "An abstract representation of a common expression.",
+      "type": "object"
+    },
+    "google.protobuf.Duration.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "duration",
+      "title": "Duration",
+      "type": "string"
+    },
+    "google.protobuf.Timestamp.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "google.type.Expr.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Example (Comparison):\n\n     title: \"Summary size limit\"\n     description: \"Determines if a summary is less than 100 chars\"\n     expression: \"document.summary.size() \u003c 100\"\n\n Example (Equality):\n\n     title: \"Requestor is owner\"\n     description: \"Determines if requestor is the document owner\"\n     expression: \"document.owner == request.auth.claims.email\"\n\n Example (Logic):\n\n     title: \"Public documents\"\n     description: \"Determine whether the document should be publicly visible\"\n     expression: \"document.type != 'private' \u0026\u0026 document.type != 'internal'\"\n\n Example (Data Manipulation):\n\n     title: \"Notification string\"\n     description: \"Create a notification string with a timestamp.\"\n     expression: \"'New message received at ' + string(document.create_time)\"\n\n The exact variables and functions that may be referenced within an expression\n are determined by the service that evaluates it. See the service\n documentation for additional information.",
+      "properties": {
+        "description": {
+          "default": "",
+          "description": "Optional. Description of the expression. This is a longer text which\n describes the expression, e.g. when hovered over it in a UI.",
+          "type": "string"
+        },
+        "expression": {
+          "default": "",
+          "description": "Textual representation of an expression in Common Expression Language\n syntax.",
+          "type": "string"
+        },
+        "location": {
+          "default": "",
+          "description": "Optional. String indicating the location of the expression for error\n reporting, e.g. a file name and a position in the file.",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "description": "Optional. Title for the expression, i.e. a short string describing\n its purpose. This can be used e.g. in UIs which allow to enter the\n expression.",
+          "type": "string"
+        }
+      },
+      "title": "Represents a textual expression in the Common Expression Language (CEL)\n syntax. CEL is a C-like expression language. The syntax and semantics of CEL\n are documented at https://github.com/google/cel-spec.",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.IamPolicy.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.IamPolicy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,116 @@
+{
+  "$id": "bytebase.store.OAuth2IdentityProviderConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.",
+  "patternProperties": {
+    "^(auth_style)$": {
+      "anyOf": [
+        {
+          "pattern": "^OAUTH2_AUTH_STYLE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "IN_PARAMS",
+            "IN_HEADER"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "O Auth2 Auth Style"
+    },
+    "^(auth_url)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(client_id)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(client_secret)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(field_mapping)$": {
+      "$ref": "bytebase.store.FieldMapping.jsonschema.json"
+    },
+    "^(skip_tls_verify)$": {
+      "default": false,
+      "type": "boolean"
+    },
+    "^(token_url)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(user_info_url)$": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "authStyle": {
+      "anyOf": [
+        {
+          "pattern": "^OAUTH2_AUTH_STYLE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "IN_PARAMS",
+            "IN_HEADER"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "O Auth2 Auth Style"
+    },
+    "authUrl": {
+      "default": "",
+      "type": "string"
+    },
+    "clientId": {
+      "default": "",
+      "type": "string"
+    },
+    "clientSecret": {
+      "default": "",
+      "type": "string"
+    },
+    "fieldMapping": {
+      "$ref": "bytebase.store.FieldMapping.jsonschema.json"
+    },
+    "scopes": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "skipTlsVerify": {
+      "default": false,
+      "type": "boolean"
+    },
+    "tokenUrl": {
+      "default": "",
+      "type": "string"
+    },
+    "userInfoUrl": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "O Auth2 Identity Provider Config",
+  "type": "object"
+}

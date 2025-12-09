@@ -1,0 +1,7 @@
+{
+  "$id": "google.protobuf.Timestamp.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "format": "date-time",
+  "title": "Timestamp",
+  "type": "string"
+}

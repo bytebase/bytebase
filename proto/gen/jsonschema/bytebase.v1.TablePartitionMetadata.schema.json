@@ -1,0 +1,91 @@
+{
+  "$id": "bytebase.v1.TablePartitionMetadata.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "TablePartitionMetadata is the metadata for table partitions.",
+  "patternProperties": {
+    "^(checkConstraints)$": {
+      "items": {
+        "$ref": "bytebase.v1.CheckConstraintMetadata.schema.json"
+      },
+      "type": "array"
+    },
+    "^(useDefault)$": {
+      "default": "",
+      "description": "The use_default is whether the users use the default partition, it stores\n the different value for different database engines. For MySQL, it's [INT]\n type, 0 means not use default partition, otherwise, it's equals to number\n in syntax [SUB]PARTITION {number}.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "check_constraints": {
+      "items": {
+        "$ref": "bytebase.v1.CheckConstraintMetadata.schema.json"
+      },
+      "type": "array"
+    },
+    "expression": {
+      "default": "",
+      "description": "The expression is the expression of a table partition.\n For PostgreSQL, the expression is the text of {FOR VALUES\n partition_bound_spec}, see\n https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL,\n the expression is the `expr` or `column_list` of the following syntax.\n PARTITION BY\n    { [LINEAR] HASH(expr)\n    | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)\n    | RANGE{(expr) | COLUMNS(column_list)}\n    | LIST{(expr) | COLUMNS(column_list)} }.",
+      "type": "string"
+    },
+    "indexes": {
+      "items": {
+        "$ref": "bytebase.v1.IndexMetadata.schema.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "default": "",
+      "description": "The name is the name of a table partition.",
+      "type": "string"
+    },
+    "subpartitions": {
+      "description": "The subpartitions is the list of subpartitions in a table partition.",
+      "items": {
+        "$ref": "#"
+      },
+      "type": "array"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "pattern": "^TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "RANGE",
+            "RANGE_COLUMNS",
+            "LIST",
+            "LIST_COLUMNS",
+            "HASH",
+            "LINEAR_HASH",
+            "KEY",
+            "LINEAR_KEY"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The type of a table partition.",
+      "title": "Type"
+    },
+    "use_default": {
+      "default": "",
+      "description": "The use_default is whether the users use the default partition, it stores\n the different value for different database engines. For MySQL, it's [INT]\n type, 0 means not use default partition, otherwise, it's equals to number\n in syntax [SUB]PARTITION {number}.",
+      "type": "string"
+    },
+    "value": {
+      "default": "",
+      "description": "The value is the value of a table partition.\n For MySQL, the value is for RANGE and LIST partition types,\n - For a RANGE partition, it contains the value set in the partition's\n VALUES LESS THAN clause, which can be either an integer or MAXVALUE.\n - For a LIST partition, this column contains the values defined in the\n partition's VALUES IN clause, which is a list of comma-separated integer\n values.\n - For others, it's an empty string.",
+      "type": "string"
+    }
+  },
+  "title": "Table Partition Metadata",
+  "type": "object"
+}

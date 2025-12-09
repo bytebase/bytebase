@@ -1,0 +1,23 @@
+{
+  "$id": "bytebase.v1.ExportAuditLogsResponse.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Response message for exporting audit logs.",
+  "properties": {
+    "content": {
+      "description": "The exported audit log content in the requested format.",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "next_page_token": {
+      "description": "A token to retrieve next page of log entities.\n Pass this value in the page_token field in the subsequent call\n to retrieve the next page of log entities.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "content",
+    "next_page_token"
+  ],
+  "title": "Export Audit Logs Response",
+  "type": "object"
+}

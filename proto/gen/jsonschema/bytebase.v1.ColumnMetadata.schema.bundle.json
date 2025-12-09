@@ -1,0 +1,257 @@
+{
+  "$defs": {
+    "bytebase.v1.ColumnMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ColumnMetadata is the metadata for columns.",
+      "patternProperties": {
+        "^(characterSet)$": {
+          "default": "",
+          "description": "The character_set is the character_set of a column.",
+          "type": "string"
+        },
+        "^(defaultConstraintName)$": {
+          "default": "",
+          "description": "Example: A column definition like:\n   CREATE TABLE employees (\n     status NVARCHAR(20) DEFAULT 'active'\n   )\n\n Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'\n or a user-defined name if specified:\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status\n\n To modify the default, you must first drop the existing constraint by name:\n   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status\n\n This field is populated when syncing from the database. When empty (e.g., when parsing\n from SQL files), the system cannot automatically drop the constraint.",
+          "title": "The default_constraint_name is the name of the default constraint, MSSQL only.\n In MSSQL, default values are implemented as named constraints. When modifying or\n dropping a column's default value, you must reference the constraint by name.\n This field stores the actual constraint name from the database.",
+          "type": "string"
+        },
+        "^(defaultOnNull)$": {
+          "default": false,
+          "description": "Oracle specific metadata.\n The default_on_null is the default on null of a column.",
+          "type": "boolean"
+        },
+        "^(hasDefault)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(identityGeneration)$": {
+          "anyOf": [
+            {
+              "pattern": "^IDENTITY_GENERATION_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "ALWAYS",
+                "BY_DEFAULT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_generation is for identity columns, PG only.",
+          "title": "Identity Generation"
+        },
+        "^(identityIncrement)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_increment is for identity columns, MSSQL only."
+        },
+        "^(identitySeed)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_seed is for identity columns, MSSQL only."
+        },
+        "^(isIdentity)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(onUpdate)$": {
+          "default": "",
+          "description": "The on_update is the on update action of a column.\n For MySQL like databases, it's only supported for TIMESTAMP columns with\n CURRENT_TIMESTAMP as on update value.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "character_set": {
+          "default": "",
+          "description": "The character_set is the character_set of a column.",
+          "type": "string"
+        },
+        "collation": {
+          "default": "",
+          "description": "The collation is the collation of a column.",
+          "type": "string"
+        },
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of a column.",
+          "type": "string"
+        },
+        "default": {
+          "default": "",
+          "description": "The default value of column.",
+          "type": "string"
+        },
+        "default_constraint_name": {
+          "default": "",
+          "description": "Example: A column definition like:\n   CREATE TABLE employees (\n     status NVARCHAR(20) DEFAULT 'active'\n   )\n\n Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'\n or a user-defined name if specified:\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status\n\n To modify the default, you must first drop the existing constraint by name:\n   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status\n\n This field is populated when syncing from the database. When empty (e.g., when parsing\n from SQL files), the system cannot automatically drop the constraint.",
+          "title": "The default_constraint_name is the name of the default constraint, MSSQL only.\n In MSSQL, default values are implemented as named constraints. When modifying or\n dropping a column's default value, you must reference the constraint by name.\n This field stores the actual constraint name from the database.",
+          "type": "string"
+        },
+        "default_on_null": {
+          "default": false,
+          "description": "Oracle specific metadata.\n The default_on_null is the default on null of a column.",
+          "type": "boolean"
+        },
+        "generation": {
+          "$ref": "#/$defs/bytebase.v1.GenerationMetadata.schema.json",
+          "description": "The generation is the generation of a column."
+        },
+        "has_default": {
+          "default": false,
+          "type": "boolean"
+        },
+        "identity_generation": {
+          "anyOf": [
+            {
+              "pattern": "^IDENTITY_GENERATION_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "ALWAYS",
+                "BY_DEFAULT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_generation is for identity columns, PG only.",
+          "title": "Identity Generation"
+        },
+        "identity_increment": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_increment is for identity columns, MSSQL only."
+        },
+        "identity_seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_seed is for identity columns, MSSQL only."
+        },
+        "is_identity": {
+          "default": false,
+          "type": "boolean"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a column.",
+          "type": "string"
+        },
+        "nullable": {
+          "default": false,
+          "description": "The nullable is the nullable of a column.",
+          "type": "boolean"
+        },
+        "on_update": {
+          "default": "",
+          "description": "The on_update is the on update action of a column.\n For MySQL like databases, it's only supported for TIMESTAMP columns with\n CURRENT_TIMESTAMP as on update value.",
+          "type": "string"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The position is the position in columns."
+        },
+        "type": {
+          "default": "",
+          "description": "The type is the type of a column.",
+          "type": "string"
+        }
+      },
+      "title": "Column Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.GenerationMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "expression": {
+          "default": "",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "VIRTUAL",
+                "STORED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Type"
+        }
+      },
+      "title": "Generation Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.ColumnMetadata.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ColumnMetadata.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

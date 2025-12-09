@@ -1,0 +1,49 @@
+{
+  "$id": "bytebase.store.SpatialIndexConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "SpatialIndexConfig is the configuration for spatial indexes across different database engines.",
+  "patternProperties": {
+    "^(engine_specific)$": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Database-specific parameters (stored as key-value pairs for extensibility)",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    }
+  },
+  "properties": {
+    "dimensional": {
+      "$ref": "bytebase.store.DimensionalConfig.jsonschema.json",
+      "description": "Dimensional and constraint parameters"
+    },
+    "engineSpecific": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Database-specific parameters (stored as key-value pairs for extensibility)",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "method": {
+      "default": "",
+      "description": "Index method/type (database-specific)\n Examples: \"SPATIAL\" (MySQL/SQL Server), \"GIST\"/\"SPGIST\" (PostgreSQL), \"MDSYS.SPATIAL_INDEX_V2\" (Oracle)",
+      "type": "string"
+    },
+    "storage": {
+      "$ref": "bytebase.store.StorageConfig.jsonschema.json",
+      "description": "Storage and performance parameters"
+    },
+    "tessellation": {
+      "$ref": "bytebase.store.TessellationConfig.jsonschema.json",
+      "description": "Tessellation configuration (primarily SQL Server)"
+    }
+  },
+  "title": "Spatial Index Config",
+  "type": "object"
+}

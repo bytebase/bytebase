@@ -1,0 +1,148 @@
+{
+  "$id": "bytebase.v1.QueryResult.PostgresError.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "refer https://www.postgresql.org/docs/11/protocol-error-fields.html\n for field description.",
+  "patternProperties": {
+    "^(columnName)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(constraintName)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(dataTypeName)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(internalPosition)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "^(internalQuery)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(schemaName)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(tableName)$": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "code": {
+      "default": "",
+      "type": "string"
+    },
+    "column_name": {
+      "default": "",
+      "type": "string"
+    },
+    "constraint_name": {
+      "default": "",
+      "type": "string"
+    },
+    "data_type_name": {
+      "default": "",
+      "type": "string"
+    },
+    "detail": {
+      "default": "",
+      "type": "string"
+    },
+    "file": {
+      "default": "",
+      "type": "string"
+    },
+    "hint": {
+      "default": "",
+      "type": "string"
+    },
+    "internal_position": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "internal_query": {
+      "default": "",
+      "type": "string"
+    },
+    "line": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "message": {
+      "default": "",
+      "type": "string"
+    },
+    "position": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "routine": {
+      "default": "",
+      "type": "string"
+    },
+    "schema_name": {
+      "default": "",
+      "type": "string"
+    },
+    "severity": {
+      "default": "",
+      "type": "string"
+    },
+    "table_name": {
+      "default": "",
+      "type": "string"
+    },
+    "where": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Postgres Error",
+  "type": "object"
+}

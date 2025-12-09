@@ -1,0 +1,27 @@
+{
+  "$id": "bytebase.store.MaskingRulePolicy.MaskingRule.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(semantic_type)$": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "condition": {
+      "$ref": "google.type.Expr.jsonschema.json"
+    },
+    "id": {
+      "default": "",
+      "description": "A unique identifier for a node in UUID format.",
+      "type": "string"
+    },
+    "semanticType": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Masking Rule",
+  "type": "object"
+}

@@ -1,0 +1,60 @@
+{
+  "$id": "bytebase.v1.ExportRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "admin": {
+      "description": "The admin is used for workspace owner and DBA for exporting data from SQL\n Editor Admin mode. The exported data is not masked.",
+      "type": "boolean"
+    },
+    "data_source_id": {
+      "description": "The id of data source.\n It is used for querying admin data source even if the instance has\n read-only data sources. Or it can be used to query a specific read-only\n data source.",
+      "type": "string"
+    },
+    "format": {
+      "description": "The export format.",
+      "enum": [
+        "FORMAT_UNSPECIFIED",
+        "CSV",
+        "JSON",
+        "SQL",
+        "XLSX"
+      ],
+      "title": "Export Format",
+      "type": "string"
+    },
+    "limit": {
+      "description": "The maximum number of rows to return.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "name": {
+      "description": "The name is the resource name to execute the export against.\n Format: instances/{instance}/databases/{database}\n Format: instances/{instance}\n Format: projects/{project}/rollouts/{rollout}\n Format: projects/{project}/rollouts/{rollout}/stages/{stage}",
+      "type": "string"
+    },
+    "password": {
+      "description": "The zip password provide by users.",
+      "type": "string"
+    },
+    "schema": {
+      "description": "The default schema to search objects. Equals to the current schema in\n Oracle and search path in Postgres.",
+      "type": "string"
+    },
+    "statement": {
+      "description": "The SQL statement to execute.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "statement",
+    "limit",
+    "format",
+    "admin",
+    "password",
+    "data_source_id"
+  ],
+  "title": "Export Request",
+  "type": "object"
+}

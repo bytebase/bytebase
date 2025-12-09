@@ -1,0 +1,22 @@
+{
+  "$id": "bytebase.v1.IamPolicy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "IAM policy that binds members to roles.",
+  "properties": {
+    "bindings": {
+      "description": "Collection of binding.\n A binding binds one or more project members to a single project role.",
+      "items": {
+        "$ref": "bytebase.v1.Binding.schema.json"
+      },
+      "type": "array"
+    },
+    "etag": {
+      "default": "",
+      "description": "The current etag of the policy.\n If an etag is provided and does not match the current etag of the policy,\n the call will be blocked and an ABORTED error will be returned.",
+      "type": "string"
+    }
+  },
+  "title": "Iam Policy",
+  "type": "object"
+}

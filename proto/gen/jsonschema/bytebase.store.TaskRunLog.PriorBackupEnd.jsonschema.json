@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.store.TaskRunLog.PriorBackupEnd.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(prior_backup_detail)$": {
+      "$ref": "bytebase.store.PriorBackupDetail.jsonschema.json"
+    }
+  },
+  "properties": {
+    "error": {
+      "default": "",
+      "type": "string"
+    },
+    "priorBackupDetail": {
+      "$ref": "bytebase.store.PriorBackupDetail.jsonschema.json"
+    }
+  },
+  "title": "Prior Backup End",
+  "type": "object"
+}

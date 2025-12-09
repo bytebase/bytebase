@@ -1,0 +1,23 @@
+{
+  "$id": "bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "database_group": {
+      "description": "Format: projects/{project}/databaseGroups/{databaseGroup}.",
+      "type": "string"
+    },
+    "databases": {
+      "description": "Format: instances/{instance-id}/databases/{database-name}.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "database_group"
+  ],
+  "title": "Database Group Mapping",
+  "type": "object"
+}

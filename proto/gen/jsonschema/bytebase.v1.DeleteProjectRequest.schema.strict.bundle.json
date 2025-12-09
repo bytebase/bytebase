@@ -1,0 +1,32 @@
+{
+  "$defs": {
+    "bytebase.v1.DeleteProjectRequest.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "force": {
+          "description": "If set to true, any databases from this project will be moved to default project.\n Sheets are not moved since BYTEBASE_ARTIFACT sheets belong to the issue and issue project.\n Open issues will remain open but associated with the deleted project.\n If set to false, the operation will fail if the project has databases or open issues.",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "The name of the project to delete.\n Format: projects/{project}",
+          "type": "string"
+        },
+        "purge": {
+          "description": "If set to true, permanently purge the soft-deleted project and all related resources.\n This operation is irreversible. Following AIP-165, this should only be used for\n administrative cleanup of old soft-deleted projects.\n The project must already be soft-deleted for this to work.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "force",
+        "purge"
+      ],
+      "title": "Delete Project Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.DeleteProjectRequest.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.DeleteProjectRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

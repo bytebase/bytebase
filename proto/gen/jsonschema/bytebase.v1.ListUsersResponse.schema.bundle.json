@@ -1,0 +1,241 @@
+{
+  "$defs": {
+    "bytebase.v1.ListUsersResponse.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(nextPageToken)$": {
+          "default": "",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\n If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "next_page_token": {
+          "default": "",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\n If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        },
+        "users": {
+          "description": "The users from the specified request.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.User.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "List Users Response",
+      "type": "object"
+    },
+    "bytebase.v1.User.Profile.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(lastChangePasswordTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The last time the user changed their password."
+        },
+        "^(lastLoginTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The last time the user successfully logged in."
+        }
+      },
+      "properties": {
+        "last_change_password_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The last time the user changed their password."
+        },
+        "last_login_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The last time the user successfully logged in."
+        },
+        "source": {
+          "default": "",
+          "description": "source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.",
+          "type": "string"
+        }
+      },
+      "title": "Profile",
+      "type": "object"
+    },
+    "bytebase.v1.User.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(mfaEnabled)$": {
+          "default": false,
+          "description": "The mfa_enabled flag means if the user has enabled MFA.",
+          "type": "boolean"
+        },
+        "^(serviceKey)$": {
+          "default": "",
+          "description": "The service key for service account authentication. Only used for service accounts.",
+          "type": "string"
+        },
+        "^(tempOtpSecret)$": {
+          "default": "",
+          "description": "Temporary OTP secret used during MFA setup and regeneration.",
+          "type": "string"
+        },
+        "^(tempOtpSecretCreatedTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer."
+        },
+        "^(tempRecoveryCodes)$": {
+          "description": "Temporary recovery codes used during MFA setup and regeneration.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "^(userType)$": {
+          "anyOf": [
+            {
+              "pattern": "^USER_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "USER",
+                "SYSTEM_BOT",
+                "SERVICE_ACCOUNT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of user account.",
+          "title": "User Type"
+        }
+      },
+      "properties": {
+        "email": {
+          "default": "",
+          "description": "The email address of the user, used for login and notifications.",
+          "type": "string"
+        },
+        "groups": {
+          "description": "The groups for the user.\n Format: groups/{email}",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "mfa_enabled": {
+          "default": false,
+          "description": "The mfa_enabled flag means if the user has enabled MFA.",
+          "type": "boolean"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the user.\n Format: users/{user}. {user} is a system-generated unique ID.",
+          "type": "string"
+        },
+        "password": {
+          "default": "",
+          "description": "The password for authentication. Only used during user creation or password updates.",
+          "type": "string"
+        },
+        "phone": {
+          "default": "",
+          "description": "Should be a valid E.164 compliant phone number.\n Could be empty.",
+          "type": "string"
+        },
+        "profile": {
+          "$ref": "#/$defs/bytebase.v1.User.Profile.schema.json",
+          "description": "User profile metadata."
+        },
+        "service_key": {
+          "default": "",
+          "description": "The service key for service account authentication. Only used for service accounts.",
+          "type": "string"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "pattern": "^STATE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "ACTIVE",
+                "DELETED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The lifecycle state of the user account.",
+          "title": "State"
+        },
+        "temp_otp_secret": {
+          "default": "",
+          "description": "Temporary OTP secret used during MFA setup and regeneration.",
+          "type": "string"
+        },
+        "temp_otp_secret_created_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer."
+        },
+        "temp_recovery_codes": {
+          "description": "Temporary recovery codes used during MFA setup and regeneration.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "title": {
+          "default": "",
+          "description": "The display title or full name of the user.",
+          "maxLength": 200,
+          "type": "string"
+        },
+        "user_type": {
+          "anyOf": [
+            {
+              "pattern": "^USER_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "USER",
+                "SYSTEM_BOT",
+                "SERVICE_ACCOUNT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of user account.",
+          "title": "User Type"
+        }
+      },
+      "title": "User",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.ListUsersResponse.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ListUsersResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

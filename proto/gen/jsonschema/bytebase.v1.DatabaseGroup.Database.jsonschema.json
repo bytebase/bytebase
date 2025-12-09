@@ -1,0 +1,15 @@
+{
+  "$id": "bytebase.v1.DatabaseGroup.Database.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A database within a database group.",
+  "properties": {
+    "name": {
+      "default": "",
+      "description": "The resource name of the database.\n Format: instances/{instance}/databases/{database}",
+      "type": "string"
+    }
+  },
+  "title": "Database",
+  "type": "object"
+}

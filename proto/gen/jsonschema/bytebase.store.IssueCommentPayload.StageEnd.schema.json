@@ -1,0 +1,13 @@
+{
+  "$id": "bytebase.store.IssueCommentPayload.StageEnd.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "stage": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Stage End",
+  "type": "object"
+}

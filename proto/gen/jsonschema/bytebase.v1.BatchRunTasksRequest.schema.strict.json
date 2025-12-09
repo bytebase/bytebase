@@ -1,0 +1,33 @@
+{
+  "$id": "bytebase.v1.BatchRunTasksRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "description": "The name of the parent of the tasks.\n Format: projects/{project}/rollouts/{rollout}/stages/{stage}",
+      "type": "string"
+    },
+    "reason": {
+      "description": "The reason for running the tasks.",
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "run_time": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json",
+      "description": "The task run should run after run_time."
+    },
+    "tasks": {
+      "description": "The tasks to run.\n Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "parent",
+    "reason"
+  ],
+  "title": "Batch Run Tasks Request",
+  "type": "object"
+}

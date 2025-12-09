@@ -1,0 +1,160 @@
+{
+  "$defs": {
+    "bytebase.v1.LoginResponse.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "mfa_temp_token": {
+          "description": "Temporary token for MFA verification.",
+          "type": "string"
+        },
+        "require_reset_password": {
+          "description": "Whether user must reset password before continuing.",
+          "type": "boolean"
+        },
+        "token": {
+          "description": "Access token for authenticated requests.",
+          "type": "string"
+        },
+        "user": {
+          "$ref": "#/$defs/bytebase.v1.User.schema.strict.json",
+          "description": "The user from the successful login."
+        }
+      },
+      "required": [
+        "token",
+        "require_reset_password"
+      ],
+      "title": "Login Response",
+      "type": "object"
+    },
+    "bytebase.v1.User.Profile.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "last_change_password_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json",
+          "description": "The last time the user changed their password."
+        },
+        "last_login_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json",
+          "description": "The last time the user successfully logged in."
+        },
+        "source": {
+          "description": "source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "title": "Profile",
+      "type": "object"
+    },
+    "bytebase.v1.User.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "email": {
+          "description": "The email address of the user, used for login and notifications.",
+          "type": "string"
+        },
+        "groups": {
+          "description": "The groups for the user.\n Format: groups/{email}",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "mfa_enabled": {
+          "description": "The mfa_enabled flag means if the user has enabled MFA.",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "The name of the user.\n Format: users/{user}. {user} is a system-generated unique ID.",
+          "type": "string"
+        },
+        "password": {
+          "description": "The password for authentication. Only used during user creation or password updates.",
+          "type": "string"
+        },
+        "phone": {
+          "description": "Should be a valid E.164 compliant phone number.\n Could be empty.",
+          "type": "string"
+        },
+        "profile": {
+          "$ref": "#/$defs/bytebase.v1.User.Profile.schema.strict.json",
+          "description": "User profile metadata."
+        },
+        "service_key": {
+          "description": "The service key for service account authentication. Only used for service accounts.",
+          "type": "string"
+        },
+        "state": {
+          "description": "The lifecycle state of the user account.",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "ACTIVE",
+            "DELETED"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "temp_otp_secret": {
+          "description": "Temporary OTP secret used during MFA setup and regeneration.",
+          "type": "string"
+        },
+        "temp_otp_secret_created_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json",
+          "description": "Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer."
+        },
+        "temp_recovery_codes": {
+          "description": "Temporary recovery codes used during MFA setup and regeneration.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "title": {
+          "description": "The display title or full name of the user.",
+          "maxLength": 200,
+          "type": "string"
+        },
+        "user_type": {
+          "description": "The type of user account.",
+          "enum": [
+            "USER_TYPE_UNSPECIFIED",
+            "USER",
+            "SYSTEM_BOT",
+            "SERVICE_ACCOUNT"
+          ],
+          "title": "User Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "state",
+        "email",
+        "title",
+        "user_type",
+        "password",
+        "service_key",
+        "mfa_enabled",
+        "temp_otp_secret",
+        "phone"
+      ],
+      "title": "User",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.LoginResponse.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.LoginResponse.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,133 @@
+{
+  "$id": "bytebase.v1.ActuatorInfo.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "System information and configuration for the Bytebase instance.\n Actuator concept is similar to the Spring Boot Actuator.",
+  "properties": {
+    "activated_instance_count": {
+      "description": "The number of activated database instances.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "debug": {
+      "description": "Whether debug mode is enabled.",
+      "type": "boolean"
+    },
+    "demo": {
+      "description": "Whether the Bytebase instance is running in demo mode.",
+      "type": "boolean"
+    },
+    "disallow_password_signin": {
+      "description": "Whether password-based signin is disabled (except for workspace admins).",
+      "type": "boolean"
+    },
+    "disallow_signup": {
+      "description": "Whether self-service user signup is disabled.",
+      "type": "boolean"
+    },
+    "docker": {
+      "description": "Whether the Bytebase instance is running in Docker.",
+      "type": "boolean"
+    },
+    "enable_sample": {
+      "description": "Whether sample data setup is enabled.",
+      "type": "boolean"
+    },
+    "external_url": {
+      "description": "The external URL where users or webhook callbacks access Bytebase.",
+      "type": "string"
+    },
+    "external_url_from_flag": {
+      "description": "Whether the external URL is set via command-line flag (and thus cannot be changed via UI).",
+      "type": "boolean"
+    },
+    "git_commit": {
+      "description": "The git commit hash of the build.",
+      "type": "string"
+    },
+    "host": {
+      "description": "The host address of the Bytebase instance.",
+      "type": "string"
+    },
+    "last_active_time": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json",
+      "description": "The last time any API call was made, refreshed on each request."
+    },
+    "need_admin_setup": {
+      "description": "Whether the Bytebase instance requires initial admin setup.",
+      "type": "boolean"
+    },
+    "password_restriction": {
+      "$ref": "bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.schema.strict.json",
+      "description": "Password complexity and restriction requirements."
+    },
+    "port": {
+      "description": "The port number of the Bytebase instance.",
+      "type": "string"
+    },
+    "readonly": {
+      "description": "Whether the Bytebase instance is running in read-only mode.",
+      "type": "boolean"
+    },
+    "require_2fa": {
+      "description": "Whether two-factor authentication is required for all users.",
+      "type": "boolean"
+    },
+    "saas": {
+      "description": "Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.",
+      "type": "boolean"
+    },
+    "total_instance_count": {
+      "description": "The total number of database instances.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "unlicensed_features": {
+      "description": "List of features that are not licensed.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "user_stats": {
+      "description": "Statistics about users in the system.",
+      "items": {
+        "$ref": "bytebase.v1.ActuatorInfo.StatUser.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "version": {
+      "description": "The Bytebase server version.",
+      "type": "string"
+    },
+    "workspace_id": {
+      "description": "The unique identifier for the workspace.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "version",
+    "git_commit",
+    "readonly",
+    "saas",
+    "demo",
+    "host",
+    "port",
+    "external_url",
+    "need_admin_setup",
+    "disallow_signup",
+    "require_2fa",
+    "workspace_id",
+    "debug",
+    "disallow_password_signin",
+    "docker",
+    "activated_instance_count",
+    "total_instance_count",
+    "enable_sample",
+    "external_url_from_flag"
+  ],
+  "title": "Actuator Info",
+  "type": "object"
+}

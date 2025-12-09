@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "bytebase.v1.Group.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A group of users within the workspace.",
+      "properties": {
+        "description": {
+          "description": "The description of the group.",
+          "maxLength": 1000,
+          "type": "string"
+        },
+        "email": {
+          "description": "The unique email for the group.",
+          "type": "string"
+        },
+        "members": {
+          "description": "The members of the group.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.GroupMember.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the group to retrieve.\n Format: groups/{group}, the group should be email or uuid.",
+          "type": "string"
+        },
+        "source": {
+          "description": "The source system where the group originated (e.g., Entra ID for SCIM sync).",
+          "type": "string"
+        },
+        "title": {
+          "description": "The display title of the group.",
+          "maxLength": 200,
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "description",
+        "source",
+        "email"
+      ],
+      "title": "Group",
+      "type": "object"
+    },
+    "bytebase.v1.GroupMember.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A member of a group with a role.",
+      "properties": {
+        "member": {
+          "description": "Format: users/hello@world.com",
+          "title": "Member is the principal who belong to this group.",
+          "type": "string"
+        },
+        "role": {
+          "description": "The member's role in the group.",
+          "enum": [
+            "ROLE_UNSPECIFIED",
+            "OWNER",
+            "MEMBER"
+          ],
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "member",
+        "role"
+      ],
+      "title": "Group Member",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.Group.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.Group.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

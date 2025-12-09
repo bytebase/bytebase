@@ -1,0 +1,20 @@
+{
+  "$defs": {
+    "bytebase.v1.GetInstanceRoleRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "The name of the role to retrieve.\n Format: instances/{instance}/roles/{role name}\n The role name is the unique name for the role.",
+          "type": "string"
+        }
+      },
+      "title": "Get Instance Role Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GetInstanceRoleRequest.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GetInstanceRoleRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

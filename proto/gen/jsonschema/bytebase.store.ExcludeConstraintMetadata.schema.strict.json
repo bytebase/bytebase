@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.store.ExcludeConstraintMetadata.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expression": {
+      "description": "The expression is the full EXCLUDE constraint definition including \"EXCLUDE\" keyword.\n Example: \"EXCLUDE USING gist (room_id WITH =, during WITH \u0026\u0026)\"",
+      "type": "string"
+    },
+    "name": {
+      "description": "The name of the EXCLUDE constraint.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "expression"
+  ],
+  "title": "Exclude Constraint Metadata",
+  "type": "object"
+}

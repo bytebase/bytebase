@@ -1,0 +1,33 @@
+{
+  "$id": "bytebase.v1.UpdateReleaseRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(allowMissing)$": {
+      "default": false,
+      "description": "If set to true, and the release is not found, a new release will be created.\n In this situation, `update_mask` is ignored.",
+      "type": "boolean"
+    },
+    "^(updateMask)$": {
+      "$ref": "google.protobuf.FieldMask.schema.json",
+      "description": "The list of fields to be updated."
+    }
+  },
+  "properties": {
+    "allow_missing": {
+      "default": false,
+      "description": "If set to true, and the release is not found, a new release will be created.\n In this situation, `update_mask` is ignored.",
+      "type": "boolean"
+    },
+    "release": {
+      "$ref": "bytebase.v1.Release.schema.json",
+      "description": "The release to update."
+    },
+    "update_mask": {
+      "$ref": "google.protobuf.FieldMask.schema.json",
+      "description": "The list of fields to be updated."
+    }
+  },
+  "title": "Update Release Request",
+  "type": "object"
+}

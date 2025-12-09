@@ -1,0 +1,44 @@
+{
+  "$defs": {
+    "bytebase.v1.ListDatabaseGroupsRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Request message for listing database groups.",
+      "properties": {
+        "parent": {
+          "default": "",
+          "description": "The parent resource whose database groups are to be listed.\n Format: projects/{project}",
+          "type": "string"
+        },
+        "view": {
+          "anyOf": [
+            {
+              "pattern": "^DATABASE_GROUP_VIEW_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "DATABASE_GROUP_VIEW_BASIC",
+                "DATABASE_GROUP_VIEW_FULL"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.",
+          "title": "Database Group View"
+        }
+      },
+      "title": "List Database Groups Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.ListDatabaseGroupsRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ListDatabaseGroupsRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

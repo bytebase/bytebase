@@ -1,0 +1,567 @@
+{
+  "$defs": {
+    "bytebase.v1.FieldMapping.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "FieldMapping saves the field names from user info API of identity provider.\n As we save all raw json string of user info response data into `principal.idp_user_info`,\n we can extract the relevant data based with `FieldMapping`.",
+      "patternProperties": {
+        "^(display_name)$": {
+          "default": "",
+          "description": "DisplayName is the field name of display name in 3rd-party idp user info. Optional.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "displayName": {
+          "default": "",
+          "description": "DisplayName is the field name of display name in 3rd-party idp user info. Optional.",
+          "type": "string"
+        },
+        "groups": {
+          "default": "",
+          "description": "Groups is the field name of groups in 3rd-party idp user info. Optional.\n Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/",
+          "type": "string"
+        },
+        "identifier": {
+          "default": "",
+          "description": "Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.",
+          "type": "string"
+        },
+        "phone": {
+          "default": "",
+          "description": "Phone is the field name of primary phone in 3rd-party idp user info. Optional.",
+          "type": "string"
+        }
+      },
+      "title": "Field Mapping",
+      "type": "object"
+    },
+    "bytebase.v1.IdentityProvider.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "config": {
+          "$ref": "#/$defs/bytebase.v1.IdentityProviderConfig.jsonschema.json",
+          "description": "The configuration details for the identity provider."
+        },
+        "domain": {
+          "default": "",
+          "description": "The domain for email matching when using this identity provider.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the identity provider.\n Format: idps/{idp}",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "description": "The display title of the identity provider.",
+          "maxLength": 200,
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^IDENTITY_PROVIDER_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "OAUTH2",
+                "OIDC",
+                "LDAP"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of identity provider protocol.",
+          "title": "Identity Provider Type"
+        }
+      },
+      "title": "Identity Provider",
+      "type": "object"
+    },
+    "bytebase.v1.IdentityProviderConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(ldap_config)$": {
+          "$ref": "#/$defs/bytebase.v1.LDAPIdentityProviderConfig.jsonschema.json",
+          "description": "LDAP protocol configuration."
+        },
+        "^(oauth2_config)$": {
+          "$ref": "#/$defs/bytebase.v1.OAuth2IdentityProviderConfig.jsonschema.json",
+          "description": "OAuth2 protocol configuration."
+        },
+        "^(oidc_config)$": {
+          "$ref": "#/$defs/bytebase.v1.OIDCIdentityProviderConfig.jsonschema.json",
+          "description": "OIDC protocol configuration."
+        }
+      },
+      "properties": {
+        "ldapConfig": {
+          "$ref": "#/$defs/bytebase.v1.LDAPIdentityProviderConfig.jsonschema.json",
+          "description": "LDAP protocol configuration."
+        },
+        "oauth2Config": {
+          "$ref": "#/$defs/bytebase.v1.OAuth2IdentityProviderConfig.jsonschema.json",
+          "description": "OAuth2 protocol configuration."
+        },
+        "oidcConfig": {
+          "$ref": "#/$defs/bytebase.v1.OIDCIdentityProviderConfig.jsonschema.json",
+          "description": "OIDC protocol configuration."
+        }
+      },
+      "title": "Identity Provider Config",
+      "type": "object"
+    },
+    "bytebase.v1.LDAPIdentityProviderConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "LDAPIdentityProviderConfig is the structure for LDAP identity provider config.",
+      "patternProperties": {
+        "^(base_dn)$": {
+          "default": "",
+          "description": "BaseDN is the base DN to search for users, e.g., \"ou=users,dc=example,dc=com\".",
+          "type": "string"
+        },
+        "^(bind_dn)$": {
+          "default": "",
+          "description": "BindDN is the DN of the user to bind as a service account to perform\n search requests.",
+          "type": "string"
+        },
+        "^(bind_password)$": {
+          "default": "",
+          "description": "BindPassword is the password of the user to bind as a service account.",
+          "type": "string"
+        },
+        "^(field_mapping)$": {
+          "$ref": "#/$defs/bytebase.v1.FieldMapping.jsonschema.json",
+          "description": "FieldMapping is the mapping of the user attributes returned by the LDAP\n server."
+        },
+        "^(security_protocol)$": {
+          "anyOf": [
+            {
+              "pattern": "^SECURITY_PROTOCOL_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "START_TLS",
+                "LDAPS"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "SecurityProtocol is the security protocol to be used for establishing\n connections with the LDAP server.",
+          "title": "Security Protocol"
+        },
+        "^(skip_tls_verify)$": {
+          "default": false,
+          "description": "SkipTLSVerify controls whether to skip TLS certificate verification.",
+          "type": "boolean"
+        },
+        "^(user_filter)$": {
+          "default": "",
+          "description": "UserFilter is the filter to search for users, e.g., \"(uid=%s)\".",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "baseDn": {
+          "default": "",
+          "description": "BaseDN is the base DN to search for users, e.g., \"ou=users,dc=example,dc=com\".",
+          "type": "string"
+        },
+        "bindDn": {
+          "default": "",
+          "description": "BindDN is the DN of the user to bind as a service account to perform\n search requests.",
+          "type": "string"
+        },
+        "bindPassword": {
+          "default": "",
+          "description": "BindPassword is the password of the user to bind as a service account.",
+          "type": "string"
+        },
+        "fieldMapping": {
+          "$ref": "#/$defs/bytebase.v1.FieldMapping.jsonschema.json",
+          "description": "FieldMapping is the mapping of the user attributes returned by the LDAP\n server."
+        },
+        "host": {
+          "default": "",
+          "description": "Host is the hostname or IP address of the LDAP server, e.g.,\n \"ldap.example.com\".",
+          "type": "string"
+        },
+        "port": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Port is the port number of the LDAP server, e.g., 389. When not set, the\n default port of the corresponding security protocol will be used, i.e. 389\n for StartTLS and 636 for LDAPS."
+        },
+        "securityProtocol": {
+          "anyOf": [
+            {
+              "pattern": "^SECURITY_PROTOCOL_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "START_TLS",
+                "LDAPS"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "SecurityProtocol is the security protocol to be used for establishing\n connections with the LDAP server.",
+          "title": "Security Protocol"
+        },
+        "skipTlsVerify": {
+          "default": false,
+          "description": "SkipTLSVerify controls whether to skip TLS certificate verification.",
+          "type": "boolean"
+        },
+        "userFilter": {
+          "default": "",
+          "description": "UserFilter is the filter to search for users, e.g., \"(uid=%s)\".",
+          "type": "string"
+        }
+      },
+      "title": "LDAP Identity Provider Config",
+      "type": "object"
+    },
+    "bytebase.v1.OAuth2IdentityProviderConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.",
+      "patternProperties": {
+        "^(auth_style)$": {
+          "anyOf": [
+            {
+              "pattern": "^OAUTH2_AUTH_STYLE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "IN_PARAMS",
+                "IN_HEADER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The authentication style for client credentials.",
+          "title": "O Auth2 Auth Style"
+        },
+        "^(auth_url)$": {
+          "default": "",
+          "description": "The authorization endpoint URL for OAuth2 flow.",
+          "type": "string"
+        },
+        "^(client_id)$": {
+          "default": "",
+          "description": "The OAuth2 client identifier.",
+          "type": "string"
+        },
+        "^(client_secret)$": {
+          "default": "",
+          "description": "The OAuth2 client secret for authentication.",
+          "type": "string"
+        },
+        "^(field_mapping)$": {
+          "$ref": "#/$defs/bytebase.v1.FieldMapping.jsonschema.json",
+          "description": "Mapping configuration for user attributes from OAuth2 response."
+        },
+        "^(skip_tls_verify)$": {
+          "default": false,
+          "description": "Whether to skip TLS certificate verification.",
+          "type": "boolean"
+        },
+        "^(token_url)$": {
+          "default": "",
+          "description": "The token endpoint URL for exchanging authorization code.",
+          "type": "string"
+        },
+        "^(user_info_url)$": {
+          "default": "",
+          "description": "The user information endpoint URL.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "authStyle": {
+          "anyOf": [
+            {
+              "pattern": "^OAUTH2_AUTH_STYLE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "IN_PARAMS",
+                "IN_HEADER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The authentication style for client credentials.",
+          "title": "O Auth2 Auth Style"
+        },
+        "authUrl": {
+          "default": "",
+          "description": "The authorization endpoint URL for OAuth2 flow.",
+          "type": "string"
+        },
+        "clientId": {
+          "default": "",
+          "description": "The OAuth2 client identifier.",
+          "type": "string"
+        },
+        "clientSecret": {
+          "default": "",
+          "description": "The OAuth2 client secret for authentication.",
+          "type": "string"
+        },
+        "fieldMapping": {
+          "$ref": "#/$defs/bytebase.v1.FieldMapping.jsonschema.json",
+          "description": "Mapping configuration for user attributes from OAuth2 response."
+        },
+        "scopes": {
+          "description": "The list of OAuth2 scopes to request.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "skipTlsVerify": {
+          "default": false,
+          "description": "Whether to skip TLS certificate verification.",
+          "type": "boolean"
+        },
+        "tokenUrl": {
+          "default": "",
+          "description": "The token endpoint URL for exchanging authorization code.",
+          "type": "string"
+        },
+        "userInfoUrl": {
+          "default": "",
+          "description": "The user information endpoint URL.",
+          "type": "string"
+        }
+      },
+      "title": "O Auth2 Identity Provider Config",
+      "type": "object"
+    },
+    "bytebase.v1.OIDCIdentityProviderConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "OIDCIdentityProviderConfig is the structure for OIDC identity provider config.",
+      "patternProperties": {
+        "^(auth_endpoint)$": {
+          "default": "",
+          "description": "The authorization endpoint of the OIDC provider.\n Should be fetched from the well-known configuration file of the OIDC provider.",
+          "type": "string"
+        },
+        "^(auth_style)$": {
+          "anyOf": [
+            {
+              "pattern": "^OAUTH2_AUTH_STYLE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "IN_PARAMS",
+                "IN_HEADER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The authentication style for client credentials.",
+          "title": "O Auth2 Auth Style"
+        },
+        "^(client_id)$": {
+          "default": "",
+          "description": "The OIDC client identifier.",
+          "type": "string"
+        },
+        "^(client_secret)$": {
+          "default": "",
+          "description": "The OIDC client secret for authentication.",
+          "type": "string"
+        },
+        "^(field_mapping)$": {
+          "$ref": "#/$defs/bytebase.v1.FieldMapping.jsonschema.json",
+          "description": "Mapping configuration for user attributes from OIDC claims."
+        },
+        "^(skip_tls_verify)$": {
+          "default": false,
+          "description": "Whether to skip TLS certificate verification.",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "authEndpoint": {
+          "default": "",
+          "description": "The authorization endpoint of the OIDC provider.\n Should be fetched from the well-known configuration file of the OIDC provider.",
+          "type": "string"
+        },
+        "authStyle": {
+          "anyOf": [
+            {
+              "pattern": "^OAUTH2_AUTH_STYLE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "IN_PARAMS",
+                "IN_HEADER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The authentication style for client credentials.",
+          "title": "O Auth2 Auth Style"
+        },
+        "clientId": {
+          "default": "",
+          "description": "The OIDC client identifier.",
+          "type": "string"
+        },
+        "clientSecret": {
+          "default": "",
+          "description": "The OIDC client secret for authentication.",
+          "type": "string"
+        },
+        "fieldMapping": {
+          "$ref": "#/$defs/bytebase.v1.FieldMapping.jsonschema.json",
+          "description": "Mapping configuration for user attributes from OIDC claims."
+        },
+        "issuer": {
+          "default": "",
+          "description": "The OIDC issuer URL for the identity provider.",
+          "type": "string"
+        },
+        "scopes": {
+          "description": "The scopes that the OIDC provider supports.\n Should be fetched from the well-known configuration file of the OIDC provider.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "skipTlsVerify": {
+          "default": false,
+          "description": "Whether to skip TLS certificate verification.",
+          "type": "boolean"
+        }
+      },
+      "title": "OIDC Identity Provider Config",
+      "type": "object"
+    },
+    "bytebase.v1.UpdateIdentityProviderRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(allow_missing)$": {
+          "default": false,
+          "description": "If set to true, and the identity provider is not found, a new identity provider will be created.\n In this situation, `update_mask` is ignored.",
+          "type": "boolean"
+        },
+        "^(identity_provider)$": {
+          "$ref": "#/$defs/bytebase.v1.IdentityProvider.jsonschema.json",
+          "description": "The identity provider's `name` field is used to identify the identity provider to update.\n Format: idps/{identity_provider}",
+          "title": "The identity provider to update."
+        },
+        "^(update_mask)$": {
+          "$ref": "#/$defs/google.protobuf.FieldMask.jsonschema.json",
+          "description": "The list of fields to update."
+        }
+      },
+      "properties": {
+        "allowMissing": {
+          "default": false,
+          "description": "If set to true, and the identity provider is not found, a new identity provider will be created.\n In this situation, `update_mask` is ignored.",
+          "type": "boolean"
+        },
+        "identityProvider": {
+          "$ref": "#/$defs/bytebase.v1.IdentityProvider.jsonschema.json",
+          "description": "The identity provider's `name` field is used to identify the identity provider to update.\n Format: idps/{identity_provider}",
+          "title": "The identity provider to update."
+        },
+        "updateMask": {
+          "$ref": "#/$defs/google.protobuf.FieldMask.jsonschema.json",
+          "description": "The list of fields to update."
+        }
+      },
+      "title": "Update Identity Provider Request",
+      "type": "object"
+    },
+    "google.protobuf.FieldMask.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "paths: \"f.a\"\n     paths: \"f.b.d\"\n\n Here `f` represents a field in some root message, `a` and `b`\n fields in the message found in `f`, and `d` a field found in the\n message in `f.b`.\n\n Field masks are used to specify a subset of fields that should be\n returned by a get operation or modified by an update operation.\n Field masks also have a custom JSON encoding (see below).\n\n # Field Masks in Projections\n\n When used in the context of a projection, a response message or\n sub-message is filtered by the API to only contain those fields as\n specified in the mask. For example, if the mask in the previous\n example is applied to a response message as follows:\n\n     f {\n       a : 22\n       b {\n         d : 1\n         x : 2\n       }\n       y : 13\n     }\n     z: 8\n\n The result will not contain specific values for fields x,y and z\n (their value will be set to the default, and omitted in proto text\n output):\n\n\n     f {\n       a : 22\n       b {\n         d : 1\n       }\n     }\n\n A repeated field is not allowed except at the last position of a\n paths string.\n\n If a FieldMask object is not present in a get operation, the\n operation applies to all fields (as if a FieldMask of all fields\n had been specified).\n\n Note that a field mask does not necessarily apply to the\n top-level response message. In case of a REST get operation, the\n field mask applies directly to the response, but in case of a REST\n list operation, the mask instead applies to each individual message\n in the returned resource list. In case of a REST custom method,\n other definitions may be used. Where the mask applies will be\n clearly documented together with its declaration in the API.  In\n any case, the effect on the returned resource/resources is required\n behavior for APIs.\n\n # Field Masks in Update Operations\n\n A field mask in update operations specifies which fields of the\n targeted resource are going to be updated. The API is required\n to only change the values of the fields as specified in the mask\n and leave the others untouched. If a resource is passed in to\n describe the updated values, the API ignores the values of all\n fields not covered by the mask.\n\n If a repeated field is specified for an update operation, new values will\n be appended to the existing repeated field in the target resource. Note that\n a repeated field is only allowed in the last position of a `paths` string.\n\n If a sub-message is specified in the last position of the field mask for an\n update operation, then new value will be merged into the existing sub-message\n in the target resource.\n\n For example, given the target message:\n\n     f {\n       b {\n         d: 1\n         x: 2\n       }\n       c: [1]\n     }\n\n And an update message:\n\n     f {\n       b {\n         d: 10\n       }\n       c: [2]\n     }\n\n then if the field mask is:\n\n  paths: [\"f.b\", \"f.c\"]\n\n then the result will be:\n\n     f {\n       b {\n         d: 10\n         x: 2\n       }\n       c: [1, 2]\n     }\n\n An implementation may provide options to override this default behavior for\n repeated and message fields.\n\n In order to reset a field's value to the default, the field must\n be in the mask and set to the default value in the provided resource.\n Hence, in order to reset all fields of a resource, provide a default\n instance of the resource and set all fields in the mask, or do\n not provide a mask as described below.\n\n If a field mask is not present on update, the operation applies to\n all fields (as if a field mask of all fields has been specified).\n Note that in the presence of schema evolution, this may mean that\n fields the client does not know and has therefore not filled into\n the request will be reset to their default. If this is unwanted\n behavior, a specific service may require a client to always specify\n a field mask, producing an error if not.\n\n As with get operations, the location of the resource which\n describes the updated values in the request message depends on the\n operation kind. In any case, the effect of the field mask is\n required to be honored by the API.\n\n ## Considerations for HTTP REST\n\n The HTTP kind of an update operation which uses a field mask must\n be set to PATCH instead of PUT in order to satisfy HTTP semantics\n (PUT must only be used for full updates).\n\n # JSON Encoding of Field Masks\n\n In JSON, a field mask is encoded as a single string where paths are\n separated by a comma. Fields name in each path are converted\n to/from lower-camel naming conventions.\n\n As an example, consider the following message declarations:\n\n     message Profile {\n       User user = 1;\n       Photo photo = 2;\n     }\n     message User {\n       string display_name = 1;\n       string address = 2;\n     }\n\n In proto a field mask for `Profile` may look as such:\n\n     mask {\n       paths: \"user.display_name\"\n       paths: \"photo\"\n     }\n\n In JSON, the same mask is represented as below:\n\n     {\n       mask: \"user.displayName,photo\"\n     }\n\n # Field Masks and Oneof Fields\n\n Field masks treat fields in oneofs just as regular fields. Consider the\n following message:\n\n     message SampleMessage {\n       oneof test_oneof {\n         string name = 4;\n         SubMessage sub_message = 9;\n       }\n     }\n\n The field mask can be:\n\n     mask {\n       paths: \"name\"\n     }\n\n Or:\n\n     mask {\n       paths: \"sub_message\"\n     }\n\n Note that oneof type names (\"test_oneof\" in this case) cannot be used in\n paths.\n\n ## Field Mask Verification\n\n The implementation of any API method which has a FieldMask type field in the\n request should verify the included field paths, and return an\n `INVALID_ARGUMENT` error if any path is unmappable.",
+      "properties": {
+        "paths": {
+          "description": "The set of field mask paths.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "`FieldMask` represents a set of symbolic field paths, for example:",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.UpdateIdentityProviderRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.UpdateIdentityProviderRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

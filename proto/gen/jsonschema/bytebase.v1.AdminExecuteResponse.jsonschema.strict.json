@@ -1,0 +1,16 @@
+{
+  "$id": "bytebase.v1.AdminExecuteResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "results": {
+      "description": "The query results.",
+      "items": {
+        "$ref": "bytebase.v1.QueryResult.jsonschema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Admin Execute Response",
+  "type": "object"
+}

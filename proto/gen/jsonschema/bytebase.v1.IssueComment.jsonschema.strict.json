@@ -1,0 +1,59 @@
+{
+  "$id": "bytebase.v1.IssueComment.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A comment on an issue.",
+  "properties": {
+    "approval": {
+      "$ref": "bytebase.v1.IssueComment.Approval.jsonschema.strict.json",
+      "description": "Approval event."
+    },
+    "comment": {
+      "description": "The text content of the comment.",
+      "maxLength": 65536,
+      "type": "string"
+    },
+    "createTime": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    },
+    "creator": {
+      "description": "Format: users/{email}",
+      "type": "string"
+    },
+    "issueUpdate": {
+      "$ref": "bytebase.v1.IssueComment.IssueUpdate.jsonschema.strict.json",
+      "description": "Issue update event."
+    },
+    "name": {
+      "description": "Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}",
+      "type": "string"
+    },
+    "payload": {
+      "description": "TODO: use struct message instead.",
+      "type": "string"
+    },
+    "stageEnd": {
+      "$ref": "bytebase.v1.IssueComment.StageEnd.jsonschema.strict.json",
+      "description": "Stage end event."
+    },
+    "taskPriorBackup": {
+      "$ref": "bytebase.v1.IssueComment.TaskPriorBackup.jsonschema.strict.json",
+      "description": "Task prior backup event."
+    },
+    "taskUpdate": {
+      "$ref": "bytebase.v1.IssueComment.TaskUpdate.jsonschema.strict.json",
+      "description": "Task update event."
+    },
+    "updateTime": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    }
+  },
+  "required": [
+    "name",
+    "comment",
+    "payload",
+    "creator"
+  ],
+  "title": "Issue Comment",
+  "type": "object"
+}

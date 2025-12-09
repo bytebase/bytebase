@@ -1,0 +1,430 @@
+{
+  "$defs": {
+    "bytebase.v1.ChangedResourceDatabase.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "schemas": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceSchema.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource Database",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResourceFunction.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "ranges": {
+          "description": "The ranges of sub-strings correspond to the statements on the sheet.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Range.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource Function",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResourceProcedure.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "ranges": {
+          "description": "The ranges of sub-strings correspond to the statements on the sheet.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Range.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource Procedure",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResourceSchema.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "functions": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceFunction.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "procedures": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceProcedure.schema.json"
+          },
+          "type": "array"
+        },
+        "tables": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceTable.schema.json"
+          },
+          "type": "array"
+        },
+        "views": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceView.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource Schema",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResourceTable.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "ranges": {
+          "description": "The ranges of sub-strings correspond to the statements on the sheet.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Range.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource Table",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResourceView.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "ranges": {
+          "description": "The ranges of sub-strings correspond to the statements on the sheet.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Range.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resource View",
+      "type": "object"
+    },
+    "bytebase.v1.ChangedResources.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "databases": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ChangedResourceDatabase.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Changed Resources",
+      "type": "object"
+    },
+    "bytebase.v1.Changelog.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(changedResources)$": {
+          "$ref": "#/$defs/bytebase.v1.ChangedResources.schema.json"
+        },
+        "^(createTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "^(dumpVersionMismatch)$": {
+          "default": false,
+          "description": "True if this changelog's dump version differs from current engine dump version.\n When true and drift is detected, the drift may be a false positive from Bytebase upgrade.",
+          "type": "boolean"
+        },
+        "^(prevSchema)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(prevSchemaSize)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(schemaSize)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(statementSheet)$": {
+          "default": "",
+          "description": "The name of the sheet resource.\n Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "^(statementSize)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(taskRun)$": {
+          "default": "",
+          "description": "Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "changed_resources": {
+          "$ref": "#/$defs/bytebase.v1.ChangedResources.schema.json"
+        },
+        "create_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "dump_version_mismatch": {
+          "default": false,
+          "description": "True if this changelog's dump version differs from current engine dump version.\n When true and drift is detected, the drift may be a false positive from Bytebase upgrade.",
+          "type": "boolean"
+        },
+        "issue": {
+          "default": "",
+          "description": "Format: projects/{project}/issues/{issue}",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "Format: instances/{instance}/databases/{database}/changelogs/{changelog}",
+          "type": "string"
+        },
+        "prev_schema": {
+          "default": "",
+          "type": "string"
+        },
+        "prev_schema_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "revision": {
+          "default": "",
+          "description": "Could be empty\n Or present but not found if deleted",
+          "type": "string"
+        },
+        "schema": {
+          "default": "",
+          "type": "string"
+        },
+        "schema_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "statement": {
+          "default": "",
+          "description": "The statement is used for preview purpose.",
+          "type": "string"
+        },
+        "statement_sheet": {
+          "default": "",
+          "description": "The name of the sheet resource.\n Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "statement_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "status": {
+          "anyOf": [
+            {
+              "pattern": "^STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "PENDING",
+                "DONE",
+                "FAILED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Status"
+        },
+        "task_run": {
+          "default": "",
+          "description": "Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "BASELINE",
+                "MIGRATE",
+                "SDL"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Type"
+        },
+        "version": {
+          "default": "",
+          "description": "Could be empty",
+          "type": "string"
+        }
+      },
+      "title": "Changelog",
+      "type": "object"
+    },
+    "bytebase.v1.ListChangelogsResponse.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(nextPageToken)$": {
+          "default": "",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\n If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "changelogs": {
+          "description": "The list of changelogs.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Changelog.schema.json"
+          },
+          "type": "array"
+        },
+        "next_page_token": {
+          "default": "",
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\n If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        }
+      },
+      "title": "List Changelogs Response",
+      "type": "object"
+    },
+    "bytebase.v1.Range.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Range of positions in text or sequence.",
+      "properties": {
+        "end": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "End position (exclusive)."
+        },
+        "start": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Start position (inclusive)."
+        }
+      },
+      "title": "Range",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.ListChangelogsResponse.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ListChangelogsResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

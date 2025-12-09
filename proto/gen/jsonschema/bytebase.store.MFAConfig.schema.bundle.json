@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "bytebase.store.MFAConfig.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "MFAConfig is the MFA configuration for a user.",
+      "patternProperties": {
+        "^(otpSecret)$": {
+          "default": "",
+          "description": "The otp_secret is the secret key used to validate the OTP code.",
+          "type": "string"
+        },
+        "^(recoveryCodes)$": {
+          "description": "The recovery_codes are the codes that can be used to recover the account.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "^(tempOtpSecret)$": {
+          "default": "",
+          "description": "The temp_otp_secret is the temporary secret key used to validate the OTP code and will replace the otp_secret in two-phase commits.",
+          "type": "string"
+        },
+        "^(tempOtpSecretCreatedTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The temp_otp_secret_created_time is the timestamp when temp_otp_secret was created. Used to enforce expiration."
+        },
+        "^(tempRecoveryCodes)$": {
+          "description": "The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two-phase commits.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "properties": {
+        "otp_secret": {
+          "default": "",
+          "description": "The otp_secret is the secret key used to validate the OTP code.",
+          "type": "string"
+        },
+        "recovery_codes": {
+          "description": "The recovery_codes are the codes that can be used to recover the account.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "temp_otp_secret": {
+          "default": "",
+          "description": "The temp_otp_secret is the temporary secret key used to validate the OTP code and will replace the otp_secret in two-phase commits.",
+          "type": "string"
+        },
+        "temp_otp_secret_created_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The temp_otp_secret_created_time is the timestamp when temp_otp_secret was created. Used to enforce expiration."
+        },
+        "temp_recovery_codes": {
+          "description": "The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two-phase commits.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "MFA Config",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.store.MFAConfig.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.MFAConfig.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

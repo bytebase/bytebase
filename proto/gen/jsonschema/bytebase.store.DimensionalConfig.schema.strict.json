@@ -1,0 +1,39 @@
+{
+  "$id": "bytebase.store.DimensionalConfig.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "DimensionalConfig defines dimensional and constraint parameters for spatial indexes.",
+  "properties": {
+    "data_type": {
+      "description": "Spatial data type\n Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.",
+      "type": "string"
+    },
+    "dimensions": {
+      "description": "Number of dimensions (2-4, default 2)",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "layer_gtype": {
+      "description": "Oracle geometry type constraint\n Examples: POINT, LINE, POLYGON, COLLECTION",
+      "type": "string"
+    },
+    "operator_class": {
+      "description": "PostgreSQL operator class\n Examples: gist_geometry_ops_2d, gist_geometry_ops_nd, etc.",
+      "type": "string"
+    },
+    "parallel_build": {
+      "description": "Parallel index creation",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "dimensions",
+    "data_type",
+    "operator_class",
+    "layer_gtype",
+    "parallel_build"
+  ],
+  "title": "Dimensional Config",
+  "type": "object"
+}

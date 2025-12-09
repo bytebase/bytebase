@@ -1,0 +1,31 @@
+{
+  "$id": "bytebase.store.EnumTypeMetadata.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "comment": {
+      "type": "string"
+    },
+    "name": {
+      "description": "The name of the enum type.",
+      "type": "string"
+    },
+    "skipDump": {
+      "type": "boolean"
+    },
+    "values": {
+      "description": "The enum values of the type.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "comment",
+    "skipDump"
+  ],
+  "title": "Enum Type Metadata",
+  "type": "object"
+}

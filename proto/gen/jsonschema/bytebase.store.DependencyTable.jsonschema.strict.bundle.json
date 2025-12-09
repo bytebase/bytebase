@@ -1,0 +1,27 @@
+{
+  "$defs": {
+    "bytebase.store.DependencyTable.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "description": "The schema is the schema of a reference table.",
+          "type": "string"
+        },
+        "table": {
+          "description": "The table is the name of a reference table.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "table"
+      ],
+      "title": "Dependency Table",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.DependencyTable.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.DependencyTable.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,16 @@
+{
+  "$id": "bytebase.v1.BatchGetUsersRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "names": {
+      "description": "The user names to retrieve.\n Format: users/{user uid or user email}",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Batch Get Users Request",
+  "type": "object"
+}

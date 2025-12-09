@@ -1,0 +1,34 @@
+{
+  "$id": "bytebase.v1.TableCatalog.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Table metadata within a schema.",
+  "patternProperties": {
+    "^(objectSchema)$": {
+      "$ref": "bytebase.v1.ObjectSchema.schema.json",
+      "description": "Object schema for JSON/XML columns."
+    }
+  },
+  "properties": {
+    "classification": {
+      "default": "",
+      "description": "The data classification level for this table.",
+      "type": "string"
+    },
+    "columns": {
+      "$ref": "bytebase.v1.TableCatalog.Columns.schema.json",
+      "description": "Regular table columns."
+    },
+    "name": {
+      "default": "",
+      "description": "The table name.",
+      "type": "string"
+    },
+    "object_schema": {
+      "$ref": "bytebase.v1.ObjectSchema.schema.json",
+      "description": "Object schema for JSON/XML columns."
+    }
+  },
+  "title": "Table Catalog",
+  "type": "object"
+}

@@ -1,0 +1,57 @@
+{
+  "$id": "bytebase.store.RuleMetadata.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "RuleMetadata is the metadata for PostgreSQL rules.",
+  "patternProperties": {
+    "^(isEnabled)$": {
+      "default": false,
+      "description": "The is_enabled indicates whether the rule is enabled.",
+      "type": "boolean"
+    },
+    "^(isInstead)$": {
+      "default": false,
+      "description": "The is_instead indicates whether this is an INSTEAD rule.",
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "action": {
+      "default": "",
+      "description": "The command(s) to execute when the rule fires.",
+      "type": "string"
+    },
+    "condition": {
+      "default": "",
+      "description": "The WHERE condition of the rule (optional).",
+      "type": "string"
+    },
+    "definition": {
+      "default": "",
+      "description": "The full CREATE RULE statement.",
+      "type": "string"
+    },
+    "event": {
+      "default": "",
+      "description": "The event type of the rule: SELECT, INSERT, UPDATE, or DELETE.",
+      "type": "string"
+    },
+    "is_enabled": {
+      "default": false,
+      "description": "The is_enabled indicates whether the rule is enabled.",
+      "type": "boolean"
+    },
+    "is_instead": {
+      "default": false,
+      "description": "The is_instead indicates whether this is an INSTEAD rule.",
+      "type": "boolean"
+    },
+    "name": {
+      "default": "",
+      "description": "The name of the rule.",
+      "type": "string"
+    }
+  },
+  "title": "Rule Metadata",
+  "type": "object"
+}

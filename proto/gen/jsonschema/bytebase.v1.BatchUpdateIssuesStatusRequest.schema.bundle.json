@@ -1,0 +1,56 @@
+{
+  "$defs": {
+    "bytebase.v1.BatchUpdateIssuesStatusRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "issues": {
+          "description": "The list of issues to update.\n Format: projects/{project}/issues/{issue}",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parent": {
+          "default": "",
+          "description": "The parent resource shared by all issues being updated.\n Format: projects/{project}\n If the operation spans parents, a dash (-) may be accepted as a wildcard.\n We only support updating the status of databases for now.",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "description": "The reason for the status change.",
+          "type": "string"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "pattern": "^ISSUE_STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "OPEN",
+                "DONE",
+                "CANCELED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The new status.",
+          "title": "Issue Status"
+        }
+      },
+      "title": "Batch Update Issues Status Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.BatchUpdateIssuesStatusRequest.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.BatchUpdateIssuesStatusRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

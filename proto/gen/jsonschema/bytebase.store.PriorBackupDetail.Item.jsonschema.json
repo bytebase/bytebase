@@ -1,0 +1,44 @@
+{
+  "$id": "bytebase.store.PriorBackupDetail.Item.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Item represents a single backup operation for a table.",
+  "patternProperties": {
+    "^(end_position)$": {
+      "$ref": "bytebase.store.Position.jsonschema.json",
+      "description": "Ending position in SQL for this backup operation."
+    },
+    "^(source_table)$": {
+      "$ref": "bytebase.store.PriorBackupDetail.Item.Table.jsonschema.json",
+      "description": "The original table that was backed up."
+    },
+    "^(start_position)$": {
+      "$ref": "bytebase.store.Position.jsonschema.json",
+      "description": "Starting position in SQL for this backup operation."
+    },
+    "^(target_table)$": {
+      "$ref": "bytebase.store.PriorBackupDetail.Item.Table.jsonschema.json",
+      "description": "The backup table where data was copied."
+    }
+  },
+  "properties": {
+    "endPosition": {
+      "$ref": "bytebase.store.Position.jsonschema.json",
+      "description": "Ending position in SQL for this backup operation."
+    },
+    "sourceTable": {
+      "$ref": "bytebase.store.PriorBackupDetail.Item.Table.jsonschema.json",
+      "description": "The original table that was backed up."
+    },
+    "startPosition": {
+      "$ref": "bytebase.store.Position.jsonschema.json",
+      "description": "Starting position in SQL for this backup operation."
+    },
+    "targetTable": {
+      "$ref": "bytebase.store.PriorBackupDetail.Item.Table.jsonschema.json",
+      "description": "The backup table where data was copied."
+    }
+  },
+  "title": "Item",
+  "type": "object"
+}

@@ -1,0 +1,73 @@
+{
+  "$id": "bytebase.v1.QueryResult.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "column_names": {
+      "description": "Column names of the query result.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "column_type_names": {
+      "description": "Column types of the query result.\n The types come from the Golang SQL driver.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "error": {
+      "description": "The error message if the query failed.",
+      "type": "string"
+    },
+    "latency": {
+      "$ref": "google.protobuf.Duration.schema.strict.json",
+      "description": "The time it takes to execute the query."
+    },
+    "masked": {
+      "description": "Masking reasons for each column (empty for non-masked columns).",
+      "items": {
+        "$ref": "bytebase.v1.MaskingReason.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "messages": {
+      "description": "Informational or debug messages returned by the database engine during query execution.\n Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.",
+      "items": {
+        "$ref": "bytebase.v1.QueryResult.Message.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "permission_denied": {
+      "$ref": "bytebase.v1.QueryResult.PermissionDenied.schema.strict.json"
+    },
+    "postgres_error": {
+      "$ref": "bytebase.v1.QueryResult.PostgresError.schema.strict.json"
+    },
+    "rows": {
+      "description": "Rows of the query result.",
+      "items": {
+        "$ref": "bytebase.v1.QueryRow.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "rows_count": {
+      "type": "integer"
+    },
+    "statement": {
+      "description": "The query statement for the result.",
+      "type": "string"
+    },
+    "syntax_error": {
+      "$ref": "bytebase.v1.QueryResult.SyntaxError.schema.strict.json"
+    }
+  },
+  "required": [
+    "rows_count",
+    "error",
+    "statement"
+  ],
+  "title": "Query Result",
+  "type": "object"
+}

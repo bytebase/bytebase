@@ -1,0 +1,20 @@
+{
+  "$id": "bytebase.v1.CreatePlanRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "description": "The parent project where this plan will be created.\n Format: projects/{project}",
+      "type": "string"
+    },
+    "plan": {
+      "$ref": "bytebase.v1.Plan.schema.strict.json",
+      "description": "The plan to create."
+    }
+  },
+  "required": [
+    "parent"
+  ],
+  "title": "Create Plan Request",
+  "type": "object"
+}

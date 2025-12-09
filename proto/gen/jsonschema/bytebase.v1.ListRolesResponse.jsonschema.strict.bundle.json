@@ -1,0 +1,68 @@
+{
+  "$defs": {
+    "bytebase.v1.ListRolesResponse.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "roles": {
+          "description": "The roles from the specified request.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Role.jsonschema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "List Roles Response",
+      "type": "object"
+    },
+    "bytebase.v1.Role.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Role defines a set of permissions that can be assigned to users.",
+      "properties": {
+        "description": {
+          "description": "Optional description of the role.",
+          "maxLength": 1000,
+          "type": "string"
+        },
+        "name": {
+          "description": "Resource name. Format: roles/{role}",
+          "type": "string"
+        },
+        "permissions": {
+          "description": "List of permission identifiers granted by this role.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "title": {
+          "description": "Human-readable title.",
+          "maxLength": 200,
+          "type": "string"
+        },
+        "type": {
+          "description": "Role type indicating if it's built-in or custom.",
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "BUILT_IN",
+            "CUSTOM"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "description",
+        "type"
+      ],
+      "title": "Role",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.ListRolesResponse.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ListRolesResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

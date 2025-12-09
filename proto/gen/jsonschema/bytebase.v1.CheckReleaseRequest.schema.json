@@ -1,0 +1,37 @@
+{
+  "$id": "bytebase.v1.CheckReleaseRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(customRules)$": {
+      "default": "",
+      "description": "Custom linting rules in natural language for AI-powered validation.\n Each rule should be a clear statement describing the desired schema constraint.\n Example: \"All tables must have a primary key\"\n Example: \"VARCHAR columns should specify a maximum length\"",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "custom_rules": {
+      "default": "",
+      "description": "Custom linting rules in natural language for AI-powered validation.\n Each rule should be a clear statement describing the desired schema constraint.\n Example: \"All tables must have a primary key\"\n Example: \"VARCHAR columns should specify a maximum length\"",
+      "type": "string"
+    },
+    "parent": {
+      "default": "",
+      "description": "Format: projects/{project}",
+      "type": "string"
+    },
+    "release": {
+      "$ref": "bytebase.v1.Release.schema.json",
+      "description": "The release to check."
+    },
+    "targets": {
+      "description": "The targets to dry-run the release.\n Can be database or databaseGroup.\n Format:\n projects/{project}/databaseGroups/{databaseGroup}\n instances/{instance}/databases/{database}",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Check Release Request",
+  "type": "object"
+}

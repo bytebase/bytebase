@@ -1,0 +1,92 @@
+{
+  "$id": "bytebase.store.AuditLog.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(requestMetadata)$": {
+      "$ref": "bytebase.store.RequestMetadata.schema.json",
+      "description": "Metadata about the operation."
+    },
+    "^(serviceData)$": {
+      "$ref": "google.protobuf.Any.schema.json",
+      "description": "The service-specific data about the request, response, and other activities."
+    }
+  },
+  "properties": {
+    "latency": {
+      "$ref": "google.protobuf.Duration.schema.json",
+      "description": "The latency of the RPC."
+    },
+    "method": {
+      "default": "",
+      "description": "Example: /bytebase.v1.SQLService/Query",
+      "type": "string"
+    },
+    "parent": {
+      "default": "",
+      "description": "The project or workspace the audit log belongs to.\n Formats:\n - projects/{project}\n - workspaces/{workspace}",
+      "type": "string"
+    },
+    "request": {
+      "default": "",
+      "description": "Marshalled request.",
+      "type": "string"
+    },
+    "request_metadata": {
+      "$ref": "bytebase.store.RequestMetadata.schema.json",
+      "description": "Metadata about the operation."
+    },
+    "resource": {
+      "default": "",
+      "description": "The resource name.\n Example: projects/{project}",
+      "type": "string"
+    },
+    "response": {
+      "default": "",
+      "description": "Marshalled response.\n Some fields are omitted because they are too large or contain sensitive information.",
+      "type": "string"
+    },
+    "service_data": {
+      "$ref": "google.protobuf.Any.schema.json",
+      "description": "The service-specific data about the request, response, and other activities."
+    },
+    "severity": {
+      "anyOf": [
+        {
+          "pattern": "^SEVERITY_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "DEBUG",
+            "INFO",
+            "NOTICE",
+            "WARNING",
+            "ERROR",
+            "CRITICAL",
+            "ALERT",
+            "EMERGENCY"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Severity"
+    },
+    "status": {
+      "$ref": "google.rpc.Status.schema.json"
+    },
+    "user": {
+      "default": "",
+      "description": "Format: users/{userUID}.",
+      "type": "string"
+    }
+  },
+  "title": "Audit Log",
+  "type": "object"
+}

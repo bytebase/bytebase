@@ -1,0 +1,100 @@
+{
+  "$defs": {
+    "bytebase.store.MaskingExceptionPolicy.MaskingException.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "anyOf": [
+            {
+              "pattern": "^ACTION_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "QUERY",
+                "EXPORT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "action is the action by which the user can access sensitive data.",
+          "title": "Action"
+        },
+        "condition": {
+          "$ref": "#/$defs/google.type.Expr.schema.json",
+          "description": "The condition that is associated with this exception policy instance."
+        },
+        "member": {
+          "default": "",
+          "description": "Format: users/{userUID} or groups/{group email}",
+          "title": "Member is the principal who binds to this exception policy instance.",
+          "type": "string"
+        }
+      },
+      "title": "Masking Exception",
+      "type": "object"
+    },
+    "bytebase.store.MaskingExceptionPolicy.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "MaskingExceptionPolicy is the allowlist of users who can access sensitive data.",
+      "patternProperties": {
+        "^(maskingExceptions)$": {
+          "items": {
+            "$ref": "#/$defs/bytebase.store.MaskingExceptionPolicy.MaskingException.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "properties": {
+        "masking_exceptions": {
+          "items": {
+            "$ref": "#/$defs/bytebase.store.MaskingExceptionPolicy.MaskingException.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Masking Exception Policy",
+      "type": "object"
+    },
+    "google.type.Expr.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Example (Comparison):\n\n     title: \"Summary size limit\"\n     description: \"Determines if a summary is less than 100 chars\"\n     expression: \"document.summary.size() \u003c 100\"\n\n Example (Equality):\n\n     title: \"Requestor is owner\"\n     description: \"Determines if requestor is the document owner\"\n     expression: \"document.owner == request.auth.claims.email\"\n\n Example (Logic):\n\n     title: \"Public documents\"\n     description: \"Determine whether the document should be publicly visible\"\n     expression: \"document.type != 'private' \u0026\u0026 document.type != 'internal'\"\n\n Example (Data Manipulation):\n\n     title: \"Notification string\"\n     description: \"Create a notification string with a timestamp.\"\n     expression: \"'New message received at ' + string(document.create_time)\"\n\n The exact variables and functions that may be referenced within an expression\n are determined by the service that evaluates it. See the service\n documentation for additional information.",
+      "properties": {
+        "description": {
+          "default": "",
+          "description": "Optional. Description of the expression. This is a longer text which\n describes the expression, e.g. when hovered over it in a UI.",
+          "type": "string"
+        },
+        "expression": {
+          "default": "",
+          "description": "Textual representation of an expression in Common Expression Language\n syntax.",
+          "type": "string"
+        },
+        "location": {
+          "default": "",
+          "description": "Optional. String indicating the location of the expression for error\n reporting, e.g. a file name and a position in the file.",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "description": "Optional. Title for the expression, i.e. a short string describing\n its purpose. This can be used e.g. in UIs which allow to enter the\n expression.",
+          "type": "string"
+        }
+      },
+      "title": "Represents a textual expression in the Common Expression Language (CEL)\n syntax. CEL is a C-like expression language. The syntax and semantics of CEL\n are documented at https://github.com/google/cel-spec.",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.MaskingExceptionPolicy.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.MaskingExceptionPolicy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

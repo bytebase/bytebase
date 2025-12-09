@@ -1,0 +1,109 @@
+{
+  "$defs": {
+    "bytebase.store.PlanCheckRunConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(database_name)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(enable_ghost)$": {
+          "default": false,
+          "description": "Whether to use gh-ost for online schema migration.",
+          "type": "boolean"
+        },
+        "^(enable_prior_backup)$": {
+          "default": false,
+          "description": "If set, a backup of the modified data will be created automatically before any changes are applied.",
+          "type": "boolean"
+        },
+        "^(enable_sdl)$": {
+          "default": false,
+          "description": "Whether this is a Schema Definition Language (SDL) change.",
+          "type": "boolean"
+        },
+        "^(ghost_flags)$": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "^(instance_id)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(sheet_uid)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "properties": {
+        "databaseName": {
+          "default": "",
+          "type": "string"
+        },
+        "enableGhost": {
+          "default": false,
+          "description": "Whether to use gh-ost for online schema migration.",
+          "type": "boolean"
+        },
+        "enablePriorBackup": {
+          "default": false,
+          "description": "If set, a backup of the modified data will be created automatically before any changes are applied.",
+          "type": "boolean"
+        },
+        "enableSdl": {
+          "default": false,
+          "description": "Whether this is a Schema Definition Language (SDL) change.",
+          "type": "boolean"
+        },
+        "ghostFlags": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "instanceId": {
+          "default": "",
+          "type": "string"
+        },
+        "sheetUid": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "title": "Plan Check Run Config",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.PlanCheckRunConfig.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.PlanCheckRunConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

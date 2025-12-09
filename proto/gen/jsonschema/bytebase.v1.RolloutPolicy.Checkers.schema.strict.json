@@ -1,0 +1,20 @@
+{
+  "$id": "bytebase.v1.RolloutPolicy.Checkers.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "required_issue_approval": {
+      "description": "Whether issue approval is required before proceeding with rollout.",
+      "type": "boolean"
+    },
+    "required_status_checks": {
+      "$ref": "bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks.schema.strict.json",
+      "description": "Status checks that must pass before rollout can be executed."
+    }
+  },
+  "required": [
+    "required_issue_approval"
+  ],
+  "title": "Checkers",
+  "type": "object"
+}

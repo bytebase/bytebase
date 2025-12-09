@@ -1,0 +1,86 @@
+{
+  "$id": "bytebase.v1.QueryResult.PostgresError.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "refer https://www.postgresql.org/docs/11/protocol-error-fields.html\n for field description.",
+  "properties": {
+    "code": {
+      "type": "string"
+    },
+    "columnName": {
+      "type": "string"
+    },
+    "constraintName": {
+      "type": "string"
+    },
+    "dataTypeName": {
+      "type": "string"
+    },
+    "detail": {
+      "type": "string"
+    },
+    "file": {
+      "type": "string"
+    },
+    "hint": {
+      "type": "string"
+    },
+    "internalPosition": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "internalQuery": {
+      "type": "string"
+    },
+    "line": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "message": {
+      "type": "string"
+    },
+    "position": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "routine": {
+      "type": "string"
+    },
+    "schemaName": {
+      "type": "string"
+    },
+    "severity": {
+      "type": "string"
+    },
+    "tableName": {
+      "type": "string"
+    },
+    "where": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "severity",
+    "code",
+    "message",
+    "detail",
+    "hint",
+    "position",
+    "internalPosition",
+    "internalQuery",
+    "where",
+    "schemaName",
+    "tableName",
+    "columnName",
+    "dataTypeName",
+    "constraintName",
+    "file",
+    "line",
+    "routine"
+  ],
+  "title": "Postgres Error",
+  "type": "object"
+}

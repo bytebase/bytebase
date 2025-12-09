@@ -1,0 +1,69 @@
+{
+  "$id": "bytebase.store.RevisionPayload.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(sheetSha256)$": {
+      "default": "",
+      "description": "The SHA256 hash value of the sheet.",
+      "type": "string"
+    },
+    "^(taskRun)$": {
+      "default": "",
+      "description": "The task run associated with the revision.\n Can be empty.\n Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "file": {
+      "default": "",
+      "description": "Format: projects/{project}/releases/{release}/files/{id}\n Can be empty.",
+      "type": "string"
+    },
+    "release": {
+      "default": "",
+      "description": "Format: projects/{project}/releases/{release}\n Can be empty.",
+      "type": "string"
+    },
+    "sheet": {
+      "default": "",
+      "description": "The sheet that holds the content.\n Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "sheet_sha256": {
+      "default": "",
+      "description": "The SHA256 hash value of the sheet.",
+      "type": "string"
+    },
+    "task_run": {
+      "default": "",
+      "description": "The task run associated with the revision.\n Can be empty.\n Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}",
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "pattern": "^SCHEMA_CHANGE_TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "VERSIONED",
+            "DECLARATIVE"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The type of the revision.",
+      "title": "Schema Change Type"
+    }
+  },
+  "title": "Revision Payload",
+  "type": "object"
+}

@@ -1,0 +1,282 @@
+{
+  "$defs": {
+    "bytebase.v1.IssueComment.Approval.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Approval event information.",
+      "properties": {
+        "status": {
+          "description": "The approval status.",
+          "enum": [
+            "STATUS_UNSPECIFIED",
+            "PENDING",
+            "APPROVED",
+            "REJECTED"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "Approval",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.IssueUpdate.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Issue update event information.",
+      "properties": {
+        "fromDescription": {
+          "type": "string"
+        },
+        "fromLabels": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "fromStatus": {
+          "enum": [
+            "ISSUE_STATUS_UNSPECIFIED",
+            "OPEN",
+            "DONE",
+            "CANCELED"
+          ],
+          "title": "Issue Status",
+          "type": "string"
+        },
+        "fromTitle": {
+          "type": "string"
+        },
+        "toDescription": {
+          "type": "string"
+        },
+        "toLabels": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "toStatus": {
+          "enum": [
+            "ISSUE_STATUS_UNSPECIFIED",
+            "OPEN",
+            "DONE",
+            "CANCELED"
+          ],
+          "title": "Issue Status",
+          "type": "string"
+        },
+        "toTitle": {
+          "type": "string"
+        }
+      },
+      "title": "Issue Update",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.StageEnd.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Stage end event information.",
+      "properties": {
+        "stage": {
+          "description": "The stage that ended.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stage"
+      ],
+      "title": "Stage End",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.TaskPriorBackup.Table.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Table identification.",
+      "properties": {
+        "schema": {
+          "description": "The schema name.",
+          "type": "string"
+        },
+        "table": {
+          "description": "The table name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "table"
+      ],
+      "title": "Table",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.TaskPriorBackup.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Task prior backup event information.",
+      "properties": {
+        "database": {
+          "description": "The database that was backed up.",
+          "type": "string"
+        },
+        "error": {
+          "description": "Error message if backup failed.",
+          "type": "string"
+        },
+        "originalLine": {
+          "description": "The original line number in the statement.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "tables": {
+          "description": "The tables that were backed up.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.IssueComment.TaskPriorBackup.Table.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "task": {
+          "description": "The task for which backup was performed.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "task",
+        "database",
+        "error"
+      ],
+      "title": "Task Prior Backup",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.TaskUpdate.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Task update event information.",
+      "properties": {
+        "fromSheet": {
+          "description": "Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "tasks": {
+          "description": "The tasks that were updated.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "toSheet": {
+          "description": "Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "toStatus": {
+          "enum": [
+            "STATUS_UNSPECIFIED",
+            "PENDING",
+            "RUNNING",
+            "DONE",
+            "FAILED",
+            "SKIPPED",
+            "CANCELED"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "title": "Task Update",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A comment on an issue.",
+      "properties": {
+        "approval": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.Approval.jsonschema.strict.json",
+          "description": "Approval event."
+        },
+        "comment": {
+          "description": "The text content of the comment.",
+          "maxLength": 65536,
+          "type": "string"
+        },
+        "createTime": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        },
+        "creator": {
+          "description": "Format: users/{email}",
+          "type": "string"
+        },
+        "issueUpdate": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.IssueUpdate.jsonschema.strict.json",
+          "description": "Issue update event."
+        },
+        "name": {
+          "description": "Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}",
+          "type": "string"
+        },
+        "payload": {
+          "description": "TODO: use struct message instead.",
+          "type": "string"
+        },
+        "stageEnd": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.StageEnd.jsonschema.strict.json",
+          "description": "Stage end event."
+        },
+        "taskPriorBackup": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.TaskPriorBackup.jsonschema.strict.json",
+          "description": "Task prior backup event."
+        },
+        "taskUpdate": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.TaskUpdate.jsonschema.strict.json",
+          "description": "Task update event."
+        },
+        "updateTime": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        }
+      },
+      "required": [
+        "name",
+        "comment",
+        "payload",
+        "creator"
+      ],
+      "title": "Issue Comment",
+      "type": "object"
+    },
+    "bytebase.v1.ListIssueCommentsResponse.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "issueComments": {
+          "description": "The issue comments from the specified request.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.IssueComment.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\n If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nextPageToken"
+      ],
+      "title": "List Issue Comments Response",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.ListIssueCommentsResponse.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ListIssueCommentsResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

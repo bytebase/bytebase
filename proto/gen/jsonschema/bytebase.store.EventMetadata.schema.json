@@ -1,0 +1,59 @@
+{
+  "$id": "bytebase.store.EventMetadata.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(characterSetClient)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(collationConnection)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(sqlMode)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(timeZone)$": {
+      "default": "",
+      "description": "The time zone of the event.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "character_set_client": {
+      "default": "",
+      "type": "string"
+    },
+    "collation_connection": {
+      "default": "",
+      "type": "string"
+    },
+    "comment": {
+      "default": "",
+      "type": "string"
+    },
+    "definition": {
+      "default": "",
+      "description": "The schedule of the event.",
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "description": "The name of the event.",
+      "type": "string"
+    },
+    "sql_mode": {
+      "default": "",
+      "type": "string"
+    },
+    "time_zone": {
+      "default": "",
+      "description": "The time zone of the event.",
+      "type": "string"
+    }
+  },
+  "title": "Event Metadata",
+  "type": "object"
+}

@@ -1,0 +1,27 @@
+{
+  "$id": "bytebase.v1.UpdateDatabaseCatalogRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Request message for updating a database catalog.",
+  "patternProperties": {
+    "^(allowMissing)$": {
+      "default": false,
+      "description": "If set to true, and the database catalog is not found, a new database catalog will be created.\n In this situation, `update_mask` is ignored.",
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "allow_missing": {
+      "default": false,
+      "description": "If set to true, and the database catalog is not found, a new database catalog will be created.\n In this situation, `update_mask` is ignored.",
+      "type": "boolean"
+    },
+    "catalog": {
+      "$ref": "bytebase.v1.DatabaseCatalog.schema.json",
+      "description": "The catalog's `name` field is used to identify the database catalog to update.\n Format: instances/{instance}/databases/{database}/catalog",
+      "title": "The database catalog to update."
+    }
+  },
+  "title": "Update Database Catalog Request",
+  "type": "object"
+}

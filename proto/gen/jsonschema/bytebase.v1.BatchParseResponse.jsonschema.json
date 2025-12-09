@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.v1.BatchParseResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Response message for batch parsing CEL expressions.",
+  "properties": {
+    "expressions": {
+      "description": "The parsed CEL expressions as AST.",
+      "items": {
+        "$ref": "google.api.expr.v1alpha1.Expr.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Batch Parse Response",
+  "type": "object"
+}

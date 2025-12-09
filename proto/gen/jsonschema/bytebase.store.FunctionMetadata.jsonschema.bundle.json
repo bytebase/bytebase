@@ -1,0 +1,111 @@
+{
+  "$defs": {
+    "bytebase.store.DependencyTable.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "default": "",
+          "description": "The schema is the schema of a reference table.",
+          "type": "string"
+        },
+        "table": {
+          "default": "",
+          "description": "The table is the name of a reference table.",
+          "type": "string"
+        }
+      },
+      "title": "Dependency Table",
+      "type": "object"
+    },
+    "bytebase.store.FunctionMetadata.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "FunctionMetadata is the metadata for functions.",
+      "patternProperties": {
+        "^(character_set_client)$": {
+          "default": "",
+          "description": "MySQL specific metadata.",
+          "type": "string"
+        },
+        "^(collation_connection)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(database_collation)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(dependency_tables)$": {
+          "description": "The dependency_tables is the list of dependency tables of a function.\n For PostgreSQL, it's the list of tables that the function depends on the return type definition.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.DependencyTable.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "^(skip_dump)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(sql_mode)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "characterSetClient": {
+          "default": "",
+          "description": "MySQL specific metadata.",
+          "type": "string"
+        },
+        "collationConnection": {
+          "default": "",
+          "type": "string"
+        },
+        "comment": {
+          "default": "",
+          "type": "string"
+        },
+        "databaseCollation": {
+          "default": "",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The definition is the definition of a function.",
+          "type": "string"
+        },
+        "dependencyTables": {
+          "description": "The dependency_tables is the list of dependency tables of a function.\n For PostgreSQL, it's the list of tables that the function depends on the return type definition.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.DependencyTable.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the function.",
+          "type": "string"
+        },
+        "signature": {
+          "default": "",
+          "description": "The signature is the name with the number and type of input arguments the\n function takes.",
+          "type": "string"
+        },
+        "skipDump": {
+          "default": false,
+          "type": "boolean"
+        },
+        "sqlMode": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Function Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.FunctionMetadata.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.FunctionMetadata.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

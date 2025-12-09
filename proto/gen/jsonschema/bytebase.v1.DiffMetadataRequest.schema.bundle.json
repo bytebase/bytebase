@@ -1,0 +1,2828 @@
+{
+  "$defs": {
+    "bytebase.v1.BoundingBox.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.",
+      "properties": {
+        "xmax": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Maximum X coordinate"
+        },
+        "xmin": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Minimum X coordinate"
+        },
+        "ymax": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Maximum Y coordinate"
+        },
+        "ymin": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Minimum Y coordinate"
+        }
+      },
+      "title": "Bounding Box",
+      "type": "object"
+    },
+    "bytebase.v1.CheckConstraintMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "CheckConstraintMetadata is the metadata for check constraints.",
+      "properties": {
+        "expression": {
+          "default": "",
+          "description": "The expression is the expression of a check constraint.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a check constraint.",
+          "type": "string"
+        }
+      },
+      "title": "Check Constraint Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.ColumnCatalog.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Column metadata within a table.",
+      "patternProperties": {
+        "^(objectSchema)$": {
+          "$ref": "#/$defs/bytebase.v1.ObjectSchema.schema.json",
+          "description": "Object schema for complex column types like JSON."
+        },
+        "^(semanticType)$": {
+          "default": "",
+          "description": "The semantic type describing the data purpose.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "classification": {
+          "default": "",
+          "description": "The data classification level for this column.",
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "User-defined labels for this column.",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "name": {
+          "default": "",
+          "description": "The column name.",
+          "type": "string"
+        },
+        "object_schema": {
+          "$ref": "#/$defs/bytebase.v1.ObjectSchema.schema.json",
+          "description": "Object schema for complex column types like JSON."
+        },
+        "semantic_type": {
+          "default": "",
+          "description": "The semantic type describing the data purpose.",
+          "type": "string"
+        }
+      },
+      "title": "Column Catalog",
+      "type": "object"
+    },
+    "bytebase.v1.ColumnMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ColumnMetadata is the metadata for columns.",
+      "patternProperties": {
+        "^(characterSet)$": {
+          "default": "",
+          "description": "The character_set is the character_set of a column.",
+          "type": "string"
+        },
+        "^(defaultConstraintName)$": {
+          "default": "",
+          "description": "Example: A column definition like:\n   CREATE TABLE employees (\n     status NVARCHAR(20) DEFAULT 'active'\n   )\n\n Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'\n or a user-defined name if specified:\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status\n\n To modify the default, you must first drop the existing constraint by name:\n   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status\n\n This field is populated when syncing from the database. When empty (e.g., when parsing\n from SQL files), the system cannot automatically drop the constraint.",
+          "title": "The default_constraint_name is the name of the default constraint, MSSQL only.\n In MSSQL, default values are implemented as named constraints. When modifying or\n dropping a column's default value, you must reference the constraint by name.\n This field stores the actual constraint name from the database.",
+          "type": "string"
+        },
+        "^(defaultOnNull)$": {
+          "default": false,
+          "description": "Oracle specific metadata.\n The default_on_null is the default on null of a column.",
+          "type": "boolean"
+        },
+        "^(hasDefault)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(identityGeneration)$": {
+          "anyOf": [
+            {
+              "pattern": "^IDENTITY_GENERATION_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "ALWAYS",
+                "BY_DEFAULT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_generation is for identity columns, PG only.",
+          "title": "Identity Generation"
+        },
+        "^(identityIncrement)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_increment is for identity columns, MSSQL only."
+        },
+        "^(identitySeed)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_seed is for identity columns, MSSQL only."
+        },
+        "^(isIdentity)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(onUpdate)$": {
+          "default": "",
+          "description": "The on_update is the on update action of a column.\n For MySQL like databases, it's only supported for TIMESTAMP columns with\n CURRENT_TIMESTAMP as on update value.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "character_set": {
+          "default": "",
+          "description": "The character_set is the character_set of a column.",
+          "type": "string"
+        },
+        "collation": {
+          "default": "",
+          "description": "The collation is the collation of a column.",
+          "type": "string"
+        },
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of a column.",
+          "type": "string"
+        },
+        "default": {
+          "default": "",
+          "description": "The default value of column.",
+          "type": "string"
+        },
+        "default_constraint_name": {
+          "default": "",
+          "description": "Example: A column definition like:\n   CREATE TABLE employees (\n     status NVARCHAR(20) DEFAULT 'active'\n   )\n\n Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'\n or a user-defined name if specified:\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status\n\n To modify the default, you must first drop the existing constraint by name:\n   ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760\n   ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status\n\n This field is populated when syncing from the database. When empty (e.g., when parsing\n from SQL files), the system cannot automatically drop the constraint.",
+          "title": "The default_constraint_name is the name of the default constraint, MSSQL only.\n In MSSQL, default values are implemented as named constraints. When modifying or\n dropping a column's default value, you must reference the constraint by name.\n This field stores the actual constraint name from the database.",
+          "type": "string"
+        },
+        "default_on_null": {
+          "default": false,
+          "description": "Oracle specific metadata.\n The default_on_null is the default on null of a column.",
+          "type": "boolean"
+        },
+        "generation": {
+          "$ref": "#/$defs/bytebase.v1.GenerationMetadata.schema.json",
+          "description": "The generation is the generation of a column."
+        },
+        "has_default": {
+          "default": false,
+          "type": "boolean"
+        },
+        "identity_generation": {
+          "anyOf": [
+            {
+              "pattern": "^IDENTITY_GENERATION_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "ALWAYS",
+                "BY_DEFAULT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_generation is for identity columns, PG only.",
+          "title": "Identity Generation"
+        },
+        "identity_increment": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_increment is for identity columns, MSSQL only."
+        },
+        "identity_seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The identity_seed is for identity columns, MSSQL only."
+        },
+        "is_identity": {
+          "default": false,
+          "type": "boolean"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a column.",
+          "type": "string"
+        },
+        "nullable": {
+          "default": false,
+          "description": "The nullable is the nullable of a column.",
+          "type": "boolean"
+        },
+        "on_update": {
+          "default": "",
+          "description": "The on_update is the on update action of a column.\n For MySQL like databases, it's only supported for TIMESTAMP columns with\n CURRENT_TIMESTAMP as on update value.",
+          "type": "string"
+        },
+        "position": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The position is the position in columns."
+        },
+        "type": {
+          "default": "",
+          "description": "The type is the type of a column.",
+          "type": "string"
+        }
+      },
+      "title": "Column Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.DatabaseCatalog.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Catalog metadata for a database including schemas, tables, and columns.",
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "The name of the database catalog.\n Format: instances/{instance}/databases/{database}/catalog",
+          "type": "string"
+        },
+        "schemas": {
+          "description": "The schemas in the database.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.SchemaCatalog.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Database Catalog",
+      "type": "object"
+    },
+    "bytebase.v1.DatabaseMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DatabaseMetadata is the metadata for databases.",
+      "patternProperties": {
+        "^(characterSet)$": {
+          "default": "",
+          "description": "The character_set is the character set of a database.",
+          "type": "string"
+        },
+        "^(searchPath)$": {
+          "default": "",
+          "description": "The search_path is the search path of a PostgreSQL database.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "character_set": {
+          "default": "",
+          "description": "The character_set is the character set of a database.",
+          "type": "string"
+        },
+        "collation": {
+          "default": "",
+          "description": "The collation is the collation of a database.",
+          "type": "string"
+        },
+        "extensions": {
+          "description": "The extensions is the list of extensions in a database.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ExtensionMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "Format: instances/{instance}/databases/{database}/metadata",
+          "title": "The database metadata name.",
+          "type": "string"
+        },
+        "owner": {
+          "default": "",
+          "description": "The owner of the database.",
+          "type": "string"
+        },
+        "schemas": {
+          "description": "The schemas is the list of schemas in a database.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.SchemaMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "search_path": {
+          "default": "",
+          "description": "The search_path is the search path of a PostgreSQL database.",
+          "type": "string"
+        }
+      },
+      "title": "Database Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.DependencyColumn.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DependencyColumn is the metadata for dependency columns.",
+      "properties": {
+        "column": {
+          "default": "",
+          "description": "The column is the name of a reference column.",
+          "type": "string"
+        },
+        "schema": {
+          "default": "",
+          "description": "The schema is the schema of a reference column.",
+          "type": "string"
+        },
+        "table": {
+          "default": "",
+          "description": "The table is the table of a reference column.",
+          "type": "string"
+        }
+      },
+      "title": "Dependency Column",
+      "type": "object"
+    },
+    "bytebase.v1.DependencyTable.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "default": "",
+          "description": "The schema is the schema of a reference table.",
+          "type": "string"
+        },
+        "table": {
+          "default": "",
+          "description": "The table is the name of a reference table.",
+          "type": "string"
+        }
+      },
+      "title": "Dependency Table",
+      "type": "object"
+    },
+    "bytebase.v1.DiffMetadataRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(sourceCatalog)$": {
+          "$ref": "#/$defs/bytebase.v1.DatabaseCatalog.schema.json"
+        },
+        "^(sourceMetadata)$": {
+          "$ref": "#/$defs/bytebase.v1.DatabaseMetadata.schema.json",
+          "description": "The metadata of the source schema."
+        },
+        "^(targetCatalog)$": {
+          "$ref": "#/$defs/bytebase.v1.DatabaseCatalog.schema.json"
+        },
+        "^(targetMetadata)$": {
+          "$ref": "#/$defs/bytebase.v1.DatabaseMetadata.schema.json",
+          "description": "The metadata of the target schema."
+        }
+      },
+      "properties": {
+        "engine": {
+          "anyOf": [
+            {
+              "pattern": "^ENGINE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "CLICKHOUSE",
+                "MYSQL",
+                "POSTGRES",
+                "SNOWFLAKE",
+                "SQLITE",
+                "TIDB",
+                "MONGODB",
+                "REDIS",
+                "ORACLE",
+                "SPANNER",
+                "MSSQL",
+                "REDSHIFT",
+                "MARIADB",
+                "OCEANBASE",
+                "STARROCKS",
+                "DORIS",
+                "HIVE",
+                "ELASTICSEARCH",
+                "BIGQUERY",
+                "DYNAMODB",
+                "DATABRICKS",
+                "COCKROACHDB",
+                "COSMOSDB",
+                "TRINO",
+                "CASSANDRA"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The database engine of the schema.",
+          "title": "Engine"
+        },
+        "source_catalog": {
+          "$ref": "#/$defs/bytebase.v1.DatabaseCatalog.schema.json"
+        },
+        "source_metadata": {
+          "$ref": "#/$defs/bytebase.v1.DatabaseMetadata.schema.json",
+          "description": "The metadata of the source schema."
+        },
+        "target_catalog": {
+          "$ref": "#/$defs/bytebase.v1.DatabaseCatalog.schema.json"
+        },
+        "target_metadata": {
+          "$ref": "#/$defs/bytebase.v1.DatabaseMetadata.schema.json",
+          "description": "The metadata of the target schema."
+        }
+      },
+      "title": "Diff Metadata Request",
+      "type": "object"
+    },
+    "bytebase.v1.DimensionConstraint.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DimensionConstraint defines constraints for a spatial dimension.",
+      "patternProperties": {
+        "^(maxValue)$": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Maximum value for this dimension"
+        },
+        "^(minValue)$": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Minimum value for this dimension"
+        }
+      },
+      "properties": {
+        "dimension": {
+          "default": "",
+          "description": "Dimension name/type (X, Y, Z, M, etc.)",
+          "type": "string"
+        },
+        "max_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Maximum value for this dimension"
+        },
+        "min_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Minimum value for this dimension"
+        },
+        "tolerance": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Tolerance for this dimension"
+        }
+      },
+      "title": "Dimension Constraint",
+      "type": "object"
+    },
+    "bytebase.v1.DimensionalConfig.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DimensionalConfig defines dimensional and constraint parameters for spatial indexes.",
+      "patternProperties": {
+        "^(dataType)$": {
+          "default": "",
+          "description": "Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "constraints": {
+          "description": "Coordinate system constraints",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DimensionConstraint.schema.json"
+          },
+          "type": "array"
+        },
+        "data_type": {
+          "default": "",
+          "description": "Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)",
+          "type": "string"
+        },
+        "dimensions": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Number of dimensions (2-4, default 2)"
+        },
+        "srid": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Spatial reference system identifier (SRID)"
+        }
+      },
+      "title": "Dimensional Config",
+      "type": "object"
+    },
+    "bytebase.v1.EnumTypeMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(skipDump)$": {
+          "default": false,
+          "description": "Whether to skip this enum type during schema dump operations.",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "comment": {
+          "default": "",
+          "description": "The comment describing the enum type.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of a type.",
+          "type": "string"
+        },
+        "skip_dump": {
+          "default": false,
+          "description": "Whether to skip this enum type during schema dump operations.",
+          "type": "boolean"
+        },
+        "values": {
+          "description": "The enum values of a type.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Enum Type Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.EventMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(characterSetClient)$": {
+          "default": "",
+          "description": "The character set used by the client creating the event.",
+          "type": "string"
+        },
+        "^(collationConnection)$": {
+          "default": "",
+          "description": "The collation used for the connection when creating the event.",
+          "type": "string"
+        },
+        "^(sqlMode)$": {
+          "default": "",
+          "description": "The SQL mode setting for the event.",
+          "type": "string"
+        },
+        "^(timeZone)$": {
+          "default": "",
+          "description": "The time zone of the event.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "character_set_client": {
+          "default": "",
+          "description": "The character set used by the client creating the event.",
+          "type": "string"
+        },
+        "collation_connection": {
+          "default": "",
+          "description": "The collation used for the connection when creating the event.",
+          "type": "string"
+        },
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of an event.",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The schedule of the event.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the event.",
+          "type": "string"
+        },
+        "sql_mode": {
+          "default": "",
+          "description": "The SQL mode setting for the event.",
+          "type": "string"
+        },
+        "time_zone": {
+          "default": "",
+          "description": "The time zone of the event.",
+          "type": "string"
+        }
+      },
+      "title": "Event Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.ExtensionMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ExtensionMetadata is the metadata for extensions.",
+      "properties": {
+        "description": {
+          "default": "",
+          "description": "The description is the description of an extension.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of an extension.",
+          "type": "string"
+        },
+        "schema": {
+          "default": "",
+          "description": "The schema is the extension that is installed to. But the extension usage\n is not limited to the schema.",
+          "type": "string"
+        },
+        "version": {
+          "default": "",
+          "description": "The version is the version of an extension.",
+          "type": "string"
+        }
+      },
+      "title": "Extension Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.ExternalTableMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(externalDatabaseName)$": {
+          "default": "",
+          "description": "The external_database_name is the name of the external database.",
+          "type": "string"
+        },
+        "^(externalServerName)$": {
+          "default": "",
+          "description": "The external_server_name is the name of the external server.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "columns": {
+          "description": "The columns is the ordered list of columns in a foreign table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ColumnMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "external_database_name": {
+          "default": "",
+          "description": "The external_database_name is the name of the external database.",
+          "type": "string"
+        },
+        "external_server_name": {
+          "default": "",
+          "description": "The external_server_name is the name of the external server.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a external table.",
+          "type": "string"
+        }
+      },
+      "title": "External Table Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.ForeignKeyMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ForeignKeyMetadata is the metadata for foreign keys.",
+      "patternProperties": {
+        "^(matchType)$": {
+          "default": "",
+          "description": "The match_type is the match type of a foreign key.\n The match_type is the PostgreSQL specific field.\n It's empty string for other databases.",
+          "type": "string"
+        },
+        "^(onDelete)$": {
+          "default": "",
+          "description": "The on_delete is the on delete action of a foreign key.",
+          "type": "string"
+        },
+        "^(onUpdate)$": {
+          "default": "",
+          "description": "The on_update is the on update action of a foreign key.",
+          "type": "string"
+        },
+        "^(referencedColumns)$": {
+          "description": "The referenced_columns are the ordered referenced columns of a foreign key.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "^(referencedSchema)$": {
+          "default": "",
+          "description": "The referenced_schema is the referenced schema name of a foreign key.\n It is an empty string for databases without such concept such as MySQL.",
+          "type": "string"
+        },
+        "^(referencedTable)$": {
+          "default": "",
+          "description": "The referenced_table is the referenced table name of a foreign key.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "columns": {
+          "description": "The columns are the ordered referencing columns of a foreign key.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "match_type": {
+          "default": "",
+          "description": "The match_type is the match type of a foreign key.\n The match_type is the PostgreSQL specific field.\n It's empty string for other databases.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a foreign key.",
+          "type": "string"
+        },
+        "on_delete": {
+          "default": "",
+          "description": "The on_delete is the on delete action of a foreign key.",
+          "type": "string"
+        },
+        "on_update": {
+          "default": "",
+          "description": "The on_update is the on update action of a foreign key.",
+          "type": "string"
+        },
+        "referenced_columns": {
+          "description": "The referenced_columns are the ordered referenced columns of a foreign key.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "referenced_schema": {
+          "default": "",
+          "description": "The referenced_schema is the referenced schema name of a foreign key.\n It is an empty string for databases without such concept such as MySQL.",
+          "type": "string"
+        },
+        "referenced_table": {
+          "default": "",
+          "description": "The referenced_table is the referenced table name of a foreign key.",
+          "type": "string"
+        }
+      },
+      "title": "Foreign Key Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.FunctionMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "FunctionMetadata is the metadata for functions.",
+      "patternProperties": {
+        "^(characterSetClient)$": {
+          "default": "",
+          "description": "MySQL specific metadata.",
+          "type": "string"
+        },
+        "^(collationConnection)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(databaseCollation)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(dependencyTables)$": {
+          "description": "The dependency_tables is the list of dependency tables of a function.\n For PostgreSQL, it's the list of tables that the function depends on the return type definition.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DependencyTable.schema.json"
+          },
+          "type": "array"
+        },
+        "^(skipDump)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(sqlMode)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "character_set_client": {
+          "default": "",
+          "description": "MySQL specific metadata.",
+          "type": "string"
+        },
+        "collation_connection": {
+          "default": "",
+          "type": "string"
+        },
+        "comment": {
+          "default": "",
+          "type": "string"
+        },
+        "database_collation": {
+          "default": "",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The definition is the definition of a function.",
+          "type": "string"
+        },
+        "dependency_tables": {
+          "description": "The dependency_tables is the list of dependency tables of a function.\n For PostgreSQL, it's the list of tables that the function depends on the return type definition.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DependencyTable.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a function.",
+          "type": "string"
+        },
+        "signature": {
+          "default": "",
+          "description": "The signature is the name with the number and type of input arguments the\n function takes.",
+          "type": "string"
+        },
+        "skip_dump": {
+          "default": false,
+          "type": "boolean"
+        },
+        "sql_mode": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Function Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.GenerationMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "expression": {
+          "default": "",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "VIRTUAL",
+                "STORED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Type"
+        }
+      },
+      "title": "Generation Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.GridLevel.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "GridLevel defines a tessellation grid level with its density.",
+      "properties": {
+        "density": {
+          "default": "",
+          "description": "Grid density (LOW, MEDIUM, HIGH)",
+          "type": "string"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Grid level number (1-4 for SQL Server)"
+        }
+      },
+      "title": "Grid Level",
+      "type": "object"
+    },
+    "bytebase.v1.IndexMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "IndexMetadata is the metadata for indexes.",
+      "patternProperties": {
+        "^(isConstraint)$": {
+          "default": false,
+          "description": "It's a PostgreSQL specific field.\n The unique constraint and unique index are not the same thing in PostgreSQL.",
+          "type": "boolean"
+        },
+        "^(keyLength)$": {
+          "description": "The key_lengths are the ordered key lengths of an index.\n If the key length is not specified, it's -1.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "^(opclassDefaults)$": {
+          "description": "True if the operator class is the default. (PostgreSQL specific).",
+          "items": {
+            "type": "boolean"
+          },
+          "type": "array"
+        },
+        "^(opclassNames)$": {
+          "description": "https://www.postgresql.org/docs/current/catalog-pg-opclass.html\n Name of the operator class for each column. (PostgreSQL specific).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "^(parentIndexName)$": {
+          "default": "",
+          "description": "The index name of the parent index.",
+          "type": "string"
+        },
+        "^(parentIndexSchema)$": {
+          "default": "",
+          "description": "The schema name of the parent index.",
+          "type": "string"
+        },
+        "^(spatialConfig)$": {
+          "$ref": "#/$defs/bytebase.v1.SpatialIndexConfig.schema.json",
+          "description": "Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc."
+        }
+      },
+      "properties": {
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of an index.",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The definition of an index.",
+          "type": "string"
+        },
+        "descending": {
+          "description": "The descending is the ordered descending of an index.",
+          "items": {
+            "type": "boolean"
+          },
+          "type": "array"
+        },
+        "expressions": {
+          "description": "The expressions are the ordered columns or expressions of an index.\n This could refer to a column or an expression.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "granularity": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The number of granules in the block. It's a ClickHouse specific field."
+        },
+        "is_constraint": {
+          "default": false,
+          "description": "It's a PostgreSQL specific field.\n The unique constraint and unique index are not the same thing in PostgreSQL.",
+          "type": "boolean"
+        },
+        "key_length": {
+          "description": "The key_lengths are the ordered key lengths of an index.\n If the key length is not specified, it's -1.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of an index.",
+          "type": "string"
+        },
+        "opclass_defaults": {
+          "description": "True if the operator class is the default. (PostgreSQL specific).",
+          "items": {
+            "type": "boolean"
+          },
+          "type": "array"
+        },
+        "opclass_names": {
+          "description": "https://www.postgresql.org/docs/current/catalog-pg-opclass.html\n Name of the operator class for each column. (PostgreSQL specific).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parent_index_name": {
+          "default": "",
+          "description": "The index name of the parent index.",
+          "type": "string"
+        },
+        "parent_index_schema": {
+          "default": "",
+          "description": "The schema name of the parent index.",
+          "type": "string"
+        },
+        "primary": {
+          "default": false,
+          "description": "The primary is whether the index is a primary key index.",
+          "type": "boolean"
+        },
+        "spatial_config": {
+          "$ref": "#/$defs/bytebase.v1.SpatialIndexConfig.schema.json",
+          "description": "Spatial index configuration for spatial databases like SQL Server, PostgreSQL with PostGIS, etc."
+        },
+        "type": {
+          "default": "",
+          "description": "The type is the type of an index.",
+          "type": "string"
+        },
+        "unique": {
+          "default": false,
+          "description": "The unique is whether the index is unique.",
+          "type": "boolean"
+        },
+        "visible": {
+          "default": false,
+          "description": "The visible is whether the index is visible.",
+          "type": "boolean"
+        }
+      },
+      "title": "Index Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.MaterializedViewMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "MaterializedViewMetadata is the metadata for materialized views.",
+      "patternProperties": {
+        "^(dependencyColumns)$": {
+          "description": "The dependency_columns is the list of dependency columns of a materialized\n view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DependencyColumn.schema.json"
+          },
+          "type": "array"
+        },
+        "^(skipDump)$": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of a materialized view.",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The definition is the definition of a materialized view.",
+          "type": "string"
+        },
+        "dependency_columns": {
+          "description": "The dependency_columns is the list of dependency columns of a materialized\n view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DependencyColumn.schema.json"
+          },
+          "type": "array"
+        },
+        "indexes": {
+          "description": "The indexes is the list of indexes in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.IndexMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a materialized view.",
+          "type": "string"
+        },
+        "skip_dump": {
+          "default": false,
+          "type": "boolean"
+        },
+        "triggers": {
+          "description": "The columns is the ordered list of columns in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TriggerMetadata.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Materialized View Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.ObjectSchema.ArrayKind.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Array type with element schema.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/bytebase.v1.ObjectSchema.schema.json",
+          "description": "The schema of array elements."
+        }
+      },
+      "title": "Array Kind",
+      "type": "object"
+    },
+    "bytebase.v1.ObjectSchema.StructKind.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Structure type with named properties.",
+      "properties": {
+        "properties": {
+          "additionalProperties": {
+            "$ref": "#/$defs/bytebase.v1.ObjectSchema.schema.json"
+          },
+          "description": "Properties of the struct.",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "title": "Struct Kind",
+      "type": "object"
+    },
+    "bytebase.v1.ObjectSchema.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Schema definition for object-type columns.",
+      "patternProperties": {
+        "^(arrayKind)$": {
+          "$ref": "#/$defs/bytebase.v1.ObjectSchema.ArrayKind.schema.json",
+          "description": "Array schema."
+        },
+        "^(semanticType)$": {
+          "default": "",
+          "description": "The semantic type of this object.",
+          "type": "string"
+        },
+        "^(structKind)$": {
+          "$ref": "#/$defs/bytebase.v1.ObjectSchema.StructKind.schema.json",
+          "description": "Struct schema."
+        }
+      },
+      "properties": {
+        "array_kind": {
+          "$ref": "#/$defs/bytebase.v1.ObjectSchema.ArrayKind.schema.json",
+          "description": "Array schema."
+        },
+        "semantic_type": {
+          "default": "",
+          "description": "The semantic type of this object.",
+          "type": "string"
+        },
+        "struct_kind": {
+          "$ref": "#/$defs/bytebase.v1.ObjectSchema.StructKind.schema.json",
+          "description": "Struct schema."
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "STRING",
+                "NUMBER",
+                "BOOLEAN",
+                "OBJECT",
+                "ARRAY"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The data type of this object.",
+          "title": "Type"
+        }
+      },
+      "title": "Object Schema",
+      "type": "object"
+    },
+    "bytebase.v1.PackageMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "PackageMetadata is the metadata for packages.",
+      "properties": {
+        "definition": {
+          "default": "",
+          "description": "The definition is the definition of a package.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a package.",
+          "type": "string"
+        }
+      },
+      "title": "Package Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.ProcedureMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ProcedureMetadata is the metadata for procedures.",
+      "patternProperties": {
+        "^(characterSetClient)$": {
+          "default": "",
+          "description": "MySQL specific metadata.",
+          "type": "string"
+        },
+        "^(collationConnection)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(databaseCollation)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(skipDump)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(sqlMode)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "character_set_client": {
+          "default": "",
+          "description": "MySQL specific metadata.",
+          "type": "string"
+        },
+        "collation_connection": {
+          "default": "",
+          "type": "string"
+        },
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of a procedure.",
+          "type": "string"
+        },
+        "database_collation": {
+          "default": "",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The definition is the definition of a procedure.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a procedure.",
+          "type": "string"
+        },
+        "signature": {
+          "default": "",
+          "description": "The signature is the name with the number and type of input arguments the\n procedure takes.",
+          "type": "string"
+        },
+        "skip_dump": {
+          "default": false,
+          "type": "boolean"
+        },
+        "sql_mode": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Procedure Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.SchemaCatalog.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Schema metadata within a database.",
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "The schema name.",
+          "type": "string"
+        },
+        "tables": {
+          "description": "The tables in the schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TableCatalog.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Schema Catalog",
+      "type": "object"
+    },
+    "bytebase.v1.SchemaMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "SchemaMetadata is the metadata for schemas.\n This is the concept of schema in Postgres, but it's a no-op for MySQL.",
+      "patternProperties": {
+        "^(enumTypes)$": {
+          "description": "The enum_types is the list of user-defined enum types in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.EnumTypeMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "^(externalTables)$": {
+          "description": "The external_tables is the list of external tables in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ExternalTableMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "^(materializedViews)$": {
+          "description": "The materialized_views is the list of materialized views in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.MaterializedViewMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "^(skipDump)$": {
+          "default": false,
+          "description": "Whether to skip this schema during schema dump operations.",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of a schema.",
+          "type": "string"
+        },
+        "enum_types": {
+          "description": "The enum_types is the list of user-defined enum types in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.EnumTypeMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "events": {
+          "description": "The events is the list of scheduled events in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.EventMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "external_tables": {
+          "description": "The external_tables is the list of external tables in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ExternalTableMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "functions": {
+          "description": "The functions is the list of functions in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.FunctionMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "materialized_views": {
+          "description": "The materialized_views is the list of materialized views in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.MaterializedViewMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the schema name.\n It is an empty string for databases without such concept such as MySQL.",
+          "type": "string"
+        },
+        "owner": {
+          "default": "",
+          "description": "The owner of the schema.",
+          "type": "string"
+        },
+        "packages": {
+          "description": "The packages is the list of packages in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.PackageMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "procedures": {
+          "description": "The procedures is the list of procedures in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ProcedureMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "sequences": {
+          "description": "The sequences is the list of sequences in a schema, sorted by name.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.SequenceMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "skip_dump": {
+          "default": false,
+          "description": "Whether to skip this schema during schema dump operations.",
+          "type": "boolean"
+        },
+        "streams": {
+          "description": "The streams is the list of streams in a schema, currently, only used for\n Snowflake.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.StreamMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "tables": {
+          "description": "The tables is the list of tables in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TableMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "tasks": {
+          "description": "The routines is the list of routines in a schema, currently, only used for\n Snowflake.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TaskMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "views": {
+          "description": "The views is the list of views in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ViewMetadata.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Schema Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.SequenceMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(cacheSize)$": {
+          "default": "",
+          "description": "Cache size of a sequence.",
+          "type": "string"
+        },
+        "^(dataType)$": {
+          "default": "",
+          "description": "The data type of a sequence.",
+          "type": "string"
+        },
+        "^(lastValue)$": {
+          "default": "",
+          "description": "Last value of a sequence.",
+          "type": "string"
+        },
+        "^(maxValue)$": {
+          "default": "",
+          "description": "The maximum value of a sequence.",
+          "type": "string"
+        },
+        "^(minValue)$": {
+          "default": "",
+          "description": "The minimum value of a sequence.",
+          "type": "string"
+        },
+        "^(ownerColumn)$": {
+          "default": "",
+          "description": "The owner column of the sequence.",
+          "type": "string"
+        },
+        "^(ownerTable)$": {
+          "default": "",
+          "description": "The owner table of the sequence.",
+          "type": "string"
+        },
+        "^(skipDump)$": {
+          "default": false,
+          "description": "Whether to skip this sequence during schema dump operations.",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "cache_size": {
+          "default": "",
+          "description": "Cache size of a sequence.",
+          "type": "string"
+        },
+        "comment": {
+          "default": "",
+          "description": "The comment describing the sequence.",
+          "type": "string"
+        },
+        "cycle": {
+          "default": false,
+          "description": "Cycle is whether the sequence cycles.",
+          "type": "boolean"
+        },
+        "data_type": {
+          "default": "",
+          "description": "The data type of a sequence.",
+          "type": "string"
+        },
+        "increment": {
+          "default": "",
+          "description": "Increment value of a sequence.",
+          "type": "string"
+        },
+        "last_value": {
+          "default": "",
+          "description": "Last value of a sequence.",
+          "type": "string"
+        },
+        "max_value": {
+          "default": "",
+          "description": "The maximum value of a sequence.",
+          "type": "string"
+        },
+        "min_value": {
+          "default": "",
+          "description": "The minimum value of a sequence.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of a sequence.",
+          "type": "string"
+        },
+        "owner_column": {
+          "default": "",
+          "description": "The owner column of the sequence.",
+          "type": "string"
+        },
+        "owner_table": {
+          "default": "",
+          "description": "The owner table of the sequence.",
+          "type": "string"
+        },
+        "skip_dump": {
+          "default": false,
+          "description": "Whether to skip this sequence during schema dump operations.",
+          "type": "boolean"
+        },
+        "start": {
+          "default": "",
+          "description": "The start value of a sequence.",
+          "type": "string"
+        }
+      },
+      "title": "Sequence Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.SpatialIndexConfig.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "SpatialIndexConfig defines the spatial index configuration for spatial databases.",
+      "properties": {
+        "dimensional": {
+          "$ref": "#/$defs/bytebase.v1.DimensionalConfig.schema.json",
+          "description": "Dimensional configuration"
+        },
+        "method": {
+          "default": "",
+          "description": "Spatial indexing method (e.g., \"SPATIAL\", \"R-TREE\", \"GIST\")",
+          "type": "string"
+        },
+        "storage": {
+          "$ref": "#/$defs/bytebase.v1.StorageConfig.schema.json",
+          "description": "Storage and performance configuration"
+        },
+        "tessellation": {
+          "$ref": "#/$defs/bytebase.v1.TessellationConfig.schema.json",
+          "description": "Tessellation configuration for grid-based spatial indexes"
+        }
+      },
+      "title": "Spatial Index Config",
+      "type": "object"
+    },
+    "bytebase.v1.StorageConfig.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "StorageConfig defines storage and performance parameters for spatial indexes.",
+      "patternProperties": {
+        "^(allowPageLocks)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(allowRowLocks)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(commitInterval)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(dataCompression)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(dropExisting)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(padIndex)$": {
+          "default": false,
+          "description": "SQL Server specific parameters",
+          "type": "boolean"
+        },
+        "^(sdoLevel)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(sortInTempdb)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(workTablespace)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "allow_page_locks": {
+          "default": false,
+          "type": "boolean"
+        },
+        "allow_row_locks": {
+          "default": false,
+          "type": "boolean"
+        },
+        "buffering": {
+          "default": "",
+          "description": "Buffering mode for PostgreSQL (auto, on, off)",
+          "type": "string"
+        },
+        "commit_interval": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "data_compression": {
+          "default": "",
+          "type": "string"
+        },
+        "drop_existing": {
+          "default": false,
+          "type": "boolean"
+        },
+        "fillfactor": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Fill factor percentage (1-100)"
+        },
+        "maxdop": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "online": {
+          "default": false,
+          "type": "boolean"
+        },
+        "pad_index": {
+          "default": false,
+          "description": "SQL Server specific parameters",
+          "type": "boolean"
+        },
+        "sdo_level": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "sort_in_tempdb": {
+          "default": "",
+          "type": "string"
+        },
+        "tablespace": {
+          "default": "",
+          "description": "Tablespace configuration for Oracle",
+          "type": "string"
+        },
+        "work_tablespace": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Storage Config",
+      "type": "object"
+    },
+    "bytebase.v1.StreamMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(tableName)$": {
+          "default": "",
+          "description": "The table_name is the name of the table/view that the stream is created on.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "comment": {
+          "default": "",
+          "description": "The comment of the stream.",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The definition of the stream.",
+          "type": "string"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "pattern": "^MODE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "DEFAULT",
+                "APPEND_ONLY",
+                "INSERT_ONLY"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The mode of the stream.",
+          "title": "Mode"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a stream.",
+          "type": "string"
+        },
+        "owner": {
+          "default": "",
+          "description": "The owner of the stream.",
+          "type": "string"
+        },
+        "stale": {
+          "default": false,
+          "description": "Indicates whether the stream was last read before the `stale_after` time.",
+          "type": "boolean"
+        },
+        "table_name": {
+          "default": "",
+          "description": "The table_name is the name of the table/view that the stream is created on.",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "DELTA"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of the stream.",
+          "title": "Type"
+        }
+      },
+      "title": "Stream Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.TableCatalog.Columns.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Column list for regular tables.",
+      "properties": {
+        "columns": {
+          "description": "The columns in the table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ColumnCatalog.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Columns",
+      "type": "object"
+    },
+    "bytebase.v1.TableCatalog.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Table metadata within a schema.",
+      "patternProperties": {
+        "^(objectSchema)$": {
+          "$ref": "#/$defs/bytebase.v1.ObjectSchema.schema.json",
+          "description": "Object schema for JSON/XML columns."
+        }
+      },
+      "properties": {
+        "classification": {
+          "default": "",
+          "description": "The data classification level for this table.",
+          "type": "string"
+        },
+        "columns": {
+          "$ref": "#/$defs/bytebase.v1.TableCatalog.Columns.schema.json",
+          "description": "Regular table columns."
+        },
+        "name": {
+          "default": "",
+          "description": "The table name.",
+          "type": "string"
+        },
+        "object_schema": {
+          "$ref": "#/$defs/bytebase.v1.ObjectSchema.schema.json",
+          "description": "Object schema for JSON/XML columns."
+        }
+      },
+      "title": "Table Catalog",
+      "type": "object"
+    },
+    "bytebase.v1.TableMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "TableMetadata is the metadata for tables.",
+      "patternProperties": {
+        "^(checkConstraints)$": {
+          "description": "The check_constraints is the list of check constraints in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.CheckConstraintMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "^(createOptions)$": {
+          "default": "",
+          "description": "The create_options is the create option of a table.",
+          "type": "string"
+        },
+        "^(dataFree)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The data_free is the estimated free data size of a table."
+        },
+        "^(dataSize)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The data_size is the estimated data size of a table."
+        },
+        "^(foreignKeys)$": {
+          "description": "The foreign_keys is the list of foreign keys in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ForeignKeyMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "^(indexSize)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The index_size is the estimated index size of a table."
+        },
+        "^(primaryKeyType)$": {
+          "default": "",
+          "description": "https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes\n CLUSTERED or NONCLUSTERED.",
+          "type": "string"
+        },
+        "^(rowCount)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The row_count is the estimated number of rows of a table."
+        },
+        "^(shardingInfo)$": {
+          "default": "",
+          "description": "https://docs.pingcap.com/tidb/stable/information-schema-tables/",
+          "type": "string"
+        },
+        "^(skipDump)$": {
+          "default": false,
+          "description": "Whether to skip this table during schema dump operations.",
+          "type": "boolean"
+        },
+        "^(sortingKeys)$": {
+          "description": "The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.\n Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "properties": {
+        "charset": {
+          "default": "",
+          "description": "The character set of table.",
+          "type": "string"
+        },
+        "check_constraints": {
+          "description": "The check_constraints is the list of check constraints in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.CheckConstraintMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "collation": {
+          "default": "",
+          "description": "The collation is the collation of a table.",
+          "type": "string"
+        },
+        "columns": {
+          "description": "The columns is the ordered list of columns in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ColumnMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of a table.",
+          "type": "string"
+        },
+        "create_options": {
+          "default": "",
+          "description": "The create_options is the create option of a table.",
+          "type": "string"
+        },
+        "data_free": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The data_free is the estimated free data size of a table."
+        },
+        "data_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The data_size is the estimated data size of a table."
+        },
+        "engine": {
+          "default": "",
+          "description": "The engine is the engine of a table.",
+          "type": "string"
+        },
+        "foreign_keys": {
+          "description": "The foreign_keys is the list of foreign keys in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ForeignKeyMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "index_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The index_size is the estimated index size of a table."
+        },
+        "indexes": {
+          "description": "The indexes is the list of indexes in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.IndexMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a table.",
+          "type": "string"
+        },
+        "owner": {
+          "default": "",
+          "description": "The owner of the table.",
+          "type": "string"
+        },
+        "partitions": {
+          "description": "The partitions is the list of partitions in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TablePartitionMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "primary_key_type": {
+          "default": "",
+          "description": "https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes\n CLUSTERED or NONCLUSTERED.",
+          "type": "string"
+        },
+        "row_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The row_count is the estimated number of rows of a table."
+        },
+        "sharding_info": {
+          "default": "",
+          "description": "https://docs.pingcap.com/tidb/stable/information-schema-tables/",
+          "type": "string"
+        },
+        "skip_dump": {
+          "default": false,
+          "description": "Whether to skip this table during schema dump operations.",
+          "type": "boolean"
+        },
+        "sorting_keys": {
+          "description": "The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.\n Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "triggers": {
+          "description": "The triggers is the list of triggers associated with the table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TriggerMetadata.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Table Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.TablePartitionMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "TablePartitionMetadata is the metadata for table partitions.",
+      "patternProperties": {
+        "^(checkConstraints)$": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.CheckConstraintMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "^(useDefault)$": {
+          "default": "",
+          "description": "The use_default is whether the users use the default partition, it stores\n the different value for different database engines. For MySQL, it's [INT]\n type, 0 means not use default partition, otherwise, it's equals to number\n in syntax [SUB]PARTITION {number}.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "check_constraints": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.CheckConstraintMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "expression": {
+          "default": "",
+          "description": "The expression is the expression of a table partition.\n For PostgreSQL, the expression is the text of {FOR VALUES\n partition_bound_spec}, see\n https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL,\n the expression is the `expr` or `column_list` of the following syntax.\n PARTITION BY\n    { [LINEAR] HASH(expr)\n    | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)\n    | RANGE{(expr) | COLUMNS(column_list)}\n    | LIST{(expr) | COLUMNS(column_list)} }.",
+          "type": "string"
+        },
+        "indexes": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.IndexMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a table partition.",
+          "type": "string"
+        },
+        "subpartitions": {
+          "description": "The subpartitions is the list of subpartitions in a table partition.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TablePartitionMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "RANGE",
+                "RANGE_COLUMNS",
+                "LIST",
+                "LIST_COLUMNS",
+                "HASH",
+                "LINEAR_HASH",
+                "KEY",
+                "LINEAR_KEY"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of a table partition.",
+          "title": "Type"
+        },
+        "use_default": {
+          "default": "",
+          "description": "The use_default is whether the users use the default partition, it stores\n the different value for different database engines. For MySQL, it's [INT]\n type, 0 means not use default partition, otherwise, it's equals to number\n in syntax [SUB]PARTITION {number}.",
+          "type": "string"
+        },
+        "value": {
+          "default": "",
+          "description": "The value is the value of a table partition.\n For MySQL, the value is for RANGE and LIST partition types,\n - For a RANGE partition, it contains the value set in the partition's\n VALUES LESS THAN clause, which can be either an integer or MAXVALUE.\n - For a LIST partition, this column contains the values defined in the\n partition's VALUES IN clause, which is a list of comma-separated integer\n values.\n - For others, it's an empty string.",
+          "type": "string"
+        }
+      },
+      "title": "Table Partition Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.TaskMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "default": "",
+          "description": "The comment of the task.",
+          "type": "string"
+        },
+        "condition": {
+          "default": "",
+          "description": "The condition of the task.",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The definition of the task.",
+          "type": "string"
+        },
+        "id": {
+          "default": "",
+          "description": "The id is the snowflake-generated id of a task.\n Example: 01ad32a0-1bb6-5e93-0000-000000000001",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a task.",
+          "type": "string"
+        },
+        "owner": {
+          "default": "",
+          "description": "The owner of the task.",
+          "type": "string"
+        },
+        "predecessors": {
+          "description": "The predecessor tasks of the task.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "schedule": {
+          "default": "",
+          "description": "The schedule interval of the task.",
+          "type": "string"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "pattern": "^STATE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "STARTED",
+                "SUSPENDED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The state of the task.",
+          "title": "State"
+        },
+        "warehouse": {
+          "default": "",
+          "description": "The warehouse of the task.",
+          "type": "string"
+        }
+      },
+      "title": "Task Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.TessellationConfig.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "TessellationConfig defines tessellation parameters for spatial indexes.",
+      "patternProperties": {
+        "^(boundingBox)$": {
+          "$ref": "#/$defs/bytebase.v1.BoundingBox.schema.json",
+          "description": "Bounding box for GEOMETRY tessellation (not used for GEOGRAPHY)"
+        },
+        "^(cellsPerObject)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Number of cells per object (1-8192 for SQL Server)"
+        },
+        "^(gridLevels)$": {
+          "description": "Grid levels and densities for multi-level tessellation",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.GridLevel.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "properties": {
+        "bounding_box": {
+          "$ref": "#/$defs/bytebase.v1.BoundingBox.schema.json",
+          "description": "Bounding box for GEOMETRY tessellation (not used for GEOGRAPHY)"
+        },
+        "cells_per_object": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Number of cells per object (1-8192 for SQL Server)"
+        },
+        "grid_levels": {
+          "description": "Grid levels and densities for multi-level tessellation",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.GridLevel.schema.json"
+          },
+          "type": "array"
+        },
+        "scheme": {
+          "default": "",
+          "description": "Tessellation scheme (e.g., \"GEOMETRY_GRID\", \"GEOGRAPHY_GRID\", \"GEOMETRY_AUTO_GRID\")",
+          "type": "string"
+        }
+      },
+      "title": "Tessellation Config",
+      "type": "object"
+    },
+    "bytebase.v1.TriggerMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(characterSetClient)$": {
+          "default": "",
+          "description": "The character set used by the client creating the trigger.",
+          "type": "string"
+        },
+        "^(collationConnection)$": {
+          "default": "",
+          "description": "The collation used for the connection when creating the trigger.",
+          "type": "string"
+        },
+        "^(skipDump)$": {
+          "default": false,
+          "description": "Whether to skip this trigger during schema dump operations.",
+          "type": "boolean"
+        },
+        "^(sqlMode)$": {
+          "default": "",
+          "description": "The SQL mode setting for the trigger.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "body": {
+          "default": "",
+          "description": "The body is the body of the trigger.",
+          "type": "string"
+        },
+        "character_set_client": {
+          "default": "",
+          "description": "The character set used by the client creating the trigger.",
+          "type": "string"
+        },
+        "collation_connection": {
+          "default": "",
+          "description": "The collation used for the connection when creating the trigger.",
+          "type": "string"
+        },
+        "comment": {
+          "default": "",
+          "description": "The comment describing the trigger.",
+          "type": "string"
+        },
+        "event": {
+          "default": "",
+          "description": "The event is the event of the trigger, such as INSERT, UPDATE, DELETE,\n TRUNCATE.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of the trigger.",
+          "type": "string"
+        },
+        "skip_dump": {
+          "default": false,
+          "description": "Whether to skip this trigger during schema dump operations.",
+          "type": "boolean"
+        },
+        "sql_mode": {
+          "default": "",
+          "description": "The SQL mode setting for the trigger.",
+          "type": "string"
+        },
+        "timing": {
+          "default": "",
+          "description": "The timing is the timing of the trigger, such as BEFORE, AFTER.",
+          "type": "string"
+        }
+      },
+      "title": "Trigger Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.ViewMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ViewMetadata is the metadata for views.",
+      "patternProperties": {
+        "^(dependencyColumns)$": {
+          "description": "The dependency_columns is the list of dependency columns of a view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DependencyColumn.schema.json"
+          },
+          "type": "array"
+        },
+        "^(skipDump)$": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "columns": {
+          "description": "The columns is the ordered list of columns in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ColumnMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of a view.",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The definition is the definition of a view.",
+          "type": "string"
+        },
+        "dependency_columns": {
+          "description": "The dependency_columns is the list of dependency columns of a view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DependencyColumn.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a view.",
+          "type": "string"
+        },
+        "skip_dump": {
+          "default": false,
+          "type": "boolean"
+        },
+        "triggers": {
+          "description": "The triggers is the list of triggers in a view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TriggerMetadata.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "View Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.DiffMetadataRequest.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.DiffMetadataRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

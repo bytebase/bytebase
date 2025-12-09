@@ -1,0 +1,916 @@
+{
+  "$defs": {
+    "bytebase.v1.DataSource.AWSCredential.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(accessKeyId)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(externalId)$": {
+          "default": "",
+          "description": "Optional external ID for additional security when assuming role.\n See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html",
+          "type": "string"
+        },
+        "^(roleArn)$": {
+          "default": "",
+          "description": "ARN of IAM role to assume for cross-account access.\n See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html",
+          "type": "string"
+        },
+        "^(secretAccessKey)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(sessionToken)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "access_key_id": {
+          "default": "",
+          "type": "string"
+        },
+        "external_id": {
+          "default": "",
+          "description": "Optional external ID for additional security when assuming role.\n See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html",
+          "type": "string"
+        },
+        "role_arn": {
+          "default": "",
+          "description": "ARN of IAM role to assume for cross-account access.\n See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html",
+          "type": "string"
+        },
+        "secret_access_key": {
+          "default": "",
+          "type": "string"
+        },
+        "session_token": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "AWS Credential",
+      "type": "object"
+    },
+    "bytebase.v1.DataSource.Address.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "default": "",
+          "type": "string"
+        },
+        "port": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Address",
+      "type": "object"
+    },
+    "bytebase.v1.DataSource.AzureCredential.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(clientId)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(clientSecret)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(tenantId)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "client_id": {
+          "default": "",
+          "type": "string"
+        },
+        "client_secret": {
+          "default": "",
+          "type": "string"
+        },
+        "tenant_id": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Azure Credential",
+      "type": "object"
+    },
+    "bytebase.v1.DataSource.GCPCredential.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "GCP Credential",
+      "type": "object"
+    },
+    "bytebase.v1.DataSource.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(additionalAddresses)$": {
+          "description": "additional_addresses is used for MongoDB replica set.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DataSource.Address.schema.json"
+          },
+          "type": "array"
+        },
+        "^(authenticationDatabase)$": {
+          "default": "",
+          "description": "authentication_database is the database name to authenticate against, which stores the user credentials.",
+          "type": "string"
+        },
+        "^(authenticationPrivateKey)$": {
+          "default": "",
+          "description": "PKCS#8 private key in PEM format. If it's empty string, no private key is required.\n Used for authentication when connecting to the data source.",
+          "type": "string"
+        },
+        "^(authenticationPrivateKeyPassphrase)$": {
+          "default": "",
+          "description": "Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.",
+          "type": "string"
+        },
+        "^(authenticationType)$": {
+          "anyOf": [
+            {
+              "pattern": "^AUTHENTICATION_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "PASSWORD",
+                "GOOGLE_CLOUD_SQL_IAM",
+                "AWS_RDS_IAM",
+                "AZURE_IAM"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Authentication Type"
+        },
+        "^(awsCredential)$": {
+          "$ref": "#/$defs/bytebase.v1.DataSource.AWSCredential.schema.json"
+        },
+        "^(azureCredential)$": {
+          "$ref": "#/$defs/bytebase.v1.DataSource.AzureCredential.schema.json"
+        },
+        "^(directConnection)$": {
+          "default": false,
+          "description": "direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.",
+          "type": "boolean"
+        },
+        "^(externalSecret)$": {
+          "$ref": "#/$defs/bytebase.v1.DataSourceExternalSecret.schema.json"
+        },
+        "^(extraConnectionParameters)$": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Extra connection parameters for the database connection.\n For PostgreSQL HA, this can be used to set target_session_attrs=read-write",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "^(gcpCredential)$": {
+          "$ref": "#/$defs/bytebase.v1.DataSource.GCPCredential.schema.json"
+        },
+        "^(masterName)$": {
+          "default": "",
+          "description": "master_name is the master name used by connecting redis-master via redis sentinel.",
+          "type": "string"
+        },
+        "^(masterPassword)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(masterUsername)$": {
+          "default": "",
+          "description": "master_username and master_password are master credentials used by redis sentinel mode.",
+          "type": "string"
+        },
+        "^(redisType)$": {
+          "anyOf": [
+            {
+              "pattern": "^REDIS_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "STANDALONE",
+                "SENTINEL",
+                "CLUSTER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Redis Type"
+        },
+        "^(replicaSet)$": {
+          "default": "",
+          "description": "replica_set is used for MongoDB replica set.",
+          "type": "string"
+        },
+        "^(saslConfig)$": {
+          "$ref": "#/$defs/bytebase.v1.SASLConfig.schema.json"
+        },
+        "^(serviceName)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(sshHost)$": {
+          "default": "",
+          "description": "Connection over SSH.\n The hostname of the SSH server agent.\n Required.",
+          "type": "string"
+        },
+        "^(sshPassword)$": {
+          "default": "",
+          "description": "The password to login the server. If it's empty string, no password is required.",
+          "type": "string"
+        },
+        "^(sshPort)$": {
+          "default": "",
+          "description": "The port of the SSH server agent. It's 22 typically.\n Required.",
+          "type": "string"
+        },
+        "^(sshPrivateKey)$": {
+          "default": "",
+          "description": "The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv(\"SSH_AUTH_SOCK\").",
+          "type": "string"
+        },
+        "^(sshUser)$": {
+          "default": "",
+          "description": "The user to login the server.\n Required.",
+          "type": "string"
+        },
+        "^(sslCa)$": {
+          "default": "",
+          "description": "The SSL certificate authority certificate.",
+          "type": "string"
+        },
+        "^(sslCert)$": {
+          "default": "",
+          "description": "The SSL client certificate.",
+          "type": "string"
+        },
+        "^(sslKey)$": {
+          "default": "",
+          "description": "The SSL client private key.",
+          "type": "string"
+        },
+        "^(useSsl)$": {
+          "default": false,
+          "description": "Use SSL to connect to the data source. By default, we use system default SSL configuration.",
+          "type": "boolean"
+        },
+        "^(verifyTlsCertificate)$": {
+          "default": false,
+          "description": "verify_tls_certificate enables TLS certificate verification for SSL connections.\n Default is false (no verification) for backward compatibility.\n Set to true for secure connections (recommended for production).\n Only set to false for development or when certificates cannot be properly\n validated (e.g., self-signed certs, VPN environments).",
+          "type": "boolean"
+        },
+        "^(warehouseId)$": {
+          "default": "",
+          "description": "warehouse_id is used by Databricks.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "additional_addresses": {
+          "description": "additional_addresses is used for MongoDB replica set.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DataSource.Address.schema.json"
+          },
+          "type": "array"
+        },
+        "authentication_database": {
+          "default": "",
+          "description": "authentication_database is the database name to authenticate against, which stores the user credentials.",
+          "type": "string"
+        },
+        "authentication_private_key": {
+          "default": "",
+          "description": "PKCS#8 private key in PEM format. If it's empty string, no private key is required.\n Used for authentication when connecting to the data source.",
+          "type": "string"
+        },
+        "authentication_private_key_passphrase": {
+          "default": "",
+          "description": "Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.",
+          "type": "string"
+        },
+        "authentication_type": {
+          "anyOf": [
+            {
+              "pattern": "^AUTHENTICATION_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "PASSWORD",
+                "GOOGLE_CLOUD_SQL_IAM",
+                "AWS_RDS_IAM",
+                "AZURE_IAM"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Authentication Type"
+        },
+        "aws_credential": {
+          "$ref": "#/$defs/bytebase.v1.DataSource.AWSCredential.schema.json"
+        },
+        "azure_credential": {
+          "$ref": "#/$defs/bytebase.v1.DataSource.AzureCredential.schema.json"
+        },
+        "cluster": {
+          "default": "",
+          "description": "Cluster is the cluster name for the data source. Used by CockroachDB.",
+          "type": "string"
+        },
+        "database": {
+          "default": "",
+          "description": "The name of the database to connect to.",
+          "type": "string"
+        },
+        "direct_connection": {
+          "default": false,
+          "description": "direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.",
+          "type": "boolean"
+        },
+        "external_secret": {
+          "$ref": "#/$defs/bytebase.v1.DataSourceExternalSecret.schema.json"
+        },
+        "extra_connection_parameters": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Extra connection parameters for the database connection.\n For PostgreSQL HA, this can be used to set target_session_attrs=read-write",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "gcp_credential": {
+          "$ref": "#/$defs/bytebase.v1.DataSource.GCPCredential.schema.json"
+        },
+        "host": {
+          "default": "",
+          "description": "The hostname or IP address of the database server.",
+          "type": "string"
+        },
+        "id": {
+          "default": "",
+          "description": "The unique identifier for this data source.",
+          "type": "string"
+        },
+        "master_name": {
+          "default": "",
+          "description": "master_name is the master name used by connecting redis-master via redis sentinel.",
+          "type": "string"
+        },
+        "master_password": {
+          "default": "",
+          "type": "string"
+        },
+        "master_username": {
+          "default": "",
+          "description": "master_username and master_password are master credentials used by redis sentinel mode.",
+          "type": "string"
+        },
+        "password": {
+          "default": "",
+          "description": "The password for database authentication.",
+          "type": "string"
+        },
+        "port": {
+          "default": "",
+          "description": "The port number of the database server.",
+          "type": "string"
+        },
+        "redis_type": {
+          "anyOf": [
+            {
+              "pattern": "^REDIS_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "STANDALONE",
+                "SENTINEL",
+                "CLUSTER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Redis Type"
+        },
+        "region": {
+          "default": "",
+          "description": "region is the location of where the DB is, works for AWS RDS. For example, us-east-1.",
+          "type": "string"
+        },
+        "replica_set": {
+          "default": "",
+          "description": "replica_set is used for MongoDB replica set.",
+          "type": "string"
+        },
+        "sasl_config": {
+          "$ref": "#/$defs/bytebase.v1.SASLConfig.schema.json"
+        },
+        "service_name": {
+          "default": "",
+          "type": "string"
+        },
+        "sid": {
+          "default": "",
+          "description": "sid and service_name are used for Oracle.",
+          "type": "string"
+        },
+        "srv": {
+          "default": false,
+          "description": "srv, authentication_database and replica_set are used for MongoDB.\n srv is a boolean flag that indicates whether the host is a DNS SRV record.",
+          "type": "boolean"
+        },
+        "ssh_host": {
+          "default": "",
+          "description": "Connection over SSH.\n The hostname of the SSH server agent.\n Required.",
+          "type": "string"
+        },
+        "ssh_password": {
+          "default": "",
+          "description": "The password to login the server. If it's empty string, no password is required.",
+          "type": "string"
+        },
+        "ssh_port": {
+          "default": "",
+          "description": "The port of the SSH server agent. It's 22 typically.\n Required.",
+          "type": "string"
+        },
+        "ssh_private_key": {
+          "default": "",
+          "description": "The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv(\"SSH_AUTH_SOCK\").",
+          "type": "string"
+        },
+        "ssh_user": {
+          "default": "",
+          "description": "The user to login the server.\n Required.",
+          "type": "string"
+        },
+        "ssl_ca": {
+          "default": "",
+          "description": "The SSL certificate authority certificate.",
+          "type": "string"
+        },
+        "ssl_cert": {
+          "default": "",
+          "description": "The SSL client certificate.",
+          "type": "string"
+        },
+        "ssl_key": {
+          "default": "",
+          "description": "The SSL client private key.",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^DATA_SOURCE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "ADMIN",
+                "READ_ONLY"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of data source (ADMIN or READ_ONLY).",
+          "title": "Data Source Type"
+        },
+        "use_ssl": {
+          "default": false,
+          "description": "Use SSL to connect to the data source. By default, we use system default SSL configuration.",
+          "type": "boolean"
+        },
+        "username": {
+          "default": "",
+          "description": "The username for database authentication.",
+          "type": "string"
+        },
+        "verify_tls_certificate": {
+          "default": false,
+          "description": "verify_tls_certificate enables TLS certificate verification for SSL connections.\n Default is false (no verification) for backward compatibility.\n Set to true for secure connections (recommended for production).\n Only set to false for development or when certificates cannot be properly\n validated (e.g., self-signed certs, VPN environments).",
+          "type": "boolean"
+        },
+        "warehouse_id": {
+          "default": "",
+          "description": "warehouse_id is used by Databricks.",
+          "type": "string"
+        }
+      },
+      "title": "Data Source",
+      "type": "object"
+    },
+    "bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(mountPath)$": {
+          "default": "",
+          "description": "The path where the approle auth method is mounted.",
+          "type": "string"
+        },
+        "^(roleId)$": {
+          "default": "",
+          "description": "The role ID for Vault AppRole authentication.",
+          "type": "string"
+        },
+        "^(secretId)$": {
+          "default": "",
+          "description": "the secret id for the role without ttl.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "mount_path": {
+          "default": "",
+          "description": "The path where the approle auth method is mounted.",
+          "type": "string"
+        },
+        "role_id": {
+          "default": "",
+          "description": "The role ID for Vault AppRole authentication.",
+          "type": "string"
+        },
+        "secret_id": {
+          "default": "",
+          "description": "the secret id for the role without ttl.",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^SECRET_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "PLAIN",
+                "ENVIRONMENT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of secret for AppRole authentication.",
+          "title": "Secret Type"
+        }
+      },
+      "title": "App Role Auth Option",
+      "type": "object"
+    },
+    "bytebase.v1.DataSourceExternalSecret.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(appRole)$": {
+          "$ref": "#/$defs/bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.schema.json",
+          "description": "AppRole authentication configuration."
+        },
+        "^(authType)$": {
+          "anyOf": [
+            {
+              "pattern": "^AUTH_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "TOKEN",
+                "VAULT_APP_ROLE"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The authentication method for accessing the secret store.",
+          "title": "Auth Type"
+        },
+        "^(engineName)$": {
+          "default": "",
+          "description": "engine name is the name for secret engine.",
+          "type": "string"
+        },
+        "^(passwordKeyName)$": {
+          "default": "",
+          "description": "the key name for the password.",
+          "type": "string"
+        },
+        "^(secretName)$": {
+          "default": "",
+          "description": "the secret name in the engine to store the password.",
+          "type": "string"
+        },
+        "^(secretType)$": {
+          "anyOf": [
+            {
+              "pattern": "^SECRET_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "VAULT_KV_V2",
+                "AWS_SECRETS_MANAGER",
+                "GCP_SECRET_MANAGER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of external secret store.",
+          "title": "Secret Type"
+        },
+        "^(skipVaultTlsVerification)$": {
+          "default": false,
+          "description": "TLS configuration for connecting to Vault server.\n These fields are separate from the database TLS configuration in DataSource.\n skip_vault_tls_verification disables TLS certificate verification for Vault connections.\n Default is false (verification enabled) for security.\n Only set to true for development or when certificates cannot be properly validated.",
+          "type": "boolean"
+        },
+        "^(vaultSslCa)$": {
+          "default": "",
+          "description": "CA certificate for Vault server verification.",
+          "type": "string"
+        },
+        "^(vaultSslCert)$": {
+          "default": "",
+          "description": "Client certificate for mutual TLS authentication with Vault.",
+          "type": "string"
+        },
+        "^(vaultSslKey)$": {
+          "default": "",
+          "description": "Client private key for mutual TLS authentication with Vault.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "app_role": {
+          "$ref": "#/$defs/bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.schema.json",
+          "description": "AppRole authentication configuration."
+        },
+        "auth_type": {
+          "anyOf": [
+            {
+              "pattern": "^AUTH_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "TOKEN",
+                "VAULT_APP_ROLE"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The authentication method for accessing the secret store.",
+          "title": "Auth Type"
+        },
+        "engine_name": {
+          "default": "",
+          "description": "engine name is the name for secret engine.",
+          "type": "string"
+        },
+        "password_key_name": {
+          "default": "",
+          "description": "the key name for the password.",
+          "type": "string"
+        },
+        "secret_name": {
+          "default": "",
+          "description": "the secret name in the engine to store the password.",
+          "type": "string"
+        },
+        "secret_type": {
+          "anyOf": [
+            {
+              "pattern": "^SECRET_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "VAULT_KV_V2",
+                "AWS_SECRETS_MANAGER",
+                "GCP_SECRET_MANAGER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of external secret store.",
+          "title": "Secret Type"
+        },
+        "skip_vault_tls_verification": {
+          "default": false,
+          "description": "TLS configuration for connecting to Vault server.\n These fields are separate from the database TLS configuration in DataSource.\n skip_vault_tls_verification disables TLS certificate verification for Vault connections.\n Default is false (verification enabled) for security.\n Only set to true for development or when certificates cannot be properly validated.",
+          "type": "boolean"
+        },
+        "token": {
+          "description": "Token for direct authentication.",
+          "type": "string"
+        },
+        "url": {
+          "default": "",
+          "description": "The URL of the external secret store.",
+          "type": "string"
+        },
+        "vault_ssl_ca": {
+          "default": "",
+          "description": "CA certificate for Vault server verification.",
+          "type": "string"
+        },
+        "vault_ssl_cert": {
+          "default": "",
+          "description": "Client certificate for mutual TLS authentication with Vault.",
+          "type": "string"
+        },
+        "vault_ssl_key": {
+          "default": "",
+          "description": "Client private key for mutual TLS authentication with Vault.",
+          "type": "string"
+        }
+      },
+      "title": "Data Source External Secret",
+      "type": "object"
+    },
+    "bytebase.v1.KerberosConfig.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(kdcHost)$": {
+          "default": "",
+          "description": "The hostname of the Key Distribution Center (KDC).",
+          "type": "string"
+        },
+        "^(kdcPort)$": {
+          "default": "",
+          "description": "The port of the Key Distribution Center (KDC).",
+          "type": "string"
+        },
+        "^(kdcTransportProtocol)$": {
+          "default": "",
+          "description": "The transport protocol for KDC communication (tcp or udp).",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "instance": {
+          "default": "",
+          "description": "The instance component of the Kerberos principal.",
+          "type": "string"
+        },
+        "kdc_host": {
+          "default": "",
+          "description": "The hostname of the Key Distribution Center (KDC).",
+          "type": "string"
+        },
+        "kdc_port": {
+          "default": "",
+          "description": "The port of the Key Distribution Center (KDC).",
+          "type": "string"
+        },
+        "kdc_transport_protocol": {
+          "default": "",
+          "description": "The transport protocol for KDC communication (tcp or udp).",
+          "type": "string"
+        },
+        "keytab": {
+          "default": null,
+          "description": "The keytab file contents for authentication.",
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        },
+        "primary": {
+          "default": "",
+          "description": "The primary component of the Kerberos principal.",
+          "type": "string"
+        },
+        "realm": {
+          "default": "",
+          "description": "The Kerberos realm.",
+          "type": "string"
+        }
+      },
+      "title": "Kerberos Config",
+      "type": "object"
+    },
+    "bytebase.v1.RemoveDataSourceRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(dataSource)$": {
+          "$ref": "#/$defs/bytebase.v1.DataSource.schema.json",
+          "description": "Identified by data source ID.\n Only READ_ONLY data source can be removed."
+        }
+      },
+      "properties": {
+        "data_source": {
+          "$ref": "#/$defs/bytebase.v1.DataSource.schema.json",
+          "description": "Identified by data source ID.\n Only READ_ONLY data source can be removed."
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the instance to remove a data source from.\n Format: instances/{instance}",
+          "type": "string"
+        }
+      },
+      "title": "Remove Data Source Request",
+      "type": "object"
+    },
+    "bytebase.v1.SASLConfig.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(krbConfig)$": {
+          "$ref": "#/$defs/bytebase.v1.KerberosConfig.schema.json",
+          "description": "Kerberos authentication configuration."
+        }
+      },
+      "properties": {
+        "krb_config": {
+          "$ref": "#/$defs/bytebase.v1.KerberosConfig.schema.json",
+          "description": "Kerberos authentication configuration."
+        }
+      },
+      "title": "SASL Config",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.RemoveDataSourceRequest.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.RemoveDataSourceRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

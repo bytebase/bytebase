@@ -1,0 +1,136 @@
+{
+  "$id": "bytebase.v1.IssueComment.IssueUpdate.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Issue update event information.",
+  "patternProperties": {
+    "^(fromDescription)$": {
+      "type": "string"
+    },
+    "^(fromLabels)$": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "^(fromStatus)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "ISSUE_STATUS_UNSPECIFIED",
+            "OPEN",
+            "DONE",
+            "CANCELED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "title": "Issue Status"
+    },
+    "^(fromTitle)$": {
+      "type": "string"
+    },
+    "^(toDescription)$": {
+      "type": "string"
+    },
+    "^(toLabels)$": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "^(toStatus)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "ISSUE_STATUS_UNSPECIFIED",
+            "OPEN",
+            "DONE",
+            "CANCELED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "title": "Issue Status"
+    },
+    "^(toTitle)$": {
+      "type": "string"
+    }
+  },
+  "properties": {
+    "from_description": {
+      "type": "string"
+    },
+    "from_labels": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "from_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "ISSUE_STATUS_UNSPECIFIED",
+            "OPEN",
+            "DONE",
+            "CANCELED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "title": "Issue Status"
+    },
+    "from_title": {
+      "type": "string"
+    },
+    "to_description": {
+      "type": "string"
+    },
+    "to_labels": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "to_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "ISSUE_STATUS_UNSPECIFIED",
+            "OPEN",
+            "DONE",
+            "CANCELED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "title": "Issue Status"
+    },
+    "to_title": {
+      "type": "string"
+    }
+  },
+  "title": "Issue Update",
+  "type": "object"
+}

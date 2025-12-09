@@ -1,0 +1,16 @@
+{
+  "$id": "bytebase.store.Algorithm.RangeMask.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "slices": {
+      "description": "We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.\n But frontend can be started with a single rule easily.",
+      "items": {
+        "$ref": "bytebase.store.Algorithm.RangeMask.Slice.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Range Mask",
+  "type": "object"
+}

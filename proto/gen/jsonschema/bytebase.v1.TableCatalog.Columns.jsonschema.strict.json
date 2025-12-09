@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.v1.TableCatalog.Columns.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Column list for regular tables.",
+  "properties": {
+    "columns": {
+      "description": "The columns in the table.",
+      "items": {
+        "$ref": "bytebase.v1.ColumnCatalog.jsonschema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Columns",
+  "type": "object"
+}

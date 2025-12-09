@@ -1,0 +1,93 @@
+{
+  "$defs": {
+    "bytebase.store.ChangedResourceTable.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(table_rows)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The estimated row count of the table."
+        }
+      },
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "ranges": {
+          "description": "The ranges of substrings correspond to the statements on the sheet.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.Range.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "tableRows": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The estimated row count of the table."
+        }
+      },
+      "title": "Changed Resource Table",
+      "type": "object"
+    },
+    "bytebase.store.Range.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Range represents a span within a text or sequence.",
+      "properties": {
+        "end": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "End index (exclusive)."
+        },
+        "start": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Start index (inclusive)."
+        }
+      },
+      "title": "Range",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.ChangedResourceTable.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.ChangedResourceTable.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

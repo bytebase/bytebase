@@ -1,0 +1,14 @@
+{
+  "$id": "bytebase.v1.GetTaskRunLogRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "default": "",
+      "description": "Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}\n TODO(d): check the resource_reference.",
+      "type": "string"
+    }
+  },
+  "title": "Get Task Run Log Request",
+  "type": "object"
+}

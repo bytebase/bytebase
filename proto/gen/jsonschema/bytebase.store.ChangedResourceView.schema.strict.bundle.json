@@ -1,0 +1,53 @@
+{
+  "$defs": {
+    "bytebase.store.ChangedResourceView.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "ranges": {
+          "description": "The ranges of substrings correspond to the statements on the sheet.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.Range.schema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Changed Resource View",
+      "type": "object"
+    },
+    "bytebase.store.Range.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Range represents a span within a text or sequence.",
+      "properties": {
+        "end": {
+          "description": "End index (exclusive).",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "start": {
+          "description": "Start index (inclusive).",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Range",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.ChangedResourceView.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.ChangedResourceView.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

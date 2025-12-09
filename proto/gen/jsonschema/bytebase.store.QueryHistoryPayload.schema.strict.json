@@ -1,0 +1,15 @@
+{
+  "$id": "bytebase.store.QueryHistoryPayload.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "duration": {
+      "$ref": "google.protobuf.Duration.schema.strict.json"
+    },
+    "error": {
+      "type": "string"
+    }
+  },
+  "title": "Query History Payload",
+  "type": "object"
+}

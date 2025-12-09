@@ -1,0 +1,15 @@
+{
+  "$id": "bytebase.v1.BatchUpdateWorksheetOrganizerResponse.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "worksheet_organizers": {
+      "items": {
+        "$ref": "bytebase.v1.WorksheetOrganizer.schema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Batch Update Worksheet Organizer Response",
+  "type": "object"
+}

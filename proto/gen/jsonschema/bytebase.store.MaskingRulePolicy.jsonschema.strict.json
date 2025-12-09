@@ -1,0 +1,15 @@
+{
+  "$id": "bytebase.store.MaskingRulePolicy.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "rules": {
+      "items": {
+        "$ref": "bytebase.store.MaskingRulePolicy.MaskingRule.jsonschema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Masking Rule Policy",
+  "type": "object"
+}

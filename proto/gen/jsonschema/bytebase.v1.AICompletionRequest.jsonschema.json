@@ -1,0 +1,15 @@
+{
+  "$id": "bytebase.v1.AICompletionRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "messages": {
+      "items": {
+        "$ref": "bytebase.v1.AICompletionRequest.Message.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "AI Completion Request",
+  "type": "object"
+}

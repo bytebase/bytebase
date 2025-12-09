@@ -1,0 +1,29 @@
+{
+  "$id": "bytebase.v1.CreateRolloutRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "description": "The parent project where this rollout will be created.\n Format: projects/{project}",
+      "type": "string"
+    },
+    "rollout": {
+      "$ref": "bytebase.v1.Rollout.schema.strict.json",
+      "description": "The rollout to create."
+    },
+    "target": {
+      "description": "Create the rollout and the stages up to the target stage.\n Format: environments/{environment}\n If unspecified, all stages are created.\n If set to \"\", no stages are created.",
+      "type": "string"
+    },
+    "validate_only": {
+      "description": "If set, validate the request and preview the rollout, but\n do not actually create it.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "parent",
+    "validate_only"
+  ],
+  "title": "Create Rollout Request",
+  "type": "object"
+}

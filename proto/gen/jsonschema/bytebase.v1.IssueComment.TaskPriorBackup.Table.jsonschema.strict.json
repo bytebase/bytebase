@@ -1,0 +1,22 @@
+{
+  "$id": "bytebase.v1.IssueComment.TaskPriorBackup.Table.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Table identification.",
+  "properties": {
+    "schema": {
+      "description": "The schema name.",
+      "type": "string"
+    },
+    "table": {
+      "description": "The table name.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "table"
+  ],
+  "title": "Table",
+  "type": "object"
+}

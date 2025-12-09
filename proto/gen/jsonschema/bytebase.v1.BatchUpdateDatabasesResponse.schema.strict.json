@@ -1,0 +1,16 @@
+{
+  "$id": "bytebase.v1.BatchUpdateDatabasesResponse.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "databases": {
+      "description": "Databases updated.",
+      "items": {
+        "$ref": "bytebase.v1.Database.schema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Batch Update Databases Response",
+  "type": "object"
+}

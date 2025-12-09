@@ -1,0 +1,31 @@
+{
+  "$id": "bytebase.v1.WorkspaceApprovalSetting.Rule.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "condition": {
+      "$ref": "google.type.Expr.jsonschema.strict.json",
+      "description": "The `source` field filters which rules apply. The `condition` field then evaluates with full context.\n\n All supported variables:\n statement.affected_rows: affected row count in the DDL/DML, support \"==\", \"!=\", \"\u003c\", \"\u003c=\", \"\u003e\", \"\u003e=\" operations.\n statement.table_rows: table row count number, support \"==\", \"!=\", \"\u003c\", \"\u003c=\", \"\u003e\", \"\u003e=\" operations.\n resource.environment_id: the environment resource id, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\" operations.\n resource.project_id: the project resource id, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\", \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n resource.db_engine: the database engine type, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\" operations. Check the Engine enum for values.\n statement.sql_type: the SQL type, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\" operations.\n resource.database_name: the database name, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\", \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n resource.schema_name: the schema name, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\", \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n resource.table_name: the table name, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\", \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n statement.text: the SQL statement, support \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n request.expiration_days: the role expiration days for the request, support \"==\", \"!=\", \"\u003c\", \"\u003c=\", \"\u003e\", \"\u003e=\" operations.\n request.role: the request role full name, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\", \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n\n When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*)\n When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name\n When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name\n When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role\n\n For examples:\n resource.environment_id == \"prod\" \u0026\u0026 statement.affected_rows \u003e= 100\n resource.table_name.matches(\"sensitive_.*\") \u0026\u0026 resource.db_engine == \"MYSQL\"",
+      "title": "The condition that is associated with the rule.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec"
+    },
+    "source": {
+      "enum": [
+        "SOURCE_UNSPECIFIED",
+        "CHANGE_DATABASE",
+        "CREATE_DATABASE",
+        "EXPORT_DATA",
+        "REQUEST_ROLE"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "template": {
+      "$ref": "bytebase.v1.ApprovalTemplate.jsonschema.strict.json"
+    }
+  },
+  "required": [
+    "source"
+  ],
+  "title": "Rule",
+  "type": "object"
+}

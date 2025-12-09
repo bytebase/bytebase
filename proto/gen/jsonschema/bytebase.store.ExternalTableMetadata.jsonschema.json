@@ -1,0 +1,43 @@
+{
+  "$id": "bytebase.store.ExternalTableMetadata.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(external_database_name)$": {
+      "default": "",
+      "description": "The external_database_name is the name of the external database.",
+      "type": "string"
+    },
+    "^(external_server_name)$": {
+      "default": "",
+      "description": "The external_server_name is the name of the external server.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "columns": {
+      "description": "The columns is the ordered list of columns in a foreign table.",
+      "items": {
+        "$ref": "bytebase.store.ColumnMetadata.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "externalDatabaseName": {
+      "default": "",
+      "description": "The external_database_name is the name of the external database.",
+      "type": "string"
+    },
+    "externalServerName": {
+      "default": "",
+      "description": "The external_server_name is the name of the external server.",
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "description": "The name of the external table.",
+      "type": "string"
+    }
+  },
+  "title": "External Table Metadata",
+  "type": "object"
+}

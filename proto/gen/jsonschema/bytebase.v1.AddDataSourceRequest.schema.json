@@ -1,0 +1,34 @@
+{
+  "$id": "bytebase.v1.AddDataSourceRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(dataSource)$": {
+      "$ref": "bytebase.v1.DataSource.schema.json",
+      "description": "Identified by data source ID.\n Only READ_ONLY data source can be added."
+    },
+    "^(validateOnly)$": {
+      "default": false,
+      "description": "Validate only also tests the data source connection.",
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "data_source": {
+      "$ref": "bytebase.v1.DataSource.schema.json",
+      "description": "Identified by data source ID.\n Only READ_ONLY data source can be added."
+    },
+    "name": {
+      "default": "",
+      "description": "The name of the instance to add a data source to.\n Format: instances/{instance}",
+      "type": "string"
+    },
+    "validate_only": {
+      "default": false,
+      "description": "Validate only also tests the data source connection.",
+      "type": "boolean"
+    }
+  },
+  "title": "Add Data Source Request",
+  "type": "object"
+}

@@ -1,0 +1,51 @@
+{
+  "$id": "bytebase.store.TriggerMetadata.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "body": {
+      "description": "The body of the trigger.",
+      "type": "string"
+    },
+    "characterSetClient": {
+      "type": "string"
+    },
+    "collationConnection": {
+      "type": "string"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "event": {
+      "description": "The event that triggers this action, such as INSERT, UPDATE, DELETE, or TRUNCATE.",
+      "type": "string"
+    },
+    "name": {
+      "description": "The name of the trigger.",
+      "type": "string"
+    },
+    "skipDump": {
+      "type": "boolean"
+    },
+    "sqlMode": {
+      "type": "string"
+    },
+    "timing": {
+      "description": "The timing of when the trigger fires, such as BEFORE or AFTER.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "event",
+    "timing",
+    "body",
+    "sqlMode",
+    "characterSetClient",
+    "collationConnection",
+    "comment",
+    "skipDump"
+  ],
+  "title": "Trigger Metadata",
+  "type": "object"
+}

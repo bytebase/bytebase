@@ -1,0 +1,37 @@
+{
+  "$id": "bytebase.store.ChangedResourceSchema.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "functions": {
+      "items": {
+        "$ref": "bytebase.store.ChangedResourceFunction.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "default": "",
+      "type": "string"
+    },
+    "procedures": {
+      "items": {
+        "$ref": "bytebase.store.ChangedResourceProcedure.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "tables": {
+      "items": {
+        "$ref": "bytebase.store.ChangedResourceTable.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "views": {
+      "items": {
+        "$ref": "bytebase.store.ChangedResourceView.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Changed Resource Schema",
+  "type": "object"
+}

@@ -1,0 +1,34 @@
+{
+  "$id": "bytebase.v1.SemanticTypeSetting.SemanticType.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "algorithm": {
+      "$ref": "bytebase.v1.Algorithm.jsonschema.strict.json"
+    },
+    "description": {
+      "description": "the description of the semantic type, it can be empty.",
+      "type": "string"
+    },
+    "icon": {
+      "description": "icon is the icon for semantic type, it can be emoji or base64 encoded image.",
+      "type": "string"
+    },
+    "id": {
+      "description": "id is the uuid for semantic type.",
+      "type": "string"
+    },
+    "title": {
+      "description": "the title of the semantic type, it should not be empty.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "description",
+    "icon"
+  ],
+  "title": "Semantic Type",
+  "type": "object"
+}

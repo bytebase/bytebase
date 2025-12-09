@@ -1,0 +1,73 @@
+{
+  "$id": "bytebase.v1.Database.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "backupAvailable": {
+      "description": "The database is available for DML prior backup.",
+      "type": "boolean"
+    },
+    "drifted": {
+      "description": "The schema is drifted from the source of truth.",
+      "type": "boolean"
+    },
+    "effectiveEnvironment": {
+      "description": "The effective environment based on environment tag above and environment\n tag on the instance. Inheritance follows\n https://cloud.google.com/resource-manager/docs/tags/tags-overview.",
+      "type": "string"
+    },
+    "environment": {
+      "description": "The environment resource.\n Format: environments/prod where prod is the environment resource ID.",
+      "type": "string"
+    },
+    "instanceResource": {
+      "$ref": "bytebase.v1.InstanceResource.jsonschema.strict.json",
+      "description": "The instance resource."
+    },
+    "labels": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Labels will be used for deployment and policy control.",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "name": {
+      "description": "The name of the database.\n Format: instances/{instance}/databases/{database}\n {database} is the database name in the instance.",
+      "type": "string"
+    },
+    "project": {
+      "description": "The project for a database.\n Format: projects/{project}",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "description": "The version of database schema.",
+      "type": "string"
+    },
+    "state": {
+      "description": "The existence of a database.",
+      "enum": [
+        "STATE_UNSPECIFIED",
+        "ACTIVE",
+        "DELETED"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "successfulSyncTime": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json",
+      "description": "The latest synchronization time."
+    }
+  },
+  "required": [
+    "name",
+    "state",
+    "project",
+    "schemaVersion",
+    "backupAvailable",
+    "drifted"
+  ],
+  "title": "Database",
+  "type": "object"
+}

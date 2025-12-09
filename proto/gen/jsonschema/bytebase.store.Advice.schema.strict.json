@@ -1,0 +1,47 @@
+{
+  "$id": "bytebase.store.Advice.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The advice code.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "content": {
+      "description": "The advice content.",
+      "type": "string"
+    },
+    "end_position": {
+      "$ref": "bytebase.store.Position.schema.strict.json"
+    },
+    "start_position": {
+      "$ref": "bytebase.store.Position.schema.strict.json",
+      "description": "The start_position is inclusive and the end_position is exclusive.\n TODO: use range instead."
+    },
+    "status": {
+      "description": "The advice status.",
+      "enum": [
+        "STATUS_UNSPECIFIED",
+        "SUCCESS",
+        "WARNING",
+        "ERROR"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "title": {
+      "description": "The advice title.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "code",
+    "title",
+    "content"
+  ],
+  "title": "Advice",
+  "type": "object"
+}

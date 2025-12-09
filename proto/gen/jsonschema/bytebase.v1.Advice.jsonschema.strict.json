@@ -1,0 +1,58 @@
+{
+  "$id": "bytebase.v1.Advice.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The advice code.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "content": {
+      "description": "The advice content.",
+      "type": "string"
+    },
+    "endPosition": {
+      "$ref": "bytebase.v1.Position.jsonschema.strict.json"
+    },
+    "ruleType": {
+      "description": "The type of linting rule that generated this advice.",
+      "enum": [
+        "RULE_TYPE_UNSPECIFIED",
+        "PARSER_BASED",
+        "AI_POWERED"
+      ],
+      "title": "Rule Type",
+      "type": "string"
+    },
+    "startPosition": {
+      "$ref": "bytebase.v1.Position.jsonschema.strict.json",
+      "description": "The start_position is inclusive and the end_position is exclusive.\n TODO: use range instead"
+    },
+    "status": {
+      "description": "The advice level.",
+      "enum": [
+        "ADVICE_LEVEL_UNSPECIFIED",
+        "SUCCESS",
+        "WARNING",
+        "ERROR"
+      ],
+      "title": "Level",
+      "type": "string"
+    },
+    "title": {
+      "description": "The advice title.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "code",
+    "title",
+    "content",
+    "ruleType"
+  ],
+  "title": "Advice",
+  "type": "object"
+}

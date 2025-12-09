@@ -1,0 +1,34 @@
+{
+  "$id": "bytebase.v1.ListReleasesRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "page_size": {
+      "description": "The maximum number of releases to return. The service may return fewer than this value.\n If unspecified, at most 10 releases will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "page_token": {
+      "description": "When paginating, all other parameters provided to `ListReleases` must match\n the call that provided the page token.",
+      "title": "A page token, received from a previous `ListReleases` call.\n Provide this to retrieve the subsequent page.",
+      "type": "string"
+    },
+    "parent": {
+      "description": "Format: projects/{project}",
+      "type": "string"
+    },
+    "show_deleted": {
+      "description": "Show deleted releases if specified.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "parent",
+    "page_size",
+    "page_token",
+    "show_deleted"
+  ],
+  "title": "List Releases Request",
+  "type": "object"
+}

@@ -1,0 +1,128 @@
+{
+  "$id": "bytebase.v1.Plan.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(createTime)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(planCheckRunStatusCount)$": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "maximum": 2147483647,
+            "minimum": -2147483648,
+            "type": "integer"
+          },
+          {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          }
+        ]
+      },
+      "description": "The status count of the latest plan check runs.\n Keys are:\n - SUCCESS\n - WARNING\n - ERROR\n - RUNNING",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "^(updateTime)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    }
+  },
+  "properties": {
+    "create_time": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "creator": {
+      "default": "",
+      "description": "Format: users/hello@world.com",
+      "type": "string"
+    },
+    "deployment": {
+      "$ref": "bytebase.v1.Plan.Deployment.schema.json"
+    },
+    "description": {
+      "default": "",
+      "description": "The description of the plan.",
+      "maxLength": 10000,
+      "type": "string"
+    },
+    "issue": {
+      "default": "",
+      "description": "The issue associated with the plan.\n Can be empty.\n Format: projects/{project}/issues/{issue}",
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "description": "The name of the plan.\n `plan` is a system generated ID.\n Format: projects/{project}/plans/{plan}",
+      "type": "string"
+    },
+    "plan_check_run_status_count": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "maximum": 2147483647,
+            "minimum": -2147483648,
+            "type": "integer"
+          },
+          {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          }
+        ]
+      },
+      "description": "The status count of the latest plan check runs.\n Keys are:\n - SUCCESS\n - WARNING\n - ERROR\n - RUNNING",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "rollout": {
+      "default": "",
+      "description": "The rollout associated with the plan.\n Can be empty.\n Format: projects/{project}/rollouts/{rollout}",
+      "type": "string"
+    },
+    "specs": {
+      "description": "The deployment specs for the plan.",
+      "items": {
+        "$ref": "bytebase.v1.Plan.Spec.schema.json"
+      },
+      "type": "array"
+    },
+    "state": {
+      "anyOf": [
+        {
+          "pattern": "^STATE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "ACTIVE",
+            "DELETED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The state of the plan.",
+      "title": "State"
+    },
+    "title": {
+      "default": "",
+      "description": "The title of the plan.",
+      "maxLength": 200,
+      "type": "string"
+    },
+    "update_time": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    }
+  },
+  "title": "Plan",
+  "type": "object"
+}

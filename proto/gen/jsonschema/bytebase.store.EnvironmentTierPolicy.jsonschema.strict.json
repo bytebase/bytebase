@@ -1,0 +1,26 @@
+{
+  "$id": "bytebase.store.EnvironmentTierPolicy.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "EnvironmentTierPolicy is the tier of an environment.",
+  "properties": {
+    "color": {
+      "type": "string"
+    },
+    "environmentTier": {
+      "enum": [
+        "ENVIRONMENT_TIER_UNSPECIFIED",
+        "PROTECTED",
+        "UNPROTECTED"
+      ],
+      "title": "Environment Tier",
+      "type": "string"
+    }
+  },
+  "required": [
+    "environmentTier",
+    "color"
+  ],
+  "title": "Environment Tier Policy",
+  "type": "object"
+}

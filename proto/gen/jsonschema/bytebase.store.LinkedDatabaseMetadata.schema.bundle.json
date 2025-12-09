@@ -1,0 +1,27 @@
+{
+  "$defs": {
+    "bytebase.store.LinkedDatabaseMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "default": "",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "username": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Linked Database Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.LinkedDatabaseMetadata.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.LinkedDatabaseMetadata.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

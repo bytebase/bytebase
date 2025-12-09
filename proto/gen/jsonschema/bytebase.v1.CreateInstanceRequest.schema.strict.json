@@ -1,0 +1,26 @@
+{
+  "$id": "bytebase.v1.CreateInstanceRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "instance": {
+      "$ref": "bytebase.v1.Instance.schema.strict.json",
+      "description": "The instance to create."
+    },
+    "instance_id": {
+      "description": "This value should be 4-63 characters, and valid characters\n are /[a-z][0-9]-/.",
+      "title": "The ID to use for the instance, which will become the final component of\n the instance's resource name.",
+      "type": "string"
+    },
+    "validate_only": {
+      "description": "Validate only also tests the data source connection.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "instance_id",
+    "validate_only"
+  ],
+  "title": "Create Instance Request",
+  "type": "object"
+}

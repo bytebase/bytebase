@@ -1,0 +1,333 @@
+{
+  "$defs": {
+    "bytebase.v1.FieldMapping.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "FieldMapping saves the field names from user info API of identity provider.\n As we save all raw json string of user info response data into `principal.idp_user_info`,\n we can extract the relevant data based with `FieldMapping`.",
+      "properties": {
+        "displayName": {
+          "description": "DisplayName is the field name of display name in 3rd-party idp user info. Optional.",
+          "type": "string"
+        },
+        "groups": {
+          "description": "Groups is the field name of groups in 3rd-party idp user info. Optional.\n Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/",
+          "type": "string"
+        },
+        "identifier": {
+          "description": "Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.",
+          "type": "string"
+        },
+        "phone": {
+          "description": "Phone is the field name of primary phone in 3rd-party idp user info. Optional.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "identifier",
+        "displayName",
+        "phone",
+        "groups"
+      ],
+      "title": "Field Mapping",
+      "type": "object"
+    },
+    "bytebase.v1.IdentityProvider.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "config": {
+          "$ref": "#/$defs/bytebase.v1.IdentityProviderConfig.jsonschema.strict.json",
+          "description": "The configuration details for the identity provider."
+        },
+        "domain": {
+          "description": "The domain for email matching when using this identity provider.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the identity provider.\n Format: idps/{idp}",
+          "type": "string"
+        },
+        "title": {
+          "description": "The display title of the identity provider.",
+          "maxLength": 200,
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of identity provider protocol.",
+          "enum": [
+            "IDENTITY_PROVIDER_TYPE_UNSPECIFIED",
+            "OAUTH2",
+            "OIDC",
+            "LDAP"
+          ],
+          "title": "Identity Provider Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "domain",
+        "type"
+      ],
+      "title": "Identity Provider",
+      "type": "object"
+    },
+    "bytebase.v1.IdentityProviderConfig.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "ldapConfig": {
+          "$ref": "#/$defs/bytebase.v1.LDAPIdentityProviderConfig.jsonschema.strict.json",
+          "description": "LDAP protocol configuration."
+        },
+        "oauth2Config": {
+          "$ref": "#/$defs/bytebase.v1.OAuth2IdentityProviderConfig.jsonschema.strict.json",
+          "description": "OAuth2 protocol configuration."
+        },
+        "oidcConfig": {
+          "$ref": "#/$defs/bytebase.v1.OIDCIdentityProviderConfig.jsonschema.strict.json",
+          "description": "OIDC protocol configuration."
+        }
+      },
+      "title": "Identity Provider Config",
+      "type": "object"
+    },
+    "bytebase.v1.LDAPIdentityProviderConfig.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "LDAPIdentityProviderConfig is the structure for LDAP identity provider config.",
+      "properties": {
+        "baseDn": {
+          "description": "BaseDN is the base DN to search for users, e.g., \"ou=users,dc=example,dc=com\".",
+          "type": "string"
+        },
+        "bindDn": {
+          "description": "BindDN is the DN of the user to bind as a service account to perform\n search requests.",
+          "type": "string"
+        },
+        "bindPassword": {
+          "description": "BindPassword is the password of the user to bind as a service account.",
+          "type": "string"
+        },
+        "fieldMapping": {
+          "$ref": "#/$defs/bytebase.v1.FieldMapping.jsonschema.strict.json",
+          "description": "FieldMapping is the mapping of the user attributes returned by the LDAP\n server."
+        },
+        "host": {
+          "description": "Host is the hostname or IP address of the LDAP server, e.g.,\n \"ldap.example.com\".",
+          "type": "string"
+        },
+        "port": {
+          "description": "Port is the port number of the LDAP server, e.g., 389. When not set, the\n default port of the corresponding security protocol will be used, i.e. 389\n for StartTLS and 636 for LDAPS.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "securityProtocol": {
+          "description": "SecurityProtocol is the security protocol to be used for establishing\n connections with the LDAP server.",
+          "enum": [
+            "SECURITY_PROTOCOL_UNSPECIFIED",
+            "START_TLS",
+            "LDAPS"
+          ],
+          "title": "Security Protocol",
+          "type": "string"
+        },
+        "skipTlsVerify": {
+          "description": "SkipTLSVerify controls whether to skip TLS certificate verification.",
+          "type": "boolean"
+        },
+        "userFilter": {
+          "description": "UserFilter is the filter to search for users, e.g., \"(uid=%s)\".",
+          "type": "string"
+        }
+      },
+      "required": [
+        "host",
+        "port",
+        "skipTlsVerify",
+        "bindDn",
+        "bindPassword",
+        "baseDn",
+        "userFilter",
+        "securityProtocol"
+      ],
+      "title": "LDAP Identity Provider Config",
+      "type": "object"
+    },
+    "bytebase.v1.OAuth2IdentityProviderConfig.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.",
+      "properties": {
+        "authStyle": {
+          "description": "The authentication style for client credentials.",
+          "enum": [
+            "OAUTH2_AUTH_STYLE_UNSPECIFIED",
+            "IN_PARAMS",
+            "IN_HEADER"
+          ],
+          "title": "O Auth2 Auth Style",
+          "type": "string"
+        },
+        "authUrl": {
+          "description": "The authorization endpoint URL for OAuth2 flow.",
+          "type": "string"
+        },
+        "clientId": {
+          "description": "The OAuth2 client identifier.",
+          "type": "string"
+        },
+        "clientSecret": {
+          "description": "The OAuth2 client secret for authentication.",
+          "type": "string"
+        },
+        "fieldMapping": {
+          "$ref": "#/$defs/bytebase.v1.FieldMapping.jsonschema.strict.json",
+          "description": "Mapping configuration for user attributes from OAuth2 response."
+        },
+        "scopes": {
+          "description": "The list of OAuth2 scopes to request.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "skipTlsVerify": {
+          "description": "Whether to skip TLS certificate verification.",
+          "type": "boolean"
+        },
+        "tokenUrl": {
+          "description": "The token endpoint URL for exchanging authorization code.",
+          "type": "string"
+        },
+        "userInfoUrl": {
+          "description": "The user information endpoint URL.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "authUrl",
+        "tokenUrl",
+        "userInfoUrl",
+        "clientId",
+        "clientSecret",
+        "skipTlsVerify",
+        "authStyle"
+      ],
+      "title": "O Auth2 Identity Provider Config",
+      "type": "object"
+    },
+    "bytebase.v1.OAuth2IdentityProviderTestRequestContext.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "Authorize code from website.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "O Auth2 Identity Provider Test Request Context",
+      "type": "object"
+    },
+    "bytebase.v1.OIDCIdentityProviderConfig.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "OIDCIdentityProviderConfig is the structure for OIDC identity provider config.",
+      "properties": {
+        "authEndpoint": {
+          "description": "The authorization endpoint of the OIDC provider.\n Should be fetched from the well-known configuration file of the OIDC provider.",
+          "type": "string"
+        },
+        "authStyle": {
+          "description": "The authentication style for client credentials.",
+          "enum": [
+            "OAUTH2_AUTH_STYLE_UNSPECIFIED",
+            "IN_PARAMS",
+            "IN_HEADER"
+          ],
+          "title": "O Auth2 Auth Style",
+          "type": "string"
+        },
+        "clientId": {
+          "description": "The OIDC client identifier.",
+          "type": "string"
+        },
+        "clientSecret": {
+          "description": "The OIDC client secret for authentication.",
+          "type": "string"
+        },
+        "fieldMapping": {
+          "$ref": "#/$defs/bytebase.v1.FieldMapping.jsonschema.strict.json",
+          "description": "Mapping configuration for user attributes from OIDC claims."
+        },
+        "issuer": {
+          "description": "The OIDC issuer URL for the identity provider.",
+          "type": "string"
+        },
+        "scopes": {
+          "description": "The scopes that the OIDC provider supports.\n Should be fetched from the well-known configuration file of the OIDC provider.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "skipTlsVerify": {
+          "description": "Whether to skip TLS certificate verification.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "issuer",
+        "clientId",
+        "clientSecret",
+        "skipTlsVerify",
+        "authStyle",
+        "authEndpoint"
+      ],
+      "title": "OIDC Identity Provider Config",
+      "type": "object"
+    },
+    "bytebase.v1.OIDCIdentityProviderTestRequestContext.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "Authorize code from OIDC provider.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "title": "OIDC Identity Provider Test Request Context",
+      "type": "object"
+    },
+    "bytebase.v1.TestIdentityProviderRequest.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "identityProvider": {
+          "$ref": "#/$defs/bytebase.v1.IdentityProvider.jsonschema.strict.json",
+          "description": "The identity provider to test connection including uncreated."
+        },
+        "oauth2Context": {
+          "$ref": "#/$defs/bytebase.v1.OAuth2IdentityProviderTestRequestContext.jsonschema.strict.json"
+        },
+        "oidcContext": {
+          "$ref": "#/$defs/bytebase.v1.OIDCIdentityProviderTestRequestContext.jsonschema.strict.json",
+          "description": "OIDC authentication context for test connection."
+        }
+      },
+      "title": "Test Identity Provider Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.TestIdentityProviderRequest.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.TestIdentityProviderRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

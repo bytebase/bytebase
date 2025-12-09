@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.Algorithm.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "full_mask": {
+      "$ref": "bytebase.v1.Algorithm.FullMask.schema.strict.json"
+    },
+    "inner_outer_mask": {
+      "$ref": "bytebase.v1.Algorithm.InnerOuterMask.schema.strict.json"
+    },
+    "md5_mask": {
+      "$ref": "bytebase.v1.Algorithm.MD5Mask.schema.strict.json"
+    },
+    "range_mask": {
+      "$ref": "bytebase.v1.Algorithm.RangeMask.schema.strict.json"
+    }
+  },
+  "title": "Algorithm",
+  "type": "object"
+}

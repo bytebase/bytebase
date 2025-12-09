@@ -1,0 +1,33 @@
+{
+  "$id": "bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Task run status update details.",
+  "properties": {
+    "status": {
+      "anyOf": [
+        {
+          "pattern": "^STATUS_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "RUNNING_WAITING",
+            "RUNNING_RUNNING"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The new status.",
+      "title": "Status"
+    }
+  },
+  "title": "Task Run Status Update",
+  "type": "object"
+}

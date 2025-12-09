@@ -1,0 +1,21 @@
+{
+  "$defs": {
+    "bytebase.v1.OIDCIdentityProviderContext.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "OpenID Connect authentication context.",
+      "properties": {
+        "code": {
+          "default": "",
+          "description": "Authorization code from OIDC provider.",
+          "type": "string"
+        }
+      },
+      "title": "OIDC Identity Provider Context",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.OIDCIdentityProviderContext.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.OIDCIdentityProviderContext.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

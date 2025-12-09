@@ -1,0 +1,23 @@
+{
+  "$id": "bytebase.v1.AppIMSetting.DingTalk.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "clientId": {
+      "type": "string"
+    },
+    "clientSecret": {
+      "type": "string"
+    },
+    "robotCode": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "clientId",
+    "clientSecret",
+    "robotCode"
+  ],
+  "title": "Ding Talk",
+  "type": "object"
+}

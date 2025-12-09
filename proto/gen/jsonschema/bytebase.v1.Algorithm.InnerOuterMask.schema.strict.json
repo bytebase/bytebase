@@ -1,0 +1,37 @@
+{
+  "$id": "bytebase.v1.Algorithm.InnerOuterMask.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "prefix_len": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "substitution": {
+      "type": "string"
+    },
+    "suffix_len": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "type": {
+      "enum": [
+        "MASK_TYPE_UNSPECIFIED",
+        "INNER",
+        "OUTER"
+      ],
+      "title": "Mask Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "prefix_len",
+    "suffix_len",
+    "type",
+    "substitution"
+  ],
+  "title": "Inner Outer Mask",
+  "type": "object"
+}

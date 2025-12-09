@@ -1,0 +1,104 @@
+{
+  "$defs": {
+    "bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(level_id)$": {
+          "type": "string"
+        }
+      },
+      "properties": {
+        "description": {
+          "default": "",
+          "type": "string"
+        },
+        "id": {
+          "default": "",
+          "description": "id is the classification id in [0-9]+-[0-9]+-[0-9]+ format.",
+          "type": "string"
+        },
+        "levelId": {
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Data Classification",
+      "type": "object"
+    },
+    "bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "default": "",
+          "type": "string"
+        },
+        "id": {
+          "default": "",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Level",
+      "type": "object"
+    },
+    "bytebase.v1.DataClassificationSetting.DataClassificationConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "additionalProperties": {
+            "$ref": "#/$defs/bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification.jsonschema.json"
+          },
+          "description": "classification is the id - DataClassification map.\n The id should in [0-9]+-[0-9]+-[0-9]+ format.",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "id": {
+          "default": "",
+          "description": "id is the uuid for classification. Each project can chose one classification config.",
+          "type": "string"
+        },
+        "levels": {
+          "description": "levels is user defined level list for classification.\n The order for the level decides its priority.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "title": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Data Classification Config",
+      "type": "object"
+    },
+    "bytebase.v1.DataClassificationSetting.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "configs": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DataClassificationSetting.DataClassificationConfig.jsonschema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Data Classification Setting",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.DataClassificationSetting.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.DataClassificationSetting.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,23 @@
+{
+  "$id": "bytebase.store.AppIMSetting.Wecom.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agentId": {
+      "type": "string"
+    },
+    "corpId": {
+      "type": "string"
+    },
+    "secret": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "corpId",
+    "agentId",
+    "secret"
+  ],
+  "title": "Wecom",
+  "type": "object"
+}

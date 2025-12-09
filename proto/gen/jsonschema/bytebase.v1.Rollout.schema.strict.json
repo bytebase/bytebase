@@ -1,0 +1,49 @@
+{
+  "$id": "bytebase.v1.Rollout.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "create_time": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json"
+    },
+    "creator": {
+      "description": "Format: users/hello@world.com",
+      "type": "string"
+    },
+    "issue": {
+      "description": "The issue associated with the rollout. Could be empty.\n Format: projects/{project}/issues/{issue}",
+      "type": "string"
+    },
+    "name": {
+      "description": "The resource name of the rollout.\n Format: projects/{project}/rollouts/{rollout}",
+      "type": "string"
+    },
+    "plan": {
+      "description": "The plan that this rollout is based on.\n Format: projects/{project}/plans/{plan}",
+      "type": "string"
+    },
+    "stages": {
+      "description": "Stages and thus tasks of the rollout.",
+      "items": {
+        "$ref": "bytebase.v1.Stage.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "title": {
+      "description": "The title of the rollout, inherited from the associated plan.\n This field is output only and cannot be directly set.",
+      "type": "string"
+    },
+    "update_time": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json"
+    }
+  },
+  "required": [
+    "name",
+    "plan",
+    "title",
+    "creator",
+    "issue"
+  ],
+  "title": "Rollout",
+  "type": "object"
+}

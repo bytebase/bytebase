@@ -1,0 +1,22 @@
+{
+  "$defs": {
+    "bytebase.v1.ApprovalFlow.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "roles": {
+          "description": "The roles required for approval in order.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Approval Flow",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.ApprovalFlow.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ApprovalFlow.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

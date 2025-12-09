@@ -1,0 +1,98 @@
+{
+  "$id": "bytebase.v1.ActuatorInfo.StatUser.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "User statistics by type and state.",
+  "patternProperties": {
+    "^(userType)$": {
+      "anyOf": [
+        {
+          "pattern": "^USER_TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "USER",
+            "SYSTEM_BOT",
+            "SERVICE_ACCOUNT"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The type of user.",
+      "title": "User Type"
+    }
+  },
+  "properties": {
+    "count": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The count of users matching this type and state."
+    },
+    "state": {
+      "anyOf": [
+        {
+          "pattern": "^STATE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "ACTIVE",
+            "DELETED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The state of the user.",
+      "title": "State"
+    },
+    "user_type": {
+      "anyOf": [
+        {
+          "pattern": "^USER_TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "USER",
+            "SYSTEM_BOT",
+            "SERVICE_ACCOUNT"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The type of user.",
+      "title": "User Type"
+    }
+  },
+  "title": "Stat User",
+  "type": "object"
+}

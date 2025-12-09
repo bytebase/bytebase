@@ -1,0 +1,20 @@
+{
+  "$id": "bytebase.store.DatabaseConfig.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "default": "",
+      "type": "string"
+    },
+    "schemas": {
+      "description": "The schema_configs is the list of configs for schemas in a database.",
+      "items": {
+        "$ref": "bytebase.store.SchemaCatalog.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Database Config",
+  "type": "object"
+}

@@ -1,0 +1,74 @@
+{
+  "$defs": {
+    "bytebase.v1.BindingDelta.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A single change to a binding.",
+      "properties": {
+        "action": {
+          "description": "The action that was performed on a Binding.",
+          "enum": [
+            "ACTION_UNSPECIFIED",
+            "ADD",
+            "REMOVE"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "condition": {
+          "$ref": "#/$defs/google.type.Expr.jsonschema.strict.json",
+          "description": "The condition that is associated with this binding."
+        },
+        "member": {
+          "description": "Follows the same format of Binding.members.",
+          "type": "string"
+        },
+        "role": {
+          "description": "Role that is assigned to `members`.\n For example, `roles/projectOwner`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "role",
+        "member"
+      ],
+      "title": "Binding Delta",
+      "type": "object"
+    },
+    "google.type.Expr.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Example (Comparison):\n\n     title: \"Summary size limit\"\n     description: \"Determines if a summary is less than 100 chars\"\n     expression: \"document.summary.size() \u003c 100\"\n\n Example (Equality):\n\n     title: \"Requestor is owner\"\n     description: \"Determines if requestor is the document owner\"\n     expression: \"document.owner == request.auth.claims.email\"\n\n Example (Logic):\n\n     title: \"Public documents\"\n     description: \"Determine whether the document should be publicly visible\"\n     expression: \"document.type != 'private' \u0026\u0026 document.type != 'internal'\"\n\n Example (Data Manipulation):\n\n     title: \"Notification string\"\n     description: \"Create a notification string with a timestamp.\"\n     expression: \"'New message received at ' + string(document.create_time)\"\n\n The exact variables and functions that may be referenced within an expression\n are determined by the service that evaluates it. See the service\n documentation for additional information.",
+      "properties": {
+        "description": {
+          "description": "Optional. Description of the expression. This is a longer text which\n describes the expression, e.g. when hovered over it in a UI.",
+          "type": "string"
+        },
+        "expression": {
+          "description": "Textual representation of an expression in Common Expression Language\n syntax.",
+          "type": "string"
+        },
+        "location": {
+          "description": "Optional. String indicating the location of the expression for error\n reporting, e.g. a file name and a position in the file.",
+          "type": "string"
+        },
+        "title": {
+          "description": "Optional. Title for the expression, i.e. a short string describing\n its purpose. This can be used e.g. in UIs which allow to enter the\n expression.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expression",
+        "title",
+        "description",
+        "location"
+      ],
+      "title": "Represents a textual expression in the Common Expression Language (CEL)\n syntax. CEL is a C-like expression language. The syntax and semantics of CEL\n are documented at https://github.com/google/cel-spec.",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.BindingDelta.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.BindingDelta.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

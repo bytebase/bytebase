@@ -1,0 +1,23 @@
+{
+  "$id": "bytebase.store.LinkedDatabaseMetadata.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "host": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "username",
+    "host"
+  ],
+  "title": "Linked Database Metadata",
+  "type": "object"
+}

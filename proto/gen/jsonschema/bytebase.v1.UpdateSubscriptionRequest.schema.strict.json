@@ -1,0 +1,20 @@
+{
+  "$id": "bytebase.v1.UpdateSubscriptionRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allow_missing": {
+      "description": "If set to true, and the subscription is not found, a new subscription will be created.\n In this situation, `update_mask` is ignored.",
+      "type": "boolean"
+    },
+    "license": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "license",
+    "allow_missing"
+  ],
+  "title": "Update Subscription Request",
+  "type": "object"
+}

@@ -1,0 +1,39 @@
+{
+  "$id": "bytebase.v1.UpdateUserRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allow_missing": {
+      "description": "If set to true, and the user is not found, a new user will be created.\n In this situation, `update_mask` is ignored.",
+      "type": "boolean"
+    },
+    "otp_code": {
+      "description": "The otp_code is used to verify the user's identity by MFA.",
+      "type": "string"
+    },
+    "regenerate_recovery_codes": {
+      "description": "The regenerate_recovery_codes flag means to regenerate recovery codes for user.",
+      "type": "boolean"
+    },
+    "regenerate_temp_mfa_secret": {
+      "description": "The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.\n This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.",
+      "type": "boolean"
+    },
+    "update_mask": {
+      "$ref": "google.protobuf.FieldMask.schema.strict.json",
+      "description": "The list of fields to update."
+    },
+    "user": {
+      "$ref": "bytebase.v1.User.schema.strict.json",
+      "description": "The user's `name` field is used to identify the user to update.\n Format: users/{user}",
+      "title": "The user to update."
+    }
+  },
+  "required": [
+    "regenerate_temp_mfa_secret",
+    "regenerate_recovery_codes",
+    "allow_missing"
+  ],
+  "title": "Update User Request",
+  "type": "object"
+}

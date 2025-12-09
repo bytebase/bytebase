@@ -1,0 +1,18 @@
+{
+  "$id": "bytebase.v1.CreateRevisionRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "default": "",
+      "description": "Format: instances/{instance}/databases/{database}",
+      "type": "string"
+    },
+    "revision": {
+      "$ref": "bytebase.v1.Revision.schema.json",
+      "description": "The revision to create."
+    }
+  },
+  "title": "Create Revision Request",
+  "type": "object"
+}

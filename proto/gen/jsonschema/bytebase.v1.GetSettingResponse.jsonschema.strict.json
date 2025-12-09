@@ -1,0 +1,13 @@
+{
+  "$id": "bytebase.v1.GetSettingResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The response message for getting a setting.",
+  "properties": {
+    "setting": {
+      "$ref": "bytebase.v1.Setting.jsonschema.strict.json"
+    }
+  },
+  "title": "Get Setting Response",
+  "type": "object"
+}

@@ -1,0 +1,27 @@
+{
+  "$id": "bytebase.v1.DependencyColumn.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "DependencyColumn is the metadata for dependency columns.",
+  "properties": {
+    "column": {
+      "description": "The column is the name of a reference column.",
+      "type": "string"
+    },
+    "schema": {
+      "description": "The schema is the schema of a reference column.",
+      "type": "string"
+    },
+    "table": {
+      "description": "The table is the table of a reference column.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "table",
+    "column"
+  ],
+  "title": "Dependency Column",
+  "type": "object"
+}

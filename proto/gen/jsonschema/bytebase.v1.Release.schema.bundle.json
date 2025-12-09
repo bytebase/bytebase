@@ -1,0 +1,261 @@
+{
+  "$defs": {
+    "bytebase.v1.Release.File.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A SQL file in a release.",
+      "patternProperties": {
+        "^(enableGhost)$": {
+          "default": false,
+          "description": "Whether to use gh-ost for online schema migration.",
+          "type": "boolean"
+        },
+        "^(sheetSha256)$": {
+          "default": "",
+          "description": "The SHA256 hash value of the sheet content or the statement.",
+          "type": "string"
+        },
+        "^(statementSize)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The size of the statement in bytes."
+        }
+      },
+      "properties": {
+        "enable_ghost": {
+          "default": false,
+          "description": "Whether to use gh-ost for online schema migration.",
+          "type": "boolean"
+        },
+        "id": {
+          "default": "",
+          "description": "The unique identifier for the file.",
+          "type": "string"
+        },
+        "path": {
+          "default": "",
+          "description": "The path of the file. e.g., `2.2/V0001_create_table.sql`.",
+          "type": "string"
+        },
+        "sheet": {
+          "default": "",
+          "description": "The sheet that holds the content.\n Format: projects/{project}/sheets/{sheet}",
+          "title": "For inputs, we must either use `sheet` or `statement`.\n For outputs, we always use `sheet`. `statement` is the preview of the sheet content.",
+          "type": "string"
+        },
+        "sheet_sha256": {
+          "default": "",
+          "description": "The SHA256 hash value of the sheet content or the statement.",
+          "type": "string"
+        },
+        "statement": {
+          "default": null,
+          "description": "The raw SQL statement content.",
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        },
+        "statement_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The size of the statement in bytes."
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "VERSIONED",
+                "DECLARATIVE"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of the file.",
+          "title": "Type"
+        },
+        "version": {
+          "default": "",
+          "description": "The version identifier for the file.",
+          "type": "string"
+        }
+      },
+      "title": "File",
+      "type": "object"
+    },
+    "bytebase.v1.Release.VCSSource.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Version control system source information.",
+      "patternProperties": {
+        "^(vcsType)$": {
+          "anyOf": [
+            {
+              "pattern": "^VCS_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "GITHUB",
+                "GITLAB",
+                "BITBUCKET",
+                "AZURE_DEVOPS"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of VCS.",
+          "title": "VCS Type"
+        }
+      },
+      "properties": {
+        "url": {
+          "default": "",
+          "description": "The url link to the e.g., GitHub commit or pull request.",
+          "type": "string"
+        },
+        "vcs_type": {
+          "anyOf": [
+            {
+              "pattern": "^VCS_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "GITHUB",
+                "GITLAB",
+                "BITBUCKET",
+                "AZURE_DEVOPS"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of VCS.",
+          "title": "VCS Type"
+        }
+      },
+      "title": "VCS Source",
+      "type": "object"
+    },
+    "bytebase.v1.Release.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(createTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "^(vcsSource)$": {
+          "$ref": "#/$defs/bytebase.v1.Release.VCSSource.schema.json",
+          "description": "The version control source of the release."
+        }
+      },
+      "properties": {
+        "create_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "creator": {
+          "default": "",
+          "description": "Format: users/hello@world.com",
+          "type": "string"
+        },
+        "digest": {
+          "default": "",
+          "description": "The digest of the release.\n The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.\n Whether to provide digest and how to generate it is up to the user.\n If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.",
+          "type": "string"
+        },
+        "files": {
+          "description": "The SQL files included in the release.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Release.File.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "Format: projects/{project}/releases/{release}",
+          "type": "string"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "pattern": "^STATE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "ACTIVE",
+                "DELETED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The lifecycle state of the release.",
+          "title": "State"
+        },
+        "title": {
+          "default": "",
+          "description": "The title of the release.",
+          "maxLength": 200,
+          "type": "string"
+        },
+        "vcs_source": {
+          "$ref": "#/$defs/bytebase.v1.Release.VCSSource.schema.json",
+          "description": "The version control source of the release."
+        }
+      },
+      "title": "Release",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.Release.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.Release.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

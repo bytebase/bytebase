@@ -1,0 +1,32 @@
+{
+  "$id": "bytebase.v1.CreateDatabaseGroupRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Request message for creating a database group.",
+  "properties": {
+    "database_group": {
+      "$ref": "bytebase.v1.DatabaseGroup.schema.strict.json",
+      "description": "The database group to create."
+    },
+    "database_group_id": {
+      "description": "This value should be 4-63 characters, and valid characters\n are /[a-z][0-9]-/.",
+      "title": "The ID to use for the database group, which will become the final component of\n the database group's resource name.",
+      "type": "string"
+    },
+    "parent": {
+      "description": "The parent resource where this database group will be created.\n Format: projects/{project}",
+      "type": "string"
+    },
+    "validate_only": {
+      "description": "If set, validate the create request and preview the full database group response, but do not actually create it.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "parent",
+    "database_group_id",
+    "validate_only"
+  ],
+  "title": "Create Database Group Request",
+  "type": "object"
+}

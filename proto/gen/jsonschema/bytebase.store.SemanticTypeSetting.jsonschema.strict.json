@@ -1,0 +1,15 @@
+{
+  "$id": "bytebase.store.SemanticTypeSetting.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "types": {
+      "items": {
+        "$ref": "bytebase.store.SemanticTypeSetting.SemanticType.jsonschema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Semantic Type Setting",
+  "type": "object"
+}

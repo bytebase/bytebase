@@ -1,0 +1,497 @@
+{
+  "$id": "bytebase.store.DataSource.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(additionalAddresses)$": {
+      "description": "additional_addresses is used for MongoDB replica set.",
+      "items": {
+        "$ref": "bytebase.store.DataSource.Address.schema.json"
+      },
+      "type": "array"
+    },
+    "^(authenticationDatabase)$": {
+      "default": "",
+      "description": "authentication_database is the database name to authenticate against, which stores the user credentials.",
+      "type": "string"
+    },
+    "^(authenticationPrivateKey)$": {
+      "default": "",
+      "description": "PKCS#8 private key in PEM format. If it's empty string, no private key is required.\n Used for authentication when connecting to the data source.",
+      "type": "string"
+    },
+    "^(authenticationPrivateKeyPassphrase)$": {
+      "default": "",
+      "description": "Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.",
+      "type": "string"
+    },
+    "^(authenticationType)$": {
+      "anyOf": [
+        {
+          "pattern": "^AUTHENTICATION_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "PASSWORD",
+            "GOOGLE_CLOUD_SQL_IAM",
+            "AWS_RDS_IAM",
+            "AZURE_IAM"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Authentication Type"
+    },
+    "^(awsCredential)$": {
+      "$ref": "bytebase.store.DataSource.AWSCredential.schema.json"
+    },
+    "^(azureCredential)$": {
+      "$ref": "bytebase.store.DataSource.AzureCredential.schema.json"
+    },
+    "^(directConnection)$": {
+      "default": false,
+      "description": "direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.",
+      "type": "boolean"
+    },
+    "^(externalSecret)$": {
+      "$ref": "bytebase.store.DataSourceExternalSecret.schema.json"
+    },
+    "^(extraConnectionParameters)$": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Extra connection parameters for the database connection.\n For PostgreSQL HA, this can be used to set target_session_attrs=read-write",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "^(gcpCredential)$": {
+      "$ref": "bytebase.store.DataSource.GCPCredential.schema.json"
+    },
+    "^(masterName)$": {
+      "default": "",
+      "description": "master_name is the master name used by connecting redis-master via redis sentinel.",
+      "type": "string"
+    },
+    "^(masterPassword)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(masterUsername)$": {
+      "default": "",
+      "description": "master_username and master_obfuscated_password are master credentials used by redis sentinel mode.",
+      "type": "string"
+    },
+    "^(obfuscatedAuthenticationPrivateKey)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(obfuscatedAuthenticationPrivateKeyPassphrase)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(obfuscatedMasterPassword)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(obfuscatedPassword)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(obfuscatedSshPassword)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(obfuscatedSshPrivateKey)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(obfuscatedSslCa)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(obfuscatedSslCert)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(obfuscatedSslKey)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(redisType)$": {
+      "anyOf": [
+        {
+          "pattern": "^REDIS_TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "STANDALONE",
+            "SENTINEL",
+            "CLUSTER"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Redis Type"
+    },
+    "^(replicaSet)$": {
+      "default": "",
+      "description": "replica_set is used for MongoDB replica set.",
+      "type": "string"
+    },
+    "^(saslConfig)$": {
+      "$ref": "bytebase.store.SASLConfig.schema.json"
+    },
+    "^(serviceName)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(sshHost)$": {
+      "default": "",
+      "description": "SSH related\n The hostname of the SSH server agent.",
+      "type": "string"
+    },
+    "^(sshPassword)$": {
+      "default": "",
+      "description": "The password to login the server. If it's empty string, no password is required.",
+      "type": "string"
+    },
+    "^(sshPort)$": {
+      "default": "",
+      "description": "The port of the SSH server agent. It's 22 typically.",
+      "type": "string"
+    },
+    "^(sshPrivateKey)$": {
+      "default": "",
+      "description": "The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv(\"SSH_AUTH_SOCK\").",
+      "type": "string"
+    },
+    "^(sshUser)$": {
+      "default": "",
+      "description": "The user to login the server.",
+      "type": "string"
+    },
+    "^(sslCa)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(sslCert)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(sslKey)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(useSsl)$": {
+      "default": false,
+      "description": "Use SSL to connect to the data source. By default, we use the system's SSL configuration.",
+      "type": "boolean"
+    },
+    "^(verifyTlsCertificate)$": {
+      "default": false,
+      "description": "verify_tls_certificate enables TLS certificate verification for SSL connections.\n Default is false (no verification) for backward compatibility.\n Set to true for secure connections (recommended for production).\n Only set to false for development or when certificates cannot be properly\n validated (e.g., self-signed certs, VPN environments).",
+      "type": "boolean"
+    },
+    "^(warehouseId)$": {
+      "default": "",
+      "description": "warehouse_id is used by Databricks.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "additional_addresses": {
+      "description": "additional_addresses is used for MongoDB replica set.",
+      "items": {
+        "$ref": "bytebase.store.DataSource.Address.schema.json"
+      },
+      "type": "array"
+    },
+    "authentication_database": {
+      "default": "",
+      "description": "authentication_database is the database name to authenticate against, which stores the user credentials.",
+      "type": "string"
+    },
+    "authentication_private_key": {
+      "default": "",
+      "description": "PKCS#8 private key in PEM format. If it's empty string, no private key is required.\n Used for authentication when connecting to the data source.",
+      "type": "string"
+    },
+    "authentication_private_key_passphrase": {
+      "default": "",
+      "description": "Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.",
+      "type": "string"
+    },
+    "authentication_type": {
+      "anyOf": [
+        {
+          "pattern": "^AUTHENTICATION_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "PASSWORD",
+            "GOOGLE_CLOUD_SQL_IAM",
+            "AWS_RDS_IAM",
+            "AZURE_IAM"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Authentication Type"
+    },
+    "aws_credential": {
+      "$ref": "bytebase.store.DataSource.AWSCredential.schema.json"
+    },
+    "azure_credential": {
+      "$ref": "bytebase.store.DataSource.AzureCredential.schema.json"
+    },
+    "cluster": {
+      "default": "",
+      "description": "Cluster is the cluster name for the data source. Used by CockroachDB.",
+      "type": "string"
+    },
+    "database": {
+      "default": "",
+      "type": "string"
+    },
+    "direct_connection": {
+      "default": false,
+      "description": "direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.",
+      "type": "boolean"
+    },
+    "external_secret": {
+      "$ref": "bytebase.store.DataSourceExternalSecret.schema.json"
+    },
+    "extra_connection_parameters": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Extra connection parameters for the database connection.\n For PostgreSQL HA, this can be used to set target_session_attrs=read-write",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "gcp_credential": {
+      "$ref": "bytebase.store.DataSource.GCPCredential.schema.json"
+    },
+    "host": {
+      "default": "",
+      "type": "string"
+    },
+    "id": {
+      "default": "",
+      "type": "string"
+    },
+    "master_name": {
+      "default": "",
+      "description": "master_name is the master name used by connecting redis-master via redis sentinel.",
+      "type": "string"
+    },
+    "master_password": {
+      "default": "",
+      "type": "string"
+    },
+    "master_username": {
+      "default": "",
+      "description": "master_username and master_obfuscated_password are master credentials used by redis sentinel mode.",
+      "type": "string"
+    },
+    "obfuscated_authentication_private_key": {
+      "default": "",
+      "type": "string"
+    },
+    "obfuscated_authentication_private_key_passphrase": {
+      "default": "",
+      "type": "string"
+    },
+    "obfuscated_master_password": {
+      "default": "",
+      "type": "string"
+    },
+    "obfuscated_password": {
+      "default": "",
+      "type": "string"
+    },
+    "obfuscated_ssh_password": {
+      "default": "",
+      "type": "string"
+    },
+    "obfuscated_ssh_private_key": {
+      "default": "",
+      "type": "string"
+    },
+    "obfuscated_ssl_ca": {
+      "default": "",
+      "type": "string"
+    },
+    "obfuscated_ssl_cert": {
+      "default": "",
+      "type": "string"
+    },
+    "obfuscated_ssl_key": {
+      "default": "",
+      "type": "string"
+    },
+    "password": {
+      "default": "",
+      "type": "string"
+    },
+    "port": {
+      "default": "",
+      "type": "string"
+    },
+    "redis_type": {
+      "anyOf": [
+        {
+          "pattern": "^REDIS_TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "STANDALONE",
+            "SENTINEL",
+            "CLUSTER"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Redis Type"
+    },
+    "region": {
+      "default": "",
+      "description": "Region is the location of the database, used for AWS RDS. For example, us-east-1.",
+      "type": "string"
+    },
+    "replica_set": {
+      "default": "",
+      "description": "replica_set is used for MongoDB replica set.",
+      "type": "string"
+    },
+    "sasl_config": {
+      "$ref": "bytebase.store.SASLConfig.schema.json"
+    },
+    "service_name": {
+      "default": "",
+      "type": "string"
+    },
+    "sid": {
+      "default": "",
+      "description": "sid and service_name are used for Oracle.",
+      "type": "string"
+    },
+    "srv": {
+      "default": false,
+      "description": "srv, authentication_database, and replica_set are used for MongoDB.\n srv is a boolean flag that indicates whether the host is a DNS SRV record.",
+      "type": "boolean"
+    },
+    "ssh_host": {
+      "default": "",
+      "description": "SSH related\n The hostname of the SSH server agent.",
+      "type": "string"
+    },
+    "ssh_password": {
+      "default": "",
+      "description": "The password to login the server. If it's empty string, no password is required.",
+      "type": "string"
+    },
+    "ssh_port": {
+      "default": "",
+      "description": "The port of the SSH server agent. It's 22 typically.",
+      "type": "string"
+    },
+    "ssh_private_key": {
+      "default": "",
+      "description": "The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv(\"SSH_AUTH_SOCK\").",
+      "type": "string"
+    },
+    "ssh_user": {
+      "default": "",
+      "description": "The user to login the server.",
+      "type": "string"
+    },
+    "ssl_ca": {
+      "default": "",
+      "type": "string"
+    },
+    "ssl_cert": {
+      "default": "",
+      "type": "string"
+    },
+    "ssl_key": {
+      "default": "",
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "pattern": "^DATA_SOURCE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "ADMIN",
+            "READ_ONLY"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Data Source Type"
+    },
+    "use_ssl": {
+      "default": false,
+      "description": "Use SSL to connect to the data source. By default, we use the system's SSL configuration.",
+      "type": "boolean"
+    },
+    "username": {
+      "default": "",
+      "type": "string"
+    },
+    "verify_tls_certificate": {
+      "default": false,
+      "description": "verify_tls_certificate enables TLS certificate verification for SSL connections.\n Default is false (no verification) for backward compatibility.\n Set to true for secure connections (recommended for production).\n Only set to false for development or when certificates cannot be properly\n validated (e.g., self-signed certs, VPN environments).",
+      "type": "boolean"
+    },
+    "warehouse_id": {
+      "default": "",
+      "description": "warehouse_id is used by Databricks.",
+      "type": "string"
+    }
+  },
+  "title": "Data Source",
+  "type": "object"
+}

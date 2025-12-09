@@ -1,0 +1,59 @@
+{
+  "$id": "bytebase.store.ViewMetadata.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ViewMetadata is the metadata for views.",
+  "properties": {
+    "columns": {
+      "description": "The ordered list of columns in the view.",
+      "items": {
+        "$ref": "bytebase.store.ColumnMetadata.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "comment": {
+      "description": "The comment is the comment of a view.",
+      "type": "string"
+    },
+    "definition": {
+      "description": "The definition is the definition of a view.",
+      "type": "string"
+    },
+    "dependencyColumns": {
+      "description": "The list of dependency columns of a view.",
+      "items": {
+        "$ref": "bytebase.store.DependencyColumn.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "description": "The name of the view.",
+      "type": "string"
+    },
+    "rules": {
+      "description": "The rules is the list of rules in a view (PostgreSQL specific).",
+      "items": {
+        "$ref": "bytebase.store.RuleMetadata.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "skipDump": {
+      "type": "boolean"
+    },
+    "triggers": {
+      "description": "The list of triggers in the view.",
+      "items": {
+        "$ref": "bytebase.store.TriggerMetadata.jsonschema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "definition",
+    "comment",
+    "skipDump"
+  ],
+  "title": "View Metadata",
+  "type": "object"
+}

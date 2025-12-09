@@ -38,3 +38,5 @@ plugins:
     opt: paths=source_relative,enum_type=string
     types:
       - bytebase.v1
+  - remote: buf.build/bufbuild/protoschema-jsonschema
+    out: gen/jsonschema

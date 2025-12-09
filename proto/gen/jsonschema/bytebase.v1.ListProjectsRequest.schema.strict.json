@@ -1,0 +1,34 @@
+{
+  "$id": "bytebase.v1.ListProjectsRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "filter": {
+      "description": "Filter the project.\n Check filter for SearchProjectsRequest for details.\n Supports filtering by name, resource_id, state, and labels (e.g., labels.environment == \"production\").",
+      "type": "string"
+    },
+    "page_size": {
+      "description": "The maximum number of projects to return. The service may return fewer than\n this value.\n If unspecified, at most 10 projects will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "page_token": {
+      "description": "When paginating, all other parameters provided to `ListProjects` must match\n the call that provided the page token.",
+      "title": "A page token, received from a previous `ListProjects` call.\n Provide this to retrieve the subsequent page.",
+      "type": "string"
+    },
+    "show_deleted": {
+      "description": "Show deleted projects if specified.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "page_size",
+    "page_token",
+    "show_deleted",
+    "filter"
+  ],
+  "title": "List Projects Request",
+  "type": "object"
+}

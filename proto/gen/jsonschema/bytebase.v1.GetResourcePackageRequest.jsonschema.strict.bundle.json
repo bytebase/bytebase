@@ -1,0 +1,15 @@
+{
+  "$defs": {
+    "bytebase.v1.GetResourcePackageRequest.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Request message for getting branding resources.",
+      "properties": {},
+      "title": "Get Resource Package Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GetResourcePackageRequest.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GetResourcePackageRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,14 @@
+{
+  "$id": "bytebase.v1.AuditData.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Additional audit data specific to certain operations.",
+  "properties": {
+    "policyDelta": {
+      "$ref": "bytebase.v1.PolicyDelta.jsonschema.strict.json",
+      "description": "Changes to IAM policies."
+    }
+  },
+  "title": "Audit Data",
+  "type": "object"
+}

@@ -1,0 +1,31 @@
+{
+  "$id": "bytebase.v1.QueryOption.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "mssql_explain_format": {
+      "enum": [
+        "MSSQL_EXPLAIN_FORMAT_UNSPECIFIED",
+        "MSSQL_EXPLAIN_FORMAT_ALL",
+        "MSSQL_EXPLAIN_FORMAT_XML"
+      ],
+      "title": "MSSQL Explain Format",
+      "type": "string"
+    },
+    "redis_run_commands_on": {
+      "enum": [
+        "REDIS_RUN_COMMANDS_ON_UNSPECIFIED",
+        "SINGLE_NODE",
+        "ALL_NODES"
+      ],
+      "title": "Redis Run Commands On",
+      "type": "string"
+    }
+  },
+  "required": [
+    "redis_run_commands_on",
+    "mssql_explain_format"
+  ],
+  "title": "Query Option",
+  "type": "object"
+}

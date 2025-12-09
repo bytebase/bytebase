@@ -1,0 +1,701 @@
+{
+  "$defs": {
+    "bytebase.v1.Position.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Handling unknown positions:\n - If the entire position is unknown, leave this field as nil/undefined\n - If only line is known, set line and leave column as 0 (e.g., line=5, column=0)\n - If only column is known (rare), set column and leave line as 0\n Frontends should check for nil/undefined/zero values and handle them appropriately.",
+      "properties": {
+        "column": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Examples:\n - \"SELECT * FROM t\" - column 8 is '*'\n - \"SELECT 你好 FROM t\" - column 8 is '你' (even though it's at byte offset 7)\n - \"SELECT 😀 FROM t\" - column 8 is '😀' (even though it's 4 bytes in UTF-8)",
+          "title": "Column position in a text (one-based).\n Column is measured in Unicode code points (characters/runes), not bytes or grapheme clusters.\n First character of the line is column 1.\n A value of 0 indicates the column information is unknown."
+        },
+        "line": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Line position in a text (one-based).\n First line of the text is line 1.\n A value of 0 indicates the line information is unknown."
+        }
+      },
+      "title": "Position in a text expressed as one-based line and one-based column.\n We use 1-based numbering to match the majority of industry standards:\n - Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)\n - GitHub Actions uses 1-based (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message)\n - Most text editors display 1-based positions to users\n Note: LSP uses 0-based (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position),\n but we follow the canonical user-facing standards.",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRun.PriorBackupDetail.Item.Table.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Table information.",
+      "properties": {
+        "database": {
+          "default": "",
+          "description": "The database information.\n Format: instances/{instance}/databases/{database}",
+          "type": "string"
+        },
+        "schema": {
+          "default": "",
+          "description": "The schema name.",
+          "type": "string"
+        },
+        "table": {
+          "default": "",
+          "description": "The table name.",
+          "type": "string"
+        }
+      },
+      "title": "Table",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRun.PriorBackupDetail.Item.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A single backup table mapping.",
+      "patternProperties": {
+        "^(endPosition)$": {
+          "$ref": "#/$defs/bytebase.v1.Position.schema.json",
+          "description": "The end position in the SQL statement."
+        },
+        "^(sourceTable)$": {
+          "$ref": "#/$defs/bytebase.v1.TaskRun.PriorBackupDetail.Item.Table.schema.json",
+          "description": "The original table information."
+        },
+        "^(startPosition)$": {
+          "$ref": "#/$defs/bytebase.v1.Position.schema.json",
+          "description": "The start position in the SQL statement."
+        },
+        "^(targetTable)$": {
+          "$ref": "#/$defs/bytebase.v1.TaskRun.PriorBackupDetail.Item.Table.schema.json",
+          "description": "The target backup table information."
+        }
+      },
+      "properties": {
+        "end_position": {
+          "$ref": "#/$defs/bytebase.v1.Position.schema.json",
+          "description": "The end position in the SQL statement."
+        },
+        "source_table": {
+          "$ref": "#/$defs/bytebase.v1.TaskRun.PriorBackupDetail.Item.Table.schema.json",
+          "description": "The original table information."
+        },
+        "start_position": {
+          "$ref": "#/$defs/bytebase.v1.Position.schema.json",
+          "description": "The start position in the SQL statement."
+        },
+        "target_table": {
+          "$ref": "#/$defs/bytebase.v1.TaskRun.PriorBackupDetail.Item.Table.schema.json",
+          "description": "The target backup table information."
+        }
+      },
+      "title": "Item",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRun.PriorBackupDetail.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Prior backup detail for rollback purposes.",
+      "properties": {
+        "items": {
+          "description": "The list of backed up tables.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TaskRun.PriorBackupDetail.Item.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Prior Backup Detail",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunLog.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "entries": {
+          "description": "The log entries for this task run.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log",
+          "type": "string"
+        }
+      },
+      "title": "Task Run Log",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Command execution response.",
+      "patternProperties": {
+        "^(affectedRows)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Total affected rows."
+        },
+        "^(allAffectedRows)$": {
+          "description": "`all_affected_rows` is the affected rows of each command.\n `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "^(logTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the response was logged."
+        }
+      },
+      "properties": {
+        "affected_rows": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Total affected rows."
+        },
+        "all_affected_rows": {
+          "description": "`all_affected_rows` is the affected rows of each command.\n `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "error": {
+          "default": "",
+          "description": "Error message if command execution failed.",
+          "type": "string"
+        },
+        "log_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the response was logged."
+        }
+      },
+      "title": "Command Response",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunLogEntry.CommandExecute.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Command execution details.",
+      "patternProperties": {
+        "^(commandIndexes)$": {
+          "description": "Either `command_indexes` or `statement` is set.\n The indexes of the executed commands.",
+          "items": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "^(logTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the command was logged."
+        }
+      },
+      "properties": {
+        "command_indexes": {
+          "description": "Either `command_indexes` or `statement` is set.\n The indexes of the executed commands.",
+          "items": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "log_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the command was logged."
+        },
+        "response": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse.schema.json",
+          "description": "The response from executing the command."
+        },
+        "statement": {
+          "default": "",
+          "description": "The executed statement.",
+          "type": "string"
+        }
+      },
+      "title": "Command Execute",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunLogEntry.ComputeDiff.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Schema diff computation details.",
+      "patternProperties": {
+        "^(endTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When diff computation ended."
+        },
+        "^(startTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When diff computation started."
+        }
+      },
+      "properties": {
+        "end_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When diff computation ended."
+        },
+        "error": {
+          "default": "",
+          "description": "Error message if computation failed.",
+          "type": "string"
+        },
+        "start_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When diff computation started."
+        }
+      },
+      "title": "Compute Diff",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunLogEntry.DatabaseSync.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Database synchronization details.",
+      "patternProperties": {
+        "^(endTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the database sync ended."
+        },
+        "^(startTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the database sync started."
+        }
+      },
+      "properties": {
+        "end_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the database sync ended."
+        },
+        "error": {
+          "default": "",
+          "description": "Error message if sync failed.",
+          "type": "string"
+        },
+        "start_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the database sync started."
+        }
+      },
+      "title": "Database Sync",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunLogEntry.PriorBackup.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Prior backup operation details.",
+      "patternProperties": {
+        "^(endTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the backup ended."
+        },
+        "^(priorBackupDetail)$": {
+          "$ref": "#/$defs/bytebase.v1.TaskRun.PriorBackupDetail.schema.json",
+          "description": "The backup details."
+        },
+        "^(startTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the backup started."
+        }
+      },
+      "properties": {
+        "end_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the backup ended."
+        },
+        "error": {
+          "default": "",
+          "description": "Error message if the backup failed.",
+          "type": "string"
+        },
+        "prior_backup_detail": {
+          "$ref": "#/$defs/bytebase.v1.TaskRun.PriorBackupDetail.schema.json",
+          "description": "The backup details."
+        },
+        "start_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the backup started."
+        }
+      },
+      "title": "Prior Backup",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunLogEntry.RetryInfo.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Retry information for failed operations.",
+      "patternProperties": {
+        "^(maximumRetries)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Maximum number of retries allowed."
+        },
+        "^(retryCount)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Current retry attempt number."
+        }
+      },
+      "properties": {
+        "error": {
+          "default": "",
+          "description": "The error that triggered the retry.",
+          "type": "string"
+        },
+        "maximum_retries": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Maximum number of retries allowed."
+        },
+        "retry_count": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Current retry attempt number."
+        }
+      },
+      "title": "Retry Info",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunLogEntry.SchemaDump.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Schema dump operation details.",
+      "patternProperties": {
+        "^(endTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the schema dump ended."
+        },
+        "^(startTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the schema dump started."
+        }
+      },
+      "properties": {
+        "end_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the schema dump ended."
+        },
+        "error": {
+          "default": "",
+          "description": "Error message if the schema dump failed.",
+          "type": "string"
+        },
+        "start_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "When the schema dump started."
+        }
+      },
+      "title": "Schema Dump",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Task run status update details.",
+      "properties": {
+        "status": {
+          "anyOf": [
+            {
+              "pattern": "^STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "RUNNING_WAITING",
+                "RUNNING_RUNNING"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The new status.",
+          "title": "Status"
+        }
+      },
+      "title": "Task Run Status Update",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunLogEntry.TransactionControl.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Transaction control operation details.",
+      "properties": {
+        "error": {
+          "default": "",
+          "description": "Error message if the operation failed.",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "BEGIN",
+                "COMMIT",
+                "ROLLBACK"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of transaction control.",
+          "title": "Type"
+        }
+      },
+      "title": "Transaction Control",
+      "type": "object"
+    },
+    "bytebase.v1.TaskRunLogEntry.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(commandExecute)$": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.CommandExecute.schema.json",
+          "description": "Command execution details (if type is COMMAND_EXECUTE)."
+        },
+        "^(computeDiff)$": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.ComputeDiff.schema.json",
+          "description": "Compute diff details (if type is COMPUTE_DIFF)."
+        },
+        "^(databaseSync)$": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.DatabaseSync.schema.json",
+          "description": "Database sync details (if type is DATABASE_SYNC)."
+        },
+        "^(deployId)$": {
+          "default": "",
+          "description": "The deployment ID for this log entry.",
+          "type": "string"
+        },
+        "^(logTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The time when the log was recorded."
+        },
+        "^(priorBackup)$": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.PriorBackup.schema.json",
+          "description": "Prior backup details (if type is PRIOR_BACKUP)."
+        },
+        "^(retryInfo)$": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.RetryInfo.schema.json",
+          "description": "Retry information details (if type is RETRY_INFO)."
+        },
+        "^(schemaDump)$": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.SchemaDump.schema.json",
+          "description": "Schema dump details (if type is SCHEMA_DUMP)."
+        },
+        "^(taskRunStatusUpdate)$": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.schema.json",
+          "description": "Task run status update details (if type is TASK_RUN_STATUS_UPDATE)."
+        },
+        "^(transactionControl)$": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.TransactionControl.schema.json",
+          "description": "Transaction control details (if type is TRANSACTION_CONTROL)."
+        }
+      },
+      "properties": {
+        "command_execute": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.CommandExecute.schema.json",
+          "description": "Command execution details (if type is COMMAND_EXECUTE)."
+        },
+        "compute_diff": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.ComputeDiff.schema.json",
+          "description": "Compute diff details (if type is COMPUTE_DIFF)."
+        },
+        "database_sync": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.DatabaseSync.schema.json",
+          "description": "Database sync details (if type is DATABASE_SYNC)."
+        },
+        "deploy_id": {
+          "default": "",
+          "description": "The deployment ID for this log entry.",
+          "type": "string"
+        },
+        "log_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The time when the log was recorded."
+        },
+        "prior_backup": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.PriorBackup.schema.json",
+          "description": "Prior backup details (if type is PRIOR_BACKUP)."
+        },
+        "retry_info": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.RetryInfo.schema.json",
+          "description": "Retry information details (if type is RETRY_INFO)."
+        },
+        "schema_dump": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.SchemaDump.schema.json",
+          "description": "Schema dump details (if type is SCHEMA_DUMP)."
+        },
+        "task_run_status_update": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate.schema.json",
+          "description": "Task run status update details (if type is TASK_RUN_STATUS_UPDATE)."
+        },
+        "transaction_control": {
+          "$ref": "#/$defs/bytebase.v1.TaskRunLogEntry.TransactionControl.schema.json",
+          "description": "Transaction control details (if type is TRANSACTION_CONTROL)."
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "SCHEMA_DUMP",
+                "COMMAND_EXECUTE",
+                "DATABASE_SYNC",
+                "TASK_RUN_STATUS_UPDATE",
+                "TRANSACTION_CONTROL",
+                "PRIOR_BACKUP",
+                "RETRY_INFO",
+                "COMPUTE_DIFF"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of this log entry.",
+          "title": "Type"
+        }
+      },
+      "title": "Task Run Log Entry",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.TaskRunLog.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.TaskRunLog.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

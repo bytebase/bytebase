@@ -1,0 +1,88 @@
+{
+  "$defs": {
+    "bytebase.v1.QueryHistory.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "createTime": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        },
+        "creator": {
+          "type": "string"
+        },
+        "database": {
+          "description": "The database name to execute the query.\n Format: instances/{instance}/databases/{databaseName}",
+          "type": "string"
+        },
+        "duration": {
+          "$ref": "#/$defs/google.protobuf.Duration.jsonschema.strict.json"
+        },
+        "error": {
+          "type": "string"
+        },
+        "name": {
+          "description": "The name for the query history.\n Format: queryHistories/{uid}",
+          "type": "string"
+        },
+        "statement": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "QUERY",
+            "EXPORT"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "database",
+        "creator",
+        "statement",
+        "type"
+      ],
+      "title": "Query History",
+      "type": "object"
+    },
+    "bytebase.v1.SearchQueryHistoriesResponse.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "nextPageToken": {
+          "description": "A token to retrieve next page of history.\n Pass this value in the page_token field in the subsequent call to\n `ListQueryHistory` method to retrieve the next page of history.",
+          "type": "string"
+        },
+        "queryHistories": {
+          "description": "The list of history.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.QueryHistory.jsonschema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "nextPageToken"
+      ],
+      "title": "Search Query Histories Response",
+      "type": "object"
+    },
+    "google.protobuf.Duration.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "duration",
+      "title": "Duration",
+      "type": "string"
+    },
+    "google.protobuf.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.SearchQueryHistoriesResponse.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.SearchQueryHistoriesResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

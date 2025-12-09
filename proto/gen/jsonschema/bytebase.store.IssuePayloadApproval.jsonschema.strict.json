@@ -1,0 +1,33 @@
+{
+  "$id": "bytebase.store.IssuePayloadApproval.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "IssuePayloadApproval records the approval template used and approval history for an issue.",
+  "properties": {
+    "approvalFindingDone": {
+      "description": "Whether the system has finished finding a matching approval template.\n False means the backend is still searching for matching templates.",
+      "type": "boolean"
+    },
+    "approvalFindingError": {
+      "description": "Error message if approval template finding failed.",
+      "type": "string"
+    },
+    "approvalTemplate": {
+      "$ref": "bytebase.store.ApprovalTemplate.jsonschema.strict.json",
+      "description": "The approval template being used for this issue."
+    },
+    "approvers": {
+      "description": "List of approvers and their current status.",
+      "items": {
+        "$ref": "bytebase.store.IssuePayloadApproval.Approver.jsonschema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "approvalFindingDone",
+    "approvalFindingError"
+  ],
+  "title": "Issue Payload Approval",
+  "type": "object"
+}

@@ -1,0 +1,129 @@
+{
+  "$defs": {
+    "bytebase.v1.DatabaseGroup.Database.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A database within a database group.",
+      "properties": {
+        "name": {
+          "description": "The resource name of the database.\n Format: instances/{instance}/databases/{database}",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Database",
+      "type": "object"
+    },
+    "bytebase.v1.DatabaseGroup.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A group of databases matched by expressions.",
+      "properties": {
+        "database_expr": {
+          "$ref": "#/$defs/google.type.Expr.schema.strict.json",
+          "description": "Support variables:\n resource.environment_id: the environment resource id. Support \"==\", \"!=\", \"in [XX]\", \"!(in [xx])\" operations.\n resource.instance_id: the instance resource id. Support \"==\", \"!=\", \"in [XX]\", \"!(in [xx])\", \"contains\", \"matches\", \"startsWith\", \"endsWith\" operations.\n resource.database_name: the database name. Support \"==\", \"!=\", \"in [XX]\", \"!(in [xx])\", \"contains\", \"matches\", \"startsWith\", \"endsWith\" operations.\n resource.database_labels: the database labels. Support map access operations.\n All variables should join with \"\u0026\u0026\" condition.\n\n For example:\n resource.environment_id == \"test\" \u0026\u0026 resource.database_name.startsWith(\"sample_\")\n resource.database_labels[\"tenant\"] == \"tenant1\"",
+          "title": "The condition that is associated with this database group.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec"
+        },
+        "matched_databases": {
+          "description": "The list of databases that match the database group condition.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DatabaseGroup.Database.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the database group.\n Format: projects/{project}/databaseGroups/{databaseGroup}",
+          "type": "string"
+        },
+        "title": {
+          "description": "The short name used in actual databases specified by users.",
+          "maxLength": 200,
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "title"
+      ],
+      "title": "Database Group",
+      "type": "object"
+    },
+    "bytebase.v1.UpdateDatabaseGroupRequest.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Request message for updating a database group.",
+      "properties": {
+        "allow_missing": {
+          "description": "If set to true, and the database group is not found, a new database group will be created.\n In this situation, `update_mask` is ignored.",
+          "type": "boolean"
+        },
+        "database_group": {
+          "$ref": "#/$defs/bytebase.v1.DatabaseGroup.schema.strict.json",
+          "description": "The database group's `name` field is used to identify the database group to update.\n Format: projects/{project}/databaseGroups/{databaseGroup}",
+          "title": "The database group to update."
+        },
+        "update_mask": {
+          "$ref": "#/$defs/google.protobuf.FieldMask.schema.strict.json",
+          "description": "The list of fields to update."
+        }
+      },
+      "required": [
+        "allow_missing"
+      ],
+      "title": "Update Database Group Request",
+      "type": "object"
+    },
+    "google.protobuf.FieldMask.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "paths: \"f.a\"\n     paths: \"f.b.d\"\n\n Here `f` represents a field in some root message, `a` and `b`\n fields in the message found in `f`, and `d` a field found in the\n message in `f.b`.\n\n Field masks are used to specify a subset of fields that should be\n returned by a get operation or modified by an update operation.\n Field masks also have a custom JSON encoding (see below).\n\n # Field Masks in Projections\n\n When used in the context of a projection, a response message or\n sub-message is filtered by the API to only contain those fields as\n specified in the mask. For example, if the mask in the previous\n example is applied to a response message as follows:\n\n     f {\n       a : 22\n       b {\n         d : 1\n         x : 2\n       }\n       y : 13\n     }\n     z: 8\n\n The result will not contain specific values for fields x,y and z\n (their value will be set to the default, and omitted in proto text\n output):\n\n\n     f {\n       a : 22\n       b {\n         d : 1\n       }\n     }\n\n A repeated field is not allowed except at the last position of a\n paths string.\n\n If a FieldMask object is not present in a get operation, the\n operation applies to all fields (as if a FieldMask of all fields\n had been specified).\n\n Note that a field mask does not necessarily apply to the\n top-level response message. In case of a REST get operation, the\n field mask applies directly to the response, but in case of a REST\n list operation, the mask instead applies to each individual message\n in the returned resource list. In case of a REST custom method,\n other definitions may be used. Where the mask applies will be\n clearly documented together with its declaration in the API.  In\n any case, the effect on the returned resource/resources is required\n behavior for APIs.\n\n # Field Masks in Update Operations\n\n A field mask in update operations specifies which fields of the\n targeted resource are going to be updated. The API is required\n to only change the values of the fields as specified in the mask\n and leave the others untouched. If a resource is passed in to\n describe the updated values, the API ignores the values of all\n fields not covered by the mask.\n\n If a repeated field is specified for an update operation, new values will\n be appended to the existing repeated field in the target resource. Note that\n a repeated field is only allowed in the last position of a `paths` string.\n\n If a sub-message is specified in the last position of the field mask for an\n update operation, then new value will be merged into the existing sub-message\n in the target resource.\n\n For example, given the target message:\n\n     f {\n       b {\n         d: 1\n         x: 2\n       }\n       c: [1]\n     }\n\n And an update message:\n\n     f {\n       b {\n         d: 10\n       }\n       c: [2]\n     }\n\n then if the field mask is:\n\n  paths: [\"f.b\", \"f.c\"]\n\n then the result will be:\n\n     f {\n       b {\n         d: 10\n         x: 2\n       }\n       c: [1, 2]\n     }\n\n An implementation may provide options to override this default behavior for\n repeated and message fields.\n\n In order to reset a field's value to the default, the field must\n be in the mask and set to the default value in the provided resource.\n Hence, in order to reset all fields of a resource, provide a default\n instance of the resource and set all fields in the mask, or do\n not provide a mask as described below.\n\n If a field mask is not present on update, the operation applies to\n all fields (as if a field mask of all fields has been specified).\n Note that in the presence of schema evolution, this may mean that\n fields the client does not know and has therefore not filled into\n the request will be reset to their default. If this is unwanted\n behavior, a specific service may require a client to always specify\n a field mask, producing an error if not.\n\n As with get operations, the location of the resource which\n describes the updated values in the request message depends on the\n operation kind. In any case, the effect of the field mask is\n required to be honored by the API.\n\n ## Considerations for HTTP REST\n\n The HTTP kind of an update operation which uses a field mask must\n be set to PATCH instead of PUT in order to satisfy HTTP semantics\n (PUT must only be used for full updates).\n\n # JSON Encoding of Field Masks\n\n In JSON, a field mask is encoded as a single string where paths are\n separated by a comma. Fields name in each path are converted\n to/from lower-camel naming conventions.\n\n As an example, consider the following message declarations:\n\n     message Profile {\n       User user = 1;\n       Photo photo = 2;\n     }\n     message User {\n       string display_name = 1;\n       string address = 2;\n     }\n\n In proto a field mask for `Profile` may look as such:\n\n     mask {\n       paths: \"user.display_name\"\n       paths: \"photo\"\n     }\n\n In JSON, the same mask is represented as below:\n\n     {\n       mask: \"user.displayName,photo\"\n     }\n\n # Field Masks and Oneof Fields\n\n Field masks treat fields in oneofs just as regular fields. Consider the\n following message:\n\n     message SampleMessage {\n       oneof test_oneof {\n         string name = 4;\n         SubMessage sub_message = 9;\n       }\n     }\n\n The field mask can be:\n\n     mask {\n       paths: \"name\"\n     }\n\n Or:\n\n     mask {\n       paths: \"sub_message\"\n     }\n\n Note that oneof type names (\"test_oneof\" in this case) cannot be used in\n paths.\n\n ## Field Mask Verification\n\n The implementation of any API method which has a FieldMask type field in the\n request should verify the included field paths, and return an\n `INVALID_ARGUMENT` error if any path is unmappable.",
+      "properties": {
+        "paths": {
+          "description": "The set of field mask paths.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "`FieldMask` represents a set of symbolic field paths, for example:",
+      "type": "object"
+    },
+    "google.type.Expr.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Example (Comparison):\n\n     title: \"Summary size limit\"\n     description: \"Determines if a summary is less than 100 chars\"\n     expression: \"document.summary.size() \u003c 100\"\n\n Example (Equality):\n\n     title: \"Requestor is owner\"\n     description: \"Determines if requestor is the document owner\"\n     expression: \"document.owner == request.auth.claims.email\"\n\n Example (Logic):\n\n     title: \"Public documents\"\n     description: \"Determine whether the document should be publicly visible\"\n     expression: \"document.type != 'private' \u0026\u0026 document.type != 'internal'\"\n\n Example (Data Manipulation):\n\n     title: \"Notification string\"\n     description: \"Create a notification string with a timestamp.\"\n     expression: \"'New message received at ' + string(document.create_time)\"\n\n The exact variables and functions that may be referenced within an expression\n are determined by the service that evaluates it. See the service\n documentation for additional information.",
+      "properties": {
+        "description": {
+          "description": "Optional. Description of the expression. This is a longer text which\n describes the expression, e.g. when hovered over it in a UI.",
+          "type": "string"
+        },
+        "expression": {
+          "description": "Textual representation of an expression in Common Expression Language\n syntax.",
+          "type": "string"
+        },
+        "location": {
+          "description": "Optional. String indicating the location of the expression for error\n reporting, e.g. a file name and a position in the file.",
+          "type": "string"
+        },
+        "title": {
+          "description": "Optional. Title for the expression, i.e. a short string describing\n its purpose. This can be used e.g. in UIs which allow to enter the\n expression.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expression",
+        "title",
+        "description",
+        "location"
+      ],
+      "title": "Represents a textual expression in the Common Expression Language (CEL)\n syntax. CEL is a C-like expression language. The syntax and semantics of CEL\n are documented at https://github.com/google/cel-spec.",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.UpdateDatabaseGroupRequest.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.UpdateDatabaseGroupRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

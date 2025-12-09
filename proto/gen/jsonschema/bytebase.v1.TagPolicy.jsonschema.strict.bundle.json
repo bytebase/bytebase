@@ -1,0 +1,26 @@
+{
+  "$defs": {
+    "bytebase.v1.TagPolicy.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Policy for tagging resources with metadata.",
+      "properties": {
+        "tags": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "tags is the key - value map for resources.\n for example, the environment resource can have the sql review config tag, like \"bb.tag.review_config\": \"reviewConfigs/{review config resource id}\"",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "title": "Tag Policy",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.TagPolicy.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.TagPolicy.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.IdentityProviderConfig.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ldapConfig": {
+      "$ref": "bytebase.v1.LDAPIdentityProviderConfig.jsonschema.strict.json",
+      "description": "LDAP protocol configuration."
+    },
+    "oauth2Config": {
+      "$ref": "bytebase.v1.OAuth2IdentityProviderConfig.jsonschema.strict.json",
+      "description": "OAuth2 protocol configuration."
+    },
+    "oidcConfig": {
+      "$ref": "bytebase.v1.OIDCIdentityProviderConfig.jsonschema.strict.json",
+      "description": "OIDC protocol configuration."
+    }
+  },
+  "title": "Identity Provider Config",
+  "type": "object"
+}

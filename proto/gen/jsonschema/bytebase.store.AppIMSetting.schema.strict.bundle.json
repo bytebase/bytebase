@@ -1,0 +1,183 @@
+{
+  "$defs": {
+    "bytebase.store.AppIMSetting.DingTalk.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "client_id": {
+          "type": "string"
+        },
+        "client_secret": {
+          "type": "string"
+        },
+        "robot_code": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "client_id",
+        "client_secret",
+        "robot_code"
+      ],
+      "title": "Ding Talk",
+      "type": "object"
+    },
+    "bytebase.store.AppIMSetting.Feishu.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "app_id": {
+          "type": "string"
+        },
+        "app_secret": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "app_id",
+        "app_secret"
+      ],
+      "title": "Feishu",
+      "type": "object"
+    },
+    "bytebase.store.AppIMSetting.IMSetting.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "dingtalk": {
+          "$ref": "#/$defs/bytebase.store.AppIMSetting.DingTalk.schema.strict.json"
+        },
+        "feishu": {
+          "$ref": "#/$defs/bytebase.store.AppIMSetting.Feishu.schema.strict.json"
+        },
+        "lark": {
+          "$ref": "#/$defs/bytebase.store.AppIMSetting.Lark.schema.strict.json"
+        },
+        "slack": {
+          "$ref": "#/$defs/bytebase.store.AppIMSetting.Slack.schema.strict.json"
+        },
+        "teams": {
+          "$ref": "#/$defs/bytebase.store.AppIMSetting.Teams.schema.strict.json"
+        },
+        "type": {
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "SLACK",
+            "DISCORD",
+            "TEAMS",
+            "DINGTALK",
+            "FEISHU",
+            "WECOM",
+            "LARK"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "wecom": {
+          "$ref": "#/$defs/bytebase.store.AppIMSetting.Wecom.schema.strict.json"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "IM Setting",
+      "type": "object"
+    },
+    "bytebase.store.AppIMSetting.Lark.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "app_id": {
+          "type": "string"
+        },
+        "app_secret": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "app_id",
+        "app_secret"
+      ],
+      "title": "Lark",
+      "type": "object"
+    },
+    "bytebase.store.AppIMSetting.Slack.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "token": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "token"
+      ],
+      "title": "Slack",
+      "type": "object"
+    },
+    "bytebase.store.AppIMSetting.Teams.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "client_id": {
+          "description": "Azure AD application (client) ID.",
+          "type": "string"
+        },
+        "client_secret": {
+          "description": "Azure AD client secret.",
+          "type": "string"
+        },
+        "tenant_id": {
+          "description": "Azure AD tenant ID (Directory ID).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tenant_id",
+        "client_id",
+        "client_secret"
+      ],
+      "title": "Teams",
+      "type": "object"
+    },
+    "bytebase.store.AppIMSetting.Wecom.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "type": "string"
+        },
+        "corp_id": {
+          "type": "string"
+        },
+        "secret": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "corp_id",
+        "agent_id",
+        "secret"
+      ],
+      "title": "Wecom",
+      "type": "object"
+    },
+    "bytebase.store.AppIMSetting.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "settings": {
+          "items": {
+            "$ref": "#/$defs/bytebase.store.AppIMSetting.IMSetting.schema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "AppIM Setting",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.AppIMSetting.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.AppIMSetting.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

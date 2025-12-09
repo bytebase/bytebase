@@ -1,0 +1,63 @@
+{
+  "$defs": {
+    "bytebase.v1.Subscription.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "active_instances": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "expires_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json"
+        },
+        "instances": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "org_name": {
+          "type": "string"
+        },
+        "plan": {
+          "enum": [
+            "PLAN_TYPE_UNSPECIFIED",
+            "FREE",
+            "TEAM",
+            "ENTERPRISE"
+          ],
+          "title": "Plan Type",
+          "type": "string"
+        },
+        "seats": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "trialing": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "plan",
+        "seats",
+        "instances",
+        "active_instances",
+        "trialing",
+        "org_name"
+      ],
+      "title": "Subscription",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.Subscription.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.Subscription.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,56 @@
+{
+  "$id": "bytebase.store.SchedulerInfo.WaitingCause.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "WaitingCause indicates why a task run is waiting to execute.",
+  "patternProperties": {
+    "^(connection_limit)$": {
+      "description": "Task is waiting due to database connection limit.",
+      "type": "boolean"
+    },
+    "^(parallel_tasks_limit)$": {
+      "description": "Task is waiting due to parallel execution limit.",
+      "type": "boolean"
+    },
+    "^(task_uid)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "Task is waiting for another task to complete."
+    }
+  },
+  "properties": {
+    "connectionLimit": {
+      "description": "Task is waiting due to database connection limit.",
+      "type": "boolean"
+    },
+    "parallelTasksLimit": {
+      "description": "Task is waiting due to parallel execution limit.",
+      "type": "boolean"
+    },
+    "taskUid": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "Task is waiting for another task to complete."
+    }
+  },
+  "title": "Waiting Cause",
+  "type": "object"
+}

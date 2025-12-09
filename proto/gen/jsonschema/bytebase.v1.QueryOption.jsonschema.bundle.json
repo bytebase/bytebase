@@ -1,0 +1,105 @@
+{
+  "$defs": {
+    "bytebase.v1.QueryOption.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(mssql_explain_format)$": {
+          "anyOf": [
+            {
+              "pattern": "^MSSQL_EXPLAIN_FORMAT_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "MSSQL_EXPLAIN_FORMAT_ALL",
+                "MSSQL_EXPLAIN_FORMAT_XML"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "MSSQL Explain Format"
+        },
+        "^(redis_run_commands_on)$": {
+          "anyOf": [
+            {
+              "pattern": "^REDIS_RUN_COMMANDS_ON_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "SINGLE_NODE",
+                "ALL_NODES"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Redis Run Commands On"
+        }
+      },
+      "properties": {
+        "mssqlExplainFormat": {
+          "anyOf": [
+            {
+              "pattern": "^MSSQL_EXPLAIN_FORMAT_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "MSSQL_EXPLAIN_FORMAT_ALL",
+                "MSSQL_EXPLAIN_FORMAT_XML"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "MSSQL Explain Format"
+        },
+        "redisRunCommandsOn": {
+          "anyOf": [
+            {
+              "pattern": "^REDIS_RUN_COMMANDS_ON_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "SINGLE_NODE",
+                "ALL_NODES"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Redis Run Commands On"
+        }
+      },
+      "title": "Query Option",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.QueryOption.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.QueryOption.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

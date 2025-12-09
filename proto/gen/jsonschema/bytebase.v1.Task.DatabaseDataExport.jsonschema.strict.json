@@ -1,0 +1,39 @@
+{
+  "$id": "bytebase.v1.Task.DatabaseDataExport.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Payload for exporting database data.",
+  "properties": {
+    "format": {
+      "description": "The format of the exported file.",
+      "enum": [
+        "FORMAT_UNSPECIFIED",
+        "CSV",
+        "JSON",
+        "SQL",
+        "XLSX"
+      ],
+      "title": "Export Format",
+      "type": "string"
+    },
+    "password": {
+      "description": "The zip password provided by users.\n Leave it empty if no needs to encrypt the zip file.",
+      "type": "string"
+    },
+    "sheet": {
+      "description": "The resource name of the sheet.\n Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "target": {
+      "description": "The resource name of the target.\n Format: instances/{instance-id}/databases/{database-name}",
+      "type": "string"
+    }
+  },
+  "required": [
+    "target",
+    "sheet",
+    "format"
+  ],
+  "title": "Database Data Export",
+  "type": "object"
+}

@@ -1,0 +1,15 @@
+{
+  "$id": "bytebase.v1.BatchUpdateInstancesResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "instances": {
+      "items": {
+        "$ref": "bytebase.v1.Instance.jsonschema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Batch Update Instances Response",
+  "type": "object"
+}

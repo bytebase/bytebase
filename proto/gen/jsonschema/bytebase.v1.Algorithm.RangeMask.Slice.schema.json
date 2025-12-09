@@ -1,0 +1,44 @@
+{
+  "$id": "bytebase.v1.Algorithm.RangeMask.Slice.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "end": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "stop is the stop index of the original value, should be less than the length of the original value."
+    },
+    "start": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "start is the start index of the original value, start from 0 and should be less than stop."
+    },
+    "substitution": {
+      "default": "",
+      "description": "substitution is the string used to replace the OriginalValue[start:end).",
+      "type": "string"
+    }
+  },
+  "title": "Slice",
+  "type": "object"
+}

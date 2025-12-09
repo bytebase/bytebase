@@ -1,0 +1,15 @@
+{
+  "$id": "bytebase.store.AppIMSetting.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "settings": {
+      "items": {
+        "$ref": "bytebase.store.AppIMSetting.IMSetting.schema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "AppIM Setting",
+  "type": "object"
+}

@@ -1,0 +1,16 @@
+{
+  "$id": "bytebase.v1.SyncDatabaseRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "description": "The name of the database to sync.\n Format: instances/{instance}/databases/{database}",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "Sync Database Request",
+  "type": "object"
+}

@@ -1,0 +1,297 @@
+{
+  "$defs": {
+    "bytebase.store.ApprovalFlow.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ApprovalFlow defines the sequence of approvals required.",
+      "properties": {
+        "roles": {
+          "description": "List of role names that must approve, in order.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Approval Flow",
+      "type": "object"
+    },
+    "bytebase.store.ApprovalTemplate.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ApprovalTemplate defines the approval workflow and requirements for an issue.",
+      "properties": {
+        "description": {
+          "default": "",
+          "description": "Detailed description of when this template applies.",
+          "type": "string"
+        },
+        "flow": {
+          "$ref": "#/$defs/bytebase.store.ApprovalFlow.schema.json",
+          "description": "The approval workflow specification."
+        },
+        "title": {
+          "default": "",
+          "description": "Human-readable title of the approval template.",
+          "type": "string"
+        }
+      },
+      "title": "Approval Template",
+      "type": "object"
+    },
+    "bytebase.store.GrantRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "GrantRequest contains details for requesting database access permissions.",
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/google.type.Expr.schema.json",
+          "description": "Optional conditional expression that limits when the grant applies."
+        },
+        "expiration": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "Duration after which the grant automatically expires."
+        },
+        "role": {
+          "default": "",
+          "description": "The role being requested for the user.\n Format: roles/EXPORTER.",
+          "type": "string"
+        },
+        "user": {
+          "default": "",
+          "description": "The user who will receive the role.\n Format: users/{userUID}.",
+          "type": "string"
+        }
+      },
+      "title": "Grant Request",
+      "type": "object"
+    },
+    "bytebase.store.Issue.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Issue is the metadata for issues that track database operations and access requests.",
+      "patternProperties": {
+        "^(grantRequest)$": {
+          "$ref": "#/$defs/bytebase.store.GrantRequest.schema.json",
+          "description": "Access grant request details if this is a grant request issue."
+        },
+        "^(riskLevel)$": {
+          "anyOf": [
+            {
+              "pattern": "^RISK_LEVEL_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "LOW",
+                "MODERATE",
+                "HIGH"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "Risk level for the issue, calculated from statement types.",
+          "title": "Risk Level"
+        }
+      },
+      "properties": {
+        "approval": {
+          "$ref": "#/$defs/bytebase.store.IssuePayloadApproval.schema.json",
+          "description": "Approval information for the issue workflow."
+        },
+        "grant_request": {
+          "$ref": "#/$defs/bytebase.store.GrantRequest.schema.json",
+          "description": "Access grant request details if this is a grant request issue."
+        },
+        "labels": {
+          "description": "Labels attached to categorize and filter the issue.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "risk_level": {
+          "anyOf": [
+            {
+              "pattern": "^RISK_LEVEL_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "LOW",
+                "MODERATE",
+                "HIGH"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "Risk level for the issue, calculated from statement types.",
+          "title": "Risk Level"
+        }
+      },
+      "title": "Issue",
+      "type": "object"
+    },
+    "bytebase.store.IssuePayloadApproval.Approver.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Approver represents a user who can approve or reject an issue.",
+      "patternProperties": {
+        "^(principalId)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The ID of the principal who is the approver."
+        }
+      },
+      "properties": {
+        "principal_id": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The ID of the principal who is the approver."
+        },
+        "status": {
+          "anyOf": [
+            {
+              "pattern": "^STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The current approval status.",
+          "title": "Status"
+        }
+      },
+      "title": "Approver",
+      "type": "object"
+    },
+    "bytebase.store.IssuePayloadApproval.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "IssuePayloadApproval records the approval template used and approval history for an issue.",
+      "patternProperties": {
+        "^(approvalFindingDone)$": {
+          "default": false,
+          "description": "Whether the system has finished finding a matching approval template.\n False means the backend is still searching for matching templates.",
+          "type": "boolean"
+        },
+        "^(approvalFindingError)$": {
+          "default": "",
+          "description": "Error message if approval template finding failed.",
+          "type": "string"
+        },
+        "^(approvalTemplate)$": {
+          "$ref": "#/$defs/bytebase.store.ApprovalTemplate.schema.json",
+          "description": "The approval template being used for this issue."
+        }
+      },
+      "properties": {
+        "approval_finding_done": {
+          "default": false,
+          "description": "Whether the system has finished finding a matching approval template.\n False means the backend is still searching for matching templates.",
+          "type": "boolean"
+        },
+        "approval_finding_error": {
+          "default": "",
+          "description": "Error message if approval template finding failed.",
+          "type": "string"
+        },
+        "approval_template": {
+          "$ref": "#/$defs/bytebase.store.ApprovalTemplate.schema.json",
+          "description": "The approval template being used for this issue."
+        },
+        "approvers": {
+          "description": "List of approvers and their current status.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.IssuePayloadApproval.Approver.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Issue Payload Approval",
+      "type": "object"
+    },
+    "google.protobuf.Duration.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "duration",
+      "title": "Duration",
+      "type": "string"
+    },
+    "google.type.Expr.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Example (Comparison):\n\n     title: \"Summary size limit\"\n     description: \"Determines if a summary is less than 100 chars\"\n     expression: \"document.summary.size() \u003c 100\"\n\n Example (Equality):\n\n     title: \"Requestor is owner\"\n     description: \"Determines if requestor is the document owner\"\n     expression: \"document.owner == request.auth.claims.email\"\n\n Example (Logic):\n\n     title: \"Public documents\"\n     description: \"Determine whether the document should be publicly visible\"\n     expression: \"document.type != 'private' \u0026\u0026 document.type != 'internal'\"\n\n Example (Data Manipulation):\n\n     title: \"Notification string\"\n     description: \"Create a notification string with a timestamp.\"\n     expression: \"'New message received at ' + string(document.create_time)\"\n\n The exact variables and functions that may be referenced within an expression\n are determined by the service that evaluates it. See the service\n documentation for additional information.",
+      "properties": {
+        "description": {
+          "default": "",
+          "description": "Optional. Description of the expression. This is a longer text which\n describes the expression, e.g. when hovered over it in a UI.",
+          "type": "string"
+        },
+        "expression": {
+          "default": "",
+          "description": "Textual representation of an expression in Common Expression Language\n syntax.",
+          "type": "string"
+        },
+        "location": {
+          "default": "",
+          "description": "Optional. String indicating the location of the expression for error\n reporting, e.g. a file name and a position in the file.",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "description": "Optional. Title for the expression, i.e. a short string describing\n its purpose. This can be used e.g. in UIs which allow to enter the\n expression.",
+          "type": "string"
+        }
+      },
+      "title": "Represents a textual expression in the Common Expression Language (CEL)\n syntax. CEL is a C-like expression language. The syntax and semantics of CEL\n are documented at https://github.com/google/cel-spec.",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.Issue.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.Issue.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

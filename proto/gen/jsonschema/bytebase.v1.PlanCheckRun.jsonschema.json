@@ -1,0 +1,92 @@
+{
+  "$id": "bytebase.v1.PlanCheckRun.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(create_time)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    }
+  },
+  "properties": {
+    "createTime": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "error": {
+      "default": "",
+      "description": "error is set if the Status is FAILED.",
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "description": "Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}",
+      "type": "string"
+    },
+    "results": {
+      "items": {
+        "$ref": "bytebase.v1.PlanCheckRun.Result.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "sheet": {
+      "default": "",
+      "description": "Format: project/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "pattern": "^STATUS_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "RUNNING",
+            "DONE",
+            "FAILED",
+            "CANCELED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Status"
+    },
+    "target": {
+      "default": "",
+      "description": "Format: instances/{instance}/databases/{database}",
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "pattern": "^TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "DATABASE_STATEMENT_FAKE_ADVISE",
+            "DATABASE_STATEMENT_ADVISE",
+            "DATABASE_STATEMENT_SUMMARY_REPORT",
+            "DATABASE_CONNECT",
+            "DATABASE_GHOST_SYNC"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Type"
+    }
+  },
+  "title": "Plan Check Run",
+  "type": "object"
+}

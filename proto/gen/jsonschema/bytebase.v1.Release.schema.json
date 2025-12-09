@@ -1,0 +1,76 @@
+{
+  "$id": "bytebase.v1.Release.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(createTime)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(vcsSource)$": {
+      "$ref": "bytebase.v1.Release.VCSSource.schema.json",
+      "description": "The version control source of the release."
+    }
+  },
+  "properties": {
+    "create_time": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "creator": {
+      "default": "",
+      "description": "Format: users/hello@world.com",
+      "type": "string"
+    },
+    "digest": {
+      "default": "",
+      "description": "The digest of the release.\n The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.\n Whether to provide digest and how to generate it is up to the user.\n If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.",
+      "type": "string"
+    },
+    "files": {
+      "description": "The SQL files included in the release.",
+      "items": {
+        "$ref": "bytebase.v1.Release.File.schema.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "default": "",
+      "description": "Format: projects/{project}/releases/{release}",
+      "type": "string"
+    },
+    "state": {
+      "anyOf": [
+        {
+          "pattern": "^STATE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "ACTIVE",
+            "DELETED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The lifecycle state of the release.",
+      "title": "State"
+    },
+    "title": {
+      "default": "",
+      "description": "The title of the release.",
+      "maxLength": 200,
+      "type": "string"
+    },
+    "vcs_source": {
+      "$ref": "bytebase.v1.Release.VCSSource.schema.json",
+      "description": "The version control source of the release."
+    }
+  },
+  "title": "Release",
+  "type": "object"
+}

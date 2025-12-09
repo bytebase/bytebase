@@ -1,0 +1,176 @@
+{
+  "$defs": {
+    "bytebase.store.ColumnCatalog.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "The user labels for a column.",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "name": {
+          "description": "The name of the column.",
+          "type": "string"
+        },
+        "object_schema": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.schema.strict.json"
+        },
+        "semantic_type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "semantic_type",
+        "classification"
+      ],
+      "title": "Column Catalog",
+      "type": "object"
+    },
+    "bytebase.store.DatabaseConfig.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "schemas": {
+          "description": "The schema_configs is the list of configs for schemas in a database.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.SchemaCatalog.schema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Database Config",
+      "type": "object"
+    },
+    "bytebase.store.ObjectSchema.ArrayKind.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.schema.strict.json"
+        }
+      },
+      "title": "Array Kind",
+      "type": "object"
+    },
+    "bytebase.store.ObjectSchema.StructKind.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "properties": {
+          "additionalProperties": {
+            "$ref": "#/$defs/bytebase.store.ObjectSchema.schema.strict.json"
+          },
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "title": "Struct Kind",
+      "type": "object"
+    },
+    "bytebase.store.ObjectSchema.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "array_kind": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.ArrayKind.schema.strict.json"
+        },
+        "semantic_type": {
+          "type": "string"
+        },
+        "struct_kind": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.StructKind.schema.strict.json"
+        },
+        "type": {
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "STRING",
+            "NUMBER",
+            "BOOLEAN",
+            "OBJECT",
+            "ARRAY"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "semantic_type"
+      ],
+      "title": "Object Schema",
+      "type": "object"
+    },
+    "bytebase.store.SchemaCatalog.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "The schema name.\n It is an empty string for databases without such concept such as MySQL.",
+          "type": "string"
+        },
+        "tables": {
+          "description": "The table_configs is the list of configs for tables in a schema.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.TableCatalog.schema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Schema Catalog",
+      "type": "object"
+    },
+    "bytebase.store.TableCatalog.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "type": "string"
+        },
+        "columns": {
+          "description": "The column_configs is the ordered list of configs for columns in a table.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.ColumnCatalog.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the table.",
+          "type": "string"
+        },
+        "object_schema": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.schema.strict.json"
+        }
+      },
+      "required": [
+        "name",
+        "classification"
+      ],
+      "title": "Table Catalog",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.DatabaseConfig.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.DatabaseConfig.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

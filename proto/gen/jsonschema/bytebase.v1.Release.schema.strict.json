@@ -1,0 +1,57 @@
+{
+  "$id": "bytebase.v1.Release.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "create_time": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json"
+    },
+    "creator": {
+      "description": "Format: users/hello@world.com",
+      "type": "string"
+    },
+    "digest": {
+      "description": "The digest of the release.\n The user can provide the digest of the release. It can be used later to retrieve the release in GetRelease.\n Whether to provide digest and how to generate it is up to the user.\n If the digest is not empty, it must be unique in the project. Otherwise, an ALREADY_EXISTS error will be returned.",
+      "type": "string"
+    },
+    "files": {
+      "description": "The SQL files included in the release.",
+      "items": {
+        "$ref": "bytebase.v1.Release.File.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "description": "Format: projects/{project}/releases/{release}",
+      "type": "string"
+    },
+    "state": {
+      "description": "The lifecycle state of the release.",
+      "enum": [
+        "STATE_UNSPECIFIED",
+        "ACTIVE",
+        "DELETED"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "title": {
+      "description": "The title of the release.",
+      "maxLength": 200,
+      "type": "string"
+    },
+    "vcs_source": {
+      "$ref": "bytebase.v1.Release.VCSSource.schema.strict.json",
+      "description": "The version control source of the release."
+    }
+  },
+  "required": [
+    "name",
+    "title",
+    "creator",
+    "state",
+    "digest"
+  ],
+  "title": "Release",
+  "type": "object"
+}

@@ -1,0 +1,35 @@
+{
+  "$id": "bytebase.store.TessellationConfig.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "TessellationConfig defines tessellation parameters for spatial indexes.",
+  "properties": {
+    "boundingBox": {
+      "$ref": "bytebase.store.BoundingBox.jsonschema.strict.json",
+      "description": "Bounding box for GEOMETRY indexes (SQL Server)"
+    },
+    "cellsPerObject": {
+      "description": "Cells per object (SQL Server)",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "gridLevels": {
+      "description": "Grid level configuration (SQL Server)",
+      "items": {
+        "$ref": "bytebase.store.GridLevel.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "scheme": {
+      "description": "Tessellation scheme\n Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID",
+      "type": "string"
+    }
+  },
+  "required": [
+    "scheme",
+    "cellsPerObject"
+  ],
+  "title": "Tessellation Config",
+  "type": "object"
+}

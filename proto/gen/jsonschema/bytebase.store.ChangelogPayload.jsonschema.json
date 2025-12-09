@@ -1,0 +1,115 @@
+{
+  "$id": "bytebase.store.ChangelogPayload.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(changed_resources)$": {
+      "$ref": "bytebase.store.ChangedResources.jsonschema.json"
+    },
+    "^(dump_version)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "Dump format version for drift detection reliability.\n Engine-specific version stored when baseline/migration is created.\n 0 = legacy changelog (pre-versioning)."
+    },
+    "^(git_commit)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(task_run)$": {
+      "default": "",
+      "description": "Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "changedResources": {
+      "$ref": "bytebase.store.ChangedResources.jsonschema.json"
+    },
+    "dumpVersion": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "Dump format version for drift detection reliability.\n Engine-specific version stored when baseline/migration is created.\n 0 = legacy changelog (pre-versioning)."
+    },
+    "gitCommit": {
+      "default": "",
+      "type": "string"
+    },
+    "issue": {
+      "default": "",
+      "description": "Format: projects/{project}/issues/{issue}",
+      "type": "string"
+    },
+    "revision": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The revision uid.\n optional"
+    },
+    "sheet": {
+      "default": "",
+      "description": "The sheet that holds the content.\n Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "taskRun": {
+      "default": "",
+      "description": "Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}",
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "pattern": "^TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "BASELINE",
+            "MIGRATE",
+            "SDL"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Type"
+    },
+    "version": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Changelog Payload",
+  "type": "object"
+}

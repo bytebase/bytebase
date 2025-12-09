@@ -1,0 +1,453 @@
+{
+  "$defs": {
+    "bytebase.v1.ApprovalFlow.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "roles": {
+          "description": "The roles required for approval in order.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Approval Flow",
+      "type": "object"
+    },
+    "bytebase.v1.ApprovalTemplate.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "default": "",
+          "description": "The description of the approval template.",
+          "type": "string"
+        },
+        "flow": {
+          "$ref": "#/$defs/bytebase.v1.ApprovalFlow.schema.json",
+          "description": "The approval flow definition."
+        },
+        "title": {
+          "default": "",
+          "description": "The title of the approval template.",
+          "type": "string"
+        }
+      },
+      "title": "Approval Template",
+      "type": "object"
+    },
+    "bytebase.v1.CreateIssueRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "issue": {
+          "$ref": "#/$defs/bytebase.v1.Issue.schema.json",
+          "description": "The issue to create."
+        },
+        "parent": {
+          "default": "",
+          "description": "The parent, which owns this collection of issues.\n Format: projects/{project}",
+          "type": "string"
+        }
+      },
+      "title": "Create Issue Request",
+      "type": "object"
+    },
+    "bytebase.v1.GrantRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/google.type.Expr.schema.json",
+          "description": "The condition for the role. Same as the condition in IAM Binding message."
+        },
+        "expiration": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "The duration for which the grant is valid."
+        },
+        "role": {
+          "default": "",
+          "description": "The requested role.\n Format: roles/EXPORTER.",
+          "type": "string"
+        },
+        "user": {
+          "default": "",
+          "description": "The user to be granted.\n Format: users/{email}.",
+          "type": "string"
+        }
+      },
+      "title": "Grant Request",
+      "type": "object"
+    },
+    "bytebase.v1.Issue.Approver.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Approvers and their approval status for the issue.",
+      "properties": {
+        "principal": {
+          "default": "",
+          "description": "Format: users/hello@world.com",
+          "type": "string"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "pattern": "^STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The new status.",
+          "title": "Status"
+        }
+      },
+      "title": "Approver",
+      "type": "object"
+    },
+    "bytebase.v1.Issue.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(approvalStatus)$": {
+          "anyOf": [
+            {
+              "pattern": "^APPROVAL_STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "CHECKING",
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "SKIPPED",
+                "ERROR"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Approval Status"
+        },
+        "^(approvalStatusError)$": {
+          "default": "",
+          "description": "Only populated when approval_status == ERROR",
+          "type": "string"
+        },
+        "^(approvalTemplate)$": {
+          "$ref": "#/$defs/bytebase.v1.ApprovalTemplate.schema.json",
+          "description": "The approval template for the issue."
+        },
+        "^(createTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "^(grantRequest)$": {
+          "$ref": "#/$defs/bytebase.v1.GrantRequest.schema.json",
+          "description": "Used if the issue type is GRANT_REQUEST."
+        },
+        "^(riskLevel)$": {
+          "anyOf": [
+            {
+              "pattern": "^RISK_LEVEL_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "LOW",
+                "MODERATE",
+                "HIGH"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The risk level of the issue.",
+          "title": "Risk Level"
+        },
+        "^(taskStatusCount)$": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "description": "The status count of the issue.\n Keys are the following:\n - NOT_STARTED\n - SKIPPED\n - PENDING\n - RUNNING\n - DONE\n - FAILED\n - CANCELED",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "^(updateTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        }
+      },
+      "properties": {
+        "approval_status": {
+          "anyOf": [
+            {
+              "pattern": "^APPROVAL_STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "CHECKING",
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "SKIPPED",
+                "ERROR"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Approval Status"
+        },
+        "approval_status_error": {
+          "default": "",
+          "description": "Only populated when approval_status == ERROR",
+          "type": "string"
+        },
+        "approval_template": {
+          "$ref": "#/$defs/bytebase.v1.ApprovalTemplate.schema.json",
+          "description": "The approval template for the issue."
+        },
+        "approvers": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Issue.Approver.schema.json"
+          },
+          "type": "array"
+        },
+        "create_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "creator": {
+          "default": "",
+          "description": "Format: users/hello@world.com",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "description": "The description of the issue.",
+          "maxLength": 10000,
+          "type": "string"
+        },
+        "grant_request": {
+          "$ref": "#/$defs/bytebase.v1.GrantRequest.schema.json",
+          "description": "Used if the issue type is GRANT_REQUEST."
+        },
+        "labels": {
+          "description": "Labels attached to the issue for categorization and filtering.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the issue.\n Format: projects/{project}/issues/{issue}",
+          "type": "string"
+        },
+        "plan": {
+          "default": "",
+          "description": "The plan associated with the issue.\n Can be empty.\n Format: projects/{project}/plans/{plan}",
+          "type": "string"
+        },
+        "releasers": {
+          "description": "The releasers of the pending stage of the issue rollout, judging\n from the rollout policy.\n Format:\n - roles/workspaceOwner\n - roles/workspaceDBA\n - roles/projectOwner\n - roles/projectReleaser",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "risk_level": {
+          "anyOf": [
+            {
+              "pattern": "^RISK_LEVEL_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "LOW",
+                "MODERATE",
+                "HIGH"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The risk level of the issue.",
+          "title": "Risk Level"
+        },
+        "rollout": {
+          "default": "",
+          "description": "The rollout associated with the issue.\n Can be empty.\n Format: projects/{project}/rollouts/{rollout}",
+          "type": "string"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "pattern": "^ISSUE_STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "OPEN",
+                "DONE",
+                "CANCELED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The status of the issue.",
+          "title": "Issue Status"
+        },
+        "task_status_count": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "description": "The status count of the issue.\n Keys are the following:\n - NOT_STARTED\n - SKIPPED\n - PENDING\n - RUNNING\n - DONE\n - FAILED\n - CANCELED",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "title": {
+          "default": "",
+          "description": "The title of the issue.",
+          "maxLength": 200,
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "DATABASE_CHANGE",
+                "GRANT_REQUEST",
+                "DATABASE_EXPORT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Type"
+        },
+        "update_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        }
+      },
+      "title": "Issue",
+      "type": "object"
+    },
+    "google.protobuf.Duration.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "duration",
+      "title": "Duration",
+      "type": "string"
+    },
+    "google.protobuf.Timestamp.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "google.type.Expr.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Example (Comparison):\n\n     title: \"Summary size limit\"\n     description: \"Determines if a summary is less than 100 chars\"\n     expression: \"document.summary.size() \u003c 100\"\n\n Example (Equality):\n\n     title: \"Requestor is owner\"\n     description: \"Determines if requestor is the document owner\"\n     expression: \"document.owner == request.auth.claims.email\"\n\n Example (Logic):\n\n     title: \"Public documents\"\n     description: \"Determine whether the document should be publicly visible\"\n     expression: \"document.type != 'private' \u0026\u0026 document.type != 'internal'\"\n\n Example (Data Manipulation):\n\n     title: \"Notification string\"\n     description: \"Create a notification string with a timestamp.\"\n     expression: \"'New message received at ' + string(document.create_time)\"\n\n The exact variables and functions that may be referenced within an expression\n are determined by the service that evaluates it. See the service\n documentation for additional information.",
+      "properties": {
+        "description": {
+          "default": "",
+          "description": "Optional. Description of the expression. This is a longer text which\n describes the expression, e.g. when hovered over it in a UI.",
+          "type": "string"
+        },
+        "expression": {
+          "default": "",
+          "description": "Textual representation of an expression in Common Expression Language\n syntax.",
+          "type": "string"
+        },
+        "location": {
+          "default": "",
+          "description": "Optional. String indicating the location of the expression for error\n reporting, e.g. a file name and a position in the file.",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "description": "Optional. Title for the expression, i.e. a short string describing\n its purpose. This can be used e.g. in UIs which allow to enter the\n expression.",
+          "type": "string"
+        }
+      },
+      "title": "Represents a textual expression in the Common Expression Language (CEL)\n syntax. CEL is a C-like expression language. The syntax and semantics of CEL\n are documented at https://github.com/google/cel-spec.",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.CreateIssueRequest.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.CreateIssueRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

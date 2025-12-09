@@ -1,0 +1,35 @@
+{
+  "$id": "bytebase.v1.GetDatabaseMetadataRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "filter": {
+      "default": "",
+      "description": "Supported filter:\n - schema: the schema name, support \"==\" operator.\n - table: the table name, support \"==\" and \".matches()\" operator.\n\n For example:\n schema == \"schema-a\"\n table == \"table-a\"\n table.matches(\"table-a\")\n schema == \"schema-a\" \u0026\u0026 table.matches(\"sample\")\n The filter used to search table with wildcard \"sample\" in the schema \"schemas/schema-a\".\n The column masking level will only be returned when a table filter is used.",
+      "title": "Filter is used to filter databases returned in the list.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec",
+      "type": "string"
+    },
+    "limit": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "Limit the response size of returned table metadata per schema.\n For example, if the database has 3 schemas, and each schema has 100 tables,\n if limit is 20, then only 20 tables will be returned for each schema, total 60 tables.\n Default 0, means no limit."
+    },
+    "name": {
+      "default": "",
+      "description": "The name of the database to retrieve metadata.\n Format: instances/{instance}/databases/{database}/metadata",
+      "type": "string"
+    }
+  },
+  "title": "Get Database Metadata Request",
+  "type": "object"
+}

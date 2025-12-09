@@ -1,0 +1,22 @@
+{
+  "$id": "bytebase.v1.RequestMetadata.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Metadata about the incoming request.",
+  "properties": {
+    "callerIp": {
+      "description": "The IP address of the request originator.",
+      "type": "string"
+    },
+    "callerSuppliedUserAgent": {
+      "description": "The user agent string provided by the caller.\n This is supplied by the client and is not authenticated.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "callerIp",
+    "callerSuppliedUserAgent"
+  ],
+  "title": "Request Metadata",
+  "type": "object"
+}

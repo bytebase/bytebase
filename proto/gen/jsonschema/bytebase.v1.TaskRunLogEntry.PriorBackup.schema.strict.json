@@ -1,0 +1,29 @@
+{
+  "$id": "bytebase.v1.TaskRunLogEntry.PriorBackup.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Prior backup operation details.",
+  "properties": {
+    "end_time": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json",
+      "description": "When the backup ended."
+    },
+    "error": {
+      "description": "Error message if the backup failed.",
+      "type": "string"
+    },
+    "prior_backup_detail": {
+      "$ref": "bytebase.v1.TaskRun.PriorBackupDetail.schema.strict.json",
+      "description": "The backup details."
+    },
+    "start_time": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json",
+      "description": "When the backup started."
+    }
+  },
+  "required": [
+    "error"
+  ],
+  "title": "Prior Backup",
+  "type": "object"
+}

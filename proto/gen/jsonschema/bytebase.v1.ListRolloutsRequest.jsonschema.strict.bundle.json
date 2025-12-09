@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "bytebase.v1.ListRolloutsRequest.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "description": "Supported filters:\n - creator: the rollout creator full name in \"users/{email or id}\" format, support \"==\" operator.\n - update_time: rollout update time in \"2006-01-02T15:04:05Z07:00\" format, support \"\u003e=\" or \"\u003c=\" operator.\n - task_type: the task type, support \"==\" and \"in\" operators, check the Task.Type enum for the values.\n\n For example:\n creator == \"users/ed@bytebase.com\" \u0026\u0026 update_time \u003e= \"2025-01-02T15:04:05Z07:00\"\n task_type == \"DATABASE_MIGRATE\"\n task_type in [\"DATABASE_MIGRATE\", \"DATABASE_EXPORT\"]",
+          "title": "Filter is used to filter rollouts returned in the list.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec",
+          "type": "string"
+        },
+        "pageSize": {
+          "description": "The maximum number of rollouts to return. The service may return fewer than\n this value.\n If unspecified, at most 10 rollouts will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "pageToken": {
+          "description": "When paginating, all other parameters provided to `ListRollouts` must match\n the call that provided the page token.",
+          "title": "A page token, received from a previous `ListRollouts` call.\n Provide this to retrieve the subsequent page.",
+          "type": "string"
+        },
+        "parent": {
+          "description": "The parent, which owns this collection of rollouts.\n Format: projects/{project}\n Use \"projects/-\" to list all rollouts from all projects.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "parent",
+        "pageSize",
+        "pageToken",
+        "filter"
+      ],
+      "title": "List Rollouts Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.ListRolloutsRequest.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ListRolloutsRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

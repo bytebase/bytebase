@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.v1.GetGroupRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Request message for getting a group.",
+  "properties": {
+    "name": {
+      "description": "The name of the group to retrieve.\n Format: groups/{email}",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "Get Group Request",
+  "type": "object"
+}

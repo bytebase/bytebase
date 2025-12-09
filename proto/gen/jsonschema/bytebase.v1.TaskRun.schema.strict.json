@@ -1,0 +1,88 @@
+{
+  "$id": "bytebase.v1.TaskRun.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "changelog": {
+      "description": "The resource name of the changelog.\n Format: instances/{instance}/databases/{database}/changelogs/{changelog}",
+      "type": "string"
+    },
+    "create_time": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json"
+    },
+    "creator": {
+      "description": "Format: users/hello@world.com",
+      "type": "string"
+    },
+    "detail": {
+      "description": "Below are the results of a task run.\n Detailed information about the task run result.",
+      "type": "string"
+    },
+    "export_archive_status": {
+      "description": "The export archive status for data export tasks.",
+      "enum": [
+        "EXPORT_ARCHIVE_STATUS_UNSPECIFIED",
+        "READY",
+        "EXPORTED"
+      ],
+      "title": "Export Archive Status",
+      "type": "string"
+    },
+    "name": {
+      "description": "Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}",
+      "type": "string"
+    },
+    "prior_backup_detail": {
+      "$ref": "bytebase.v1.TaskRun.PriorBackupDetail.schema.strict.json",
+      "description": "The prior backup detail that will be used to rollback the task run."
+    },
+    "run_time": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json",
+      "description": "The task run should run after run_time.\n This can only be set when creating the task run calling BatchRunTasks."
+    },
+    "scheduler_info": {
+      "$ref": "bytebase.v1.TaskRun.SchedulerInfo.schema.strict.json",
+      "description": "Scheduling information about the task run."
+    },
+    "schema_version": {
+      "description": "The schema version after this task run completes.",
+      "type": "string"
+    },
+    "sheet": {
+      "description": "Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "start_time": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json",
+      "description": "The time when the task run started execution."
+    },
+    "status": {
+      "description": "The current execution status of the task run.",
+      "enum": [
+        "STATUS_UNSPECIFIED",
+        "PENDING",
+        "RUNNING",
+        "DONE",
+        "FAILED",
+        "CANCELED"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "update_time": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json"
+    }
+  },
+  "required": [
+    "name",
+    "creator",
+    "status",
+    "detail",
+    "changelog",
+    "schema_version",
+    "export_archive_status",
+    "sheet"
+  ],
+  "title": "Task Run",
+  "type": "object"
+}

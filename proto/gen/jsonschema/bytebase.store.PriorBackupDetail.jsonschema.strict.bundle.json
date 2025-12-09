@@ -1,0 +1,100 @@
+{
+  "$defs": {
+    "bytebase.store.Position.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Handling unknown positions:\n - If the entire position is unknown, leave this field as nil/undefined\n - If only line is known, set line and leave column as 0 (e.g., line=5, column=0)\n - If only column is known (rare), set column and leave line as 0\n Frontends should check for nil/undefined/zero values and handle them appropriately.",
+      "properties": {
+        "column": {
+          "description": "Examples:\n - \"SELECT * FROM t\" - column 8 is '*'\n - \"SELECT 你好 FROM t\" - column 8 is '你' (even though it's at byte offset 7)\n - \"SELECT 😀 FROM t\" - column 8 is '😀' (even though it's 4 bytes in UTF-8)",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "title": "Column position in a text (one-based).\n Column is measured in Unicode code points (characters/runes), not bytes or grapheme clusters.\n First character of the line is column 1.\n A value of 0 indicates the column information is unknown.",
+          "type": "integer"
+        },
+        "line": {
+          "description": "Line position in a text (one-based).\n First line of the text is line 1.\n A value of 0 indicates the line information is unknown.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "title": "Position in a text expressed as one-based line and one-based column.\n We use 1-based numbering to match the majority of industry standards:\n - Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)\n - GitHub Actions uses 1-based (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message)\n - Most text editors display 1-based positions to users\n Note: LSP uses 0-based (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position),\n but we follow the canonical user-facing standards.",
+      "type": "object"
+    },
+    "bytebase.store.PriorBackupDetail.Item.Table.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Table identifies a database table.",
+      "properties": {
+        "database": {
+          "description": "The database containing the table.\n Format: instances/{instance}/databases/{database}",
+          "type": "string"
+        },
+        "schema": {
+          "description": "Schema name (for databases that support schemas).",
+          "type": "string"
+        },
+        "table": {
+          "description": "Table name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "database",
+        "schema",
+        "table"
+      ],
+      "title": "Table",
+      "type": "object"
+    },
+    "bytebase.store.PriorBackupDetail.Item.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Item represents a single backup operation for a table.",
+      "properties": {
+        "endPosition": {
+          "$ref": "#/$defs/bytebase.store.Position.jsonschema.strict.json",
+          "description": "Ending position in SQL for this backup operation."
+        },
+        "sourceTable": {
+          "$ref": "#/$defs/bytebase.store.PriorBackupDetail.Item.Table.jsonschema.strict.json",
+          "description": "The original table that was backed up."
+        },
+        "startPosition": {
+          "$ref": "#/$defs/bytebase.store.Position.jsonschema.strict.json",
+          "description": "Starting position in SQL for this backup operation."
+        },
+        "targetTable": {
+          "$ref": "#/$defs/bytebase.store.PriorBackupDetail.Item.Table.jsonschema.strict.json",
+          "description": "The backup table where data was copied."
+        }
+      },
+      "title": "Item",
+      "type": "object"
+    },
+    "bytebase.store.PriorBackupDetail.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "PriorBackupDetail contains information about automatic backups created before migration.",
+      "properties": {
+        "items": {
+          "description": "List of backup operations performed.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.PriorBackupDetail.Item.jsonschema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Prior Backup Detail",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.PriorBackupDetail.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.PriorBackupDetail.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

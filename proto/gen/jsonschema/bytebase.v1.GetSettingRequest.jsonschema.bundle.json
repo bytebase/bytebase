@@ -1,0 +1,21 @@
+{
+  "$defs": {
+    "bytebase.v1.GetSettingRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "The request message for getting a setting.",
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "The resource name of the setting.",
+          "type": "string"
+        }
+      },
+      "title": "Get Setting Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GetSettingRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GetSettingRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

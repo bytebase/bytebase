@@ -1,0 +1,72 @@
+{
+  "$id": "bytebase.store.AuditLog.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "latency": {
+      "$ref": "google.protobuf.Duration.jsonschema.strict.json",
+      "description": "The latency of the RPC."
+    },
+    "method": {
+      "description": "Example: /bytebase.v1.SQLService/Query",
+      "type": "string"
+    },
+    "parent": {
+      "description": "The project or workspace the audit log belongs to.\n Formats:\n - projects/{project}\n - workspaces/{workspace}",
+      "type": "string"
+    },
+    "request": {
+      "description": "Marshalled request.",
+      "type": "string"
+    },
+    "requestMetadata": {
+      "$ref": "bytebase.store.RequestMetadata.jsonschema.strict.json",
+      "description": "Metadata about the operation."
+    },
+    "resource": {
+      "description": "The resource name.\n Example: projects/{project}",
+      "type": "string"
+    },
+    "response": {
+      "description": "Marshalled response.\n Some fields are omitted because they are too large or contain sensitive information.",
+      "type": "string"
+    },
+    "serviceData": {
+      "$ref": "google.protobuf.Any.jsonschema.strict.json",
+      "description": "The service-specific data about the request, response, and other activities."
+    },
+    "severity": {
+      "enum": [
+        "SEVERITY_UNSPECIFIED",
+        "DEBUG",
+        "INFO",
+        "NOTICE",
+        "WARNING",
+        "ERROR",
+        "CRITICAL",
+        "ALERT",
+        "EMERGENCY"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "google.rpc.Status.jsonschema.strict.json"
+    },
+    "user": {
+      "description": "Format: users/{userUID}.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "parent",
+    "method",
+    "resource",
+    "user",
+    "severity",
+    "request",
+    "response"
+  ],
+  "title": "Audit Log",
+  "type": "object"
+}

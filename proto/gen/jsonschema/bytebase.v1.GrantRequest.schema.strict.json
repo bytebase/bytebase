@@ -1,0 +1,29 @@
+{
+  "$id": "bytebase.v1.GrantRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "condition": {
+      "$ref": "google.type.Expr.schema.strict.json",
+      "description": "The condition for the role. Same as the condition in IAM Binding message."
+    },
+    "expiration": {
+      "$ref": "google.protobuf.Duration.schema.strict.json",
+      "description": "The duration for which the grant is valid."
+    },
+    "role": {
+      "description": "The requested role.\n Format: roles/EXPORTER.",
+      "type": "string"
+    },
+    "user": {
+      "description": "The user to be granted.\n Format: users/{email}.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "role",
+    "user"
+  ],
+  "title": "Grant Request",
+  "type": "object"
+}

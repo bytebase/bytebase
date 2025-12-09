@@ -1,0 +1,38 @@
+{
+  "$id": "bytebase.v1.LoginResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(mfa_temp_token)$": {
+      "description": "Temporary token for MFA verification.",
+      "type": "string"
+    },
+    "^(require_reset_password)$": {
+      "default": false,
+      "description": "Whether user must reset password before continuing.",
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "mfaTempToken": {
+      "description": "Temporary token for MFA verification.",
+      "type": "string"
+    },
+    "requireResetPassword": {
+      "default": false,
+      "description": "Whether user must reset password before continuing.",
+      "type": "boolean"
+    },
+    "token": {
+      "default": "",
+      "description": "Access token for authenticated requests.",
+      "type": "string"
+    },
+    "user": {
+      "$ref": "bytebase.v1.User.jsonschema.json",
+      "description": "The user from the successful login."
+    }
+  },
+  "title": "Login Response",
+  "type": "object"
+}

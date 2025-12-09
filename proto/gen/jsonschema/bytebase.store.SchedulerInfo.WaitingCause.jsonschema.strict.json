@@ -1,0 +1,24 @@
+{
+  "$id": "bytebase.store.SchedulerInfo.WaitingCause.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "WaitingCause indicates why a task run is waiting to execute.",
+  "properties": {
+    "connectionLimit": {
+      "description": "Task is waiting due to database connection limit.",
+      "type": "boolean"
+    },
+    "parallelTasksLimit": {
+      "description": "Task is waiting due to parallel execution limit.",
+      "type": "boolean"
+    },
+    "taskUid": {
+      "description": "Task is waiting for another task to complete.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "title": "Waiting Cause",
+  "type": "object"
+}

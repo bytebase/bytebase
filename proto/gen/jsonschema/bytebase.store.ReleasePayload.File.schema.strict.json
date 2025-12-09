@@ -1,0 +1,50 @@
+{
+  "$id": "bytebase.store.ReleasePayload.File.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "enable_ghost": {
+      "description": "Whether to use gh-ost for online schema migration.",
+      "type": "boolean"
+    },
+    "id": {
+      "description": "The unique identifier for the file.",
+      "type": "string"
+    },
+    "path": {
+      "description": "The path of the file, e.g., `2.2/V0001_create_table.sql`.",
+      "type": "string"
+    },
+    "sheet": {
+      "description": "The sheet that holds the content.\n Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "sheet_sha256": {
+      "description": "The SHA256 hash value of the sheet.",
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "SCHEMA_CHANGE_TYPE_UNSPECIFIED",
+        "VERSIONED",
+        "DECLARATIVE"
+      ],
+      "title": "Schema Change Type",
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "path",
+    "sheet",
+    "sheet_sha256",
+    "type",
+    "version",
+    "enable_ghost"
+  ],
+  "title": "File",
+  "type": "object"
+}

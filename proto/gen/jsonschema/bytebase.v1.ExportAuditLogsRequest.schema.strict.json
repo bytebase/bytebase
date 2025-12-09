@@ -1,0 +1,51 @@
+{
+  "$id": "bytebase.v1.ExportAuditLogsRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Request message for exporting audit logs.",
+  "properties": {
+    "filter": {
+      "description": "The filter of the log. It should be a valid CEL expression.\n Check the filter field in the SearchAuditLogsRequest message.",
+      "type": "string"
+    },
+    "format": {
+      "description": "The export format.",
+      "enum": [
+        "FORMAT_UNSPECIFIED",
+        "CSV",
+        "JSON",
+        "SQL",
+        "XLSX"
+      ],
+      "title": "Export Format",
+      "type": "string"
+    },
+    "order_by": {
+      "description": "The order by of the log.\n Only support order by create_time.\n For example:\n  - order_by = \"create_time asc\"\n  - order_by = \"create_time desc\"",
+      "type": "string"
+    },
+    "page_size": {
+      "description": "The maximum number of logs to return.\n The service may return fewer than this value.\n If unspecified, at most 10 log entries will be returned.\n The maximum value is 5000; values above 5000 will be coerced to 5000.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "page_token": {
+      "description": "A page token, received from a previous `ExportAuditLogs` call.\n Provide this to retrieve the subsequent page.",
+      "type": "string"
+    },
+    "parent": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "parent",
+    "filter",
+    "order_by",
+    "format",
+    "page_size",
+    "page_token"
+  ],
+  "title": "Export Audit Logs Request",
+  "type": "object"
+}

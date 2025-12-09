@@ -1,0 +1,9 @@
+{
+  "$id": "bytebase.v1.DeleteCacheRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Request message for deleting cache.",
+  "properties": {},
+  "title": "Delete Cache Request",
+  "type": "object"
+}

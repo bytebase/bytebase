@@ -1,0 +1,43 @@
+{
+  "$defs": {
+    "bytebase.store.IdentityProviderUserInfo.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "display_name": {
+          "description": "DisplayName is the value of display name in 3rd-party idp user info.",
+          "type": "string"
+        },
+        "groups": {
+          "description": "Groups is the value of groups in 3rd-party idp user info.\n Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "has_groups": {
+          "type": "boolean"
+        },
+        "identifier": {
+          "description": "Identifier is the value of the unique identifier in 3rd-party idp user info.",
+          "type": "string"
+        },
+        "phone": {
+          "description": "Phone is the value of primary phone in 3rd-party idp user info.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "identifier",
+        "display_name",
+        "phone",
+        "has_groups"
+      ],
+      "title": "Identity Provider User Info",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.IdentityProviderUserInfo.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.IdentityProviderUserInfo.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

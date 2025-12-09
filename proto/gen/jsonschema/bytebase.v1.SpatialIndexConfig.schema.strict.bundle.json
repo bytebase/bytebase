@@ -1,0 +1,354 @@
+{
+  "$defs": {
+    "bytebase.v1.BoundingBox.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.",
+      "properties": {
+        "xmax": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ],
+          "description": "Maximum X coordinate"
+        },
+        "xmin": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ],
+          "description": "Minimum X coordinate"
+        },
+        "ymax": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ],
+          "description": "Maximum Y coordinate"
+        },
+        "ymin": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ],
+          "description": "Minimum Y coordinate"
+        }
+      },
+      "required": [
+        "xmin",
+        "ymin",
+        "xmax",
+        "ymax"
+      ],
+      "title": "Bounding Box",
+      "type": "object"
+    },
+    "bytebase.v1.DimensionConstraint.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DimensionConstraint defines constraints for a spatial dimension.",
+      "properties": {
+        "dimension": {
+          "description": "Dimension name/type (X, Y, Z, M, etc.)",
+          "type": "string"
+        },
+        "max_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ],
+          "description": "Maximum value for this dimension"
+        },
+        "min_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ],
+          "description": "Minimum value for this dimension"
+        },
+        "tolerance": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ],
+          "description": "Tolerance for this dimension"
+        }
+      },
+      "required": [
+        "dimension",
+        "min_value",
+        "max_value",
+        "tolerance"
+      ],
+      "title": "Dimension Constraint",
+      "type": "object"
+    },
+    "bytebase.v1.DimensionalConfig.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DimensionalConfig defines dimensional and constraint parameters for spatial indexes.",
+      "properties": {
+        "constraints": {
+          "description": "Coordinate system constraints",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DimensionConstraint.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "data_type": {
+          "description": "Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)",
+          "type": "string"
+        },
+        "dimensions": {
+          "description": "Number of dimensions (2-4, default 2)",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "srid": {
+          "description": "Spatial reference system identifier (SRID)",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dimensions",
+        "data_type",
+        "srid"
+      ],
+      "title": "Dimensional Config",
+      "type": "object"
+    },
+    "bytebase.v1.GridLevel.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "GridLevel defines a tessellation grid level with its density.",
+      "properties": {
+        "density": {
+          "description": "Grid density (LOW, MEDIUM, HIGH)",
+          "type": "string"
+        },
+        "level": {
+          "description": "Grid level number (1-4 for SQL Server)",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "level",
+        "density"
+      ],
+      "title": "Grid Level",
+      "type": "object"
+    },
+    "bytebase.v1.SpatialIndexConfig.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "SpatialIndexConfig defines the spatial index configuration for spatial databases.",
+      "properties": {
+        "dimensional": {
+          "$ref": "#/$defs/bytebase.v1.DimensionalConfig.schema.strict.json",
+          "description": "Dimensional configuration"
+        },
+        "method": {
+          "description": "Spatial indexing method (e.g., \"SPATIAL\", \"R-TREE\", \"GIST\")",
+          "type": "string"
+        },
+        "storage": {
+          "$ref": "#/$defs/bytebase.v1.StorageConfig.schema.strict.json",
+          "description": "Storage and performance configuration"
+        },
+        "tessellation": {
+          "$ref": "#/$defs/bytebase.v1.TessellationConfig.schema.strict.json",
+          "description": "Tessellation configuration for grid-based spatial indexes"
+        }
+      },
+      "required": [
+        "method"
+      ],
+      "title": "Spatial Index Config",
+      "type": "object"
+    },
+    "bytebase.v1.StorageConfig.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "StorageConfig defines storage and performance parameters for spatial indexes.",
+      "properties": {
+        "allow_page_locks": {
+          "type": "boolean"
+        },
+        "allow_row_locks": {
+          "type": "boolean"
+        },
+        "buffering": {
+          "description": "Buffering mode for PostgreSQL (auto, on, off)",
+          "type": "string"
+        },
+        "commit_interval": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "data_compression": {
+          "type": "string"
+        },
+        "drop_existing": {
+          "type": "boolean"
+        },
+        "fillfactor": {
+          "description": "Fill factor percentage (1-100)",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "maxdop": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "online": {
+          "type": "boolean"
+        },
+        "pad_index": {
+          "description": "SQL Server specific parameters",
+          "type": "boolean"
+        },
+        "sdo_level": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "sort_in_tempdb": {
+          "type": "string"
+        },
+        "tablespace": {
+          "description": "Tablespace configuration for Oracle",
+          "type": "string"
+        },
+        "work_tablespace": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "fillfactor",
+        "buffering",
+        "tablespace",
+        "work_tablespace",
+        "sdo_level",
+        "commit_interval",
+        "pad_index",
+        "sort_in_tempdb",
+        "drop_existing",
+        "online",
+        "allow_row_locks",
+        "allow_page_locks",
+        "maxdop",
+        "data_compression"
+      ],
+      "title": "Storage Config",
+      "type": "object"
+    },
+    "bytebase.v1.TessellationConfig.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "TessellationConfig defines tessellation parameters for spatial indexes.",
+      "properties": {
+        "bounding_box": {
+          "$ref": "#/$defs/bytebase.v1.BoundingBox.schema.strict.json",
+          "description": "Bounding box for GEOMETRY tessellation (not used for GEOGRAPHY)"
+        },
+        "cells_per_object": {
+          "description": "Number of cells per object (1-8192 for SQL Server)",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "grid_levels": {
+          "description": "Grid levels and densities for multi-level tessellation",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.GridLevel.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "scheme": {
+          "description": "Tessellation scheme (e.g., \"GEOMETRY_GRID\", \"GEOGRAPHY_GRID\", \"GEOMETRY_AUTO_GRID\")",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scheme",
+        "cells_per_object"
+      ],
+      "title": "Tessellation Config",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.SpatialIndexConfig.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.SpatialIndexConfig.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

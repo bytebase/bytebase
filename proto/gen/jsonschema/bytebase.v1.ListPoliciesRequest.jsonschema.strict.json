@@ -1,0 +1,35 @@
+{
+  "$id": "bytebase.v1.ListPoliciesRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "description": "The parent, which owns this collection of policies.\n Format: {resource type}/{resource id}",
+      "type": "string"
+    },
+    "policyType": {
+      "description": "Filter by specific policy type.",
+      "enum": [
+        "POLICY_TYPE_UNSPECIFIED",
+        "ROLLOUT_POLICY",
+        "MASKING_RULE",
+        "MASKING_EXCEPTION",
+        "TAG",
+        "DATA_SOURCE_QUERY",
+        "DATA_QUERY"
+      ],
+      "title": "Policy Type",
+      "type": "string"
+    },
+    "showDeleted": {
+      "description": "Show deleted policies if specified.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "parent",
+    "showDeleted"
+  ],
+  "title": "List Policies Request",
+  "type": "object"
+}

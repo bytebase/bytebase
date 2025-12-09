@@ -1,0 +1,110 @@
+{
+  "$defs": {
+    "bytebase.store.ApprovalFlow.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ApprovalFlow defines the sequence of approvals required.",
+      "properties": {
+        "roles": {
+          "description": "List of role names that must approve, in order.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Approval Flow",
+      "type": "object"
+    },
+    "bytebase.store.ApprovalTemplate.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ApprovalTemplate defines the approval workflow and requirements for an issue.",
+      "properties": {
+        "description": {
+          "description": "Detailed description of when this template applies.",
+          "type": "string"
+        },
+        "flow": {
+          "$ref": "#/$defs/bytebase.store.ApprovalFlow.schema.strict.json",
+          "description": "The approval workflow specification."
+        },
+        "title": {
+          "description": "Human-readable title of the approval template.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "description"
+      ],
+      "title": "Approval Template",
+      "type": "object"
+    },
+    "bytebase.store.IssuePayloadApproval.Approver.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Approver represents a user who can approve or reject an issue.",
+      "properties": {
+        "principal_id": {
+          "description": "The ID of the principal who is the approver.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "status": {
+          "description": "The current approval status.",
+          "enum": [
+            "STATUS_UNSPECIFIED",
+            "PENDING",
+            "APPROVED",
+            "REJECTED"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "principal_id"
+      ],
+      "title": "Approver",
+      "type": "object"
+    },
+    "bytebase.store.IssuePayloadApproval.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "IssuePayloadApproval records the approval template used and approval history for an issue.",
+      "properties": {
+        "approval_finding_done": {
+          "description": "Whether the system has finished finding a matching approval template.\n False means the backend is still searching for matching templates.",
+          "type": "boolean"
+        },
+        "approval_finding_error": {
+          "description": "Error message if approval template finding failed.",
+          "type": "string"
+        },
+        "approval_template": {
+          "$ref": "#/$defs/bytebase.store.ApprovalTemplate.schema.strict.json",
+          "description": "The approval template being used for this issue."
+        },
+        "approvers": {
+          "description": "List of approvers and their current status.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.IssuePayloadApproval.Approver.schema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "approval_finding_done",
+        "approval_finding_error"
+      ],
+      "title": "Issue Payload Approval",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.IssuePayloadApproval.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.IssuePayloadApproval.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

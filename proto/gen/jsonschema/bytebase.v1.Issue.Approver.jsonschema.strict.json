@@ -1,0 +1,29 @@
+{
+  "$id": "bytebase.v1.Issue.Approver.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Approvers and their approval status for the issue.",
+  "properties": {
+    "principal": {
+      "description": "Format: users/hello@world.com",
+      "type": "string"
+    },
+    "status": {
+      "description": "The new status.",
+      "enum": [
+        "STATUS_UNSPECIFIED",
+        "PENDING",
+        "APPROVED",
+        "REJECTED"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "principal"
+  ],
+  "title": "Approver",
+  "type": "object"
+}

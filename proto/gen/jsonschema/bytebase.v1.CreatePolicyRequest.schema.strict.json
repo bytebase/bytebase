@@ -1,0 +1,35 @@
+{
+  "$id": "bytebase.v1.CreatePolicyRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "description": "The parent resource where this instance will be created.\n Workspace resource name: \"\".\n Environment resource name: environments/environment-id.\n Instance resource name: instances/instance-id.\n Database resource name: instances/instance-id/databases/database-name.",
+      "type": "string"
+    },
+    "policy": {
+      "$ref": "bytebase.v1.Policy.schema.strict.json",
+      "description": "The policy to create."
+    },
+    "type": {
+      "description": "The type of policy to create.",
+      "enum": [
+        "POLICY_TYPE_UNSPECIFIED",
+        "ROLLOUT_POLICY",
+        "MASKING_RULE",
+        "MASKING_EXCEPTION",
+        "TAG",
+        "DATA_SOURCE_QUERY",
+        "DATA_QUERY"
+      ],
+      "title": "Policy Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "parent",
+    "type"
+  ],
+  "title": "Create Policy Request",
+  "type": "object"
+}

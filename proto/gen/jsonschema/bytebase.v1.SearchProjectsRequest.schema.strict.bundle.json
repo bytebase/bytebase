@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "bytebase.v1.SearchProjectsRequest.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "description": "Supported filters:\n - name: the project name, support \"==\" and \".matches()\" operator.\n - resource_id: the project id, support \"==\" and \".matches()\" operator.\n - exclude_default: if not include the default project, should be \"true\" or \"false\", support \"==\" operator.\n - state: check the State enum for the values, support \"==\" operator.\n - labels.{key}: the project label, support \"==\" and \"in\" operators.\n\n For example:\n name == \"project name\"\n name.matches(\"project name\")\n resource_id == \"project id\"\n resource_id.matches(\"project id\")\n exclude_default == true\n state == \"DELETED\"\n labels.environment == \"production\"\n labels.tier == \"critical\"\n labels.environment in [\"staging\", \"prod\"]\n You can combine filter conditions like:\n name == \"project name\" \u0026\u0026 resource_id.matches(\"project id\")\n name.matches(\"project name\") || resource_id == \"project id\"\n labels.environment == \"production\" \u0026\u0026 labels.tier == \"critical\"",
+          "title": "Filter the project.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec",
+          "type": "string"
+        },
+        "page_size": {
+          "description": "The maximum number of projects to return. The service may return fewer than\n this value.\n If unspecified, at most 10 projects will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "page_token": {
+          "description": "When paginating, all other parameters provided to `SearchProjects` must match\n the call that provided the page token.",
+          "title": "A page token, received from a previous `SearchProjects` call.\n Provide this to retrieve the subsequent page.",
+          "type": "string"
+        },
+        "show_deleted": {
+          "description": "Show deleted projects if specified.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "show_deleted",
+        "filter",
+        "page_size",
+        "page_token"
+      ],
+      "title": "Search Projects Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.SearchProjectsRequest.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.SearchProjectsRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

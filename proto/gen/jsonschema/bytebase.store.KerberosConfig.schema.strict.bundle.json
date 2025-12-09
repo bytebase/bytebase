@@ -1,0 +1,46 @@
+{
+  "$defs": {
+    "bytebase.store.KerberosConfig.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "instance": {
+          "type": "string"
+        },
+        "kdc_host": {
+          "type": "string"
+        },
+        "kdc_port": {
+          "type": "string"
+        },
+        "kdc_transport_protocol": {
+          "type": "string"
+        },
+        "keytab": {
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        },
+        "primary": {
+          "type": "string"
+        },
+        "realm": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "primary",
+        "instance",
+        "realm",
+        "keytab",
+        "kdc_host",
+        "kdc_port",
+        "kdc_transport_protocol"
+      ],
+      "title": "Kerberos Config",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.KerberosConfig.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.KerberosConfig.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

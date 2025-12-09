@@ -1,0 +1,49 @@
+{
+  "$id": "bytebase.store.PlanCheckRunConfig.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "database_name": {
+      "type": "string"
+    },
+    "enable_ghost": {
+      "description": "Whether to use gh-ost for online schema migration.",
+      "type": "boolean"
+    },
+    "enable_prior_backup": {
+      "description": "If set, a backup of the modified data will be created automatically before any changes are applied.",
+      "type": "boolean"
+    },
+    "enable_sdl": {
+      "description": "Whether this is a Schema Definition Language (SDL) change.",
+      "type": "boolean"
+    },
+    "ghost_flags": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "instance_id": {
+      "type": "string"
+    },
+    "sheet_uid": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "sheet_uid",
+    "instance_id",
+    "database_name",
+    "enable_prior_backup",
+    "enable_ghost",
+    "enable_sdl"
+  ],
+  "title": "Plan Check Run Config",
+  "type": "object"
+}

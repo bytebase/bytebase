@@ -1,0 +1,64 @@
+{
+  "$id": "bytebase.store.LDAPIdentityProviderConfig.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "LDAPIdentityProviderConfig is the structure for LDAP identity provider config.",
+  "properties": {
+    "base_dn": {
+      "description": "BaseDN is the base DN to search for users, e.g. \"ou=users,dc=example,dc=com\".",
+      "type": "string"
+    },
+    "bind_dn": {
+      "description": "BindDN is the DN of the user to bind as a service account to perform\n search requests.",
+      "type": "string"
+    },
+    "bind_password": {
+      "description": "BindPassword is the password of the user to bind as a service account.",
+      "type": "string"
+    },
+    "field_mapping": {
+      "$ref": "bytebase.store.FieldMapping.schema.strict.json",
+      "description": "FieldMapping is the mapping of the user attributes returned by the LDAP\n server."
+    },
+    "host": {
+      "description": "Host is the hostname or IP address of the LDAP server, e.g.\n \"ldap.example.com\".",
+      "type": "string"
+    },
+    "port": {
+      "description": "Port is the port number of the LDAP server, e.g. 389. When not set, the\n default port of the corresponding security protocol will be used, i.e. 389\n for StartTLS and 636 for LDAPS.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "security_protocol": {
+      "description": "SecurityProtocol is the security protocol to be used for establishing\n connections with the LDAP server.",
+      "enum": [
+        "SECURITY_PROTOCOL_UNSPECIFIED",
+        "START_TLS",
+        "LDAPS"
+      ],
+      "title": "Security Protocol",
+      "type": "string"
+    },
+    "skip_tls_verify": {
+      "description": "SkipTLSVerify controls whether to skip TLS certificate verification.",
+      "type": "boolean"
+    },
+    "user_filter": {
+      "description": "UserFilter is the filter to search for users, e.g. \"(uid=%s)\".",
+      "type": "string"
+    }
+  },
+  "required": [
+    "host",
+    "port",
+    "skip_tls_verify",
+    "bind_dn",
+    "bind_password",
+    "base_dn",
+    "user_filter",
+    "security_protocol"
+  ],
+  "title": "LDAP Identity Provider Config",
+  "type": "object"
+}

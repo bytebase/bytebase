@@ -1,0 +1,24 @@
+{
+  "$id": "bytebase.store.ExportArchivePayload.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "file_format": {
+      "description": "The exported file format. e.g. JSON, CSV, SQL",
+      "enum": [
+        "FORMAT_UNSPECIFIED",
+        "CSV",
+        "JSON",
+        "SQL",
+        "XLSX"
+      ],
+      "title": "Export Format",
+      "type": "string"
+    }
+  },
+  "required": [
+    "file_format"
+  ],
+  "title": "Export Archive Payload",
+  "type": "object"
+}

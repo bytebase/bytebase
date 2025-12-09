@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "bytebase.v1.MaskingRulePolicy.MaskingRule.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A rule that defines when and how to mask data.",
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/google.type.Expr.schema.strict.json",
+          "description": "Support variables:\n resource.environment_id: the environment resource id.\n resource.project_id: the project resource id.\n resource.instance_id: the instance resource id.\n resource.database_name: the database name.\n resource.table_name: the table name.\n resource.column_name: the column name.\n resource.classification_level: the classification level.\n\n Each variable support following operations:\n ==: the value equals the target.\n !=: the value not equals the target.\n in: the value matches one of the targets.\n !(in): the value not matches any of the targets.\n\n For example:\n resource.environment_id == \"test\" \u0026\u0026 resource.project_id == \"sample-project\"\n resource.instance_id == \"sample-instance\" \u0026\u0026 resource.database_name == \"employee\" \u0026\u0026 resource.table_name in [\"table1\", \"table2\"]\n resource.environment_id != \"test\" || !(resource.project_id in [\"poject1\", \"prject2\"])\n resource.instance_id == \"sample-instance\" \u0026\u0026 (resource.database_name == \"db1\" || resource.database_name == \"db2\")",
+          "title": "The condition for the masking rule.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec"
+        },
+        "id": {
+          "description": "A unique identifier for the rule in UUID format.",
+          "type": "string"
+        },
+        "semantic_type": {
+          "description": "The semantic type of data to mask (e.g., \"SSN\", \"EMAIL\").",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "semantic_type"
+      ],
+      "title": "Masking Rule",
+      "type": "object"
+    },
+    "bytebase.v1.MaskingRulePolicy.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Policy for configuring data masking rules.",
+      "properties": {
+        "rules": {
+          "description": "The list of masking rules.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.MaskingRulePolicy.MaskingRule.schema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Masking Rule Policy",
+      "type": "object"
+    },
+    "google.type.Expr.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Example (Comparison):\n\n     title: \"Summary size limit\"\n     description: \"Determines if a summary is less than 100 chars\"\n     expression: \"document.summary.size() \u003c 100\"\n\n Example (Equality):\n\n     title: \"Requestor is owner\"\n     description: \"Determines if requestor is the document owner\"\n     expression: \"document.owner == request.auth.claims.email\"\n\n Example (Logic):\n\n     title: \"Public documents\"\n     description: \"Determine whether the document should be publicly visible\"\n     expression: \"document.type != 'private' \u0026\u0026 document.type != 'internal'\"\n\n Example (Data Manipulation):\n\n     title: \"Notification string\"\n     description: \"Create a notification string with a timestamp.\"\n     expression: \"'New message received at ' + string(document.create_time)\"\n\n The exact variables and functions that may be referenced within an expression\n are determined by the service that evaluates it. See the service\n documentation for additional information.",
+      "properties": {
+        "description": {
+          "description": "Optional. Description of the expression. This is a longer text which\n describes the expression, e.g. when hovered over it in a UI.",
+          "type": "string"
+        },
+        "expression": {
+          "description": "Textual representation of an expression in Common Expression Language\n syntax.",
+          "type": "string"
+        },
+        "location": {
+          "description": "Optional. String indicating the location of the expression for error\n reporting, e.g. a file name and a position in the file.",
+          "type": "string"
+        },
+        "title": {
+          "description": "Optional. Title for the expression, i.e. a short string describing\n its purpose. This can be used e.g. in UIs which allow to enter the\n expression.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expression",
+        "title",
+        "description",
+        "location"
+      ],
+      "title": "Represents a textual expression in the Common Expression Language (CEL)\n syntax. CEL is a C-like expression language. The syntax and semantics of CEL\n are documented at https://github.com/google/cel-spec.",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.MaskingRulePolicy.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.MaskingRulePolicy.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

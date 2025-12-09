@@ -1,0 +1,24 @@
+{
+  "$id": "bytebase.v1.IssueComment.Approval.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Approval event information.",
+  "properties": {
+    "status": {
+      "description": "The approval status.",
+      "enum": [
+        "STATUS_UNSPECIFIED",
+        "PENDING",
+        "APPROVED",
+        "REJECTED"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status"
+  ],
+  "title": "Approval",
+  "type": "object"
+}

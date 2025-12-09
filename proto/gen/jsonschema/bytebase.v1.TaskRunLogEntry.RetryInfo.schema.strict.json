@@ -1,0 +1,31 @@
+{
+  "$id": "bytebase.v1.TaskRunLogEntry.RetryInfo.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Retry information for failed operations.",
+  "properties": {
+    "error": {
+      "description": "The error that triggered the retry.",
+      "type": "string"
+    },
+    "maximum_retries": {
+      "description": "Maximum number of retries allowed.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "retry_count": {
+      "description": "Current retry attempt number.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "error",
+    "retry_count",
+    "maximum_retries"
+  ],
+  "title": "Retry Info",
+  "type": "object"
+}

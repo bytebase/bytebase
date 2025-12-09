@@ -1,0 +1,24 @@
+{
+  "$id": "bytebase.store.ApprovalTemplate.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ApprovalTemplate defines the approval workflow and requirements for an issue.",
+  "properties": {
+    "description": {
+      "default": "",
+      "description": "Detailed description of when this template applies.",
+      "type": "string"
+    },
+    "flow": {
+      "$ref": "bytebase.store.ApprovalFlow.jsonschema.json",
+      "description": "The approval workflow specification."
+    },
+    "title": {
+      "default": "",
+      "description": "Human-readable title of the approval template.",
+      "type": "string"
+    }
+  },
+  "title": "Approval Template",
+  "type": "object"
+}

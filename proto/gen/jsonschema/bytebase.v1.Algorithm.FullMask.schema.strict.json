@@ -1,0 +1,16 @@
+{
+  "$id": "bytebase.v1.Algorithm.FullMask.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "substitution": {
+      "description": "substitution is the string used to replace the original value, the\n max length of the string is 16 bytes.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "substitution"
+  ],
+  "title": "Full Mask",
+  "type": "object"
+}

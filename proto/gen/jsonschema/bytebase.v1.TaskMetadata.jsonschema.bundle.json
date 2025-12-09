@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "bytebase.v1.TaskMetadata.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "comment": {
+          "default": "",
+          "description": "The comment of the task.",
+          "type": "string"
+        },
+        "condition": {
+          "default": "",
+          "description": "The condition of the task.",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The definition of the task.",
+          "type": "string"
+        },
+        "id": {
+          "default": "",
+          "description": "The id is the snowflake-generated id of a task.\n Example: 01ad32a0-1bb6-5e93-0000-000000000001",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the name of a task.",
+          "type": "string"
+        },
+        "owner": {
+          "default": "",
+          "description": "The owner of the task.",
+          "type": "string"
+        },
+        "predecessors": {
+          "description": "The predecessor tasks of the task.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "schedule": {
+          "default": "",
+          "description": "The schedule interval of the task.",
+          "type": "string"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "pattern": "^STATE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "STARTED",
+                "SUSPENDED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The state of the task.",
+          "title": "State"
+        },
+        "warehouse": {
+          "default": "",
+          "description": "The warehouse of the task.",
+          "type": "string"
+        }
+      },
+      "title": "Task Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.TaskMetadata.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.TaskMetadata.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

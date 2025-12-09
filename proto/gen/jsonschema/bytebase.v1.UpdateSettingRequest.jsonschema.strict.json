@@ -1,0 +1,28 @@
+{
+  "$id": "bytebase.v1.UpdateSettingRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The request message for updating or creating a setting.",
+  "properties": {
+    "allowMissing": {
+      "type": "boolean"
+    },
+    "setting": {
+      "$ref": "bytebase.v1.Setting.jsonschema.strict.json",
+      "description": "The setting to update."
+    },
+    "updateMask": {
+      "$ref": "google.protobuf.FieldMask.jsonschema.strict.json"
+    },
+    "validateOnly": {
+      "description": "validate_only is a flag to indicate whether to validate the setting value,\n server would not persist the setting value if it is true.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "validateOnly",
+    "allowMissing"
+  ],
+  "title": "Update Setting Request",
+  "type": "object"
+}

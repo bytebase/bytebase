@@ -1,0 +1,75 @@
+{
+  "$defs": {
+    "bytebase.store.Binding.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/google.type.Expr.schema.json",
+          "description": "The condition that is associated with this binding.\n If the condition evaluates to true, then this binding applies to the current request.\n If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding."
+        },
+        "members": {
+          "description": "Specifies the principals requesting access for a Bytebase resource.\n For users, the member should be: users/{userUID}\n For groups, the member should be: groups/{email}",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "role": {
+          "default": "",
+          "description": "The role that is assigned to the members.\n Format: roles/{role}",
+          "type": "string"
+        }
+      },
+      "title": "Binding",
+      "type": "object"
+    },
+    "bytebase.store.IamPolicy.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "bindings": {
+          "description": "Collection of binding.\n A binding binds one or more members or groups to a single role.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.Binding.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Iam Policy",
+      "type": "object"
+    },
+    "google.type.Expr.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Example (Comparison):\n\n     title: \"Summary size limit\"\n     description: \"Determines if a summary is less than 100 chars\"\n     expression: \"document.summary.size() \u003c 100\"\n\n Example (Equality):\n\n     title: \"Requestor is owner\"\n     description: \"Determines if requestor is the document owner\"\n     expression: \"document.owner == request.auth.claims.email\"\n\n Example (Logic):\n\n     title: \"Public documents\"\n     description: \"Determine whether the document should be publicly visible\"\n     expression: \"document.type != 'private' \u0026\u0026 document.type != 'internal'\"\n\n Example (Data Manipulation):\n\n     title: \"Notification string\"\n     description: \"Create a notification string with a timestamp.\"\n     expression: \"'New message received at ' + string(document.create_time)\"\n\n The exact variables and functions that may be referenced within an expression\n are determined by the service that evaluates it. See the service\n documentation for additional information.",
+      "properties": {
+        "description": {
+          "default": "",
+          "description": "Optional. Description of the expression. This is a longer text which\n describes the expression, e.g. when hovered over it in a UI.",
+          "type": "string"
+        },
+        "expression": {
+          "default": "",
+          "description": "Textual representation of an expression in Common Expression Language\n syntax.",
+          "type": "string"
+        },
+        "location": {
+          "default": "",
+          "description": "Optional. String indicating the location of the expression for error\n reporting, e.g. a file name and a position in the file.",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "description": "Optional. Title for the expression, i.e. a short string describing\n its purpose. This can be used e.g. in UIs which allow to enter the\n expression.",
+          "type": "string"
+        }
+      },
+      "title": "Represents a textual expression in the Common Expression Language (CEL)\n syntax. CEL is a C-like expression language. The syntax and semantics of CEL\n are documented at https://github.com/google/cel-spec.",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.IamPolicy.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.IamPolicy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.BatchGetDatabasesRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "names": {
+      "description": "The list of database names to retrieve.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "parent": {
+      "default": "",
+      "description": "The parent resource shared by all databases being retrieved.\n - projects/{project}: batch get databases in a project;\n - instances/{instances}: batch get databases in a instance;\n Use \"-\" as wildcard to batch get databases across parent.",
+      "type": "string"
+    }
+  },
+  "title": "Batch Get Databases Request",
+  "type": "object"
+}

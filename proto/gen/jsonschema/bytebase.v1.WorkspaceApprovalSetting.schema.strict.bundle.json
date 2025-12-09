@@ -1,0 +1,121 @@
+{
+  "$defs": {
+    "bytebase.v1.ApprovalFlow.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "roles": {
+          "description": "The roles required for approval in order.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Approval Flow",
+      "type": "object"
+    },
+    "bytebase.v1.ApprovalTemplate.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "The description of the approval template.",
+          "type": "string"
+        },
+        "flow": {
+          "$ref": "#/$defs/bytebase.v1.ApprovalFlow.schema.strict.json",
+          "description": "The approval flow definition."
+        },
+        "title": {
+          "description": "The title of the approval template.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "description"
+      ],
+      "title": "Approval Template",
+      "type": "object"
+    },
+    "bytebase.v1.WorkspaceApprovalSetting.Rule.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/google.type.Expr.schema.strict.json",
+          "description": "The `source` field filters which rules apply. The `condition` field then evaluates with full context.\n\n All supported variables:\n statement.affected_rows: affected row count in the DDL/DML, support \"==\", \"!=\", \"\u003c\", \"\u003c=\", \"\u003e\", \"\u003e=\" operations.\n statement.table_rows: table row count number, support \"==\", \"!=\", \"\u003c\", \"\u003c=\", \"\u003e\", \"\u003e=\" operations.\n resource.environment_id: the environment resource id, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\" operations.\n resource.project_id: the project resource id, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\", \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n resource.db_engine: the database engine type, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\" operations. Check the Engine enum for values.\n statement.sql_type: the SQL type, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\" operations.\n resource.database_name: the database name, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\", \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n resource.schema_name: the schema name, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\", \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n resource.table_name: the table name, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\", \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n statement.text: the SQL statement, support \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n request.expiration_days: the role expiration days for the request, support \"==\", \"!=\", \"\u003c\", \"\u003c=\", \"\u003e\", \"\u003e=\" operations.\n request.role: the request role full name, support \"==\", \"!=\", \"in [xx]\", \"!(in [xx])\", \"contains()\", \"matches()\", \"startsWith()\", \"endsWith()\" operations.\n\n When source is CHANGE_DATABASE, support: statement.*, resource.* (excluding request.*)\n When source is CREATE_DATABASE, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name\n When source is EXPORT_DATA, support: resource.environment_id, resource.project_id, resource.db_engine, resource.database_name, resource.schema_name, resource.table_name\n When source is REQUEST_ROLE, support: resource.project_id, request.expiration_days, request.role\n\n For examples:\n resource.environment_id == \"prod\" \u0026\u0026 statement.affected_rows \u003e= 100\n resource.table_name.matches(\"sensitive_.*\") \u0026\u0026 resource.db_engine == \"MYSQL\"",
+          "title": "The condition that is associated with the rule.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec"
+        },
+        "source": {
+          "enum": [
+            "SOURCE_UNSPECIFIED",
+            "CHANGE_DATABASE",
+            "CREATE_DATABASE",
+            "EXPORT_DATA",
+            "REQUEST_ROLE"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "template": {
+          "$ref": "#/$defs/bytebase.v1.ApprovalTemplate.schema.strict.json"
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "title": "Rule",
+      "type": "object"
+    },
+    "bytebase.v1.WorkspaceApprovalSetting.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.WorkspaceApprovalSetting.Rule.schema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Workspace Approval Setting",
+      "type": "object"
+    },
+    "google.type.Expr.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Example (Comparison):\n\n     title: \"Summary size limit\"\n     description: \"Determines if a summary is less than 100 chars\"\n     expression: \"document.summary.size() \u003c 100\"\n\n Example (Equality):\n\n     title: \"Requestor is owner\"\n     description: \"Determines if requestor is the document owner\"\n     expression: \"document.owner == request.auth.claims.email\"\n\n Example (Logic):\n\n     title: \"Public documents\"\n     description: \"Determine whether the document should be publicly visible\"\n     expression: \"document.type != 'private' \u0026\u0026 document.type != 'internal'\"\n\n Example (Data Manipulation):\n\n     title: \"Notification string\"\n     description: \"Create a notification string with a timestamp.\"\n     expression: \"'New message received at ' + string(document.create_time)\"\n\n The exact variables and functions that may be referenced within an expression\n are determined by the service that evaluates it. See the service\n documentation for additional information.",
+      "properties": {
+        "description": {
+          "description": "Optional. Description of the expression. This is a longer text which\n describes the expression, e.g. when hovered over it in a UI.",
+          "type": "string"
+        },
+        "expression": {
+          "description": "Textual representation of an expression in Common Expression Language\n syntax.",
+          "type": "string"
+        },
+        "location": {
+          "description": "Optional. String indicating the location of the expression for error\n reporting, e.g. a file name and a position in the file.",
+          "type": "string"
+        },
+        "title": {
+          "description": "Optional. Title for the expression, i.e. a short string describing\n its purpose. This can be used e.g. in UIs which allow to enter the\n expression.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expression",
+        "title",
+        "description",
+        "location"
+      ],
+      "title": "Represents a textual expression in the Common Expression Language (CEL)\n syntax. CEL is a C-like expression language. The syntax and semantics of CEL\n are documented at https://github.com/google/cel-spec.",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.WorkspaceApprovalSetting.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.WorkspaceApprovalSetting.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

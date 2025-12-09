@@ -1,0 +1,29 @@
+{
+  "$id": "bytebase.v1.BatchCancelTaskRunsRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "description": "The name of the parent of the taskRuns.\n Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}\n Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.",
+      "type": "string"
+    },
+    "reason": {
+      "description": "The reason for canceling the task runs.",
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "task_runs": {
+      "description": "The taskRuns to cancel.\n Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "parent",
+    "reason"
+  ],
+  "title": "Batch Cancel Task Runs Request",
+  "type": "object"
+}

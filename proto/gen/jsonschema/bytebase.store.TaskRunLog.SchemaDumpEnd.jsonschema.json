@@ -1,0 +1,13 @@
+{
+  "$id": "bytebase.store.TaskRunLog.SchemaDumpEnd.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "error": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Schema Dump End",
+  "type": "object"
+}

@@ -1,0 +1,27 @@
+{
+  "$defs": {
+    "bytebase.store.CheckConstraintMetadata.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "expression": {
+          "description": "The expression is the expression of a check constraint.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the check constraint.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "expression"
+      ],
+      "title": "Check Constraint Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.CheckConstraintMetadata.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.CheckConstraintMetadata.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

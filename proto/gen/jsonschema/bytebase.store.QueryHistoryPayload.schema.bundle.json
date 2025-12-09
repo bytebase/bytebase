@@ -1,0 +1,27 @@
+{
+  "$defs": {
+    "bytebase.store.QueryHistoryPayload.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "duration": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json"
+        },
+        "error": {
+          "type": "string"
+        }
+      },
+      "title": "Query History Payload",
+      "type": "object"
+    },
+    "google.protobuf.Duration.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "duration",
+      "title": "Duration",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.store.QueryHistoryPayload.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.QueryHistoryPayload.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

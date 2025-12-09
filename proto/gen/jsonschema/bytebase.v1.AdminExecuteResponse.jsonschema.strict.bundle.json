@@ -1,0 +1,489 @@
+{
+  "$defs": {
+    "bytebase.v1.AdminExecuteResponse.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "results": {
+          "description": "The query results.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.QueryResult.jsonschema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Admin Execute Response",
+      "type": "object"
+    },
+    "bytebase.v1.MaskingReason.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "description": "The masking algorithm used.",
+          "type": "string"
+        },
+        "classificationLevel": {
+          "description": "Whether masking was due to classification level.",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context (e.g., \"Matched global rule: PII Protection\").",
+          "type": "string"
+        },
+        "maskingRuleId": {
+          "description": "The masking rule ID that matched (if applicable).",
+          "type": "string"
+        },
+        "semanticTypeIcon": {
+          "description": "Icon associated with the semantic type (if any).",
+          "type": "string"
+        },
+        "semanticTypeId": {
+          "description": "The semantic type that triggered masking (e.g., \"SSN\", \"email\", \"phone\").",
+          "type": "string"
+        },
+        "semanticTypeTitle": {
+          "description": "Human-readable semantic type title.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "semanticTypeId",
+        "semanticTypeTitle",
+        "maskingRuleId",
+        "algorithm",
+        "context",
+        "classificationLevel",
+        "semanticTypeIcon"
+      ],
+      "title": "Masking Reason",
+      "type": "object"
+    },
+    "bytebase.v1.Position.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Handling unknown positions:\n - If the entire position is unknown, leave this field as nil/undefined\n - If only line is known, set line and leave column as 0 (e.g., line=5, column=0)\n - If only column is known (rare), set column and leave line as 0\n Frontends should check for nil/undefined/zero values and handle them appropriately.",
+      "properties": {
+        "column": {
+          "description": "Examples:\n - \"SELECT * FROM t\" - column 8 is '*'\n - \"SELECT 你好 FROM t\" - column 8 is '你' (even though it's at byte offset 7)\n - \"SELECT 😀 FROM t\" - column 8 is '😀' (even though it's 4 bytes in UTF-8)",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "title": "Column position in a text (one-based).\n Column is measured in Unicode code points (characters/runes), not bytes or grapheme clusters.\n First character of the line is column 1.\n A value of 0 indicates the column information is unknown.",
+          "type": "integer"
+        },
+        "line": {
+          "description": "Line position in a text (one-based).\n First line of the text is line 1.\n A value of 0 indicates the line information is unknown.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "title": "Position in a text expressed as one-based line and one-based column.\n We use 1-based numbering to match the majority of industry standards:\n - Monaco Editor uses 1-based (https://microsoft.github.io/monaco-editor/typedoc/interfaces/IPosition.html)\n - GitHub Actions uses 1-based (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message)\n - Most text editors display 1-based positions to users\n Note: LSP uses 0-based (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position),\n but we follow the canonical user-facing standards.",
+      "type": "object"
+    },
+    "bytebase.v1.QueryResult.Message.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "level": {
+          "enum": [
+            "LEVEL_UNSPECIFIED",
+            "INFO",
+            "WARNING",
+            "DEBUG",
+            "LOG",
+            "NOTICE",
+            "EXCEPTION"
+          ],
+          "title": "Level",
+          "type": "string"
+        }
+      },
+      "required": [
+        "level",
+        "content"
+      ],
+      "title": "Message",
+      "type": "object"
+    },
+    "bytebase.v1.QueryResult.PermissionDenied.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Permission denied with resource information or disallowed command_type.\n Either resources or command_type is available.",
+      "properties": {
+        "commandType": {
+          "description": "Disallowed command_type.",
+          "enum": [
+            "COMMAND_TYPE_UNSPECIFIED",
+            "DDL",
+            "DML",
+            "NON_READ_ONLY"
+          ],
+          "title": "Command Type",
+          "type": "string"
+        },
+        "resources": {
+          "description": "Denied to access the resources.\n Format:\n instances/{instance}/databases/{database}\n instances/{instance}/databases/{database}/schemas/{schema}\n instances/{instance}/databases/{database}/tables/{table}\n instances/{instance}/databases/{database}/schemas/{schema}/tables/{table}",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "commandType"
+      ],
+      "title": "Permission Denied",
+      "type": "object"
+    },
+    "bytebase.v1.QueryResult.PostgresError.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "refer https://www.postgresql.org/docs/11/protocol-error-fields.html\n for field description.",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "columnName": {
+          "type": "string"
+        },
+        "constraintName": {
+          "type": "string"
+        },
+        "dataTypeName": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "hint": {
+          "type": "string"
+        },
+        "internalPosition": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "internalQuery": {
+          "type": "string"
+        },
+        "line": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        },
+        "position": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "routine": {
+          "type": "string"
+        },
+        "schemaName": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string"
+        },
+        "tableName": {
+          "type": "string"
+        },
+        "where": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "severity",
+        "code",
+        "message",
+        "detail",
+        "hint",
+        "position",
+        "internalPosition",
+        "internalQuery",
+        "where",
+        "schemaName",
+        "tableName",
+        "columnName",
+        "dataTypeName",
+        "constraintName",
+        "file",
+        "line",
+        "routine"
+      ],
+      "title": "Postgres Error",
+      "type": "object"
+    },
+    "bytebase.v1.QueryResult.SyntaxError.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Syntax error with position information for editor highlighting",
+      "properties": {
+        "startPosition": {
+          "$ref": "#/$defs/bytebase.v1.Position.jsonschema.strict.json",
+          "description": "Position information for highlighting in editor"
+        }
+      },
+      "title": "Syntax Error",
+      "type": "object"
+    },
+    "bytebase.v1.QueryResult.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "columnNames": {
+          "description": "Column names of the query result.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "columnTypeNames": {
+          "description": "Column types of the query result.\n The types come from the Golang SQL driver.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "error": {
+          "description": "The error message if the query failed.",
+          "type": "string"
+        },
+        "latency": {
+          "$ref": "#/$defs/google.protobuf.Duration.jsonschema.strict.json",
+          "description": "The time it takes to execute the query."
+        },
+        "masked": {
+          "description": "Masking reasons for each column (empty for non-masked columns).",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.MaskingReason.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "messages": {
+          "description": "Informational or debug messages returned by the database engine during query execution.\n Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.QueryResult.Message.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "permissionDenied": {
+          "$ref": "#/$defs/bytebase.v1.QueryResult.PermissionDenied.jsonschema.strict.json"
+        },
+        "postgresError": {
+          "$ref": "#/$defs/bytebase.v1.QueryResult.PostgresError.jsonschema.strict.json"
+        },
+        "rows": {
+          "description": "Rows of the query result.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.QueryRow.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "rowsCount": {
+          "type": "integer"
+        },
+        "statement": {
+          "description": "The query statement for the result.",
+          "type": "string"
+        },
+        "syntaxError": {
+          "$ref": "#/$defs/bytebase.v1.QueryResult.SyntaxError.jsonschema.strict.json"
+        }
+      },
+      "required": [
+        "rowsCount",
+        "error",
+        "statement"
+      ],
+      "title": "Query Result",
+      "type": "object"
+    },
+    "bytebase.v1.QueryRow.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "values": {
+          "description": "Row values of the query result.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.RowValue.jsonschema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Query Row",
+      "type": "object"
+    },
+    "bytebase.v1.RowValue.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "accuracy": {
+          "description": "The accuracy is the number of digits after the decimal point.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "googleTimestamp": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        }
+      },
+      "required": [
+        "accuracy"
+      ],
+      "title": "Timestamp",
+      "type": "object"
+    },
+    "bytebase.v1.RowValue.TimestampTZ.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "accuracy": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "googleTimestamp": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        },
+        "offset": {
+          "description": "The offset is in seconds east of UTC",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "zone": {
+          "description": "Zone is the time zone abbreviations in timezone database such as \"PDT\",\n \"PST\". https://en.wikipedia.org/wiki/List_of_tz_database_time_zones We\n retrieve the time zone information from the timestamptz field in the\n database. A timestamp is in UTC or epoch time, and with zone info, we can\n convert it to a local time string. Zone and offset are returned by\n time.Time.Zone()",
+          "type": "string"
+        }
+      },
+      "required": [
+        "zone",
+        "offset",
+        "accuracy"
+      ],
+      "title": "TimestampTZ",
+      "type": "object"
+    },
+    "bytebase.v1.RowValue.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "boolValue": {
+          "type": "boolean"
+        },
+        "bytesValue": {
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        },
+        "doubleValue": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "floatValue": {
+          "anyOf": [
+            {
+              "maximum": 3.4028234663852886e+38,
+              "minimum": -3.4028234663852886e+38,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "int32Value": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "int64Value": {
+          "type": "integer"
+        },
+        "nullValue": {
+          "enum": [
+            "NULL_VALUE"
+          ],
+          "title": "Null Value",
+          "type": "string"
+        },
+        "stringValue": {
+          "type": "string"
+        },
+        "timestampTzValue": {
+          "$ref": "#/$defs/bytebase.v1.RowValue.TimestampTZ.jsonschema.strict.json",
+          "description": "timestamp_tz_value is used for the timestamptz data type, which\n accurately represents the timestamp with location information."
+        },
+        "timestampValue": {
+          "$ref": "#/$defs/bytebase.v1.RowValue.Timestamp.jsonschema.strict.json",
+          "description": "timestamp_value is used for the timestamp without time zone data type,\n meaning it only includes the timestamp without any time zone or location\n info. Although it may be expressed as a UTC value, it should be seen as a\n timestamp missing location context."
+        },
+        "uint32Value": {
+          "maximum": 4294967295,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "uint64Value": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "valueValue": {
+          "$ref": "#/$defs/google.protobuf.Value.jsonschema.strict.json",
+          "description": "value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only."
+        }
+      },
+      "title": "Row Value",
+      "type": "object"
+    },
+    "google.protobuf.Duration.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "duration",
+      "title": "Duration",
+      "type": "string"
+    },
+    "google.protobuf.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "google.protobuf.Value.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Value"
+    }
+  },
+  "$id": "bytebase.v1.AdminExecuteResponse.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.AdminExecuteResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

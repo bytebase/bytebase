@@ -1,0 +1,180 @@
+{
+  "$defs": {
+    "bytebase.v1.AuditLog.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Audit log entry recording system activity or API call.",
+      "properties": {
+        "create_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json",
+          "description": "The timestamp when the audit log was created."
+        },
+        "latency": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.strict.json",
+          "description": "The duration of the operation."
+        },
+        "method": {
+          "description": "The method or action being audited.\n For example: /bytebase.v1.SQLService/Query or bb.project.repository.push",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the log.\n Formats:\n - projects/{project}/auditLogs/{uid}\n - workspaces/{workspace}/auditLogs/{uid}",
+          "type": "string"
+        },
+        "request": {
+          "description": "The request payload in JSON format.",
+          "type": "string"
+        },
+        "request_metadata": {
+          "$ref": "#/$defs/bytebase.v1.RequestMetadata.schema.strict.json",
+          "description": "Metadata about the request context."
+        },
+        "resource": {
+          "description": "The resource associated with this audit log.",
+          "type": "string"
+        },
+        "response": {
+          "description": "The response payload in JSON format.\n Some fields may be omitted if they are too large or contain sensitive information.",
+          "type": "string"
+        },
+        "service_data": {
+          "$ref": "#/$defs/google.protobuf.Any.schema.strict.json",
+          "description": "Service-specific metadata about the request, response, and activities."
+        },
+        "severity": {
+          "description": "The severity level of this audit log entry.",
+          "enum": [
+            "SEVERITY_UNSPECIFIED",
+            "DEBUG",
+            "INFO",
+            "NOTICE",
+            "WARNING",
+            "ERROR",
+            "CRITICAL",
+            "ALERT",
+            "EMERGENCY"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/google.rpc.Status.schema.strict.json",
+          "description": "The status of the operation."
+        },
+        "user": {
+          "description": "The user who performed the action.\n Format: users/{email}",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "user",
+        "method",
+        "severity",
+        "resource",
+        "request",
+        "response"
+      ],
+      "title": "Audit Log",
+      "type": "object"
+    },
+    "bytebase.v1.RequestMetadata.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Metadata about the incoming request.",
+      "properties": {
+        "caller_ip": {
+          "description": "The IP address of the request originator.",
+          "type": "string"
+        },
+        "caller_supplied_user_agent": {
+          "description": "The user agent string provided by the caller.\n This is supplied by the client and is not authenticated.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "caller_ip",
+        "caller_supplied_user_agent"
+      ],
+      "title": "Request Metadata",
+      "type": "object"
+    },
+    "bytebase.v1.SearchAuditLogsResponse.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Response message for searching audit logs.",
+      "properties": {
+        "audit_logs": {
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.AuditLog.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "next_page_token": {
+          "description": "A token to retrieve next page of log entities.\n Pass this value in the page_token field in the subsequent call\n to retrieve the next page of log entities.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "next_page_token"
+      ],
+      "title": "Search Audit Logs Response",
+      "type": "object"
+    },
+    "google.protobuf.Any.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "title": "Any",
+      "type": "object"
+    },
+    "google.protobuf.Duration.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "duration",
+      "title": "Duration",
+      "type": "string"
+    },
+    "google.protobuf.Timestamp.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "google.rpc.Status.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "You can find out more about this error model and how to work with it in the\n [API Design Guide](https://cloud.google.com/apis/design/errors).",
+      "properties": {
+        "code": {
+          "description": "The status code, which should be an enum value of\n [google.rpc.Code][google.rpc.Code].",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "details": {
+          "description": "A list of messages that carry the error details.  There is a common set of\n message types for APIs to use.",
+          "items": {
+            "$ref": "#/$defs/google.protobuf.Any.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "message": {
+          "description": "A developer-facing error message, which should be in English. Any\n user-facing error message should be localized and sent in the\n [google.rpc.Status.details][google.rpc.Status.details] field, or localized\n by the client.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "The `Status` type defines a logical error model that is suitable for\n different programming environments, including REST APIs and RPC APIs. It is\n used by [gRPC](https://github.com/grpc). Each `Status` message contains\n three pieces of data: error code, error message, and error details.",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.SearchAuditLogsResponse.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.SearchAuditLogsResponse.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

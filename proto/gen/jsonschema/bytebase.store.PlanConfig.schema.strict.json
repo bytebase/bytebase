@@ -1,0 +1,18 @@
+{
+  "$id": "bytebase.store.PlanConfig.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "deployment": {
+      "$ref": "bytebase.store.PlanConfig.Deployment.schema.strict.json"
+    },
+    "specs": {
+      "items": {
+        "$ref": "bytebase.store.PlanConfig.Spec.schema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Plan Config",
+  "type": "object"
+}

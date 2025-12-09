@@ -1,0 +1,37 @@
+{
+  "$id": "bytebase.store.DataClassificationSetting.DataClassificationConfig.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "classification": {
+      "additionalProperties": {
+        "$ref": "bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification.jsonschema.strict.json"
+      },
+      "description": "classification is the id - DataClassification map.\n The id should in [0-9]+-[0-9]+-[0-9]+ format.",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "id": {
+      "description": "id is the uuid for classification. Each project can chose one\n classification config.",
+      "type": "string"
+    },
+    "levels": {
+      "description": "levels is user defined level list for classification.\n The order for the level decides its priority.",
+      "items": {
+        "$ref": "bytebase.store.DataClassificationSetting.DataClassificationConfig.Level.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "title": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "title"
+  ],
+  "title": "Data Classification Config",
+  "type": "object"
+}

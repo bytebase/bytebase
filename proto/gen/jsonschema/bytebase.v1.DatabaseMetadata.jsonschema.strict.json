@@ -1,0 +1,52 @@
+{
+  "$id": "bytebase.v1.DatabaseMetadata.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "DatabaseMetadata is the metadata for databases.",
+  "properties": {
+    "characterSet": {
+      "description": "The character_set is the character set of a database.",
+      "type": "string"
+    },
+    "collation": {
+      "description": "The collation is the collation of a database.",
+      "type": "string"
+    },
+    "extensions": {
+      "description": "The extensions is the list of extensions in a database.",
+      "items": {
+        "$ref": "bytebase.v1.ExtensionMetadata.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "description": "Format: instances/{instance}/databases/{database}/metadata",
+      "title": "The database metadata name.",
+      "type": "string"
+    },
+    "owner": {
+      "description": "The owner of the database.",
+      "type": "string"
+    },
+    "schemas": {
+      "description": "The schemas is the list of schemas in a database.",
+      "items": {
+        "$ref": "bytebase.v1.SchemaMetadata.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "searchPath": {
+      "description": "The search_path is the search path of a PostgreSQL database.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "characterSet",
+    "collation",
+    "owner",
+    "searchPath"
+  ],
+  "title": "Database Metadata",
+  "type": "object"
+}

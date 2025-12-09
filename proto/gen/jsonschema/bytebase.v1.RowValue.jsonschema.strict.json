@@ -1,0 +1,87 @@
+{
+  "$id": "bytebase.v1.RowValue.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "boolValue": {
+      "type": "boolean"
+    },
+    "bytesValue": {
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
+    "doubleValue": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    "floatValue": {
+      "anyOf": [
+        {
+          "maximum": 3.4028234663852886e+38,
+          "minimum": -3.4028234663852886e+38,
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    "int32Value": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "int64Value": {
+      "type": "integer"
+    },
+    "nullValue": {
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "title": "Null Value",
+      "type": "string"
+    },
+    "stringValue": {
+      "type": "string"
+    },
+    "timestampTzValue": {
+      "$ref": "bytebase.v1.RowValue.TimestampTZ.jsonschema.strict.json",
+      "description": "timestamp_tz_value is used for the timestamptz data type, which\n accurately represents the timestamp with location information."
+    },
+    "timestampValue": {
+      "$ref": "bytebase.v1.RowValue.Timestamp.jsonschema.strict.json",
+      "description": "timestamp_value is used for the timestamp without time zone data type,\n meaning it only includes the timestamp without any time zone or location\n info. Although it may be expressed as a UTC value, it should be seen as a\n timestamp missing location context."
+    },
+    "uint32Value": {
+      "maximum": 4294967295,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "uint64Value": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "valueValue": {
+      "$ref": "google.protobuf.Value.jsonschema.strict.json",
+      "description": "value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only."
+    }
+  },
+  "title": "Row Value",
+  "type": "object"
+}

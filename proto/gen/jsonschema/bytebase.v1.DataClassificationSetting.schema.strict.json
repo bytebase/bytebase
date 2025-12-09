@@ -1,0 +1,15 @@
+{
+  "$id": "bytebase.v1.DataClassificationSetting.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "configs": {
+      "items": {
+        "$ref": "bytebase.v1.DataClassificationSetting.DataClassificationConfig.schema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Data Classification Setting",
+  "type": "object"
+}

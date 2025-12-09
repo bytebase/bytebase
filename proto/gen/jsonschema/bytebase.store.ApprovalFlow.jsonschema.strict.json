@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.store.ApprovalFlow.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ApprovalFlow defines the sequence of approvals required.",
+  "properties": {
+    "roles": {
+      "description": "List of role names that must approve, in order.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Approval Flow",
+  "type": "object"
+}

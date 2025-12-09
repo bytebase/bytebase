@@ -1,0 +1,20 @@
+{
+  "$defs": {
+    "bytebase.v1.GetRoleRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "The name of the role to retrieve.\n Format: roles/{role}",
+          "type": "string"
+        }
+      },
+      "title": "Get Role Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GetRoleRequest.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GetRoleRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

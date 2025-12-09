@@ -1,0 +1,48 @@
+{
+  "$id": "bytebase.v1.SettingValue.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The data in setting value.",
+  "patternProperties": {
+    "^(appIm)$": {
+      "$ref": "bytebase.v1.AppIMSetting.schema.json"
+    },
+    "^(dataClassification)$": {
+      "$ref": "bytebase.v1.DataClassificationSetting.schema.json"
+    },
+    "^(semanticType)$": {
+      "$ref": "bytebase.v1.SemanticTypeSetting.schema.json"
+    },
+    "^(workspaceApproval)$": {
+      "$ref": "bytebase.v1.WorkspaceApprovalSetting.schema.json"
+    },
+    "^(workspaceProfile)$": {
+      "$ref": "bytebase.v1.WorkspaceProfileSetting.schema.json"
+    }
+  },
+  "properties": {
+    "ai": {
+      "$ref": "bytebase.v1.AISetting.schema.json"
+    },
+    "app_im": {
+      "$ref": "bytebase.v1.AppIMSetting.schema.json"
+    },
+    "data_classification": {
+      "$ref": "bytebase.v1.DataClassificationSetting.schema.json"
+    },
+    "environment": {
+      "$ref": "bytebase.v1.EnvironmentSetting.schema.json"
+    },
+    "semantic_type": {
+      "$ref": "bytebase.v1.SemanticTypeSetting.schema.json"
+    },
+    "workspace_approval": {
+      "$ref": "bytebase.v1.WorkspaceApprovalSetting.schema.json"
+    },
+    "workspace_profile": {
+      "$ref": "bytebase.v1.WorkspaceProfileSetting.schema.json"
+    }
+  },
+  "title": "Setting Value",
+  "type": "object"
+}

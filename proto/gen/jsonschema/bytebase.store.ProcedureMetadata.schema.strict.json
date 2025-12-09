@@ -1,0 +1,52 @@
+{
+  "$id": "bytebase.store.ProcedureMetadata.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProcedureMetadata is the metadata for procedures.",
+  "properties": {
+    "character_set_client": {
+      "description": "MySQL specific metadata.",
+      "type": "string"
+    },
+    "collation_connection": {
+      "type": "string"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "database_collation": {
+      "type": "string"
+    },
+    "definition": {
+      "description": "The definition is the definition of a procedure.",
+      "type": "string"
+    },
+    "name": {
+      "description": "The name of the procedure.",
+      "type": "string"
+    },
+    "signature": {
+      "description": "The signature is the name with the number and type of input arguments the\n function takes.",
+      "type": "string"
+    },
+    "skip_dump": {
+      "type": "boolean"
+    },
+    "sql_mode": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "definition",
+    "signature",
+    "character_set_client",
+    "collation_connection",
+    "database_collation",
+    "sql_mode",
+    "comment",
+    "skip_dump"
+  ],
+  "title": "Procedure Metadata",
+  "type": "object"
+}

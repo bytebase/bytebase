@@ -1,0 +1,74 @@
+{
+  "$id": "bytebase.store.Advice.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(end_position)$": {
+      "$ref": "bytebase.store.Position.jsonschema.json"
+    },
+    "^(start_position)$": {
+      "$ref": "bytebase.store.Position.jsonschema.json",
+      "description": "The start_position is inclusive and the end_position is exclusive.\n TODO: use range instead."
+    }
+  },
+  "properties": {
+    "code": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The advice code."
+    },
+    "content": {
+      "default": "",
+      "description": "The advice content.",
+      "type": "string"
+    },
+    "endPosition": {
+      "$ref": "bytebase.store.Position.jsonschema.json"
+    },
+    "startPosition": {
+      "$ref": "bytebase.store.Position.jsonschema.json",
+      "description": "The start_position is inclusive and the end_position is exclusive.\n TODO: use range instead."
+    },
+    "status": {
+      "anyOf": [
+        {
+          "pattern": "^STATUS_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "SUCCESS",
+            "WARNING",
+            "ERROR"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The advice status.",
+      "title": "Status"
+    },
+    "title": {
+      "default": "",
+      "description": "The advice title.",
+      "type": "string"
+    }
+  },
+  "title": "Advice",
+  "type": "object"
+}

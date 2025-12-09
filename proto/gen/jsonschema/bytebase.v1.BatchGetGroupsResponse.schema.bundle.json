@@ -1,0 +1,104 @@
+{
+  "$defs": {
+    "bytebase.v1.BatchGetGroupsResponse.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Response message for batch getting groups.",
+      "properties": {
+        "groups": {
+          "description": "The groups from the specified request.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.Group.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Batch Get Groups Response",
+      "type": "object"
+    },
+    "bytebase.v1.Group.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A group of users within the workspace.",
+      "properties": {
+        "description": {
+          "default": "",
+          "description": "The description of the group.",
+          "maxLength": 1000,
+          "type": "string"
+        },
+        "email": {
+          "default": "",
+          "description": "The unique email for the group.",
+          "type": "string"
+        },
+        "members": {
+          "description": "The members of the group.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.GroupMember.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the group to retrieve.\n Format: groups/{group}, the group should be email or uuid.",
+          "type": "string"
+        },
+        "source": {
+          "default": "",
+          "description": "The source system where the group originated (e.g., Entra ID for SCIM sync).",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "description": "The display title of the group.",
+          "maxLength": 200,
+          "type": "string"
+        }
+      },
+      "title": "Group",
+      "type": "object"
+    },
+    "bytebase.v1.GroupMember.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A member of a group with a role.",
+      "properties": {
+        "member": {
+          "default": "",
+          "description": "Format: users/hello@world.com",
+          "title": "Member is the principal who belong to this group.",
+          "type": "string"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "pattern": "^ROLE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "OWNER",
+                "MEMBER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The member's role in the group.",
+          "title": "Role"
+        }
+      },
+      "title": "Group Member",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.BatchGetGroupsResponse.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.BatchGetGroupsResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

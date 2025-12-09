@@ -1,0 +1,76 @@
+{
+  "$id": "bytebase.store.BoundingBox.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "BoundingBox defines the bounding box for spatial indexes.",
+  "properties": {
+    "xmax": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    "xmin": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    "ymax": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    "ymin": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "required": [
+    "xmin",
+    "ymin",
+    "xmax",
+    "ymax"
+  ],
+  "title": "Bounding Box",
+  "type": "object"
+}

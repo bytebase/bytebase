@@ -1,0 +1,35 @@
+{
+  "$id": "bytebase.v1.ListInstancesRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "filter": {
+      "description": "Supported filters:\n - name: the instance name, support \"==\" and \".matches()\" operator.\n - resource_id: the instance id, support \"==\" and \".matches()\" operator.\n - environment: the environment full name in \"environments/{id}\" format, support \"==\" operator.\n - state: the instance state, check State enum for values, support \"==\" operator.\n - engine: the instance engine, check Engine enum for values. Support \"==\", \"in [xx]\", \"!(in [xx])\" operator.\n - host: the instance host, support \"==\" and \".matches()\" operator.\n - port: the instance port, support \"==\" and \".matches()\" operator.\n - project: the project full name in \"projects/{id}\" format, support \"==\" operator.\n - labels.{key}: the instance label, support \"==\" and \"in\" operators.\n\n For example:\n name == \"sample instance\"\n name.matches(\"sample\")\n resource_id == \"sample-instance\"\n resource_id.matches(\"sample\")\n state == \"DELETED\"\n environment == \"environments/test\"\n environment == \"\" (find instances which environment is not set)\n engine == \"MYSQL\"\n engine in [\"MYSQL\", \"POSTGRES\"]\n !(engine in [\"MYSQL\", \"POSTGRES\"])\n host == \"127.0.0.1\"\n host.matches(\"127.0\")\n port == \"54321\"\n port.matches(\"543\")\n labels.org_group == \"infrastructure\"\n labels.environment in [\"prod\", \"production\"]\n project == \"projects/sample-project\"\n You can combine filter conditions like:\n name.matches(\"sample\") \u0026\u0026 environment == \"environments/test\"\n host == \"127.0.0.1\" \u0026\u0026 port == \"54321\"",
+      "title": "Filter the instance.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec",
+      "type": "string"
+    },
+    "pageSize": {
+      "description": "The maximum number of instances to return. The service may return fewer than\n this value.\n If unspecified, at most 10 instances will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "pageToken": {
+      "description": "When paginating, all other parameters provided to `ListInstances` must match\n the call that provided the page token.",
+      "title": "A page token, received from a previous `ListInstances` call.\n Provide this to retrieve the subsequent page.",
+      "type": "string"
+    },
+    "showDeleted": {
+      "description": "Show deleted instances if specified.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "pageSize",
+    "pageToken",
+    "showDeleted",
+    "filter"
+  ],
+  "title": "List Instances Request",
+  "type": "object"
+}

@@ -1,0 +1,34 @@
+{
+  "$id": "bytebase.store.ObjectSchema.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "array_kind": {
+      "$ref": "bytebase.store.ObjectSchema.ArrayKind.schema.strict.json"
+    },
+    "semantic_type": {
+      "type": "string"
+    },
+    "struct_kind": {
+      "$ref": "bytebase.store.ObjectSchema.StructKind.schema.strict.json"
+    },
+    "type": {
+      "enum": [
+        "TYPE_UNSPECIFIED",
+        "STRING",
+        "NUMBER",
+        "BOOLEAN",
+        "OBJECT",
+        "ARRAY"
+      ],
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "semantic_type"
+  ],
+  "title": "Object Schema",
+  "type": "object"
+}

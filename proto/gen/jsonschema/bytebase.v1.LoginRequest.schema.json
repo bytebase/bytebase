@@ -1,0 +1,68 @@
+{
+  "$id": "bytebase.v1.LoginRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(idpContext)$": {
+      "$ref": "bytebase.v1.IdentityProviderContext.schema.json",
+      "description": "The idp_context is using to get the user information from identity provider."
+    },
+    "^(idpName)$": {
+      "default": "",
+      "description": "The name of the identity provider.\n Format: idps/{idp}",
+      "type": "string"
+    },
+    "^(mfaTempToken)$": {
+      "description": "The mfa_temp_token is used to verify the user's identity by MFA.",
+      "type": "string"
+    },
+    "^(otpCode)$": {
+      "description": "The otp_code is used to verify the user's identity by MFA.",
+      "type": "string"
+    },
+    "^(recoveryCode)$": {
+      "description": "The recovery_code is used to recovery the user's identity with MFA.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "email": {
+      "default": "",
+      "description": "User's email address.",
+      "type": "string"
+    },
+    "idp_context": {
+      "$ref": "bytebase.v1.IdentityProviderContext.schema.json",
+      "description": "The idp_context is using to get the user information from identity provider."
+    },
+    "idp_name": {
+      "default": "",
+      "description": "The name of the identity provider.\n Format: idps/{idp}",
+      "type": "string"
+    },
+    "mfa_temp_token": {
+      "description": "The mfa_temp_token is used to verify the user's identity by MFA.",
+      "type": "string"
+    },
+    "otp_code": {
+      "description": "The otp_code is used to verify the user's identity by MFA.",
+      "type": "string"
+    },
+    "password": {
+      "default": "",
+      "description": "User's password for authentication.",
+      "type": "string"
+    },
+    "recovery_code": {
+      "description": "The recovery_code is used to recovery the user's identity with MFA.",
+      "type": "string"
+    },
+    "web": {
+      "default": false,
+      "description": "If web is set, we will set access token, refresh token, and user to the cookie.",
+      "type": "boolean"
+    }
+  },
+  "title": "Login Request",
+  "type": "object"
+}

@@ -1,0 +1,25 @@
+{
+  "$id": "bytebase.store.PlanConfig.Spec.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "change_database_config": {
+      "$ref": "bytebase.store.PlanConfig.ChangeDatabaseConfig.schema.strict.json"
+    },
+    "create_database_config": {
+      "$ref": "bytebase.store.PlanConfig.CreateDatabaseConfig.schema.strict.json"
+    },
+    "export_data_config": {
+      "$ref": "bytebase.store.PlanConfig.ExportDataConfig.schema.strict.json"
+    },
+    "id": {
+      "description": "A UUID4 string that uniquely identifies the Spec.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "title": "Spec",
+  "type": "object"
+}

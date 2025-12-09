@@ -1,0 +1,22 @@
+{
+  "$id": "bytebase.store.GroupPayload.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "members": {
+      "items": {
+        "$ref": "bytebase.store.GroupMember.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "source": {
+      "description": "The source indicates where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source"
+  ],
+  "title": "Group Payload",
+  "type": "object"
+}

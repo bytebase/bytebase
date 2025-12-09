@@ -1,0 +1,39 @@
+{
+  "$id": "bytebase.v1.SearchAuditLogsRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Request message for searching audit logs.",
+  "properties": {
+    "filter": {
+      "description": "Supported filter:\n - method: the API name, can be found in the docs, should start with \"/bytebase.v1.\" prefix. For example \"/bytebase.v1.UserService/CreateUser\". Support \"==\" operator.\n - severity: support \"==\" operator, check Severity enum in AuditLog message for values.\n - user: the actor, should in \"users/{email}\" format, support \"==\" operator.\n - create_time: support \"\u003e=\" and \"\u003c=\" operator.\n\n For example:\n  - filter = \"method == '/bytebase.v1.SQLService/Query'\"\n  - filter = \"method == '/bytebase.v1.SQLService/Query' \u0026\u0026 severity == 'ERROR'\"\n  - filter = \"method == '/bytebase.v1.SQLService/Query' \u0026\u0026 severity == 'ERROR' \u0026\u0026 user == 'users/bb@bytebase.com'\"\n  - filter = \"method == '/bytebase.v1.SQLService/Query' \u0026\u0026 severity == 'ERROR' \u0026\u0026 create_time \u003c= '2021-01-01T00:00:00Z' \u0026\u0026 create_time \u003e= '2020-01-01T00:00:00Z'\"",
+      "title": "The filter of the log. It should be a valid CEL expression.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec",
+      "type": "string"
+    },
+    "orderBy": {
+      "description": "The order by of the log.\n Only support order by create_time.\n For example:\n  - order_by = \"create_time asc\"\n  - order_by = \"create_time desc\"",
+      "type": "string"
+    },
+    "pageSize": {
+      "description": "The maximum number of logs to return.\n The service may return fewer than this value.\n If unspecified, at most 10 log entries will be returned.\n The maximum value is 5000; values above 5000 will be coerced to 5000.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "pageToken": {
+      "description": "A page token, received from a previous `SearchLogs` call.\n Provide this to retrieve the subsequent page.",
+      "type": "string"
+    },
+    "parent": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "parent",
+    "filter",
+    "orderBy",
+    "pageSize",
+    "pageToken"
+  ],
+  "title": "Search Audit Logs Request",
+  "type": "object"
+}

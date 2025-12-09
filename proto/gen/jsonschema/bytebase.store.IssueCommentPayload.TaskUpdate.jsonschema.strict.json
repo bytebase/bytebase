@@ -1,0 +1,37 @@
+{
+  "$id": "bytebase.store.IssueCommentPayload.TaskUpdate.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "fromSheet": {
+      "description": "Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "tasks": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "toSheet": {
+      "description": "Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "toStatus": {
+      "enum": [
+        "STATUS_UNSPECIFIED",
+        "PENDING",
+        "RUNNING",
+        "DONE",
+        "FAILED",
+        "CANCELED",
+        "NOT_STARTED",
+        "SKIPPED"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "title": "Task Update",
+  "type": "object"
+}

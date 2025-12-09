@@ -1,0 +1,38 @@
+{
+  "$defs": {
+    "bytebase.store.DataSourceQueryPolicy.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.",
+      "properties": {
+        "adminDataSourceRestriction": {
+          "enum": [
+            "RESTRICTION_UNSPECIFIED",
+            "FALLBACK",
+            "DISALLOW"
+          ],
+          "title": "Restriction",
+          "type": "string"
+        },
+        "disallowDdl": {
+          "description": "Disallow running DDL statements in the SQL editor.",
+          "type": "boolean"
+        },
+        "disallowDml": {
+          "description": "Disallow running DML statements in the SQL editor.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "adminDataSourceRestriction",
+        "disallowDdl",
+        "disallowDml"
+      ],
+      "title": "Data Source Query Policy",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.DataSourceQueryPolicy.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.DataSourceQueryPolicy.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

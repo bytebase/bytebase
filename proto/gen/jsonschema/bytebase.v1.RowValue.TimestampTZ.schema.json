@@ -1,0 +1,51 @@
+{
+  "$id": "bytebase.v1.RowValue.TimestampTZ.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(googleTimestamp)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    }
+  },
+  "properties": {
+    "accuracy": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "google_timestamp": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "offset": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "The offset is in seconds east of UTC"
+    },
+    "zone": {
+      "default": "",
+      "description": "Zone is the time zone abbreviations in timezone database such as \"PDT\",\n \"PST\". https://en.wikipedia.org/wiki/List_of_tz_database_time_zones We\n retrieve the time zone information from the timestamptz field in the\n database. A timestamp is in UTC or epoch time, and with zone info, we can\n convert it to a local time string. Zone and offset are returned by\n time.Time.Zone()",
+      "type": "string"
+    }
+  },
+  "title": "TimestampTZ",
+  "type": "object"
+}

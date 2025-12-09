@@ -1,0 +1,62 @@
+{
+  "$id": "bytebase.v1.IssueComment.TaskPriorBackup.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Task prior backup event information.",
+  "patternProperties": {
+    "^(original_line)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "The original line number in the statement."
+    }
+  },
+  "properties": {
+    "database": {
+      "default": "",
+      "description": "The database that was backed up.",
+      "type": "string"
+    },
+    "error": {
+      "default": "",
+      "description": "Error message if backup failed.",
+      "type": "string"
+    },
+    "originalLine": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "The original line number in the statement."
+    },
+    "tables": {
+      "description": "The tables that were backed up.",
+      "items": {
+        "$ref": "bytebase.v1.IssueComment.TaskPriorBackup.Table.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "task": {
+      "default": "",
+      "description": "The task for which backup was performed.",
+      "type": "string"
+    }
+  },
+  "title": "Task Prior Backup",
+  "type": "object"
+}

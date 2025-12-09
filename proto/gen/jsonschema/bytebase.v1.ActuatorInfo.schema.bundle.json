@@ -1,0 +1,459 @@
+{
+  "$defs": {
+    "bytebase.v1.ActuatorInfo.StatUser.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "User statistics by type and state.",
+      "patternProperties": {
+        "^(userType)$": {
+          "anyOf": [
+            {
+              "pattern": "^USER_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "USER",
+                "SYSTEM_BOT",
+                "SERVICE_ACCOUNT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of user.",
+          "title": "User Type"
+        }
+      },
+      "properties": {
+        "count": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The count of users matching this type and state."
+        },
+        "state": {
+          "anyOf": [
+            {
+              "pattern": "^STATE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "ACTIVE",
+                "DELETED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The state of the user.",
+          "title": "State"
+        },
+        "user_type": {
+          "anyOf": [
+            {
+              "pattern": "^USER_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "USER",
+                "SYSTEM_BOT",
+                "SERVICE_ACCOUNT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of user.",
+          "title": "User Type"
+        }
+      },
+      "title": "Stat User",
+      "type": "object"
+    },
+    "bytebase.v1.ActuatorInfo.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "System information and configuration for the Bytebase instance.\n Actuator concept is similar to the Spring Boot Actuator.",
+      "patternProperties": {
+        "^(activatedInstanceCount)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The number of activated database instances."
+        },
+        "^(disallowPasswordSignin)$": {
+          "default": false,
+          "description": "Whether password-based signin is disabled (except for workspace admins).",
+          "type": "boolean"
+        },
+        "^(disallowSignup)$": {
+          "default": false,
+          "description": "Whether self-service user signup is disabled.",
+          "type": "boolean"
+        },
+        "^(enableSample)$": {
+          "default": false,
+          "description": "Whether sample data setup is enabled.",
+          "type": "boolean"
+        },
+        "^(externalUrl)$": {
+          "default": "",
+          "description": "The external URL where users or webhook callbacks access Bytebase.",
+          "type": "string"
+        },
+        "^(externalUrlFromFlag)$": {
+          "default": false,
+          "description": "Whether the external URL is set via command-line flag (and thus cannot be changed via UI).",
+          "type": "boolean"
+        },
+        "^(gitCommit)$": {
+          "default": "",
+          "description": "The git commit hash of the build.",
+          "type": "string"
+        },
+        "^(lastActiveTime)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The last time any API call was made, refreshed on each request."
+        },
+        "^(needAdminSetup)$": {
+          "default": false,
+          "description": "Whether the Bytebase instance requires initial admin setup.",
+          "type": "boolean"
+        },
+        "^(passwordRestriction)$": {
+          "$ref": "#/$defs/bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.schema.json",
+          "description": "Password complexity and restriction requirements."
+        },
+        "^(require2fa)$": {
+          "default": false,
+          "description": "Whether two-factor authentication is required for all users.",
+          "type": "boolean"
+        },
+        "^(totalInstanceCount)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The total number of database instances."
+        },
+        "^(unlicensedFeatures)$": {
+          "description": "List of features that are not licensed.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "^(userStats)$": {
+          "description": "Statistics about users in the system.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ActuatorInfo.StatUser.schema.json"
+          },
+          "type": "array"
+        },
+        "^(workspaceId)$": {
+          "default": "",
+          "description": "The unique identifier for the workspace.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "activated_instance_count": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The number of activated database instances."
+        },
+        "debug": {
+          "default": false,
+          "description": "Whether debug mode is enabled.",
+          "type": "boolean"
+        },
+        "demo": {
+          "default": false,
+          "description": "Whether the Bytebase instance is running in demo mode.",
+          "type": "boolean"
+        },
+        "disallow_password_signin": {
+          "default": false,
+          "description": "Whether password-based signin is disabled (except for workspace admins).",
+          "type": "boolean"
+        },
+        "disallow_signup": {
+          "default": false,
+          "description": "Whether self-service user signup is disabled.",
+          "type": "boolean"
+        },
+        "docker": {
+          "default": false,
+          "description": "Whether the Bytebase instance is running in Docker.",
+          "type": "boolean"
+        },
+        "enable_sample": {
+          "default": false,
+          "description": "Whether sample data setup is enabled.",
+          "type": "boolean"
+        },
+        "external_url": {
+          "default": "",
+          "description": "The external URL where users or webhook callbacks access Bytebase.",
+          "type": "string"
+        },
+        "external_url_from_flag": {
+          "default": false,
+          "description": "Whether the external URL is set via command-line flag (and thus cannot be changed via UI).",
+          "type": "boolean"
+        },
+        "git_commit": {
+          "default": "",
+          "description": "The git commit hash of the build.",
+          "type": "string"
+        },
+        "host": {
+          "default": "",
+          "description": "The host address of the Bytebase instance.",
+          "type": "string"
+        },
+        "last_active_time": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json",
+          "description": "The last time any API call was made, refreshed on each request."
+        },
+        "need_admin_setup": {
+          "default": false,
+          "description": "Whether the Bytebase instance requires initial admin setup.",
+          "type": "boolean"
+        },
+        "password_restriction": {
+          "$ref": "#/$defs/bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.schema.json",
+          "description": "Password complexity and restriction requirements."
+        },
+        "port": {
+          "default": "",
+          "description": "The port number of the Bytebase instance.",
+          "type": "string"
+        },
+        "readonly": {
+          "default": false,
+          "description": "Whether the Bytebase instance is running in read-only mode.",
+          "type": "boolean"
+        },
+        "require_2fa": {
+          "default": false,
+          "description": "Whether two-factor authentication is required for all users.",
+          "type": "boolean"
+        },
+        "saas": {
+          "default": false,
+          "description": "Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.",
+          "type": "boolean"
+        },
+        "total_instance_count": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The total number of database instances."
+        },
+        "unlicensed_features": {
+          "description": "List of features that are not licensed.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "user_stats": {
+          "description": "Statistics about users in the system.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.ActuatorInfo.StatUser.schema.json"
+          },
+          "type": "array"
+        },
+        "version": {
+          "default": "",
+          "description": "The Bytebase server version.",
+          "type": "string"
+        },
+        "workspace_id": {
+          "default": "",
+          "description": "The unique identifier for the workspace.",
+          "type": "string"
+        }
+      },
+      "title": "Actuator Info",
+      "type": "object"
+    },
+    "bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(minLength)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "min_length is the minimum length for password, should no less than 8."
+        },
+        "^(passwordRotation)$": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "password_rotation requires users to reset their password after the duration."
+        },
+        "^(requireLetter)$": {
+          "default": false,
+          "description": "require_letter requires the password must contains at least one letter, regardless of upper case or lower case",
+          "type": "boolean"
+        },
+        "^(requireNumber)$": {
+          "default": false,
+          "description": "require_number requires the password must contains at least one number.",
+          "type": "boolean"
+        },
+        "^(requireResetPasswordForFirstLogin)$": {
+          "default": false,
+          "description": "require_reset_password_for_first_login requires users to reset their password after the 1st login.",
+          "type": "boolean"
+        },
+        "^(requireSpecialCharacter)$": {
+          "default": false,
+          "description": "require_special_character requires the password must contains at least one special character.",
+          "type": "boolean"
+        },
+        "^(requireUppercaseLetter)$": {
+          "default": false,
+          "description": "require_uppercase_letter requires the password must contains at least one upper case letter.",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "min_length": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "min_length is the minimum length for password, should no less than 8."
+        },
+        "password_rotation": {
+          "$ref": "#/$defs/google.protobuf.Duration.schema.json",
+          "description": "password_rotation requires users to reset their password after the duration."
+        },
+        "require_letter": {
+          "default": false,
+          "description": "require_letter requires the password must contains at least one letter, regardless of upper case or lower case",
+          "type": "boolean"
+        },
+        "require_number": {
+          "default": false,
+          "description": "require_number requires the password must contains at least one number.",
+          "type": "boolean"
+        },
+        "require_reset_password_for_first_login": {
+          "default": false,
+          "description": "require_reset_password_for_first_login requires users to reset their password after the 1st login.",
+          "type": "boolean"
+        },
+        "require_special_character": {
+          "default": false,
+          "description": "require_special_character requires the password must contains at least one special character.",
+          "type": "boolean"
+        },
+        "require_uppercase_letter": {
+          "default": false,
+          "description": "require_uppercase_letter requires the password must contains at least one upper case letter.",
+          "type": "boolean"
+        }
+      },
+      "title": "Password Restriction",
+      "type": "object"
+    },
+    "google.protobuf.Duration.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "duration",
+      "title": "Duration",
+      "type": "string"
+    },
+    "google.protobuf.Timestamp.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.ActuatorInfo.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ActuatorInfo.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

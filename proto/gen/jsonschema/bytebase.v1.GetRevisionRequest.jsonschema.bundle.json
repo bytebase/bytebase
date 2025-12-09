@@ -1,0 +1,20 @@
+{
+  "$defs": {
+    "bytebase.v1.GetRevisionRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "The name of the revision.\n Format: instances/{instance}/databases/{database}/revisions/{revision}",
+          "type": "string"
+        }
+      },
+      "title": "Get Revision Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GetRevisionRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GetRevisionRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

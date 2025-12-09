@@ -1,0 +1,25 @@
+{
+  "$id": "bytebase.store.PriorBackupDetail.Item.Table.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Table identifies a database table.",
+  "properties": {
+    "database": {
+      "default": "",
+      "description": "The database containing the table.\n Format: instances/{instance}/databases/{database}",
+      "type": "string"
+    },
+    "schema": {
+      "default": "",
+      "description": "Schema name (for databases that support schemas).",
+      "type": "string"
+    },
+    "table": {
+      "default": "",
+      "description": "Table name.",
+      "type": "string"
+    }
+  },
+  "title": "Table",
+  "type": "object"
+}

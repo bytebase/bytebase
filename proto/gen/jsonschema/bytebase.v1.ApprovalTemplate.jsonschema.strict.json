@@ -1,0 +1,25 @@
+{
+  "$id": "bytebase.v1.ApprovalTemplate.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "description": {
+      "description": "The description of the approval template.",
+      "type": "string"
+    },
+    "flow": {
+      "$ref": "bytebase.v1.ApprovalFlow.jsonschema.strict.json",
+      "description": "The approval flow definition."
+    },
+    "title": {
+      "description": "The title of the approval template.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "description"
+  ],
+  "title": "Approval Template",
+  "type": "object"
+}

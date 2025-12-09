@@ -1,0 +1,789 @@
+{
+  "$defs": {
+    "bytebase.store.BoundingBox.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "BoundingBox defines the bounding box for spatial indexes.",
+      "properties": {
+        "xmax": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "xmin": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "ymax": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "ymin": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "title": "Bounding Box",
+      "type": "object"
+    },
+    "bytebase.store.DependencyColumn.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DependencyColumn is the metadata for dependency columns.",
+      "properties": {
+        "column": {
+          "default": "",
+          "description": "The column is the name of a reference column.",
+          "type": "string"
+        },
+        "schema": {
+          "default": "",
+          "description": "The schema is the schema of a reference column.",
+          "type": "string"
+        },
+        "table": {
+          "default": "",
+          "description": "The table is the table of a reference column.",
+          "type": "string"
+        }
+      },
+      "title": "Dependency Column",
+      "type": "object"
+    },
+    "bytebase.store.DimensionalConfig.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DimensionalConfig defines dimensional and constraint parameters for spatial indexes.",
+      "patternProperties": {
+        "^(dataType)$": {
+          "default": "",
+          "description": "Spatial data type\n Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.",
+          "type": "string"
+        },
+        "^(layerGtype)$": {
+          "default": "",
+          "description": "Oracle geometry type constraint\n Examples: POINT, LINE, POLYGON, COLLECTION",
+          "type": "string"
+        },
+        "^(operatorClass)$": {
+          "default": "",
+          "description": "PostgreSQL operator class\n Examples: gist_geometry_ops_2d, gist_geometry_ops_nd, etc.",
+          "type": "string"
+        },
+        "^(parallelBuild)$": {
+          "default": false,
+          "description": "Parallel index creation",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "data_type": {
+          "default": "",
+          "description": "Spatial data type\n Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.",
+          "type": "string"
+        },
+        "dimensions": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Number of dimensions (2-4, default 2)"
+        },
+        "layer_gtype": {
+          "default": "",
+          "description": "Oracle geometry type constraint\n Examples: POINT, LINE, POLYGON, COLLECTION",
+          "type": "string"
+        },
+        "operator_class": {
+          "default": "",
+          "description": "PostgreSQL operator class\n Examples: gist_geometry_ops_2d, gist_geometry_ops_nd, etc.",
+          "type": "string"
+        },
+        "parallel_build": {
+          "default": false,
+          "description": "Parallel index creation",
+          "type": "boolean"
+        }
+      },
+      "title": "Dimensional Config",
+      "type": "object"
+    },
+    "bytebase.store.GridLevel.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "GridLevel defines a grid level for spatial tessellation.",
+      "properties": {
+        "density": {
+          "default": "",
+          "type": "string"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "title": "Grid Level",
+      "type": "object"
+    },
+    "bytebase.store.IndexMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "IndexMetadata is the metadata for indexes.",
+      "patternProperties": {
+        "^(isConstraint)$": {
+          "default": false,
+          "description": "It's a PostgreSQL specific field.\n The unique constraint and unique index are not the same thing in PostgreSQL.",
+          "type": "boolean"
+        },
+        "^(keyLength)$": {
+          "description": "The ordered list of key lengths for the index.\n If the key length is not specified, it is -1.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "^(opclassDefaults)$": {
+          "description": "True if the operator class is the default. (PostgreSQL specific).",
+          "items": {
+            "type": "boolean"
+          },
+          "type": "array"
+        },
+        "^(opclassNames)$": {
+          "description": "https://www.postgresql.org/docs/current/catalog-pg-opclass.html\n Name of the operator class for each column. (PostgreSQL specific).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "^(parentIndexName)$": {
+          "default": "",
+          "description": "The index name of the parent index.",
+          "type": "string"
+        },
+        "^(parentIndexSchema)$": {
+          "default": "",
+          "description": "The schema name of the parent index.",
+          "type": "string"
+        },
+        "^(spatialConfig)$": {
+          "$ref": "#/$defs/bytebase.store.SpatialIndexConfig.schema.json",
+          "description": "Spatial index specific configuration"
+        }
+      },
+      "properties": {
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of an index.",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The definition of an index.",
+          "type": "string"
+        },
+        "descending": {
+          "description": "The ordered list of descending flags for the index columns.",
+          "items": {
+            "type": "boolean"
+          },
+          "type": "array"
+        },
+        "expressions": {
+          "description": "The expressions are the ordered columns or expressions of an index.\n This could refer to a column or an expression.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "granularity": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The number of granules in the block. It's a ClickHouse specific field."
+        },
+        "is_constraint": {
+          "default": false,
+          "description": "It's a PostgreSQL specific field.\n The unique constraint and unique index are not the same thing in PostgreSQL.",
+          "type": "boolean"
+        },
+        "key_length": {
+          "description": "The ordered list of key lengths for the index.\n If the key length is not specified, it is -1.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "pattern": "^-?[0-9]+$",
+                "type": "string"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the index.",
+          "type": "string"
+        },
+        "opclass_defaults": {
+          "description": "True if the operator class is the default. (PostgreSQL specific).",
+          "items": {
+            "type": "boolean"
+          },
+          "type": "array"
+        },
+        "opclass_names": {
+          "description": "https://www.postgresql.org/docs/current/catalog-pg-opclass.html\n Name of the operator class for each column. (PostgreSQL specific).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parent_index_name": {
+          "default": "",
+          "description": "The index name of the parent index.",
+          "type": "string"
+        },
+        "parent_index_schema": {
+          "default": "",
+          "description": "The schema name of the parent index.",
+          "type": "string"
+        },
+        "primary": {
+          "default": false,
+          "description": "The primary is whether the index is a primary key index.",
+          "type": "boolean"
+        },
+        "spatial_config": {
+          "$ref": "#/$defs/bytebase.store.SpatialIndexConfig.schema.json",
+          "description": "Spatial index specific configuration"
+        },
+        "type": {
+          "default": "",
+          "description": "The type is the type of an index.",
+          "type": "string"
+        },
+        "unique": {
+          "default": false,
+          "description": "The unique is whether the index is unique.",
+          "type": "boolean"
+        },
+        "visible": {
+          "default": false,
+          "description": "The visible is whether the index is visible.",
+          "type": "boolean"
+        }
+      },
+      "title": "Index Metadata",
+      "type": "object"
+    },
+    "bytebase.store.MaterializedViewMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "MaterializedViewMetadata is the metadata for materialized views.",
+      "patternProperties": {
+        "^(dependencyColumns)$": {
+          "description": "The list of dependency columns of the view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.DependencyColumn.schema.json"
+          },
+          "type": "array"
+        },
+        "^(skipDump)$": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of a view.",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The definition is the definition of a view.",
+          "type": "string"
+        },
+        "dependency_columns": {
+          "description": "The list of dependency columns of the view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.DependencyColumn.schema.json"
+          },
+          "type": "array"
+        },
+        "indexes": {
+          "description": "The list of indexes in the materialized view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.IndexMetadata.schema.json"
+          },
+          "type": "array"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the materialized view.",
+          "type": "string"
+        },
+        "skip_dump": {
+          "default": false,
+          "type": "boolean"
+        },
+        "triggers": {
+          "description": "The ordered list of columns in the materialized view.",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.TriggerMetadata.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Materialized View Metadata",
+      "type": "object"
+    },
+    "bytebase.store.SpatialIndexConfig.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "SpatialIndexConfig is the configuration for spatial indexes across different database engines.",
+      "patternProperties": {
+        "^(engineSpecific)$": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Database-specific parameters (stored as key-value pairs for extensibility)",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "properties": {
+        "dimensional": {
+          "$ref": "#/$defs/bytebase.store.DimensionalConfig.schema.json",
+          "description": "Dimensional and constraint parameters"
+        },
+        "engine_specific": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Database-specific parameters (stored as key-value pairs for extensibility)",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "method": {
+          "default": "",
+          "description": "Index method/type (database-specific)\n Examples: \"SPATIAL\" (MySQL/SQL Server), \"GIST\"/\"SPGIST\" (PostgreSQL), \"MDSYS.SPATIAL_INDEX_V2\" (Oracle)",
+          "type": "string"
+        },
+        "storage": {
+          "$ref": "#/$defs/bytebase.store.StorageConfig.schema.json",
+          "description": "Storage and performance parameters"
+        },
+        "tessellation": {
+          "$ref": "#/$defs/bytebase.store.TessellationConfig.schema.json",
+          "description": "Tessellation configuration (primarily SQL Server)"
+        }
+      },
+      "title": "Spatial Index Config",
+      "type": "object"
+    },
+    "bytebase.store.StorageConfig.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "StorageConfig defines storage and performance parameters for spatial indexes.",
+      "patternProperties": {
+        "^(allowPageLocks)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(allowRowLocks)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(commitInterval)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(dataCompression)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(dropExisting)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(padIndex)$": {
+          "default": false,
+          "description": "SQL Server parameters",
+          "type": "boolean"
+        },
+        "^(sdoLevel)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(sortInTempdb)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(workTablespace)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "allow_page_locks": {
+          "default": false,
+          "type": "boolean"
+        },
+        "allow_row_locks": {
+          "default": false,
+          "type": "boolean"
+        },
+        "buffering": {
+          "default": "",
+          "type": "string"
+        },
+        "commit_interval": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "data_compression": {
+          "default": "",
+          "type": "string"
+        },
+        "drop_existing": {
+          "default": false,
+          "type": "boolean"
+        },
+        "fillfactor": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "PostgreSQL parameters"
+        },
+        "maxdop": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "online": {
+          "default": false,
+          "type": "boolean"
+        },
+        "pad_index": {
+          "default": false,
+          "description": "SQL Server parameters",
+          "type": "boolean"
+        },
+        "sdo_level": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "sort_in_tempdb": {
+          "default": "",
+          "type": "string"
+        },
+        "tablespace": {
+          "default": "",
+          "description": "Oracle parameters",
+          "type": "string"
+        },
+        "work_tablespace": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Storage Config",
+      "type": "object"
+    },
+    "bytebase.store.TessellationConfig.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "TessellationConfig defines tessellation parameters for spatial indexes.",
+      "patternProperties": {
+        "^(boundingBox)$": {
+          "$ref": "#/$defs/bytebase.store.BoundingBox.schema.json",
+          "description": "Bounding box for GEOMETRY indexes (SQL Server)"
+        },
+        "^(cellsPerObject)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Cells per object (SQL Server)"
+        },
+        "^(gridLevels)$": {
+          "description": "Grid level configuration (SQL Server)",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.GridLevel.schema.json"
+          },
+          "type": "array"
+        }
+      },
+      "properties": {
+        "bounding_box": {
+          "$ref": "#/$defs/bytebase.store.BoundingBox.schema.json",
+          "description": "Bounding box for GEOMETRY indexes (SQL Server)"
+        },
+        "cells_per_object": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Cells per object (SQL Server)"
+        },
+        "grid_levels": {
+          "description": "Grid level configuration (SQL Server)",
+          "items": {
+            "$ref": "#/$defs/bytebase.store.GridLevel.schema.json"
+          },
+          "type": "array"
+        },
+        "scheme": {
+          "default": "",
+          "description": "Tessellation scheme\n Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID",
+          "type": "string"
+        }
+      },
+      "title": "Tessellation Config",
+      "type": "object"
+    },
+    "bytebase.store.TriggerMetadata.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(characterSetClient)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(collationConnection)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(skipDump)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(sqlMode)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "body": {
+          "default": "",
+          "description": "The body of the trigger.",
+          "type": "string"
+        },
+        "character_set_client": {
+          "default": "",
+          "type": "string"
+        },
+        "collation_connection": {
+          "default": "",
+          "type": "string"
+        },
+        "comment": {
+          "default": "",
+          "type": "string"
+        },
+        "event": {
+          "default": "",
+          "description": "The event that triggers this action, such as INSERT, UPDATE, DELETE, or TRUNCATE.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the trigger.",
+          "type": "string"
+        },
+        "skip_dump": {
+          "default": false,
+          "type": "boolean"
+        },
+        "sql_mode": {
+          "default": "",
+          "type": "string"
+        },
+        "timing": {
+          "default": "",
+          "description": "The timing of when the trigger fires, such as BEFORE or AFTER.",
+          "type": "string"
+        }
+      },
+      "title": "Trigger Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.MaterializedViewMetadata.schema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.MaterializedViewMetadata.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

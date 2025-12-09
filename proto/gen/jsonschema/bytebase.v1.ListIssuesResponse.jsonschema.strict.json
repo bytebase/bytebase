@@ -1,0 +1,23 @@
+{
+  "$id": "bytebase.v1.ListIssuesResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "issues": {
+      "description": "The issues from the specified request.",
+      "items": {
+        "$ref": "bytebase.v1.Issue.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "nextPageToken": {
+      "description": "A token, which can be sent as `page_token` to retrieve the next page.\n If this field is omitted, there are no subsequent pages.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "nextPageToken"
+  ],
+  "title": "List Issues Response",
+  "type": "object"
+}

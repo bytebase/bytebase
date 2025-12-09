@@ -1,0 +1,8 @@
+{
+  "$id": "bytebase.store.TaskRunLog.DatabaseSyncStart.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {},
+  "title": "Database Sync Start",
+  "type": "object"
+}

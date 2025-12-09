@@ -1,0 +1,24 @@
+{
+  "$id": "bytebase.store.ReleasePayload.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "files": {
+      "items": {
+        "$ref": "bytebase.store.ReleasePayload.File.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "title": {
+      "type": "string"
+    },
+    "vcs_source": {
+      "$ref": "bytebase.store.ReleasePayload.VCSSource.schema.strict.json"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "title": "Release Payload",
+  "type": "object"
+}

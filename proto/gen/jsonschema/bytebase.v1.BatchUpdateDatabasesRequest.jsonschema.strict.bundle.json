@@ -1,0 +1,707 @@
+{
+  "$defs": {
+    "bytebase.v1.BatchUpdateDatabasesRequest.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "parent": {
+          "description": "The parent resource shared by all databases being updated.\n Format: instances/{instance}\n If the operation spans parents, a dash (-) may be accepted as a wildcard.\n We only support updating the project of databases for now.",
+          "type": "string"
+        },
+        "requests": {
+          "description": "The request message specifying the resources to update.\n A maximum of 1000 databases can be modified in a batch.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.UpdateDatabaseRequest.jsonschema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "parent"
+      ],
+      "title": "Batch Update Databases Request",
+      "type": "object"
+    },
+    "bytebase.v1.DataSource.AWSCredential.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "accessKeyId": {
+          "type": "string"
+        },
+        "externalId": {
+          "description": "Optional external ID for additional security when assuming role.\n See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html",
+          "type": "string"
+        },
+        "roleArn": {
+          "description": "ARN of IAM role to assume for cross-account access.\n See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html",
+          "type": "string"
+        },
+        "secretAccessKey": {
+          "type": "string"
+        },
+        "sessionToken": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "accessKeyId",
+        "secretAccessKey",
+        "sessionToken",
+        "roleArn",
+        "externalId"
+      ],
+      "title": "AWS Credential",
+      "type": "object"
+    },
+    "bytebase.v1.DataSource.Address.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "host",
+        "port"
+      ],
+      "title": "Address",
+      "type": "object"
+    },
+    "bytebase.v1.DataSource.AzureCredential.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "clientId": {
+          "type": "string"
+        },
+        "clientSecret": {
+          "type": "string"
+        },
+        "tenantId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "tenantId",
+        "clientId",
+        "clientSecret"
+      ],
+      "title": "Azure Credential",
+      "type": "object"
+    },
+    "bytebase.v1.DataSource.GCPCredential.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "title": "GCP Credential",
+      "type": "object"
+    },
+    "bytebase.v1.DataSource.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "additionalAddresses": {
+          "description": "additional_addresses is used for MongoDB replica set.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DataSource.Address.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "authenticationDatabase": {
+          "description": "authentication_database is the database name to authenticate against, which stores the user credentials.",
+          "type": "string"
+        },
+        "authenticationPrivateKey": {
+          "description": "PKCS#8 private key in PEM format. If it's empty string, no private key is required.\n Used for authentication when connecting to the data source.",
+          "type": "string"
+        },
+        "authenticationPrivateKeyPassphrase": {
+          "description": "Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.",
+          "type": "string"
+        },
+        "authenticationType": {
+          "enum": [
+            "AUTHENTICATION_UNSPECIFIED",
+            "PASSWORD",
+            "GOOGLE_CLOUD_SQL_IAM",
+            "AWS_RDS_IAM",
+            "AZURE_IAM"
+          ],
+          "title": "Authentication Type",
+          "type": "string"
+        },
+        "awsCredential": {
+          "$ref": "#/$defs/bytebase.v1.DataSource.AWSCredential.jsonschema.strict.json"
+        },
+        "azureCredential": {
+          "$ref": "#/$defs/bytebase.v1.DataSource.AzureCredential.jsonschema.strict.json"
+        },
+        "cluster": {
+          "description": "Cluster is the cluster name for the data source. Used by CockroachDB.",
+          "type": "string"
+        },
+        "database": {
+          "description": "The name of the database to connect to.",
+          "type": "string"
+        },
+        "directConnection": {
+          "description": "direct_connection is used for MongoDB to dispatch all the operations to the node specified in the connection string.",
+          "type": "boolean"
+        },
+        "externalSecret": {
+          "$ref": "#/$defs/bytebase.v1.DataSourceExternalSecret.jsonschema.strict.json"
+        },
+        "extraConnectionParameters": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Extra connection parameters for the database connection.\n For PostgreSQL HA, this can be used to set target_session_attrs=read-write",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "gcpCredential": {
+          "$ref": "#/$defs/bytebase.v1.DataSource.GCPCredential.jsonschema.strict.json"
+        },
+        "host": {
+          "description": "The hostname or IP address of the database server.",
+          "type": "string"
+        },
+        "id": {
+          "description": "The unique identifier for this data source.",
+          "type": "string"
+        },
+        "masterName": {
+          "description": "master_name is the master name used by connecting redis-master via redis sentinel.",
+          "type": "string"
+        },
+        "masterPassword": {
+          "type": "string"
+        },
+        "masterUsername": {
+          "description": "master_username and master_password are master credentials used by redis sentinel mode.",
+          "type": "string"
+        },
+        "password": {
+          "description": "The password for database authentication.",
+          "type": "string"
+        },
+        "port": {
+          "description": "The port number of the database server.",
+          "type": "string"
+        },
+        "redisType": {
+          "enum": [
+            "REDIS_TYPE_UNSPECIFIED",
+            "STANDALONE",
+            "SENTINEL",
+            "CLUSTER"
+          ],
+          "title": "Redis Type",
+          "type": "string"
+        },
+        "region": {
+          "description": "region is the location of where the DB is, works for AWS RDS. For example, us-east-1.",
+          "type": "string"
+        },
+        "replicaSet": {
+          "description": "replica_set is used for MongoDB replica set.",
+          "type": "string"
+        },
+        "saslConfig": {
+          "$ref": "#/$defs/bytebase.v1.SASLConfig.jsonschema.strict.json"
+        },
+        "serviceName": {
+          "type": "string"
+        },
+        "sid": {
+          "description": "sid and service_name are used for Oracle.",
+          "type": "string"
+        },
+        "srv": {
+          "description": "srv, authentication_database and replica_set are used for MongoDB.\n srv is a boolean flag that indicates whether the host is a DNS SRV record.",
+          "type": "boolean"
+        },
+        "sshHost": {
+          "description": "Connection over SSH.\n The hostname of the SSH server agent.\n Required.",
+          "type": "string"
+        },
+        "sshPassword": {
+          "description": "The password to login the server. If it's empty string, no password is required.",
+          "type": "string"
+        },
+        "sshPort": {
+          "description": "The port of the SSH server agent. It's 22 typically.\n Required.",
+          "type": "string"
+        },
+        "sshPrivateKey": {
+          "description": "The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv(\"SSH_AUTH_SOCK\").",
+          "type": "string"
+        },
+        "sshUser": {
+          "description": "The user to login the server.\n Required.",
+          "type": "string"
+        },
+        "sslCa": {
+          "description": "The SSL certificate authority certificate.",
+          "type": "string"
+        },
+        "sslCert": {
+          "description": "The SSL client certificate.",
+          "type": "string"
+        },
+        "sslKey": {
+          "description": "The SSL client private key.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of data source (ADMIN or READ_ONLY).",
+          "enum": [
+            "DATA_SOURCE_UNSPECIFIED",
+            "ADMIN",
+            "READ_ONLY"
+          ],
+          "title": "Data Source Type",
+          "type": "string"
+        },
+        "useSsl": {
+          "description": "Use SSL to connect to the data source. By default, we use system default SSL configuration.",
+          "type": "boolean"
+        },
+        "username": {
+          "description": "The username for database authentication.",
+          "type": "string"
+        },
+        "verifyTlsCertificate": {
+          "description": "verify_tls_certificate enables TLS certificate verification for SSL connections.\n Default is false (no verification) for backward compatibility.\n Set to true for secure connections (recommended for production).\n Only set to false for development or when certificates cannot be properly\n validated (e.g., self-signed certs, VPN environments).",
+          "type": "boolean"
+        },
+        "warehouseId": {
+          "description": "warehouse_id is used by Databricks.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "username",
+        "password",
+        "useSsl",
+        "sslCa",
+        "sslCert",
+        "sslKey",
+        "verifyTlsCertificate",
+        "host",
+        "port",
+        "database",
+        "srv",
+        "authenticationDatabase",
+        "replicaSet",
+        "sid",
+        "serviceName",
+        "sshHost",
+        "sshPort",
+        "sshUser",
+        "sshPassword",
+        "sshPrivateKey",
+        "authenticationPrivateKey",
+        "authenticationPrivateKeyPassphrase",
+        "authenticationType",
+        "directConnection",
+        "region",
+        "warehouseId",
+        "masterName",
+        "masterUsername",
+        "masterPassword",
+        "redisType",
+        "cluster"
+      ],
+      "title": "Data Source",
+      "type": "object"
+    },
+    "bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "mountPath": {
+          "description": "The path where the approle auth method is mounted.",
+          "type": "string"
+        },
+        "roleId": {
+          "description": "The role ID for Vault AppRole authentication.",
+          "type": "string"
+        },
+        "secretId": {
+          "description": "the secret id for the role without ttl.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of secret for AppRole authentication.",
+          "enum": [
+            "SECRET_TYPE_UNSPECIFIED",
+            "PLAIN",
+            "ENVIRONMENT"
+          ],
+          "title": "Secret Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "roleId",
+        "secretId",
+        "type",
+        "mountPath"
+      ],
+      "title": "App Role Auth Option",
+      "type": "object"
+    },
+    "bytebase.v1.DataSourceExternalSecret.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "appRole": {
+          "$ref": "#/$defs/bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.jsonschema.strict.json",
+          "description": "AppRole authentication configuration."
+        },
+        "authType": {
+          "description": "The authentication method for accessing the secret store.",
+          "enum": [
+            "AUTH_TYPE_UNSPECIFIED",
+            "TOKEN",
+            "VAULT_APP_ROLE"
+          ],
+          "title": "Auth Type",
+          "type": "string"
+        },
+        "engineName": {
+          "description": "engine name is the name for secret engine.",
+          "type": "string"
+        },
+        "passwordKeyName": {
+          "description": "the key name for the password.",
+          "type": "string"
+        },
+        "secretName": {
+          "description": "the secret name in the engine to store the password.",
+          "type": "string"
+        },
+        "secretType": {
+          "description": "The type of external secret store.",
+          "enum": [
+            "SECRET_TYPE_UNSPECIFIED",
+            "VAULT_KV_V2",
+            "AWS_SECRETS_MANAGER",
+            "GCP_SECRET_MANAGER"
+          ],
+          "title": "Secret Type",
+          "type": "string"
+        },
+        "skipVaultTlsVerification": {
+          "description": "TLS configuration for connecting to Vault server.\n These fields are separate from the database TLS configuration in DataSource.\n skip_vault_tls_verification disables TLS certificate verification for Vault connections.\n Default is false (verification enabled) for security.\n Only set to true for development or when certificates cannot be properly validated.",
+          "type": "boolean"
+        },
+        "token": {
+          "description": "Token for direct authentication.",
+          "type": "string"
+        },
+        "url": {
+          "description": "The URL of the external secret store.",
+          "type": "string"
+        },
+        "vaultSslCa": {
+          "description": "CA certificate for Vault server verification.",
+          "type": "string"
+        },
+        "vaultSslCert": {
+          "description": "Client certificate for mutual TLS authentication with Vault.",
+          "type": "string"
+        },
+        "vaultSslKey": {
+          "description": "Client private key for mutual TLS authentication with Vault.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "secretType",
+        "url",
+        "authType",
+        "engineName",
+        "secretName",
+        "passwordKeyName",
+        "skipVaultTlsVerification",
+        "vaultSslCa",
+        "vaultSslCert",
+        "vaultSslKey"
+      ],
+      "title": "Data Source External Secret",
+      "type": "object"
+    },
+    "bytebase.v1.Database.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "backupAvailable": {
+          "description": "The database is available for DML prior backup.",
+          "type": "boolean"
+        },
+        "drifted": {
+          "description": "The schema is drifted from the source of truth.",
+          "type": "boolean"
+        },
+        "effectiveEnvironment": {
+          "description": "The effective environment based on environment tag above and environment\n tag on the instance. Inheritance follows\n https://cloud.google.com/resource-manager/docs/tags/tags-overview.",
+          "type": "string"
+        },
+        "environment": {
+          "description": "The environment resource.\n Format: environments/prod where prod is the environment resource ID.",
+          "type": "string"
+        },
+        "instanceResource": {
+          "$ref": "#/$defs/bytebase.v1.InstanceResource.jsonschema.strict.json",
+          "description": "The instance resource."
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Labels will be used for deployment and policy control.",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "name": {
+          "description": "The name of the database.\n Format: instances/{instance}/databases/{database}\n {database} is the database name in the instance.",
+          "type": "string"
+        },
+        "project": {
+          "description": "The project for a database.\n Format: projects/{project}",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "description": "The version of database schema.",
+          "type": "string"
+        },
+        "state": {
+          "description": "The existence of a database.",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "ACTIVE",
+            "DELETED"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "successfulSyncTime": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json",
+          "description": "The latest synchronization time."
+        }
+      },
+      "required": [
+        "name",
+        "state",
+        "project",
+        "schemaVersion",
+        "backupAvailable",
+        "drifted"
+      ],
+      "title": "Database",
+      "type": "object"
+    },
+    "bytebase.v1.InstanceResource.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "activation": {
+          "description": "Whether the instance is activated.",
+          "type": "boolean"
+        },
+        "dataSources": {
+          "description": "Data source configurations for the instance.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DataSource.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "engine": {
+          "description": "The database engine type.",
+          "enum": [
+            "ENGINE_UNSPECIFIED",
+            "CLICKHOUSE",
+            "MYSQL",
+            "POSTGRES",
+            "SNOWFLAKE",
+            "SQLITE",
+            "TIDB",
+            "MONGODB",
+            "REDIS",
+            "ORACLE",
+            "SPANNER",
+            "MSSQL",
+            "REDSHIFT",
+            "MARIADB",
+            "OCEANBASE",
+            "STARROCKS",
+            "DORIS",
+            "HIVE",
+            "ELASTICSEARCH",
+            "BIGQUERY",
+            "DYNAMODB",
+            "DATABRICKS",
+            "COCKROACHDB",
+            "COSMOSDB",
+            "TRINO",
+            "CASSANDRA"
+          ],
+          "title": "Engine",
+          "type": "string"
+        },
+        "engineVersion": {
+          "description": "The version of the database engine.",
+          "type": "string"
+        },
+        "environment": {
+          "description": "The environment resource.\n Format: environments/prod where prod is the environment resource ID.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the instance.\n Format: instances/{instance}",
+          "type": "string"
+        },
+        "title": {
+          "description": "The display title of the instance.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "engine",
+        "engineVersion",
+        "activation",
+        "name"
+      ],
+      "title": "Instance Resource",
+      "type": "object"
+    },
+    "bytebase.v1.KerberosConfig.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "instance": {
+          "description": "The instance component of the Kerberos principal.",
+          "type": "string"
+        },
+        "kdcHost": {
+          "description": "The hostname of the Key Distribution Center (KDC).",
+          "type": "string"
+        },
+        "kdcPort": {
+          "description": "The port of the Key Distribution Center (KDC).",
+          "type": "string"
+        },
+        "kdcTransportProtocol": {
+          "description": "The transport protocol for KDC communication (tcp or udp).",
+          "type": "string"
+        },
+        "keytab": {
+          "description": "The keytab file contents for authentication.",
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        },
+        "primary": {
+          "description": "The primary component of the Kerberos principal.",
+          "type": "string"
+        },
+        "realm": {
+          "description": "The Kerberos realm.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "primary",
+        "instance",
+        "realm",
+        "keytab",
+        "kdcHost",
+        "kdcPort",
+        "kdcTransportProtocol"
+      ],
+      "title": "Kerberos Config",
+      "type": "object"
+    },
+    "bytebase.v1.SASLConfig.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "krbConfig": {
+          "$ref": "#/$defs/bytebase.v1.KerberosConfig.jsonschema.strict.json",
+          "description": "Kerberos authentication configuration."
+        }
+      },
+      "title": "SASL Config",
+      "type": "object"
+    },
+    "bytebase.v1.UpdateDatabaseRequest.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "allowMissing": {
+          "description": "If set to true, and the database is not found, a new database will be created.\n In this situation, `update_mask` is ignored.",
+          "type": "boolean"
+        },
+        "database": {
+          "$ref": "#/$defs/bytebase.v1.Database.jsonschema.strict.json",
+          "description": "The database's `name` field is used to identify the database to update.\n Format: instances/{instance}/databases/{database}",
+          "title": "The database to update."
+        },
+        "updateMask": {
+          "$ref": "#/$defs/google.protobuf.FieldMask.jsonschema.strict.json",
+          "description": "The list of fields to update."
+        }
+      },
+      "required": [
+        "allowMissing"
+      ],
+      "title": "Update Database Request",
+      "type": "object"
+    },
+    "google.protobuf.FieldMask.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "paths: \"f.a\"\n     paths: \"f.b.d\"\n\n Here `f` represents a field in some root message, `a` and `b`\n fields in the message found in `f`, and `d` a field found in the\n message in `f.b`.\n\n Field masks are used to specify a subset of fields that should be\n returned by a get operation or modified by an update operation.\n Field masks also have a custom JSON encoding (see below).\n\n # Field Masks in Projections\n\n When used in the context of a projection, a response message or\n sub-message is filtered by the API to only contain those fields as\n specified in the mask. For example, if the mask in the previous\n example is applied to a response message as follows:\n\n     f {\n       a : 22\n       b {\n         d : 1\n         x : 2\n       }\n       y : 13\n     }\n     z: 8\n\n The result will not contain specific values for fields x,y and z\n (their value will be set to the default, and omitted in proto text\n output):\n\n\n     f {\n       a : 22\n       b {\n         d : 1\n       }\n     }\n\n A repeated field is not allowed except at the last position of a\n paths string.\n\n If a FieldMask object is not present in a get operation, the\n operation applies to all fields (as if a FieldMask of all fields\n had been specified).\n\n Note that a field mask does not necessarily apply to the\n top-level response message. In case of a REST get operation, the\n field mask applies directly to the response, but in case of a REST\n list operation, the mask instead applies to each individual message\n in the returned resource list. In case of a REST custom method,\n other definitions may be used. Where the mask applies will be\n clearly documented together with its declaration in the API.  In\n any case, the effect on the returned resource/resources is required\n behavior for APIs.\n\n # Field Masks in Update Operations\n\n A field mask in update operations specifies which fields of the\n targeted resource are going to be updated. The API is required\n to only change the values of the fields as specified in the mask\n and leave the others untouched. If a resource is passed in to\n describe the updated values, the API ignores the values of all\n fields not covered by the mask.\n\n If a repeated field is specified for an update operation, new values will\n be appended to the existing repeated field in the target resource. Note that\n a repeated field is only allowed in the last position of a `paths` string.\n\n If a sub-message is specified in the last position of the field mask for an\n update operation, then new value will be merged into the existing sub-message\n in the target resource.\n\n For example, given the target message:\n\n     f {\n       b {\n         d: 1\n         x: 2\n       }\n       c: [1]\n     }\n\n And an update message:\n\n     f {\n       b {\n         d: 10\n       }\n       c: [2]\n     }\n\n then if the field mask is:\n\n  paths: [\"f.b\", \"f.c\"]\n\n then the result will be:\n\n     f {\n       b {\n         d: 10\n         x: 2\n       }\n       c: [1, 2]\n     }\n\n An implementation may provide options to override this default behavior for\n repeated and message fields.\n\n In order to reset a field's value to the default, the field must\n be in the mask and set to the default value in the provided resource.\n Hence, in order to reset all fields of a resource, provide a default\n instance of the resource and set all fields in the mask, or do\n not provide a mask as described below.\n\n If a field mask is not present on update, the operation applies to\n all fields (as if a field mask of all fields has been specified).\n Note that in the presence of schema evolution, this may mean that\n fields the client does not know and has therefore not filled into\n the request will be reset to their default. If this is unwanted\n behavior, a specific service may require a client to always specify\n a field mask, producing an error if not.\n\n As with get operations, the location of the resource which\n describes the updated values in the request message depends on the\n operation kind. In any case, the effect of the field mask is\n required to be honored by the API.\n\n ## Considerations for HTTP REST\n\n The HTTP kind of an update operation which uses a field mask must\n be set to PATCH instead of PUT in order to satisfy HTTP semantics\n (PUT must only be used for full updates).\n\n # JSON Encoding of Field Masks\n\n In JSON, a field mask is encoded as a single string where paths are\n separated by a comma. Fields name in each path are converted\n to/from lower-camel naming conventions.\n\n As an example, consider the following message declarations:\n\n     message Profile {\n       User user = 1;\n       Photo photo = 2;\n     }\n     message User {\n       string display_name = 1;\n       string address = 2;\n     }\n\n In proto a field mask for `Profile` may look as such:\n\n     mask {\n       paths: \"user.display_name\"\n       paths: \"photo\"\n     }\n\n In JSON, the same mask is represented as below:\n\n     {\n       mask: \"user.displayName,photo\"\n     }\n\n # Field Masks and Oneof Fields\n\n Field masks treat fields in oneofs just as regular fields. Consider the\n following message:\n\n     message SampleMessage {\n       oneof test_oneof {\n         string name = 4;\n         SubMessage sub_message = 9;\n       }\n     }\n\n The field mask can be:\n\n     mask {\n       paths: \"name\"\n     }\n\n Or:\n\n     mask {\n       paths: \"sub_message\"\n     }\n\n Note that oneof type names (\"test_oneof\" in this case) cannot be used in\n paths.\n\n ## Field Mask Verification\n\n The implementation of any API method which has a FieldMask type field in the\n request should verify the included field paths, and return an\n `INVALID_ARGUMENT` error if any path is unmappable.",
+      "properties": {
+        "paths": {
+          "description": "The set of field mask paths.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "title": "`FieldMask` represents a set of symbolic field paths, for example:",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.BatchUpdateDatabasesRequest.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.BatchUpdateDatabasesRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

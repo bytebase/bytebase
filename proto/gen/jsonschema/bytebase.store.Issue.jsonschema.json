@@ -1,0 +1,79 @@
+{
+  "$id": "bytebase.store.Issue.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Issue is the metadata for issues that track database operations and access requests.",
+  "patternProperties": {
+    "^(grant_request)$": {
+      "$ref": "bytebase.store.GrantRequest.jsonschema.json",
+      "description": "Access grant request details if this is a grant request issue."
+    },
+    "^(risk_level)$": {
+      "anyOf": [
+        {
+          "pattern": "^RISK_LEVEL_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "LOW",
+            "MODERATE",
+            "HIGH"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "Risk level for the issue, calculated from statement types.",
+      "title": "Risk Level"
+    }
+  },
+  "properties": {
+    "approval": {
+      "$ref": "bytebase.store.IssuePayloadApproval.jsonschema.json",
+      "description": "Approval information for the issue workflow."
+    },
+    "grantRequest": {
+      "$ref": "bytebase.store.GrantRequest.jsonschema.json",
+      "description": "Access grant request details if this is a grant request issue."
+    },
+    "labels": {
+      "description": "Labels attached to categorize and filter the issue.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "riskLevel": {
+      "anyOf": [
+        {
+          "pattern": "^RISK_LEVEL_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "LOW",
+            "MODERATE",
+            "HIGH"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "Risk level for the issue, calculated from statement types.",
+      "title": "Risk Level"
+    }
+  },
+  "title": "Issue",
+  "type": "object"
+}

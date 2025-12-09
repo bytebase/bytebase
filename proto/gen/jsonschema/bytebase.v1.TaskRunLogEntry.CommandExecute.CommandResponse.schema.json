@@ -1,0 +1,81 @@
+{
+  "$id": "bytebase.v1.TaskRunLogEntry.CommandExecute.CommandResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Command execution response.",
+  "patternProperties": {
+    "^(affectedRows)$": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "Total affected rows."
+    },
+    "^(allAffectedRows)$": {
+      "description": "`all_affected_rows` is the affected rows of each command.\n `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.",
+      "items": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "^(logTime)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "When the response was logged."
+    }
+  },
+  "properties": {
+    "affected_rows": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "Total affected rows."
+    },
+    "all_affected_rows": {
+      "description": "`all_affected_rows` is the affected rows of each command.\n `all_affected_rows` may be unavailable if the database driver doesn't support it. Caller should fallback to `affected_rows` in that case.",
+      "items": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "error": {
+      "default": "",
+      "description": "Error message if command execution failed.",
+      "type": "string"
+    },
+    "log_time": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "When the response was logged."
+    }
+  },
+  "title": "Command Response",
+  "type": "object"
+}

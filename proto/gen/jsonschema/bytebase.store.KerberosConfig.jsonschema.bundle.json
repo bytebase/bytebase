@@ -1,0 +1,58 @@
+{
+  "$defs": {
+    "bytebase.store.KerberosConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(kdc_host)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(kdc_port)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(kdc_transport_protocol)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "instance": {
+          "default": "",
+          "type": "string"
+        },
+        "kdcHost": {
+          "default": "",
+          "type": "string"
+        },
+        "kdcPort": {
+          "default": "",
+          "type": "string"
+        },
+        "kdcTransportProtocol": {
+          "default": "",
+          "type": "string"
+        },
+        "keytab": {
+          "default": null,
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+          "type": "string"
+        },
+        "primary": {
+          "default": "",
+          "type": "string"
+        },
+        "realm": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Kerberos Config",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.KerberosConfig.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.KerberosConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

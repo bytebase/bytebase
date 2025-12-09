@@ -1,0 +1,18 @@
+{
+  "$id": "bytebase.v1.UpdateWorksheetRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "update_mask": {
+      "$ref": "google.protobuf.FieldMask.schema.strict.json",
+      "description": "The list of fields to be updated.\n Fields are specified relative to the worksheet.\n (e.g., `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)\n Only support update the following fields for now:\n - `title`\n - `statement`\n - `starred`\n - `visibility`"
+    },
+    "worksheet": {
+      "$ref": "bytebase.v1.Worksheet.schema.strict.json",
+      "description": "The worksheet's `name` field is used to identify the worksheet to update.\n Format: worksheets/{worksheet}",
+      "title": "The worksheet to update."
+    }
+  },
+  "title": "Update Worksheet Request",
+  "type": "object"
+}

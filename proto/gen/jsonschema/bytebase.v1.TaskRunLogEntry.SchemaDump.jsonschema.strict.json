@@ -1,0 +1,25 @@
+{
+  "$id": "bytebase.v1.TaskRunLogEntry.SchemaDump.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Schema dump operation details.",
+  "properties": {
+    "endTime": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json",
+      "description": "When the schema dump ended."
+    },
+    "error": {
+      "description": "Error message if the schema dump failed.",
+      "type": "string"
+    },
+    "startTime": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json",
+      "description": "When the schema dump started."
+    }
+  },
+  "required": [
+    "error"
+  ],
+  "title": "Schema Dump",
+  "type": "object"
+}

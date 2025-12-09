@@ -1,0 +1,12 @@
+{
+  "$id": "bytebase.store.ObjectSchema.ArrayKind.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "$ref": "bytebase.store.ObjectSchema.jsonschema.json"
+    }
+  },
+  "title": "Array Kind",
+  "type": "object"
+}

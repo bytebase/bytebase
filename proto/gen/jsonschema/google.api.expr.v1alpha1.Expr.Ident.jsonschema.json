@@ -1,0 +1,16 @@
+{
+  "$id": "google.api.expr.v1alpha1.Expr.Ident.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "An identifier expression. e.g. `request`.",
+  "properties": {
+    "name": {
+      "default": "",
+      "description": "Qualified names are represented by the\n [Expr.Select][google.api.expr.v1alpha1.Expr.Select] expression.",
+      "title": "Required. Holds a single, unqualified identifier, possibly preceded by a\n '.'.",
+      "type": "string"
+    }
+  },
+  "title": "Ident",
+  "type": "object"
+}

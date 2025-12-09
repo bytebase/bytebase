@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.store.SASLConfig.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(krbConfig)$": {
+      "$ref": "bytebase.store.KerberosConfig.schema.json"
+    }
+  },
+  "properties": {
+    "krb_config": {
+      "$ref": "bytebase.store.KerberosConfig.schema.json"
+    }
+  },
+  "title": "SASL Config",
+  "type": "object"
+}

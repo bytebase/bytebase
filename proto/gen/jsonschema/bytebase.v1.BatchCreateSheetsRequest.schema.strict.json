@@ -1,0 +1,22 @@
+{
+  "$id": "bytebase.v1.BatchCreateSheetsRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "description": "The parent resource where all sheets will be created.\n Format: projects/{project}",
+      "type": "string"
+    },
+    "requests": {
+      "items": {
+        "$ref": "bytebase.v1.CreateSheetRequest.schema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "parent"
+  ],
+  "title": "Batch Create Sheets Request",
+  "type": "object"
+}

@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.store.InstanceChangeHistoryPayload.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(changedResources)$": {
+      "$ref": "bytebase.store.ChangedResources.schema.json"
+    }
+  },
+  "properties": {
+    "changed_resources": {
+      "$ref": "bytebase.store.ChangedResources.schema.json"
+    }
+  },
+  "title": "Instance Change History Payload",
+  "type": "object"
+}

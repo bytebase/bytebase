@@ -1,0 +1,22 @@
+{
+  "$id": "bytebase.v1.ChangedResourceFunction.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "ranges": {
+      "description": "The ranges of sub-strings correspond to the statements on the sheet.",
+      "items": {
+        "$ref": "bytebase.v1.Range.schema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "Changed Resource Function",
+  "type": "object"
+}

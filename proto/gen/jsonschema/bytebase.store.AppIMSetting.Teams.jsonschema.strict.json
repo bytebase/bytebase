@@ -1,0 +1,26 @@
+{
+  "$id": "bytebase.store.AppIMSetting.Teams.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "clientId": {
+      "description": "Azure AD application (client) ID.",
+      "type": "string"
+    },
+    "clientSecret": {
+      "description": "Azure AD client secret.",
+      "type": "string"
+    },
+    "tenantId": {
+      "description": "Azure AD tenant ID (Directory ID).",
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenantId",
+    "clientId",
+    "clientSecret"
+  ],
+  "title": "Teams",
+  "type": "object"
+}

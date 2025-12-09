@@ -1,0 +1,46 @@
+{
+  "$id": "bytebase.store.TaskRunResult.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "TaskRunResult contains the outcome and metadata from a task run execution.",
+  "properties": {
+    "changelog": {
+      "description": "Resource name of the changelog entry created by this run.\n Format: instances/{instance}/databases/{database}/changelogs/{changelog}",
+      "type": "string"
+    },
+    "detail": {
+      "description": "Detailed execution information or error message.",
+      "type": "string"
+    },
+    "end_position": {
+      "$ref": "bytebase.store.Position.schema.strict.json",
+      "description": "Ending position in the SQL statement where an error occurred."
+    },
+    "export_archive_uid": {
+      "description": "UID of the export archive generated for export tasks.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "prior_backup_detail": {
+      "$ref": "bytebase.store.PriorBackupDetail.schema.strict.json",
+      "description": "Backup details that can be used to rollback changes."
+    },
+    "start_position": {
+      "$ref": "bytebase.store.Position.schema.strict.json",
+      "description": "Starting position in the SQL statement where an error occurred."
+    },
+    "version": {
+      "description": "Schema version after the migration was applied.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "detail",
+    "changelog",
+    "version",
+    "export_archive_uid"
+  ],
+  "title": "Task Run Result",
+  "type": "object"
+}

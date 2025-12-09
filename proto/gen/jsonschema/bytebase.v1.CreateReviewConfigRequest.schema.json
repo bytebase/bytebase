@@ -1,0 +1,19 @@
+{
+  "$id": "bytebase.v1.CreateReviewConfigRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(reviewConfig)$": {
+      "$ref": "bytebase.v1.ReviewConfig.schema.json",
+      "description": "The SQL review config to create."
+    }
+  },
+  "properties": {
+    "review_config": {
+      "$ref": "bytebase.v1.ReviewConfig.schema.json",
+      "description": "The SQL review config to create."
+    }
+  },
+  "title": "Create Review Config Request",
+  "type": "object"
+}

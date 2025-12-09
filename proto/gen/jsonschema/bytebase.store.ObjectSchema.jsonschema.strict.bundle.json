@@ -1,0 +1,68 @@
+{
+  "$defs": {
+    "bytebase.store.ObjectSchema.ArrayKind.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.jsonschema.strict.json"
+        }
+      },
+      "title": "Array Kind",
+      "type": "object"
+    },
+    "bytebase.store.ObjectSchema.StructKind.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "properties": {
+          "additionalProperties": {
+            "$ref": "#/$defs/bytebase.store.ObjectSchema.jsonschema.strict.json"
+          },
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "title": "Struct Kind",
+      "type": "object"
+    },
+    "bytebase.store.ObjectSchema.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "arrayKind": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.ArrayKind.jsonschema.strict.json"
+        },
+        "semanticType": {
+          "type": "string"
+        },
+        "structKind": {
+          "$ref": "#/$defs/bytebase.store.ObjectSchema.StructKind.jsonschema.strict.json"
+        },
+        "type": {
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "STRING",
+            "NUMBER",
+            "BOOLEAN",
+            "OBJECT",
+            "ARRAY"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "semanticType"
+      ],
+      "title": "Object Schema",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.ObjectSchema.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.ObjectSchema.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

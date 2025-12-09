@@ -1,0 +1,17 @@
+{
+  "$id": "bytebase.v1.MaskingRulePolicy.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Policy for configuring data masking rules.",
+  "properties": {
+    "rules": {
+      "description": "The list of masking rules.",
+      "items": {
+        "$ref": "bytebase.v1.MaskingRulePolicy.MaskingRule.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Masking Rule Policy",
+  "type": "object"
+}

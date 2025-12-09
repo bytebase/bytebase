@@ -1,0 +1,52 @@
+{
+  "$id": "bytebase.v1.ViewMetadata.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ViewMetadata is the metadata for views.",
+  "properties": {
+    "columns": {
+      "description": "The columns is the ordered list of columns in a table.",
+      "items": {
+        "$ref": "bytebase.v1.ColumnMetadata.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "comment": {
+      "description": "The comment is the comment of a view.",
+      "type": "string"
+    },
+    "definition": {
+      "description": "The definition is the definition of a view.",
+      "type": "string"
+    },
+    "dependency_columns": {
+      "description": "The dependency_columns is the list of dependency columns of a view.",
+      "items": {
+        "$ref": "bytebase.v1.DependencyColumn.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "description": "The name is the name of a view.",
+      "type": "string"
+    },
+    "skip_dump": {
+      "type": "boolean"
+    },
+    "triggers": {
+      "description": "The triggers is the list of triggers in a view.",
+      "items": {
+        "$ref": "bytebase.v1.TriggerMetadata.schema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "definition",
+    "comment",
+    "skip_dump"
+  ],
+  "title": "View Metadata",
+  "type": "object"
+}

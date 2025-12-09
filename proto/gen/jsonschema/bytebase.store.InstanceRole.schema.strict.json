@@ -1,0 +1,31 @@
+{
+  "$id": "bytebase.store.InstanceRole.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "InstanceRole is the API message for instance role.",
+  "properties": {
+    "attribute": {
+      "description": "The role attribute.\n For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html\n For MySQL, it is the global privileges as GRANT statements, which means it only contains \"GRANT ... ON *.* TO ...\". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html",
+      "type": "string"
+    },
+    "connection_limit": {
+      "description": "The connection count limit for this role.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "name": {
+      "description": "The role name.",
+      "type": "string"
+    },
+    "valid_until": {
+      "description": "The expiration for the role's password.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "Instance Role",
+  "type": "object"
+}

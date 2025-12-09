@@ -1,0 +1,72 @@
+{
+  "$defs": {
+    "bytebase.v1.EventMetadata.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(character_set_client)$": {
+          "default": "",
+          "description": "The character set used by the client creating the event.",
+          "type": "string"
+        },
+        "^(collation_connection)$": {
+          "default": "",
+          "description": "The collation used for the connection when creating the event.",
+          "type": "string"
+        },
+        "^(sql_mode)$": {
+          "default": "",
+          "description": "The SQL mode setting for the event.",
+          "type": "string"
+        },
+        "^(time_zone)$": {
+          "default": "",
+          "description": "The time zone of the event.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "characterSetClient": {
+          "default": "",
+          "description": "The character set used by the client creating the event.",
+          "type": "string"
+        },
+        "collationConnection": {
+          "default": "",
+          "description": "The collation used for the connection when creating the event.",
+          "type": "string"
+        },
+        "comment": {
+          "default": "",
+          "description": "The comment is the comment of an event.",
+          "type": "string"
+        },
+        "definition": {
+          "default": "",
+          "description": "The schedule of the event.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "The name of the event.",
+          "type": "string"
+        },
+        "sqlMode": {
+          "default": "",
+          "description": "The SQL mode setting for the event.",
+          "type": "string"
+        },
+        "timeZone": {
+          "default": "",
+          "description": "The time zone of the event.",
+          "type": "string"
+        }
+      },
+      "title": "Event Metadata",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.EventMetadata.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.EventMetadata.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

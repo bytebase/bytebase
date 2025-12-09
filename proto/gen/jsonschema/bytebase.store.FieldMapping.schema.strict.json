@@ -1,0 +1,32 @@
+{
+  "$id": "bytebase.store.FieldMapping.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "FieldMapping saves the field names from user info API of identity provider.\n As we save all raw json string of user info response data into `principal.idp_user_info`,\n we can extract the relevant data based with `FieldMapping`.",
+  "properties": {
+    "display_name": {
+      "description": "DisplayName is the field name of display name in 3rd-party idp user info. Optional.",
+      "type": "string"
+    },
+    "groups": {
+      "description": "Groups is the field name of groups in 3rd-party idp user info. Optional.\n Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/",
+      "type": "string"
+    },
+    "identifier": {
+      "description": "Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.",
+      "type": "string"
+    },
+    "phone": {
+      "description": "Phone is the field name of primary phone in 3rd-party idp user info. Optional.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "identifier",
+    "display_name",
+    "phone",
+    "groups"
+  ],
+  "title": "Field Mapping",
+  "type": "object"
+}

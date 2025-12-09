@@ -1,0 +1,38 @@
+{
+  "$id": "bytebase.v1.DimensionalConfig.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "DimensionalConfig defines dimensional and constraint parameters for spatial indexes.",
+  "properties": {
+    "constraints": {
+      "description": "Coordinate system constraints",
+      "items": {
+        "$ref": "bytebase.v1.DimensionConstraint.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "data_type": {
+      "description": "Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)",
+      "type": "string"
+    },
+    "dimensions": {
+      "description": "Number of dimensions (2-4, default 2)",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "srid": {
+      "description": "Spatial reference system identifier (SRID)",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "dimensions",
+    "data_type",
+    "srid"
+  ],
+  "title": "Dimensional Config",
+  "type": "object"
+}

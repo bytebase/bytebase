@@ -1,0 +1,52 @@
+{
+  "$defs": {
+    "bytebase.v1.MaskingReason.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "description": "The masking algorithm used.",
+          "type": "string"
+        },
+        "classification_level": {
+          "description": "Whether masking was due to classification level.",
+          "type": "string"
+        },
+        "context": {
+          "description": "Additional context (e.g., \"Matched global rule: PII Protection\").",
+          "type": "string"
+        },
+        "masking_rule_id": {
+          "description": "The masking rule ID that matched (if applicable).",
+          "type": "string"
+        },
+        "semantic_type_icon": {
+          "description": "Icon associated with the semantic type (if any).",
+          "type": "string"
+        },
+        "semantic_type_id": {
+          "description": "The semantic type that triggered masking (e.g., \"SSN\", \"email\", \"phone\").",
+          "type": "string"
+        },
+        "semantic_type_title": {
+          "description": "Human-readable semantic type title.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "semantic_type_id",
+        "semantic_type_title",
+        "masking_rule_id",
+        "algorithm",
+        "context",
+        "classification_level",
+        "semantic_type_icon"
+      ],
+      "title": "Masking Reason",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.MaskingReason.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.MaskingReason.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,68 @@
+{
+  "$defs": {
+    "bytebase.v1.InstanceRole.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "InstanceRole is the API message for instance role.",
+      "properties": {
+        "attribute": {
+          "description": "The role attribute.\n For PostgreSQL, it contains super_user, no_inherit, create_role, create_db, can_login, replication, and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html\n For MySQL, it's the global privileges as GRANT statements, which means it only contains \"GRANT ... ON *.* TO ...\". Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html",
+          "type": "string"
+        },
+        "connectionLimit": {
+          "description": "The connection count limit for this role.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "name": {
+          "description": "The name of the role.\n Format: instances/{instance}/roles/{role}\n The role name is the unique name for the role.",
+          "type": "string"
+        },
+        "password": {
+          "description": "The role password.",
+          "type": "string"
+        },
+        "roleName": {
+          "description": "The role name. It's unique within the instance.",
+          "type": "string"
+        },
+        "validUntil": {
+          "description": "The expiration for the role's password.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "roleName"
+      ],
+      "title": "Instance Role",
+      "type": "object"
+    },
+    "bytebase.v1.ListInstanceRolesResponse.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "nextPageToken": {
+          "description": "A token, which can be sent as `page_token` to retrieve the next page.\n If this field is omitted, there are no subsequent pages.",
+          "type": "string"
+        },
+        "roles": {
+          "description": "The roles from the specified request.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.InstanceRole.jsonschema.strict.json"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "nextPageToken"
+      ],
+      "title": "List Instance Roles Response",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.ListInstanceRolesResponse.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.ListInstanceRolesResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

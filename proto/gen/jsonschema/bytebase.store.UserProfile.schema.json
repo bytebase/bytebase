@@ -1,0 +1,28 @@
+{
+  "$id": "bytebase.store.UserProfile.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(lastChangePasswordTime)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(lastLoginTime)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    }
+  },
+  "properties": {
+    "last_change_password_time": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "last_login_time": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "source": {
+      "default": "",
+      "description": "The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.",
+      "type": "string"
+    }
+  },
+  "title": "User Profile",
+  "type": "object"
+}

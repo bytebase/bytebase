@@ -1,0 +1,43 @@
+{
+  "$id": "bytebase.v1.IdentityProvider.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "config": {
+      "$ref": "bytebase.v1.IdentityProviderConfig.schema.strict.json",
+      "description": "The configuration details for the identity provider."
+    },
+    "domain": {
+      "description": "The domain for email matching when using this identity provider.",
+      "type": "string"
+    },
+    "name": {
+      "description": "The name of the identity provider.\n Format: idps/{idp}",
+      "type": "string"
+    },
+    "title": {
+      "description": "The display title of the identity provider.",
+      "maxLength": 200,
+      "type": "string"
+    },
+    "type": {
+      "description": "The type of identity provider protocol.",
+      "enum": [
+        "IDENTITY_PROVIDER_TYPE_UNSPECIFIED",
+        "OAUTH2",
+        "OIDC",
+        "LDAP"
+      ],
+      "title": "Identity Provider Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "title",
+    "domain",
+    "type"
+  ],
+  "title": "Identity Provider",
+  "type": "object"
+}

@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.BatchUpdateDatabasesRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "default": "",
+      "description": "The parent resource shared by all databases being updated.\n Format: instances/{instance}\n If the operation spans parents, a dash (-) may be accepted as a wildcard.\n We only support updating the project of databases for now.",
+      "type": "string"
+    },
+    "requests": {
+      "description": "The request message specifying the resources to update.\n A maximum of 1000 databases can be modified in a batch.",
+      "items": {
+        "$ref": "bytebase.v1.UpdateDatabaseRequest.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Batch Update Databases Request",
+  "type": "object"
+}

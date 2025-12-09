@@ -1,0 +1,23 @@
+{
+  "$defs": {
+    "bytebase.store.TaskReleaseSource.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "TaskReleaseSource contains information about the release file this task originated from.",
+      "properties": {
+        "file": {
+          "description": "Resource name of the release file.\n Format: projects/{project}/releases/{release}/files/{id}",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file"
+      ],
+      "title": "Task Release Source",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.TaskReleaseSource.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.store.TaskReleaseSource.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

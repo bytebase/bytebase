@@ -1,0 +1,99 @@
+{
+  "$id": "bytebase.v1.WorkspaceProfileSetting.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "announcement": {
+      "$ref": "bytebase.v1.Announcement.jsonschema.strict.json",
+      "description": "The setting of custom announcement"
+    },
+    "brandingLogo": {
+      "description": "The branding logo as a data URI (e.g. data:image/png;base64,...).",
+      "type": "string"
+    },
+    "databaseChangeMode": {
+      "description": "The workspace database change mode.",
+      "enum": [
+        "DATABASE_CHANGE_MODE_UNSPECIFIED",
+        "PIPELINE",
+        "EDITOR"
+      ],
+      "title": "Database Change Mode",
+      "type": "string"
+    },
+    "directorySyncToken": {
+      "description": "The token for directory sync authentication.",
+      "type": "string"
+    },
+    "disallowPasswordSignin": {
+      "description": "Whether to disallow password signin. (Except workspace admins)",
+      "type": "boolean"
+    },
+    "disallowSignup": {
+      "description": "Disallow self-service signup, users can only be invited by the owner.",
+      "type": "boolean"
+    },
+    "domains": {
+      "description": "The workspace domain, e.g., bytebase.com.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "enableAuditLogStdout": {
+      "description": "Whether to enable audit logging to stdout in structured JSON format.\n Requires TEAM or ENTERPRISE license.",
+      "type": "boolean"
+    },
+    "enableMetricCollection": {
+      "description": "Whether to enable metric collection for the workspace.",
+      "type": "boolean"
+    },
+    "enforceIdentityDomain": {
+      "description": "Only user and group from the domains can be created and login.",
+      "type": "boolean"
+    },
+    "externalUrl": {
+      "description": "The external URL is used for sso authentication callback.",
+      "type": "string"
+    },
+    "inactiveSessionTimeout": {
+      "$ref": "google.protobuf.Duration.jsonschema.strict.json",
+      "description": "The session expiration time if not activity detected for the user. Value \u003c= 0 means no limit."
+    },
+    "maximumRoleExpiration": {
+      "$ref": "google.protobuf.Duration.jsonschema.strict.json",
+      "description": "The max duration for role expired."
+    },
+    "passwordRestriction": {
+      "$ref": "bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.jsonschema.strict.json",
+      "description": "Password restriction settings."
+    },
+    "require2fa": {
+      "description": "Require 2FA for all users.",
+      "type": "boolean"
+    },
+    "tokenDuration": {
+      "$ref": "google.protobuf.Duration.jsonschema.strict.json",
+      "description": "The duration for token."
+    },
+    "watermark": {
+      "description": "Whether to display watermark on pages.\n Requires ENTERPRISE license.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "externalUrl",
+    "disallowSignup",
+    "require2fa",
+    "enforceIdentityDomain",
+    "databaseChangeMode",
+    "disallowPasswordSignin",
+    "enableMetricCollection",
+    "enableAuditLogStdout",
+    "watermark",
+    "directorySyncToken",
+    "brandingLogo"
+  ],
+  "title": "Workspace Profile Setting",
+  "type": "object"
+}

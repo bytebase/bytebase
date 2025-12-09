@@ -1,0 +1,55 @@
+{
+  "$id": "bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(affectedRows)$": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "^(changedResources)$": {
+      "$ref": "bytebase.store.ChangedResources.schema.json"
+    },
+    "^(statementTypes)$": {
+      "description": "statement_types are the types of statements found in the SQL.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "affected_rows": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "changed_resources": {
+      "$ref": "bytebase.store.ChangedResources.schema.json"
+    },
+    "statement_types": {
+      "description": "statement_types are the types of statements found in the SQL.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Sql Summary Report",
+  "type": "object"
+}

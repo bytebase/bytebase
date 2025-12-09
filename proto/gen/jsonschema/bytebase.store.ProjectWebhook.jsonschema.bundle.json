@@ -1,0 +1,94 @@
+{
+  "$defs": {
+    "bytebase.store.ProjectWebhook.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(direct_message)$": {
+          "default": false,
+          "description": "If direct_message is set, the notification is sent directly\n to the persons and url will be ignored.\n IM integration setting should be set for this function to work.",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "activities": {
+          "description": "List of activities that trigger this webhook.",
+          "items": {
+            "anyOf": [
+              {
+                "enum": [
+                  "TYPE_UNSPECIFIED",
+                  "NOTIFY_ISSUE_APPROVED",
+                  "NOTIFY_PIPELINE_ROLLOUT",
+                  "ISSUE_CREATE",
+                  "ISSUE_COMMENT_CREATE",
+                  "ISSUE_FIELD_UPDATE",
+                  "ISSUE_STATUS_UPDATE",
+                  "ISSUE_APPROVAL_NOTIFY",
+                  "ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
+                  "ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE"
+                ],
+                "type": "string"
+              },
+              {
+                "maximum": 2147483647,
+                "minimum": -2147483648,
+                "type": "integer"
+              }
+            ],
+            "title": "Type"
+          },
+          "type": "array"
+        },
+        "directMessage": {
+          "default": false,
+          "description": "If direct_message is set, the notification is sent directly\n to the persons and url will be ignored.\n IM integration setting should be set for this function to work.",
+          "type": "boolean"
+        },
+        "title": {
+          "default": "",
+          "description": "Webhook title.",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "SLACK",
+                "DISCORD",
+                "TEAMS",
+                "DINGTALK",
+                "FEISHU",
+                "WECOM",
+                "LARK"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "Webhook type.",
+          "title": "Type"
+        },
+        "url": {
+          "default": "",
+          "description": "Webhook URL.",
+          "type": "string"
+        }
+      },
+      "title": "Project Webhook",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.store.ProjectWebhook.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.store.ProjectWebhook.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,33 @@
+{
+  "$id": "bytebase.v1.Binding.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Binding associates members with a role and optional conditions.",
+  "properties": {
+    "condition": {
+      "$ref": "google.type.Expr.schema.strict.json",
+      "description": "Support variables:\n resource.database: the database full name in \"instances/{instance}/databases/{database}\" format, used by the \"roles/sqlEditorUser\" role, support \"==\" operator.\n resource.schema_name: the schema name, used by the \"roles/sqlEditorUser\" role, support \"==\" operator.\n resource.table_name: the table name, used by the \"roles/sqlEditorUser\" role, support \"==\" operator.\n request.time: the expiration. Only support \"\u003c\" operation in `request.time \u003c timestamp(\"{ISO datetime string format}\")`.\n\n For example:\n resource.database == \"instances/local-pg/databases/postgres\" \u0026\u0026 resource.schema_name in [\"public\",\"another_schema\"]\n resource.database == \"instances/local-pg/databases/bytebase\" \u0026\u0026 resource.schema_name == \"public\" \u0026\u0026 resource.table_name in [\"audit_log\"]\n request.time \u003c timestamp(\"2025-04-26T11:24:48.655Z\")",
+      "title": "The condition that is associated with this binding, only used in the project IAM policy.\n If the condition evaluates to true, then this binding applies to the current request.\n If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding.\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec"
+    },
+    "members": {
+      "description": "Specifies the principals requesting access for a Bytebase resource.\n For users, the member should be: user:{email}\n For groups, the member should be: group:{email}",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "parsed_expr": {
+      "$ref": "google.api.expr.v1alpha1.Expr.schema.strict.json",
+      "description": "The parsed expression of the condition."
+    },
+    "role": {
+      "description": "The role that is assigned to the members.\n Format: roles/{role}",
+      "type": "string"
+    }
+  },
+  "required": [
+    "role"
+  ],
+  "title": "Binding",
+  "type": "object"
+}

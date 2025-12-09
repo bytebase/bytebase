@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.CreateProjectRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "project": {
+      "$ref": "bytebase.v1.Project.jsonschema.strict.json",
+      "description": "The project to create."
+    },
+    "projectId": {
+      "description": "This value should be 4-63 characters, and valid characters\n are /[a-z][0-9]-/.",
+      "title": "The ID to use for the project, which will become the final component of\n the project's resource name.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "projectId"
+  ],
+  "title": "Create Project Request",
+  "type": "object"
+}

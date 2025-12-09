@@ -1,0 +1,40 @@
+{
+  "$id": "bytebase.v1.Plan.ExportDataConfig.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "description": "The format of the exported file.",
+      "enum": [
+        "FORMAT_UNSPECIFIED",
+        "CSV",
+        "JSON",
+        "SQL",
+        "XLSX"
+      ],
+      "title": "Export Format",
+      "type": "string"
+    },
+    "password": {
+      "description": "The zip password provide by users.\n Leave it empty if no needs to encrypt the zip file.",
+      "type": "string"
+    },
+    "sheet": {
+      "description": "The resource name of the sheet.\n Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "targets": {
+      "description": "The list of targets.\n Multi-database format: [instances/{instance-id}/databases/{database-name}].\n Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "sheet",
+    "format"
+  ],
+  "title": "Export Data Config",
+  "type": "object"
+}

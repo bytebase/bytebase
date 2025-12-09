@@ -1,0 +1,79 @@
+{
+  "$id": "bytebase.store.IssueCommentPayload.TaskUpdate.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(from_sheet)$": {
+      "description": "Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "^(to_sheet)$": {
+      "description": "Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "^(to_status)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "STATUS_UNSPECIFIED",
+            "PENDING",
+            "RUNNING",
+            "DONE",
+            "FAILED",
+            "CANCELED",
+            "NOT_STARTED",
+            "SKIPPED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "title": "Status"
+    }
+  },
+  "properties": {
+    "fromSheet": {
+      "description": "Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "tasks": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "toSheet": {
+      "description": "Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "toStatus": {
+      "anyOf": [
+        {
+          "enum": [
+            "STATUS_UNSPECIFIED",
+            "PENDING",
+            "RUNNING",
+            "DONE",
+            "FAILED",
+            "CANCELED",
+            "NOT_STARTED",
+            "SKIPPED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "title": "Status"
+    }
+  },
+  "title": "Task Update",
+  "type": "object"
+}

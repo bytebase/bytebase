@@ -1,0 +1,23 @@
+{
+  "$id": "bytebase.v1.BatchCreateRevisionsRequest.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "description": "The parent resource shared by all revisions being created.\n Format: instances/{instance}/databases/{database}",
+      "type": "string"
+    },
+    "requests": {
+      "description": "The request message specifying the revisions to create.\n A maximum of 100 revisions can be created in a batch.",
+      "items": {
+        "$ref": "bytebase.v1.CreateRevisionRequest.jsonschema.strict.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "parent"
+  ],
+  "title": "Batch Create Revisions Request",
+  "type": "object"
+}

@@ -1,0 +1,42 @@
+{
+  "$id": "bytebase.v1.PlanCheckRun.Result.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "content": {
+      "type": "string"
+    },
+    "sql_review_report": {
+      "$ref": "bytebase.v1.PlanCheckRun.Result.SqlReviewReport.schema.strict.json"
+    },
+    "sql_summary_report": {
+      "$ref": "bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.schema.strict.json"
+    },
+    "status": {
+      "enum": [
+        "ADVICE_LEVEL_UNSPECIFIED",
+        "SUCCESS",
+        "WARNING",
+        "ERROR"
+      ],
+      "title": "Level",
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "title",
+    "content",
+    "code"
+  ],
+  "title": "Result",
+  "type": "object"
+}

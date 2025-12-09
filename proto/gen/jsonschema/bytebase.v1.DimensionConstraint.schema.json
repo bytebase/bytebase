@@ -1,0 +1,117 @@
+{
+  "$id": "bytebase.v1.DimensionConstraint.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "DimensionConstraint defines constraints for a spatial dimension.",
+  "patternProperties": {
+    "^(maxValue)$": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "Maximum value for this dimension"
+    },
+    "^(minValue)$": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "Minimum value for this dimension"
+    }
+  },
+  "properties": {
+    "dimension": {
+      "default": "",
+      "description": "Dimension name/type (X, Y, Z, M, etc.)",
+      "type": "string"
+    },
+    "max_value": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "Maximum value for this dimension"
+    },
+    "min_value": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "Minimum value for this dimension"
+    },
+    "tolerance": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": 0,
+      "description": "Tolerance for this dimension"
+    }
+  },
+  "title": "Dimension Constraint",
+  "type": "object"
+}

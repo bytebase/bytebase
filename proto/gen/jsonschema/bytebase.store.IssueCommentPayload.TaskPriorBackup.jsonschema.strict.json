@@ -1,0 +1,34 @@
+{
+  "$id": "bytebase.store.IssueCommentPayload.TaskPriorBackup.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "database": {
+      "type": "string"
+    },
+    "error": {
+      "type": "string"
+    },
+    "originalLine": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "tables": {
+      "items": {
+        "$ref": "bytebase.store.IssueCommentPayload.TaskPriorBackup.Table.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "task": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "task",
+    "database",
+    "error"
+  ],
+  "title": "Task Prior Backup",
+  "type": "object"
+}

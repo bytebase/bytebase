@@ -1,0 +1,35 @@
+{
+  "$defs": {
+    "bytebase.v1.SearchQueryHistoriesRequest.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "filter": {
+          "description": "Supported filter:\n - project: the project full name in \"projects/{id}\" format, support \"==\" operator.\n - database: the database full name in \"instances/{id}/databases/{name}\" format, support \"==\" operator.\n - instance: the instance full name in \"instances/{id}\" format, support \"==\" operator.\n - type: the type, should be \"QUERY\" or \"EXPORT\", support \"==\" operator.\n - statement: the SQL statement, support \".matches()\" operator.\n\n For example:\n project == \"projects/{project}\"\n database == \"instances/{instance}/databases/{database}\"\n instance == \"instances/{instance}\"\n type == \"QUERY\"\n type == \"EXPORT\"\n statement.matches(\"select\")\n type == \"QUERY\" \u0026\u0026 statement.matches(\"select\")",
+          "title": "Filter is the filter to apply on the search query history\n The syntax and semantics of CEL are documented at https://github.com/google/cel-spec",
+          "type": "string"
+        },
+        "page_size": {
+          "description": "The maximum number of histories to return.\n The service may return fewer than this value.\n If unspecified, at most 10 history entries will be returned.\n The maximum value is 1000; values above 1000 will be coerced to 1000.",
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "page_token": {
+          "description": "A page token, received from a previous `ListQueryHistory` call.\n Provide this to retrieve the subsequent page.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "page_size",
+        "page_token",
+        "filter"
+      ],
+      "title": "Search Query Histories Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.SearchQueryHistoriesRequest.schema.strict.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.SearchQueryHistoriesRequest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

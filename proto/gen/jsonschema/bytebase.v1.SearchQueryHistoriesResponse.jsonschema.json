@@ -1,0 +1,35 @@
+{
+  "$id": "bytebase.v1.SearchQueryHistoriesResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(next_page_token)$": {
+      "default": "",
+      "description": "A token to retrieve next page of history.\n Pass this value in the page_token field in the subsequent call to\n `ListQueryHistory` method to retrieve the next page of history.",
+      "type": "string"
+    },
+    "^(query_histories)$": {
+      "description": "The list of history.",
+      "items": {
+        "$ref": "bytebase.v1.QueryHistory.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "nextPageToken": {
+      "default": "",
+      "description": "A token to retrieve next page of history.\n Pass this value in the page_token field in the subsequent call to\n `ListQueryHistory` method to retrieve the next page of history.",
+      "type": "string"
+    },
+    "queryHistories": {
+      "description": "The list of history.",
+      "items": {
+        "$ref": "bytebase.v1.QueryHistory.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Search Query Histories Response",
+  "type": "object"
+}
