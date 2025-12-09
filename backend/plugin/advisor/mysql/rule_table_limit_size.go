@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -30,9 +32,9 @@ var (
 
 // If table size > xx bytes, then warning/error.
 func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for this rule")
 	}
 
 	stmtList, err := getANTLRTree(checkCtx)
@@ -55,7 +57,7 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 
 		if statTypeChecker.IsDDL {
 			// Create the rule
-			rule := NewTableLimitSizeRule(status, checkCtx.Rule.Type.String(), payload.Number, checkCtx.DBSchema)
+			rule := NewTableLimitSizeRule(status, checkCtx.Rule.Type.String(), int(numberPayload.Number), checkCtx.DBSchema)
 
 			// Create the generic checker with the rule
 			checker := NewGenericChecker([]Rule{rule})

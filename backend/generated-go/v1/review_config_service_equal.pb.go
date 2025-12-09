@@ -133,6 +133,113 @@ func (x *ReviewConfig) Equal(y *ReviewConfig) bool {
 	return true
 }
 
+func (x *SQLReviewRule_NamingRulePayload) Equal(y *SQLReviewRule_NamingRulePayload) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.MaxLength != y.MaxLength {
+		return false
+	}
+	if x.Format != y.Format {
+		return false
+	}
+	return true
+}
+
+func (x *SQLReviewRule_NumberRulePayload) Equal(y *SQLReviewRule_NumberRulePayload) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Number != y.Number {
+		return false
+	}
+	return true
+}
+
+func (x *SQLReviewRule_StringArrayRulePayload) Equal(y *SQLReviewRule_StringArrayRulePayload) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.List) != len(y.List) {
+		return false
+	}
+	for i := 0; i < len(x.List); i++ {
+		if x.List[i] != y.List[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *SQLReviewRule_CommentConventionRulePayload) Equal(y *SQLReviewRule_CommentConventionRulePayload) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Required != y.Required {
+		return false
+	}
+	if x.MaxLength != y.MaxLength {
+		return false
+	}
+	return true
+}
+
+func (x *SQLReviewRule_RequiredColumnRulePayload) Equal(y *SQLReviewRule_RequiredColumnRulePayload) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.ColumnList) != len(y.ColumnList) {
+		return false
+	}
+	for i := 0; i < len(x.ColumnList); i++ {
+		if x.ColumnList[i] != y.ColumnList[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *SQLReviewRule_StringRulePayload) Equal(y *SQLReviewRule_StringRulePayload) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Value != y.Value {
+		return false
+	}
+	return true
+}
+
+func (x *SQLReviewRule_NamingCaseRulePayload) Equal(y *SQLReviewRule_NamingCaseRulePayload) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Upper != y.Upper {
+		return false
+	}
+	return true
+}
+
 func (x *SQLReviewRule) Equal(y *SQLReviewRule) bool {
 	if x == y {
 		return true
@@ -146,7 +253,25 @@ func (x *SQLReviewRule) Equal(y *SQLReviewRule) bool {
 	if x.Level != y.Level {
 		return false
 	}
-	if x.Payload != y.Payload {
+	if !x.GetNamingPayload().Equal(y.GetNamingPayload()) {
+		return false
+	}
+	if !x.GetNumberPayload().Equal(y.GetNumberPayload()) {
+		return false
+	}
+	if !x.GetStringArrayPayload().Equal(y.GetStringArrayPayload()) {
+		return false
+	}
+	if !x.GetCommentConventionPayload().Equal(y.GetCommentConventionPayload()) {
+		return false
+	}
+	if !x.GetRequiredColumnPayload().Equal(y.GetRequiredColumnPayload()) {
+		return false
+	}
+	if !x.GetStringPayload().Equal(y.GetStringPayload()) {
+		return false
+	}
+	if !x.GetNamingCasePayload().Equal(y.GetNamingCasePayload()) {
 		return false
 	}
 	if x.Engine != y.Engine {

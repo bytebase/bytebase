@@ -22,8 +22,6 @@ import {
   GetReviewConfigRequestSchema,
   ListReviewConfigsRequestSchema,
   ReviewConfigSchema,
-  SQLReviewRule_Type,
-  SQLReviewRuleSchema,
   UpdateReviewConfigRequestSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
 import { usePolicyV1Store } from "./v1/policy";
@@ -68,24 +66,11 @@ const removeReviewConfigTag = async (resources: string[]) => {
 const convertToSQLReviewPolicy = (
   reviewConfig: ReviewConfig
 ): SQLReviewPolicy | undefined => {
-  const ruleList: SchemaPolicyRule[] = [];
-  for (const r of reviewConfig.rules) {
-    const rule: SchemaPolicyRule = {
-      type: SQLReviewRule_Type[r.type] as string,
-      level: r.level,
-      engine: r.engine,
-    };
-    if (r.payload && r.payload !== "{}") {
-      rule.payload = JSON.parse(r.payload);
-    }
-    ruleList.push(rule);
-  }
-
   return {
     id: reviewConfig.name,
     name: reviewConfig.title,
     resources: reviewConfig.resources,
-    ruleList,
+    ruleList: reviewConfig.rules, // Use proto rules directly
     enforce: reviewConfig.enabled,
   };
 };
@@ -191,14 +176,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
       if (ruleList) {
         updateMask.push("rules");
-        patch.rules = ruleList.map((r) => {
-          return create(SQLReviewRuleSchema, {
-            type: SQLReviewRule_Type[r.type as keyof typeof SQLReviewRule_Type],
-            level: r.level,
-            engine: r.engine,
-            payload: r.payload ? JSON.stringify(r.payload) : "{}",
-          });
-        });
+        patch.rules = ruleList; // Use proto rules directly
       }
 
       const request = create(UpdateReviewConfigRequestSchema, {

@@ -547,6 +547,13 @@
     - [ListReviewConfigsResponse](#bytebase-v1-ListReviewConfigsResponse)
     - [ReviewConfig](#bytebase-v1-ReviewConfig)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
+    - [SQLReviewRule.CommentConventionRulePayload](#bytebase-v1-SQLReviewRule-CommentConventionRulePayload)
+    - [SQLReviewRule.NamingCaseRulePayload](#bytebase-v1-SQLReviewRule-NamingCaseRulePayload)
+    - [SQLReviewRule.NamingRulePayload](#bytebase-v1-SQLReviewRule-NamingRulePayload)
+    - [SQLReviewRule.NumberRulePayload](#bytebase-v1-SQLReviewRule-NumberRulePayload)
+    - [SQLReviewRule.RequiredColumnRulePayload](#bytebase-v1-SQLReviewRule-RequiredColumnRulePayload)
+    - [SQLReviewRule.StringArrayRulePayload](#bytebase-v1-SQLReviewRule-StringArrayRulePayload)
+    - [SQLReviewRule.StringRulePayload](#bytebase-v1-SQLReviewRule-StringRulePayload)
     - [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest)
   
     - [SQLReviewRule.Level](#bytebase-v1-SQLReviewRule-Level)
@@ -9006,8 +9013,121 @@ SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for d
 | ----- | ---- | ----- | ----------- |
 | type | [SQLReviewRule.Type](#bytebase-v1-SQLReviewRule-Type) |  | The type of SQL review rule. |
 | level | [SQLReviewRule.Level](#bytebase-v1-SQLReviewRule-Level) |  | The severity level of the rule. |
-| payload | [string](#string) |  | The payload is a JSON string that varies by rule type. |
+| naming_payload | [SQLReviewRule.NamingRulePayload](#bytebase-v1-SQLReviewRule-NamingRulePayload) |  |  |
+| number_payload | [SQLReviewRule.NumberRulePayload](#bytebase-v1-SQLReviewRule-NumberRulePayload) |  |  |
+| string_array_payload | [SQLReviewRule.StringArrayRulePayload](#bytebase-v1-SQLReviewRule-StringArrayRulePayload) |  |  |
+| comment_convention_payload | [SQLReviewRule.CommentConventionRulePayload](#bytebase-v1-SQLReviewRule-CommentConventionRulePayload) |  |  |
+| required_column_payload | [SQLReviewRule.RequiredColumnRulePayload](#bytebase-v1-SQLReviewRule-RequiredColumnRulePayload) |  |  |
+| string_payload | [SQLReviewRule.StringRulePayload](#bytebase-v1-SQLReviewRule-StringRulePayload) |  |  |
+| naming_case_payload | [SQLReviewRule.NamingCaseRulePayload](#bytebase-v1-SQLReviewRule-NamingCaseRulePayload) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine this rule applies to. |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-CommentConventionRulePayload"></a>
+
+### SQLReviewRule.CommentConventionRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| required | [bool](#bool) |  |  |
+| max_length | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-NamingCaseRulePayload"></a>
+
+### SQLReviewRule.NamingCaseRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| upper | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-NamingRulePayload"></a>
+
+### SQLReviewRule.NamingRulePayload
+Payload message types for SQL review rules
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| max_length | [int32](#int32) |  |  |
+| format | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-NumberRulePayload"></a>
+
+### SQLReviewRule.NumberRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| number | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-RequiredColumnRulePayload"></a>
+
+### SQLReviewRule.RequiredColumnRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| column_list | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-StringArrayRulePayload"></a>
+
+### SQLReviewRule.StringArrayRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| list | [string](#string) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-SQLReviewRule-StringRulePayload"></a>
+
+### SQLReviewRule.StringRulePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| value | [string](#string) |  |  |
 
 
 

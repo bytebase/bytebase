@@ -9,6 +9,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -41,9 +42,14 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 	if err != nil {
 		return nil, err
 	}
-	format, _, err := advisor.UnmarshalNamingRulePayloadAsRegexp(checkCtx.Rule.Payload)
+	namingPayload := checkCtx.Rule.GetNamingPayload()
+	if namingPayload == nil {
+		return nil, errors.New("naming_payload is required for table drop naming convention rule")
+	}
+
+	format, err := regexp.Compile(namingPayload.Format)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
 	// Create the rule

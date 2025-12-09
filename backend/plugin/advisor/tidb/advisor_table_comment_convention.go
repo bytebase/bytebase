@@ -39,14 +39,11 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalCommentConventionRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 	checker := &tableCommentConventionChecker{
 		level:   level,
 		title:   checkCtx.Rule.Type.String(),
-		payload: payload,
+		payload: commentPayload,
 	}
 
 	for _, stmt := range stmtList {
@@ -64,7 +61,7 @@ type tableCommentConventionChecker struct {
 	title      string
 	text       string
 	line       int
-	payload    *advisor.CommentConventionRulePayload
+	payload    *storepb.SQLReviewRule_CommentConventionRulePayload
 }
 
 // Enter implements the ast.Visitor interface.
@@ -80,7 +77,7 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 				StartPosition: common.ConvertANTLRLineToPosition(checker.line),
 			})
 		}
-		if checker.payload.MaxLength >= 0 && len(comment) > checker.payload.MaxLength {
+		if checker.payload.MaxLength >= 0 && int32(len(comment)) > checker.payload.MaxLength {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:        checker.level,
 				Code:          code.CommentTooLong.Int32(),

@@ -41,16 +41,13 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 	if err != nil {
 		return nil, err
 	}
-	paylaod, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 	checker := &columnTypeDisallowListChecker{
 		level:           level,
 		title:           checkCtx.Rule.Type.String(),
 		typeRestriction: make(map[string]bool),
 	}
-	for _, tp := range paylaod.List {
+	for _, tp := range stringArrayPayload.List {
 		checker.typeRestriction[strings.ToUpper(tp)] = true
 	}
 

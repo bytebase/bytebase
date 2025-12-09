@@ -37,17 +37,14 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	payload, err := advisor.UnmarshalCommentConventionRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 
 	rule := &tableCommentConventionRule{
 		BaseRule: BaseRule{
 			level: level,
 			title: checkCtx.Rule.Type.String(),
 		},
-		payload:        payload,
+		payload:        commentPayload,
 		statementsText: checkCtx.Statements,
 		createdTables:  make(map[string]*tableInfo),
 		tableComments:  make(map[string]*tableCommentInfo),
@@ -80,7 +77,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 			}
 		} else {
 			comment := tableCommentInfo.comment
-			if rule.payload.MaxLength > 0 && len(comment) > rule.payload.MaxLength {
+			if rule.payload.MaxLength > 0 && int32(len(comment)) > rule.payload.MaxLength {
 				rule.AddAdvice(&storepb.Advice{
 					Status:  rule.level,
 					Code:    code.CommentTooLong.Int32(),
@@ -113,7 +110,7 @@ type tableCommentInfo struct {
 type tableCommentConventionRule struct {
 	BaseRule
 
-	payload        *advisor.CommentConventionRulePayload
+	payload        *storepb.SQLReviewRule_CommentConventionRulePayload
 	statementsText string
 
 	createdTables map[string]*tableInfo

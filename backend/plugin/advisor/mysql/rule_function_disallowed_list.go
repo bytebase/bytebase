@@ -40,13 +40,10 @@ func (*FunctionDisallowedListAdvisor) Check(_ context.Context, checkCtx advisor.
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
 	var disallowList []string
-	for _, fn := range payload.List {
+	for _, fn := range stringArrayPayload.List {
 		disallowList = append(disallowList, strings.ToUpper(fn))
 	}
 

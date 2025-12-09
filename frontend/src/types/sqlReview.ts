@@ -1,8 +1,17 @@
+import { create } from "@bufbuild/protobuf";
 import { t, te } from "@/plugins/i18n";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { SQLReviewRule } from "@/types/proto-es/v1/review_config_service_pb";
 import {
+  SQLReviewRule_CommentConventionRulePayloadSchema,
   SQLReviewRule_Level,
+  SQLReviewRule_NamingCaseRulePayloadSchema,
+  SQLReviewRule_NamingRulePayloadSchema,
+  SQLReviewRule_NumberRulePayloadSchema,
+  SQLReviewRule_StringArrayRulePayloadSchema,
+  SQLReviewRule_StringRulePayloadSchema,
   SQLReviewRule_Type,
+  SQLReviewRuleSchema,
 } from "@/types/proto-es/v1/review_config_service_pb";
 import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
@@ -62,58 +71,9 @@ export interface RuleConfigComponent {
     | BooleanPayload;
 }
 
-// The naming format rule payload.
-// Used by the backend.
-interface NamingFormatPayload {
-  format: string;
-  maxLength?: number;
-}
-
-// The string array rule payload.
-// Used by the backend.
-interface StringArrayLimitPayload {
-  list: string[];
-}
-
-// The comment format rule payload.
-// Used by the backend.
-interface CommentFormatPayload {
-  required: boolean;
-  maxLength: number;
-}
-
-// The number value rule payload.
-// Used by the backend.
-interface NumberValuePayload {
-  number: number;
-}
-
-// The string value rule payload.
-// Used by the backend.
-interface StringValuePayload {
-  string: string;
-}
-
-// The case rule payload.
-// Used by the backend.
-interface CasePayload {
-  upper: boolean;
-}
-
-// The SchemaPolicyRule stores the rule configuration by users.
-// Used by the backend
-export interface SchemaPolicyRule {
-  type: string;
-  level: SQLReviewRule_Level;
-  engine: Engine;
-  payload?:
-    | NamingFormatPayload
-    | StringArrayLimitPayload
-    | CommentFormatPayload
-    | NumberValuePayload
-    | StringValuePayload
-    | CasePayload;
-}
+// SchemaPolicyRule is an alias for the proto SQLReviewRule type.
+// We use the proto type directly instead of maintaining a separate interface.
+export type SchemaPolicyRule = SQLReviewRule;
 
 // The API for SQL review policy in backend.
 export interface SQLReviewPolicy {
@@ -310,9 +270,9 @@ export const convertPolicyRuleToRuleTemplate = (
   policyRule: SchemaPolicyRule,
   ruleTemplate: RuleTemplateV2
 ): RuleTemplateV2 => {
-  if (policyRule.type !== ruleTypeToString(ruleTemplate.type)) {
+  if (policyRule.type !== ruleTemplate.type) {
     throw new Error(
-      `The rule type is not same. policyRule:${policyRule.type}, ruleTemplate:${ruleTypeToString(ruleTemplate.type)}`
+      `The rule type is not same. policyRule:${policyRule.type}, ruleTemplate:${ruleTemplate.type}`
     );
   }
 
@@ -327,7 +287,11 @@ export const convertPolicyRuleToRuleTemplate = (
     return res;
   }
 
-  const payload = policyRule?.payload ?? {};
+  // Extract payload value from proto oneof
+  let payload: any = {};
+  if (policyRule?.payload?.case) {
+    payload = policyRule.payload.value;
+  }
 
   const stringComponent = componentList.find(
     (c) => c.payload.type === "STRING"
@@ -358,7 +322,7 @@ export const convertPolicyRuleToRuleTemplate = (
             ...stringComponent,
             payload: {
               ...stringComponent.payload,
-              value: (payload as StringValuePayload).string,
+              value: payload.value, // proto field is 'value'
             } as StringPayload,
           },
         ],
@@ -376,7 +340,7 @@ export const convertPolicyRuleToRuleTemplate = (
             ...stringComponent,
             payload: {
               ...stringComponent.payload,
-              value: (payload as NamingFormatPayload).format,
+              value: payload.format,
             } as StringPayload,
           },
         ],
@@ -396,14 +360,14 @@ export const convertPolicyRuleToRuleTemplate = (
             ...stringComponent,
             payload: {
               ...stringComponent.payload,
-              value: (payload as NamingFormatPayload).format,
+              value: payload.format,
             } as StringPayload,
           },
           {
             ...numberComponent,
             payload: {
               ...numberComponent.payload,
-              value: (payload as NamingFormatPayload).maxLength,
+              value: payload.maxLength,
             } as NumberPayload,
           },
         ],
@@ -421,7 +385,7 @@ export const convertPolicyRuleToRuleTemplate = (
             ...templateComponent,
             payload: {
               ...templateComponent.payload,
-              value: (payload as NamingFormatPayload).format,
+              value: payload.format,
             } as TemplatePayload,
           },
         ],
@@ -441,14 +405,14 @@ export const convertPolicyRuleToRuleTemplate = (
             ...templateComponent,
             payload: {
               ...templateComponent.payload,
-              value: (payload as NamingFormatPayload).format,
+              value: payload.format,
             } as TemplatePayload,
           },
           {
             ...numberComponent,
             payload: {
               ...numberComponent.payload,
-              value: (payload as NamingFormatPayload).maxLength,
+              value: payload.maxLength,
             } as NumberPayload,
           },
         ],
@@ -469,12 +433,8 @@ export const convertPolicyRuleToRuleTemplate = (
       };
     case SQLReviewRule_Type.COLUMN_REQUIRED: {
       const requiredColumnComponent = componentList[0];
-      // The columnList payload is deprecated.
-      // Just keep it to compatible with old data, we can remove this later.
-      let value: string[] = (payload as any)["columnList"];
-      if (!value) {
-        value = (payload as StringArrayLimitPayload).list;
-      }
+      // Proto uses stringArrayPayload with 'list' field
+      const value = payload.list || [];
       const requiredColumnPayload = {
         ...requiredColumnComponent.payload,
         value,
@@ -503,7 +463,7 @@ export const convertPolicyRuleToRuleTemplate = (
       }
       const stringArrayPayload = {
         ...stringArrayComponent.payload,
-        value: (payload as StringArrayLimitPayload).list,
+        value: payload.list || [],
       } as StringArrayPayload;
       return {
         ...res,
@@ -531,14 +491,14 @@ export const convertPolicyRuleToRuleTemplate = (
             ...requireComponent,
             payload: {
               ...requireComponent.payload,
-              value: (payload as CommentFormatPayload).required,
+              value: payload.required,
             } as BooleanPayload,
           },
           {
             ...numberComponent,
             payload: {
               ...numberComponent.payload,
-              value: (payload as CommentFormatPayload).maxLength,
+              value: payload.maxLength,
             } as NumberPayload,
           },
         ],
@@ -571,7 +531,7 @@ export const convertPolicyRuleToRuleTemplate = (
             ...numberComponent,
             payload: {
               ...numberComponent.payload,
-              value: (payload as NumberValuePayload).number,
+              value: payload.number,
             } as NumberPayload,
           },
         ],
@@ -608,7 +568,10 @@ const mergeIndividualConfigAsRule = (
       return {
         ...base,
         payload: {
-          string: stringPayload.value ?? stringPayload.default,
+          case: "stringPayload",
+          value: create(SQLReviewRule_StringRulePayloadSchema, {
+            value: stringPayload.value ?? stringPayload.default,
+          }),
         },
       };
     // Following rules require STRING component.
@@ -620,7 +583,11 @@ const mergeIndividualConfigAsRule = (
       return {
         ...base,
         payload: {
-          format: stringPayload.value ?? stringPayload.default,
+          case: "namingPayload",
+          value: create(SQLReviewRule_NamingRulePayloadSchema, {
+            format: stringPayload.value ?? stringPayload.default,
+            maxLength: 0,
+          }),
         },
       };
     // Following rules require STRING and NUMBER component.
@@ -634,8 +601,11 @@ const mergeIndividualConfigAsRule = (
       return {
         ...base,
         payload: {
-          format: stringPayload.value ?? stringPayload.default,
-          maxLength: numberPayload.value ?? numberPayload.default,
+          case: "namingPayload",
+          value: create(SQLReviewRule_NamingRulePayloadSchema, {
+            format: stringPayload.value ?? stringPayload.default,
+            maxLength: numberPayload.value ?? numberPayload.default,
+          }),
         },
       };
     // Following rules require TEMPLATE component.
@@ -646,7 +616,11 @@ const mergeIndividualConfigAsRule = (
       return {
         ...base,
         payload: {
-          format: templatePayload.value ?? templatePayload.default,
+          case: "namingPayload",
+          value: create(SQLReviewRule_NamingRulePayloadSchema, {
+            format: templatePayload.value ?? templatePayload.default,
+            maxLength: 0,
+          }),
         },
       };
     // Following rules require TEMPLATE and NUMBER component.
@@ -659,8 +633,11 @@ const mergeIndividualConfigAsRule = (
       return {
         ...base,
         payload: {
-          format: templatePayload.value ?? templatePayload.default,
-          maxLength: numberPayload.value ?? numberPayload.default,
+          case: "namingPayload",
+          value: create(SQLReviewRule_NamingRulePayloadSchema, {
+            format: templatePayload.value ?? templatePayload.default,
+            maxLength: numberPayload.value ?? numberPayload.default,
+          }),
         },
       };
     // Following rules require BOOLEAN component.
@@ -671,7 +648,10 @@ const mergeIndividualConfigAsRule = (
       return {
         ...base,
         payload: {
-          upper: booleanPayload.value ?? booleanPayload.default,
+          case: "namingCasePayload",
+          value: create(SQLReviewRule_NamingCaseRulePayloadSchema, {
+            upper: booleanPayload.value ?? booleanPayload.default,
+          }),
         },
       };
     // Following rules require STRING_ARRAY component.
@@ -690,7 +670,10 @@ const mergeIndividualConfigAsRule = (
       return {
         ...base,
         payload: {
-          list: stringArrayPayload.value ?? stringArrayPayload.default,
+          case: "stringArrayPayload",
+          value: create(SQLReviewRule_StringArrayRulePayloadSchema, {
+            list: stringArrayPayload.value ?? stringArrayPayload.default,
+          }),
         },
       };
     }
@@ -706,8 +689,11 @@ const mergeIndividualConfigAsRule = (
       return {
         ...base,
         payload: {
-          required: requirePayload.value ?? requirePayload.default,
-          maxLength: numberPayload.value ?? numberPayload.default,
+          case: "commentConventionPayload",
+          value: create(SQLReviewRule_CommentConventionRulePayloadSchema, {
+            required: requirePayload.value ?? requirePayload.default,
+            maxLength: numberPayload.value ?? numberPayload.default,
+          }),
         },
       };
     }
@@ -733,7 +719,10 @@ const mergeIndividualConfigAsRule = (
       return {
         ...base,
         payload: {
-          number: numberPayload.value ?? numberPayload.default,
+          case: "numberPayload",
+          value: create(SQLReviewRule_NumberRulePayloadSchema, {
+            number: numberPayload.value ?? numberPayload.default,
+          }),
         },
       };
   }
@@ -760,11 +749,12 @@ export const convertRuleMapToPolicyRuleList = (
 const convertRuleTemplateToPolicyRule = (
   rule: RuleTemplateV2
 ): SchemaPolicyRule => {
-  const base: SchemaPolicyRule = {
-    type: ruleTypeToString(rule.type),
+  const base: SchemaPolicyRule = create(SQLReviewRuleSchema, {
+    type: rule.type,
     level: rule.level,
     engine: rule.engine,
-  };
+    // payload will be set by mergeIndividualConfigAsRule if componentList is not empty
+  });
   if ((rule.componentList?.length ?? 0) === 0) {
     return base;
   }

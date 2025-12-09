@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -40,9 +42,23 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	format, templateList, maxLength, err := advisor.UnmarshalNamingRulePayloadAsTemplate(storepb.SQLReviewRule_Type(checkCtx.Rule.Type), checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	namingPayload := checkCtx.Rule.GetNamingPayload()
+	if namingPayload == nil {
+		return nil, errors.New("naming_payload is required for this rule")
+	}
+
+	format := namingPayload.Format
+	templateList, _ := advisor.ParseTemplateTokens(format)
+
+	for _, key := range templateList {
+		if _, ok := advisor.TemplateNamingTokens[checkCtx.Rule.Type][key]; !ok {
+			return nil, errors.Errorf("invalid template %s for rule %s", key, checkCtx.Rule.Type)
+		}
+	}
+
+	maxLength := int(namingPayload.MaxLength)
+	if maxLength == 0 {
+		maxLength = advisor.DefaultNameLengthLimit
 	}
 	checker := &namingUKConventionChecker{
 		level:            level,

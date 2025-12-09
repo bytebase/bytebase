@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -38,13 +40,13 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
+	if stringArrayPayload == nil {
+		return nil, errors.New("string_array_payload is required for column type disallow list rule")
 	}
 
 	disallowTypes := []string{}
-	for _, tp := range payload.List {
+	for _, tp := range stringArrayPayload.List {
 		disallowTypes = append(disallowTypes, strings.ToUpper(tp))
 	}
 

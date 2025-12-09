@@ -11,7 +11,8 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLReviewRule {
+// ConvertToV1PBSQLReviewRules converts store SQL review rules to v1 API format.
+func ConvertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLReviewRule {
 	var rules []*v1pb.SQLReviewRule
 	for _, rule := range ruleList {
 		level := v1pb.SQLReviewRule_LEVEL_UNSPECIFIED
@@ -22,18 +23,69 @@ func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLR
 			level = v1pb.SQLReviewRule_WARNING
 		default:
 		}
-		rules = append(rules, &v1pb.SQLReviewRule{
-			Level:   level,
-			Type:    v1pb.SQLReviewRule_Type(rule.Type),
-			Payload: rule.Payload,
-			Engine:  convertToEngine(rule.Engine),
-		})
+
+		v1Rule := &v1pb.SQLReviewRule{
+			Level:  level,
+			Type:   v1pb.SQLReviewRule_Type(rule.Type),
+			Engine: convertToEngine(rule.Engine),
+		}
+
+		// Convert typed payload from store to v1 API
+		switch payload := rule.Payload.(type) {
+		case *storepb.SQLReviewRule_NamingPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_NamingPayload{
+				NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+					MaxLength: payload.NamingPayload.MaxLength,
+					Format:    payload.NamingPayload.Format,
+				},
+			}
+		case *storepb.SQLReviewRule_NumberPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_NumberPayload{
+				NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+					Number: payload.NumberPayload.Number,
+				},
+			}
+		case *storepb.SQLReviewRule_StringArrayPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+					List: payload.StringArrayPayload.List,
+				},
+			}
+		case *storepb.SQLReviewRule_CommentConventionPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_CommentConventionPayload{
+				CommentConventionPayload: &v1pb.SQLReviewRule_CommentConventionRulePayload{
+					Required:  payload.CommentConventionPayload.Required,
+					MaxLength: payload.CommentConventionPayload.MaxLength,
+				},
+			}
+		case *storepb.SQLReviewRule_NamingCasePayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_NamingCasePayload{
+				NamingCasePayload: &v1pb.SQLReviewRule_NamingCaseRulePayload{
+					Upper: payload.NamingCasePayload.Upper,
+				},
+			}
+		case *storepb.SQLReviewRule_StringPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_StringPayload{
+				StringPayload: &v1pb.SQLReviewRule_StringRulePayload{
+					Value: payload.StringPayload.Value,
+				},
+			}
+		case *storepb.SQLReviewRule_RequiredColumnPayload:
+			v1Rule.Payload = &v1pb.SQLReviewRule_RequiredColumnPayload{
+				RequiredColumnPayload: &v1pb.SQLReviewRule_RequiredColumnRulePayload{
+					ColumnList: payload.RequiredColumnPayload.ColumnList,
+				},
+			}
+		}
+
+		rules = append(rules, v1Rule)
 	}
 
 	return rules
 }
 
-func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewRule, error) {
+// ConvertToSQLReviewRules converts v1 API SQL review rules to store format.
+func ConvertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewRule, error) {
 	var ruleList []*storepb.SQLReviewRule
 	for _, rule := range rules {
 		var level storepb.SQLReviewRule_Level
@@ -45,12 +97,62 @@ func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewR
 		default:
 			return nil, errors.Errorf("invalid rule level %v", rule.Level)
 		}
-		ruleList = append(ruleList, &storepb.SQLReviewRule{
-			Level:   level,
-			Payload: rule.Payload,
-			Type:    storepb.SQLReviewRule_Type(rule.Type),
-			Engine:  convertEngine(rule.Engine),
-		})
+
+		storeRule := &storepb.SQLReviewRule{
+			Type:   storepb.SQLReviewRule_Type(rule.Type),
+			Level:  level,
+			Engine: convertEngine(rule.Engine),
+		}
+
+		// Convert typed payload from v1 API to store
+		switch payload := rule.Payload.(type) {
+		case *v1pb.SQLReviewRule_NamingPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_NamingPayload{
+				NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{
+					MaxLength: payload.NamingPayload.MaxLength,
+					Format:    payload.NamingPayload.Format,
+				},
+			}
+		case *v1pb.SQLReviewRule_NumberPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_NumberPayload{
+				NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+					Number: payload.NumberPayload.Number,
+				},
+			}
+		case *v1pb.SQLReviewRule_StringArrayPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+					List: payload.StringArrayPayload.List,
+				},
+			}
+		case *v1pb.SQLReviewRule_CommentConventionPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_CommentConventionPayload{
+				CommentConventionPayload: &storepb.SQLReviewRule_CommentConventionRulePayload{
+					Required:  payload.CommentConventionPayload.Required,
+					MaxLength: payload.CommentConventionPayload.MaxLength,
+				},
+			}
+		case *v1pb.SQLReviewRule_NamingCasePayload:
+			storeRule.Payload = &storepb.SQLReviewRule_NamingCasePayload{
+				NamingCasePayload: &storepb.SQLReviewRule_NamingCaseRulePayload{
+					Upper: payload.NamingCasePayload.Upper,
+				},
+			}
+		case *v1pb.SQLReviewRule_StringPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_StringPayload{
+				StringPayload: &storepb.SQLReviewRule_StringRulePayload{
+					Value: payload.StringPayload.Value,
+				},
+			}
+		case *v1pb.SQLReviewRule_RequiredColumnPayload:
+			storeRule.Payload = &storepb.SQLReviewRule_RequiredColumnPayload{
+				RequiredColumnPayload: &storepb.SQLReviewRule_RequiredColumnRulePayload{
+					ColumnList: payload.RequiredColumnPayload.ColumnList,
+				},
+			}
+		}
+
+		ruleList = append(ruleList, storeRule)
 	}
 
 	return ruleList, nil

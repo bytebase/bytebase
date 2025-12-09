@@ -36,15 +36,12 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalCommentConventionRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 
 	rule := &columnCommentConventionRule{
 		level:   level,
 		title:   checkCtx.Rule.Type.String(),
-		payload: payload,
+		payload: commentPayload,
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
@@ -79,7 +76,7 @@ type columnCommentConventionRule struct {
 
 	level   storepb.Advice_Status
 	title   string
-	payload *advisor.CommentConventionRulePayload
+	payload *storepb.SQLReviewRule_CommentConventionRulePayload
 
 	columns  []columnInfo
 	comments []commentInfo
@@ -243,7 +240,7 @@ func (r *columnCommentConventionRule) generateAdvice() []*storepb.Advice {
 			comment := matchedComment.comment
 
 			// Check max length
-			if r.payload.MaxLength > 0 && len(comment) > r.payload.MaxLength {
+			if r.payload.MaxLength > 0 && int32(len(comment)) > r.payload.MaxLength {
 				adviceList = append(adviceList, &storepb.Advice{
 					Status:  r.level,
 					Code:    code.CommentTooLong.Int32(),
