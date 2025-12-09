@@ -7,7 +7,6 @@ import { computed, inject, nextTick, provide, ref } from "vue";
 import {
   useProjectV1Store,
   useSQLEditorStore,
-  useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
