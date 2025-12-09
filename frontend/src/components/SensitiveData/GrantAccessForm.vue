@@ -71,7 +71,6 @@
         <MembersBindingSelect
           v-model:value="state.memberList"
           :required="true"
-          :project-name="projectName"
           :include-all-users="false"
           :include-service-account="false"
         />
