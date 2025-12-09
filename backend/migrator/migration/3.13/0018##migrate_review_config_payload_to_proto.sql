@@ -57,10 +57,14 @@ BEGIN
                         AND rule->>'payload' IS NOT NULL AND rule->>'payload' != '' AND rule->>'payload' != 'null' AND rule->>'payload' != '{}'
                         THEN jsonb_set(rule, '{namingCasePayload}', (rule->>'payload')::jsonb) - 'payload'
 
-                        -- String rule: parse JSON string and wrap in stringPayload
+                        -- String rule: parse JSON string, rename field from "string" to "value", and wrap in stringPayload
                         WHEN (rule->>'type') = 'NAMING_FULLY_QUALIFIED'
                         AND rule->>'payload' IS NOT NULL AND rule->>'payload' != '' AND rule->>'payload' != 'null' AND rule->>'payload' != '{}'
-                        THEN jsonb_set(rule, '{stringPayload}', (rule->>'payload')::jsonb) - 'payload'
+                        THEN jsonb_set(
+                            rule,
+                            '{stringPayload}',
+                            jsonb_build_object('value', (rule->>'payload')::jsonb->>'string')
+                        ) - 'payload'
 
                         -- Rules with empty/null payload or already migrated - remove payload field
                         ELSE rule - 'payload'
