@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
-func TestPostgreSQLANTLRRules(t *testing.T) {
-	antlrRules := []storepb.SQLReviewRule_Type{
+func TestPostgreSQLRules(t *testing.T) {
+	postgresRules := []storepb.SQLReviewRule_Type{
 		storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
 		storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST,
 		storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST,
@@ -62,7 +63,7 @@ func TestPostgreSQLANTLRRules(t *testing.T) {
 		storepb.SQLReviewRule_NAMING_INDEX_UK,
 	}
 
-	for _, rule := range antlrRules {
-		RunPGSQLReviewRuleTest(t, rule, storepb.Engine_POSTGRES, false /* record */)
+	for _, rule := range postgresRules {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_POSTGRES, true /* needMetaData */, false /* record */)
 	}
 }
