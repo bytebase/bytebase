@@ -5,35 +5,6 @@
     </div>
 
     <template v-else>
-      <!-- <div v-if="checkable" class="px-1 flex items-center justify-start flex-wrap gap-y-1 gap-x-1 bg-blue-100 py-2">
-        <NButton
-          quaternary
-          size="tiny"
-          :disabled="checkedNodes.length === 0" @click="handleMultiDelete"
-        >
-          <template #icon>
-            <TrashIcon />
-          </template>
-          {{ t("common.delete") }}
-        </NButton>
-        <NButton
-          quaternary
-          size="tiny"
-          :disabled="checkedWorksheets.length === 0"
-          @click="showReorgModal = true"
-        >
-          <template #icon>
-            <FolderInputIcon />
-          </template>
-          {{ $t('sheet.move-worksheets') }}
-        </NButton>
-        <NButton quaternary size="tiny" @click="checkable = false">
-          <template #icon>
-            <XIcon />
-          </template>
-          {{$t("common.cancel")}}
-        </NButton>
-      </div> -->
       <NTree
         block-line
         block-node
