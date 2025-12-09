@@ -31,6 +31,7 @@ func configureEchoRouters(
 	oauthAuthorize *mcpoauth.AuthorizeHandler,
 	oauthToken *mcpoauth.TokenHandler,
 	oauthLogin *mcpoauth.LoginHandler,
+	oauthRegister *mcpoauth.RegisterHandler,
 	issuer string,
 ) {
 	e.Use(recoverMiddleware)
@@ -91,9 +92,10 @@ func configureEchoRouters(
 	e.GET("/.well-known/oauth-authorization-server", echo.WrapHandler(http.HandlerFunc(oauthMetadata.AuthorizationServerMetadata)))
 	e.GET("/.well-known/oauth-authorization-server/*", echo.WrapHandler(http.HandlerFunc(oauthMetadata.AuthorizationServerMetadata)))
 
-	// OAuth authorization and token endpoints.
+	// OAuth authorization, token, and registration endpoints.
 	e.GET("/oauth/authorize", echo.WrapHandler(oauthAuthorize))
 	e.POST("/oauth/token", echo.WrapHandler(oauthToken))
+	e.POST("/oauth/register", echo.WrapHandler(oauthRegister))
 
 	// OAuth login endpoints.
 	e.GET("/oauth/login", echo.WrapHandler(http.HandlerFunc(oauthLogin.ServeLogin)))

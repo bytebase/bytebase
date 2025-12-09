@@ -235,17 +235,19 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// OAuth handlers for MCP authentication.
 	issuer := fmt.Sprintf("http://localhost:%d", profile.Port)
 	oauthCodeStore := mcpoauth.NewAuthCodeStore()
+	oauthClientStore := mcpoauth.NewClientStore()
 	oauthMetadata := mcpoauth.NewMetadataServer(issuer)
 	oauthAuthorize := mcpoauth.NewAuthorizeHandler(stores, oauthCodeStore, issuer)
 	oauthToken := mcpoauth.NewTokenHandler(stores, oauthCodeStore, secret, profile.Mode)
 	oauthLogin := mcpoauth.NewLoginHandler(stores, oauthCodeStore, oauthAuthorize, issuer)
+	oauthRegister := mcpoauth.NewRegisterHandler(oauthClientStore)
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager, profile)
 
 	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
-	configureEchoRouters(s.echoServer, s.lspServer, mcpServer, directorySyncServer, profile, oauthMetadata, oauthAuthorize, oauthToken, oauthLogin, issuer)
+	configureEchoRouters(s.echoServer, s.lspServer, mcpServer, directorySyncServer, profile, oauthMetadata, oauthAuthorize, oauthToken, oauthLogin, oauthRegister, issuer)
 
 	serverStarted = true
 	return s, nil

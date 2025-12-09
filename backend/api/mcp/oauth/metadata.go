@@ -38,6 +38,7 @@ func (s *MetadataServer) AuthorizationServerMetadata(w http.ResponseWriter, _ *h
 		"issuer":                                s.issuer,
 		"authorization_endpoint":                s.issuer + "/oauth/authorize",
 		"token_endpoint":                        s.issuer + "/oauth/token",
+		"registration_endpoint":                 s.issuer + "/oauth/register",
 		"response_types_supported":              []string{"code"},
 		"grant_types_supported":                 []string{"authorization_code"},
 		"code_challenge_methods_supported":      []string{"S256"},
