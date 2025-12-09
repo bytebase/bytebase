@@ -1,9 +1,0 @@
-{
-  "$id": "bytebase.store.TaskRun.schema.strict.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "additionalProperties": false,
-  "description": "TaskRun represents an execution attempt of a task.",
-  "properties": {},
-  "title": "Task Run",
-  "type": "object"
-}

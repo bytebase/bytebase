@@ -40,3 +40,6 @@ plugins:
       - bytebase.v1
   - remote: buf.build/bufbuild/protoschema-jsonschema
     out: gen/jsonschema
+    opt: target=json
+    types:
+      - bytebase.v1

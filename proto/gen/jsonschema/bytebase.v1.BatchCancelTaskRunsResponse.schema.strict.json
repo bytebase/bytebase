@@ -1,8 +1,0 @@
-{
-  "$id": "bytebase.v1.BatchCancelTaskRunsResponse.schema.strict.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "additionalProperties": false,
-  "properties": {},
-  "title": "Batch Cancel Task Runs Response",
-  "type": "object"
-}

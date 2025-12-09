@@ -1,8 +1,0 @@
-{
-  "$id": "bytebase.v1.ListSettingsRequest.jsonschema.strict.json",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "additionalProperties": false,
-  "properties": {},
-  "title": "List Settings Request",
-  "type": "object"
-}
