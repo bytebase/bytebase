@@ -15,6 +15,7 @@ import (
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	mcpserver "github.com/bytebase/bytebase/backend/api/mcp"
+	mcpoauth "github.com/bytebase/bytebase/backend/api/mcp/oauth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -26,6 +27,11 @@ func configureEchoRouters(
 	mcpServer *mcpserver.Server,
 	directorySyncServer *directorysync.Service,
 	profile *config.Profile,
+	oauthMetadata *mcpoauth.MetadataServer,
+	oauthAuthorize *mcpoauth.AuthorizeHandler,
+	oauthToken *mcpoauth.TokenHandler,
+	oauthLogin *mcpoauth.LoginHandler,
+	issuer string,
 ) {
 	e.Use(recoverMiddleware)
 	e.Use(securityHeadersMiddleware)
@@ -76,9 +82,26 @@ func configureEchoRouters(
 	// LSP server.
 	e.GET(lspAPI, lspServer.Router)
 
-	// MCP server endpoint.
-	e.Any("/mcp", echo.WrapHandler(mcpServer.Handler()))
-	e.Any("/mcp/*", echo.WrapHandler(mcpServer.Handler()))
+	// OAuth metadata endpoints for MCP authentication.
+	resourceMetadataURL := issuer + "/.well-known/oauth-protected-resource"
+	e.GET("/.well-known/oauth-protected-resource", echo.WrapHandler(http.HandlerFunc(oauthMetadata.ProtectedResourceMetadata)))
+	e.GET("/.well-known/oauth-authorization-server", echo.WrapHandler(http.HandlerFunc(oauthMetadata.AuthorizationServerMetadata)))
+
+	// OAuth authorization and token endpoints.
+	e.GET("/oauth/authorize", echo.WrapHandler(oauthAuthorize))
+	e.POST("/oauth/token", echo.WrapHandler(oauthToken))
+
+	// OAuth login endpoints.
+	e.GET("/oauth/login", echo.WrapHandler(http.HandlerFunc(oauthLogin.ServeLogin)))
+	e.GET("/oauth/login/:idp", func(c echo.Context) error {
+		oauthLogin.ServeLoginWithIDP(c.Response(), c.Request(), c.Param("idp"))
+		return nil
+	})
+	e.GET("/oauth/callback", echo.WrapHandler(http.HandlerFunc(oauthLogin.ServeCallback)))
+
+	// MCP server endpoint (with OAuth authentication).
+	e.Any("/mcp", echo.WrapHandler(mcpServer.Handler(resourceMetadataURL)))
+	e.Any("/mcp/*", echo.WrapHandler(mcpServer.Handler(resourceMetadataURL)))
 
 	hookGroup := e.Group(webhookAPIPrefix)
 	scimGroup := hookGroup.Group(scimAPIPrefix)

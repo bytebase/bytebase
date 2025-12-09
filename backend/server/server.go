@@ -15,9 +15,11 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/http2"
 
+	bbauth "github.com/bytebase/bytebase/backend/api/auth"
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	mcpserver "github.com/bytebase/bytebase/backend/api/mcp"
+	mcpoauth "github.com/bytebase/bytebase/backend/api/mcp/oauth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -216,23 +218,34 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
 
+	// Auth interceptor (needed for both gRPC and MCP).
+	authInterceptor := bbauth.New(stores, secret, s.licenseService, s.stateCfg, profile)
+
 	// MCP server.
 	mcpInvoker := mcpserver.NewInvoker(fmt.Sprintf("http://localhost:%d", profile.Port))
 	mcpRegistry, err := mcpserver.NewRegistry("proto/gen/jsonschema", mcpInvoker)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create MCP registry")
 	}
-	mcpServer, err := mcpserver.NewServer(mcpRegistry)
+	mcpServer, err := mcpserver.NewServer(mcpRegistry, stores, profile, s.stateCfg, authInterceptor)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create MCP server")
 	}
+
+	// OAuth handlers for MCP authentication.
+	issuer := fmt.Sprintf("http://localhost:%d", profile.Port)
+	oauthCodeStore := mcpoauth.NewAuthCodeStore()
+	oauthMetadata := mcpoauth.NewMetadataServer(issuer)
+	oauthAuthorize := mcpoauth.NewAuthorizeHandler(stores, oauthCodeStore, issuer)
+	oauthToken := mcpoauth.NewTokenHandler(stores, oauthCodeStore, secret, profile.Mode)
+	oauthLogin := mcpoauth.NewLoginHandler(stores, oauthCodeStore, oauthAuthorize, issuer)
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager, profile)
 
 	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
-	configureEchoRouters(s.echoServer, s.lspServer, mcpServer, directorySyncServer, profile)
+	configureEchoRouters(s.echoServer, s.lspServer, mcpServer, directorySyncServer, profile, oauthMetadata, oauthAuthorize, oauthToken, oauthLogin, issuer)
 
 	serverStarted = true
 	return s, nil
