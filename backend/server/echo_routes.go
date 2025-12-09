@@ -83,9 +83,13 @@ func configureEchoRouters(
 	e.GET(lspAPI, lspServer.Router)
 
 	// OAuth metadata endpoints for MCP authentication.
+	// Support both base paths and resource-specific paths (e.g., /.well-known/oauth-protected-resource/mcp)
+	// per RFC 9728 - MCP clients may append the resource path to discover metadata.
 	resourceMetadataURL := issuer + "/.well-known/oauth-protected-resource"
 	e.GET("/.well-known/oauth-protected-resource", echo.WrapHandler(http.HandlerFunc(oauthMetadata.ProtectedResourceMetadata)))
+	e.GET("/.well-known/oauth-protected-resource/*", echo.WrapHandler(http.HandlerFunc(oauthMetadata.ProtectedResourceMetadata)))
 	e.GET("/.well-known/oauth-authorization-server", echo.WrapHandler(http.HandlerFunc(oauthMetadata.AuthorizationServerMetadata)))
+	e.GET("/.well-known/oauth-authorization-server/*", echo.WrapHandler(http.HandlerFunc(oauthMetadata.AuthorizationServerMetadata)))
 
 	// OAuth authorization and token endpoints.
 	e.GET("/oauth/authorize", echo.WrapHandler(oauthAuthorize))
