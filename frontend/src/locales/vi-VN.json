@@ -89,7 +89,6 @@
     "unassigned": "Chưa gán",
     "new": "Mới",
     "add": "Thêm",
-    "confirm-and-add": "Xác nhận và Thêm",
     "confirm-and-update": "Xác nhận và Cập nhật",
     "query": "Truy vấn",
     "transfer": "Chuyển",
@@ -230,7 +229,6 @@
     "errors": "Lỗi",
     "removed": "LOẠI BỎ",
     "submit": "Nộp",
-    "start": "Bắt đầu",
     "draft": "Bản nháp",
     "import": "Nhập khẩu",
     "hard-delete": {
@@ -307,7 +305,6 @@
       "description": "Đặt ngày và giờ cụ thể để các tác vụ tự động bắt đầu chạy. Hữu ích cho các khung giờ bảo trì hoặc ngoài giờ cao điểm."
     },
     "select-task": "Chọn nhiệm vụ | Chọn nhiệm vụ",
-    "selected-n-tasks": "{n} nhiệm vụ đã chọn | {n} nhiệm vụ đã chọn",
     "no-tasks-selected": "Không có nhiệm vụ nào được chọn",
     "no-runnable-tasks": "Không có tác vụ nào có thể chạy được",
     "no-skippable-tasks": "Không có nhiệm vụ nào có thể bỏ qua",
@@ -1218,14 +1215,10 @@
     },
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
-      "start-stage": "Giai đoạn bắt đầu",
       "run-stage": "Chạy sân khấu",
       "confirm-create": "Bạn có chắc chắn muốn tạo tác vụ cho giai đoạn này không?",
       "back-to-stage": "Trở lại sân khấu {stage}",
-      "no-stages": {
-        "self": "Không có giai đoạn",
-        "description": "Không có giai đoạn nào được xác định cho lần triển khai này."
-      }
+      "no-stages": {}
     },
     "task": {
       "selected-count": "{count} nhiệm vụ đã chọn | {count} nhiệm vụ đã chọn",
