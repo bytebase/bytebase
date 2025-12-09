@@ -4,7 +4,6 @@ import { v1 as uuidv1 } from "uuid";
 import { useDatabaseV1Store, usePolicyV1Store } from "@/store";
 import type {
   ComposedDatabase,
-  CoreSQLEditorTab,
   QueryDataSourceType,
   SQLEditorConnection,
   SQLEditorTab,

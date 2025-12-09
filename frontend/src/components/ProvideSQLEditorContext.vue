@@ -64,9 +64,7 @@ import {
   isDatabaseV1Queryable,
   isSameSQLEditorConnection,
   isWorksheetReadableV1,
-  projectNameFromSheetSlug,
   suggestedTabTitleForSQLEditorConnection,
-  worksheetNameFromSlug,
 } from "@/utils";
 import {
   type AsidePanelTab,
