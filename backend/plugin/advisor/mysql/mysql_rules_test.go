@@ -8,7 +8,7 @@ import (
 )
 
 func TestMySQLRules(t *testing.T) {
-	mysqlRules := []storepb.SQLReviewRule_Type{
+	for _, rule := range []storepb.SQLReviewRule_Type{
 		// storepb.SQLReviewRule_ENGINE_MYSQL_USE_INNODB enforce the innodb engine.
 		storepb.SQLReviewRule_ENGINE_MYSQL_USE_INNODB,
 
@@ -163,9 +163,7 @@ func TestMySQLRules(t *testing.T) {
 		storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOW_CREATE,
 		// storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST enforce the function disallow list.
 		storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST,
-	}
-
-	for _, rule := range mysqlRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MYSQL, false, false /* record */)
+	} {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_MYSQL, false /* record */)
 	}
 }
