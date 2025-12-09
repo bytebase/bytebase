@@ -61,7 +61,7 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractIssueUID, getSheetStatement } from "@/utils";
 import HumanizeDate from "../misc/HumanizeDate.vue";
-import TaskRunLogViewer from "../Plan/components/RolloutView/v2/TaskRunLogViewer.vue";
+import { TaskRunLogViewer } from "../Plan/components/RolloutView/v2/TaskRunLogViewer";
 
 interface LocalState {
   loading: boolean;

@@ -76,7 +76,7 @@ import Timestamp from "@/components/misc/Timestamp.vue";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type { TaskRunLogSummary } from "./composables/useTaskRunLogSummary";
-import TaskRunLogViewer from "./TaskRunLogViewer.vue";
+import { TaskRunLogViewer } from "./TaskRunLogViewer";
 
 // Types
 interface StatusConfig {

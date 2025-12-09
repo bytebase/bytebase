@@ -3,7 +3,6 @@ package advisor
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -156,7 +155,7 @@ type TestCase struct {
 }
 
 // RunSQLReviewRuleTest helps to test the SQL review rule.
-func RunSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType storepb.Engine, needMetaData bool, record bool) {
+func RunSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType storepb.Engine, record bool) {
 	var tests []TestCase
 
 	fileName := strings.Map(func(r rune) rune {
@@ -179,49 +178,36 @@ func RunSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType 
 
 	sm := sheet.NewManager(nil)
 	for i, tc := range tests {
-		// Add engine types here for mocked database metadata.
+		// Set metadata and database-specific settings based on engine type
 		var schemaMetadata *storepb.DatabaseSchemaMetadata
 		curDB := "TEST_DB"
-		if needMetaData {
-			switch dbType {
-			case storepb.Engine_POSTGRES:
-				schemaMetadata = MockPostgreSQLDatabase
-			case storepb.Engine_MSSQL:
-				curDB = "master"
-				schemaMetadata = MockMSSQLDatabase
-			case storepb.Engine_MYSQL:
-				schemaMetadata = MockMySQLDatabase
-			default:
-				panic(fmt.Sprintf("%s doesn't have mocked metadata support", storepb.Engine_name[int32(dbType)]))
-			}
-		}
-
-		// Use the schemaMetadata if available, otherwise use mock database for catalog creation
-		catalogMetadata := schemaMetadata
-		if catalogMetadata == nil {
-			if dbType == storepb.Engine_POSTGRES {
-				catalogMetadata = MockPostgreSQLDatabase
-			} else {
-				catalogMetadata = MockMySQLDatabase
-			}
-		}
-
 		isCaseSensitive := false
-		if dbType == storepb.Engine_POSTGRES {
+
+		switch dbType {
+		case storepb.Engine_POSTGRES:
+			schemaMetadata = MockPostgreSQLDatabase
 			isCaseSensitive = true
+		case storepb.Engine_MSSQL:
+			schemaMetadata = MockMSSQLDatabase
+			curDB = "master"
+		case storepb.Engine_MYSQL:
+			schemaMetadata = MockMySQLDatabase
+		default:
+			// Fallback to MySQL for engines without specific mock
+			schemaMetadata = MockMySQLDatabase
 		}
 
 		// Create OriginalMetadata as DatabaseMetadata (read-only)
 		// Clone to avoid mutations affecting future test cases
-		originalCatalogClone, ok := proto.Clone(catalogMetadata).(*storepb.DatabaseSchemaMetadata)
-		require.True(t, ok, "failed to clone catalog metadata")
-		originalMetadata := model.NewDatabaseMetadata(originalCatalogClone, nil, nil, dbType, isCaseSensitive)
+		metadata, ok := proto.Clone(schemaMetadata).(*storepb.DatabaseSchemaMetadata)
+		require.True(t, ok, "failed to clone metadata")
+		originalMetadata := model.NewDatabaseMetadata(metadata, nil, nil, dbType, isCaseSensitive)
 
 		// Create FinalMetadata as DatabaseMetadata (mutable for walk-through)
 		// Clone to avoid mutations affecting future test cases
-		finalCatalogClone, ok := proto.Clone(catalogMetadata).(*storepb.DatabaseSchemaMetadata)
-		require.True(t, ok, "failed to clone catalog metadata")
-		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, nil, nil, dbType, isCaseSensitive)
+		metadata, ok = proto.Clone(schemaMetadata).(*storepb.DatabaseSchemaMetadata)
+		require.True(t, ok, "failed to clone metadata")
+		finalMetadata := model.NewDatabaseMetadata(metadata, nil, nil, dbType, isCaseSensitive)
 
 		sqlRule := &storepb.SQLReviewRule{
 			Type:  rule,
@@ -403,6 +389,7 @@ func SetDefaultSQLReviewRulePayload(rule *storepb.SQLReviewRule, dbType storepb.
 		storepb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME,
 		storepb.SQLReviewRule_STATEMENT_REQUIRE_ALGORITHM_OPTION,
 		storepb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION,
+		storepb.SQLReviewRule_STATEMENT_OBJECT_OWNER_CHECK,
 		storepb.SQLReviewRule_TABLE_DISALLOW_SET_CHARSET,
 		storepb.SQLReviewRule_STATEMENT_DISALLOW_CROSS_DB_QUERIES,
 		storepb.SQLReviewRule_INDEX_NOT_REDUNDANT:

@@ -8,7 +8,7 @@ import (
 )
 
 func TestTiDBRules(t *testing.T) {
-	tidbRules := []storepb.SQLReviewRule_Type{
+	for _, rule := range []storepb.SQLReviewRule_Type{
 		// storepb.SQLReviewRule_NAMING_TABLE enforce the table name format.
 		storepb.SQLReviewRule_NAMING_TABLE,
 		// storepb.SQLReviewRule_NAMING_COLUMN enforce the column name format.
@@ -113,9 +113,7 @@ func TestTiDBRules(t *testing.T) {
 
 		// storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST enforce the collation allowlist.
 		storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST,
-	}
-
-	for _, rule := range tidbRules {
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_TIDB, false, false /* record */)
+	} {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_TIDB, false /* record */)
 	}
 }

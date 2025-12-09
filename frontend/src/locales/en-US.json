@@ -89,7 +89,6 @@
     "unassigned": "Unassigned",
     "new": "New",
     "add": "Add",
-    "confirm-and-add": "Confirm and add",
     "confirm-and-update": "Confirm and update",
     "query": "Query",
     "transfer": "Transfer",
@@ -230,7 +229,6 @@
     "errors": "Errors",
     "removed": "Removed",
     "submit": "Submit",
-    "start": "Start",
     "draft": "Draft",
     "import": "Import",
     "hard-delete": {
@@ -307,7 +305,6 @@
       "description": "Set a specific date and time for tasks to automatically start running. Useful for maintenance windows or off-peak hours."
     },
     "select-task": "Select task | Select tasks",
-    "selected-n-tasks": "{n} task selected | {n} tasks selected",
     "no-tasks-selected": "No tasks selected",
     "no-runnable-tasks": "No runnable tasks",
     "no-skippable-tasks": "No skippable tasks",
@@ -1218,14 +1215,10 @@
     },
     "stage": {
       "self": "Stage | Stages",
-      "start-stage": "Start stage",
       "run-stage": "Run Stage",
       "confirm-create": "Confirm to create tasks for this stage?",
       "back-to-stage": "Back to Stage {stage}",
-      "no-stages": {
-        "self": "No stages",
-        "description": "No stages are defined for this rollout."
-      }
+      "no-stages": {}
     },
     "task": {
       "selected-count": "{count} task selected | {count} tasks selected",

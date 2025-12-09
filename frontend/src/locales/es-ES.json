@@ -89,7 +89,6 @@
     "unassigned": "No asignado",
     "new": "Nuevo",
     "add": "Agregar",
-    "confirm-and-add": "Confirmar y agregar",
     "confirm-and-update": "Confirmar y actualizar",
     "query": "Consulta",
     "transfer": "Transferir",
@@ -230,7 +229,6 @@
     "errors": "Errores",
     "removed": "Remoto",
     "submit": "Entregar",
-    "start": "Comenzar",
     "draft": "Borrador",
     "import": "Importar",
     "hard-delete": {
@@ -307,7 +305,6 @@
       "description": "Establezca una fecha y hora específicas para que las tareas comiencen a ejecutarse automáticamente. Útil para periodos de mantenimiento o horas de baja demanda."
     },
     "select-task": "Seleccionar tarea | Seleccionar tareas",
-    "selected-n-tasks": "{n} tarea seleccionada | {n} tareas seleccionadas",
     "no-tasks-selected": "No hay tareas seleccionadas",
     "no-runnable-tasks": "No hay tareas ejecutables",
     "no-skippable-tasks": "No hay tareas que se puedan omitir",
@@ -1218,14 +1215,10 @@
     },
     "stage": {
       "self": "Escenario | Escenarios",
-      "start-stage": "Etapa de inicio",
       "run-stage": "Etapa de ejecución",
       "confirm-create": "¿Está seguro de que desea crear tareas para esta etapa?",
       "back-to-stage": "Volver a la etapa {stage}",
-      "no-stages": {
-        "self": "Sin etapas",
-        "description": "No se definen etapas para este lanzamiento."
-      }
+      "no-stages": {}
     },
     "task": {
       "selected-count": "{count} tarea seleccionada | {count} tareas seleccionadas",
