@@ -36,6 +36,7 @@ import {
   languageOfEngineV1,
   type Position,
   type SQLEditorConnection,
+  type SQLEditorTab,
   typeToView,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -51,7 +52,7 @@ import {
   generateSimpleSelectAllStatement,
   generateSimpleUpdateStatement,
   instanceV1HasAlterSchema,
-  isSimilarSQLEditorTab,
+  isSameSQLEditorConnection,
   sortByDictionary,
   supportGetStringSchema,
 } from "@/utils";
@@ -104,10 +105,10 @@ export const useActions = () => {
   };
 
   const openNewTab = (params: {
-    title?: string;
+    title: string;
     schema?: string;
     table?: string;
-    view?: EditorPanelView;
+    view: EditorPanelView;
   }) => {
     const tabStore = useSQLEditorTabStore();
     const tabViewStateStore = useTabViewStateStore();
@@ -124,37 +125,39 @@ export const useActions = () => {
     }
 
     const fromTab = tabStore.currentTab;
-    const clonedTab = defaultSQLEditorTab();
+    const clonedTab: SQLEditorTab = {
+      ...defaultSQLEditorTab(),
+      status: "CLEAN",
+      title: params.title,
+    };
     if (fromTab) {
       clonedTab.connection = cloneDeep(fromTab.connection);
       clonedTab.treeState = cloneDeep(fromTab.treeState);
     }
-    clonedTab.status = "CLEAN";
-    clonedTab.title = params.title ?? "";
 
-    for (const tab of tabStore.openTabList) {
-      if (tab.id === fromTab?.id) {
-        continue;
+    const findExistedTab = tabStore.openTabList.find((tab) => {
+      if (tab.status !== "CLEAN" || tab.id === fromTab?.id) {
+        return false;
       }
-      if (!isSimilarSQLEditorTab(clonedTab, tab, false)) {
-        continue;
-      }
-      if (tab.status !== clonedTab.status) {
-        continue;
+      if (!isSameSQLEditorConnection(tab.connection, clonedTab.connection)) {
+        return false;
       }
       const viewState = tabViewStateStore.getViewState(tab.id);
       if (
         viewState.view !== params.view ||
         (schema && viewState.schema !== schema)
       ) {
-        continue;
+        return false;
       }
-      tabStore.setCurrentTabId(tab.id);
-      return;
-    }
+      return true;
+    });
 
-    tabStore.addTab(clonedTab);
-    updateViewState({ view: params.view, schema, table });
+    if (findExistedTab) {
+      tabStore.setCurrentTabId(findExistedTab.id);
+    } else {
+      tabStore.addTab(clonedTab);
+      updateViewState({ view: params.view, schema, table });
+    }
   };
 
   const viewDetail = async (node: TreeNode) => {

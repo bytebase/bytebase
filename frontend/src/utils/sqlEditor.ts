@@ -77,22 +77,11 @@ export const getConnectionForSQLEditorTab = (tab: SQLEditorTab) => {
   return target;
 };
 
-const isSameSQLEditorConnection = (
+export const isSameSQLEditorConnection = (
   a: SQLEditorConnection,
   b: SQLEditorConnection
 ): boolean => {
   return a.instance === b.instance && a.database === b.database;
-};
-
-export const isSimilarSQLEditorTab = (
-  a: CoreSQLEditorTab,
-  b: CoreSQLEditorTab,
-  ignoreMode?: boolean
-): boolean => {
-  if (!isSameSQLEditorConnection(a.connection, b.connection)) return false;
-  if (a.worksheet !== b.worksheet) return false;
-  if (!ignoreMode && a.mode !== b.mode) return false;
-  return true;
 };
 
 export const suggestedTabTitleForSQLEditorConnection = (

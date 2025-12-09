@@ -62,6 +62,7 @@ import {
   getDefaultPagination,
   getSheetStatement,
   isDatabaseV1Queryable,
+  isSameSQLEditorConnection,
   isWorksheetReadableV1,
   projectNameFromSheetSlug,
   suggestedTabTitleForSQLEditorConnection,
@@ -140,22 +141,19 @@ const initializeProject = async () => {
 };
 
 const connect = (connection: SQLEditorConnection) => {
-  const currentTab = tabStore.selectOrAddSimilarNewTab(
-    {
-      connection,
-      worksheet: "",
-      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-    },
-    /* beside */ false,
-    /* defaultTitle */ suggestedTabTitleForSQLEditorConnection(connection),
-    /* ignoreMode */ true
+  const tabWithSameConnect = tabStore.draftList.find((tab) =>
+    isSameSQLEditorConnection(tab.connection, connection)
   );
-  if (currentTab?.mode === "ADMIN") {
-    // Don't enter ADMIN mode initially
-    tabStore.updateCurrentTab({
-      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-    });
+  if (tabWithSameConnect) {
+    tabStore.addTab(tabWithSameConnect);
+    return;
   }
+
+  tabStore.addTab({
+    connection,
+    mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+    title: suggestedTabTitleForSQLEditorConnection(connection),
+  });
 };
 
 const switchWorksheet = async (sheetName: string) => {
@@ -208,19 +206,6 @@ const switchWorksheet = async (sheetName: string) => {
   });
 
   return true;
-};
-
-const prepareSheetLegacy = async () => {
-  const sheetSlug = (route.params.sheetSlug as string) || "";
-  if (!sheetSlug) {
-    return false;
-  }
-
-  const projectName = projectNameFromSheetSlug(sheetSlug);
-  await maybeSwitchProject(projectName);
-
-  const sheetName = worksheetNameFromSlug(sheetSlug);
-  return await switchWorksheet(sheetName);
 };
 
 const prepareSheet = async () => {
@@ -277,10 +262,6 @@ const initializeConnectionFromQuery = async () => {
   // 2. instanceId and databaseId in connectionSlug
   // 3. database in global filter
   // 4. disconnected
-
-  if (await prepareSheetLegacy()) {
-    return true;
-  }
   if (await prepareSheet()) {
     return;
   }

@@ -4,7 +4,6 @@ import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, unref, watch } from "vue";
 import type {
   BatchQueryContext,
-  CoreSQLEditorTab,
   SQLEditorConnection,
   SQLEditorDatabaseQueryContext,
   SQLEditorTab,
@@ -18,7 +17,6 @@ import {
   extractWorksheetConnection,
   getSheetStatement,
   isConnectedSQLEditorTab,
-  isSimilarSQLEditorTab,
   useDynamicLocalStorage,
 } from "@/utils";
 import {
@@ -397,50 +395,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     currentTabId.value = id;
   };
 
-  // TODO(ed): deprecate
-  // The similar tab should not consider the worksheet
-  // What we should do:
-  // When load the SQL Editor page in the URL like /instances/{instance}/databases/{database},
-  // get the connection, check if exist opening tab with the same connection
-  // - exist: set the current tab id
-  // - not exist: we still have to provide a draft worksheet, but the draft can only exist in the memory, not in the local storage
-  const selectOrAddSimilarNewTab = (
-    tab: CoreSQLEditorTab,
-    beside = false,
-    defaultTitle?: string,
-    ignoreMode?: boolean
-  ) => {
-    const curr = currentTab.value;
-    if (curr) {
-      if (
-        !isConnectedSQLEditorTab(curr) ||
-        isSimilarSQLEditorTab(tab, curr, ignoreMode)
-      ) {
-        updateTab(curr.id, {
-          connection: tab.connection,
-          worksheet: tab.worksheet,
-          mode: tab.mode,
-        });
-        return curr;
-      }
-    }
-    const similarNewTab = openTabList.value.find(
-      (tmp) => tmp.status === "CLEAN" && isSimilarSQLEditorTab(tmp, tab)
-    );
-    if (similarNewTab) {
-      setCurrentTabId(similarNewTab.id);
-      return similarNewTab;
-    } else {
-      return addTab(
-        {
-          ...tab,
-          title: defaultTitle,
-        },
-        beside
-      );
-    }
-  };
-
   watch(
     () => project.value,
     () => {
@@ -472,7 +426,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     batchRemoveDatabaseQueryContext,
     deleteDatabaseQueryContext,
     setCurrentTabId,
-    selectOrAddSimilarNewTab,
     maybeInitProject,
     isDisconnected,
     isInBatchMode,
