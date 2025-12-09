@@ -22,7 +22,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"gopkg.in/yaml.v3"
 
-	apiV1 "github.com/bytebase/bytebase/backend/api/v1"
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -963,7 +963,7 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 // setV1SQLReviewRulePayloads sets default payloads for v1pb rules by converting to storepb and back.
 func setV1SQLReviewRulePayloads(rules []*v1pb.SQLReviewRule, engine v1pb.Engine) {
 	// Convert v1pb rules to storepb format
-	storeRules, err := apiV1.ConvertToSQLReviewRules(rules)
+	storeRules, err := apiv1.ConvertToSQLReviewRules(rules)
 	if err != nil {
 		// This shouldn't fail for test data, but if it does, panic to fail the test
 		panic(fmt.Sprintf("failed to convert rules: %v", err))
@@ -978,7 +978,7 @@ func setV1SQLReviewRulePayloads(rules []*v1pb.SQLReviewRule, engine v1pb.Engine)
 	}
 
 	// Convert back to v1pb and copy payloads
-	convertedRules := apiV1.ConvertToV1PBSQLReviewRules(storeRules)
+	convertedRules := apiv1.ConvertToV1PBSQLReviewRules(storeRules)
 	for i, rule := range rules {
 		rule.Payload = convertedRules[i].Payload
 		rule.Engine = engine
