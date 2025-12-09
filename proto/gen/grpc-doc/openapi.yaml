@@ -13489,9 +13489,20 @@ components:
                     type: string
                     description: The severity level of the rule.
                     format: enum
-                payload:
-                    type: string
-                    description: The payload is a JSON string that varies by rule type.
+                namingPayload:
+                    $ref: '#/components/schemas/SQLReviewRule_NamingRulePayload'
+                numberPayload:
+                    $ref: '#/components/schemas/SQLReviewRule_NumberRulePayload'
+                stringArrayPayload:
+                    $ref: '#/components/schemas/SQLReviewRule_StringArrayRulePayload'
+                commentConventionPayload:
+                    $ref: '#/components/schemas/SQLReviewRule_CommentConventionRulePayload'
+                requiredColumnPayload:
+                    $ref: '#/components/schemas/SQLReviewRule_RequiredColumnRulePayload'
+                stringPayload:
+                    $ref: '#/components/schemas/SQLReviewRule_StringRulePayload'
+                namingCasePayload:
+                    $ref: '#/components/schemas/SQLReviewRule_NamingCaseRulePayload'
                 engine:
                     enum:
                         - ENGINE_UNSPECIFIED
@@ -13524,6 +13535,53 @@ components:
                     description: The database engine this rule applies to.
                     format: enum
             description: SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
+        SQLReviewRule_CommentConventionRulePayload:
+            type: object
+            properties:
+                required:
+                    type: boolean
+                maxLength:
+                    type: integer
+                    format: int32
+        SQLReviewRule_NamingCaseRulePayload:
+            type: object
+            properties:
+                upper:
+                    type: boolean
+        SQLReviewRule_NamingRulePayload:
+            type: object
+            properties:
+                maxLength:
+                    type: integer
+                    format: int32
+                format:
+                    type: string
+            description: Payload message types for SQL review rules
+        SQLReviewRule_NumberRulePayload:
+            type: object
+            properties:
+                number:
+                    type: integer
+                    format: int32
+        SQLReviewRule_RequiredColumnRulePayload:
+            type: object
+            properties:
+                columnList:
+                    type: array
+                    items:
+                        type: string
+        SQLReviewRule_StringArrayRulePayload:
+            type: object
+            properties:
+                list:
+                    type: array
+                    items:
+                        type: string
+        SQLReviewRule_StringRulePayload:
+            type: object
+            properties:
+                value:
+                    type: string
         SchedulerInfo_WaitingCause:
             type: object
             properties:

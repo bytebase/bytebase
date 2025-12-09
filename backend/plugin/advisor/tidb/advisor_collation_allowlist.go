@@ -40,16 +40,13 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 	checker := &collationAllowlistChecker{
 		level:     level,
 		title:     checkCtx.Rule.Type.String(),
 		allowlist: make(map[string]bool),
 	}
-	for _, collation := range payload.List {
+	for _, collation := range stringArrayPayload.List {
 		checker.allowlist[strings.ToLower(collation)] = true
 	}
 

@@ -42,13 +42,13 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for this rule")
 	}
 
 	// Create the rule
-	rule := NewStatementAffectedRowLimitRule(ctx, level, checkCtx.Rule.Type.String(), payload.Number, checkCtx.Driver)
+	rule := NewStatementAffectedRowLimitRule(ctx, level, checkCtx.Rule.Type.String(), int(numberPayload.Number), checkCtx.Driver)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

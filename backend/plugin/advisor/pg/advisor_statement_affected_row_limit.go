@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/parser/postgresql"
@@ -39,9 +41,9 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, err
 	}
 
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for this rule")
 	}
 
 	rule := &statementAffectedRowLimitRule{
@@ -49,14 +51,14 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			level: level,
 			title: checkCtx.Rule.Type.String(),
 		},
-		maxRow:                   payload.Number,
+		maxRow:                   int(numberPayload.Number),
 		ctx:                      ctx,
 		driver:                   checkCtx.Driver,
 		usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
 		statementsText:           checkCtx.Statements,
 	}
 
-	if payload.Number > 0 && checkCtx.Driver != nil {
+	if int(numberPayload.Number) > 0 && checkCtx.Driver != nil {
 		checker := NewGenericChecker([]Rule{rule})
 
 		for _, parseResult := range parseResults {

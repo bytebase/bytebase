@@ -11,6 +11,37 @@ message ReviewConfigPayload {
 }
 
 message SQLReviewRule {
+  // Payload message types for SQL review rules
+  message NamingRulePayload {
+    int32 max_length = 1;
+    string format = 2;
+  }
+
+  message NumberRulePayload {
+    int32 number = 1;
+  }
+
+  message StringArrayRulePayload {
+    repeated string list = 1;
+  }
+
+  message CommentConventionRulePayload {
+    bool required = 1;
+    int32 max_length = 2;
+  }
+
+  message RequiredColumnRulePayload {
+    repeated string column_list = 1;
+  }
+
+  message StringRulePayload {
+    string value = 1;
+  }
+
+  message NamingCaseRulePayload {
+    bool upper = 1;
+  }
+
   // The severity level for SQL review rules.
   enum Level {
     // Unspecified level.
@@ -136,6 +167,16 @@ message SQLReviewRule {
 
   Type type = 1;
   Level level = 2;
-  string payload = 3;
-  Engine engine = 4;
+
+  oneof payload {
+    NamingRulePayload naming_payload = 3;
+    NumberRulePayload number_payload = 4;
+    StringArrayRulePayload string_array_payload = 5;
+    CommentConventionRulePayload comment_convention_payload = 6;
+    RequiredColumnRulePayload required_column_payload = 7;
+    StringRulePayload string_payload = 8;
+    NamingCaseRulePayload naming_case_payload = 9;
+  }
+
+  Engine engine = 10;
 }

@@ -39,12 +39,9 @@ func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNamingCaseRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	namingCasePayload := checkCtx.Rule.GetNamingCasePayload()
 
-	rule := NewNamingIdentifierCaseRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, payload.Upper)
+	rule := NewNamingIdentifierCaseRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, namingCasePayload.Upper)
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmtNode := range stmtList {

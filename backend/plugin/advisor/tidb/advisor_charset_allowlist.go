@@ -39,16 +39,13 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 	checker := &charsetAllowlistChecker{
 		level:     level,
 		title:     checkCtx.Rule.Type.String(),
 		allowlist: make(map[string]bool),
 	}
-	for _, charset := range payload.List {
+	for _, charset := range stringArrayPayload.List {
 		checker.allowlist[strings.ToLower(charset)] = true
 	}
 

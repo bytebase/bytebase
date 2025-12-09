@@ -3,7 +3,6 @@ package advisor
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -224,16 +223,14 @@ func RunSQLReviewRuleTest(t *testing.T, rule storepb.SQLReviewRule_Type, dbType 
 		require.True(t, ok, "failed to clone catalog metadata")
 		finalMetadata := model.NewDatabaseMetadata(finalCatalogClone, nil, nil, dbType, isCaseSensitive)
 
-		payload, err := SetDefaultSQLReviewRulePayload(rule, dbType)
+		sqlRule := &storepb.SQLReviewRule{
+			Type:  rule,
+			Level: storepb.SQLReviewRule_WARNING,
+		}
+		err := SetDefaultSQLReviewRulePayload(sqlRule, dbType)
 		require.NoError(t, err)
 
-		ruleList := []*storepb.SQLReviewRule{
-			{
-				Type:    rule,
-				Level:   storepb.SQLReviewRule_WARNING,
-				Payload: string(payload),
-			},
-		}
+		ruleList := []*storepb.SQLReviewRule{sqlRule}
 
 		checkCtx := Context{
 			Charset:                  "",
@@ -343,10 +340,8 @@ func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchem
 }
 
 // SetDefaultSQLReviewRulePayload sets the default payload for this rule.
-func SetDefaultSQLReviewRulePayload(ruleTp storepb.SQLReviewRule_Type, dbType storepb.Engine) (string, error) {
-	var payload []byte
-	var err error
-	switch ruleTp {
+func SetDefaultSQLReviewRulePayload(rule *storepb.SQLReviewRule, dbType storepb.Engine) error {
+	switch rule.Type {
 	case storepb.SQLReviewRule_ENGINE_MYSQL_USE_INNODB,
 		storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK,
 		storepb.SQLReviewRule_NAMING_FULLY_QUALIFIED,
@@ -412,12 +407,14 @@ func SetDefaultSQLReviewRulePayload(ruleTp storepb.SQLReviewRule_Type, dbType st
 		storepb.SQLReviewRule_STATEMENT_DISALLOW_CROSS_DB_QUERIES,
 		storepb.SQLReviewRule_INDEX_NOT_REDUNDANT:
 	case storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION:
-		payload, err = json.Marshal(NamingRulePayload{
-			Format: "_delete$",
-		})
+		rule.Payload = &storepb.SQLReviewRule_NamingPayload{
+			NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{
+				Format: "_delete$",
+			},
+		}
 	case storepb.SQLReviewRule_NAMING_TABLE, storepb.SQLReviewRule_NAMING_COLUMN:
 		format := "^[a-z]+(_[a-z]+)*$"
-		maxLength := 64
+		maxLength := int32(64)
 		switch dbType {
 		case storepb.Engine_SNOWFLAKE:
 			format = "^[A-Z]+(_[A-Z]+)*$"
@@ -426,140 +423,193 @@ func SetDefaultSQLReviewRulePayload(ruleTp storepb.SQLReviewRule_Type, dbType st
 		default:
 			// Use default format for other databases
 		}
-		payload, err = json.Marshal(NamingRulePayload{
-			Format:    format,
-			MaxLength: maxLength,
-		})
-	case storepb.SQLReviewRule_NAMING_INDEX_IDX:
-		payload, err = json.Marshal(NamingRulePayload{
-			Format:    "^$|^idx_{{table}}_{{column_list}}$",
-			MaxLength: 64,
-		})
-	case storepb.SQLReviewRule_NAMING_INDEX_PK:
-		payload, err = json.Marshal(NamingRulePayload{
-			Format:    "^$|^pk_{{table}}_{{column_list}}$",
-			MaxLength: 64,
-		})
-	case storepb.SQLReviewRule_NAMING_INDEX_UK:
-		payload, err = json.Marshal(NamingRulePayload{
-			Format:    "^$|^uk_{{table}}_{{column_list}}$",
-			MaxLength: 64,
-		})
-	case storepb.SQLReviewRule_NAMING_INDEX_FK:
-		payload, err = json.Marshal(NamingRulePayload{
-			Format:    "^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
-			MaxLength: 64,
-		})
-	case storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT:
-		payload, err = json.Marshal(NamingRulePayload{
-			Format:    "^id$",
-			MaxLength: 64,
-		})
-	case storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT:
-		payload, err = json.Marshal(NumberTypeRulePayload{
-			Number: 5,
-		})
-	case storepb.SQLReviewRule_STATEMENT_MAXIMUM_JOIN_TABLE_COUNT:
-		payload, err = json.Marshal(NumberTypeRulePayload{
-			Number: 2,
-		})
-	case storepb.SQLReviewRule_STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
-		payload, err = json.Marshal(NumberTypeRulePayload{
-			Number: 2,
-		})
-	case storepb.SQLReviewRule_STATEMENT_MAXIMUM_LIMIT_VALUE:
-		payload, err = json.Marshal(NumberTypeRulePayload{
-			Number: 1000,
-		})
-	case storepb.SQLReviewRule_TABLE_COMMENT, storepb.SQLReviewRule_COLUMN_COMMENT:
-		payload, err = json.Marshal(CommentConventionRulePayload{
-			Required:  true,
-			MaxLength: 10,
-		})
-	case storepb.SQLReviewRule_COLUMN_REQUIRED:
-		payload, err = json.Marshal(StringArrayTypeRulePayload{
-			List: []string{
-				"id",
-				"created_ts",
-				"updated_ts",
-				"creator_id",
-				"updater_id",
+		rule.Payload = &storepb.SQLReviewRule_NamingPayload{
+			NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{
+				Format:    format,
+				MaxLength: maxLength,
 			},
-		})
+		}
+	case storepb.SQLReviewRule_NAMING_INDEX_IDX:
+		rule.Payload = &storepb.SQLReviewRule_NamingPayload{
+			NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{
+				Format:    "^$|^idx_{{table}}_{{column_list}}$",
+				MaxLength: 64,
+			},
+		}
+	case storepb.SQLReviewRule_NAMING_INDEX_PK:
+		rule.Payload = &storepb.SQLReviewRule_NamingPayload{
+			NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{
+				Format:    "^$|^pk_{{table}}_{{column_list}}$",
+				MaxLength: 64,
+			},
+		}
+	case storepb.SQLReviewRule_NAMING_INDEX_UK:
+		rule.Payload = &storepb.SQLReviewRule_NamingPayload{
+			NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{
+				Format:    "^$|^uk_{{table}}_{{column_list}}$",
+				MaxLength: 64,
+			},
+		}
+	case storepb.SQLReviewRule_NAMING_INDEX_FK:
+		rule.Payload = &storepb.SQLReviewRule_NamingPayload{
+			NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{
+				Format:    "^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+				MaxLength: 64,
+			},
+		}
+	case storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT:
+		rule.Payload = &storepb.SQLReviewRule_NamingPayload{
+			NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{
+				Format:    "^id$",
+				MaxLength: 64,
+			},
+		}
+	case storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT:
+		rule.Payload = &storepb.SQLReviewRule_NumberPayload{
+			NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+				Number: 5,
+			},
+		}
+	case storepb.SQLReviewRule_STATEMENT_MAXIMUM_JOIN_TABLE_COUNT:
+		rule.Payload = &storepb.SQLReviewRule_NumberPayload{
+			NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+				Number: 2,
+			},
+		}
+	case storepb.SQLReviewRule_STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT:
+		rule.Payload = &storepb.SQLReviewRule_NumberPayload{
+			NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+				Number: 2,
+			},
+		}
+	case storepb.SQLReviewRule_STATEMENT_MAXIMUM_LIMIT_VALUE:
+		rule.Payload = &storepb.SQLReviewRule_NumberPayload{
+			NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+				Number: 1000,
+			},
+		}
+	case storepb.SQLReviewRule_TABLE_COMMENT, storepb.SQLReviewRule_COLUMN_COMMENT:
+		rule.Payload = &storepb.SQLReviewRule_CommentConventionPayload{
+			CommentConventionPayload: &storepb.SQLReviewRule_CommentConventionRulePayload{
+				Required:  true,
+				MaxLength: 10,
+			},
+		}
+	case storepb.SQLReviewRule_COLUMN_REQUIRED:
+		rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{
+					"id",
+					"created_ts",
+					"updated_ts",
+					"creator_id",
+					"updater_id",
+				},
+			},
+		}
 	case storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST:
-		payload, err = json.Marshal(StringArrayTypeRulePayload{
-			List: []string{"JSON", "BINARY_FLOAT"},
-		})
+		rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"JSON", "BINARY_FLOAT"},
+			},
+		}
 	case storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH:
-		payload, err = json.Marshal(NumberTypeRulePayload{
-			Number: 20,
-		})
+		rule.Payload = &storepb.SQLReviewRule_NumberPayload{
+			NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+				Number: 20,
+			},
+		}
 	case storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH:
-		payload, err = json.Marshal(NumberTypeRulePayload{
-			Number: 2560,
-		})
+		rule.Payload = &storepb.SQLReviewRule_NumberPayload{
+			NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+				Number: 2560,
+			},
+		}
 	case storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE:
-		payload, err = json.Marshal(NumberTypeRulePayload{
-			Number: 20,
-		})
+		rule.Payload = &storepb.SQLReviewRule_NumberPayload{
+			NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+				Number: 20,
+			},
+		}
 	case storepb.SQLReviewRule_TABLE_DISALLOW_DDL:
 		if dbType == storepb.Engine_MSSQL {
-			payload, err = json.Marshal(StringArrayTypeRulePayload{
-				List: []string{"MySchema.Identifier"},
-			})
+			rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+					List: []string{"MySchema.Identifier"},
+				},
+			}
 		} else {
-			payload, err = json.Marshal(StringArrayTypeRulePayload{
-				List: []string{"identifier"},
-			})
+			rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+					List: []string{"identifier"},
+				},
+			}
 		}
 	case storepb.SQLReviewRule_TABLE_DISALLOW_DML:
 		if dbType == storepb.Engine_MSSQL {
-			payload, err = json.Marshal(StringArrayTypeRulePayload{
-				List: []string{"MySchema.Identifier"},
-			})
+			rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+					List: []string{"MySchema.Identifier"},
+				},
+			}
 		} else {
-			payload, err = json.Marshal(StringArrayTypeRulePayload{
-				List: []string{"identifier"},
-			})
+			rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+				StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+					List: []string{"identifier"},
+				},
+			}
 		}
 	case storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, storepb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT:
-		payload, err = json.Marshal(NumberTypeRulePayload{
-			Number: 5,
-		})
+		rule.Payload = &storepb.SQLReviewRule_NumberPayload{
+			NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+				Number: 5,
+			},
+		}
 	case storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST:
-		payload, err = json.Marshal(StringArrayTypeRulePayload{
-			List: []string{"utf8mb4", "UTF8"},
-		})
+		rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"utf8mb4", "UTF8"},
+			},
+		}
 	case storepb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST:
-		payload, err = json.Marshal(StringArrayTypeRulePayload{
-			List: []string{"utf8mb4_0900_ai_ci"},
-		})
+		rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"utf8mb4_0900_ai_ci"},
+			},
+		}
 	case storepb.SQLReviewRule_SYSTEM_COMMENT_LENGTH:
-		payload, err = json.Marshal(NumberTypeRulePayload{
-			Number: 20,
-		})
+		rule.Payload = &storepb.SQLReviewRule_NumberPayload{
+			NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
+				Number: 20,
+			},
+		}
 	case storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST:
-		payload, err = json.Marshal(StringArrayTypeRulePayload{
-			List: []string{"serial", "bigserial", "int", "bigint"},
-		})
+		rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"serial", "bigserial", "int", "bigint"},
+			},
+		}
 	case storepb.SQLReviewRule_INDEX_TYPE_ALLOW_LIST:
-		payload, err = json.Marshal(StringArrayTypeRulePayload{
-			List: []string{"BTREE", "HASH"},
-		})
+		rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"BTREE", "HASH"},
+			},
+		}
 	case storepb.SQLReviewRule_NAMING_IDENTIFIER_CASE:
-		payload, err = json.Marshal(NamingCaseRulePayload{
-			Upper: true,
-		})
+		rule.Payload = &storepb.SQLReviewRule_NamingCasePayload{
+			NamingCasePayload: &storepb.SQLReviewRule_NamingCaseRulePayload{
+				Upper: true,
+			},
+		}
 	case storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST:
-		payload, err = json.Marshal(StringArrayTypeRulePayload{
-			List: []string{"rand", "uuid", "sleep"},
-		})
+		rule.Payload = &storepb.SQLReviewRule_StringArrayPayload{
+			StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{
+				List: []string{"rand", "uuid", "sleep"},
+			},
+		}
 	default:
-		return "", errors.Errorf("unknown SQL review type for default payload: %s", ruleTp)
+		return errors.Errorf("unknown SQL review type for default payload: %s", rule.Type)
 	}
 
-	if err != nil {
-		return "", err
-	}
-	return string(payload), nil
+	return nil
 }

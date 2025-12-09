@@ -38,14 +38,11 @@ func (*EncodingAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
 	// Convert allowlist to lowercase for case-insensitive comparison
 	allowlist := make(map[string]bool)
-	for _, encoding := range payload.List {
+	for _, encoding := range stringArrayPayload.List {
 		allowlist[strings.ToLower(encoding)] = true
 	}
 

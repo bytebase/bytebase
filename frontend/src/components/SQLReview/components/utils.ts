@@ -17,10 +17,8 @@ export const rulesToTemplate = (review: SQLReviewPolicy) => {
   const ruleTemplateList: RuleTemplateV2[] = [];
 
   for (const rule of review.ruleList) {
-    // Convert type string to enum for map lookup
-    const typeKey = rule.type as keyof typeof SQLReviewRule_Type;
-    const type =
-      SQLReviewRule_Type[typeKey] ?? SQLReviewRule_Type.TYPE_UNSPECIFIED;
+    // rule.type is already SQLReviewRule_Type enum
+    const type = rule.type ?? SQLReviewRule_Type.TYPE_UNSPECIFIED;
 
     const ruleTemplate = ruleTemplateMapV2.get(rule.engine)?.get(type);
     if (!ruleTemplate) {

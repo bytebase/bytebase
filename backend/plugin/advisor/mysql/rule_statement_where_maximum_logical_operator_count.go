@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
 
@@ -35,15 +37,15 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for this rule")
 	}
 
 	var allAdvice []*storepb.Advice
 	for _, stmt := range stmtList {
 		// Create the rule for each statement
-		rule := NewStatementWhereMaximumLogicalOperatorCountRule(level, checkCtx.Rule.Type.String(), payload.Number)
+		rule := NewStatementWhereMaximumLogicalOperatorCountRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
 
 		// Create the generic checker with the rule
 		checker := NewGenericChecker([]Rule{rule})

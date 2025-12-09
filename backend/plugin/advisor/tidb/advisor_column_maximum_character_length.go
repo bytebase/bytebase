@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -41,14 +43,14 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for column maximum character length rule")
 	}
 	checker := &columnMaximumCharacterLengthChecker{
 		level:   level,
 		title:   checkCtx.Rule.Type.String(),
-		maximum: payload.Number,
+		maximum: int(numberPayload.Number),
 	}
 
 	for _, stmt := range stmtList {

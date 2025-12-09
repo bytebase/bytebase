@@ -527,11 +527,15 @@ const getActiveRule = (type: string): RuleTemplateV2 | undefined => {
       componentList: [],
     };
   }
+  // Convert string to enum for comparison
+  const typeKey = type as keyof typeof SQLReviewRule_Type;
+  const typeEnum = SQLReviewRule_Type[typeKey];
+
   const rule = reviewPolicy.value?.ruleList.find((rule) => {
     if (engine && rule.engine !== engine) {
       return false;
     }
-    return rule.type === type;
+    return rule.type === typeEnum;
   });
   if (!rule) {
     return undefined;

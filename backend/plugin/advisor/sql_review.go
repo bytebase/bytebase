@@ -2,7 +2,6 @@ package advisor
 
 import (
 	"context"
-	"encoding/json"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -38,11 +37,11 @@ const (
 	// ReferencedColumnNameTemplateToken is the token for referenced column name.
 	ReferencedColumnNameTemplateToken = "{{referenced_column}}"
 
-	// defaultNameLengthLimit is the default length limit for naming rules.
+	// DefaultNameLengthLimit is the default length limit for naming rules.
 	// PostgreSQL has it's own naming length limit, will auto slice the name to make sure its length <= 63
 	// https://www.postgresql.org/docs/current/limits.html.
 	// While MySQL does not enforce the limit, thus we use PostgreSQL's 63 as the default limit.
-	defaultNameLengthLimit = 63
+	DefaultNameLengthLimit = 63
 )
 
 var (
@@ -69,98 +68,12 @@ var (
 	}
 )
 
-// NamingRulePayload is the payload for naming rule.
-type NamingRulePayload struct {
-	MaxLength int    `json:"maxLength"`
-	Format    string `json:"format"`
-}
-
-// StringArrayTypeRulePayload is the payload for rules with string array value.
-type StringArrayTypeRulePayload struct {
-	List []string `json:"list"`
-}
-
-// RequiredColumnRulePayload is the payload for required column rule.
-type RequiredColumnRulePayload struct {
-	ColumnList []string `json:"columnList"`
-}
-
-// CommentConventionRulePayload is the payload for comment convention rule.
-type CommentConventionRulePayload struct {
-	Required  bool `json:"required"`
-	MaxLength int  `json:"maxLength"`
-}
-
-// NumberTypeRulePayload is the number type payload.
-type NumberTypeRulePayload struct {
-	Number int `json:"number"`
-}
-
-// StringTypeRulePayload is the string type payload.
-type StringTypeRulePayload struct {
-	String string `json:"string"`
-}
-
-// NamingCaseRulePayload is the payload for naming case rule.
-type NamingCaseRulePayload struct {
-	// Upper is true means the case should be upper case, otherwise lower case.
-	Upper bool `json:"upper"`
-}
-
-// UnmarshalNamingRulePayloadAsRegexp will unmarshal payload to NamingRulePayload and compile it as regular expression.
-func UnmarshalNamingRulePayloadAsRegexp(payload string) (*regexp.Regexp, int, error) {
-	var nr NamingRulePayload
-	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
-		return nil, 0, errors.Wrapf(err, "failed to unmarshal naming rule payload %q", payload)
-	}
-
-	format, err := regexp.Compile(nr.Format)
-	if err != nil {
-		return nil, 0, errors.Wrapf(err, "failed to compile regular expression \"%s\"", nr.Format)
-	}
-
-	// We need to be compatible with existed naming rules in the database. 0 means using the default length limit.
-	maxLength := nr.MaxLength
-	if maxLength == 0 {
-		maxLength = defaultNameLengthLimit
-	}
-
-	return format, maxLength, nil
-}
-
-// UnmarshalNamingRulePayloadAsTemplate will unmarshal payload to NamingRulePayload and extract all the template keys.
-// For example, "hard_code_{{table}}_{{column}}_end" will return
-// "hard_code_{{table}}_{{column}}_end", ["{{table}}", "{{column}}"].
-func UnmarshalNamingRulePayloadAsTemplate(ruleType storepb.SQLReviewRule_Type, payload string) (string, []string, int, error) {
-	var nr NamingRulePayload
-	if err := json.Unmarshal([]byte(payload), &nr); err != nil {
-		return "", nil, 0, errors.Wrapf(err, "failed to unmarshal naming rule payload %q", payload)
-	}
-
-	template := nr.Format
-	keys, _ := parseTemplateTokens(template)
-
-	for _, key := range keys {
-		if _, ok := TemplateNamingTokens[ruleType][key]; !ok {
-			return "", nil, 0, errors.Errorf("invalid template %s for rule %s", key, ruleType)
-		}
-	}
-
-	// We need to be compatible with existed naming rules in the database. 0 means using the default length limit.
-	maxLength := nr.MaxLength
-	if maxLength == 0 {
-		maxLength = defaultNameLengthLimit
-	}
-
-	return template, keys, maxLength, nil
-}
-
-// parseTemplateTokens parses the template and returns template tokens and their delimiters.
+// ParseTemplateTokens parses the template and returns template tokens and their delimiters.
 // For example, if the template is "{{DB_NAME}}_hello_{{LOCATION}}", then the tokens will be ["{{DB_NAME}}", "{{LOCATION}}"],
 // and the delimiters will be ["_hello_"].
 // The caller will usually replace the tokens with a normal string, or a regexp. In the latter case, it will be a problem
 // if there are special regexp characters such as "$" in the delimiters. The caller should escape the delimiters in such cases.
-func parseTemplateTokens(template string) ([]string, []string) {
+func ParseTemplateTokens(template string) ([]string, []string) {
 	r := regexp.MustCompile(`{{[^{}]+}}`)
 	tokens := r.FindAllString(template, -1)
 	if len(tokens) > 0 {
@@ -174,83 +87,6 @@ func parseTemplateTokens(template string) ([]string, []string) {
 		return tokens, delimiters
 	}
 	return nil, nil
-}
-
-// UnmarshalRequiredColumnList will unmarshal payload and parse the required column list.
-func UnmarshalRequiredColumnList(payload string) ([]string, error) {
-	stringArrayRulePayload, err := UnmarshalStringArrayTypeRulePayload(payload)
-	if err != nil {
-		return nil, err
-	}
-	if len(stringArrayRulePayload.List) != 0 {
-		return stringArrayRulePayload.List, nil
-	}
-
-	// The RequiredColumnRulePayload is deprecated.
-	// Just keep it to compatible with old data, and we can remove this later.
-	columnRulePayload, err := unmarshalRequiredColumnRulePayload(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	return columnRulePayload.ColumnList, nil
-}
-
-// unmarshalRequiredColumnRulePayload will unmarshal payload to RequiredColumnRulePayload.
-func unmarshalRequiredColumnRulePayload(payload string) (*RequiredColumnRulePayload, error) {
-	var rcr RequiredColumnRulePayload
-	if err := json.Unmarshal([]byte(payload), &rcr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal required column rule payload %q", payload)
-	}
-	if len(rcr.ColumnList) == 0 {
-		return nil, errors.Errorf("invalid required column rule payload, column list cannot be empty")
-	}
-	return &rcr, nil
-}
-
-// UnmarshalCommentConventionRulePayload will unmarshal payload to CommentConventionRulePayload.
-func UnmarshalCommentConventionRulePayload(payload string) (*CommentConventionRulePayload, error) {
-	var ccr CommentConventionRulePayload
-	if err := json.Unmarshal([]byte(payload), &ccr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal comment convention rule payload %q", payload)
-	}
-	return &ccr, nil
-}
-
-// UnmarshalNumberTypeRulePayload will unmarshal payload to NumberTypeRulePayload.
-func UnmarshalNumberTypeRulePayload(payload string) (*NumberTypeRulePayload, error) {
-	var nlr NumberTypeRulePayload
-	if err := json.Unmarshal([]byte(payload), &nlr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal number type rule payload %q", payload)
-	}
-	return &nlr, nil
-}
-
-// UnmarshalStringTypeRulePayload will unmarshal payload to StringTypeRulePayload.
-func UnmarshalStringTypeRulePayload(payload string) (*StringTypeRulePayload, error) {
-	var slr StringTypeRulePayload
-	if err := json.Unmarshal([]byte(payload), &slr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal string type rule payload %q", payload)
-	}
-	return &slr, nil
-}
-
-// UnmarshalStringArrayTypeRulePayload will unmarshal payload to StringArrayTypeRulePayload.
-func UnmarshalStringArrayTypeRulePayload(payload string) (*StringArrayTypeRulePayload, error) {
-	var trr StringArrayTypeRulePayload
-	if err := json.Unmarshal([]byte(payload), &trr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal string array rule payload %q", payload)
-	}
-	return &trr, nil
-}
-
-// UnmarshalNamingCaseRulePayload will unmarshal payload to NamingCaseRulePayload.
-func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, error) {
-	var ncr NamingCaseRulePayload
-	if err := json.Unmarshal([]byte(payload), &ncr); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal naming case rule payload %q", payload)
-	}
-	return &ncr, nil
 }
 
 // SQLReviewCheck checks the statements with sql review rules.

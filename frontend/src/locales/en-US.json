@@ -106,7 +106,6 @@
     "learn-more": "Learn more",
     "troubleshoot": "Troubleshoot",
     "schema-version": "Schema version",
-    "time": "Time",
     "Default": "Default",
     "definition": "Definition",
     "empty": "Empty",
@@ -357,8 +356,6 @@
     "history": "Execution History",
     "latest-logs": "Latest Logs",
     "latest": "Latest Execution",
-    "showing-recent-logs": "Showing recent {count} logs",
-    "view-full-logs": "View full logs",
     "status": {
       "enqueued": "Waiting for execution.",
       "enqueued-with-rollout-time": "Waiting to execute after {time}.",
@@ -373,6 +370,27 @@
         "description": "Bytebase generates a rollback statement based on the task run. You can review the statement before executing the rollback."
       },
       "no-statement-generated": "No rollback statement generated"
+    },
+    "log-type": {
+      "schema-dump": "Schema Dump",
+      "command-execute": "Command Execute",
+      "database-sync": "Database Sync",
+      "status-update": "Status Update",
+      "transaction": "Transaction",
+      "prior-backup": "Prior Backup",
+      "retry": "Retry",
+      "compute-diff": "Compute Diff"
+    },
+    "log-detail": {
+      "dumping": "dumping...",
+      "syncing": "syncing...",
+      "waiting-to-execute": "waiting to execute",
+      "executing": "executing",
+      "status-changed": "status changed",
+      "backup-completed": "completed ({count} tables)",
+      "backing-up": "backing up...",
+      "retry-attempt": "attempt {current}/{max}",
+      "computing": "computing..."
     }
   },
   "banner": {
@@ -1068,14 +1086,7 @@
           "prior-backup": "Prior backup",
           "retry-info": "Retry information",
           "compute-diff": "Compute diff"
-        },
-        "affected-rows-n": "Affected rows: {n}",
-        "prior-backup-tables": "Prior backup tables",
-        "status-update": {
-          "waiting": "Ready to be executed",
-          "running": "Being executed"
-        },
-        "retry-info": "Retrying (attempt {n}/{m}) due to lock timeout."
+        }
       },
       "task-run-session": {
         "blocking-sessions": {

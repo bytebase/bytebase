@@ -44,12 +44,9 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalStringArrayTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 	allowlist := make(map[string]bool)
-	for _, tp := range payload.List {
+	for _, tp := range stringArrayPayload.List {
 		allowlist[strings.ToLower(tp)] = true
 	}
 	checker := &indexPrimaryKeyTypeAllowlistChecker{

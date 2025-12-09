@@ -40,13 +40,13 @@ func (*StatementQueryMinumumPlanLevelAdvisor) Check(ctx context.Context, checkCt
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalStringTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	stringPayload := checkCtx.Rule.GetStringPayload()
+	if stringPayload == nil {
+		return nil, errors.New("string_payload is required for this rule")
 	}
 
 	// Create the rule
-	rule := NewStatementQueryMinumumPlanLevelRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver, convertExplainTypeFromString(strings.ToUpper(payload.String)))
+	rule := NewStatementQueryMinumumPlanLevelRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver, convertExplainTypeFromString(strings.ToUpper(stringPayload.Value)))
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})

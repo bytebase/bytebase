@@ -38,3 +38,4 @@ bytebase-build
 scripts/azure-marketplace/.cnab/
 scripts/azure-marketplace/*.tgz
 scripts/azure-marketplace/*.backup
+/main

@@ -22,6 +22,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"gopkg.in/yaml.v3"
 
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -101,8 +102,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	_, err = pgDB.Exec("ALTER USER bytebase WITH SUPERUSER")
 	a.NoError(err)
 
-	reviewConfig, err := prodTemplateReviewConfigForPostgreSQL()
-	a.NoError(err)
+	reviewConfig := prodTemplateReviewConfigForPostgreSQL()
 
 	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, connect.NewRequest(&v1pb.CreateReviewConfigRequest{
 		ReviewConfig: reviewConfig,
@@ -269,8 +269,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
 	a.NoError(err)
 
-	reviewConfig, err := prodTemplateReviewConfigForMySQL()
-	a.NoError(err)
+	reviewConfig := prodTemplateReviewConfigForMySQL()
 
 	createdConfig, err := ctl.reviewConfigServiceClient.CreateReviewConfig(ctx, connect.NewRequest(&v1pb.CreateReviewConfigRequest{
 		ReviewConfig: reviewConfig,
@@ -524,7 +523,7 @@ func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckR
 	}
 }
 
-func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
+func prodTemplateReviewConfigForPostgreSQL() *v1pb.ReviewConfig {
 	config := &v1pb.ReviewConfig{
 		Name:    common.FormatReviewConfig(generateRandomString("review")),
 		Title:   "Prod",
@@ -685,17 +684,11 @@ func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 		},
 	}
 
-	for _, rule := range config.Rules {
-		payload, err := advisor.SetDefaultSQLReviewRulePayload(storepb.SQLReviewRule_Type(rule.Type), storepb.Engine_POSTGRES)
-		if err != nil {
-			return nil, err
-		}
-		rule.Payload = payload
-	}
-	return config, nil
+	setV1SQLReviewRulePayloads(config.Rules, v1pb.Engine_POSTGRES)
+	return config
 }
 
-func prodTemplateReviewConfigForMySQL() (*v1pb.ReviewConfig, error) {
+func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 	config := &v1pb.ReviewConfig{
 		Name:    common.FormatReviewConfig(generateRandomString("review")),
 		Title:   "Prod",
@@ -963,12 +956,31 @@ func prodTemplateReviewConfigForMySQL() (*v1pb.ReviewConfig, error) {
 		},
 	}
 
-	for _, rule := range config.Rules {
-		payload, err := advisor.SetDefaultSQLReviewRulePayload(storepb.SQLReviewRule_Type(rule.Type), storepb.Engine_POSTGRES)
-		if err != nil {
-			return nil, err
-		}
-		rule.Payload = payload
+	setV1SQLReviewRulePayloads(config.Rules, v1pb.Engine_MYSQL)
+	return config
+}
+
+// setV1SQLReviewRulePayloads sets default payloads for v1pb rules by converting to storepb and back.
+func setV1SQLReviewRulePayloads(rules []*v1pb.SQLReviewRule, engine v1pb.Engine) {
+	// Convert v1pb rules to storepb format
+	storeRules, err := apiv1.ConvertToSQLReviewRules(rules)
+	if err != nil {
+		// This shouldn't fail for test data, but if it does, panic to fail the test
+		panic(fmt.Sprintf("failed to convert rules: %v", err))
 	}
-	return config, nil
+
+	// Set default payloads using the advisor package
+	for _, storeRule := range storeRules {
+		storeRule.Engine = storepb.Engine(engine)
+		if err := advisor.SetDefaultSQLReviewRulePayload(storeRule, storepb.Engine(engine)); err != nil {
+			panic(fmt.Sprintf("failed to set payload for rule %v: %v", storeRule.Type, err))
+		}
+	}
+
+	// Convert back to v1pb and copy payloads
+	convertedRules := apiv1.ConvertToV1PBSQLReviewRules(storeRules)
+	for i, rule := range rules {
+		rule.Payload = convertedRules[i].Payload
+		rule.Engine = engine
+	}
 }

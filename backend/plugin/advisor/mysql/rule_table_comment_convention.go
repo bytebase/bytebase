@@ -40,13 +40,10 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalCommentConventionRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
-	}
+	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 
 	// Create the rule
-	rule := NewTableCommentConventionRule(level, checkCtx.Rule.Type.String(), payload)
+	rule := NewTableCommentConventionRule(level, checkCtx.Rule.Type.String(), commentPayload)
 
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
@@ -63,11 +60,11 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 // TableCommentConventionRule checks for table comment convention.
 type TableCommentConventionRule struct {
 	BaseRule
-	payload *advisor.CommentConventionRulePayload
+	payload *storepb.SQLReviewRule_CommentConventionRulePayload
 }
 
 // NewTableCommentConventionRule creates a new TableCommentConventionRule.
-func NewTableCommentConventionRule(level storepb.Advice_Status, title string, payload *advisor.CommentConventionRulePayload) *TableCommentConventionRule {
+func NewTableCommentConventionRule(level storepb.Advice_Status, title string, payload *storepb.SQLReviewRule_CommentConventionRulePayload) *TableCommentConventionRule {
 	return &TableCommentConventionRule{
 		BaseRule: BaseRule{
 			level: level,
@@ -116,7 +113,7 @@ func (r *TableCommentConventionRule) checkCreateTable(ctx *mysql.CreateTableCont
 			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
 		})
 	}
-	if r.payload.MaxLength >= 0 && len(comment) > r.payload.MaxLength {
+	if r.payload.MaxLength >= 0 && int32(len(comment)) > r.payload.MaxLength {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.CommentTooLong.Int32(),

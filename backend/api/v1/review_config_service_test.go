@@ -25,10 +25,9 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			name: "valid ERROR level",
 			rules: []*v1pb.SQLReviewRule{
 				{
-					Type:    v1pb.SQLReviewRule_TABLE_REQUIRE_PK,
-					Level:   v1pb.SQLReviewRule_ERROR,
-					Engine:  v1pb.Engine_POSTGRES,
-					Payload: "",
+					Type:   v1pb.SQLReviewRule_TABLE_REQUIRE_PK,
+					Level:  v1pb.SQLReviewRule_ERROR,
+					Engine: v1pb.Engine_POSTGRES,
 				},
 			},
 			wantErr: false,
@@ -37,10 +36,9 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			name: "valid WARNING level",
 			rules: []*v1pb.SQLReviewRule{
 				{
-					Type:    v1pb.SQLReviewRule_TABLE_REQUIRE_PK,
-					Level:   v1pb.SQLReviewRule_WARNING,
-					Engine:  v1pb.Engine_POSTGRES,
-					Payload: "",
+					Type:   v1pb.SQLReviewRule_TABLE_REQUIRE_PK,
+					Level:  v1pb.SQLReviewRule_WARNING,
+					Engine: v1pb.Engine_POSTGRES,
 				},
 			},
 			wantErr: false,
@@ -49,10 +47,9 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			name: "invalid LEVEL_UNSPECIFIED",
 			rules: []*v1pb.SQLReviewRule{
 				{
-					Type:    v1pb.SQLReviewRule_TABLE_REQUIRE_PK,
-					Level:   v1pb.SQLReviewRule_LEVEL_UNSPECIFIED,
-					Engine:  v1pb.Engine_POSTGRES,
-					Payload: "",
+					Type:   v1pb.SQLReviewRule_TABLE_REQUIRE_PK,
+					Level:  v1pb.SQLReviewRule_LEVEL_UNSPECIFIED,
+					Engine: v1pb.Engine_POSTGRES,
 				},
 			},
 			wantErr: true,
@@ -62,10 +59,9 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			name: "invalid TYPE_UNSPECIFIED",
 			rules: []*v1pb.SQLReviewRule{
 				{
-					Type:    v1pb.SQLReviewRule_TYPE_UNSPECIFIED,
-					Level:   v1pb.SQLReviewRule_ERROR,
-					Engine:  v1pb.Engine_POSTGRES,
-					Payload: "",
+					Type:   v1pb.SQLReviewRule_TYPE_UNSPECIFIED,
+					Level:  v1pb.SQLReviewRule_ERROR,
+					Engine: v1pb.Engine_POSTGRES,
 				},
 			},
 			wantErr: true,
@@ -75,16 +71,14 @@ func TestValidateSQLReviewRules(t *testing.T) {
 			name: "multiple rules with one invalid",
 			rules: []*v1pb.SQLReviewRule{
 				{
-					Type:    v1pb.SQLReviewRule_TABLE_REQUIRE_PK,
-					Level:   v1pb.SQLReviewRule_ERROR,
-					Engine:  v1pb.Engine_POSTGRES,
-					Payload: "",
+					Type:   v1pb.SQLReviewRule_TABLE_REQUIRE_PK,
+					Level:  v1pb.SQLReviewRule_ERROR,
+					Engine: v1pb.Engine_POSTGRES,
 				},
 				{
-					Type:    v1pb.SQLReviewRule_TABLE_NO_FOREIGN_KEY,
-					Level:   v1pb.SQLReviewRule_LEVEL_UNSPECIFIED,
-					Engine:  v1pb.Engine_POSTGRES,
-					Payload: "",
+					Type:   v1pb.SQLReviewRule_TABLE_NO_FOREIGN_KEY,
+					Level:  v1pb.SQLReviewRule_LEVEL_UNSPECIFIED,
+					Engine: v1pb.Engine_POSTGRES,
 				},
 			},
 			wantErr: true,

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -42,14 +44,14 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for index total number limit rule")
 	}
 	checker := &indexTotalNumberLimitChecker{
 		level:         level,
 		title:         checkCtx.Rule.Type.String(),
-		max:           payload.Number,
+		max:           int(numberPayload.Number),
 		lineForTable:  make(map[string]int),
 		finalMetadata: checkCtx.FinalMetadata,
 	}

@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -40,14 +42,14 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(_ context.Context, checkCtx
 	if err != nil {
 		return nil, err
 	}
-	payload, err := advisor.UnmarshalNumberTypeRulePayload(checkCtx.Rule.Payload)
-	if err != nil {
-		return nil, err
+	numberPayload := checkCtx.Rule.GetNumberPayload()
+	if numberPayload == nil {
+		return nil, errors.New("number_payload is required for column auto increment initial value rule")
 	}
 	checker := &columnAutoIncrementInitialValueChecker{
 		level: level,
 		title: checkCtx.Rule.Type.String(),
-		value: payload.Number,
+		value: int(numberPayload.Number),
 	}
 
 	for _, stmt := range stmtList {
