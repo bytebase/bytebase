@@ -403,6 +403,7 @@ func SetDefaultSQLReviewRulePayload(rule *storepb.SQLReviewRule, dbType storepb.
 		storepb.SQLReviewRule_STATEMENT_MAX_EXECUTION_TIME,
 		storepb.SQLReviewRule_STATEMENT_REQUIRE_ALGORITHM_OPTION,
 		storepb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION,
+		storepb.SQLReviewRule_STATEMENT_OBJECT_OWNER_CHECK,
 		storepb.SQLReviewRule_TABLE_DISALLOW_SET_CHARSET,
 		storepb.SQLReviewRule_STATEMENT_DISALLOW_CROSS_DB_QUERIES,
 		storepb.SQLReviewRule_INDEX_NOT_REDUNDANT:
