@@ -153,7 +153,20 @@ func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		"form-action 'self'; " +
 		"frame-ancestors 'self'"
 
+	// OAuth login page needs relaxed CSP to allow form submission and redirect to MCP client callback
+	oauthCSP := "default-src 'self'; " +
+		"script-src 'self'; " +
+		"style-src 'self' 'unsafe-inline'; " +
+		"form-action *; " +
+		"frame-ancestors 'self'"
+
 	return func(c echo.Context) error {
+		// Use relaxed CSP for OAuth login page
+		path := c.Request().URL.Path
+		selectedCSP := csp
+		if strings.HasPrefix(path, "/oauth/login") {
+			selectedCSP = oauthCSP
+		}
 		// Allow popups to maintain window.opener for OAuth flows
 		c.Response().Header().Set("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
 		// Prevent being embedded in iframes from different origins
@@ -165,7 +178,7 @@ func securityHeadersMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			// max-age=31536000 (1 year), includeSubDomains for all subdomains
 			c.Response().Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
-		c.Response().Header().Set("Content-Security-Policy", csp)
+		c.Response().Header().Set("Content-Security-Policy", selectedCSP)
 		return next(c)
 	}
 }
