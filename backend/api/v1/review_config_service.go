@@ -125,7 +125,7 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, req *conne
 			if err := validateSQLReviewRules(req.Msg.ReviewConfig.Rules); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
-			ruleList, err := convertToSQLReviewRules(req.Msg.ReviewConfig.Rules)
+			ruleList, err := ConvertToSQLReviewRules(req.Msg.ReviewConfig.Rules)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to convert rules"))
 			}
@@ -200,7 +200,7 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *conne
 }
 
 func convertToReviewConfigMessage(reviewConfig *v1pb.ReviewConfig) (*store.ReviewConfigMessage, error) {
-	ruleList, err := convertToSQLReviewRules(reviewConfig.Rules)
+	ruleList, err := ConvertToSQLReviewRules(reviewConfig.Rules)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to convert rules"))
 	}
@@ -238,7 +238,7 @@ func (s *ReviewConfigService) convertToV1ReviewConfig(ctx context.Context, revie
 		Name:    common.FormatReviewConfig(reviewConfigMessage.ID),
 		Title:   reviewConfigMessage.Name,
 		Enabled: reviewConfigMessage.Enforce,
-		Rules:   convertToV1PBSQLReviewRules(reviewConfigMessage.Payload.SqlReviewRules),
+		Rules:   ConvertToV1PBSQLReviewRules(reviewConfigMessage.Payload.SqlReviewRules),
 	}
 
 	for _, policy := range tagPolicies {

@@ -11,7 +11,8 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLReviewRule {
+// ConvertToV1PBSQLReviewRules converts store SQL review rules to v1 API format.
+func ConvertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLReviewRule {
 	var rules []*v1pb.SQLReviewRule
 	for _, rule := range ruleList {
 		level := v1pb.SQLReviewRule_LEVEL_UNSPECIFIED
@@ -83,7 +84,8 @@ func convertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLR
 	return rules
 }
 
-func convertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewRule, error) {
+// ConvertToSQLReviewRules converts v1 API SQL review rules to store format.
+func ConvertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewRule, error) {
 	var ruleList []*storepb.SQLReviewRule
 	for _, rule := range rules {
 		var level storepb.SQLReviewRule_Level
