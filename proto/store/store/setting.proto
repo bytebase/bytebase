@@ -7,7 +7,6 @@ import "google/type/expr.proto";
 import "store/approval.proto";
 import "store/common.proto";
 
-
 option go_package = "generated-go/store";
 
 enum SettingName {
