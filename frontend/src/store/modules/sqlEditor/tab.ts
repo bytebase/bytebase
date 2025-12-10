@@ -1,5 +1,5 @@
 import type { MaybeRef } from "@vueuse/core";
-import { head, pick, uniqBy } from "lodash-es";
+import { cloneDeep, head, isUndefined, omitBy, pick } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, unref, watch } from "vue";
 import type {
@@ -17,6 +17,7 @@ import {
   extractWorksheetConnection,
   getSheetStatement,
   isConnectedSQLEditorTab,
+  suggestedTabTitleForSQLEditorConnection,
   useDynamicLocalStorage,
 } from "@/utils";
 import {
@@ -29,6 +30,10 @@ import {
 } from "../v1";
 import { useCurrentUserV1 } from "../v1/auth";
 import { useSQLEditorStore } from "./editor";
+import {
+  migrateDraftsFromCache,
+  migrateTabViewState,
+} from "./legacy/migration";
 import { useWebTerminalStore } from "./webTerminal";
 
 const PERSISTENT_TAB_FIELDS = [
@@ -37,6 +42,7 @@ const PERSISTENT_TAB_FIELDS = [
   "mode",
   "batchQueryContext",
   "treeState",
+  "viewState",
 ] as const;
 type PersistentTab = Pick<SQLEditorTab, (typeof PERSISTENT_TAB_FIELDS)[number]>;
 
@@ -52,15 +58,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const userUID = computed(() => extractUserId(me.value.name));
   const keyNamespace = computed(
     () => `${LOCAL_STORAGE_KEY_PREFIX}.${project.value}.${userUID.value}`
-  );
-
-  const draftTabList = useDynamicLocalStorage<SQLEditorTab[]>(
-    computed(() => `${keyNamespace.value}.draft-tab-list`),
-    [],
-    localStorage,
-    {
-      listenToStorageChanges: true,
-    }
   );
 
   const openTmpTabList = useDynamicLocalStorage<PersistentTab[]>(
@@ -87,44 +84,29 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       if (validOpenTabMap.has(tab.id)) {
         continue;
       }
-      let fullTab: SQLEditorTab | undefined;
-      if (tab.worksheet) {
-        const worksheet = await worksheetStore.getOrFetchWorksheetByName(
-          tab.worksheet,
-          true
-        );
-        if (!worksheet) {
-          continue;
-        }
-        const statement = getSheetStatement(worksheet);
-        const connection = await extractWorksheetConnection(worksheet);
-
-        fullTab = {
-          ...defaultSQLEditorTab(),
-          ...tab,
-          connection,
-          worksheet: worksheet.name,
-          title: worksheet.title,
-          statement,
-          status: "CLEAN",
-          databaseQueryContexts: undefined,
-        };
-      } else {
-        const draft = draftTabList.value.find((item) => item.id === tab.id);
-        if (!draft) {
-          continue;
-        }
-        fullTab = {
-          ...draft,
-          databaseQueryContexts: undefined,
-        };
-      }
-      if (!fullTab) {
+      if (!tab.worksheet) {
         continue;
       }
-      if (!fullTab.mode) {
-        fullTab.mode = "WORKSHEET";
+      const worksheet = await worksheetStore.getOrFetchWorksheetByName(
+        tab.worksheet,
+        true
+      );
+      if (!worksheet) {
+        continue;
       }
+      const statement = getSheetStatement(worksheet);
+      const connection = await extractWorksheetConnection(worksheet);
+
+      const fullTab: SQLEditorTab = {
+        ...defaultSQLEditorTab(),
+        ...omitBy(tab, isUndefined),
+        connection,
+        worksheet: worksheet.name,
+        title: worksheet.title,
+        statement,
+        status: "CLEAN",
+        databaseQueryContexts: undefined,
+      };
 
       validOpenTabMap.set(tab.id, tab);
       tabsById.set(tab.id, fullTab);
@@ -135,21 +117,24 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
 
   const maybeInitProject = async () => {
     tabsById.clear();
-    draftTabList.value = uniqBy(draftTabList.value, (draft) => draft.id);
     await loadStoredTabs();
     currentTabId.value = head(openTmpTabList.value)?.id ?? "";
   };
 
+  const getTabById = (tabId: string) => {
+    return tabsById.get(tabId);
+  };
+
   const openTabList = computed(() => {
     return openTmpTabList.value.map((item) => {
-      return tabsById.get(item.id) ?? defaultSQLEditorTab();
+      return getTabById(item.id) ?? defaultSQLEditorTab();
     });
   });
 
   const currentTab = computed(() => {
     const currId = currentTabId.value;
     if (!currId) return undefined;
-    return tabsById.get(currId);
+    return getTabById(currId);
   });
 
   const supportBatchMode = computed(() => currentTab.value?.mode !== "ADMIN");
@@ -177,109 +162,94 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
 
   // actions
   /**
-   *
+   * Create or update the tab, and ensure the tab is open.
    * @param payload
    * @param beside `true` to add the tab beside currentTab, `false` to add the tab to the last, default to `false`
-   * @returns
+   * @returns the tab
    */
   const addTab = (payload?: Partial<SQLEditorTab>, beside = false) => {
-    const newTab = reactive<SQLEditorTab>({
+    const defaultTab: SQLEditorTab = {
       ...defaultSQLEditorTab(),
-      ...payload,
-    });
-    const { id, worksheet } = newTab;
+      ...omitBy(payload, isUndefined),
+    };
+    const { id } = defaultTab;
 
-    if (openTmpTabList.value.find((tab) => tab.id === id)) {
-      setCurrentTabId(id);
-      const response = tabsById.get(id) ?? newTab;
-      tabsById.set(id, response);
-      return newTab;
-    }
-
-    const persistentTab = pick(
-      newTab,
-      ...PERSISTENT_TAB_FIELDS
-    ) as PersistentTab;
-    const position = openTmpTabList.value.findIndex(
-      (item) => item.id === currentTabId.value
-    );
-    if (beside && position >= 0) {
-      openTmpTabList.value.splice(position + 1, 0, persistentTab);
+    let newTab = getTabById(id);
+    if (newTab) {
+      Object.assign(newTab, omitBy(payload, isUndefined));
     } else {
-      openTmpTabList.value.push(persistentTab);
-    }
-    if (
-      !worksheet &&
-      !draftTabList.value.find((draft) => draft.id === newTab.id)
-    ) {
-      draftTabList.value.push(newTab);
+      newTab = defaultTab;
+      tabsById.set(id, newTab);
     }
 
+    upsertCache(newTab, beside);
     setCurrentTabId(id);
-    tabsById.set(id, newTab);
-
     return newTab;
   };
 
-  const removeDraft = (tab: SQLEditorTab) => {
-    const draftIndex = draftTabList.value.findIndex(
-      (item) => item.id === tab.id
-    );
-    if (draftIndex >= 0) {
-      draftTabList.value.splice(draftIndex, 1);
-    }
+  const cloneTab = (
+    targetId: string,
+    payload?: Partial<SQLEditorTab>
+  ): SQLEditorTab => {
+    const targetTab = getTabById(targetId);
+    const clonedTab: Partial<SQLEditorTab> = {
+      statement: targetTab?.statement,
+      connection: cloneDeep(targetTab?.connection),
+      treeState: cloneDeep(targetTab?.treeState),
+      editorState: cloneDeep(targetTab?.editorState),
+      batchQueryContext: cloneDeep(targetTab?.batchQueryContext),
+      title: suggestedTabTitleForSQLEditorConnection(
+        targetTab?.connection ?? emptySQLEditorConnection()
+      ),
+      ...payload,
+    };
+
+    return addTab(clonedTab, true);
   };
 
-  const closeTab = (tab: SQLEditorTab) => {
-    const { id } = tab;
-    const position = openTmpTabList.value.findIndex((item) => item.id === id);
+  const closeTab = (tabId: string) => {
+    const position = openTmpTabList.value.findIndex(
+      (item) => item.id === tabId
+    );
     if (position < 0) {
       return;
     }
     openTmpTabList.value.splice(position, 1);
-    tabsById.delete(id);
+    tabsById.delete(tabId);
+    useWebTerminalStore().clearQueryStateByTab(tabId);
 
-    if (tab.mode === "ADMIN") {
-      useWebTerminalStore().clearQueryStateByTab(id);
-    }
-
-    if (id === currentTabId.value) {
+    if (tabId === currentTabId.value) {
       const nextIndex = Math.min(position, openTmpTabList.value.length - 1);
       const nextTab = openTmpTabList.value[nextIndex];
       setCurrentTabId(nextTab?.id ?? "");
     }
   };
 
-  const updateCache = (tab: SQLEditorTab) => {
-    const draftIndex = draftTabList.value.findIndex(
-      (item) => item.id === tab.id
-    );
-    if (draftIndex >= 0) {
-      Object.assign(draftTabList.value[draftIndex], tab);
-    }
+  const upsertCache = (tab: SQLEditorTab, beside = false) => {
+    const persistentTab = pick(tab, ...PERSISTENT_TAB_FIELDS) as PersistentTab;
 
-    const openTabIndex = openTmpTabList.value.findIndex(
+    const position = openTmpTabList.value.findIndex(
       (item) => item.id === tab.id
     );
-    if (openTabIndex >= 0) {
-      const persistentTab = pick(
-        tab,
-        ...PERSISTENT_TAB_FIELDS
-      ) as PersistentTab;
-      Object.assign(openTmpTabList.value[openTabIndex], persistentTab);
+    if (position >= 0) {
+      Object.assign(openTmpTabList.value[position], persistentTab);
+    } else {
+      const currentPosition = openTmpTabList.value.findIndex(
+        (item) => item.id === currentTabId.value
+      );
+      if (beside && currentPosition >= 0) {
+        openTmpTabList.value.splice(currentPosition + 1, 0, persistentTab);
+      } else {
+        openTmpTabList.value.push(persistentTab);
+      }
     }
   };
 
   const updateTab = (id: string, payload: Partial<SQLEditorTab>) => {
-    const tab = tabsById.get(id);
+    const tab = getTabById(id);
     if (!tab) return;
     Object.assign(tab, payload);
-
-    if (payload.worksheet) {
-      removeDraft(tab);
-    } else {
-      updateCache(tab);
-    }
+    upsertCache(tab);
   };
 
   const updateCurrentTab = (payload: Partial<SQLEditorTab>) => {
@@ -312,7 +282,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     database: string;
     contextId: string;
   }): SQLEditorDatabaseQueryContext | undefined => {
-    const tab = tabsById.get(currentTabId.value);
+    const tab = getTabById(currentTabId.value);
     if (!tab || !tab.databaseQueryContexts) {
       return;
     }
@@ -335,7 +305,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     database: string;
     contextIds: string[];
   }) => {
-    const tab = tabsById.get(currentTabId.value);
+    const tab = getTabById(currentTabId.value);
     if (!tab || !tab.databaseQueryContexts) {
       return;
     }
@@ -358,7 +328,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   };
 
   const deleteDatabaseQueryContext = (database: string) => {
-    const tab = tabsById.get(currentTabId.value);
+    const tab = getTabById(currentTabId.value);
     if (!tab || !tab.databaseQueryContexts) {
       return;
     }
@@ -374,7 +344,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     contextId: string;
     context: Partial<SQLEditorDatabaseQueryContext>;
   }) => {
-    const tab = tabsById.get(currentTabId.value);
+    const tab = getTabById(currentTabId.value);
     if (!tab || !tab.databaseQueryContexts) {
       return;
     }
@@ -397,9 +367,12 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
 
   watch(
     () => project.value,
-    () => {
-      maybeInitProject();
-    }
+    async (project) => {
+      await migrateDraftsFromCache(project);
+      migrateTabViewState(project);
+      await maybeInitProject();
+    },
+    { immediate: true }
   );
 
   // some shortcuts
@@ -411,12 +384,12 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
 
   return {
     project,
+    getTabById,
     openTabList,
-    draftList: computed(() => draftTabList.value),
     currentTabId,
     currentTab,
     addTab,
-    removeDraft,
+    cloneTab,
     closeTab,
     updateTab,
     updateCurrentTab,
@@ -426,7 +399,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     batchRemoveDatabaseQueryContext,
     deleteDatabaseQueryContext,
     setCurrentTabId,
-    maybeInitProject,
     isDisconnected,
     isInBatchMode,
     supportBatchMode,

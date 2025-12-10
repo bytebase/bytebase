@@ -16,9 +16,9 @@ import { t } from "@/plugins/i18n";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorTabStore,
-  useTabViewStateStore,
 } from "@/store";
 import {
+  defaultViewState,
   type EditorPanelView,
   type EditorPanelViewState as ViewState,
 } from "@/types";
@@ -34,14 +34,12 @@ const KEY = Symbol(
 
 export const provideCurrentTabViewStateContext = () => {
   const tabStore = useSQLEditorTabStore();
-  const tabViewStateStore = useTabViewStateStore();
   const { currentTab: tab } = storeToRefs(tabStore);
 
   const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   const viewState = computed(() => {
-    if (!tab.value) return undefined;
-    return tabViewStateStore.getViewState(tab.value.id);
+    return tab.value?.viewState;
   });
 
   const availableActions = computed(() => {
@@ -119,7 +117,13 @@ export const provideCurrentTabViewStateContext = () => {
 
   const updateViewState = (patch: Partial<ViewState>) => {
     if (!tab.value) return;
-    tabViewStateStore.updateViewState(tab.value.id, patch);
+    tabStore.updateTab(tab.value.id, {
+      viewState: {
+        ...defaultViewState(),
+        ...tab.value.viewState,
+        ...patch,
+      },
+    });
   };
 
   watch(

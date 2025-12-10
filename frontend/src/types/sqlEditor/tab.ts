@@ -1,11 +1,9 @@
-import type {
-  AdviceOption,
-  Selection as MonacoSelection,
-} from "@/components/MonacoEditor";
+import type { Selection as MonacoSelection } from "@/components/MonacoEditor";
 import { t } from "@/plugins/i18n";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import type { SQLResultSetV1 } from "../v1/sql";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "./editor";
+import type { EditorPanelViewState } from "./tabViewState";
 
 export type SQLEditorTabStatus =
   | "DIRTY" // edited
@@ -89,8 +87,8 @@ export type SQLEditorTab = {
   };
   editorState: {
     selection: MonacoSelection | null;
-    advices: AdviceOption[];
   };
+  viewState: EditorPanelViewState;
 };
 
 export type CoreSQLEditorTab = Pick<

@@ -47,8 +47,8 @@ const icon = computed((): IconType | undefined => {
   if (state.hovering) {
     return "close";
   }
-  const { mode, status, worksheet } = props.tab;
-  if (mode === "WORKSHEET" && !!worksheet && status === "DIRTY") {
+  const { mode, status } = props.tab;
+  if (mode === "WORKSHEET" && status === "DIRTY") {
     return "unsaved";
   }
   return "close";

@@ -10,6 +10,7 @@ import type {
 } from "@/types";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
+  defaultViewState,
   isValidDatabaseName,
   isValidInstanceName,
   UNKNOWN_DATABASE_NAME,
@@ -41,12 +42,12 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
     },
     editorState: {
       selection: null,
-      advices: [],
     },
+    viewState: defaultViewState(),
   };
 };
 
-export const defaultSQLEditorTabTitle = () => {
+const defaultSQLEditorTabTitle = () => {
   return dayjs().format("YYYY-MM-DD HH:mm");
 };
 

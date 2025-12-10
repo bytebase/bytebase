@@ -194,21 +194,18 @@
     <div
       class="w-full flex items-center justify-between text-xs mt-1 gap-x-4 text-control-light"
     >
-      <div class="flex flex-1 items-center gap-x-2">
+      <div class="flex items-center gap-x-2">
         <RichDatabaseName :database="database" />
-        <NTooltip :disabled="!isSupported">
-          <template #trigger>
-            <div
-              class="truncate cursor-pointer hover:bg-gray-200"
-              @click="copyStatement"
-            >
-              {{ result.statement }}
-            </div>
-          </template>
-          {{ $t("common.click-to-copy") }}
-        </NTooltip>
+        <div class="flex items-center gap-x-1">
+          <EllipsisText
+            :line-clamp="1"
+          >
+            {{ result.statement }}
+          </EllipsisText>
+          <CopyButton :size="'tiny'" :content="result.statement" />
+        </div>
       </div>
-      <div class="flex items-center shrink-0 gap-x-2">
+      <div class="flex shrink-0 items-center gap-x-2">
         <NButton
           v-if="showVisualizeButton"
           text
@@ -238,7 +235,6 @@
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
-import { useClipboard } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
 import { ArrowDownIcon, ArrowUpIcon, XIcon } from "lucide-vue-next";
 import { NButton, NEmpty, NFormItem, NSwitch, NTooltip } from "naive-ui";
@@ -254,14 +250,11 @@ import type {
   ExportOption,
 } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
-import { RichDatabaseName } from "@/components/v2";
+import EllipsisText from "@/components/EllipsisText.vue";
+import { CopyButton, RichDatabaseName } from "@/components/v2";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
-import {
-  pushNotification,
-  useSQLEditorStore,
-  useSQLEditorTabStore,
-} from "@/store";
+import { useSQLEditorStore, useSQLEditorTabStore } from "@/store";
 import type {
   ComposedDatabase,
   SQLEditorDatabaseQueryContext,
@@ -338,23 +331,6 @@ const state = reactive<LocalState>({
 
 const dataTableRef =
   ref<InstanceType<typeof VirtualDataTable | typeof VirtualDataBlock>>();
-
-const { copy: copyTextToClipboard, isSupported } = useClipboard({
-  legacy: true,
-});
-
-const copyStatement = () => {
-  if (!isSupported.value) {
-    return;
-  }
-  copyTextToClipboard(props.result.statement).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.copied"),
-    });
-  });
-};
 
 const { t } = useI18n();
 const { dark } = useSQLResultViewContext();

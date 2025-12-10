@@ -2,23 +2,17 @@ import type * as monaco from "monaco-editor";
 import { Engine } from "../proto-es/v1/common_pb";
 import { type QueryOption } from "../proto-es/v1/sql_service_pb";
 
-export type EditorModel = monaco.editor.ITextModel;
-export type EditorPosition = monaco.Position;
-export type CompletionItems = monaco.languages.CompletionItem[];
-
 export type Language = "sql" | "javascript" | "redis" | "json";
 
-export const EngineTypesUsingSQL = [
-  "MYSQL",
-  "CLICKHOUSE",
-  "POSTGRES",
-  "SNOWFLAKE",
-  "TIDB",
-  "SPANNER",
-  "OCEANBASE",
-] as const;
-export type SQLDialect = (typeof EngineTypesUsingSQL)[number];
-export const EngineToSQLDialectMap = new Map<Engine, SQLDialect>([
+export type SQLDialect =
+  | "MYSQL"
+  | "CLICKHOUSE"
+  | "POSTGRES"
+  | "SNOWFLAKE"
+  | "TIDB"
+  | "SPANNER"
+  | "OCEANBASE";
+const EngineToSQLDialectMap = new Map<Engine, SQLDialect>([
   [Engine.MYSQL, "MYSQL"],
   [Engine.CLICKHOUSE, "CLICKHOUSE"],
   [Engine.POSTGRES, "POSTGRES"],
@@ -39,26 +33,11 @@ export const languageOfEngineV1 = (engine?: Engine): Language => {
   return "sql";
 };
 
-export const dialectOfEngine = (engine = "unknown"): SQLDialect => {
-  if (EngineTypesUsingSQL.includes(engine as any)) {
-    return engine as SQLDialect;
-  }
-  // Fallback to MYSQL otherwise
-  return "MYSQL";
-};
-
 export const dialectOfEngineV1 = (
   engine: Engine = Engine.ENGINE_UNSPECIFIED
 ): SQLDialect => {
   return EngineToSQLDialectMap.get(engine) ?? "MYSQL";
 };
-
-export enum SortText {
-  DATABASE = "0",
-  TABLE = "1",
-  COLUMN = "2",
-  KEYWORD = "3",
-}
 
 export interface SQLEditorConnection {
   instance: string; // instance resource name, empty if not connected
@@ -67,8 +46,6 @@ export interface SQLEditorConnection {
   schema?: string;
   table?: string;
 }
-
-export const SQLEditorTabConnectionSchemaUnspecified = "-1";
 
 export type SQLEditorQueryParams = {
   connection: SQLEditorConnection; // the connection snapshot of the query

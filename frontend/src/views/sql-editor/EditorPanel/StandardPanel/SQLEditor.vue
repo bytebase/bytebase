@@ -12,7 +12,6 @@
       :language="language"
       :dialect="dialect"
       :readonly="readonly"
-      :advices="advices"
       :auto-complete-context="{
         instance: instance.name,
         database: database.name,
@@ -37,7 +36,6 @@ import { storeToRefs } from "pinia";
 import { v1 as uuidv1 } from "uuid";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import type {
-  AdviceOption,
   IStandaloneCodeEditor,
   MonacoModule,
   Selection as MonacoSelection,
@@ -90,13 +88,6 @@ const AIContext = useAIContext();
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
 
 const content = computed(() => currentTab.value?.statement ?? "");
-const advices = computed((): AdviceOption[] => {
-  const tab = currentTab.value;
-  if (!tab) {
-    return [];
-  }
-  return tab.editorState.advices;
-});
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 const language = useInstanceV1EditorLanguage(instance);
 const dialect = computed((): SQLDialect => {
@@ -134,7 +125,6 @@ const handleUpdateSelection = (selection: MonacoSelection | null) => {
   if (!tab) return;
   tabStore.updateCurrentTab({
     editorState: {
-      ...tab.editorState,
       selection,
     },
   });

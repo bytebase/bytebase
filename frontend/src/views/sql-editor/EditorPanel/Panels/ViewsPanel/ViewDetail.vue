@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-[44px] px-2 py-2 border-b flex flex-row justify-between items-center"
+    class="w-full h-11 px-2 py-2 border-b flex flex-row justify-between items-center"
   >
     <NTabs
       v-model:value="state.mode"

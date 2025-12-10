@@ -9,7 +9,7 @@
         block-line
         block-node
         :keyboard="false"
-        :draggable="!editingNode && !multiSelectMode"
+        :draggable="props.view !== 'draft' && !editingNode && !multiSelectMode"
         :data="treeData"
         :multiple="false"
         cascade
@@ -83,7 +83,6 @@ import {
   pushNotification,
   useSQLEditorStore,
   useSQLEditorTabStore,
-  useTabViewStateStore,
   useWorkSheetStore,
 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
@@ -146,7 +145,6 @@ const {
   getFoldersForWorksheet,
 } = useSheetContextByView(props.view);
 const $dialog = useDialog();
-const { removeViewState } = useTabViewStateStore();
 const tabStore = useSQLEditorTabStore();
 
 const {
@@ -380,12 +378,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
             forceNewTab: e.metaKey || e.ctrlKey,
           });
         } else {
-          const tab = tabStore.draftList.find(
-            (draft) => draft.id === node.worksheet?.name
-          );
-          if (tab) {
-            tabStore.addTab(tab);
-          }
+          tabStore.setCurrentTabId(node.worksheet.name);
         }
       } else {
         if (expandedKeys.value.has(node.key)) {
@@ -407,8 +400,7 @@ const deleteWorksheets = async (worksheets: string[]) => {
   for (const worksheet of worksheets) {
     const tab = tabStore.openTabList.find((tab) => tab.worksheet === worksheet);
     if (tab) {
-      tabStore.closeTab(tab);
-      removeViewState(tab.id);
+      tabStore.closeTab(tab.id);
     }
   }
 };

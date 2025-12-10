@@ -1,13 +1,18 @@
+import { create } from "@bufbuild/protobuf";
 import { omit } from "lodash-es";
 import { computed, reactive } from "vue";
-import type { SQLEditorTab } from "@/types";
+import type { EditorPanelViewState, SQLEditorTab } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
+import {
+  Worksheet_Visibility,
+  WorksheetSchema,
+} from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   defaultSQLEditorTab,
   useDynamicLocalStorage,
   WebStorageHelper,
 } from "@/utils";
-import { extractUserId } from "../../v1";
+import { extractUserId, useWorkSheetStore } from "../../v1";
 import { useCurrentUserV1 } from "../../v1/auth";
 import { EXTENDED_TAB_FIELDS, useExtendedTabStore } from "./extendedTab";
 
@@ -100,5 +105,85 @@ export const migrateLegacyCache = async () => {
     }
 
     delete tabIdListMapByProject.value[project];
+  }
+};
+
+export const migrateDraftsFromCache = async (project: string) => {
+  const me = useCurrentUserV1();
+  const userUID = computed(() => extractUserId(me.value.name));
+  const worksheetStore = useWorkSheetStore();
+
+  const viewStateByTab = useDynamicLocalStorage<
+    Map</* tab.id */ string, EditorPanelViewState>
+  >(
+    computed(() => `bb.sql-editor-tab-state.${userUID.value}`),
+    new Map()
+  );
+
+  const keyNamespace = computed(
+    () => `${LOCAL_STORAGE_KEY_PREFIX}.${project}.${userUID.value}`
+  );
+
+  const draftTabList = useDynamicLocalStorage<SQLEditorTab[]>(
+    computed(() => `${keyNamespace.value}.draft-tab-list`),
+    [],
+    localStorage,
+    {
+      listenToStorageChanges: true,
+    }
+  );
+
+  const drafts = [...draftTabList.value];
+  for (const draft of drafts) {
+    const viewState = viewStateByTab.value.get(draft.id);
+    if ((!viewState || viewState.view === "CODE") && draft.statement) {
+      // only store the draft with content
+      await worksheetStore.createWorksheet(
+        create(WorksheetSchema, {
+          title: draft.title,
+          database: draft.connection.database,
+          content: new TextEncoder().encode(draft.statement),
+          project: project,
+          visibility: Worksheet_Visibility.PRIVATE,
+        })
+      );
+    }
+    const index = draftTabList.value.findIndex((d) => d.id === draft.id);
+    if (index >= 0) {
+      draftTabList.value.splice(index, 1);
+    }
+  }
+};
+
+export const migrateTabViewState = (project: string) => {
+  const me = useCurrentUserV1();
+  const userUID = computed(() => extractUserId(me.value.name));
+
+  const keyNamespace = computed(
+    () => `${LOCAL_STORAGE_KEY_PREFIX}.${project}.${userUID.value}`
+  );
+
+  const viewStateByTab = useDynamicLocalStorage<
+    Map</* tab.id */ string, EditorPanelViewState>
+  >(
+    computed(() => `bb.sql-editor-tab-state.${userUID.value}`),
+    new Map()
+  );
+
+  const openTmpTabList = useDynamicLocalStorage<PersistentTab[]>(
+    computed(() => `${keyNamespace.value}.opening-tab-list`),
+    [],
+    localStorage,
+    {
+      listenToStorageChanges: false,
+    }
+  );
+
+  for (const openedTab of openTmpTabList.value) {
+    const viewState = viewStateByTab.value.get(openedTab.id);
+    if (viewState) {
+      Object.assign(openedTab, { viewState });
+    }
+    viewStateByTab.value.delete(openedTab.id);
   }
 };

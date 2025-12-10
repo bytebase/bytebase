@@ -155,7 +155,7 @@
       </template>
     </div>
 
-    <Drawer v-if="detail" :show="!!detail" @close="detail = undefined">
+    <Drawer v-if="detail && resultSet" :show="!!detail" @close="detail = undefined">
       <DetailPanel :result="viewMode === 'SINGLE-RESULT' ? resultSet.results[0] : filteredResults[detail.set]" />
     </Drawer>
   </NConfigProvider>

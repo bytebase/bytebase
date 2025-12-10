@@ -18,14 +18,12 @@ import type { DropdownOption } from "naive-ui";
 import { NDropdown } from "naive-ui";
 import { computed, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { useTabViewStateStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import type { CloseTabAction } from "./context";
 import { useTabListContext } from "./context";
 
 const { t } = useI18n();
 const { contextMenu: state, events } = useTabListContext();
-const tabViewStateStore = useTabViewStateStore();
 
 const options = computed((): DropdownOption[] => {
   if (!state.value) {
@@ -61,11 +59,8 @@ const options = computed((): DropdownOption[] => {
     CLOSE_ALL,
   ];
 
-  const { tab } = state.value;
-  if (
-    tab.mode === "WORKSHEET" &&
-    tabViewStateStore.getViewState(tab.id).view === "CODE"
-  ) {
+  const { mode, viewState } = state.value.tab;
+  if (mode === "WORKSHEET" && viewState.view === "CODE") {
     options.push(
       {
         type: "divider",

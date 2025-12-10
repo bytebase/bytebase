@@ -3,4 +3,3 @@ export * from "./tab";
 export * from "./tree";
 export * from "./queryHistory";
 export * from "./webTerminal";
-export * from "./tabViewState";
