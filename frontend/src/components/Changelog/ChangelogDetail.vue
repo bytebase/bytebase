@@ -48,24 +48,6 @@
       </div>
 
       <div class="flex flex-col gap-y-6">
-        <div v-if="affectedTables.length > 0">
-          <span class="flex items-center text-lg text-main capitalize">
-            {{ $t("changelog.affected-tables") }}
-          </span>
-          <div class="flex flex-wrap gap-x-3 gap-y-2">
-            <span
-              v-for="(affectedTable, i) in affectedTables"
-              :key="`${i}.${affectedTable.schema}.${affectedTable.table}`"
-              :class="[
-                !affectedTable.dropped
-                  ? 'text-blue-600 cursor-pointer'
-                  : 'mb-2 text-gray-400 italic',
-              ]"
-            >
-              {{ getAffectedTableDisplayName(affectedTable) }}
-            </span>
-          </div>
-        </div>
         <div class="flex flex-col gap-y-2">
           <p class="flex items-center text-lg text-main capitalize gap-x-2">
             {{ $t("common.statement") }}
@@ -146,13 +128,11 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import {
   extractIssueUID,
-  getAffectedTableDisplayName,
   getStatementSize,
   hasProjectPermissionV2,
   wrapRefAsPromise,
 } from "@/utils";
 import {
-  getAffectedTablesOfChangelog,
   getChangelogChangeType,
 } from "@/utils/v1/changelog";
 import NoPermissionPlaceholder from "../misc/NoPermissionPlaceholder.vue";
@@ -208,13 +188,6 @@ const changelogStatement = computed(() => {
     statement = `${statement}${statement.endsWith("\n") ? "" : "\n"}...`;
   }
   return statement;
-});
-
-const affectedTables = computed(() => {
-  if (changelog.value === undefined) {
-    return [];
-  }
-  return getAffectedTablesOfChangelog(changelog.value);
 });
 
 const showSchemaSnapshot = computed(() => {
