@@ -66,8 +66,8 @@
           class="px-2 py-4"
         >
           <!-- Check Run Header -->
-          <div class="flex items-start justify-between mb-2">
-            <div class="flex items-center gap-3">
+          <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+            <div class="flex items-center gap-3 shrink-0">
               <component
                 :is="getCheckTypeIcon(checkRun.type)"
                 class="w-5 h-5 text-control-light"
@@ -90,7 +90,7 @@
               </div>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 min-w-0 max-w-[50%]">
               <DatabaseDisplay :database="checkRun.target" />
             </div>
           </div>
