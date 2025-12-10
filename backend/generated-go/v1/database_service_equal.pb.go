@@ -1893,9 +1893,6 @@ func (x *Changelog) Equal(y *Changelog) bool {
 	if x.Type != y.Type {
 		return false
 	}
-	if x.DumpVersionMismatch != y.DumpVersionMismatch {
-		return false
-	}
 	return true
 }
 

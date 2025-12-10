@@ -2361,7 +2361,7 @@ var File_store_setting_proto protoreflect.FileDescriptor
 
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x1bstore/project_webhook.proto\"m\n" +
+	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"m\n" +
 	"\rSystemSetting\x12\x1f\n" +
 	"\vauth_secret\x18\x01 \x01(\tR\n" +
 	"authSecret\x12!\n" +
@@ -2660,7 +2660,6 @@ func file_store_setting_proto_init() {
 	}
 	file_store_approval_proto_init()
 	file_store_common_proto_init()
-	file_store_project_webhook_proto_init()
 	file_store_setting_proto_msgTypes[4].OneofWrappers = []any{
 		(*Algorithm_FullMask_)(nil),
 		(*Algorithm_RangeMask_)(nil),

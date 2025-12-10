@@ -8916,11 +8916,6 @@ components:
                         - SDL
                     type: string
                     format: enum
-                dumpVersionMismatch:
-                    type: boolean
-                    description: |-
-                        True if this changelog's dump version differs from current engine dump version.
-                         When true and drift is detected, the drift may be a false positive from Bytebase upgrade.
         CheckConstraintMetadata:
             type: object
             properties:

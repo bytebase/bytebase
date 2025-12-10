@@ -490,35 +490,14 @@ func (s *Syncer) getSchemaDrifted(ctx context.Context, instance *store.InstanceM
 		return false, errors.Errorf("expect sync history but get nil")
 	}
 
-	// Get current dump version for this engine
+	// Skip drift detection if dump format version changed to avoid false positives after Bytebase upgrade.
 	currentVersion := schema.GetDumpFormatVersion(instance.Metadata.GetEngine())
 	baselineVersion := changelog.Payload.GetDumpVersion()
-	versionMismatch := baselineVersion != currentVersion
-
-	// Always compare schemas
-	latestSchema := string(rawDump)
-	drifted = changelog.Schema != latestSchema
-
-	// If versions mismatch but schemas match, update the baseline version (auto-heal).
-	// This is safe because identical strings mean the format change didn't affect this database's output.
-	if versionMismatch && !drifted {
-		if err := s.store.UpdateChangelog(ctx, &store.UpdateChangelogMessage{
-			UID:         changelog.UID,
-			DumpVersion: &currentVersion,
-		}); err != nil {
-			slog.Warn("Failed to update changelog format version",
-				slog.String("database", database.DatabaseName),
-				log.BBError(err))
-			// Non-fatal: continue with drift detection result
-		} else {
-			slog.Info("Updated changelog format version (schemas match)",
-				slog.String("database", database.DatabaseName),
-				slog.Int("old_version", int(baselineVersion)),
-				slog.Int("new_version", int(currentVersion)))
-		}
+	if baselineVersion != currentVersion {
+		return false, nil
 	}
 
-	return drifted, nil
+	return changelog.Schema != rawDump, nil
 }
 
 func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.InstanceMessage, dbMetadata *storepb.DatabaseSchemaMetadata) bool {

@@ -1779,7 +1779,6 @@
         "self": "Schema drift detected",
         "description": "The schema is different from the last applied schema. This may cause application errors and should be resolved."
       },
-      "format-version-mismatch-caveat": "Note: If you recently upgraded Bytebase, this may be a false positive due to schema dump format changes.",
       "new-baseline": {
         "self": "New baseline",
         "successfully-established": "Successfully established new baseline"

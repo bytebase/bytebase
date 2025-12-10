@@ -1779,7 +1779,6 @@
         "self": "Se detectó una desviación del esquema",
         "description": "El esquema es diferente del último aplicado. Esto puede causar errores de aplicación y debe solucionarse."
       },
-      "format-version-mismatch-caveat": "Nota: Si actualizó Bytebase recientemente, esto puede ser un falso positivo debido a cambios en el formato de volcado del esquema.",
       "new-baseline": {
         "self": "Nueva línea base",
         "successfully-established": "Se estableció con éxito una nueva línea base"
