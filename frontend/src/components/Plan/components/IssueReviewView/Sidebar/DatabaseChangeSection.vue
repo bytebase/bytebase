@@ -22,25 +22,34 @@
       <h3 class="textlabel">
         {{ $t("rollout.stage.self", 2) }}
       </h3>
-      <div class="flex flex-col gap-1">
+      <div class="flex flex-wrap items-center gap-y-1">
         <template v-if="rollout.stages.length > 0">
-          <div
-            v-for="stage in rollout.stages"
+          <template
+            v-for="(stage, index) in rollout.stages"
             :key="stage.name"
-            class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-            @click="navigateToStage(stage.name)"
           >
-            <TaskStatus
-              :status="getStageStatus(stage)"
-              size="small"
-              disabled
-            />
-            <EnvironmentV1Name
-              :environment="getEnvironmentEntity(stage.environment)"
-              :link="false"
-              :null-environment-placeholder="'Null'"
-            />
-          </div>
+            <div
+              class="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+              @click="navigateToStage(stage.name)"
+            >
+              <TaskStatus
+                :status="getStageStatus(stage)"
+                size="small"
+                disabled
+              />
+              <EnvironmentV1Name
+                :environment="getEnvironmentEntity(stage.environment)"
+                :link="false"
+                :null-environment-placeholder="'Null'"
+              />
+            </div>
+            <span
+              v-if="index < rollout.stages.length - 1"
+              class="mx-1 text-control-placeholder"
+            >
+              →
+            </span>
+          </template>
         </template>
         <span v-else class="text-sm text-control-placeholder">
           {{ $t("common.no-data") }}
