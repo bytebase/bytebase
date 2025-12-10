@@ -2,8 +2,7 @@ package mcp
 
 import "embed"
 
-// embeddedSchemas contains all JSON schema files for MCP tool definitions.
-// These are generated from proto files via buf generate.
+// embeddedSchemas contains existing openapi.yaml
 //
-//go:embed schemas/*.jsonschema.bundle.json
+//go:embed spec/openapi.yaml
 var embeddedSchemas embed.FS

@@ -10,118 +10,50 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"gopkg.in/yaml.v3"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // Registry holds MCP tool definitions derived from proto services.
 type Registry struct {
-	schemas map[string]json.RawMessage // proto message name -> JSON schema
-	invoker *Invoker
+	openAPIDoc *OpenAPIDoc
+	invoker    *Invoker
+}
+
+// OpenAPIDoc matches the structure of the generated openapi.yaml
+type OpenAPIDoc struct {
+	Components struct {
+		Schemas map[string]any `yaml:"schemas"`
+	} `yaml:"components"`
 }
 
 // NewRegistry creates a new tool registry.
 func NewRegistry(invoker *Invoker) (*Registry, error) {
 	r := &Registry{
-		schemas: make(map[string]json.RawMessage),
 		invoker: invoker,
 	}
 
-	if err := r.loadSchemas(); err != nil {
-		return nil, errors.Wrap(err, "failed to load JSON schemas")
+	if err := r.loadOpenAPISchemas(); err != nil {
+		return nil, errors.Wrap(err, "failed to load OpenAPI schemas")
 	}
 
 	return r, nil
 }
 
-// loadSchemas loads all JSON schemas from embedded files.
-// The schemas are in bundle format with $defs and $ref. We transform them
-// to inline the main definition so MCP SDK accepts them (requires type: object at root).
-func (r *Registry) loadSchemas() error {
-	entries, err := embeddedSchemas.ReadDir("schemas")
+// loadOpenAPISchemas parses the embedded OpenAPI spec.
+func (r *Registry) loadOpenAPISchemas() error {
+	data, err := embeddedSchemas.ReadFile("spec/openapi.yaml")
 	if err != nil {
 		return err
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".jsonschema.bundle.json") {
-			continue
-		}
-
-		data, err := embeddedSchemas.ReadFile("schemas/" + entry.Name())
-		if err != nil {
-			return err
-		}
-
-		// Transform bundle format to inline format for MCP compatibility
-		transformed, err := transformBundleSchema(data)
-		if err != nil {
-			return errors.Wrapf(err, "failed to transform schema %s", entry.Name())
-		}
-
-		// Schema filename format: bytebase.v1.MessageName.jsonschema.bundle.json
-		// Extract just bytebase.v1.MessageName part
-		name := strings.TrimSuffix(entry.Name(), ".jsonschema.bundle.json")
-		r.schemas[name] = transformed
+	var doc OpenAPIDoc
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return err
 	}
-
+	r.openAPIDoc = &doc
 	return nil
-}
-
-// transformBundleSchema transforms a bundle schema (with $defs and $ref) into
-// an inline schema that MCP SDK accepts (with type: object at root).
-// Bundle format:
-//
-//	{"$defs": {"msg.jsonschema.json": {...}}, "$ref": "#/$defs/msg.jsonschema.json", "$schema": "..."}
-//
-// Output format:
-//
-//	{"$schema": "...", "$defs": {...}, "type": "object", "properties": {...}, ...}
-func transformBundleSchema(data []byte) (json.RawMessage, error) {
-	var bundle map[string]json.RawMessage
-	if err := json.Unmarshal(data, &bundle); err != nil {
-		return nil, err
-	}
-
-	// Get the $ref to find the main definition name
-	var ref string
-	if err := json.Unmarshal(bundle["$ref"], &ref); err != nil {
-		return nil, errors.Wrap(err, "failed to parse $ref")
-	}
-
-	// $ref format: "#/$defs/bytebase.v1.MessageName.jsonschema.json"
-	defName := strings.TrimPrefix(ref, "#/$defs/")
-
-	// Get $defs
-	var defs map[string]json.RawMessage
-	if err := json.Unmarshal(bundle["$defs"], &defs); err != nil {
-		return nil, errors.Wrap(err, "failed to parse $defs")
-	}
-
-	// Get the main definition
-	mainDef, ok := defs[defName]
-	if !ok {
-		return nil, errors.Errorf("main definition %s not found in $defs", defName)
-	}
-
-	// Parse the main definition
-	var result map[string]json.RawMessage
-	if err := json.Unmarshal(mainDef, &result); err != nil {
-		return nil, errors.Wrap(err, "failed to parse main definition")
-	}
-
-	// If there are other definitions besides the main one, include them as $defs
-	// and rewrite internal $refs
-	if len(defs) > 1 {
-		delete(defs, defName)
-		defsJSON, err := json.Marshal(defs)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal remaining $defs")
-		}
-		result["$defs"] = defsJSON
-	}
-
-	return json.Marshal(result)
 }
 
 // getServices returns all v1 service descriptors to register as tools.
@@ -158,9 +90,18 @@ func (r *Registry) RegisterTools(server *mcp.Server) error {
 			toolName := fmt.Sprintf("%s_%s", svcName, methodName)
 
 			inputName := string(method.Input().FullName())
-			schema, ok := r.schemas[inputName]
-			if !ok {
-				// Skip methods without schemas (shouldn't happen)
+			// Proto full name is like "bytebase.v1.BatchGetIamPolicyRequest"
+			// OpenAPI schemas are flat, like "BatchGetIamPolicyRequest"
+			// We strip the package prefix to find the matching schema.
+			schemaName := strings.TrimPrefix(inputName, "bytebase.v1.")
+
+			schema, err := r.resolveSchema(schemaName)
+			if err != nil {
+				// Warn but continue? For now, we assume schema must exist if it's in v1.
+				// However, some empty requests might not be in OpenAPI if not used in HTTP body.
+				// But gnostic-openapi usually generates them.
+				// Let's log error or skip?
+				// Just skip if not found.
 				continue
 			}
 
@@ -175,6 +116,117 @@ func (r *Registry) RegisterTools(server *mcp.Server) error {
 		}
 	}
 
+	return nil
+}
+
+// resolveSchema returns a self-contained JSON schema for the given definition name.
+// It crawls dependencies in the OpenAPI doc and includes them in $defs.
+func (r *Registry) resolveSchema(rootDef string) (json.RawMessage, error) {
+	// Verify root schema exists
+	if _, ok := r.openAPIDoc.Components.Schemas[rootDef]; !ok {
+		return nil, errors.Errorf("schema %s not found", rootDef)
+	}
+
+	// Collected definitions to include
+	defs := make(map[string]any)
+	visited := make(map[string]bool)
+
+	var crawl func(name string) error
+	crawl = func(name string) error {
+		if visited[name] {
+			return nil
+		}
+		visited[name] = true
+
+		s, ok := r.openAPIDoc.Components.Schemas[name]
+		if !ok {
+			return errors.Errorf("dependent schema %s not found", name)
+		}
+
+		// Deep copy schema to avoid modifying the global doc in place
+		// We use JSON roundtrip for simplicity and to ensure standard map[string]any types
+		sJSON, err := json.Marshal(s)
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal schema %s", name)
+		}
+		var clone any
+		if err := json.Unmarshal(sJSON, &clone); err != nil {
+			return errors.Wrapf(err, "failed to unmarshal schema clone %s", name)
+		}
+
+		defs[name] = clone
+
+		// Find $refs in this schema and recurse
+		return r.walkRefs(clone, func(refName string) error {
+			return crawl(refName)
+		})
+	}
+
+	if err := crawl(rootDef); err != nil {
+		return nil, err
+	}
+
+	// Construct the final schema
+	// We want to inline the root schema properties so that MCP clients can see them at the top level.
+	// We copy the root schema fields to finalSchema, but use the collected defs.
+
+	// Convert root clone to map
+	rootMap, ok := defs[rootDef].(map[string]any)
+	if !ok {
+		// Should not happen as we unmarshaled into interface{}
+		return nil, errors.Errorf("root definition %s is not a map", rootDef)
+	}
+
+	// Remove rootDef from defs since we are inlining it
+	delete(defs, rootDef)
+
+	finalSchema := make(map[string]any)
+	// Copy all fields from root definition
+	for k, v := range rootMap {
+		finalSchema[k] = v
+	}
+
+	// Ensure $schema version matches (override if present or add)
+	finalSchema["$schema"] = "http://json-schema.org/draft-07/schema#"
+	// Ensure type is object (though it should be from root)
+	finalSchema["type"] = "object"
+	// Add other definitions
+	if len(defs) > 0 {
+		finalSchema["$defs"] = defs
+	}
+
+	return json.Marshal(finalSchema)
+}
+
+// walkRefs validates and walks all $ref occurrences in the schema.
+func (r *Registry) walkRefs(v any, fn func(refName string) error) error {
+	switch t := v.(type) {
+	case map[string]any:
+		for k, val := range t {
+			if k == "$ref" {
+				if refStr, ok := val.(string); ok {
+					// OpenAPI refs are '#/components/schemas/Name'
+					// We need to extract 'Name' and change ref to '#/$defs/Name'
+					name := strings.TrimPrefix(refStr, "#/components/schemas/")
+					// Update the ref in place to point to $defs
+					t[k] = "#/$defs/" + name
+					if err := fn(name); err != nil {
+						return err
+					}
+				}
+			} else {
+				if err := r.walkRefs(val, fn); err != nil {
+					return err
+				}
+			}
+		}
+	case []any:
+		for _, val := range t {
+			if err := r.walkRefs(val, fn); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 

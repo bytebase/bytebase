@@ -160,77 +160,84 @@ func TestAuthHeaderKey(t *testing.T) {
 	a.Equal("other", ctx3.Value(otherKey{}))
 }
 
-func TestTransformBundleSchema(t *testing.T) {
+func TestResolveSchema(t *testing.T) {
 	a := require.New(t)
 
-	// Test bundle schema transformation
-	bundleSchema := []byte(`{
-		"$defs": {
-			"bytebase.v1.TestRequest.jsonschema.json": {
-				"$schema": "https://json-schema.org/draft/2020-12/schema",
-				"type": "object",
-				"properties": {
-					"name": {"type": "string"}
-				}
-			}
-		},
-		"$id": "bytebase.v1.TestRequest.jsonschema.bundle.json",
-		"$ref": "#/$defs/bytebase.v1.TestRequest.jsonschema.json",
-		"$schema": "https://json-schema.org/draft/2020-12/schema"
-	}`)
-
-	transformed, err := transformBundleSchema(bundleSchema)
-	a.NoError(err)
-
-	// Verify the transformed schema has type: object at root
-	var result map[string]any
-	err = json.Unmarshal(transformed, &result)
-	a.NoError(err)
-	a.Equal("object", result["type"])
-	a.NotNil(result["properties"])
-
-	// Verify no $ref at root level
-	a.Nil(result["$ref"])
-}
-
-func TestTransformBundleSchemaWithDeps(t *testing.T) {
-	a := require.New(t)
-
-	// Test bundle schema with dependencies
-	bundleSchema := []byte(`{
-		"$defs": {
-			"bytebase.v1.TestRequest.jsonschema.json": {
-				"$schema": "https://json-schema.org/draft/2020-12/schema",
-				"type": "object",
-				"properties": {
-					"nested": {"$ref": "#/$defs/bytebase.v1.NestedType.jsonschema.json"}
-				}
+	// Create registry with mock OpenAPI doc
+	r := &Registry{
+		openAPIDoc: &OpenAPIDoc{},
+	}
+	r.openAPIDoc.Components.Schemas = map[string]any{
+		"TestRequest": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"name": map[string]any{"type": "string"},
 			},
-			"bytebase.v1.NestedType.jsonschema.json": {
-				"$schema": "https://json-schema.org/draft/2020-12/schema",
-				"type": "object",
-				"properties": {
-					"value": {"type": "string"}
-				}
-			}
 		},
-		"$id": "bytebase.v1.TestRequest.jsonschema.bundle.json",
-		"$ref": "#/$defs/bytebase.v1.TestRequest.jsonschema.json",
-		"$schema": "https://json-schema.org/draft/2020-12/schema"
-	}`)
+		"RequestWithDep": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"nested": map[string]any{
+					"$ref": "#/components/schemas/NestedType",
+				},
+			},
+		},
+		"NestedType": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"value": map[string]any{"type": "string"},
+			},
+		},
+	}
 
-	transformed, err := transformBundleSchema(bundleSchema)
-	a.NoError(err)
+	t.Run("basic schema", func(t *testing.T) {
+		schemaJSON, err := r.resolveSchema("TestRequest")
+		a.NoError(err)
 
-	// Verify the transformed schema has type: object at root
-	var result map[string]any
-	err = json.Unmarshal(transformed, &result)
-	a.NoError(err)
-	a.Equal("object", result["type"])
+		var result map[string]any
+		err = json.Unmarshal(schemaJSON, &result)
+		a.NoError(err)
 
-	// Verify $defs contains the dependency but not the main definition
-	defs, ok := result["$defs"].(map[string]any)
-	a.True(ok)
-	a.NotNil(defs["bytebase.v1.NestedType.jsonschema.json"])
-	a.Nil(defs["bytebase.v1.TestRequest.jsonschema.json"])
+		// Should have inlined properties
+		a.Equal("object", result["type"])
+		props, ok := result["properties"].(map[string]any)
+		a.True(ok)
+		a.NotNil(props["name"])
+
+		// Should NOT have $defs for root (inlined)
+		if result["$defs"] != nil {
+			defs := result["$defs"].(map[string]any)
+			a.Nil(defs["TestRequest"])
+		}
+	})
+
+	t.Run("schema with dependencies", func(t *testing.T) {
+		schemaJSON, err := r.resolveSchema("RequestWithDep")
+		a.NoError(err)
+
+		var result map[string]any
+		err = json.Unmarshal(schemaJSON, &result)
+		a.NoError(err)
+
+		// Root should be inlined
+		a.Equal("object", result["type"])
+		props := result["properties"].(map[string]any)
+		a.NotNil(props["nested"])
+
+		// Dependencies should be in $defs
+		defs := result["$defs"].(map[string]any)
+		a.NotNil(defs["NestedType"])
+
+		// Root should NOT be in $defs
+		a.Nil(defs["RequestWithDep"])
+
+		// Verify ref rewriting in RequestWithDep (inlined properties)
+		nested := props["nested"].(map[string]any)
+		a.Equal("#/$defs/NestedType", nested["$ref"])
+	})
+
+	t.Run("missing schema", func(t *testing.T) {
+		_, err := r.resolveSchema("Missing")
+		a.Error(err)
+	})
 }
