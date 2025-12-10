@@ -44,8 +44,6 @@ export const changelogLink = (changelog: Changelog): string => {
   );
 };
 
-
-
 export const mockLatestChangelog = (
   database: ComposedDatabase,
   schema: string = ""

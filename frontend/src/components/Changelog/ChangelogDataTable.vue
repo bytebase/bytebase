@@ -25,10 +25,7 @@ import {
   Changelog_Type,
 } from "@/types/proto-es/v1/database_service_pb";
 import { extractIssueUID } from "@/utils";
-import {
-  changelogLink,
-  getChangelogChangeType,
-} from "@/utils/v1/changelog";
+import { changelogLink, getChangelogChangeType } from "@/utils/v1/changelog";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 

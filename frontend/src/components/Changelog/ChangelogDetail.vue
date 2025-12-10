@@ -132,9 +132,7 @@ import {
   hasProjectPermissionV2,
   wrapRefAsPromise,
 } from "@/utils";
-import {
-  getChangelogChangeType,
-} from "@/utils/v1/changelog";
+import { getChangelogChangeType } from "@/utils/v1/changelog";
 import NoPermissionPlaceholder from "../misc/NoPermissionPlaceholder.vue";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 

@@ -107,9 +107,7 @@ import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAlert, BBSpin } from "@/bbkit";
-import {
-  ChangelogDataTable,
-} from "@/components/Changelog";
+import { ChangelogDataTable } from "@/components/Changelog";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
@@ -136,7 +134,6 @@ interface LocalState {
   loading: boolean;
   selectedChangelogNames: string[];
   isExporting: boolean;
-
 }
 
 const props = defineProps<{
@@ -155,10 +152,7 @@ const state = reactive<LocalState>({
   loading: false,
   selectedChangelogNames: [],
   isExporting: false,
-
 });
-
-
 
 const searchChangelogFilter = computed(() => {
   return "";
@@ -184,8 +178,6 @@ const fetchChangelogList = async ({
     list: changelogs,
   };
 };
-
-
 
 const { allowAlterSchema } = useDatabaseDetailContext();
 
