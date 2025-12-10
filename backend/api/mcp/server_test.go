@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -157,4 +158,79 @@ func TestAuthHeaderKey(t *testing.T) {
 	ctx3 := context.WithValue(ctx, otherKey{}, "other")
 	a.Nil(ctx3.Value(authHeaderKey{}))
 	a.Equal("other", ctx3.Value(otherKey{}))
+}
+
+func TestTransformBundleSchema(t *testing.T) {
+	a := require.New(t)
+
+	// Test bundle schema transformation
+	bundleSchema := []byte(`{
+		"$defs": {
+			"bytebase.v1.TestRequest.jsonschema.json": {
+				"$schema": "https://json-schema.org/draft/2020-12/schema",
+				"type": "object",
+				"properties": {
+					"name": {"type": "string"}
+				}
+			}
+		},
+		"$id": "bytebase.v1.TestRequest.jsonschema.bundle.json",
+		"$ref": "#/$defs/bytebase.v1.TestRequest.jsonschema.json",
+		"$schema": "https://json-schema.org/draft/2020-12/schema"
+	}`)
+
+	transformed, err := transformBundleSchema(bundleSchema)
+	a.NoError(err)
+
+	// Verify the transformed schema has type: object at root
+	var result map[string]any
+	err = json.Unmarshal(transformed, &result)
+	a.NoError(err)
+	a.Equal("object", result["type"])
+	a.NotNil(result["properties"])
+
+	// Verify no $ref at root level
+	a.Nil(result["$ref"])
+}
+
+func TestTransformBundleSchemaWithDeps(t *testing.T) {
+	a := require.New(t)
+
+	// Test bundle schema with dependencies
+	bundleSchema := []byte(`{
+		"$defs": {
+			"bytebase.v1.TestRequest.jsonschema.json": {
+				"$schema": "https://json-schema.org/draft/2020-12/schema",
+				"type": "object",
+				"properties": {
+					"nested": {"$ref": "#/$defs/bytebase.v1.NestedType.jsonschema.json"}
+				}
+			},
+			"bytebase.v1.NestedType.jsonschema.json": {
+				"$schema": "https://json-schema.org/draft/2020-12/schema",
+				"type": "object",
+				"properties": {
+					"value": {"type": "string"}
+				}
+			}
+		},
+		"$id": "bytebase.v1.TestRequest.jsonschema.bundle.json",
+		"$ref": "#/$defs/bytebase.v1.TestRequest.jsonschema.json",
+		"$schema": "https://json-schema.org/draft/2020-12/schema"
+	}`)
+
+	transformed, err := transformBundleSchema(bundleSchema)
+	a.NoError(err)
+
+	// Verify the transformed schema has type: object at root
+	var result map[string]any
+	err = json.Unmarshal(transformed, &result)
+	a.NoError(err)
+	a.Equal("object", result["type"])
+
+	// Verify $defs contains the dependency but not the main definition
+	defs, ok := result["$defs"].(map[string]any)
+	a.True(ok)
+	a.NotNil(defs["bytebase.v1.NestedType.jsonschema.json"])
+	a.Nil(defs["bytebase.v1.TestRequest.jsonschema.json"])
 }

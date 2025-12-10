@@ -1,0 +1,311 @@
+{
+  "$defs": {
+    "bytebase.v1.Task.DatabaseCreate.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Payload for creating a new database.",
+      "patternProperties": {
+        "^(character_set)$": {
+          "default": "",
+          "description": "The character set for the database.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "characterSet": {
+          "default": "",
+          "description": "The character set for the database.",
+          "type": "string"
+        },
+        "collation": {
+          "default": "",
+          "description": "The collation for the database.",
+          "type": "string"
+        },
+        "database": {
+          "default": "",
+          "description": "Database name.",
+          "type": "string"
+        },
+        "environment": {
+          "default": "",
+          "description": "The environment the database belongs to.",
+          "type": "string"
+        },
+        "project": {
+          "default": "",
+          "description": "The project owning the database.\n Format: projects/{project}",
+          "type": "string"
+        },
+        "sheet": {
+          "default": "",
+          "description": "Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "table": {
+          "default": "",
+          "description": "Table name.",
+          "type": "string"
+        }
+      },
+      "title": "Database Create",
+      "type": "object"
+    },
+    "bytebase.v1.Task.DatabaseDataExport.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Payload for exporting database data.",
+      "properties": {
+        "format": {
+          "anyOf": [
+            {
+              "pattern": "^FORMAT_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "CSV",
+                "JSON",
+                "SQL",
+                "XLSX"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The format of the exported file.",
+          "title": "Export Format"
+        },
+        "password": {
+          "description": "The zip password provided by users.\n Leave it empty if no needs to encrypt the zip file.",
+          "type": "string"
+        },
+        "sheet": {
+          "default": "",
+          "description": "The resource name of the sheet.\n Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "target": {
+          "default": "",
+          "description": "The resource name of the target.\n Format: instances/{instance-id}/databases/{database-name}",
+          "type": "string"
+        }
+      },
+      "title": "Database Data Export",
+      "type": "object"
+    },
+    "bytebase.v1.Task.DatabaseUpdate.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Payload for updating a database schema.",
+      "patternProperties": {
+        "^(database_change_type)$": {
+          "anyOf": [
+            {
+              "pattern": "^DATABASE_CHANGE_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "MIGRATE",
+                "SDL"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of database change (MIGRATE or SDL).",
+          "title": "Database Change Type"
+        },
+        "^(schema_version)$": {
+          "default": "",
+          "description": "The target schema version after this update.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "databaseChangeType": {
+          "anyOf": [
+            {
+              "pattern": "^DATABASE_CHANGE_TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "MIGRATE",
+                "SDL"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The type of database change (MIGRATE or SDL).",
+          "title": "Database Change Type"
+        },
+        "schemaVersion": {
+          "default": "",
+          "description": "The target schema version after this update.",
+          "type": "string"
+        },
+        "sheet": {
+          "default": "",
+          "description": "Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        }
+      },
+      "title": "Database Update",
+      "type": "object"
+    },
+    "bytebase.v1.Task.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(database_create)$": {
+          "$ref": "#/$defs/bytebase.v1.Task.DatabaseCreate.jsonschema.json"
+        },
+        "^(database_data_export)$": {
+          "$ref": "#/$defs/bytebase.v1.Task.DatabaseDataExport.jsonschema.json"
+        },
+        "^(database_update)$": {
+          "$ref": "#/$defs/bytebase.v1.Task.DatabaseUpdate.jsonschema.json"
+        },
+        "^(run_time)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json",
+          "description": "The run_time is the scheduled run time of latest task run.\n If there are no task runs or the task run is not scheduled, it will be empty."
+        },
+        "^(skipped_reason)$": {
+          "default": "",
+          "description": "The reason why the task was skipped.",
+          "type": "string"
+        },
+        "^(spec_id)$": {
+          "default": "",
+          "description": "A UUID4 string that uniquely identifies the Spec.\n Could be empty if the rollout of the task does not have an associating plan.",
+          "type": "string"
+        },
+        "^(update_time)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json",
+          "description": "The update_time is the update time of latest task run.\n If there are no task runs, it will be empty."
+        }
+      },
+      "properties": {
+        "databaseCreate": {
+          "$ref": "#/$defs/bytebase.v1.Task.DatabaseCreate.jsonschema.json"
+        },
+        "databaseDataExport": {
+          "$ref": "#/$defs/bytebase.v1.Task.DatabaseDataExport.jsonschema.json"
+        },
+        "databaseUpdate": {
+          "$ref": "#/$defs/bytebase.v1.Task.DatabaseUpdate.jsonschema.json"
+        },
+        "name": {
+          "default": "",
+          "description": "Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}",
+          "type": "string"
+        },
+        "runTime": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json",
+          "description": "The run_time is the scheduled run time of latest task run.\n If there are no task runs or the task run is not scheduled, it will be empty."
+        },
+        "skippedReason": {
+          "default": "",
+          "description": "The reason why the task was skipped.",
+          "type": "string"
+        },
+        "specId": {
+          "default": "",
+          "description": "A UUID4 string that uniquely identifies the Spec.\n Could be empty if the rollout of the task does not have an associating plan.",
+          "type": "string"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "pattern": "^STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "NOT_STARTED",
+                "PENDING",
+                "RUNNING",
+                "DONE",
+                "FAILED",
+                "CANCELED",
+                "SKIPPED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "Status is the status of the task.",
+          "title": "Status"
+        },
+        "target": {
+          "default": "",
+          "description": "Format: instances/{instance} if the task is DatabaseCreate.\n Format: instances/{instance}/databases/{database}",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "GENERAL",
+                "DATABASE_CREATE",
+                "DATABASE_MIGRATE",
+                "DATABASE_SDL",
+                "DATABASE_EXPORT"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Type"
+        },
+        "updateTime": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json",
+          "description": "The update_time is the update time of latest task run.\n If there are no task runs, it will be empty."
+        }
+      },
+      "title": "Task",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.Task.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.Task.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

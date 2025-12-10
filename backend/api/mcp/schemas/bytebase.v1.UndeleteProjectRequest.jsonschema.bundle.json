@@ -1,0 +1,20 @@
+{
+  "$defs": {
+    "bytebase.v1.UndeleteProjectRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "The name of the deleted project.\n Format: projects/{project}",
+          "type": "string"
+        }
+      },
+      "title": "Undelete Project Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.UndeleteProjectRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.UndeleteProjectRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

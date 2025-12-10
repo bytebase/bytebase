@@ -1,0 +1,21 @@
+{
+  "$defs": {
+    "bytebase.v1.DatabaseSchema.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DatabaseSchema is the metadata for databases.",
+      "properties": {
+        "schema": {
+          "default": "",
+          "description": "The schema dump from database.",
+          "type": "string"
+        }
+      },
+      "title": "Database Schema",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.DatabaseSchema.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.DatabaseSchema.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

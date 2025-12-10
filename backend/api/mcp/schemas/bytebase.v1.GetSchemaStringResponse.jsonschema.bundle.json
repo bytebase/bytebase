@@ -1,0 +1,25 @@
+{
+  "$defs": {
+    "bytebase.v1.GetSchemaStringResponse.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(schema_string)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "schemaString": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Get Schema String Response",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GetSchemaStringResponse.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GetSchemaStringResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

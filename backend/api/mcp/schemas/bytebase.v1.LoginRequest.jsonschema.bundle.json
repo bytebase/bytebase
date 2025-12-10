@@ -1,0 +1,129 @@
+{
+  "$defs": {
+    "bytebase.v1.IdentityProviderContext.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Context for identity provider authentication.",
+      "patternProperties": {
+        "^(oauth2_context)$": {
+          "$ref": "#/$defs/bytebase.v1.OAuth2IdentityProviderContext.jsonschema.json",
+          "description": "OAuth2 authentication context."
+        },
+        "^(oidc_context)$": {
+          "$ref": "#/$defs/bytebase.v1.OIDCIdentityProviderContext.jsonschema.json",
+          "description": "OpenID Connect authentication context."
+        }
+      },
+      "properties": {
+        "oauth2Context": {
+          "$ref": "#/$defs/bytebase.v1.OAuth2IdentityProviderContext.jsonschema.json",
+          "description": "OAuth2 authentication context."
+        },
+        "oidcContext": {
+          "$ref": "#/$defs/bytebase.v1.OIDCIdentityProviderContext.jsonschema.json",
+          "description": "OpenID Connect authentication context."
+        }
+      },
+      "title": "Identity Provider Context",
+      "type": "object"
+    },
+    "bytebase.v1.LoginRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(idp_context)$": {
+          "$ref": "#/$defs/bytebase.v1.IdentityProviderContext.jsonschema.json",
+          "description": "The idp_context is using to get the user information from identity provider."
+        },
+        "^(idp_name)$": {
+          "default": "",
+          "description": "The name of the identity provider.\n Format: idps/{idp}",
+          "type": "string"
+        },
+        "^(mfa_temp_token)$": {
+          "description": "The mfa_temp_token is used to verify the user's identity by MFA.",
+          "type": "string"
+        },
+        "^(otp_code)$": {
+          "description": "The otp_code is used to verify the user's identity by MFA.",
+          "type": "string"
+        },
+        "^(recovery_code)$": {
+          "description": "The recovery_code is used to recovery the user's identity with MFA.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "email": {
+          "default": "",
+          "description": "User's email address.",
+          "type": "string"
+        },
+        "idpContext": {
+          "$ref": "#/$defs/bytebase.v1.IdentityProviderContext.jsonschema.json",
+          "description": "The idp_context is using to get the user information from identity provider."
+        },
+        "idpName": {
+          "default": "",
+          "description": "The name of the identity provider.\n Format: idps/{idp}",
+          "type": "string"
+        },
+        "mfaTempToken": {
+          "description": "The mfa_temp_token is used to verify the user's identity by MFA.",
+          "type": "string"
+        },
+        "otpCode": {
+          "description": "The otp_code is used to verify the user's identity by MFA.",
+          "type": "string"
+        },
+        "password": {
+          "default": "",
+          "description": "User's password for authentication.",
+          "type": "string"
+        },
+        "recoveryCode": {
+          "description": "The recovery_code is used to recovery the user's identity with MFA.",
+          "type": "string"
+        },
+        "web": {
+          "default": false,
+          "description": "If web is set, we will set access token, refresh token, and user to the cookie.",
+          "type": "boolean"
+        }
+      },
+      "title": "Login Request",
+      "type": "object"
+    },
+    "bytebase.v1.OAuth2IdentityProviderContext.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "OAuth2 authentication context.",
+      "properties": {
+        "code": {
+          "default": "",
+          "description": "Authorization code from OAuth2 provider.",
+          "type": "string"
+        }
+      },
+      "title": "O Auth2 Identity Provider Context",
+      "type": "object"
+    },
+    "bytebase.v1.OIDCIdentityProviderContext.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "OpenID Connect authentication context.",
+      "properties": {
+        "code": {
+          "default": "",
+          "description": "Authorization code from OIDC provider.",
+          "type": "string"
+        }
+      },
+      "title": "OIDC Identity Provider Context",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.LoginRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.LoginRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

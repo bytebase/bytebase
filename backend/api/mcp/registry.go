@@ -35,6 +35,8 @@ func NewRegistry(invoker *Invoker) (*Registry, error) {
 }
 
 // loadSchemas loads all JSON schemas from embedded files.
+// The schemas are in bundle format with $defs and $ref. We transform them
+// to inline the main definition so MCP SDK accepts them (requires type: object at root).
 func (r *Registry) loadSchemas() error {
 	entries, err := embeddedSchemas.ReadDir("schemas")
 	if err != nil {
@@ -42,7 +44,7 @@ func (r *Registry) loadSchemas() error {
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".jsonschema.json") {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".jsonschema.bundle.json") {
 			continue
 		}
 
@@ -51,13 +53,75 @@ func (r *Registry) loadSchemas() error {
 			return err
 		}
 
-		// Schema filename format: bytebase.v1.MessageName.jsonschema.json
+		// Transform bundle format to inline format for MCP compatibility
+		transformed, err := transformBundleSchema(data)
+		if err != nil {
+			return errors.Wrapf(err, "failed to transform schema %s", entry.Name())
+		}
+
+		// Schema filename format: bytebase.v1.MessageName.jsonschema.bundle.json
 		// Extract just bytebase.v1.MessageName part
-		name := strings.TrimSuffix(entry.Name(), ".jsonschema.json")
-		r.schemas[name] = json.RawMessage(data)
+		name := strings.TrimSuffix(entry.Name(), ".jsonschema.bundle.json")
+		r.schemas[name] = transformed
 	}
 
 	return nil
+}
+
+// transformBundleSchema transforms a bundle schema (with $defs and $ref) into
+// an inline schema that MCP SDK accepts (with type: object at root).
+// Bundle format:
+//
+//	{"$defs": {"msg.jsonschema.json": {...}}, "$ref": "#/$defs/msg.jsonschema.json", "$schema": "..."}
+//
+// Output format:
+//
+//	{"$schema": "...", "$defs": {...}, "type": "object", "properties": {...}, ...}
+func transformBundleSchema(data []byte) (json.RawMessage, error) {
+	var bundle map[string]json.RawMessage
+	if err := json.Unmarshal(data, &bundle); err != nil {
+		return nil, err
+	}
+
+	// Get the $ref to find the main definition name
+	var ref string
+	if err := json.Unmarshal(bundle["$ref"], &ref); err != nil {
+		return nil, errors.Wrap(err, "failed to parse $ref")
+	}
+
+	// $ref format: "#/$defs/bytebase.v1.MessageName.jsonschema.json"
+	defName := strings.TrimPrefix(ref, "#/$defs/")
+
+	// Get $defs
+	var defs map[string]json.RawMessage
+	if err := json.Unmarshal(bundle["$defs"], &defs); err != nil {
+		return nil, errors.Wrap(err, "failed to parse $defs")
+	}
+
+	// Get the main definition
+	mainDef, ok := defs[defName]
+	if !ok {
+		return nil, errors.Errorf("main definition %s not found in $defs", defName)
+	}
+
+	// Parse the main definition
+	var result map[string]json.RawMessage
+	if err := json.Unmarshal(mainDef, &result); err != nil {
+		return nil, errors.Wrap(err, "failed to parse main definition")
+	}
+
+	// If there are other definitions besides the main one, include them as $defs
+	// and rewrite internal $refs
+	if len(defs) > 1 {
+		delete(defs, defName)
+		defsJSON, err := json.Marshal(defs)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal remaining $defs")
+		}
+		result["$defs"] = defsJSON
+	}
+
+	return json.Marshal(result)
 }
 
 // getServices returns all v1 service descriptors to register as tools.

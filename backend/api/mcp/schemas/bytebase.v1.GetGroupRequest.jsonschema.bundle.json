@@ -1,0 +1,21 @@
+{
+  "$defs": {
+    "bytebase.v1.GetGroupRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Request message for getting a group.",
+      "properties": {
+        "name": {
+          "default": "",
+          "description": "The name of the group to retrieve.\n Format: groups/{email}",
+          "type": "string"
+        }
+      },
+      "title": "Get Group Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GetGroupRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GetGroupRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

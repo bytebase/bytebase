@@ -1,0 +1,178 @@
+{
+  "$defs": {
+    "bytebase.v1.FieldMapping.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "FieldMapping saves the field names from user info API of identity provider.\n As we save all raw json string of user info response data into `principal.idp_user_info`,\n we can extract the relevant data based with `FieldMapping`.",
+      "patternProperties": {
+        "^(display_name)$": {
+          "default": "",
+          "description": "DisplayName is the field name of display name in 3rd-party idp user info. Optional.",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "displayName": {
+          "default": "",
+          "description": "DisplayName is the field name of display name in 3rd-party idp user info. Optional.",
+          "type": "string"
+        },
+        "groups": {
+          "default": "",
+          "description": "Groups is the field name of groups in 3rd-party idp user info. Optional.\n Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/",
+          "type": "string"
+        },
+        "identifier": {
+          "default": "",
+          "description": "Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.",
+          "type": "string"
+        },
+        "phone": {
+          "default": "",
+          "description": "Phone is the field name of primary phone in 3rd-party idp user info. Optional.",
+          "type": "string"
+        }
+      },
+      "title": "Field Mapping",
+      "type": "object"
+    },
+    "bytebase.v1.LDAPIdentityProviderConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "LDAPIdentityProviderConfig is the structure for LDAP identity provider config.",
+      "patternProperties": {
+        "^(base_dn)$": {
+          "default": "",
+          "description": "BaseDN is the base DN to search for users, e.g., \"ou=users,dc=example,dc=com\".",
+          "type": "string"
+        },
+        "^(bind_dn)$": {
+          "default": "",
+          "description": "BindDN is the DN of the user to bind as a service account to perform\n search requests.",
+          "type": "string"
+        },
+        "^(bind_password)$": {
+          "default": "",
+          "description": "BindPassword is the password of the user to bind as a service account.",
+          "type": "string"
+        },
+        "^(field_mapping)$": {
+          "$ref": "#/$defs/bytebase.v1.FieldMapping.jsonschema.json",
+          "description": "FieldMapping is the mapping of the user attributes returned by the LDAP\n server."
+        },
+        "^(security_protocol)$": {
+          "anyOf": [
+            {
+              "pattern": "^SECURITY_PROTOCOL_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "START_TLS",
+                "LDAPS"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "SecurityProtocol is the security protocol to be used for establishing\n connections with the LDAP server.",
+          "title": "Security Protocol"
+        },
+        "^(skip_tls_verify)$": {
+          "default": false,
+          "description": "SkipTLSVerify controls whether to skip TLS certificate verification.",
+          "type": "boolean"
+        },
+        "^(user_filter)$": {
+          "default": "",
+          "description": "UserFilter is the filter to search for users, e.g., \"(uid=%s)\".",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "baseDn": {
+          "default": "",
+          "description": "BaseDN is the base DN to search for users, e.g., \"ou=users,dc=example,dc=com\".",
+          "type": "string"
+        },
+        "bindDn": {
+          "default": "",
+          "description": "BindDN is the DN of the user to bind as a service account to perform\n search requests.",
+          "type": "string"
+        },
+        "bindPassword": {
+          "default": "",
+          "description": "BindPassword is the password of the user to bind as a service account.",
+          "type": "string"
+        },
+        "fieldMapping": {
+          "$ref": "#/$defs/bytebase.v1.FieldMapping.jsonschema.json",
+          "description": "FieldMapping is the mapping of the user attributes returned by the LDAP\n server."
+        },
+        "host": {
+          "default": "",
+          "description": "Host is the hostname or IP address of the LDAP server, e.g.,\n \"ldap.example.com\".",
+          "type": "string"
+        },
+        "port": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Port is the port number of the LDAP server, e.g., 389. When not set, the\n default port of the corresponding security protocol will be used, i.e. 389\n for StartTLS and 636 for LDAPS."
+        },
+        "securityProtocol": {
+          "anyOf": [
+            {
+              "pattern": "^SECURITY_PROTOCOL_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "START_TLS",
+                "LDAPS"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "SecurityProtocol is the security protocol to be used for establishing\n connections with the LDAP server.",
+          "title": "Security Protocol"
+        },
+        "skipTlsVerify": {
+          "default": false,
+          "description": "SkipTLSVerify controls whether to skip TLS certificate verification.",
+          "type": "boolean"
+        },
+        "userFilter": {
+          "default": "",
+          "description": "UserFilter is the filter to search for users, e.g., \"(uid=%s)\".",
+          "type": "string"
+        }
+      },
+      "title": "LDAP Identity Provider Config",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.LDAPIdentityProviderConfig.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.LDAPIdentityProviderConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

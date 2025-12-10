@@ -1,0 +1,65 @@
+{
+  "$defs": {
+    "bytebase.v1.AISetting.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(api_key)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "apiKey": {
+          "default": "",
+          "type": "string"
+        },
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        },
+        "endpoint": {
+          "default": "",
+          "type": "string"
+        },
+        "model": {
+          "default": "",
+          "type": "string"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "pattern": "^PROVIDER_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "OPEN_AI",
+                "CLAUDE",
+                "GEMINI",
+                "AZURE_OPENAI"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Provider"
+        },
+        "version": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "AI Setting",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.AISetting.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.AISetting.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

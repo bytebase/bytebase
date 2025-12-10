@@ -1,0 +1,456 @@
+{
+  "$defs": {
+    "bytebase.v1.CreateIssueCommentRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(issue_comment)$": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.jsonschema.json",
+          "description": "The comment to create."
+        }
+      },
+      "properties": {
+        "issueComment": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.jsonschema.json",
+          "description": "The comment to create."
+        },
+        "parent": {
+          "default": "",
+          "description": "The issue name\n Format: projects/{project}/issues/{issue}",
+          "type": "string"
+        }
+      },
+      "title": "Create Issue Comment Request",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.Approval.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Approval event information.",
+      "properties": {
+        "status": {
+          "anyOf": [
+            {
+              "pattern": "^STATUS_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The approval status.",
+          "title": "Status"
+        }
+      },
+      "title": "Approval",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.IssueUpdate.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Issue update event information.",
+      "patternProperties": {
+        "^(from_description)$": {
+          "type": "string"
+        },
+        "^(from_labels)$": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "^(from_status)$": {
+          "anyOf": [
+            {
+              "enum": [
+                "ISSUE_STATUS_UNSPECIFIED",
+                "OPEN",
+                "DONE",
+                "CANCELED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "title": "Issue Status"
+        },
+        "^(from_title)$": {
+          "type": "string"
+        },
+        "^(to_description)$": {
+          "type": "string"
+        },
+        "^(to_labels)$": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "^(to_status)$": {
+          "anyOf": [
+            {
+              "enum": [
+                "ISSUE_STATUS_UNSPECIFIED",
+                "OPEN",
+                "DONE",
+                "CANCELED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "title": "Issue Status"
+        },
+        "^(to_title)$": {
+          "type": "string"
+        }
+      },
+      "properties": {
+        "fromDescription": {
+          "type": "string"
+        },
+        "fromLabels": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "fromStatus": {
+          "anyOf": [
+            {
+              "enum": [
+                "ISSUE_STATUS_UNSPECIFIED",
+                "OPEN",
+                "DONE",
+                "CANCELED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "title": "Issue Status"
+        },
+        "fromTitle": {
+          "type": "string"
+        },
+        "toDescription": {
+          "type": "string"
+        },
+        "toLabels": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "toStatus": {
+          "anyOf": [
+            {
+              "enum": [
+                "ISSUE_STATUS_UNSPECIFIED",
+                "OPEN",
+                "DONE",
+                "CANCELED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "title": "Issue Status"
+        },
+        "toTitle": {
+          "type": "string"
+        }
+      },
+      "title": "Issue Update",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.StageEnd.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Stage end event information.",
+      "properties": {
+        "stage": {
+          "default": "",
+          "description": "The stage that ended.",
+          "type": "string"
+        }
+      },
+      "title": "Stage End",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.TaskPriorBackup.Table.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Table identification.",
+      "properties": {
+        "schema": {
+          "default": "",
+          "description": "The schema name.",
+          "type": "string"
+        },
+        "table": {
+          "default": "",
+          "description": "The table name.",
+          "type": "string"
+        }
+      },
+      "title": "Table",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.TaskPriorBackup.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Task prior backup event information.",
+      "patternProperties": {
+        "^(original_line)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "The original line number in the statement."
+        }
+      },
+      "properties": {
+        "database": {
+          "default": "",
+          "description": "The database that was backed up.",
+          "type": "string"
+        },
+        "error": {
+          "default": "",
+          "description": "Error message if backup failed.",
+          "type": "string"
+        },
+        "originalLine": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "The original line number in the statement."
+        },
+        "tables": {
+          "description": "The tables that were backed up.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.IssueComment.TaskPriorBackup.Table.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "task": {
+          "default": "",
+          "description": "The task for which backup was performed.",
+          "type": "string"
+        }
+      },
+      "title": "Task Prior Backup",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.TaskUpdate.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Task update event information.",
+      "patternProperties": {
+        "^(from_sheet)$": {
+          "description": "Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "^(to_sheet)$": {
+          "description": "Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "^(to_status)$": {
+          "anyOf": [
+            {
+              "enum": [
+                "STATUS_UNSPECIFIED",
+                "PENDING",
+                "RUNNING",
+                "DONE",
+                "FAILED",
+                "SKIPPED",
+                "CANCELED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "title": "Status"
+        }
+      },
+      "properties": {
+        "fromSheet": {
+          "description": "Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "tasks": {
+          "description": "The tasks that were updated.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "toSheet": {
+          "description": "Format: projects/{project}/sheets/{sheet}",
+          "type": "string"
+        },
+        "toStatus": {
+          "anyOf": [
+            {
+              "enum": [
+                "STATUS_UNSPECIFIED",
+                "PENDING",
+                "RUNNING",
+                "DONE",
+                "FAILED",
+                "SKIPPED",
+                "CANCELED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "title": "Status"
+        }
+      },
+      "title": "Task Update",
+      "type": "object"
+    },
+    "bytebase.v1.IssueComment.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A comment on an issue.",
+      "patternProperties": {
+        "^(create_time)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json"
+        },
+        "^(issue_update)$": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.IssueUpdate.jsonschema.json",
+          "description": "Issue update event."
+        },
+        "^(stage_end)$": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.StageEnd.jsonschema.json",
+          "description": "Stage end event."
+        },
+        "^(task_prior_backup)$": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.TaskPriorBackup.jsonschema.json",
+          "description": "Task prior backup event."
+        },
+        "^(task_update)$": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.TaskUpdate.jsonschema.json",
+          "description": "Task update event."
+        },
+        "^(update_time)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json"
+        }
+      },
+      "properties": {
+        "approval": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.Approval.jsonschema.json",
+          "description": "Approval event."
+        },
+        "comment": {
+          "default": "",
+          "description": "The text content of the comment.",
+          "maxLength": 65536,
+          "type": "string"
+        },
+        "createTime": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json"
+        },
+        "creator": {
+          "default": "",
+          "description": "Format: users/{email}",
+          "type": "string"
+        },
+        "issueUpdate": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.IssueUpdate.jsonschema.json",
+          "description": "Issue update event."
+        },
+        "name": {
+          "default": "",
+          "description": "Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}",
+          "type": "string"
+        },
+        "payload": {
+          "default": "",
+          "description": "TODO: use struct message instead.",
+          "type": "string"
+        },
+        "stageEnd": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.StageEnd.jsonschema.json",
+          "description": "Stage end event."
+        },
+        "taskPriorBackup": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.TaskPriorBackup.jsonschema.json",
+          "description": "Task prior backup event."
+        },
+        "taskUpdate": {
+          "$ref": "#/$defs/bytebase.v1.IssueComment.TaskUpdate.jsonschema.json",
+          "description": "Task update event."
+        },
+        "updateTime": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json"
+        }
+      },
+      "title": "Issue Comment",
+      "type": "object"
+    },
+    "google.protobuf.Timestamp.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    }
+  },
+  "$id": "bytebase.v1.CreateIssueCommentRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.CreateIssueCommentRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

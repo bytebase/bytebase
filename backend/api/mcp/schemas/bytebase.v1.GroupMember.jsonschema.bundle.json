@@ -1,0 +1,45 @@
+{
+  "$defs": {
+    "bytebase.v1.GroupMember.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "A member of a group with a role.",
+      "properties": {
+        "member": {
+          "default": "",
+          "description": "Format: users/hello@world.com",
+          "title": "Member is the principal who belong to this group.",
+          "type": "string"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "pattern": "^ROLE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "OWNER",
+                "MEMBER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "description": "The member's role in the group.",
+          "title": "Role"
+        }
+      },
+      "title": "Group Member",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GroupMember.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GroupMember.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,79 @@
+{
+  "$defs": {
+    "bytebase.v1.SheetCommand.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "start": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "title": "Sheet Command",
+      "type": "object"
+    },
+    "bytebase.v1.SheetPayload.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "commands": {
+          "description": "The start and end position of each command in the sheet statement.",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.SheetCommand.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "pattern": "^TYPE_UNSPECIFIED$",
+              "type": "string"
+            },
+            {
+              "enum": [
+                "SCHEMA_DESIGN"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            }
+          ],
+          "default": 0,
+          "title": "Type"
+        }
+      },
+      "title": "Sheet Payload",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.SheetPayload.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.SheetPayload.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

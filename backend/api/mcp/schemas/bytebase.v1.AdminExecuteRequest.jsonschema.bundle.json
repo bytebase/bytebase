@@ -1,0 +1,48 @@
+{
+  "$defs": {
+    "bytebase.v1.AdminExecuteRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "container": {
+          "description": "Container is the container name to execute the query against, used for\n CosmosDB only.",
+          "type": "string"
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "The maximum number of rows to return."
+        },
+        "name": {
+          "default": "",
+          "description": "The name is the instance name to execute the query against.\n Format: instances/{instance}/databases/{databaseName}",
+          "type": "string"
+        },
+        "schema": {
+          "description": "The default schema to execute the statement. Equals to the current schema\n in Oracle and search path in Postgres.",
+          "type": "string"
+        },
+        "statement": {
+          "default": "",
+          "description": "The SQL statement to execute.",
+          "type": "string"
+        }
+      },
+      "title": "Admin Execute Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.AdminExecuteRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.AdminExecuteRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

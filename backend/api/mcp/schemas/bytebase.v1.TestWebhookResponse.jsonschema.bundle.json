@@ -1,0 +1,20 @@
+{
+  "$defs": {
+    "bytebase.v1.TestWebhookResponse.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "default": "",
+          "description": "The result of the test, empty if the test is successful.",
+          "type": "string"
+        }
+      },
+      "title": "Test Webhook Response",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.TestWebhookResponse.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.TestWebhookResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

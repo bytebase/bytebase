@@ -1,0 +1,181 @@
+{
+  "$defs": {
+    "bytebase.v1.DimensionConstraint.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DimensionConstraint defines constraints for a spatial dimension.",
+      "patternProperties": {
+        "^(max_value)$": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Maximum value for this dimension"
+        },
+        "^(min_value)$": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Minimum value for this dimension"
+        }
+      },
+      "properties": {
+        "dimension": {
+          "default": "",
+          "description": "Dimension name/type (X, Y, Z, M, etc.)",
+          "type": "string"
+        },
+        "maxValue": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Maximum value for this dimension"
+        },
+        "minValue": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Minimum value for this dimension"
+        },
+        "tolerance": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Tolerance for this dimension"
+        }
+      },
+      "title": "Dimension Constraint",
+      "type": "object"
+    },
+    "bytebase.v1.DimensionalConfig.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DimensionalConfig defines dimensional and constraint parameters for spatial indexes.",
+      "patternProperties": {
+        "^(data_type)$": {
+          "default": "",
+          "description": "Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "constraints": {
+          "description": "Coordinate system constraints",
+          "items": {
+            "$ref": "#/$defs/bytebase.v1.DimensionConstraint.jsonschema.json"
+          },
+          "type": "array"
+        },
+        "dataType": {
+          "default": "",
+          "description": "Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)",
+          "type": "string"
+        },
+        "dimensions": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Number of dimensions (2-4, default 2)"
+        },
+        "srid": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0,
+          "description": "Spatial reference system identifier (SRID)"
+        }
+      },
+      "title": "Dimensional Config",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.DimensionalConfig.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.DimensionalConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,15 @@
+{
+  "$defs": {
+    "bytebase.v1.GetActuatorInfoRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Request message for getting actuator information.",
+      "properties": {},
+      "title": "Get Actuator Info Request",
+      "type": "object"
+    }
+  },
+  "$id": "bytebase.v1.GetActuatorInfoRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/bytebase.v1.GetActuatorInfoRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
