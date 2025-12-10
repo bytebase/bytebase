@@ -56,36 +56,41 @@ const useTableResize = (options: TableResizeOptions) => {
     if (!table.value) return;
 
     state.drag = undefined;
-    state.isAutoAdjusting = false;
-
     // Use auto layout to calculate the width of each column.
-    table.value.style.tableLayout = "auto";
-    const scale = containerWidth.value / table.value.scrollWidth;
-    const thList = Array.from(table.value.querySelectorAll("th"));
-    state.columns = thList
-      .map((th) =>
-        Math.max(
-          th.getBoundingClientRect().width,
-          th.getBoundingClientRect().width * scale
-        )
-      )
-      .map((width) => ({ width }));
-    // After calculating the width, use fixed layout to keep the width stable.
+    state.isAutoAdjusting = true;
+
     nextTick(() => {
-      if (!table.value) {
-        return;
-      }
-      table.value.style.tableLayout = "fixed";
+      if (!table.value) return;
+
+      const scale = containerWidth.value / table.value.scrollWidth;
+      const thList = Array.from(table.value.querySelectorAll("th"));
+      state.columns = thList
+        .map((th) =>
+          Math.max(
+            th.getBoundingClientRect().width,
+            th.getBoundingClientRect().width * scale
+          )
+        )
+        .map((width) => ({ width }));
+      // After calculating the width, use fixed layout to keep the width stable.
+      state.isAutoAdjusting = false;
     });
   };
 
   // Record the initial state of dragging.
   const startResizing = (index: number) => {
+    // Use actual DOM width as the initial width to ensure accuracy
+    const th = table.value?.querySelectorAll("th")[index];
+    const actualWidth =
+      th?.getBoundingClientRect().width ?? state.columns[index].width;
+
     state.drag = {
       start: pointer.x.value,
       index,
-      initialWidth: state.columns[index].width,
+      initialWidth: actualWidth,
     };
+    // Sync state with actual DOM width
+    state.columns[index].width = actualWidth;
     toggleDragStyle(table, true);
   };
 
@@ -99,6 +104,7 @@ const useTableResize = (options: TableResizeOptions) => {
     const offset = pointer.x.value - start;
     const expectedWidth = initialWidth + offset;
     state.columns[index].width = normalizeWidth(expectedWidth);
+
     if (index === state.columns.length - 1) {
       // When resizing the last column, Keep the horizontal scroll at the end of the container.
       scrollMaxX(options.containerRef.value);
@@ -116,9 +122,13 @@ const useTableResize = (options: TableResizeOptions) => {
   const getColumnProps = (index: number) => {
     const column = state.columns[index];
     if (!column) return {};
+    const widthValue = state.isAutoAdjusting ? "auto" : `${column.width}px`;
     return {
       style: {
-        width: state.isAutoAdjusting ? "auto" : `${column.width}px`,
+        width: widthValue,
+        minWidth: widthValue,
+        maxWidth: widthValue,
+        boxSizing: "border-box" as const,
       },
       class: state.isAutoAdjusting ? "" : "truncate",
       "data-index": index,
@@ -135,9 +145,11 @@ const useTableResize = (options: TableResizeOptions) => {
   });
 
   const tableProps = computed(() => {
+    const widthValue = state.isAutoAdjusting ? "auto" : `${totalWidth.value}px`;
     return {
       style: {
-        width: state.isAutoAdjusting ? "auto" : `${totalWidth.value}px`,
+        width: widthValue,
+        tableLayout: state.isAutoAdjusting ? "auto" : "fixed",
       },
     };
   });

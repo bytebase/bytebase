@@ -3,11 +3,12 @@
     ref="containerRef"
     class="relative w-full flex-1 overflow-auto flex flex-col rounded-sm border dark:border-zinc-500"
   >
-    <table
-      ref="tableRef"
-      class="relative border-collapse w-full -mx-px table-fixed"
-      v-bind="tableResize.tableProps"
-    >
+    <div class="inline-block">
+      <table
+        ref="tableRef"
+        class="relative border-collapse -mx-px"
+        v-bind="tableResize.tableProps"
+      >
       <thead
         class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-1 drop-shadow-xs"
       >
@@ -103,7 +104,8 @@
           </th>
         </tr>
       </thead>
-    </table>
+      </table>
+    </div>
     <NVirtualList
       ref="virtualListRef"
       :items="rows"

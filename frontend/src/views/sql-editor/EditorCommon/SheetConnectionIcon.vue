@@ -1,5 +1,7 @@
 <template>
-  <EngineIcon v-if="connected && instance" :engine="instance.engine" />
+  <div v-if="connected && instance" class="w-4">
+    <EngineIcon custom-class="w-full" :engine="instance.engine" />
+  </div>
   <UnlinkIcon v-else />
 </template>
 
