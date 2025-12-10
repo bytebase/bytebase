@@ -371,7 +371,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     () => project.value,
     async (project) => {
       await initProject(project);
-    },
+    }
   );
 
   // some shortcuts

@@ -386,7 +386,7 @@ onMounted(async () => {
   ]);
 
   await migrateLegacyCache();
-  await tabStore.initProject(project)
+  await tabStore.initProject(project);
   await initializeConnectionFromQuery();
   syncURLWithConnection();
 });
