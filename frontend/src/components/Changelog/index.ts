@@ -1,11 +1,5 @@
-import AffectedTablesSelect from "./AffectedTablesSelect.vue";
 import ChangelogDataTable from "./ChangelogDataTable.vue";
 import ChangelogDetail from "./ChangelogDetail.vue";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 
-export {
-  ChangelogDetail,
-  ChangelogStatusIcon,
-  ChangelogDataTable,
-  AffectedTablesSelect,
-};
+export { ChangelogDetail, ChangelogStatusIcon, ChangelogDataTable };

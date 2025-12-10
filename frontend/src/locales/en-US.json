@@ -1626,9 +1626,7 @@
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "export": "Export Changelog",
     "need-to-select-first": "Need to select changelog first",
-    "all-tables": "All tables",
-    "affected-tables": "Affected Tables",
-    "select-affection-tables": "Select affected tables",
+
     "rollback-tip": "Select a specific DDL changelog to rollback."
   },
   "database": {

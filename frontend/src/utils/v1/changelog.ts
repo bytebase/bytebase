@@ -1,9 +1,8 @@
 import { create } from "@bufbuild/protobuf";
-import { isEqual, isUndefined, orderBy, uniqBy } from "lodash-es";
 import { t } from "@/plugins/i18n";
-import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { type AffectedTable, EmptyAffectedTable, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
   Changelog_Type,
@@ -43,57 +42,6 @@ export const changelogLink = (changelog: Changelog): string => {
   return [databaseV1Url(composedDatabase), "changelogs", changelogUID].join(
     "/"
   );
-};
-
-export const getAffectedTablesOfChangelog = (
-  changelog: Changelog
-): AffectedTable[] => {
-  const { databaseName } = extractDatabaseNameAndChangelogUID(changelog.name);
-  const database = useDatabaseV1Store().getDatabaseByName(databaseName);
-  const metadata = useDBSchemaV1Store().getDatabaseMetadata(database.name);
-  return uniqBy(
-    orderBy(
-      changelog.changedResources?.databases
-        .find((db) => db.name === database.databaseName)
-        ?.schemas.map((schema) => {
-          return schema.tables.map((table) => {
-            const dropped = isUndefined(
-              metadata.schemas
-                .find((s) => s.name === schema.name)
-                ?.tables.find((t) => t.name === table.name)
-            );
-            return {
-              schema: schema.name,
-              table: table.name,
-              dropped,
-            };
-          });
-        })
-        .flat() || [],
-      ["dropped"]
-    ),
-    (affectedTable) => `${affectedTable.schema}.${affectedTable.table}`
-  );
-};
-
-export const stringifyAffectedTable = (affectedTable: AffectedTable) => {
-  const { schema, table } = affectedTable;
-  if (schema !== "") {
-    return `${schema}.${table}`;
-  }
-  return table;
-};
-
-export const getAffectedTableDisplayName = (affectedTable: AffectedTable) => {
-  if (isEqual(affectedTable, EmptyAffectedTable)) {
-    return t("changelog.all-tables");
-  }
-
-  let name = stringifyAffectedTable(affectedTable);
-  if (affectedTable.dropped) {
-    name = `${name}(deleted)`;
-  }
-  return name;
 };
 
 export const mockLatestChangelog = (

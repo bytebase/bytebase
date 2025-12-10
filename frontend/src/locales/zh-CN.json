@@ -1626,9 +1626,7 @@
     "establish-database-baseline": "建立「{name}」基线",
     "export": "导出变更历史",
     "need-to-select-first": "需要先选择变更历史",
-    "all-tables": "所有表",
-    "affected-tables": "受影响的表",
-    "select-affection-tables": "选择受影响的表",
+
     "rollback-tip": "选择要回滚到的某个 DDL 历史记录。"
   },
   "database": {
