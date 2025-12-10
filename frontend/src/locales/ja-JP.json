@@ -1626,9 +1626,7 @@
     "establish-database-baseline": "ベースライン「{name}」を作成します",
     "export": "変更履歴のエクスポート",
     "need-to-select-first": "最初に変更履歴を選択する必要があります",
-    "all-tables": "すべてのテーブル",
-    "affected-tables": "影響を受けるテーブル",
-    "select-affection-tables": "影響を受けるテーブルを選択",
+
     "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。"
   },
   "database": {

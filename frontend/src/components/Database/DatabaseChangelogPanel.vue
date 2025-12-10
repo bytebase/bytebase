@@ -102,7 +102,7 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -117,7 +117,7 @@ import {
   useChangelogStore,
   useDatabaseV1Store,
 } from "@/store";
-import type { ComposedDatabase, SearchChangeLogParams, Table } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {

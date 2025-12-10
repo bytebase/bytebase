@@ -1626,9 +1626,7 @@
     "establish-database-baseline": "Establecer línea base de \"{name}\"",
     "export": "Exportar historial de cambios",
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
-    "all-tables": "Todas las tablas",
-    "affected-tables": "Tablas afectadas",
-    "select-affection-tables": "Seleccionar tablas afectadas",
+
     "rollback-tip": "Seleccione un historial de DDL específico para revertir."
   },
   "database": {

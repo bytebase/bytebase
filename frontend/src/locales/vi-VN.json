@@ -1626,9 +1626,7 @@
     "establish-database-baseline": "Thiết lập đường cơ sở \"{name}\"",
     "export": "Xuất Nhật ký thay đổi",
     "need-to-select-first": "Cần chọn nhật ký thay đổi trước",
-    "all-tables": "Tất cả các bảng",
-    "affected-tables": "Bảng bị ảnh hưởng",
-    "select-affection-tables": "Chọn bảng bị ảnh hưởng",
+
     "rollback-tip": "Chọn một nhật ký thay đổi DDL cụ thể để hoàn tác."
   },
   "database": {
