@@ -509,8 +509,11 @@ type DatabaseSchemaMetadata struct {
 	// The list of event triggers in a database (PostgreSQL specific).
 	// Event triggers are database-level objects, not schema-scoped.
 	EventTriggers []*EventTriggerMetadata `protobuf:"bytes,11,rep,name=event_triggers,json=eventTriggers,proto3" json:"event_triggers,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Schemas that were skipped during sync due to insufficient permissions.
+	// These schemas exist in the database but could not be synced.
+	SkippedSchemas []string `protobuf:"bytes,12,rep,name=skipped_schemas,json=skippedSchemas,proto3" json:"skipped_schemas,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *DatabaseSchemaMetadata) Reset() {
@@ -616,6 +619,13 @@ func (x *DatabaseSchemaMetadata) GetSearchPath() string {
 func (x *DatabaseSchemaMetadata) GetEventTriggers() []*EventTriggerMetadata {
 	if x != nil {
 		return x.EventTriggers
+	}
+	return nil
+}
+
+func (x *DatabaseSchemaMetadata) GetSkippedSchemas() []string {
+	if x != nil {
+		return x.SkippedSchemas
 	}
 	return nil
 }
@@ -4583,7 +4593,7 @@ const file_store_database_proto_rawDesc = "" +
 	"\aversion\x18\a \x01(\tR\aversion\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x84\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xad\x04\n" +
 	"\x16DatabaseSchemaMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1e.bytebase.store.SchemaMetadataR\aschemas\x12#\n" +
@@ -4599,7 +4609,8 @@ const file_store_database_proto_rawDesc = "" +
 	"\vsearch_path\x18\n" +
 	" \x01(\tR\n" +
 	"searchPath\x12K\n" +
-	"\x0eevent_triggers\x18\v \x03(\v2$.bytebase.store.EventTriggerMetadataR\reventTriggers\"\\\n" +
+	"\x0eevent_triggers\x18\v \x03(\v2$.bytebase.store.EventTriggerMetadataR\reventTriggers\x12'\n" +
+	"\x0fskipped_schemas\x18\f \x03(\tR\x0eskippedSchemas\"\\\n" +
 	"\x16LinkedDatabaseMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x12\n" +

@@ -1104,6 +1104,7 @@ DatabaseSchemaMetadata is the schema metadata for databases.
 | owner | [string](#string) |  |  |
 | search_path | [string](#string) |  | The search_path is the search path of a PostgreSQL database. |
 | event_triggers | [EventTriggerMetadata](#bytebase-store-EventTriggerMetadata) | repeated | The list of event triggers in a database (PostgreSQL specific). Event triggers are database-level objects, not schema-scoped. |
+| skipped_schemas | [string](#string) | repeated | Schemas that were skipped during sync due to insufficient permissions. These schemas exist in the database but could not be synced. |
 
 
 

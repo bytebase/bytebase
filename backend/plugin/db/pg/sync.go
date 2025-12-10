@@ -98,11 +98,41 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get extension dependencies from database %q", d.databaseName)
 	}
-	schemas, schemaOwners, schemaComments, skipDumps, err := getSchemas(txn, extensionDepend)
+
+	// Pre-filter accessible schemas to avoid permission errors on Supabase and similar restricted environments.
+	accessibleSchemas, skippedSchemas, err := filterAccessibleSchemas(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to filter accessible schemas from database %q", d.databaseName)
+	}
+
+	// Log schema filtering results for debugging
+	if len(skippedSchemas) > 0 {
+		slog.Info("Schema sync: some schemas skipped due to insufficient permissions",
+			slog.String("database", d.databaseName),
+			slog.Int("accessible", len(accessibleSchemas)),
+			slog.Int("skipped", len(skippedSchemas)),
+			slog.Any("skipped_schemas", skippedSchemas))
+	}
+
+	// Handle edge case: no accessible schemas
+	if len(accessibleSchemas) == 0 {
+		slog.Warn("No accessible schemas found",
+			slog.String("database", d.databaseName),
+			slog.Any("skipped_schemas", skippedSchemas))
+
+		if err := txn.Commit(); err != nil {
+			return nil, err
+		}
+
+		databaseMetadata.SkippedSchemas = skippedSchemas
+		return databaseMetadata, nil
+	}
+
+	schemas, schemaOwners, schemaComments, skipDumps, err := getSchemas(txn, extensionDepend, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", d.databaseName)
 	}
-	columnMap, err := getTableColumns(txn)
+	columnMap, err := getTableColumns(txn, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get columns from database %q", d.databaseName)
 	}
@@ -113,54 +143,54 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, errors.Wrapf(err, "failed to get index inheritance from database %q", d.databaseName)
 		}
 	}
-	indexMap, err := getIndexes(txn, indexInheritanceMap)
+	indexMap, err := getIndexes(txn, indexInheritanceMap, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indexes from database %q", d.databaseName)
 	}
-	triggerMap, err := getTriggers(txn, extensionDepend)
+	triggerMap, err := getTriggers(txn, extensionDepend, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get triggers from database %q", d.databaseName)
 	}
-	checksMap, err := getChecks(txn)
+	checksMap, err := getChecks(txn, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get checks from database %q", d.databaseName)
 	}
-	excludesMap, err := getExcludeConstraints(txn)
+	excludesMap, err := getExcludeConstraints(txn, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get exclude constraints from database %q", d.databaseName)
 	}
-	tableMap, externalTableMap, tableOidMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, triggerMap, checksMap, excludesMap, extensionDepend)
+	tableMap, externalTableMap, tableOidMap, err := getTables(txn, isAtLeastPG10, columnMap, indexMap, triggerMap, checksMap, excludesMap, extensionDepend, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
 	var tablePartitionMap map[db.TableKey][]*storepb.TablePartitionMetadata
 	if isAtLeastPG10 {
-		tablePartitionMap, err = getTablePartitions(txn, indexMap, checksMap, excludesMap)
+		tablePartitionMap, err = getTablePartitions(txn, indexMap, checksMap, excludesMap, accessibleSchemas)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get table partitions from database %q", d.databaseName)
 		}
 	}
-	viewMap, viewOidMap, err := getViews(txn, columnMap, triggerMap, extensionDepend)
+	viewMap, viewOidMap, err := getViews(txn, columnMap, triggerMap, extensionDepend, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", d.databaseName)
 	}
-	ruleMap, err := getRules(txn)
+	ruleMap, err := getRules(txn, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get rules from database %q", d.databaseName)
 	}
-	materializedViewMap, materializedViewOidMap, err := getMaterializedViews(txn, indexMap, triggerMap, extensionDepend)
+	materializedViewMap, materializedViewOidMap, err := getMaterializedViews(txn, indexMap, triggerMap, extensionDepend, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", d.databaseName)
 	}
-	functionDependencyTables, err := getFunctionDependencyTables(txn)
+	functionDependencyTables, err := getFunctionDependencyTables(txn, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get function dependency tables from database %q", d.databaseName)
 	}
-	functionMap, err := getFunctions(txn, functionDependencyTables, tableOidMap, viewOidMap, materializedViewOidMap, extensionDepend)
+	functionMap, err := getFunctions(txn, functionDependencyTables, tableOidMap, viewOidMap, materializedViewOidMap, extensionDepend, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get functions from database %q", d.databaseName)
 	}
-	sequenceMap, err := getSequences(txn, tableOidMap, extensionDepend)
+	sequenceMap, err := getSequences(txn, tableOidMap, extensionDepend, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sequences from database %q", d.databaseName)
 	}
@@ -170,7 +200,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, errors.Wrapf(err, "failed to get extensions from database %q", d.databaseName)
 	}
 
-	enumTypes, err := getEnumTypes(txn, extensionDepend)
+	enumTypes, err := getEnumTypes(txn, extensionDepend, accessibleSchemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get enum types from database %q", d.databaseName)
 	}
@@ -216,6 +246,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 	databaseMetadata.Extensions = extensions
 	databaseMetadata.EventTriggers = eventTriggers
+	databaseMetadata.SkippedSchemas = skippedSchemas
 
 	return databaseMetadata, err
 }
@@ -262,19 +293,20 @@ func getExtensionDepend(txn *sql.Tx) (map[int]bool, error) {
 	return extensionDepend, nil
 }
 
-var listCheckQuery = `
+func getListCheckQuery(schemaFilter string) string {
+	return fmt.Sprintf(`
 SELECT nsp.nspname, rel.relname, con.conname, pg_get_constraintdef(con.oid, true)
     FROM pg_catalog.pg_constraint con
         INNER JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid
         INNER JOIN pg_catalog.pg_namespace nsp ON nsp.oid = connamespace
-        WHERE contype = 'c' and ` + fmt.Sprintf(`nsp.nspname NOT IN (%s)
-        AND nsp.nspname NOT LIKE 'pg_temp%%'
-        AND nsp.nspname NOT LIKE 'pg_toast%%'
-        ORDER BY nsp.nspname, rel.relname, con.conname`, pgparser.SystemSchemaWhereClause)
+        WHERE contype = 'c' AND %s
+        ORDER BY nsp.nspname, rel.relname, con.conname`, schemaFilter)
+}
 
-func getChecks(txn *sql.Tx) (map[db.TableKey][]*storepb.CheckConstraintMetadata, error) {
+func getChecks(txn *sql.Tx, accessibleSchemas []string) (map[db.TableKey][]*storepb.CheckConstraintMetadata, error) {
 	checksMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
-	rows, err := txn.Query(listCheckQuery)
+	query := getListCheckQuery(buildSchemaFilter("nsp.nspname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -297,18 +329,19 @@ func getChecks(txn *sql.Tx) (map[db.TableKey][]*storepb.CheckConstraintMetadata,
 	return checksMap, nil
 }
 
-var listExcludeConstraintsQuery = `
+func getListExcludeConstraintsQuery(schemaFilter string) string {
+	return fmt.Sprintf(`
 SELECT nsp.nspname, rel.relname, con.conname, pg_get_constraintdef(con.oid, true)
     FROM pg_catalog.pg_constraint con
         INNER JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid
         INNER JOIN pg_catalog.pg_namespace nsp ON nsp.oid = connamespace
-        WHERE contype = 'x' and ` + fmt.Sprintf(`nsp.nspname NOT IN (%s)
-        AND nsp.nspname NOT LIKE 'pg_temp%%'
-        AND nsp.nspname NOT LIKE 'pg_toast%%'`, pgparser.SystemSchemaWhereClause)
+        WHERE contype = 'x' AND %s`, schemaFilter)
+}
 
-func getExcludeConstraints(txn *sql.Tx) (map[db.TableKey][]*storepb.ExcludeConstraintMetadata, error) {
+func getExcludeConstraints(txn *sql.Tx, accessibleSchemas []string) (map[db.TableKey][]*storepb.ExcludeConstraintMetadata, error) {
 	excludesMap := make(map[db.TableKey][]*storepb.ExcludeConstraintMetadata)
-	rows, err := txn.Query(listExcludeConstraintsQuery)
+	query := getListExcludeConstraintsQuery(buildSchemaFilter("nsp.nspname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +364,8 @@ func getExcludeConstraints(txn *sql.Tx) (map[db.TableKey][]*storepb.ExcludeConst
 	return excludesMap, nil
 }
 
-var listForeignKeyQuery = `
+func getListForeignKeyQuery(schemaFilter string) string {
+	return fmt.Sprintf(`
 SELECT
 	n.nspname AS fk_schema,
 	conrelid::regclass AS fk_table,
@@ -344,18 +378,18 @@ SELECT
 	pg_get_constraintdef(c.oid) AS fk_def
 FROM
 	pg_constraint c
-	JOIN pg_namespace n ON n.oid = c.connamespace` + fmt.Sprintf(`
+	JOIN pg_namespace n ON n.oid = c.connamespace
 WHERE
-	n.nspname NOT IN(%s)
-	AND n.nspname NOT LIKE 'pg_temp%%'
-	AND n.nspname NOT LIKE 'pg_toast%%'
+	%s
 	AND c.contype = 'f'
 	AND c.conparentid = 0
-ORDER BY fk_schema, fk_table, fk_name;`, pgparser.SystemSchemaWhereClause)
+ORDER BY fk_schema, fk_table, fk_name;`, schemaFilter)
+}
 
-func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
+func getForeignKeys(txn *sql.Tx, accessibleSchemas []string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
-	rows, err := txn.Query(listForeignKeyQuery)
+	query := getListForeignKeyQuery(buildSchemaFilter("n.nspname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -471,18 +505,72 @@ func formatTableNameFromRegclass(name string) string {
 	return strings.Trim(name, `"`)
 }
 
-var listSchemaQuery = fmt.Sprintf(`
+// filterAccessibleSchemas returns two lists: schemas the user can access,
+// and schemas that were skipped due to insufficient permissions.
+func filterAccessibleSchemas(txn *sql.Tx) (accessible []string, skipped []string, err error) {
+	query := fmt.Sprintf(`
+		SELECT
+			nspname,
+			has_schema_privilege(oid, 'USAGE') as has_usage
+		FROM pg_catalog.pg_namespace
+		WHERE nspname NOT IN (%s)
+		  AND nspname NOT LIKE 'pg_temp%%'
+		  AND nspname NOT LIKE 'pg_toast%%'
+		ORDER BY nspname
+	`, pgparser.SystemSchemaWhereClause)
+
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var schemaName string
+		var hasUsage bool
+		if err := rows.Scan(&schemaName, &hasUsage); err != nil {
+			return nil, nil, err
+		}
+		if pgparser.IsSystemSchema(schemaName) {
+			continue
+		}
+		if hasUsage {
+			accessible = append(accessible, schemaName)
+		} else {
+			skipped = append(skipped, schemaName)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	return accessible, skipped, nil
+}
+
+// buildSchemaFilter returns a SQL clause for filtering schemas.
+// Uses pq.QuoteLiteral for proper escaping to prevent SQL injection.
+func buildSchemaFilter(columnName string, accessibleSchemas []string) string {
+	if len(accessibleSchemas) == 0 {
+		// Return a condition that matches nothing
+		return fmt.Sprintf("%s IN (NULL)", columnName)
+	}
+	quoted := make([]string, len(accessibleSchemas))
+	for i, s := range accessibleSchemas {
+		quoted[i] = pq.QuoteLiteral(s)
+	}
+	return fmt.Sprintf("%s IN (%s)", columnName, strings.Join(quoted, ","))
+}
+
+func getSchemas(txn *sql.Tx, extensionDepend map[int]bool, accessibleSchemas []string) ([]string, []string, []string, []bool, error) {
+	query := fmt.Sprintf(`
 SELECT oid, nspname, pg_catalog.pg_get_userbyid(nspowner) as schema_owner,
        obj_description(oid, 'pg_namespace') as schema_comment
 FROM pg_catalog.pg_namespace
-WHERE nspname NOT IN (%s)
-  AND nspname NOT LIKE 'pg_temp%%'
-  AND nspname NOT LIKE 'pg_toast%%'
+WHERE %s
 ORDER BY nspname;
-`, pgparser.SystemSchemaWhereClause)
-
-func getSchemas(txn *sql.Tx, extensionDepend map[int]bool) ([]string, []string, []string, []bool, error) {
-	rows, err := txn.Query(listSchemaQuery)
+`, buildSchemaFilter("nspname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -523,24 +611,22 @@ func getListForeignTableQuery() string {
 		foreign_table.foreign_server_name
 	FROM information_schema.foreign_tables AS foreign_table;`
 }
-func getListTableQuery(isAtLeastPG10 bool) string {
+func getListTableQuery(isAtLeastPG10 bool, schemaFilter string) string {
 	relisPartition := ""
 	if isAtLeastPG10 {
 		relisPartition = " AND pc.relispartition IS FALSE"
 	}
-	return `
+	return fmt.Sprintf(`
 	SELECT pc.oid, tbl.schemaname, tbl.tablename,
-		pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
-		pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
+		pg_table_size(format('%%s.%%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
+		pg_indexes_size(format('%%s.%%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
 		GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
-		obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment,
+		obj_description(format('%%s.%%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment,
 		tbl.tableowner
 	FROM pg_catalog.pg_tables tbl
-	LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass` + fmt.Sprintf(`
-	WHERE tbl.schemaname NOT IN (%s)
-	  AND tbl.schemaname NOT LIKE 'pg_temp%%'
-	  AND tbl.schemaname NOT LIKE 'pg_toast%%'%s
-	ORDER BY tbl.schemaname, tbl.tablename;`, pgparser.SystemSchemaWhereClause, relisPartition)
+	LEFT JOIN pg_class as pc ON pc.oid = format('%%s.%%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass
+	WHERE %s%s
+	ORDER BY tbl.schemaname, tbl.tablename;`, schemaFilter, relisPartition)
 }
 
 // getTables gets all tables of a database.
@@ -553,8 +639,9 @@ func getTables(
 	checksMap map[db.TableKey][]*storepb.CheckConstraintMetadata,
 	excludesMap map[db.TableKey][]*storepb.ExcludeConstraintMetadata,
 	extensionDepend map[int]bool,
+	accessibleSchemas []string,
 ) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, map[int]*db.TableKeyWithColumns, error) {
-	foreignKeysMap, err := getForeignKeys(txn)
+	foreignKeysMap, err := getForeignKeys(txn, accessibleSchemas)
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to get foreign keys")
 	}
@@ -565,7 +652,7 @@ func getTables(
 
 	tableMap := make(map[string][]*storepb.TableMetadata)
 	tableOidMap := make(map[int]*db.TableKeyWithColumns)
-	query := getListTableQuery(isAtLeastPG10)
+	query := getListTableQuery(isAtLeastPG10, buildSchemaFilter("tbl.schemaname", accessibleSchemas))
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, nil, nil, err
@@ -644,7 +731,8 @@ func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMe
 	return foreignTablesMap, nil
 }
 
-var listTablePartitionQuery = `
+func getListTablePartitionQuery(schemaFilter string) string {
+	return fmt.Sprintf(`
 SELECT
 	n.nspname AS schema_name,
 	c.relname AS table_name,
@@ -657,22 +745,22 @@ FROM
 	pg_catalog.pg_class c
 	LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
     LEFT JOIN (
-		pg_inherits i 
-		INNER JOIN pg_class c2 ON i.inhparent = c2.oid 
+		pg_inherits i
+		INNER JOIN pg_class c2 ON i.inhparent = c2.oid
 		LEFT JOIN pg_namespace n2 ON n2.oid = c2.relnamespace
 		LEFT JOIN pg_partitioned_table p ON p.partrelid = c2.oid
-	) i2 ON i2.inhrelid = c.oid 
+	) i2 ON i2.inhrelid = c.oid
 WHERE
 	((c.relkind = 'r'::"char") OR (c.relkind = 'f'::"char") OR (c.relkind = 'p'::"char"))
-	AND c.relispartition IS TRUE ` + fmt.Sprintf(`
-	AND n.nspname NOT IN (%s)
-	AND n.nspname NOT LIKE 'pg_temp%%'
-	AND n.nspname NOT LIKE 'pg_toast%%'
-ORDER BY c.oid;`, pgparser.SystemSchemaWhereClause)
+	AND c.relispartition IS TRUE
+	AND %s
+ORDER BY c.oid;`, schemaFilter)
+}
 
-func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, checksMap map[db.TableKey][]*storepb.CheckConstraintMetadata, excludesMap map[db.TableKey][]*storepb.ExcludeConstraintMetadata) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
+func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, checksMap map[db.TableKey][]*storepb.CheckConstraintMetadata, excludesMap map[db.TableKey][]*storepb.ExcludeConstraintMetadata, accessibleSchemas []string) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
 	result := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
-	rows, err := txn.Query(listTablePartitionQuery)
+	query := getListTablePartitionQuery(buildSchemaFilter("n.nspname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -763,7 +851,8 @@ func setTxSearchPath(txn *sql.Tx, searchPath string) error {
 	return nil
 }
 
-var listColumnQuery = `
+func getListColumnQuery(schemaFilter string) string {
+	return fmt.Sprintf(`
 SELECT
 	cols.table_schema,
 	cols.table_name,
@@ -780,17 +869,17 @@ SELECT
 	cols.udt_schema,
 	cols.udt_name,
 	cols.identity_generation,
-	pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
-FROM INFORMATION_SCHEMA.COLUMNS AS cols` + fmt.Sprintf(`
-WHERE cols.table_schema NOT IN (%s)
-  AND cols.table_schema NOT LIKE 'pg_temp%%'
-  AND cols.table_schema NOT LIKE 'pg_toast%%'
-ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, pgparser.SystemSchemaWhereClause)
+	pg_catalog.col_description(format('%%s.%%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
+FROM INFORMATION_SCHEMA.COLUMNS AS cols
+WHERE %s
+ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, schemaFilter)
+}
 
 // getTableColumns gets the columns of a table.
-func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
+func getTableColumns(txn *sql.Tx, accessibleSchemas []string) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
 	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
-	rows, err := txn.Query(listColumnQuery)
+	query := getListColumnQuery(buildSchemaFilter("cols.table_schema", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -880,20 +969,21 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	return columnsMap, nil
 }
 
-var listMaterializedViewQuery = `
-SELECT pc.oid, schemaname, matviewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(matviewname))::regclass)
+func getListMaterializedViewQuery(schemaFilter string) string {
+	return fmt.Sprintf(`
+SELECT pc.oid, schemaname, matviewname, definition, obj_description(format('%%s.%%s', quote_ident(schemaname), quote_ident(matviewname))::regclass)
 FROM pg_catalog.pg_matviews
-	LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(schemaname), quote_ident(matviewname))::regclass` + fmt.Sprintf(`
-WHERE schemaname NOT IN (%s)
-  AND schemaname NOT LIKE 'pg_temp%%'
-  AND schemaname NOT LIKE 'pg_toast%%'
-ORDER BY schemaname, matviewname;`, pgparser.SystemSchemaWhereClause)
+	LEFT JOIN pg_class as pc ON pc.oid = format('%%s.%%s', quote_ident(schemaname), quote_ident(matviewname))::regclass
+WHERE %s
+ORDER BY schemaname, matviewname;`, schemaFilter)
+}
 
-func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.MaterializedViewMetadata, map[int]*db.TableKey, error) {
+func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool, accessibleSchemas []string) (map[string][]*storepb.MaterializedViewMetadata, map[int]*db.TableKey, error) {
 	matviewMap := make(map[string][]*storepb.MaterializedViewMetadata)
 	materializedViewOidMap := make(map[int]*db.TableKey)
 
-	rows, err := txn.Query(listMaterializedViewQuery)
+	query := getListMaterializedViewQuery(buildSchemaFilter("schemaname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -946,21 +1036,22 @@ func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.Index
 	return matviewMap, materializedViewOidMap, nil
 }
 
-var listViewQuery = `
-SELECT pc.oid, schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass)
+func getListViewQuery(schemaFilter string) string {
+	return fmt.Sprintf(`
+SELECT pc.oid, schemaname, viewname, definition, obj_description(format('%%s.%%s', quote_ident(schemaname), quote_ident(viewname))::regclass)
 FROM pg_catalog.pg_views
-	LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass` + fmt.Sprintf(`
-WHERE schemaname NOT IN (%s)
-  AND schemaname NOT LIKE 'pg_temp%%'
-  AND schemaname NOT LIKE 'pg_toast%%'
-ORDER BY schemaname, viewname;`, pgparser.SystemSchemaWhereClause)
+	LEFT JOIN pg_class as pc ON pc.oid = format('%%s.%%s', quote_ident(schemaname), quote_ident(viewname))::regclass
+WHERE %s
+ORDER BY schemaname, viewname;`, schemaFilter)
+}
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.ViewMetadata, map[int]*db.TableKey, error) {
+func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool, accessibleSchemas []string) (map[string][]*storepb.ViewMetadata, map[int]*db.TableKey, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 	viewOidMap := make(map[int]*db.TableKey)
 
-	rows, err := txn.Query(listViewQuery)
+	query := getListViewQuery(buildSchemaFilter("schemaname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1059,11 +1150,11 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 }
 
 // getRules gets all rules for tables and views in a database.
-func getRules(txn *sql.Tx) (map[db.TableKey][]*storepb.RuleMetadata, error) {
+func getRules(txn *sql.Tx, accessibleSchemas []string) (map[db.TableKey][]*storepb.RuleMetadata, error) {
 	ruleMap := make(map[db.TableKey][]*storepb.RuleMetadata)
 
-	query := `
-		SELECT 
+	query := fmt.Sprintf(`
+		SELECT
 			n.nspname AS schema_name,
 			c.relname AS table_name,
 			r.rulename AS rule_name,
@@ -1081,8 +1172,8 @@ func getRules(txn *sql.Tx) (map[db.TableKey][]*storepb.RuleMetadata, error) {
 		JOIN pg_class c ON c.oid = r.ev_class
 		JOIN pg_namespace n ON n.oid = c.relnamespace
 		WHERE r.rulename NOT IN ('_RETURN', '_NOTHING')
-			AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
-		ORDER BY n.nspname, c.relname, r.rulename;`
+			AND %s
+		ORDER BY n.nspname, c.relname, r.rulename;`, buildSchemaFilter("n.nspname", accessibleSchemas))
 
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -1162,8 +1253,8 @@ func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
 	return extensions, nil
 }
 
-func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*storepb.EnumTypeMetadata, error) {
-	query := `
+func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool, accessibleSchemas []string) (map[string][]*storepb.EnumTypeMetadata, error) {
+	query := fmt.Sprintf(`
 	SELECT
 		pt.oid,
 		pn.nspname as schema_name,
@@ -1173,11 +1264,9 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 	FROM pg_enum as pe
 		LEFT JOIN pg_type as pt ON pe.enumtypid = pt.oid
 		LEFT JOIN pg_namespace as pn ON pt.typnamespace = pn.oid
-	WHERE pn.nspname NOT IN (%s)
-	  AND pn.nspname NOT LIKE 'pg_temp%%'
-	  AND pn.nspname NOT LIKE 'pg_toast%%'
-	ORDER BY pn.nspname, pt.typname, pe.enumsortorder;`
-	rows, err := txn.Query(fmt.Sprintf(query, pgparser.SystemSchemaWhereClause))
+	WHERE %s
+	ORDER BY pn.nspname, pt.typname, pe.enumsortorder;`, buildSchemaFilter("pn.nspname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -1235,7 +1324,7 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 }
 
 // getSequences gets all sequences of a database.
-func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, extensionDepend map[int]bool) (map[string][]*storepb.SequenceMetadata, error) {
+func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, extensionDepend map[int]bool, accessibleSchemas []string) (map[string][]*storepb.SequenceMetadata, error) {
 	sequenceOwnerMap, err := getSequenceOwners(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sequence owners")
@@ -1257,10 +1346,8 @@ func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, exte
 		pg_catalog.obj_description(pc.oid) as sequence_comment
 	FROM pg_sequences
 		LEFT JOIN pg_class as pc ON pc.oid = format('%%s.%%s', quote_ident(schemaname), quote_ident(sequencename))::regclass
-	WHERE schemaname NOT IN (%s)
-	  AND schemaname NOT LIKE 'pg_temp%%%%'
-	  AND schemaname NOT LIKE 'pg_toast%%%%'
-	ORDER BY schemaname, sequencename;`, pgparser.SystemSchemaWhereClause)
+	WHERE %s
+	ORDER BY schemaname, sequencename;`, buildSchemaFilter("schemaname", accessibleSchemas))
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -1359,8 +1446,8 @@ func getSequenceOwners(txn *sql.Tx) (map[int]ColumnOidKey, error) {
 	return sequenceOwnerMap, nil
 }
 
-func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*storepb.TriggerMetadata, error) {
-	query := `
+func getTriggers(txn *sql.Tx, extensionDepend map[int]bool, accessibleSchemas []string) (map[db.TableKey][]*storepb.TriggerMetadata, error) {
+	query := fmt.Sprintf(`
 	SELECT
 		pt.oid,
 		pn.nspname as schema_name,
@@ -1371,8 +1458,8 @@ func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*
 	FROM pg_trigger as pt
 		LEFT JOIN pg_class as pc ON pc.oid = pt.tgrelid
 		LEFT JOIN pg_namespace as pn ON pn.oid = pc.relnamespace
-	WHERE pn.nspname NOT IN (%s) AND pt.tgisinternal = false;`
-	rows, err := txn.Query(fmt.Sprintf(query, pgparser.SystemSchemaWhereClause))
+	WHERE %s AND pt.tgisinternal = false;`, buildSchemaFilter("pn.nspname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -1501,8 +1588,9 @@ func buildEventTriggerDefinition(et *storepb.EventTriggerMetadata) string {
 
 // getUniqueConstraints is no longer needed - we get constraint info directly from pg_constraint in the main query
 
-var listIndexQuery = `
-SELECT 
+func getListIndexQuery(schemaFilter string) string {
+	return fmt.Sprintf(`
+SELECT
     n.nspname as schema_name,
     t.relname as table_name,
     i.relname as index_name,
@@ -1541,11 +1629,10 @@ FROM pg_class i
 JOIN pg_index ix ON i.oid = ix.indexrelid
 JOIN pg_class t ON ix.indrelid = t.oid
 JOIN pg_namespace n ON t.relnamespace = n.oid
-JOIN pg_am am ON i.relam = am.oid` + fmt.Sprintf(`
-WHERE n.nspname NOT IN (%s)
-  AND n.nspname NOT LIKE 'pg_temp%%'
-  AND n.nspname NOT LIKE 'pg_toast%%'
-ORDER BY n.nspname, t.relname, i.relname;`, pgparser.SystemSchemaWhereClause)
+JOIN pg_am am ON i.relam = am.oid
+WHERE %s
+ORDER BY n.nspname, t.relname, i.relname;`, schemaFilter)
+}
 
 // parseIndexOptions parses PostgreSQL indoption int2vector to extract sort order information
 // indoption is a space-separated string of integers where each integer is a bitmask:
@@ -1578,10 +1665,11 @@ func parseIndexOptions(optionsStr string, keyCount int) ([]bool, []bool) {
 }
 
 // getIndexes gets all indices of a database.
-func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey, accessibleSchemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
 
-	rows, err := txn.Query(listIndexQuery)
+	query := getListIndexQuery(buildSchemaFilter("n.nspname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -1658,24 +1746,25 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 	return indexMap, nil
 }
 
-var listFunctionDependencyTablesQuery = `
+func getListFunctionDependencyTablesQuery(schemaFilter string) string {
+	return fmt.Sprintf(`
 select
 	p.oid as function_oid,
 	pt.typrelid as table_oid
 from pg_proc p
 	left join pg_depend d on p.oid = d.objid
 	left join pg_type pt on d.refobjid = pt.oid
-	left join pg_namespace n on p.pronamespace = n.oid` + fmt.Sprintf(`
-where n.nspname not in (%s)
-  AND n.nspname NOT LIKE 'pg_temp%%'
-  AND n.nspname NOT LIKE 'pg_toast%%'
+	left join pg_namespace n on p.pronamespace = n.oid
+where %s
   AND pt.typrelid IS NOT NULL
-`, pgparser.SystemSchemaWhereClause)
+`, schemaFilter)
+}
 
-func getFunctionDependencyTables(txn *sql.Tx) (map[int][]int, error) {
+func getFunctionDependencyTables(txn *sql.Tx, accessibleSchemas []string) (map[int][]int, error) {
 	dependencyTableMap := make(map[int][]int)
 
-	rows, err := txn.Query(listFunctionDependencyTablesQuery)
+	query := getListFunctionDependencyTablesQuery(buildSchemaFilter("n.nspname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -1696,7 +1785,8 @@ func getFunctionDependencyTables(txn *sql.Tx) (map[int][]int, error) {
 	return dependencyTableMap, nil
 }
 
-var listFunctionQuery = `
+func getListFunctionQuery(schemaFilter string) string {
+	return fmt.Sprintf(`
 select p.oid, n.nspname as function_schema,
 	p.proname as function_name,
 	pg_catalog.pg_get_function_identity_arguments(p.oid) as arguments,
@@ -1707,11 +1797,10 @@ select p.oid, n.nspname as function_schema,
 from pg_proc p
 left join pg_namespace n on p.pronamespace = n.oid
 left join pg_language l on p.prolang = l.oid
-left join pg_type t on t.oid = p.prorettype ` + fmt.Sprintf(`
-where n.nspname not in (%s)
-  AND n.nspname NOT LIKE 'pg_temp%%'
-  AND n.nspname NOT LIKE 'pg_toast%%'
-order by function_schema, function_name;`, pgparser.SystemSchemaWhereClause)
+left join pg_type t on t.oid = p.prorettype
+where %s
+order by function_schema, function_name;`, schemaFilter)
+}
 
 // getFunctions gets all functions of a database.
 func getFunctions(
@@ -1720,10 +1809,12 @@ func getFunctions(
 	tableOidMap map[int]*db.TableKeyWithColumns,
 	viewOidMap, materializedViewOidMap map[int]*db.TableKey,
 	extensionDepend map[int]bool,
+	accessibleSchemas []string,
 ) (map[string][]*storepb.FunctionMetadata, error) {
 	functionMap := make(map[string][]*storepb.FunctionMetadata)
 
-	rows, err := txn.Query(listFunctionQuery)
+	query := getListFunctionQuery(buildSchemaFilter("n.nspname", accessibleSchemas))
+	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}

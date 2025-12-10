@@ -104,6 +104,14 @@ func (x *DatabaseSchemaMetadata) Equal(y *DatabaseSchemaMetadata) bool {
 			return false
 		}
 	}
+	if len(x.SkippedSchemas) != len(y.SkippedSchemas) {
+		return false
+	}
+	for i := 0; i < len(x.SkippedSchemas); i++ {
+		if x.SkippedSchemas[i] != y.SkippedSchemas[i] {
+			return false
+		}
+	}
 	return true
 }
 

@@ -50,6 +50,10 @@ message DatabaseSchemaMetadata {
   // The list of event triggers in a database (PostgreSQL specific).
   // Event triggers are database-level objects, not schema-scoped.
   repeated EventTriggerMetadata event_triggers = 11;
+
+  // Schemas that were skipped during sync due to insufficient permissions.
+  // These schemas exist in the database but could not be synced.
+  repeated string skipped_schemas = 12;
 }
 
 message LinkedDatabaseMetadata {

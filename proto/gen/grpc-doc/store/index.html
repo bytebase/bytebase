@@ -3409,6 +3409,14 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
 Event triggers are database-level objects, not schema-scoped. </p></td>
                 </tr>
               
+                <tr>
+                  <td>skipped_schemas</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Schemas that were skipped during sync due to insufficient permissions.
+These schemas exist in the database but could not be synced. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
