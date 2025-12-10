@@ -132,7 +132,6 @@ const initializeProject = async () => {
     // clear last visit project.
     editorStore.setProject("");
   }
-
   return editorStore.project;
 };
 
