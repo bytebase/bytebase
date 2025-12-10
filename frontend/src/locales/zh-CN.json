@@ -1779,7 +1779,6 @@
         "self": "检测到 Schema 偏差",
         "description": "当前数据库 Schema 与 Bytebase 中记录的 Schema 不一致。请及时检查并修复以避免潜在问题。"
       },
-      "format-version-mismatch-caveat": "注意：如果您最近升级了 Bytebase，这可能是由于 Schema 转储格式变更导致的误报。",
       "new-baseline": {
         "self": "建立新基线",
         "successfully-established": "成功建立新的基线"
