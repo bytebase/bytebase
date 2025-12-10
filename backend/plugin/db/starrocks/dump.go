@@ -80,35 +80,15 @@ const (
 )
 
 // Dump dumps the database.
-func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
-	// We must use the same MySQL connection to lock and unlock tables.
-	conn, err := d.db.Conn(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	options := sql.TxOptions{}
-	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.
-	// Beginning a transaction in the same session will implicitly release existing table locks.
-	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
-	txn, err := conn.BeginTx(ctx, &options)
-	if err != nil {
-		return err
-	}
-	defer txn.Rollback()
-
 	slog.Debug("begin to dump database", slog.String("database", d.databaseName))
-	if err := dumpTxn(txn, d.databaseName, out, d.dbType); err != nil {
-		return err
-	}
 
-	return txn.Commit()
-}
+	db := d.GetDB()
+	database := d.databaseName
+	dbType := d.dbType
 
-func dumpTxn(txn *sql.Tx, database string, out io.Writer, dbType storepb.Engine) error {
 	// Disable foreign key check.
 	// mysqldump uses the same mechanism. When there is any schema or data dependency, we have to disable
 	// the unique and foreign key check so that the restoring will not fail.
@@ -118,7 +98,7 @@ func dumpTxn(txn *sql.Tx, database string, out io.Writer, dbType storepb.Engine)
 
 	// Table and view statement.
 	// We have to dump the table before views because of the structure dependency.
-	tables, err := getTablesTx(txn, database, dbType)
+	tables, err := getTables(db, database, dbType)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get tables of database %q", database)
 	}
@@ -184,7 +164,7 @@ func dumpTxn(txn *sql.Tx, database string, out io.Writer, dbType storepb.Engine)
 	}
 
 	// Procedure and function (routine) statements.
-	routines, err := getRoutines(txn, database)
+	routines, err := getRoutines(db, database)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get routines of database %q", database)
 	}
@@ -195,7 +175,7 @@ func dumpTxn(txn *sql.Tx, database string, out io.Writer, dbType storepb.Engine)
 	}
 
 	// Event statements.
-	events, err := getEvents(txn, database)
+	events, err := getEvents(db, database)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get events of database %q", database)
 	}
@@ -256,11 +236,11 @@ type eventSchema struct {
 	statement string
 }
 
-// getTablesTx gets all tables of a database using the provided transaction.
-func getTablesTx(txn *sql.Tx, dbName string, dbType storepb.Engine) ([]*TableSchema, error) {
+// getTables gets all tables of a database using the provided database instance.
+func getTables(db *sql.DB, dbName string, dbType storepb.Engine) ([]*TableSchema, error) {
 	var tables []*TableSchema
 	query := fmt.Sprintf("SELECT TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA = '%s';", dbName)
-	rows, err := txn.Query(query)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +274,7 @@ func getTablesTx(txn *sql.Tx, dbName string, dbType storepb.Engine) ([]*TableSch
 	materializedViewNames := make(map[string]bool)
 	if dbType == storepb.Engine_DORIS {
 		mvQuery := fmt.Sprintf(`SELECT Name FROM mv_infos("database"="%s")`, dbName)
-		mvRows, err := txn.Query(mvQuery)
+		mvRows, err := db.Query(mvQuery)
 		if err != nil {
 			// mv_infos() might not be available in older versions, just log and continue
 			slog.Debug("failed to query mv_infos(), might not be supported", slog.String("error", err.Error()))
@@ -321,13 +301,13 @@ func getTablesTx(txn *sql.Tx, dbName string, dbType storepb.Engine) ([]*TableSch
 	}
 
 	for _, tbl := range tables {
-		stmt, err := getTableStmt(txn, dbName, tbl.Name, tbl.TableType)
+		stmt, err := getTableStmt(db, dbName, tbl.Name, tbl.TableType)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to call getTableStmt(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
 		}
 		tbl.Statement = stmt
 		if tbl.TableType == viewTableType || tbl.TableType == materializedViewType {
-			viewColumns, err := getViewColumns(txn, dbName, tbl.Name)
+			viewColumns, err := getViewColumns(db, dbName, tbl.Name)
 			if err != nil {
 				tbl.InvalidView = err.Error()
 			} else {
@@ -339,12 +319,12 @@ func getTablesTx(txn *sql.Tx, dbName string, dbType storepb.Engine) ([]*TableSch
 }
 
 // getTableStmt gets the create statement of a table.
-func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) {
+func getTableStmt(db *sql.DB, dbName, tblName, tblType string) (string, error) {
 	switch tblType {
 	case baseTableType:
 		query := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`;", dbName, tblName)
 		var stmt, unused string
-		if err := txn.QueryRow(query).Scan(&unused, &stmt); err != nil {
+		if err := db.QueryRow(query).Scan(&unused, &stmt); err != nil {
 			if err == sql.ErrNoRows {
 				return "", common.FormatDBErrorEmptyRowWithQuery(query)
 			}
@@ -357,7 +337,7 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 		// This differs from mysqldump as it includes.
 		query := fmt.Sprintf("SHOW CREATE VIEW `%s`.`%s`;", dbName, tblName)
 		var createStmt, unused string
-		if err := txn.QueryRow(query).Scan(&unused, &createStmt, &unused, &unused); err != nil {
+		if err := db.QueryRow(query).Scan(&unused, &createStmt, &unused, &unused); err != nil {
 			if err == sql.ErrNoRows {
 				return "", common.FormatDBErrorEmptyRowWithQuery(query)
 			}
@@ -371,7 +351,7 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 		// This command returns 2 columns: materialized view name and create statement.
 		query := fmt.Sprintf("SHOW CREATE MATERIALIZED VIEW `%s`.`%s`;", dbName, tblName)
 		var createStmt, unused string
-		if err := txn.QueryRow(query).Scan(&unused, &createStmt); err != nil {
+		if err := db.QueryRow(query).Scan(&unused, &createStmt); err != nil {
 			if err == sql.ErrNoRows {
 				return "", common.FormatDBErrorEmptyRowWithQuery(query)
 			}
@@ -387,11 +367,11 @@ func getTableStmt(txn *sql.Tx, dbName, tblName, tblType string) (string, error) 
 }
 
 // getViewColumns gets the create statement of a table.
-func getViewColumns(txn *sql.Tx, dbName, tblName string) ([]string, error) {
+func getViewColumns(db *sql.DB, dbName, tblName string) ([]string, error) {
 	query := fmt.Sprintf("SHOW COLUMNS FROM `%s`.`%s`;", dbName, tblName)
 	// https://dev.mysql.com/doc/refman/8.0/en/show-columns.html
 	// Field, Type, Null, Key, Default, Extra.
-	rows, err := txn.Query(query)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -413,12 +393,12 @@ func getViewColumns(txn *sql.Tx, dbName, tblName string) ([]string, error) {
 }
 
 // getRoutines gets all routines of a database.
-func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
+func getRoutines(db *sql.DB, dbName string) ([]*routineSchema, error) {
 	var routines []*routineSchema
 	for _, routineType := range []string{"FUNCTION", "PROCEDURE"} {
 		if err := func() error {
 			query := fmt.Sprintf("SHOW %s STATUS WHERE Db = '%s';", routineType, dbName)
-			rows, err := txn.Query(query)
+			rows, err := db.Query(query)
 			if err != nil {
 				return errors.Wrapf(err, "failed query %q", query)
 			}
@@ -449,7 +429,7 @@ func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 	}
 
 	for _, r := range routines {
-		stmt, err := getRoutineStmt(txn, dbName, r.name, r.routineType)
+		stmt, err := getRoutineStmt(db, dbName, r.name, r.routineType)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to call getRoutineStmt(%q, %q, %q)", dbName, r.name, r.routineType)
 		}
@@ -459,11 +439,11 @@ func getRoutines(txn *sql.Tx, dbName string) ([]*routineSchema, error) {
 }
 
 // getRoutineStmt gets the create statement of a routine.
-func getRoutineStmt(txn *sql.Tx, dbName, routineName, routineType string) (string, error) {
+func getRoutineStmt(db *sql.DB, dbName, routineName, routineType string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE %s `%s`.`%s`;", routineType, dbName, routineName)
 	var sqlmode, charset, collation, unused string
 	var stmt sql.NullString
-	if err := txn.QueryRow(query).Scan(
+	if err := db.QueryRow(query).Scan(
 		&unused,
 		&sqlmode,
 		&stmt,
@@ -500,10 +480,10 @@ func getReadableRoutineType(s string) string {
 }
 
 // getEvents gets all events of a database.
-func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
+func getEvents(db *sql.DB, dbName string) ([]*eventSchema, error) {
 	var events []*eventSchema
 	query := fmt.Sprintf("SHOW EVENTS FROM `%s`;", dbName)
-	rows, err := txn.Query(query)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -530,7 +510,7 @@ func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 	}
 
 	for _, r := range events {
-		stmt, err := getEventStmt(txn, dbName, r.name)
+		stmt, err := getEventStmt(db, dbName, r.name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to call getEventStmt(%q, %q)", dbName, r.name)
 		}
@@ -540,10 +520,10 @@ func getEvents(txn *sql.Tx, dbName string) ([]*eventSchema, error) {
 }
 
 // getEventStmt gets the create statement of an event.
-func getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
+func getEventStmt(db *sql.DB, dbName, eventName string) (string, error) {
 	query := fmt.Sprintf("SHOW CREATE EVENT `%s`.`%s`;", dbName, eventName)
 	var sqlmode, timezone, stmt, charset, collation, unused string
-	if err := txn.QueryRow(query).Scan(&unused, &sqlmode, &timezone, &stmt, &charset, &collation, &unused); err != nil {
+	if err := db.QueryRow(query).Scan(&unused, &sqlmode, &timezone, &stmt, &charset, &collation, &unused); err != nil {
 		if err == sql.ErrNoRows {
 			return "", common.FormatDBErrorEmptyRowWithQuery(query)
 		}
