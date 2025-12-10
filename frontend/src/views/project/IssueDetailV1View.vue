@@ -11,9 +11,6 @@
 
     <!-- Grant Request View -->
     <GrantRequestView v-else-if="issueType === IssueType.GRANT_REQUEST" />
-
-    <!-- CI/CD View (default) -->
-    <DatabaseChangeView v-else />
   </IssueBaseLayout>
 </template>
 
@@ -22,7 +19,6 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { usePlanContextWithIssue } from "@/components/Plan";
-import DatabaseChangeView from "@/components/Plan/components/IssueReviewView/DatabaseChangeView.vue";
 import DatabaseCreateView from "@/components/Plan/components/IssueReviewView/DatabaseCreateView.vue";
 import DatabaseExportView from "@/components/Plan/components/IssueReviewView/DatabaseExportView.vue";
 import GrantRequestView from "@/components/Plan/components/IssueReviewView/GrantRequestView.vue";
@@ -34,7 +30,6 @@ import { issueV1Slug } from "@/utils";
 
 enum IssueType {
   CREATE_DATABASE = "CREATE_DATABASE",
-  CHANGE_DATABASE = "CHANGE_DATABASE",
   EXPORT_DATA = "EXPORT_DATA",
   GRANT_REQUEST = "GRANT_REQUEST",
 }
@@ -67,7 +62,7 @@ const issueType = computed(() => {
   ) {
     return IssueType.EXPORT_DATA;
   }
-  return IssueType.CHANGE_DATABASE;
+  return undefined;
 });
 
 onMounted(() => {

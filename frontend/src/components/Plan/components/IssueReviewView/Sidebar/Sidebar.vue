@@ -10,6 +10,8 @@
       :disabled="!allowChange"
       @update:value="onIssueLabelsUpdate"
     />
+
+    <DatabaseChangeSection />
   </div>
 </template>
 
@@ -33,6 +35,7 @@ import {
 import { hasProjectPermissionV2 } from "@/utils";
 import { usePlanContextWithIssue } from "../../../logic/context";
 import ApprovalFlowSection from "./ApprovalFlowSection/ApprovalFlowSection.vue";
+import DatabaseChangeSection from "./DatabaseChangeSection.vue";
 import IssueStatusSection from "./IssueStatusSection.vue";
 
 const { t } = useI18n();
