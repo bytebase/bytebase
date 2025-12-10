@@ -72,7 +72,6 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
 import { NSplit } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, defineAsyncComponent, nextTick, ref } from "vue";

@@ -4,16 +4,14 @@ import { type QueryOption } from "../proto-es/v1/sql_service_pb";
 
 export type Language = "sql" | "javascript" | "redis" | "json";
 
-const EngineTypesUsingSQL = [
-  "MYSQL",
-  "CLICKHOUSE",
-  "POSTGRES",
-  "SNOWFLAKE",
-  "TIDB",
-  "SPANNER",
-  "OCEANBASE",
-] as const;
-export type SQLDialect = (typeof EngineTypesUsingSQL)[number];
+export type SQLDialect =
+  | "MYSQL"
+  | "CLICKHOUSE"
+  | "POSTGRES"
+  | "SNOWFLAKE"
+  | "TIDB"
+  | "SPANNER"
+  | "OCEANBASE";
 const EngineToSQLDialectMap = new Map<Engine, SQLDialect>([
   [Engine.MYSQL, "MYSQL"],
   [Engine.CLICKHOUSE, "CLICKHOUSE"],
