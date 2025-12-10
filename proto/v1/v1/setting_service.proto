@@ -12,7 +12,7 @@ import "google/type/expr.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/issue_service.proto";
-import "v1/project_service.proto";
+
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
