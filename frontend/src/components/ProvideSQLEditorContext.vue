@@ -132,6 +132,8 @@ const initializeProject = async () => {
     // clear last visit project.
     editorStore.setProject("");
   }
+
+  return editorStore.project;
 };
 
 const switchWorksheet = async (sheetName: string) => {
@@ -377,7 +379,7 @@ const restoreLastVisitedSidebarTab = () => {
 
 onMounted(async () => {
   editorStore.projectContextReady = false;
-  await Promise.all([
+  const [_, project] = await Promise.all([
     policyStore.fetchPolicies({
       resourceType: PolicyResourceType.WORKSPACE,
     }),
@@ -385,6 +387,7 @@ onMounted(async () => {
   ]);
 
   await migrateLegacyCache();
+  await tabStore.initProject(project)
   await initializeConnectionFromQuery();
   syncURLWithConnection();
 });

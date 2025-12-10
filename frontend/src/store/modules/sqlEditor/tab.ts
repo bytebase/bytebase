@@ -115,7 +115,9 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     openTmpTabList.value = [...validOpenTabMap.values()];
   };
 
-  const maybeInitProject = async () => {
+  const initProject = async (project: string) => {
+    await migrateDraftsFromCache(project);
+    migrateTabViewState(project);
     tabsById.clear();
     await loadStoredTabs();
     currentTabId.value = head(openTmpTabList.value)?.id ?? "";
@@ -368,11 +370,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   watch(
     () => project.value,
     async (project) => {
-      await migrateDraftsFromCache(project);
-      migrateTabViewState(project);
-      await maybeInitProject();
+      await initProject(project);
     },
-    { immediate: true }
   );
 
   // some shortcuts
@@ -384,6 +383,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
 
   return {
     project,
+    initProject,
     getTabById,
     openTabList,
     currentTabId,
