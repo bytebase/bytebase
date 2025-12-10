@@ -8,5 +8,5 @@
 </template>
 
 <script setup lang="ts">
-import IssueCommentList from "@/components/IssueV1/components/IssueCommentSection/IssueCommentList.vue";
+import IssueCommentList from "./IssueCommentList.vue";
 </script>
