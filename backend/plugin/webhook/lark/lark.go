@@ -25,7 +25,7 @@ func getLarkConfig(setting *storepb.AppIMSetting) *storepb.AppIMSetting_Lark {
 		return nil
 	}
 	for _, s := range setting.Settings {
-		if s.Type == storepb.ProjectWebhook_LARK {
+		if s.Type == storepb.WebhookType_LARK {
 			return s.GetLark()
 		}
 	}
@@ -109,7 +109,7 @@ type Webhook struct {
 }
 
 func init() {
-	webhook.Register(storepb.ProjectWebhook_LARK, &larkReceiver{})
+	webhook.Register(storepb.WebhookType_LARK, &larkReceiver{})
 }
 
 // larkReceiver is the receiver for Lark.

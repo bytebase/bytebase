@@ -506,26 +506,8 @@ message Webhook {
   string name = 1;
 
   // Webhook integration type.
-  enum Type {
-    // Unspecified type.
-    TYPE_UNSPECIFIED = 0;
-    // Slack integration.
-    SLACK = 1;
-    // Discord integration.
-    DISCORD = 2;
-    // Microsoft Teams integration.
-    TEAMS = 3;
-    // DingTalk integration.
-    DINGTALK = 4;
-    // Feishu integration.
-    FEISHU = 5;
-    // WeCom (WeChat Work) integration.
-    WECOM = 6;
-    // Lark integration.
-    LARK = 8;
-  }
   // type is the type of the webhook.
-  Type type = 2 [(google.api.field_behavior) = REQUIRED];
+  WebhookType type = 2 [(google.api.field_behavior) = REQUIRED];
 
   // title is the title of the webhook.
   string title = 3 [(google.api.field_behavior) = REQUIRED];

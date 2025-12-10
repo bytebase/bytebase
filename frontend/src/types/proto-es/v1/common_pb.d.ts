@@ -476,3 +476,71 @@ export enum RiskLevel {
  */
 export declare const RiskLevelSchema: GenEnum<RiskLevel>;
 
+/**
+ * Webhook integration type.
+ *
+ * @generated from enum bytebase.v1.WebhookType
+ */
+export enum WebhookType {
+  /**
+   * Unspecified type.
+   *
+   * @generated from enum value: WEBHOOK_TYPE_UNSPECIFIED = 0;
+   */
+  WEBHOOK_TYPE_UNSPECIFIED = 0,
+
+  /**
+   * Slack integration.
+   *
+   * @generated from enum value: SLACK = 1;
+   */
+  SLACK = 1,
+
+  /**
+   * Discord integration.
+   *
+   * @generated from enum value: DISCORD = 2;
+   */
+  DISCORD = 2,
+
+  /**
+   * Microsoft Teams integration.
+   *
+   * @generated from enum value: TEAMS = 3;
+   */
+  TEAMS = 3,
+
+  /**
+   * DingTalk integration.
+   *
+   * @generated from enum value: DINGTALK = 4;
+   */
+  DINGTALK = 4,
+
+  /**
+   * Feishu integration.
+   *
+   * @generated from enum value: FEISHU = 5;
+   */
+  FEISHU = 5,
+
+  /**
+   * WeCom (WeChat Work) integration.
+   *
+   * @generated from enum value: WECOM = 6;
+   */
+  WECOM = 6,
+
+  /**
+   * Lark integration.
+   *
+   * @generated from enum value: LARK = 8;
+   */
+  LARK = 8,
+}
+
+/**
+ * Describes the enum bytebase.v1.WebhookType.
+ */
+export declare const WebhookTypeSchema: GenEnum<WebhookType>;
+

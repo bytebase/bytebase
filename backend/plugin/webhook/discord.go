@@ -46,7 +46,7 @@ type DiscordWebhook struct {
 }
 
 func init() {
-	Register(storepb.ProjectWebhook_DISCORD, &DiscordReceiver{})
+	Register(storepb.WebhookType_DISCORD, &DiscordReceiver{})
 }
 
 // DiscordReceiver is the receiver for Discord.

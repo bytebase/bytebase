@@ -41,7 +41,7 @@
         />
 
         <div class="mt-4">
-          <div v-if="item.type === Webhook_Type.SLACK">
+          <div v-if="item.type === WebhookType.SLACK">
             <div class="textlabel">Token</div>
             <BBTextField
               class="mt-2"
@@ -51,7 +51,7 @@
             />
           </div>
           <div
-            v-else-if="item.type === Webhook_Type.FEISHU"
+            v-else-if="item.type === WebhookType.FEISHU"
             class="flex flex-col gap-y-4"
           >
             <div>
@@ -74,7 +74,7 @@
             </div>
           </div>
           <div
-            v-else-if="item.type === Webhook_Type.WECOM"
+            v-else-if="item.type === WebhookType.WECOM"
             class="flex flex-col gap-y-4"
           >
             <div>
@@ -106,7 +106,7 @@
             </div>
           </div>
           <div
-            v-else-if="item.type === Webhook_Type.LARK"
+            v-else-if="item.type === WebhookType.LARK"
             class="flex flex-col gap-y-4"
           >
             <div>
@@ -129,7 +129,7 @@
             </div>
           </div>
           <div
-            v-else-if="item.type === Webhook_Type.DINGTALK"
+            v-else-if="item.type === WebhookType.DINGTALK"
             class="flex flex-col gap-y-4"
           >
             <div>
@@ -161,7 +161,7 @@
             </div>
           </div>
           <div
-            v-else-if="item.type === Webhook_Type.TEAMS"
+            v-else-if="item.type === WebhookType.TEAMS"
             class="flex flex-col gap-y-4"
           >
             <div>
@@ -267,7 +267,7 @@ import BBTextField from "@/bbkit/BBTextField.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import WebhookTypeIcon from "@/components/Project/WebhookTypeIcon.vue";
 import { pushNotification, useSettingV1Store } from "@/store";
-import { Webhook_Type } from "@/types/proto-es/v1/project_service_pb";
+import { WebhookType } from "@/types/proto-es/v1/common_pb";
 import {
   type AppIMSetting,
   type AppIMSetting_DingTalk,
@@ -291,7 +291,7 @@ import {
 
 interface LocalState {
   setting: AppIMSetting;
-  pendingSaveType?: Webhook_Type;
+  pendingSaveType?: WebhookType;
 }
 
 type IMSettingPayloadValue =
@@ -316,10 +316,10 @@ const state = reactive<LocalState>({
 
 const settingStore = useSettingV1Store();
 
-const onAddIM = (type: Webhook_Type) => {
+const onAddIM = (type: WebhookType) => {
   let setting: AppIMSetting_IMSetting | undefined = undefined;
   switch (type) {
-    case Webhook_Type.SLACK:
+    case WebhookType.SLACK:
       setting = create(AppIMSetting_IMSettingSchema, {
         type,
         payload: {
@@ -328,7 +328,7 @@ const onAddIM = (type: Webhook_Type) => {
         },
       });
       break;
-    case Webhook_Type.FEISHU:
+    case WebhookType.FEISHU:
       setting = create(AppIMSetting_IMSettingSchema, {
         type,
         payload: {
@@ -337,7 +337,7 @@ const onAddIM = (type: Webhook_Type) => {
         },
       });
       break;
-    case Webhook_Type.LARK:
+    case WebhookType.LARK:
       setting = create(AppIMSetting_IMSettingSchema, {
         type,
         payload: {
@@ -346,7 +346,7 @@ const onAddIM = (type: Webhook_Type) => {
         },
       });
       break;
-    case Webhook_Type.WECOM:
+    case WebhookType.WECOM:
       setting = create(AppIMSetting_IMSettingSchema, {
         type,
         payload: {
@@ -355,7 +355,7 @@ const onAddIM = (type: Webhook_Type) => {
         },
       });
       break;
-    case Webhook_Type.DINGTALK:
+    case WebhookType.DINGTALK:
       setting = create(AppIMSetting_IMSettingSchema, {
         type,
         payload: {
@@ -364,7 +364,7 @@ const onAddIM = (type: Webhook_Type) => {
         },
       });
       break;
-    case Webhook_Type.TEAMS:
+    case WebhookType.TEAMS:
       setting = create(AppIMSetting_IMSettingSchema, {
         type,
         payload: {
@@ -380,7 +380,7 @@ const onAddIM = (type: Webhook_Type) => {
   state.setting.settings.push(setting);
 };
 
-const onDeleteIM = async (index: number, type: Webhook_Type) => {
+const onDeleteIM = async (index: number, type: WebhookType) => {
   state.setting.settings.splice(index, 1);
   if (isConfigured(type)) {
     await settingStore.upsertSetting({
@@ -404,7 +404,7 @@ const onDeleteIM = async (index: number, type: Webhook_Type) => {
   }
 };
 
-const onDiscardIM = (index: number, type: Webhook_Type) => {
+const onDiscardIM = (index: number, type: WebhookType) => {
   const oldSetting = imSetting.value.settings.find(
     (setting) => setting.type === type
   );
@@ -418,27 +418,27 @@ const onDiscardIM = (index: number, type: Webhook_Type) => {
   }
 };
 
-const onSaveIM = async (index: number, type: Webhook_Type) => {
+const onSaveIM = async (index: number, type: WebhookType) => {
   state.pendingSaveType = type;
 
   const updateMask: string[] = [];
   switch (type) {
-    case Webhook_Type.SLACK:
+    case WebhookType.SLACK:
       updateMask.push("value.app_im.slack");
       break;
-    case Webhook_Type.FEISHU:
+    case WebhookType.FEISHU:
       updateMask.push("value.app_im.feishu");
       break;
-    case Webhook_Type.WECOM:
+    case WebhookType.WECOM:
       updateMask.push("value.app_im.wecom");
       break;
-    case Webhook_Type.LARK:
+    case WebhookType.LARK:
       updateMask.push("value.app_im.lark");
       break;
-    case Webhook_Type.DINGTALK:
+    case WebhookType.DINGTALK:
       updateMask.push("value.app_im.dingtalk");
       break;
-    case Webhook_Type.TEAMS:
+    case WebhookType.TEAMS:
       updateMask.push("value.app_im_setting_value.teams");
       break;
   }
@@ -452,7 +452,7 @@ const onSaveIM = async (index: number, type: Webhook_Type) => {
   const reconstructSetting = (): AppIMSetting_IMSetting => {
     const payloadValue = setting.payload.value;
     switch (type) {
-      case Webhook_Type.SLACK:
+      case WebhookType.SLACK:
         return create(AppIMSetting_IMSettingSchema, {
           type,
           payload: {
@@ -463,7 +463,7 @@ const onSaveIM = async (index: number, type: Webhook_Type) => {
             ),
           },
         });
-      case Webhook_Type.FEISHU:
+      case WebhookType.FEISHU:
         return create(AppIMSetting_IMSettingSchema, {
           type,
           payload: {
@@ -474,7 +474,7 @@ const onSaveIM = async (index: number, type: Webhook_Type) => {
             ),
           },
         });
-      case Webhook_Type.WECOM:
+      case WebhookType.WECOM:
         return create(AppIMSetting_IMSettingSchema, {
           type,
           payload: {
@@ -485,7 +485,7 @@ const onSaveIM = async (index: number, type: Webhook_Type) => {
             ),
           },
         });
-      case Webhook_Type.LARK:
+      case WebhookType.LARK:
         return create(AppIMSetting_IMSettingSchema, {
           type,
           payload: {
@@ -496,7 +496,7 @@ const onSaveIM = async (index: number, type: Webhook_Type) => {
             ),
           },
         });
-      case Webhook_Type.DINGTALK:
+      case WebhookType.DINGTALK:
         return create(AppIMSetting_IMSettingSchema, {
           type,
           payload: {
@@ -507,7 +507,7 @@ const onSaveIM = async (index: number, type: Webhook_Type) => {
             ),
           },
         });
-      case Webhook_Type.TEAMS:
+      case WebhookType.TEAMS:
         return create(AppIMSetting_IMSettingSchema, {
           type,
           payload: {
@@ -593,31 +593,31 @@ const imSetting = computed(() => {
   });
 });
 
-const isConfigured = (type: Webhook_Type) => {
+const isConfigured = (type: WebhookType) => {
   return (
     imSetting.value.settings.findIndex((setting) => setting.type === type) >= 0
   );
 };
 
-const isExisted = (type: Webhook_Type) => {
+const isExisted = (type: WebhookType) => {
   return (
     state.setting.settings.findIndex((setting) => setting.type === type) >= 0
   );
 };
 
-const getImLabel = (type: Webhook_Type): string => {
+const getImLabel = (type: WebhookType): string => {
   switch (type) {
-    case Webhook_Type.SLACK:
+    case WebhookType.SLACK:
       return t("common.slack");
-    case Webhook_Type.FEISHU:
+    case WebhookType.FEISHU:
       return t("common.feishu");
-    case Webhook_Type.LARK:
+    case WebhookType.LARK:
       return t("common.lark");
-    case Webhook_Type.WECOM:
+    case WebhookType.WECOM:
       return t("common.wecom");
-    case Webhook_Type.DINGTALK:
+    case WebhookType.DINGTALK:
       return t("common.dingtalk");
-    case Webhook_Type.TEAMS:
+    case WebhookType.TEAMS:
       return t("common.teams");
     default:
       return "";
@@ -626,12 +626,12 @@ const getImLabel = (type: Webhook_Type): string => {
 
 const availableImSettings = computed(() => {
   return [
-    Webhook_Type.SLACK,
-    Webhook_Type.FEISHU,
-    Webhook_Type.LARK,
-    Webhook_Type.WECOM,
-    Webhook_Type.DINGTALK,
-    Webhook_Type.TEAMS,
+    WebhookType.SLACK,
+    WebhookType.FEISHU,
+    WebhookType.LARK,
+    WebhookType.WECOM,
+    WebhookType.DINGTALK,
+    WebhookType.TEAMS,
   ]
     .filter((type) => !isConfigured(type) && !isExisted(type))
     .map((type) => ({
@@ -639,7 +639,7 @@ const availableImSettings = computed(() => {
     }));
 });
 
-const renderOption = ({ value }: { value: Webhook_Type }) => {
+const renderOption = ({ value }: { value: WebhookType }) => {
   return (
     <div class="flex items-center gap-x-2">
       <WebhookTypeIcon type={value} class="h-5 w-5" />
@@ -657,7 +657,7 @@ watch(
 );
 
 const isDataChanged = (
-  type: Webhook_Type,
+  type: WebhookType,
   value: IMSettingPayloadValue
 ): boolean => {
   const oldSetting = imSetting.value.settings.find(

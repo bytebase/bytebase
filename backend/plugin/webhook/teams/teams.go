@@ -35,7 +35,7 @@ func getTeamsConfig(setting *storepb.AppIMSetting) *storepb.AppIMSetting_Teams {
 		return nil
 	}
 	for _, s := range setting.Settings {
-		if s.Type == storepb.ProjectWebhook_TEAMS {
+		if s.Type == storepb.WebhookType_TEAMS {
 			return s.GetTeams()
 		}
 	}
@@ -83,7 +83,7 @@ type Webhook struct {
 }
 
 func init() {
-	webhook.Register(storepb.ProjectWebhook_TEAMS, &Receiver{})
+	webhook.Register(storepb.WebhookType_TEAMS, &Receiver{})
 }
 
 // Receiver is the receiver for Teams.

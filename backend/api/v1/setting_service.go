@@ -351,7 +351,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 
 		// Helper function to find or create an IM setting entry by type
-		findIMSetting := func(imType storepb.ProjectWebhook_Type) *storepb.AppIMSetting_IMSetting {
+		findIMSetting := func(imType storepb.WebhookType) *storepb.AppIMSetting_IMSetting {
 			for _, s := range payload.Settings {
 				if s.Type == imType {
 					return s
@@ -363,7 +363,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		for _, path := range request.Msg.GetUpdateMask().GetPaths() {
 			switch path {
 			case "value.app_im.slack":
-				slackSetting := findIMSetting(storepb.ProjectWebhook_SLACK)
+				slackSetting := findIMSetting(storepb.WebhookType_SLACK)
 				if slackSetting == nil || slackSetting.GetSlack() == nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found slack setting"))
 				}
@@ -372,7 +372,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				}
 
 			case "value.app_im.feishu":
-				feishuSetting := findIMSetting(storepb.ProjectWebhook_FEISHU)
+				feishuSetting := findIMSetting(storepb.WebhookType_FEISHU)
 				if feishuSetting == nil || feishuSetting.GetFeishu() == nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found feishu setting"))
 				}
@@ -381,7 +381,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				}
 
 			case "value.app_im.wecom":
-				wecomSetting := findIMSetting(storepb.ProjectWebhook_WECOM)
+				wecomSetting := findIMSetting(storepb.WebhookType_WECOM)
 				if wecomSetting == nil || wecomSetting.GetWecom() == nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found wecom setting"))
 				}
@@ -390,7 +390,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				}
 
 			case "value.app_im.lark":
-				larkSetting := findIMSetting(storepb.ProjectWebhook_LARK)
+				larkSetting := findIMSetting(storepb.WebhookType_LARK)
 				if larkSetting == nil || larkSetting.GetLark() == nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found lark setting"))
 				}
@@ -399,7 +399,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				}
 
 			case "value.app_im.dingtalk":
-				dingtalkSetting := findIMSetting(storepb.ProjectWebhook_DINGTALK)
+				dingtalkSetting := findIMSetting(storepb.WebhookType_DINGTALK)
 				if dingtalkSetting == nil || dingtalkSetting.GetDingtalk() == nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found dingtalk setting"))
 				}
@@ -408,7 +408,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				}
 
 			case "value.app_im_setting_value.teams":
-				teamsSetting := findIMSetting(storepb.ProjectWebhook_TEAMS)
+				teamsSetting := findIMSetting(storepb.WebhookType_TEAMS)
 				if teamsSetting == nil || teamsSetting.GetTeams() == nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found teams setting"))
 				}

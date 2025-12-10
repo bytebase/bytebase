@@ -24,7 +24,7 @@ func getSlackToken(setting *storepb.AppIMSetting) string {
 		return ""
 	}
 	for _, s := range setting.Settings {
-		if s.Type == storepb.ProjectWebhook_SLACK {
+		if s.Type == storepb.WebhookType_SLACK {
 			if slack := s.GetSlack(); slack != nil {
 				return slack.Token
 			}
@@ -66,7 +66,7 @@ type MessagePayload struct {
 }
 
 func init() {
-	webhook.Register(storepb.ProjectWebhook_SLACK, &Receiver{})
+	webhook.Register(storepb.WebhookType_SLACK, &Receiver{})
 }
 
 // Receiver is the receiver for Slack.

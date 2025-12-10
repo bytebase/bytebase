@@ -1822,7 +1822,7 @@ func (x *AppIMSetting_Teams) GetClientSecret() string {
 
 type AppIMSetting_IMSetting struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Type  Webhook_Type           `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.Webhook_Type" json:"type,omitempty"`
+	Type  WebhookType            `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.WebhookType" json:"type,omitempty"`
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*AppIMSetting_IMSetting_Slack
@@ -1866,11 +1866,11 @@ func (*AppIMSetting_IMSetting) Descriptor() ([]byte, []int) {
 	return file_v1_setting_service_proto_rawDescGZIP(), []int{7, 6}
 }
 
-func (x *AppIMSetting_IMSetting) GetType() Webhook_Type {
+func (x *AppIMSetting_IMSetting) GetType() WebhookType {
 	if x != nil {
 		return x.Type
 	}
-	return Webhook_TYPE_UNSPECIFIED
+	return WebhookType_WEBHOOK_TYPE_UNSPECIFIED
 }
 
 func (x *AppIMSetting_IMSetting) GetPayload() isAppIMSetting_IMSetting_Payload {
@@ -2797,7 +2797,7 @@ var File_v1_setting_service_proto protoreflect.FileDescriptor
 
 const file_v1_setting_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/setting_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x16v1/issue_service.proto\x1a\x18v1/project_service.proto\"\x15\n" +
+	"\x18v1/setting_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x16v1/issue_service.proto\x1a\x18v1/project_service.proto\"\x15\n" +
 	"\x13ListSettingsRequest\"H\n" +
 	"\x14ListSettingsResponse\x120\n" +
 	"\bsettings\x18\x01 \x03(\v2\x14.bytebase.v1.SettingR\bsettings\"E\n" +
@@ -2836,7 +2836,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\rsemantic_type\x18\v \x01(\v2 .bytebase.v1.SemanticTypeSettingH\x00R\fsemanticType\x12(\n" +
 	"\x02ai\x18\x10 \x01(\v2\x16.bytebase.v1.AISettingH\x00R\x02ai\x12C\n" +
 	"\venvironment\x18\x11 \x01(\v2\x1f.bytebase.v1.EnvironmentSettingH\x00R\venvironmentB\a\n" +
-	"\x05value\"\x83\b\n" +
+	"\x05value\"\x82\b\n" +
 	"\fAppIMSetting\x12?\n" +
 	"\bsettings\x18\x01 \x03(\v2#.bytebase.v1.AppIMSetting.IMSettingR\bsettings\x1a\"\n" +
 	"\x05Slack\x12\x19\n" +
@@ -2861,9 +2861,9 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x05Teams\x12 \n" +
 	"\ttenant_id\x18\x01 \x01(\tB\x03\xe0A\x04R\btenantId\x12 \n" +
 	"\tclient_id\x18\x02 \x01(\tB\x03\xe0A\x04R\bclientId\x12(\n" +
-	"\rclient_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\fclientSecret\x1a\xa4\x03\n" +
-	"\tIMSetting\x12-\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x19.bytebase.v1.Webhook.TypeR\x04type\x127\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\fclientSecret\x1a\xa3\x03\n" +
+	"\tIMSetting\x12,\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x18.bytebase.v1.WebhookTypeR\x04type\x127\n" +
 	"\x05slack\x18\x02 \x01(\v2\x1f.bytebase.v1.AppIMSetting.SlackH\x00R\x05slack\x12:\n" +
 	"\x06feishu\x18\x03 \x01(\v2 .bytebase.v1.AppIMSetting.FeishuH\x00R\x06feishu\x127\n" +
 	"\x05wecom\x18\x04 \x01(\v2\x1f.bytebase.v1.AppIMSetting.WecomH\x00R\x05wecom\x124\n" +
@@ -3077,7 +3077,7 @@ var file_v1_setting_service_proto_goTypes = []any{
 	nil,                                      // 42: bytebase.v1.EnvironmentSetting.Environment.TagsEntry
 	(*fieldmaskpb.FieldMask)(nil),            // 43: google.protobuf.FieldMask
 	(*durationpb.Duration)(nil),              // 44: google.protobuf.Duration
-	(Webhook_Type)(0),                        // 45: bytebase.v1.Webhook.Type
+	(WebhookType)(0),                         // 45: bytebase.v1.WebhookType
 	(*ApprovalTemplate)(nil),                 // 46: bytebase.v1.ApprovalTemplate
 	(*expr.Expr)(nil),                        // 47: google.type.Expr
 }
@@ -3111,7 +3111,7 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	39, // 26: bytebase.v1.Algorithm.inner_outer_mask:type_name -> bytebase.v1.Algorithm.InnerOuterMask
 	5,  // 27: bytebase.v1.AISetting.provider:type_name -> bytebase.v1.AISetting.Provider
 	41, // 28: bytebase.v1.EnvironmentSetting.environments:type_name -> bytebase.v1.EnvironmentSetting.Environment
-	45, // 29: bytebase.v1.AppIMSetting.IMSetting.type:type_name -> bytebase.v1.Webhook.Type
+	45, // 29: bytebase.v1.AppIMSetting.IMSetting.type:type_name -> bytebase.v1.WebhookType
 	22, // 30: bytebase.v1.AppIMSetting.IMSetting.slack:type_name -> bytebase.v1.AppIMSetting.Slack
 	23, // 31: bytebase.v1.AppIMSetting.IMSetting.feishu:type_name -> bytebase.v1.AppIMSetting.Feishu
 	24, // 32: bytebase.v1.AppIMSetting.IMSetting.wecom:type_name -> bytebase.v1.AppIMSetting.Wecom
@@ -3148,6 +3148,7 @@ func file_v1_setting_service_proto_init() {
 		return
 	}
 	file_v1_annotation_proto_init()
+	file_v1_common_proto_init()
 	file_v1_issue_service_proto_init()
 	file_v1_project_service_proto_init()
 	file_v1_setting_service_proto_msgTypes[6].OneofWrappers = []any{
