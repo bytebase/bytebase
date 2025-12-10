@@ -22,11 +22,8 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"gopkg.in/yaml.v3"
 
-	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
 var (
@@ -534,31 +531,67 @@ func prodTemplateReviewConfigForPostgreSQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_NAMING_TABLE,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^[a-z]+(_[a-z]+)*$",
+						MaxLength: 64,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_NAMING_COLUMN,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^[a-z]+(_[a-z]+)*$",
+						MaxLength: 64,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_NAMING_INDEX_IDX,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^$|^idx_{{table}}_{{column_list}}$",
+						MaxLength: 64,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_NAMING_INDEX_PK,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^$|^pk_{{table}}_{{column_list}}$",
+						MaxLength: 64,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_NAMING_INDEX_UK,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^$|^uk_{{table}}_{{column_list}}$",
+						MaxLength: 64,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_NAMING_INDEX_FK,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+						MaxLength: 64,
+					},
+				},
 			},
 			// Statement
 			{
@@ -611,11 +644,22 @@ func prodTemplateReviewConfigForPostgreSQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION,
 				Level:  v1pb.SQLReviewRule_ERROR,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format: "_delete$",
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_TABLE_COMMENT,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_CommentConventionPayload{
+					CommentConventionPayload: &v1pb.SQLReviewRule_CommentConventionRulePayload{
+						Required:  true,
+						MaxLength: 10,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_TABLE_DISALLOW_PARTITION,
@@ -627,6 +671,17 @@ func prodTemplateReviewConfigForPostgreSQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_COLUMN_REQUIRED,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_StringArrayPayload{
+					StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+						List: []string{
+							"id",
+							"created_ts",
+							"updated_ts",
+							"creator_id",
+							"updater_id",
+						},
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_COLUMN_NO_NULL,
@@ -642,11 +697,21 @@ func prodTemplateReviewConfigForPostgreSQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST,
 				Level:  v1pb.SQLReviewRule_ERROR,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_StringArrayPayload{
+					StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+						List: []string{"JSON", "BINARY_FLOAT"},
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_NumberPayload{
+					NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+						Number: 20,
+					},
+				},
 			},
 			// SCHEMA
 			{
@@ -664,27 +729,46 @@ func prodTemplateReviewConfigForPostgreSQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_NumberPayload{
+					NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+						Number: 5,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_NumberPayload{
+					NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+						Number: 5,
+					},
+				},
 			},
 			// SYSTEM
 			{
 				Type:   v1pb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_StringArrayPayload{
+					StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+						List: []string{"utf8mb4", "UTF8"},
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_POSTGRES,
+				Payload: &v1pb.SQLReviewRule_StringArrayPayload{
+					StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+						List: []string{"utf8mb4_0900_ai_ci"},
+					},
+				},
 			},
 		},
 	}
 
-	setV1SQLReviewRulePayloads(config.Rules, v1pb.Engine_POSTGRES)
 	return config
 }
 
@@ -705,31 +789,67 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_NAMING_TABLE,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^[a-z]+(_[a-z]+)*$",
+						MaxLength: 64,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_NAMING_COLUMN,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^[a-z]+(_[a-z]+)*$",
+						MaxLength: 64,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_NAMING_INDEX_IDX,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^$|^idx_{{table}}_{{column_list}}$",
+						MaxLength: 64,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_NAMING_INDEX_UK,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^$|^uk_{{table}}_{{column_list}}$",
+						MaxLength: 64,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_NAMING_INDEX_FK,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^$|^fk_{{referencing_table}}_{{referencing_column}}_{{referenced_table}}_{{referenced_column}}$",
+						MaxLength: 64,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format:    "^id$",
+						MaxLength: 64,
+					},
+				},
 			},
 			// Statement
 			{
@@ -776,6 +896,11 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NumberPayload{
+					NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+						Number: 5,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN,
@@ -791,6 +916,11 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NumberPayload{
+					NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+						Number: 5,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_STATEMENT_DML_DRY_RUN,
@@ -812,11 +942,22 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION,
 				Level:  v1pb.SQLReviewRule_ERROR,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NamingPayload{
+					NamingPayload: &v1pb.SQLReviewRule_NamingRulePayload{
+						Format: "_delete$",
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_TABLE_COMMENT,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_CommentConventionPayload{
+					CommentConventionPayload: &v1pb.SQLReviewRule_CommentConventionRulePayload{
+						Required:  true,
+						MaxLength: 10,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_TABLE_DISALLOW_PARTITION,
@@ -828,6 +969,17 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_COLUMN_REQUIRED,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_StringArrayPayload{
+					StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+						List: []string{
+							"id",
+							"created_ts",
+							"updated_ts",
+							"creator_id",
+							"updater_id",
+						},
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_COLUMN_NO_NULL,
@@ -863,6 +1015,12 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_COLUMN_COMMENT,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_CommentConventionPayload{
+					CommentConventionPayload: &v1pb.SQLReviewRule_CommentConventionRulePayload{
+						Required:  true,
+						MaxLength: 10,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_INTEGER,
@@ -873,6 +1031,11 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST,
 				Level:  v1pb.SQLReviewRule_ERROR,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_StringArrayPayload{
+					StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+						List: []string{"JSON", "BINARY_FLOAT"},
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_COLUMN_DISALLOW_SET_CHARSET,
@@ -883,11 +1046,21 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NumberPayload{
+					NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+						Number: 20,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NumberPayload{
+					NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+						Number: 20,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_UNSIGNED,
@@ -926,6 +1099,11 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NumberPayload{
+					NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+						Number: 5,
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_INDEX_PK_TYPE_LIMIT,
@@ -941,46 +1119,35 @@ func prodTemplateReviewConfigForMySQL() *v1pb.ReviewConfig {
 				Type:   v1pb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_NumberPayload{
+					NumberPayload: &v1pb.SQLReviewRule_NumberRulePayload{
+						Number: 5,
+					},
+				},
 			},
 			// SYSTEM
 			{
 				Type:   v1pb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_StringArrayPayload{
+					StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+						List: []string{"utf8mb4", "UTF8"},
+					},
+				},
 			},
 			{
 				Type:   v1pb.SQLReviewRule_SYSTEM_COLLATION_ALLOWLIST,
 				Level:  v1pb.SQLReviewRule_WARNING,
 				Engine: v1pb.Engine_MYSQL,
+				Payload: &v1pb.SQLReviewRule_StringArrayPayload{
+					StringArrayPayload: &v1pb.SQLReviewRule_StringArrayRulePayload{
+						List: []string{"utf8mb4_0900_ai_ci"},
+					},
+				},
 			},
 		},
 	}
 
-	setV1SQLReviewRulePayloads(config.Rules, v1pb.Engine_MYSQL)
 	return config
-}
-
-// setV1SQLReviewRulePayloads sets default payloads for v1pb rules by converting to storepb and back.
-func setV1SQLReviewRulePayloads(rules []*v1pb.SQLReviewRule, engine v1pb.Engine) {
-	// Convert v1pb rules to storepb format
-	storeRules, err := apiv1.ConvertToSQLReviewRules(rules)
-	if err != nil {
-		// This shouldn't fail for test data, but if it does, panic to fail the test
-		panic(fmt.Sprintf("failed to convert rules: %v", err))
-	}
-
-	// Set default payloads using the advisor package
-	for _, storeRule := range storeRules {
-		storeRule.Engine = storepb.Engine(engine)
-		if err := advisor.SetDefaultSQLReviewRulePayload(storeRule, storepb.Engine(engine)); err != nil {
-			panic(fmt.Sprintf("failed to set payload for rule %v: %v", storeRule.Type, err))
-		}
-	}
-
-	// Convert back to v1pb and copy payloads
-	convertedRules := apiv1.ConvertToV1PBSQLReviewRules(storeRules)
-	for i, rule := range rules {
-		rule.Payload = convertedRules[i].Payload
-		rule.Engine = engine
-	}
 }

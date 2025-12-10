@@ -173,7 +173,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	// Note: StarRocks is an OLAP database with limited transaction support.
 	// For DDL operations, transactions are not supported. For DML operations,
 	// StarRocks supports transactions within certain limitations.
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == common.TransactionModeOff || opts.CreateDatabase {
 		return d.executeInAutoCommitMode(ctx, statement)
 	}
 	return d.executeInTransactionMode(ctx, statement, opts)
