@@ -115,47 +115,47 @@ func convertToV1ActivityTypes(types []storepb.Activity_Type) []v1pb.Activity_Typ
 	return result
 }
 
-func convertToStoreWebhookType(tp v1pb.Webhook_Type) (storepb.ProjectWebhook_Type, error) {
+func convertToStoreWebhookType(tp v1pb.WebhookType) (storepb.WebhookType, error) {
 	switch tp {
-	case v1pb.Webhook_TYPE_UNSPECIFIED:
-		return storepb.ProjectWebhook_TYPE_UNSPECIFIED, common.Errorf(common.Invalid, "webhook type must not be unspecified")
-	case v1pb.Webhook_SLACK:
-		return storepb.ProjectWebhook_SLACK, nil
-	case v1pb.Webhook_DISCORD:
-		return storepb.ProjectWebhook_DISCORD, nil
-	case v1pb.Webhook_TEAMS:
-		return storepb.ProjectWebhook_TEAMS, nil
-	case v1pb.Webhook_DINGTALK:
-		return storepb.ProjectWebhook_DINGTALK, nil
-	case v1pb.Webhook_FEISHU:
-		return storepb.ProjectWebhook_FEISHU, nil
-	case v1pb.Webhook_WECOM:
-		return storepb.ProjectWebhook_WECOM, nil
-	case v1pb.Webhook_LARK:
-		return storepb.ProjectWebhook_LARK, nil
+	case v1pb.WebhookType_WEBHOOK_TYPE_UNSPECIFIED:
+		return storepb.WebhookType_WEBHOOK_TYPE_UNSPECIFIED, common.Errorf(common.Invalid, "webhook type must not be unspecified")
+	case v1pb.WebhookType_SLACK:
+		return storepb.WebhookType_SLACK, nil
+	case v1pb.WebhookType_DISCORD:
+		return storepb.WebhookType_DISCORD, nil
+	case v1pb.WebhookType_TEAMS:
+		return storepb.WebhookType_TEAMS, nil
+	case v1pb.WebhookType_DINGTALK:
+		return storepb.WebhookType_DINGTALK, nil
+	case v1pb.WebhookType_FEISHU:
+		return storepb.WebhookType_FEISHU, nil
+	case v1pb.WebhookType_WECOM:
+		return storepb.WebhookType_WECOM, nil
+	case v1pb.WebhookType_LARK:
+		return storepb.WebhookType_LARK, nil
 	default:
-		return storepb.ProjectWebhook_TYPE_UNSPECIFIED, common.Errorf(common.Invalid, "webhook type %q is not supported", tp)
+		return storepb.WebhookType_WEBHOOK_TYPE_UNSPECIFIED, common.Errorf(common.Invalid, "webhook type %q is not supported", tp)
 	}
 }
 
-func convertToV1WebhookType(tp storepb.ProjectWebhook_Type) v1pb.Webhook_Type {
+func convertToV1WebhookType(tp storepb.WebhookType) v1pb.WebhookType {
 	switch tp {
-	case storepb.ProjectWebhook_SLACK:
-		return v1pb.Webhook_SLACK
-	case storepb.ProjectWebhook_DISCORD:
-		return v1pb.Webhook_DISCORD
-	case storepb.ProjectWebhook_TEAMS:
-		return v1pb.Webhook_TEAMS
-	case storepb.ProjectWebhook_DINGTALK:
-		return v1pb.Webhook_DINGTALK
-	case storepb.ProjectWebhook_FEISHU:
-		return v1pb.Webhook_FEISHU
-	case storepb.ProjectWebhook_WECOM:
-		return v1pb.Webhook_WECOM
-	case storepb.ProjectWebhook_LARK:
-		return v1pb.Webhook_LARK
+	case storepb.WebhookType_SLACK:
+		return v1pb.WebhookType_SLACK
+	case storepb.WebhookType_DISCORD:
+		return v1pb.WebhookType_DISCORD
+	case storepb.WebhookType_TEAMS:
+		return v1pb.WebhookType_TEAMS
+	case storepb.WebhookType_DINGTALK:
+		return v1pb.WebhookType_DINGTALK
+	case storepb.WebhookType_FEISHU:
+		return v1pb.WebhookType_FEISHU
+	case storepb.WebhookType_WECOM:
+		return v1pb.WebhookType_WECOM
+	case storepb.WebhookType_LARK:
+		return v1pb.WebhookType_LARK
 	default:
-		return v1pb.Webhook_TYPE_UNSPECIFIED
+		return v1pb.WebhookType_WEBHOOK_TYPE_UNSPECIFIED
 	}
 }
 

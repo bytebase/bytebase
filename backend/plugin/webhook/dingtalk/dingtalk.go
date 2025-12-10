@@ -29,7 +29,7 @@ func getDingTalkConfig(setting *storepb.AppIMSetting) *storepb.AppIMSetting_Ding
 		return nil
 	}
 	for _, s := range setting.Settings {
-		if s.Type == storepb.ProjectWebhook_DINGTALK {
+		if s.Type == storepb.WebhookType_DINGTALK {
 			return s.GetDingtalk()
 		}
 	}
@@ -62,7 +62,7 @@ type Message struct {
 }
 
 func init() {
-	webhook.Register(storepb.ProjectWebhook_DINGTALK, &Receiver{})
+	webhook.Register(storepb.WebhookType_DINGTALK, &Receiver{})
 }
 
 // Receiver is the receiver for DingTalk.

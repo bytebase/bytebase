@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask } from "@bufbuild/protobuf/wkt";
-import type { Webhook_Type } from "./project_service_pb";
+import type { WebhookType } from "./common_pb";
 import type { ApprovalTemplate } from "./issue_service_pb";
 import type { Expr } from "../google/type/expr_pb";
 
@@ -422,9 +422,9 @@ export declare const AppIMSetting_TeamsSchema: GenMessage<AppIMSetting_Teams>;
  */
 export declare type AppIMSetting_IMSetting = Message<"bytebase.v1.AppIMSetting.IMSetting"> & {
   /**
-   * @generated from field: bytebase.v1.Webhook.Type type = 1;
+   * @generated from field: bytebase.v1.WebhookType type = 1;
    */
-  type: Webhook_Type;
+  type: WebhookType;
 
   /**
    * @generated from oneof bytebase.v1.AppIMSetting.IMSetting.payload

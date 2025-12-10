@@ -2133,7 +2133,7 @@ func (x *AppIMSetting_Teams) GetClientSecret() string {
 
 type AppIMSetting_IMSetting struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Type  ProjectWebhook_Type    `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.ProjectWebhook_Type" json:"type,omitempty"`
+	Type  WebhookType            `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.WebhookType" json:"type,omitempty"`
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*AppIMSetting_IMSetting_Slack
@@ -2177,11 +2177,11 @@ func (*AppIMSetting_IMSetting) Descriptor() ([]byte, []int) {
 	return file_store_setting_proto_rawDescGZIP(), []int{6, 6}
 }
 
-func (x *AppIMSetting_IMSetting) GetType() ProjectWebhook_Type {
+func (x *AppIMSetting_IMSetting) GetType() WebhookType {
 	if x != nil {
 		return x.Type
 	}
-	return ProjectWebhook_TYPE_UNSPECIFIED
+	return WebhookType_WEBHOOK_TYPE_UNSPECIFIED
 }
 
 func (x *AppIMSetting_IMSetting) GetPayload() isAppIMSetting_IMSetting_Payload {
@@ -2361,7 +2361,7 @@ var File_store_setting_proto protoreflect.FileDescriptor
 
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x1bstore/project_webhook.proto\"m\n" +
+	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x1bstore/project_webhook.proto\"m\n" +
 	"\rSystemSetting\x12\x1f\n" +
 	"\vauth_secret\x18\x01 \x01(\tR\n" +
 	"authSecret\x12!\n" +
@@ -2478,7 +2478,7 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x127\n" +
 	"\talgorithm\x18\x06 \x01(\v2\x19.bytebase.store.AlgorithmR\talgorithm\x12\x12\n" +
-	"\x04icon\x18\a \x01(\tR\x04icon\"\xdc\a\n" +
+	"\x04icon\x18\a \x01(\tR\x04icon\"\xd4\a\n" +
 	"\fAppIMSetting\x12B\n" +
 	"\bsettings\x18\x01 \x03(\v2&.bytebase.store.AppIMSetting.IMSettingR\bsettings\x1a\x1d\n" +
 	"\x05Slack\x12\x14\n" +
@@ -2503,9 +2503,9 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x05Teams\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
-	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x1a\xc0\x03\n" +
-	"\tIMSetting\x127\n" +
-	"\x04type\x18\x01 \x01(\x0e2#.bytebase.store.ProjectWebhook.TypeR\x04type\x12:\n" +
+	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x1a\xb8\x03\n" +
+	"\tIMSetting\x12/\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x1b.bytebase.store.WebhookTypeR\x04type\x12:\n" +
 	"\x05slack\x18\x02 \x01(\v2\".bytebase.store.AppIMSetting.SlackH\x00R\x05slack\x12=\n" +
 	"\x06feishu\x18\x03 \x01(\v2#.bytebase.store.AppIMSetting.FeishuH\x00R\x06feishu\x12:\n" +
 	"\x05wecom\x18\x04 \x01(\v2\".bytebase.store.AppIMSetting.WecomH\x00R\x05wecom\x127\n" +
@@ -2608,7 +2608,7 @@ var file_store_setting_proto_goTypes = []any{
 	(*durationpb.Duration)(nil),              // 37: google.protobuf.Duration
 	(*ApprovalTemplate)(nil),                 // 38: bytebase.store.ApprovalTemplate
 	(*expr.Expr)(nil),                        // 39: google.type.Expr
-	(ProjectWebhook_Type)(0),                 // 40: bytebase.store.ProjectWebhook.Type
+	(WebhookType)(0),                         // 40: bytebase.store.WebhookType
 }
 var file_store_setting_proto_depIdxs = []int32{
 	37, // 0: bytebase.store.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
@@ -2638,7 +2638,7 @@ var file_store_setting_proto_depIdxs = []int32{
 	26, // 24: bytebase.store.Algorithm.RangeMask.slices:type_name -> bytebase.store.Algorithm.RangeMask.Slice
 	4,  // 25: bytebase.store.Algorithm.InnerOuterMask.type:type_name -> bytebase.store.Algorithm.InnerOuterMask.MaskType
 	10, // 26: bytebase.store.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.store.Algorithm
-	40, // 27: bytebase.store.AppIMSetting.IMSetting.type:type_name -> bytebase.store.ProjectWebhook.Type
+	40, // 27: bytebase.store.AppIMSetting.IMSetting.type:type_name -> bytebase.store.WebhookType
 	28, // 28: bytebase.store.AppIMSetting.IMSetting.slack:type_name -> bytebase.store.AppIMSetting.Slack
 	29, // 29: bytebase.store.AppIMSetting.IMSetting.feishu:type_name -> bytebase.store.AppIMSetting.Feishu
 	30, // 30: bytebase.store.AppIMSetting.IMSetting.wecom:type_name -> bytebase.store.AppIMSetting.Wecom
@@ -2659,6 +2659,7 @@ func file_store_setting_proto_init() {
 		return
 	}
 	file_store_approval_proto_init()
+	file_store_common_proto_init()
 	file_store_project_webhook_proto_init()
 	file_store_setting_proto_msgTypes[4].OneofWrappers = []any{
 		(*Algorithm_FullMask_)(nil),

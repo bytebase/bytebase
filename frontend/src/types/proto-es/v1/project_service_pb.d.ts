@@ -6,7 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
 import type { GetIamPolicyRequestSchema, IamPolicy, IamPolicySchema, SetIamPolicyRequestSchema } from "./iam_policy_pb";
-import type { State } from "./common_pb";
+import type { State, WebhookType } from "./common_pb";
 
 /**
  * Describes the file v1/project_service.proto.
@@ -758,11 +758,12 @@ export declare type Webhook = Message<"bytebase.v1.Webhook"> & {
   name: string;
 
   /**
+   * Webhook integration type.
    * type is the type of the webhook.
    *
-   * @generated from field: bytebase.v1.Webhook.Type type = 2;
+   * @generated from field: bytebase.v1.WebhookType type = 2;
    */
-  type: Webhook_Type;
+  type: WebhookType;
 
   /**
    * title is the title of the webhook.
@@ -811,74 +812,6 @@ export declare type Webhook = Message<"bytebase.v1.Webhook"> & {
  * Use `create(WebhookSchema)` to create a new message.
  */
 export declare const WebhookSchema: GenMessage<Webhook>;
-
-/**
- * Webhook integration type.
- *
- * @generated from enum bytebase.v1.Webhook.Type
- */
-export enum Webhook_Type {
-  /**
-   * Unspecified type.
-   *
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * Slack integration.
-   *
-   * @generated from enum value: SLACK = 1;
-   */
-  SLACK = 1,
-
-  /**
-   * Discord integration.
-   *
-   * @generated from enum value: DISCORD = 2;
-   */
-  DISCORD = 2,
-
-  /**
-   * Microsoft Teams integration.
-   *
-   * @generated from enum value: TEAMS = 3;
-   */
-  TEAMS = 3,
-
-  /**
-   * DingTalk integration.
-   *
-   * @generated from enum value: DINGTALK = 4;
-   */
-  DINGTALK = 4,
-
-  /**
-   * Feishu integration.
-   *
-   * @generated from enum value: FEISHU = 5;
-   */
-  FEISHU = 5,
-
-  /**
-   * WeCom (WeChat Work) integration.
-   *
-   * @generated from enum value: WECOM = 6;
-   */
-  WECOM = 6,
-
-  /**
-   * Lark integration.
-   *
-   * @generated from enum value: LARK = 8;
-   */
-  LARK = 8,
-}
-
-/**
- * Describes the enum bytebase.v1.Webhook.Type.
- */
-export declare const Webhook_TypeSchema: GenEnum<Webhook_Type>;
 
 /**
  * Activity types for webhook notifications.

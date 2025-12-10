@@ -242,6 +242,10 @@
                   <a href="#bytebase.v1.VCSType"><span class="badge">E</span>VCSType</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.WebhookType"><span class="badge">E</span>WebhookType</a>
+                </li>
+              
               
               
             </ul>
@@ -545,10 +549,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Activity.Type"><span class="badge">E</span>Activity.Type</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Webhook.Type"><span class="badge">E</span>Webhook.Type</a>
                 </li>
               
               
@@ -3319,6 +3319,65 @@ Examples:
                 <td>AZURE_DEVOPS</td>
                 <td>4</td>
                 <td><p>Azure DevOps version control platform.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.WebhookType">WebhookType</h3>
+        <p>Webhook integration type.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>WEBHOOK_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Unspecified type.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SLACK</td>
+                <td>1</td>
+                <td><p>Slack integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISCORD</td>
+                <td>2</td>
+                <td><p>Discord integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TEAMS</td>
+                <td>3</td>
+                <td><p>Microsoft Teams integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DINGTALK</td>
+                <td>4</td>
+                <td><p>DingTalk integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>FEISHU</td>
+                <td>5</td>
+                <td><p>Feishu integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>WECOM</td>
+                <td>6</td>
+                <td><p>WeCom (WeChat Work) integration.</p></td>
+              </tr>
+            
+              <tr>
+                <td>LARK</td>
+                <td>8</td>
+                <td><p>Lark integration.</p></td>
               </tr>
             
           </tbody>
@@ -6333,9 +6392,10 @@ format: projects/{project}/webhooks/{webhook} </p></td>
               
                 <tr>
                   <td>type</td>
-                  <td><a href="#bytebase.v1.Webhook.Type">Webhook.Type</a></td>
+                  <td><a href="#bytebase.v1.WebhookType">WebhookType</a></td>
                   <td></td>
-                  <td><p>type is the type of the webhook. </p></td>
+                  <td><p>Webhook integration type.
+type is the type of the webhook. </p></td>
                 </tr>
               
                 <tr>
@@ -6458,65 +6518,6 @@ ISSUE_CREATE represents creating an issue.</p></td>
                 <td>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE</td>
                 <td>22</td>
                 <td><p>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.Webhook.Type">Webhook.Type</h3>
-        <p>Webhook integration type.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Unspecified type.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SLACK</td>
-                <td>1</td>
-                <td><p>Slack integration.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DISCORD</td>
-                <td>2</td>
-                <td><p>Discord integration.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TEAMS</td>
-                <td>3</td>
-                <td><p>Microsoft Teams integration.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DINGTALK</td>
-                <td>4</td>
-                <td><p>DingTalk integration.</p></td>
-              </tr>
-            
-              <tr>
-                <td>FEISHU</td>
-                <td>5</td>
-                <td><p>Feishu integration.</p></td>
-              </tr>
-            
-              <tr>
-                <td>WECOM</td>
-                <td>6</td>
-                <td><p>WeCom (WeChat Work) integration.</p></td>
-              </tr>
-            
-              <tr>
-                <td>LARK</td>
-                <td>8</td>
-                <td><p>Lark integration.</p></td>
               </tr>
             
           </tbody>
@@ -7239,7 +7240,7 @@ But frontend can be started with a single rule easily. </p></td>
               
                 <tr>
                   <td>type</td>
-                  <td><a href="#bytebase.v1.Webhook.Type">Webhook.Type</a></td>
+                  <td><a href="#bytebase.v1.WebhookType">WebhookType</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

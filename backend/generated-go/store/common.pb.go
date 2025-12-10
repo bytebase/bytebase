@@ -413,6 +413,78 @@ func (SchemaChangeType) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{5}
 }
 
+type WebhookType int32
+
+const (
+	// Unspecified type.
+	WebhookType_WEBHOOK_TYPE_UNSPECIFIED WebhookType = 0
+	// Slack integration.
+	WebhookType_SLACK WebhookType = 1
+	// Discord integration.
+	WebhookType_DISCORD WebhookType = 2
+	// Microsoft Teams integration.
+	WebhookType_TEAMS WebhookType = 3
+	// DingTalk integration.
+	WebhookType_DINGTALK WebhookType = 4
+	// Feishu integration.
+	WebhookType_FEISHU WebhookType = 5
+	// WeCom (WeChat Work) integration.
+	WebhookType_WECOM WebhookType = 6
+	// Lark integration.
+	WebhookType_LARK WebhookType = 8
+)
+
+// Enum value maps for WebhookType.
+var (
+	WebhookType_name = map[int32]string{
+		0: "WEBHOOK_TYPE_UNSPECIFIED",
+		1: "SLACK",
+		2: "DISCORD",
+		3: "TEAMS",
+		4: "DINGTALK",
+		5: "FEISHU",
+		6: "WECOM",
+		8: "LARK",
+	}
+	WebhookType_value = map[string]int32{
+		"WEBHOOK_TYPE_UNSPECIFIED": 0,
+		"SLACK":                    1,
+		"DISCORD":                  2,
+		"TEAMS":                    3,
+		"DINGTALK":                 4,
+		"FEISHU":                   5,
+		"WECOM":                    6,
+		"LARK":                     8,
+	}
+)
+
+func (x WebhookType) Enum() *WebhookType {
+	p := new(WebhookType)
+	*p = x
+	return p
+}
+
+func (x WebhookType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WebhookType) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_common_proto_enumTypes[6].Descriptor()
+}
+
+func (WebhookType) Type() protoreflect.EnumType {
+	return &file_store_common_proto_enumTypes[6]
+}
+
+func (x WebhookType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WebhookType.Descriptor instead.
+func (WebhookType) EnumDescriptor() ([]byte, []int) {
+	return file_store_common_proto_rawDescGZIP(), []int{6}
+}
+
 // PageToken is used internally for obfuscating pagination tokens.
 type PageToken struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -673,7 +745,17 @@ const file_store_common_proto_rawDesc = "" +
 	"\x10SchemaChangeType\x12\"\n" +
 	"\x1eSCHEMA_CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +
-	"\vDECLARATIVE\x10\x02B\x8e\x01\n" +
+	"\vDECLARATIVE\x10\x02*}\n" +
+	"\vWebhookType\x12\x1c\n" +
+	"\x18WEBHOOK_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
+	"\x05SLACK\x10\x01\x12\v\n" +
+	"\aDISCORD\x10\x02\x12\t\n" +
+	"\x05TEAMS\x10\x03\x12\f\n" +
+	"\bDINGTALK\x10\x04\x12\n" +
+	"\n" +
+	"\x06FEISHU\x10\x05\x12\t\n" +
+	"\x05WECOM\x10\x06\x12\b\n" +
+	"\x04LARK\x10\bB\x8e\x01\n" +
 	"\x12com.bytebase.storeB\vCommonProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -688,7 +770,7 @@ func file_store_common_proto_rawDescGZIP() []byte {
 	return file_store_common_proto_rawDescData
 }
 
-var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_store_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_common_proto_goTypes = []any{
 	(Engine)(0),           // 0: bytebase.store.Engine
@@ -697,9 +779,10 @@ var file_store_common_proto_goTypes = []any{
 	(ExportFormat)(0),     // 3: bytebase.store.ExportFormat
 	(RiskLevel)(0),        // 4: bytebase.store.RiskLevel
 	(SchemaChangeType)(0), // 5: bytebase.store.SchemaChangeType
-	(*PageToken)(nil),     // 6: bytebase.store.PageToken
-	(*Position)(nil),      // 7: bytebase.store.Position
-	(*Range)(nil),         // 8: bytebase.store.Range
+	(WebhookType)(0),      // 6: bytebase.store.WebhookType
+	(*PageToken)(nil),     // 7: bytebase.store.PageToken
+	(*Position)(nil),      // 8: bytebase.store.Position
+	(*Range)(nil),         // 9: bytebase.store.Range
 }
 var file_store_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -719,7 +802,7 @@ func file_store_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_common_proto_rawDesc), len(file_store_common_proto_rawDesc)),
-			NumEnums:      6,
+			NumEnums:      7,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,

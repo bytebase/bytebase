@@ -8181,7 +8181,7 @@ components:
             properties:
                 type:
                     enum:
-                        - TYPE_UNSPECIFIED
+                        - WEBHOOK_TYPE_UNSPECIFIED
                         - SLACK
                         - DISCORD
                         - TEAMS
@@ -15478,7 +15478,7 @@ components:
                          format: projects/{project}/webhooks/{webhook}
                 type:
                     enum:
-                        - TYPE_UNSPECIFIED
+                        - WEBHOOK_TYPE_UNSPECIFIED
                         - SLACK
                         - DISCORD
                         - TEAMS
@@ -15487,7 +15487,9 @@ components:
                         - WECOM
                         - LARK
                     type: string
-                    description: type is the type of the webhook.
+                    description: |-
+                        Webhook integration type.
+                         type is the type of the webhook.
                     format: enum
                 title:
                     type: string

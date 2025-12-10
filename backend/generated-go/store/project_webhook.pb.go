@@ -106,78 +106,6 @@ func (Activity_Type) EnumDescriptor() ([]byte, []int) {
 	return file_store_project_webhook_proto_rawDescGZIP(), []int{0, 0}
 }
 
-type ProjectWebhook_Type int32
-
-const (
-	// Unspecified type.
-	ProjectWebhook_TYPE_UNSPECIFIED ProjectWebhook_Type = 0
-	// Slack integration.
-	ProjectWebhook_SLACK ProjectWebhook_Type = 1
-	// Discord integration.
-	ProjectWebhook_DISCORD ProjectWebhook_Type = 2
-	// Microsoft Teams integration.
-	ProjectWebhook_TEAMS ProjectWebhook_Type = 3
-	// DingTalk integration.
-	ProjectWebhook_DINGTALK ProjectWebhook_Type = 4
-	// Feishu integration.
-	ProjectWebhook_FEISHU ProjectWebhook_Type = 5
-	// WeCom (WeChat Work) integration.
-	ProjectWebhook_WECOM ProjectWebhook_Type = 6
-	// Lark integration.
-	ProjectWebhook_LARK ProjectWebhook_Type = 8
-)
-
-// Enum value maps for ProjectWebhook_Type.
-var (
-	ProjectWebhook_Type_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		1: "SLACK",
-		2: "DISCORD",
-		3: "TEAMS",
-		4: "DINGTALK",
-		5: "FEISHU",
-		6: "WECOM",
-		8: "LARK",
-	}
-	ProjectWebhook_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED": 0,
-		"SLACK":            1,
-		"DISCORD":          2,
-		"TEAMS":            3,
-		"DINGTALK":         4,
-		"FEISHU":           5,
-		"WECOM":            6,
-		"LARK":             8,
-	}
-)
-
-func (x ProjectWebhook_Type) Enum() *ProjectWebhook_Type {
-	p := new(ProjectWebhook_Type)
-	*p = x
-	return p
-}
-
-func (x ProjectWebhook_Type) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ProjectWebhook_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_project_webhook_proto_enumTypes[1].Descriptor()
-}
-
-func (ProjectWebhook_Type) Type() protoreflect.EnumType {
-	return &file_store_project_webhook_proto_enumTypes[1]
-}
-
-func (x ProjectWebhook_Type) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ProjectWebhook_Type.Descriptor instead.
-func (ProjectWebhook_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_project_webhook_proto_rawDescGZIP(), []int{1, 0}
-}
-
 // Activity types for webhook notifications.
 type Activity struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -218,7 +146,7 @@ func (*Activity) Descriptor() ([]byte, []int) {
 type ProjectWebhook struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Webhook type.
-	Type ProjectWebhook_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.ProjectWebhook_Type" json:"type,omitempty"`
+	Type WebhookType `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.store.WebhookType" json:"type,omitempty"`
 	// Webhook title.
 	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	// Webhook URL.
@@ -263,11 +191,11 @@ func (*ProjectWebhook) Descriptor() ([]byte, []int) {
 	return file_store_project_webhook_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ProjectWebhook) GetType() ProjectWebhook_Type {
+func (x *ProjectWebhook) GetType() WebhookType {
 	if x != nil {
 		return x.Type
 	}
-	return ProjectWebhook_TYPE_UNSPECIFIED
+	return WebhookType_WEBHOOK_TYPE_UNSPECIFIED
 }
 
 func (x *ProjectWebhook) GetTitle() string {
@@ -302,7 +230,7 @@ var File_store_project_webhook_proto protoreflect.FileDescriptor
 
 const file_store_project_webhook_proto_rawDesc = "" +
 	"\n" +
-	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\"\xac\x02\n" +
+	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xac\x02\n" +
 	"\bActivity\"\x9f\x02\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
@@ -314,25 +242,15 @@ const file_store_project_webhook_proto_rawDesc = "" +
 	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12\x19\n" +
 	"\x15ISSUE_APPROVAL_NOTIFY\x10\x15\x12&\n" +
 	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12)\n" +
-	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x16\"\xc7\x02\n" +
-	"\x0eProjectWebhook\x127\n" +
-	"\x04type\x18\x01 \x01(\x0e2#.bytebase.store.ProjectWebhook.TypeR\x04type\x12\x14\n" +
+	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x16\"\xcf\x01\n" +
+	"\x0eProjectWebhook\x12/\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x1b.bytebase.store.WebhookTypeR\x04type\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +
 	"\x03url\x18\x03 \x01(\tR\x03url\x12=\n" +
 	"\n" +
 	"activities\x18\x04 \x03(\x0e2\x1d.bytebase.store.Activity.TypeR\n" +
 	"activities\x12%\n" +
-	"\x0edirect_message\x18\x05 \x01(\bR\rdirectMessage\"n\n" +
-	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
-	"\x05SLACK\x10\x01\x12\v\n" +
-	"\aDISCORD\x10\x02\x12\t\n" +
-	"\x05TEAMS\x10\x03\x12\f\n" +
-	"\bDINGTALK\x10\x04\x12\n" +
-	"\n" +
-	"\x06FEISHU\x10\x05\x12\t\n" +
-	"\x05WECOM\x10\x06\x12\b\n" +
-	"\x04LARK\x10\bB\x96\x01\n" +
+	"\x0edirect_message\x18\x05 \x01(\bR\rdirectMessageB\x96\x01\n" +
 	"\x12com.bytebase.storeB\x13ProjectWebhookProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -347,16 +265,16 @@ func file_store_project_webhook_proto_rawDescGZIP() []byte {
 	return file_store_project_webhook_proto_rawDescData
 }
 
-var file_store_project_webhook_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_store_project_webhook_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_store_project_webhook_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_project_webhook_proto_goTypes = []any{
-	(Activity_Type)(0),       // 0: bytebase.store.Activity.Type
-	(ProjectWebhook_Type)(0), // 1: bytebase.store.ProjectWebhook.Type
-	(*Activity)(nil),         // 2: bytebase.store.Activity
-	(*ProjectWebhook)(nil),   // 3: bytebase.store.ProjectWebhook
+	(Activity_Type)(0),     // 0: bytebase.store.Activity.Type
+	(*Activity)(nil),       // 1: bytebase.store.Activity
+	(*ProjectWebhook)(nil), // 2: bytebase.store.ProjectWebhook
+	(WebhookType)(0),       // 3: bytebase.store.WebhookType
 }
 var file_store_project_webhook_proto_depIdxs = []int32{
-	1, // 0: bytebase.store.ProjectWebhook.type:type_name -> bytebase.store.ProjectWebhook.Type
+	3, // 0: bytebase.store.ProjectWebhook.type:type_name -> bytebase.store.WebhookType
 	0, // 1: bytebase.store.ProjectWebhook.activities:type_name -> bytebase.store.Activity.Type
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
@@ -370,12 +288,13 @@ func file_store_project_webhook_proto_init() {
 	if File_store_project_webhook_proto != nil {
 		return
 	}
+	file_store_common_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_project_webhook_proto_rawDesc), len(file_store_project_webhook_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      1,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,

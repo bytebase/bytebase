@@ -2,19 +2,19 @@ import { create as createProto } from "@bufbuild/protobuf";
 import { t } from "@/plugins/i18n";
 import {
   Activity_Type,
-  Webhook_Type,
   WebhookSchema,
 } from "../proto-es/v1/project_service_pb";
+import { WebhookType } from "../proto-es/v1/common_pb";
 
 export const emptyProjectWebhook = () => {
   return createProto(WebhookSchema, {
-    type: Webhook_Type.SLACK,
+    type: WebhookType.SLACK,
     notificationTypes: [Activity_Type.ISSUE_STATUS_UPDATE],
   });
 };
 
 type ProjectWebhookV1TypeItem = {
-  type: Webhook_Type;
+  type: WebhookType;
   name: string;
   urlPrefix: string;
   urlPlaceholder: string;
@@ -25,7 +25,7 @@ type ProjectWebhookV1TypeItem = {
 export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
   return [
     {
-      type: Webhook_Type.SLACK,
+      type: WebhookType.SLACK,
       name: t("common.slack"),
       urlPrefix: "https://hooks.slack.com/",
       urlPlaceholder: "https://hooks.slack.com/services/...",
@@ -33,7 +33,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: true,
     },
     {
-      type: Webhook_Type.DISCORD,
+      type: WebhookType.DISCORD,
       name: t("common.discord"),
       urlPrefix: "https://discord.com/api/webhooks",
       urlPlaceholder: "https://discord.com/api/webhooks/...",
@@ -42,7 +42,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: false,
     },
     {
-      type: Webhook_Type.TEAMS,
+      type: WebhookType.TEAMS,
       name: t("common.teams"),
       urlPrefix: "",
       urlPlaceholder: "https://acme123.webhook.office.com/webhookb2/...",
@@ -51,7 +51,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: true,
     },
     {
-      type: Webhook_Type.DINGTALK,
+      type: WebhookType.DINGTALK,
       name: t("common.dingtalk"),
       urlPrefix: "https://oapi.dingtalk.com",
       urlPlaceholder: "https://oapi.dingtalk.com/robot/...",
@@ -60,7 +60,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: true,
     },
     {
-      type: Webhook_Type.FEISHU,
+      type: WebhookType.FEISHU,
       name: t("common.feishu"),
       urlPrefix: "https://open.feishu.cn",
       urlPlaceholder: "https://open.feishu.cn/open-apis/bot/v2/hook/...",
@@ -69,7 +69,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: true,
     },
     {
-      type: Webhook_Type.LARK,
+      type: WebhookType.LARK,
       name: t("common.lark"),
       urlPrefix: "https://open.larksuite.com",
       urlPlaceholder: "https://open.larksuite.com/open-apis/bot/v2/hook/...",
@@ -78,7 +78,7 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       supportDirectMessage: true,
     },
     {
-      type: Webhook_Type.WECOM,
+      type: WebhookType.WECOM,
       name: t("common.wecom"),
       urlPrefix: "https://qyapi.weixin.qq.com",
       urlPlaceholder: "https://qyapi.weixin.qq.com/cgi-bin/webhook/...",
