@@ -44,7 +44,6 @@ import {
   useWorkSheetStore,
 } from "@/store";
 import { migrateLegacyCache } from "@/store/modules/sqlEditor/legacy/migration";
-import type { SQLEditorConnection } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   DEFAULT_SQL_EDITOR_TAB_MODE,
@@ -62,7 +61,6 @@ import {
   getDefaultPagination,
   getSheetStatement,
   isDatabaseV1Queryable,
-  isSameSQLEditorConnection,
   isWorksheetReadableV1,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
@@ -89,9 +87,7 @@ const {
 useRouteChangeGuard(
   computed(() => {
     return (
-      tabStore.openTabList.find(
-        (tab) => !!tab?.worksheet && tab.status === "DIRTY"
-      ) !== undefined
+      tabStore.openTabList.find((tab) => tab.status === "DIRTY") !== undefined
     );
   }),
   `${t("sql-editor.tab.unsaved-worksheet")} ${t("common.leave-without-saving")}`
@@ -138,36 +134,21 @@ const initializeProject = async () => {
   }
 };
 
-const connect = (connection: SQLEditorConnection) => {
-  const tabWithSameConnect = tabStore.draftList.find((tab) =>
-    isSameSQLEditorConnection(tab.connection, connection)
-  );
-  if (tabWithSameConnect) {
-    tabStore.addTab(tabWithSameConnect);
-    return;
-  }
-
-  tabStore.addTab({
-    connection,
-    mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-    title: suggestedTabTitleForSQLEditorConnection(connection),
-  });
-};
-
 const switchWorksheet = async (sheetName: string) => {
-  const openingSheetTab = tabStore.openTabList.find(
+  const openedSheetTab = tabStore.openTabList.find(
     (tab) => tab.worksheet == sheetName
   );
 
   const sheet = await worksheetStore.getOrFetchWorksheetByName(sheetName);
-
   if (!sheet) {
-    if (openingSheetTab) {
+    if (openedSheetTab) {
       // If a sheet is open in a tab but it returns 404 NOT_FOUND
       // that means the sheet has been deleted somewhere else.
       // We need to turn the sheet to an unsaved tab.
-      openingSheetTab.worksheet = "";
-      openingSheetTab.status = "DIRTY";
+      tabStore.updateTab(openedSheetTab.id, {
+        worksheet: "",
+        status: "DIRTY",
+      });
     }
     return false;
   }
@@ -181,28 +162,14 @@ const switchWorksheet = async (sheetName: string) => {
   }
 
   const connection = await extractWorksheetConnection(sheet);
-  if (openingSheetTab) {
-    // Switch to a sheet tab if it's open already.
-    // and don't touch it
-    tabStore.setCurrentTabId(openingSheetTab.id);
-    tabStore.updateCurrentTab({
-      connection,
-      worksheet: sheet.name,
-      statement: getSheetStatement(sheet),
-      status: "CLEAN",
-    });
-    return true;
-  }
-
-  // Open the sheet in a new tab otherwise.
   tabStore.addTab({
+    id: openedSheetTab?.id,
     connection,
     worksheet: sheet.name,
     title: sheet.title,
     statement: getSheetStatement(sheet),
     status: "CLEAN",
   });
-
   return true;
 };
 
@@ -242,14 +209,19 @@ const prepareConnectionParams = async () => {
       (tab) => tab.connection.database === database.name
     );
     for (const tab of tabs) {
-      tabStore.closeTab(tab);
+      tabStore.closeTab(tab.id);
     }
     return false;
   }
   // connected to db
-  connect({
+  const connection = {
     instance: database.instance,
     database: database.name,
+  };
+  tabStore.addTab({
+    connection,
+    mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+    title: suggestedTabTitleForSQLEditorConnection(connection),
   });
   return true;
 };
@@ -413,7 +385,6 @@ onMounted(async () => {
   ]);
 
   await migrateLegacyCache();
-  await tabStore.maybeInitProject();
   await initializeConnectionFromQuery();
   syncURLWithConnection();
 });

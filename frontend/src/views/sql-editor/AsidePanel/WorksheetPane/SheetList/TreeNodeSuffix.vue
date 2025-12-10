@@ -60,18 +60,14 @@ import {
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { t } from "@/plugins/i18n";
-import {
-  useSQLEditorTabStore,
-  useTabViewStateStore,
-  useUserStore,
-  useWorkSheetStore,
-} from "@/store";
+import { useSQLEditorTabStore, useUserStore, useWorkSheetStore } from "@/store";
 import { Worksheet_Visibility } from "@/types/proto-es/v1/worksheet_service_pb";
 import type {
   SheetViewMode,
   WorksheetFolderNode,
 } from "@/views/sql-editor/Sheet";
 import { useSheetContext } from "@/views/sql-editor/Sheet";
+import { useTabListContext } from "@/views/sql-editor/TabList/context";
 
 const props = defineProps<{
   node: WorksheetFolderNode;
@@ -86,9 +82,9 @@ const emit = defineEmits<{
 
 const userStore = useUserStore();
 const worksheetStore = useWorkSheetStore();
-const { removeViewState } = useTabViewStateStore();
 const tabStore = useSQLEditorTabStore();
 const { isWorksheetCreator } = useSheetContext();
+const { events } = useTabListContext();
 
 const worksheetLite = computed(() => {
   if (!props.node.worksheet) {
@@ -124,15 +120,11 @@ const creatorForSheet = (creator: string) => {
 };
 
 const handleDeleteDraft = () => {
-  if (props.node.worksheet && props.node.worksheet.name) {
-    const draft = tabStore.draftList.find(
-      (t) => t.id === props.node.worksheet!.name
-    );
-    if (draft) {
-      tabStore.closeTab(draft);
-      tabStore.removeDraft(draft);
+  if (props.node.worksheet?.name) {
+    const tab = tabStore.getTabById(props.node.worksheet?.name);
+    if (tab) {
+      events.emit("close-tab", { tab, index: 0, action: "CLOSE" });
     }
-    removeViewState(props.node.worksheet.name);
   }
 };
 

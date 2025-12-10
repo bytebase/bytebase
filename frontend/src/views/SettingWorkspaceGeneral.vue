@@ -41,7 +41,7 @@
 
     <div v-if="allowEdit && isDirty" class="sticky bottom-0 z-10">
       <div
-        class="flex justify-between w-full py-4 border-block-border bg-white"
+        class="flex justify-between w-full py-4 border-t border-block-border bg-white"
       >
         <NButton @click.prevent="onRevert">
           {{ $t("common.cancel") }}

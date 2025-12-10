@@ -25,7 +25,6 @@ import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
   useSQLEditorTabStore,
-  useTabViewStateStore,
 } from "@/store";
 import {
   type ComposedDatabase,
@@ -111,7 +110,6 @@ export const useActions = () => {
     view: EditorPanelView;
   }) => {
     const tabStore = useSQLEditorTabStore();
-    const tabViewStateStore = useTabViewStateStore();
 
     let schema = params.schema;
     let table = params.table;
@@ -142,7 +140,7 @@ export const useActions = () => {
       if (!isSameSQLEditorConnection(tab.connection, clonedTab.connection)) {
         return false;
       }
-      const viewState = tabViewStateStore.getViewState(tab.id);
+      const viewState = tab.viewState;
       if (
         viewState.view !== params.view ||
         (schema && viewState.schema !== schema)

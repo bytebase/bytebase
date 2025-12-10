@@ -82,14 +82,9 @@ import { AIChatToSQL } from "@/plugins/ai";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorTabStore,
-  useTabViewStateStore,
 } from "@/store";
 import type { SQLEditorQueryParams } from "@/types";
-import {
-  defaultSQLEditorTab,
-  instanceV1HasReadonlyMode,
-  suggestedTabTitleForSQLEditorConnection,
-} from "@/utils";
+import { instanceV1HasReadonlyMode } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import {
   EditorAction,
@@ -107,7 +102,6 @@ const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
 const { instance } = useConnectionOfCurrentSQLEditorTab();
 const { showAIPanel, editorPanelSize, handleEditorPanelResize } =
   useSQLEditorContext();
-const { cloneViewState } = useTabViewStateStore();
 const sqlEditorRef = ref<InstanceType<typeof SQLEditor>>();
 
 const allowReadonlyMode = computed(() => {
@@ -137,24 +131,9 @@ const handleExecute = ({
   newTab: boolean;
 }) => {
   if (newTab) {
-    const fromTab = tabStore.currentTab;
-    const clonedTab = defaultSQLEditorTab();
-    if (fromTab) {
-      clonedTab.connection = cloneDeep(fromTab.connection);
-      clonedTab.treeState = cloneDeep(fromTab.treeState);
-    }
-    clonedTab.title = suggestedTabTitleForSQLEditorConnection(
-      clonedTab.connection
-    );
-    const newTab = tabStore.addTab(clonedTab, /* beside */ true);
-    if (fromTab) {
-      const vs = cloneViewState(fromTab.id, newTab.id);
-      if (vs) {
-        vs.view = "CODE";
-        vs.detail = {};
-      }
-    }
-    newTab.statement = params.statement;
+    tabStore.cloneTab(tabStore.currentTabId, {
+      statement: params.statement,
+    });
   }
 
   nextTick(() => {

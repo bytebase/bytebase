@@ -15,13 +15,16 @@
           <!-- header for the index -->
           <th
             :key="`${setIndex}-0-index`"
-            class="`group relative px-1 py-2 tracking-wider border-x border-block-border dark:border-zinc-500"
+            class="`group relative px-2 py-2 tracking-wider border-x border-block-border dark:border-zinc-500"
             v-bind="tableResize.getColumnProps(0)"
           >
             <!-- Use the max index to calculate the cell width -->
             <div
               :class="[
                 'textinfolabel opacity-0',
+                selectionDisabled
+                  ? ''
+                  : 'ml-2',
               ]"
             >{{ rows.length }}</div>
             <div
@@ -34,7 +37,7 @@
           <th
             v-for="(header, columnIndex) of columns"
             :key="`${setIndex}-${columnIndex + 1}-${header.id}`"
-            class="group relative px-2 py-2 min-w-8 text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-x border-block-border dark:border-zinc-500"
+            class="group relative px-3 py-2 min-w-8 text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-x border-block-border dark:border-zinc-500"
             :class="{
               'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800':
                 !selectionDisabled,
@@ -122,7 +125,7 @@
             class="relative flex items-center pl-3 shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
             :class="{
               'border-r': true,
-              'border-b': rowIndex < (rows.length - 1),
+              'border-b': true,
               'bg-accent/10! dark:bg-accent/40!': activeRowIndex === rowIndex,
               'bg-accent/20! dark:bg-accent/40!': selectionState.rows.includes(rowIndex)
             }"
@@ -166,7 +169,7 @@
             class="relative shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
             :class="{
               'border-r': columnIndex < (row.item.values.length - 1),
-              'border-b': rowIndex < (rows.length - 1),
+              'border-b': true,
             }"
             :data-col-index="columnIndex + 1"
             :style="{

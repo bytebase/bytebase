@@ -130,12 +130,14 @@ const useSheetTreeByView = (
       case "shared":
         return worksheetList.value.map(convertToWorksheetLikeItem);
       case "draft":
-        return tabStore.draftList.map((tab) => ({
-          name: tab.id,
-          title: tab.title,
-          folders: [],
-          type: "draft",
-        }));
+        return tabStore.openTabList
+          .filter((tab) => !tab.worksheet)
+          .map((tab) => ({
+            name: tab.id,
+            title: tab.title,
+            folders: [],
+            type: "draft",
+          }));
       default:
         return [];
     }

@@ -74,13 +74,13 @@ import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useSQLEditorTabStore, useTabViewStateStore } from "@/store";
+import { useSQLEditorTabStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { defer, usePreventBackAndForward } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import BrandingLogoWrapper from "./BrandingLogoWrapper.vue";
 import ContextMenu from "./ContextMenu.vue";
-import { provideTabListContext } from "./context";
+import { useTabListContext } from "./context";
 import TabItem from "./TabItem/TabItem.vue";
 
 type LocalState = {
@@ -91,6 +91,7 @@ type LocalState = {
 
 const tabStore = useSQLEditorTabStore();
 const editorContext = useSQLEditorContext();
+const context = useTabListContext();
 
 const { t } = useI18n();
 const dialog = useDialog();
@@ -102,8 +103,6 @@ const state = reactive<LocalState>({
 });
 const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
-const { removeViewState } = useTabViewStateStore();
-const context = provideTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 
 const scrollState = reactive({
@@ -172,9 +171,7 @@ const handleRemoveTab = async (tab: SQLEditorTab, focusWhenConfirm = false) => {
   }
 
   function remove() {
-    tabStore.closeTab(tab);
-    removeViewState(tab.id);
-
+    tabStore.closeTab(tab.id);
     nextTick(recalculateScrollState);
   }
 

@@ -25,6 +25,7 @@ import {
 import { PolicyResourceType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { provideSQLEditorContext } from "@/views/sql-editor/context";
 import { provideSheetContext } from "@/views/sql-editor/Sheet";
+import { provideTabListContext } from "@/views/sql-editor/TabList/context";
 
 const router = useRouter();
 
@@ -32,6 +33,8 @@ const router = useRouter();
 provideSQLEditorContext();
 // provide context for sheets
 provideSheetContext();
+// provide context for tabs
+provideTabListContext();
 
 const ready = ref(false);
 
