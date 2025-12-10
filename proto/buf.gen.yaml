@@ -39,7 +39,7 @@ plugins:
     types:
       - bytebase.v1
   - remote: buf.build/bufbuild/protoschema-jsonschema
-    out: gen/jsonschema
+    out: ../backend/api/mcp/schemas
     opt: target=json
     types:
       - bytebase.v1

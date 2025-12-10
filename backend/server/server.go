@@ -223,7 +223,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	// MCP server.
 	mcpInvoker := mcpserver.NewInvoker(fmt.Sprintf("http://localhost:%d", profile.Port))
-	mcpRegistry, err := mcpserver.NewRegistry("proto/gen/jsonschema", mcpInvoker)
+	mcpRegistry, err := mcpserver.NewRegistry(mcpInvoker)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create MCP registry")
 	}

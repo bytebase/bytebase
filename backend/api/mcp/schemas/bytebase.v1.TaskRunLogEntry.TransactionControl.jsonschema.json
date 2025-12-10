@@ -1,0 +1,39 @@
+{
+  "$id": "bytebase.v1.TaskRunLogEntry.TransactionControl.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Transaction control operation details.",
+  "properties": {
+    "error": {
+      "default": "",
+      "description": "Error message if the operation failed.",
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "pattern": "^TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "BEGIN",
+            "COMMIT",
+            "ROLLBACK"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The type of transaction control.",
+      "title": "Type"
+    }
+  },
+  "title": "Transaction Control",
+  "type": "object"
+}

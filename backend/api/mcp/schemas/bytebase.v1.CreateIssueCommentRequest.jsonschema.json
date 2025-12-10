@@ -1,0 +1,24 @@
+{
+  "$id": "bytebase.v1.CreateIssueCommentRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(issue_comment)$": {
+      "$ref": "bytebase.v1.IssueComment.jsonschema.json",
+      "description": "The comment to create."
+    }
+  },
+  "properties": {
+    "issueComment": {
+      "$ref": "bytebase.v1.IssueComment.jsonschema.json",
+      "description": "The comment to create."
+    },
+    "parent": {
+      "default": "",
+      "description": "The issue name\n Format: projects/{project}/issues/{issue}",
+      "type": "string"
+    }
+  },
+  "title": "Create Issue Comment Request",
+  "type": "object"
+}

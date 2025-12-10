@@ -1,0 +1,57 @@
+{
+  "$id": "bytebase.v1.Role.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Role defines a set of permissions that can be assigned to users.",
+  "properties": {
+    "description": {
+      "default": "",
+      "description": "Optional description of the role.",
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "description": "Resource name. Format: roles/{role}",
+      "type": "string"
+    },
+    "permissions": {
+      "description": "List of permission identifiers granted by this role.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "title": {
+      "default": "",
+      "description": "Human-readable title.",
+      "maxLength": 200,
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "pattern": "^TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "BUILT_IN",
+            "CUSTOM"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "Role type indicating if it's built-in or custom.",
+      "title": "Type"
+    }
+  },
+  "title": "Role",
+  "type": "object"
+}

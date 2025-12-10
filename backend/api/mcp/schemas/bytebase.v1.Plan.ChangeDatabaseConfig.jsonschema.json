@@ -1,0 +1,89 @@
+{
+  "$id": "bytebase.v1.Plan.ChangeDatabaseConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(enable_ghost)$": {
+      "default": false,
+      "description": "Whether to use gh-ost for online schema migration.",
+      "type": "boolean"
+    },
+    "^(enable_prior_backup)$": {
+      "default": false,
+      "description": "If set, a backup of the modified data will be created automatically before any changes are applied.",
+      "type": "boolean"
+    },
+    "^(ghost_flags)$": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    }
+  },
+  "properties": {
+    "enableGhost": {
+      "default": false,
+      "description": "Whether to use gh-ost for online schema migration.",
+      "type": "boolean"
+    },
+    "enablePriorBackup": {
+      "default": false,
+      "description": "If set, a backup of the modified data will be created automatically before any changes are applied.",
+      "type": "boolean"
+    },
+    "ghostFlags": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "release": {
+      "default": "",
+      "description": "The resource name of the release.\n Format: projects/{project}/releases/{release}",
+      "type": "string"
+    },
+    "sheet": {
+      "default": "",
+      "description": "The resource name of the sheet.\n Format: projects/{project}/sheets/{sheet}",
+      "type": "string"
+    },
+    "targets": {
+      "description": "The list of targets.\n Multi-database format: [instances/{instance-id}/databases/{database-name}].\n Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "pattern": "^DATABASE_CHANGE_TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "MIGRATE",
+            "SDL"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "Type is the database change type.",
+      "title": "Database Change Type"
+    }
+  },
+  "title": "Change Database Config",
+  "type": "object"
+}

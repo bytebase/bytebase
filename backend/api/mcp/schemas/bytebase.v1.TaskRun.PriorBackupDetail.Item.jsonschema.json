@@ -1,0 +1,44 @@
+{
+  "$id": "bytebase.v1.TaskRun.PriorBackupDetail.Item.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A single backup table mapping.",
+  "patternProperties": {
+    "^(end_position)$": {
+      "$ref": "bytebase.v1.Position.jsonschema.json",
+      "description": "The end position in the SQL statement."
+    },
+    "^(source_table)$": {
+      "$ref": "bytebase.v1.TaskRun.PriorBackupDetail.Item.Table.jsonschema.json",
+      "description": "The original table information."
+    },
+    "^(start_position)$": {
+      "$ref": "bytebase.v1.Position.jsonschema.json",
+      "description": "The start position in the SQL statement."
+    },
+    "^(target_table)$": {
+      "$ref": "bytebase.v1.TaskRun.PriorBackupDetail.Item.Table.jsonschema.json",
+      "description": "The target backup table information."
+    }
+  },
+  "properties": {
+    "endPosition": {
+      "$ref": "bytebase.v1.Position.jsonschema.json",
+      "description": "The end position in the SQL statement."
+    },
+    "sourceTable": {
+      "$ref": "bytebase.v1.TaskRun.PriorBackupDetail.Item.Table.jsonschema.json",
+      "description": "The original table information."
+    },
+    "startPosition": {
+      "$ref": "bytebase.v1.Position.jsonschema.json",
+      "description": "The start position in the SQL statement."
+    },
+    "targetTable": {
+      "$ref": "bytebase.v1.TaskRun.PriorBackupDetail.Item.Table.jsonschema.json",
+      "description": "The target backup table information."
+    }
+  },
+  "title": "Item",
+  "type": "object"
+}

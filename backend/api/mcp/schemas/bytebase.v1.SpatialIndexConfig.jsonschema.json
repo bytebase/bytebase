@@ -1,0 +1,27 @@
+{
+  "$id": "bytebase.v1.SpatialIndexConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "SpatialIndexConfig defines the spatial index configuration for spatial databases.",
+  "properties": {
+    "dimensional": {
+      "$ref": "bytebase.v1.DimensionalConfig.jsonschema.json",
+      "description": "Dimensional configuration"
+    },
+    "method": {
+      "default": "",
+      "description": "Spatial indexing method (e.g., \"SPATIAL\", \"R-TREE\", \"GIST\")",
+      "type": "string"
+    },
+    "storage": {
+      "$ref": "bytebase.v1.StorageConfig.jsonschema.json",
+      "description": "Storage and performance configuration"
+    },
+    "tessellation": {
+      "$ref": "bytebase.v1.TessellationConfig.jsonschema.json",
+      "description": "Tessellation configuration for grid-based spatial indexes"
+    }
+  },
+  "title": "Spatial Index Config",
+  "type": "object"
+}

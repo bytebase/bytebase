@@ -1,0 +1,21 @@
+{
+  "$id": "bytebase.v1.TaskRunLog.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entries": {
+      "description": "The log entries for this task run.",
+      "items": {
+        "$ref": "bytebase.v1.TaskRunLogEntry.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "name": {
+      "default": "",
+      "description": "Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log",
+      "type": "string"
+    }
+  },
+  "title": "Task Run Log",
+  "type": "object"
+}

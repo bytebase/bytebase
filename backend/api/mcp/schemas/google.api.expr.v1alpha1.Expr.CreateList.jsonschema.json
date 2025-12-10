@@ -1,0 +1,55 @@
+{
+  "$id": "google.api.expr.v1alpha1.Expr.CreateList.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Lists may either be homogenous, e.g. `[1, 2, 3]`, or heterogeneous, e.g.\n `dyn([1, 'hello', 2.0])`",
+  "patternProperties": {
+    "^(optional_indices)$": {
+      "description": "When an optional-typed value is present, the value it contains\n is included in the list. If the optional-typed value is absent, the list\n element is omitted from the CreateList result.",
+      "items": {
+        "anyOf": [
+          {
+            "maximum": 2147483647,
+            "minimum": -2147483648,
+            "type": "integer"
+          },
+          {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          }
+        ]
+      },
+      "title": "The indices within the elements list which are marked as optional\n elements.",
+      "type": "array"
+    }
+  },
+  "properties": {
+    "elements": {
+      "description": "The elements part of the list.",
+      "items": {
+        "$ref": "google.api.expr.v1alpha1.Expr.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "optionalIndices": {
+      "description": "When an optional-typed value is present, the value it contains\n is included in the list. If the optional-typed value is absent, the list\n element is omitted from the CreateList result.",
+      "items": {
+        "anyOf": [
+          {
+            "maximum": 2147483647,
+            "minimum": -2147483648,
+            "type": "integer"
+          },
+          {
+            "pattern": "^-?[0-9]+$",
+            "type": "string"
+          }
+        ]
+      },
+      "title": "The indices within the elements list which are marked as optional\n elements.",
+      "type": "array"
+    }
+  },
+  "title": "A list creation expression.",
+  "type": "object"
+}

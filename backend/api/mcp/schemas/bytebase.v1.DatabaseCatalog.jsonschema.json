@@ -1,0 +1,22 @@
+{
+  "$id": "bytebase.v1.DatabaseCatalog.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Catalog metadata for a database including schemas, tables, and columns.",
+  "properties": {
+    "name": {
+      "default": "",
+      "description": "The name of the database catalog.\n Format: instances/{instance}/databases/{database}/catalog",
+      "type": "string"
+    },
+    "schemas": {
+      "description": "The schemas in the database.",
+      "items": {
+        "$ref": "bytebase.v1.SchemaCatalog.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Database Catalog",
+  "type": "object"
+}

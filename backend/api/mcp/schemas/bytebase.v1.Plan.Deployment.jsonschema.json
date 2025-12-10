@@ -1,0 +1,32 @@
+{
+  "$id": "bytebase.v1.Plan.Deployment.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(database_group_mappings)$": {
+      "description": "The database group mapping.",
+      "items": {
+        "$ref": "bytebase.v1.Plan.Deployment.DatabaseGroupMapping.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "databaseGroupMappings": {
+      "description": "The database group mapping.",
+      "items": {
+        "$ref": "bytebase.v1.Plan.Deployment.DatabaseGroupMapping.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "environments": {
+      "description": "The environments deploy order.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Deployment",
+  "type": "object"
+}

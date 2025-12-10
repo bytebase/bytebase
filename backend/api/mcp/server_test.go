@@ -108,11 +108,9 @@ func TestInvoker_doConnect_AuthHeaderForwarding(t *testing.T) {
 func TestNewServer(t *testing.T) {
 	a := require.New(t)
 
-	t.Run("valid registry", func(t *testing.T) {
-		// Create a temporary directory for schemas (even if empty)
-		tmpDir := t.TempDir()
+	t.Run("valid registry", func(*testing.T) {
 		invoker := NewInvoker("http://localhost:8080")
-		registry, err := NewRegistry(tmpDir, invoker)
+		registry, err := NewRegistry(invoker)
 		a.NoError(err)
 
 		server, err := NewServer(registry, nil, nil, nil, nil)
@@ -126,10 +124,8 @@ func TestNewServer(t *testing.T) {
 func TestServer_Handler(t *testing.T) {
 	a := require.New(t)
 
-	// Create a temporary directory for schemas (even if empty)
-	tmpDir := t.TempDir()
 	invoker := NewInvoker("http://localhost:8080")
-	registry, err := NewRegistry(tmpDir, invoker)
+	registry, err := NewRegistry(invoker)
 	a.NoError(err)
 
 	server, err := NewServer(registry, nil, nil, nil, nil)

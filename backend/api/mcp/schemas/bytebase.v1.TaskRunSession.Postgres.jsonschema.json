@@ -1,0 +1,44 @@
+{
+  "$id": "bytebase.v1.TaskRunSession.Postgres.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "PostgreSQL session information.",
+  "patternProperties": {
+    "^(blocked_sessions)$": {
+      "description": "`blocked_sessions` are blocked by `session`.",
+      "items": {
+        "$ref": "bytebase.v1.TaskRunSession.Postgres.Session.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "^(blocking_sessions)$": {
+      "description": "`blocking_sessions` block `session`.",
+      "items": {
+        "$ref": "bytebase.v1.TaskRunSession.Postgres.Session.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "blockedSessions": {
+      "description": "`blocked_sessions` are blocked by `session`.",
+      "items": {
+        "$ref": "bytebase.v1.TaskRunSession.Postgres.Session.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "blockingSessions": {
+      "description": "`blocking_sessions` block `session`.",
+      "items": {
+        "$ref": "bytebase.v1.TaskRunSession.Postgres.Session.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "session": {
+      "$ref": "bytebase.v1.TaskRunSession.Postgres.Session.jsonschema.json",
+      "description": "`session` is the session of the task run executing commands."
+    }
+  },
+  "title": "Postgres",
+  "type": "object"
+}

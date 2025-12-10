@@ -1,0 +1,18 @@
+{
+  "$id": "bytebase.v1.CreateSheetRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "parent": {
+      "default": "",
+      "description": "The parent resource where this sheet will be created.\n Format: projects/{project}",
+      "type": "string"
+    },
+    "sheet": {
+      "$ref": "bytebase.v1.Sheet.jsonschema.json",
+      "description": "The sheet to create."
+    }
+  },
+  "title": "Create Sheet Request",
+  "type": "object"
+}

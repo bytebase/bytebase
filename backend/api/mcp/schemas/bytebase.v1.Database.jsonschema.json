@@ -1,0 +1,107 @@
+{
+  "$id": "bytebase.v1.Database.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(backup_available)$": {
+      "default": false,
+      "description": "The database is available for DML prior backup.",
+      "type": "boolean"
+    },
+    "^(effective_environment)$": {
+      "description": "The effective environment based on environment tag above and environment\n tag on the instance. Inheritance follows\n https://cloud.google.com/resource-manager/docs/tags/tags-overview.",
+      "type": "string"
+    },
+    "^(instance_resource)$": {
+      "$ref": "bytebase.v1.InstanceResource.jsonschema.json",
+      "description": "The instance resource."
+    },
+    "^(schema_version)$": {
+      "default": "",
+      "description": "The version of database schema.",
+      "type": "string"
+    },
+    "^(successful_sync_time)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "The latest synchronization time."
+    }
+  },
+  "properties": {
+    "backupAvailable": {
+      "default": false,
+      "description": "The database is available for DML prior backup.",
+      "type": "boolean"
+    },
+    "drifted": {
+      "default": false,
+      "description": "The schema is drifted from the source of truth.",
+      "type": "boolean"
+    },
+    "effectiveEnvironment": {
+      "description": "The effective environment based on environment tag above and environment\n tag on the instance. Inheritance follows\n https://cloud.google.com/resource-manager/docs/tags/tags-overview.",
+      "type": "string"
+    },
+    "environment": {
+      "description": "The environment resource.\n Format: environments/prod where prod is the environment resource ID.",
+      "type": "string"
+    },
+    "instanceResource": {
+      "$ref": "bytebase.v1.InstanceResource.jsonschema.json",
+      "description": "The instance resource."
+    },
+    "labels": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Labels will be used for deployment and policy control.",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "name": {
+      "default": "",
+      "description": "The name of the database.\n Format: instances/{instance}/databases/{database}\n {database} is the database name in the instance.",
+      "type": "string"
+    },
+    "project": {
+      "default": "",
+      "description": "The project for a database.\n Format: projects/{project}",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "default": "",
+      "description": "The version of database schema.",
+      "type": "string"
+    },
+    "state": {
+      "anyOf": [
+        {
+          "pattern": "^STATE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "ACTIVE",
+            "DELETED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The existence of a database.",
+      "title": "State"
+    },
+    "successfulSyncTime": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "The latest synchronization time."
+    }
+  },
+  "title": "Database",
+  "type": "object"
+}

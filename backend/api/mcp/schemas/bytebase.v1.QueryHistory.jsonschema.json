@@ -1,0 +1,63 @@
+{
+  "$id": "bytebase.v1.QueryHistory.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(create_time)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    }
+  },
+  "properties": {
+    "createTime": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "creator": {
+      "default": "",
+      "type": "string"
+    },
+    "database": {
+      "default": "",
+      "description": "The database name to execute the query.\n Format: instances/{instance}/databases/{databaseName}",
+      "type": "string"
+    },
+    "duration": {
+      "$ref": "google.protobuf.Duration.jsonschema.json"
+    },
+    "error": {
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "description": "The name for the query history.\n Format: queryHistories/{uid}",
+      "type": "string"
+    },
+    "statement": {
+      "default": "",
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "pattern": "^TYPE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "QUERY",
+            "EXPORT"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "title": "Type"
+    }
+  },
+  "title": "Query History",
+  "type": "object"
+}

@@ -1,0 +1,32 @@
+{
+  "$id": "bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Information about why a task run is waiting.",
+  "patternProperties": {
+    "^(connection_limit)$": {
+      "description": "Waiting due to connection limit reached.",
+      "type": "boolean"
+    },
+    "^(parallel_tasks_limit)$": {
+      "description": "Waiting due to parallel tasks limit.",
+      "type": "boolean"
+    }
+  },
+  "properties": {
+    "connectionLimit": {
+      "description": "Waiting due to connection limit reached.",
+      "type": "boolean"
+    },
+    "parallelTasksLimit": {
+      "description": "Waiting due to parallel tasks limit.",
+      "type": "boolean"
+    },
+    "task": {
+      "$ref": "bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task.jsonschema.json",
+      "description": "Waiting for another task to complete."
+    }
+  },
+  "title": "Waiting Cause",
+  "type": "object"
+}

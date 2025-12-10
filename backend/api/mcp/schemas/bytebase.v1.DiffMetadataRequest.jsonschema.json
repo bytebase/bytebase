@@ -1,0 +1,85 @@
+{
+  "$id": "bytebase.v1.DiffMetadataRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(source_catalog)$": {
+      "$ref": "bytebase.v1.DatabaseCatalog.jsonschema.json"
+    },
+    "^(source_metadata)$": {
+      "$ref": "bytebase.v1.DatabaseMetadata.jsonschema.json",
+      "description": "The metadata of the source schema."
+    },
+    "^(target_catalog)$": {
+      "$ref": "bytebase.v1.DatabaseCatalog.jsonschema.json"
+    },
+    "^(target_metadata)$": {
+      "$ref": "bytebase.v1.DatabaseMetadata.jsonschema.json",
+      "description": "The metadata of the target schema."
+    }
+  },
+  "properties": {
+    "engine": {
+      "anyOf": [
+        {
+          "pattern": "^ENGINE_UNSPECIFIED$",
+          "type": "string"
+        },
+        {
+          "enum": [
+            "CLICKHOUSE",
+            "MYSQL",
+            "POSTGRES",
+            "SNOWFLAKE",
+            "SQLITE",
+            "TIDB",
+            "MONGODB",
+            "REDIS",
+            "ORACLE",
+            "SPANNER",
+            "MSSQL",
+            "REDSHIFT",
+            "MARIADB",
+            "OCEANBASE",
+            "STARROCKS",
+            "DORIS",
+            "HIVE",
+            "ELASTICSEARCH",
+            "BIGQUERY",
+            "DYNAMODB",
+            "DATABRICKS",
+            "COCKROACHDB",
+            "COSMOSDB",
+            "TRINO",
+            "CASSANDRA"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "default": 0,
+      "description": "The database engine of the schema.",
+      "title": "Engine"
+    },
+    "sourceCatalog": {
+      "$ref": "bytebase.v1.DatabaseCatalog.jsonschema.json"
+    },
+    "sourceMetadata": {
+      "$ref": "bytebase.v1.DatabaseMetadata.jsonschema.json",
+      "description": "The metadata of the source schema."
+    },
+    "targetCatalog": {
+      "$ref": "bytebase.v1.DatabaseCatalog.jsonschema.json"
+    },
+    "targetMetadata": {
+      "$ref": "bytebase.v1.DatabaseMetadata.jsonschema.json",
+      "description": "The metadata of the target schema."
+    }
+  },
+  "title": "Diff Metadata Request",
+  "type": "object"
+}

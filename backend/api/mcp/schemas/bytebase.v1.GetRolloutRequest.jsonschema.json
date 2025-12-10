@@ -1,0 +1,14 @@
+{
+  "$id": "bytebase.v1.GetRolloutRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "default": "",
+      "description": "The name of the rollout to retrieve.\n Format: projects/{project}/rollouts/{rollout}",
+      "type": "string"
+    }
+  },
+  "title": "Get Rollout Request",
+  "type": "object"
+}

@@ -1,0 +1,25 @@
+{
+  "$id": "bytebase.v1.BatchGetIamPolicyResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(policy_results)$": {
+      "description": "The policy results for each requested project.",
+      "items": {
+        "$ref": "bytebase.v1.BatchGetIamPolicyResponse.PolicyResult.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "policyResults": {
+      "description": "The policy results for each requested project.",
+      "items": {
+        "$ref": "bytebase.v1.BatchGetIamPolicyResponse.PolicyResult.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Batch Get Iam Policy Response",
+  "type": "object"
+}

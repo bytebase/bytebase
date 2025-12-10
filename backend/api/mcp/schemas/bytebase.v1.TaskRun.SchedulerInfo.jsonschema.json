@@ -1,0 +1,28 @@
+{
+  "$id": "bytebase.v1.TaskRun.SchedulerInfo.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Information about task run scheduling.",
+  "patternProperties": {
+    "^(report_time)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "The time when the scheduling info was reported."
+    },
+    "^(waiting_cause)$": {
+      "$ref": "bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.jsonschema.json",
+      "description": "The cause for the task run waiting."
+    }
+  },
+  "properties": {
+    "reportTime": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "The time when the scheduling info was reported."
+    },
+    "waitingCause": {
+      "$ref": "bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.jsonschema.json",
+      "description": "The cause for the task run waiting."
+    }
+  },
+  "title": "Scheduler Info",
+  "type": "object"
+}

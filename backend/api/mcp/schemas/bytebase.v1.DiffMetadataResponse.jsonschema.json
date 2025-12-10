@@ -1,0 +1,14 @@
+{
+  "$id": "bytebase.v1.DiffMetadataResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "diff": {
+      "default": "",
+      "description": "The diff of the metadata.",
+      "type": "string"
+    }
+  },
+  "title": "Diff Metadata Response",
+  "type": "object"
+}

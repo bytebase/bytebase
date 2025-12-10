@@ -1,0 +1,16 @@
+{
+  "$id": "bytebase.v1.SearchWorksheetsResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "worksheets": {
+      "description": "The worksheets that matched the search criteria.",
+      "items": {
+        "$ref": "bytebase.v1.Worksheet.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Search Worksheets Response",
+  "type": "object"
+}

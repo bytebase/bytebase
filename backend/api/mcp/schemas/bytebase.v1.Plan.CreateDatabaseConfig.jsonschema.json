@@ -1,0 +1,56 @@
+{
+  "$id": "bytebase.v1.Plan.CreateDatabaseConfig.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(character_set)$": {
+      "default": "",
+      "description": "character_set is the character set of the database.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "characterSet": {
+      "default": "",
+      "description": "character_set is the character set of the database.",
+      "type": "string"
+    },
+    "cluster": {
+      "default": "",
+      "description": "cluster is the cluster of the database. This is only applicable to ClickHouse for \"ON CLUSTER \u003c\u003ccluster\u003e\u003e\".",
+      "type": "string"
+    },
+    "collation": {
+      "default": "",
+      "description": "collation is the collation of the database.",
+      "type": "string"
+    },
+    "database": {
+      "default": "",
+      "description": "The name of the database to create.",
+      "type": "string"
+    },
+    "environment": {
+      "default": "",
+      "description": "The environment resource.\n Format: environments/prod where prod is the environment resource ID.",
+      "type": "string"
+    },
+    "owner": {
+      "default": "",
+      "description": "owner is the owner of the database. This is only applicable to Postgres for \"WITH OWNER \u003c\u003cowner\u003e\u003e\".",
+      "type": "string"
+    },
+    "table": {
+      "default": "",
+      "description": "table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.\n For example, in MongoDB, it only creates the database when we first store data in that database.",
+      "type": "string"
+    },
+    "target": {
+      "default": "",
+      "description": "The resource name of the instance on which the database is created.\n Format: instances/{instance}",
+      "type": "string"
+    }
+  },
+  "title": "Create Database Config",
+  "type": "object"
+}

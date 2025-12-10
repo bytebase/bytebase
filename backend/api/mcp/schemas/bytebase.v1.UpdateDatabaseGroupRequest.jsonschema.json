@@ -1,0 +1,40 @@
+{
+  "$id": "bytebase.v1.UpdateDatabaseGroupRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Request message for updating a database group.",
+  "patternProperties": {
+    "^(allow_missing)$": {
+      "default": false,
+      "description": "If set to true, and the database group is not found, a new database group will be created.\n In this situation, `update_mask` is ignored.",
+      "type": "boolean"
+    },
+    "^(database_group)$": {
+      "$ref": "bytebase.v1.DatabaseGroup.jsonschema.json",
+      "description": "The database group's `name` field is used to identify the database group to update.\n Format: projects/{project}/databaseGroups/{databaseGroup}",
+      "title": "The database group to update."
+    },
+    "^(update_mask)$": {
+      "$ref": "google.protobuf.FieldMask.jsonschema.json",
+      "description": "The list of fields to update."
+    }
+  },
+  "properties": {
+    "allowMissing": {
+      "default": false,
+      "description": "If set to true, and the database group is not found, a new database group will be created.\n In this situation, `update_mask` is ignored.",
+      "type": "boolean"
+    },
+    "databaseGroup": {
+      "$ref": "bytebase.v1.DatabaseGroup.jsonschema.json",
+      "description": "The database group's `name` field is used to identify the database group to update.\n Format: projects/{project}/databaseGroups/{databaseGroup}",
+      "title": "The database group to update."
+    },
+    "updateMask": {
+      "$ref": "google.protobuf.FieldMask.jsonschema.json",
+      "description": "The list of fields to update."
+    }
+  },
+  "title": "Update Database Group Request",
+  "type": "object"
+}

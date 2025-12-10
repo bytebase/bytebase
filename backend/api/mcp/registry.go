@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -18,17 +16,15 @@ import (
 
 // Registry holds MCP tool definitions derived from proto services.
 type Registry struct {
-	schemaDir string
-	schemas   map[string]json.RawMessage // proto message name -> JSON schema
-	invoker   *Invoker
+	schemas map[string]json.RawMessage // proto message name -> JSON schema
+	invoker *Invoker
 }
 
 // NewRegistry creates a new tool registry.
-func NewRegistry(schemaDir string, invoker *Invoker) (*Registry, error) {
+func NewRegistry(invoker *Invoker) (*Registry, error) {
 	r := &Registry{
-		schemaDir: schemaDir,
-		schemas:   make(map[string]json.RawMessage),
-		invoker:   invoker,
+		schemas: make(map[string]json.RawMessage),
+		invoker: invoker,
 	}
 
 	if err := r.loadSchemas(); err != nil {
@@ -38,9 +34,9 @@ func NewRegistry(schemaDir string, invoker *Invoker) (*Registry, error) {
 	return r, nil
 }
 
-// loadSchemas loads all JSON schemas from the schema directory.
+// loadSchemas loads all JSON schemas from embedded files.
 func (r *Registry) loadSchemas() error {
-	entries, err := os.ReadDir(r.schemaDir)
+	entries, err := embeddedSchemas.ReadDir("schemas")
 	if err != nil {
 		return err
 	}
@@ -50,7 +46,7 @@ func (r *Registry) loadSchemas() error {
 			continue
 		}
 
-		data, err := os.ReadFile(filepath.Join(r.schemaDir, entry.Name()))
+		data, err := embeddedSchemas.ReadFile("schemas/" + entry.Name())
 		if err != nil {
 			return err
 		}

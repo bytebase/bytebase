@@ -1,0 +1,7 @@
+{
+  "$id": "google.protobuf.Duration.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "format": "duration",
+  "title": "Duration",
+  "type": "string"
+}
