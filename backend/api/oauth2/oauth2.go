@@ -49,8 +49,10 @@ func (s *Service) RegisterRoutes(g *echo.Group) {
 	g.POST("/oauth2/register", s.handleRegister)
 	g.GET("/oauth2/authorize", s.handleAuthorizeGet)
 	g.POST("/oauth2/authorize", s.handleAuthorizePost)
-	g.POST("/oauth2/token", s.handleToken)
-	g.POST("/oauth2/revoke", s.handleRevoke)
+	// TODO: Uncomment when token.go is implemented
+	// g.POST("/oauth2/token", s.handleToken)
+	// TODO: Uncomment when revoke.go is implemented
+	// g.POST("/oauth2/revoke", s.handleRevoke)
 }
 
 // nolint:unused
@@ -187,25 +189,4 @@ func (s *Service) registrationEndpoint() string {
 // nolint:unused
 func (s *Service) revocationEndpoint() string {
 	return fmt.Sprintf("%s/oauth2/revoke", s.externalURL)
-}
-
-// Handler stubs - to be implemented in separate files
-// nolint:unused,revive,staticcheck
-func (_ *Service) handleAuthorizeGet(_ echo.Context) error {
-	panic("not implemented")
-}
-
-// nolint:unused,revive,staticcheck
-func (_ *Service) handleAuthorizePost(_ echo.Context) error {
-	panic("not implemented")
-}
-
-// nolint:unused,revive,staticcheck
-func (_ *Service) handleToken(_ echo.Context) error {
-	panic("not implemented")
-}
-
-// nolint:unused,revive,staticcheck
-func (_ *Service) handleRevoke(_ echo.Context) error {
-	panic("not implemented")
 }
