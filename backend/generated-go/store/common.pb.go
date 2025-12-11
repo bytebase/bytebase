@@ -196,62 +196,6 @@ func (VCSType) EnumDescriptor() ([]byte, []int) {
 	return file_store_common_proto_rawDescGZIP(), []int{1}
 }
 
-// MaskingLevel represents the level of data masking applied to sensitive information.
-type MaskingLevel int32
-
-const (
-	MaskingLevel_MASKING_LEVEL_UNSPECIFIED MaskingLevel = 0
-	// No masking applied.
-	MaskingLevel_NONE MaskingLevel = 1
-	// Partial masking (e.g., showing first/last characters).
-	MaskingLevel_PARTIAL MaskingLevel = 2
-	// Full masking (all characters masked).
-	MaskingLevel_FULL MaskingLevel = 3
-)
-
-// Enum value maps for MaskingLevel.
-var (
-	MaskingLevel_name = map[int32]string{
-		0: "MASKING_LEVEL_UNSPECIFIED",
-		1: "NONE",
-		2: "PARTIAL",
-		3: "FULL",
-	}
-	MaskingLevel_value = map[string]int32{
-		"MASKING_LEVEL_UNSPECIFIED": 0,
-		"NONE":                      1,
-		"PARTIAL":                   2,
-		"FULL":                      3,
-	}
-)
-
-func (x MaskingLevel) Enum() *MaskingLevel {
-	p := new(MaskingLevel)
-	*p = x
-	return p
-}
-
-func (x MaskingLevel) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (MaskingLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_common_proto_enumTypes[2].Descriptor()
-}
-
-func (MaskingLevel) Type() protoreflect.EnumType {
-	return &file_store_common_proto_enumTypes[2]
-}
-
-func (x MaskingLevel) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use MaskingLevel.Descriptor instead.
-func (MaskingLevel) EnumDescriptor() ([]byte, []int) {
-	return file_store_common_proto_rawDescGZIP(), []int{2}
-}
-
 // ExportFormat represents the file format for exported data.
 type ExportFormat int32
 
@@ -292,11 +236,11 @@ func (x ExportFormat) String() string {
 }
 
 func (ExportFormat) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_common_proto_enumTypes[3].Descriptor()
+	return file_store_common_proto_enumTypes[2].Descriptor()
 }
 
 func (ExportFormat) Type() protoreflect.EnumType {
-	return &file_store_common_proto_enumTypes[3]
+	return &file_store_common_proto_enumTypes[2]
 }
 
 func (x ExportFormat) Number() protoreflect.EnumNumber {
@@ -305,7 +249,7 @@ func (x ExportFormat) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ExportFormat.Descriptor instead.
 func (ExportFormat) EnumDescriptor() ([]byte, []int) {
-	return file_store_common_proto_rawDescGZIP(), []int{3}
+	return file_store_common_proto_rawDescGZIP(), []int{2}
 }
 
 // RiskLevel represents the assessed risk level of a database operation.
@@ -345,11 +289,11 @@ func (x RiskLevel) String() string {
 }
 
 func (RiskLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_common_proto_enumTypes[4].Descriptor()
+	return file_store_common_proto_enumTypes[3].Descriptor()
 }
 
 func (RiskLevel) Type() protoreflect.EnumType {
-	return &file_store_common_proto_enumTypes[4]
+	return &file_store_common_proto_enumTypes[3]
 }
 
 func (x RiskLevel) Number() protoreflect.EnumNumber {
@@ -358,7 +302,7 @@ func (x RiskLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RiskLevel.Descriptor instead.
 func (RiskLevel) EnumDescriptor() ([]byte, []int) {
-	return file_store_common_proto_rawDescGZIP(), []int{4}
+	return file_store_common_proto_rawDescGZIP(), []int{3}
 }
 
 // SchemaChangeType represents the strategy for schema changes.
@@ -397,11 +341,11 @@ func (x SchemaChangeType) String() string {
 }
 
 func (SchemaChangeType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_common_proto_enumTypes[5].Descriptor()
+	return file_store_common_proto_enumTypes[4].Descriptor()
 }
 
 func (SchemaChangeType) Type() protoreflect.EnumType {
-	return &file_store_common_proto_enumTypes[5]
+	return &file_store_common_proto_enumTypes[4]
 }
 
 func (x SchemaChangeType) Number() protoreflect.EnumNumber {
@@ -410,7 +354,7 @@ func (x SchemaChangeType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SchemaChangeType.Descriptor instead.
 func (SchemaChangeType) EnumDescriptor() ([]byte, []int) {
-	return file_store_common_proto_rawDescGZIP(), []int{5}
+	return file_store_common_proto_rawDescGZIP(), []int{4}
 }
 
 type WebhookType int32
@@ -469,11 +413,11 @@ func (x WebhookType) String() string {
 }
 
 func (WebhookType) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_common_proto_enumTypes[6].Descriptor()
+	return file_store_common_proto_enumTypes[5].Descriptor()
 }
 
 func (WebhookType) Type() protoreflect.EnumType {
-	return &file_store_common_proto_enumTypes[6]
+	return &file_store_common_proto_enumTypes[5]
 }
 
 func (x WebhookType) Number() protoreflect.EnumNumber {
@@ -482,7 +426,7 @@ func (x WebhookType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WebhookType.Descriptor instead.
 func (WebhookType) EnumDescriptor() ([]byte, []int) {
-	return file_store_common_proto_rawDescGZIP(), []int{6}
+	return file_store_common_proto_rawDescGZIP(), []int{5}
 }
 
 // PageToken is used internally for obfuscating pagination tokens.
@@ -725,12 +669,7 @@ const file_store_common_proto_rawDesc = "" +
 	"\n" +
 	"\x06GITLAB\x10\x02\x12\r\n" +
 	"\tBITBUCKET\x10\x03\x12\x10\n" +
-	"\fAZURE_DEVOPS\x10\x04*N\n" +
-	"\fMaskingLevel\x12\x1d\n" +
-	"\x19MASKING_LEVEL_UNSPECIFIED\x10\x00\x12\b\n" +
-	"\x04NONE\x10\x01\x12\v\n" +
-	"\aPARTIAL\x10\x02\x12\b\n" +
-	"\x04FULL\x10\x03*L\n" +
+	"\fAZURE_DEVOPS\x10\x04*L\n" +
 	"\fExportFormat\x12\x16\n" +
 	"\x12FORMAT_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03CSV\x10\x01\x12\b\n" +
@@ -770,19 +709,18 @@ func file_store_common_proto_rawDescGZIP() []byte {
 	return file_store_common_proto_rawDescData
 }
 
-var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
 var file_store_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_common_proto_goTypes = []any{
 	(Engine)(0),           // 0: bytebase.store.Engine
 	(VCSType)(0),          // 1: bytebase.store.VCSType
-	(MaskingLevel)(0),     // 2: bytebase.store.MaskingLevel
-	(ExportFormat)(0),     // 3: bytebase.store.ExportFormat
-	(RiskLevel)(0),        // 4: bytebase.store.RiskLevel
-	(SchemaChangeType)(0), // 5: bytebase.store.SchemaChangeType
-	(WebhookType)(0),      // 6: bytebase.store.WebhookType
-	(*PageToken)(nil),     // 7: bytebase.store.PageToken
-	(*Position)(nil),      // 8: bytebase.store.Position
-	(*Range)(nil),         // 9: bytebase.store.Range
+	(ExportFormat)(0),     // 2: bytebase.store.ExportFormat
+	(RiskLevel)(0),        // 3: bytebase.store.RiskLevel
+	(SchemaChangeType)(0), // 4: bytebase.store.SchemaChangeType
+	(WebhookType)(0),      // 5: bytebase.store.WebhookType
+	(*PageToken)(nil),     // 6: bytebase.store.PageToken
+	(*Position)(nil),      // 7: bytebase.store.Position
+	(*Range)(nil),         // 8: bytebase.store.Range
 }
 var file_store_common_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -802,7 +740,7 @@ func file_store_common_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_common_proto_rawDesc), len(file_store_common_proto_rawDesc)),
-			NumEnums:      7,
+			NumEnums:      6,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
