@@ -5532,45 +5532,8 @@ type ListChangelogsRequest struct {
 	//
 	// When paginating, all other parameters provided must match
 	// the call that provided the page token.
-	PageToken string        `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	View      ChangelogView `protobuf:"varint,4,opt,name=view,proto3,enum=bytebase.v1.ChangelogView" json:"view,omitempty"`
-	// The filter of the changelogs.
-	// follow the
-	// [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-	// syntax. Support filter by type, source or table. For example: table =
-	// "tableExists('{database}', '{schema}', '{table}')" table =
-	// "tableExists('db', 'public', 'table1') || tableExists('db', 'public',
-	// 'table2')"
-	//
-	// The table filter follow the CEL syntax.
-	// currently, we have one function for CEL:
-	// - tableExists(database, schema, table): return true if the table exists in
-	// changed resources.
-	//
-	// examples:
-	// Use
-	//
-	//	tableExists("db", "public", "table1")
-	//
-	// to filter the changelogs which have the table "table1" in the schema
-	// "public" of the database "db". For MySQL, the schema is always "", such as
-	// tableExists("db", "", "table1").
-	//
-	// Combine multiple functions with "&&" and "||", we MUST use the Disjunctive
-	// Normal Form(DNF). In other words, the CEL expression consists of several
-	// parts connected by OR operators. For example, the following expression is
-	// valid:
-	// (
-	//
-	//	tableExists("db", "public", "table1") &&
-	//	tableExists("db", "public", "table2")
-	//
-	// ) || (
-	//
-	//	tableExists("db", "public", "table3")
-	//
-	// )
-	Filter        string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
+	PageToken     string        `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	View          ChangelogView `protobuf:"varint,4,opt,name=view,proto3,enum=bytebase.v1.ChangelogView" json:"view,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5631,13 +5594,6 @@ func (x *ListChangelogsRequest) GetView() ChangelogView {
 		return x.View
 	}
 	return ChangelogView_CHANGELOG_VIEW_UNSPECIFIED
-}
-
-func (x *ListChangelogsRequest) GetFilter() string {
-	if x != nil {
-		return x.Filter
-	}
-	return ""
 }
 
 type ListChangelogsResponse struct {
@@ -6525,15 +6481,14 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x06ranges\x18\x02 \x03(\v2\x12.bytebase.v1.RangeR\x06ranges\"Z\n" +
 	"\x18ChangedResourceProcedure\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12*\n" +
-	"\x06ranges\x18\x02 \x03(\v2\x12.bytebase.v1.RangeR\x06ranges\"\xd2\x01\n" +
+	"\x06ranges\x18\x02 \x03(\v2\x12.bytebase.v1.RangeR\x06ranges\"\xba\x01\n" +
 	"\x15ListChangelogsRequest\x125\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12.\n" +
-	"\x04view\x18\x04 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\x12\x16\n" +
-	"\x06filter\x18\x05 \x01(\tR\x06filter\"x\n" +
+	"\x04view\x18\x04 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"x\n" +
 	"\x16ListChangelogsResponse\x126\n" +
 	"\n" +
 	"changelogs\x18\x01 \x03(\v2\x16.bytebase.v1.ChangelogR\n" +

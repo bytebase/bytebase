@@ -43,7 +43,6 @@ export const useChangelogStore = defineStore("changelog", () => {
       pageSize: params.pageSize,
       pageToken: params.pageToken,
       view: params.view,
-      filter: params.filter,
     });
     const response = await databaseServiceClientConnect.listChangelogs(request);
     const changelogs = response.changelogs;
@@ -54,8 +53,7 @@ export const useChangelogStore = defineStore("changelog", () => {
   const getOrFetchChangelogListOfDatabase = async (
     databaseName: string,
     pageSize = DEFAULT_PAGE_SIZE,
-    view = ChangelogView.BASIC,
-    filter = ""
+    view = ChangelogView.BASIC
   ) => {
     if (changelogsMapByDatabase.has(databaseName)) {
       return changelogsMapByDatabase.get(databaseName) ?? [];
@@ -65,7 +63,6 @@ export const useChangelogStore = defineStore("changelog", () => {
       parent: databaseName,
       pageSize,
       view,
-      filter,
     });
     return changelogs;
   };
