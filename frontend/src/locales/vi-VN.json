@@ -1135,6 +1135,9 @@
       "rollout": "Triển khai",
       "statement-empty": "Câu lệnh trống rỗng"
     },
+    "checks": {
+      "self": "Kiểm tra"
+    },
     "spec": {
       "change": "Thay đổi",
       "type": {
@@ -1186,9 +1189,6 @@
       "some-databases-not-meeting-requirements": "Một số cơ sở dữ liệu ({databases}) không đáp ứng được yêu cầu",
       "some-databases-have-issues": "{count} cơ sở dữ liệu có vấn đề | {count} cơ sở dữ liệu có vấn đề",
       "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}"
-    },
-    "checks": {
-      "self": "Kiểm tra"
     },
     "refresh-indicator": {
       "last-refresh": "Làm mới lần cuối: {time}"
@@ -1626,7 +1626,6 @@
     "establish-database-baseline": "Thiết lập đường cơ sở \"{name}\"",
     "export": "Xuất Nhật ký thay đổi",
     "need-to-select-first": "Cần chọn nhật ký thay đổi trước",
-
     "rollback-tip": "Chọn một nhật ký thay đổi DDL cụ thể để hoàn tác."
   },
   "database": {
