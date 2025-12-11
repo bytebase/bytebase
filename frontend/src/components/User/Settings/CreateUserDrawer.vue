@@ -359,16 +359,11 @@ const platformOptions = [
   { label: "GitHub Actions", value: ProviderType.PROVIDER_GITHUB },
 ];
 
-const platformPresets: Record<
-  ProviderType,
-  { issuerUrl: string; audience: string }
+const platformPresets: Partial<
+  Record<ProviderType, { issuerUrl: string; audience: string }>
 > = {
   [ProviderType.PROVIDER_GITHUB]: {
     issuerUrl: "https://token.actions.githubusercontent.com",
-    audience: "",
-  },
-  [ProviderType.PROVIDER_TYPE_UNSPECIFIED]: {
-    issuerUrl: "",
     audience: "",
   },
 };
@@ -451,10 +446,7 @@ const extractUserTitle = (email: string): string => {
   return email;
 };
 
-const getMemberPrefix = (userType: UserType): string => {
-  if (userType === UserType.WORKLOAD_IDENTITY) {
-    return "workloadIdentity:";
-  }
+const getMemberPrefix = (_userType: UserType): string => {
   return "user:";
 };
 

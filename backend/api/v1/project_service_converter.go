@@ -174,10 +174,6 @@ func convertToV1MemberInBinding(ctx context.Context, stores *store.Store, member
 		if user == nil {
 			return ""
 		}
-		// Use workloadIdentity: prefix for workload identity users
-		if user.Type == storepb.PrincipalType_WORKLOAD_IDENTITY {
-			return fmt.Sprintf("%s%s", common.WorkloadIdentityBindingPrefix, user.Email)
-		}
 		return fmt.Sprintf("%s%s", common.UserBindingPrefix, user.Email)
 	} else if strings.HasPrefix(member, common.GroupPrefix) {
 		email, err := common.GetGroupEmail(member)
@@ -283,19 +279,6 @@ func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, mem
 		}
 		if user == nil {
 			return "", connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", member))
-		}
-		return common.FormatUserUID(user.ID), nil
-	} else if strings.HasPrefix(member, common.WorkloadIdentityBindingPrefix) {
-		email := strings.TrimPrefix(member, common.WorkloadIdentityBindingPrefix)
-		user, err := stores.GetUserByEmail(ctx, email)
-		if err != nil {
-			return "", connect.NewError(connect.CodeInternal, err)
-		}
-		if user == nil {
-			return "", connect.NewError(connect.CodeNotFound, errors.Errorf("workload identity %q not found", member))
-		}
-		if user.Type != storepb.PrincipalType_WORKLOAD_IDENTITY {
-			return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%q is not a workload identity", member))
 		}
 		return common.FormatUserUID(user.ID), nil
 	} else if strings.HasPrefix(member, common.GroupBindingPrefix) {
