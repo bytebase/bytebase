@@ -2053,6 +2053,7 @@
     "hex-format": "Hexadecimal format",
     "boolean-format": "Boolean format",
     "text-format": "Text format",
+    "show-in-editor": "Show in Editor",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "Close the unsaved sheet?",
