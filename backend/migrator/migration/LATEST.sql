@@ -19,7 +19,7 @@ CREATE TABLE principal (
     id serial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     created_at timestamptz NOT NULL DEFAULT now(),
-    type text NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT', 'SERVICE_ACCOUNT')),
+    type text NOT NULL CHECK (type IN ('END_USER', 'SYSTEM_BOT', 'SERVICE_ACCOUNT', 'WORKLOAD_IDENTITY')),
     name text NOT NULL,
     email text NOT NULL,
     password_hash text NOT NULL,

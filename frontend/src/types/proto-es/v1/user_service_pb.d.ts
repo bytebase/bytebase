@@ -406,6 +406,13 @@ export declare type User = Message<"bytebase.v1.User"> & {
    * @generated from field: repeated string groups = 14;
    */
   groups: string[];
+
+  /**
+   * Workload Identity configuration (only for WORKLOAD_IDENTITY type)
+   *
+   * @generated from field: bytebase.v1.WorkloadIdentityConfig workload_identity_config = 16;
+   */
+  workloadIdentityConfig?: WorkloadIdentityConfig;
 };
 
 /**
@@ -447,6 +454,69 @@ export declare type User_Profile = Message<"bytebase.v1.User.Profile"> & {
 export declare const User_ProfileSchema: GenMessage<User_Profile>;
 
 /**
+ * WorkloadIdentityConfig for API layer
+ *
+ * @generated from message bytebase.v1.WorkloadIdentityConfig
+ */
+export declare type WorkloadIdentityConfig = Message<"bytebase.v1.WorkloadIdentityConfig"> & {
+  /**
+   * Platform type (currently only GITHUB is supported)
+   *
+   * @generated from field: bytebase.v1.WorkloadIdentityConfig.ProviderType provider_type = 1;
+   */
+  providerType: WorkloadIdentityConfig_ProviderType;
+
+  /**
+   * OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+   *
+   * @generated from field: string issuer_url = 2;
+   */
+  issuerUrl: string;
+
+  /**
+   * Allowed audiences for token validation
+   *
+   * @generated from field: repeated string allowed_audiences = 3;
+   */
+  allowedAudiences: string[];
+
+  /**
+   * Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+   *
+   * @generated from field: string subject_pattern = 4;
+   */
+  subjectPattern: string;
+};
+
+/**
+ * Describes the message bytebase.v1.WorkloadIdentityConfig.
+ * Use `create(WorkloadIdentityConfigSchema)` to create a new message.
+ */
+export declare const WorkloadIdentityConfigSchema: GenMessage<WorkloadIdentityConfig>;
+
+/**
+ * ProviderType identifies the CI/CD platform.
+ *
+ * @generated from enum bytebase.v1.WorkloadIdentityConfig.ProviderType
+ */
+export enum WorkloadIdentityConfig_ProviderType {
+  /**
+   * @generated from enum value: PROVIDER_TYPE_UNSPECIFIED = 0;
+   */
+  PROVIDER_TYPE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: GITHUB = 1;
+   */
+  GITHUB = 1,
+}
+
+/**
+ * Describes the enum bytebase.v1.WorkloadIdentityConfig.ProviderType.
+ */
+export declare const WorkloadIdentityConfig_ProviderTypeSchema: GenEnum<WorkloadIdentityConfig_ProviderType>;
+
+/**
  * @generated from enum bytebase.v1.UserType
  */
 export enum UserType {
@@ -477,6 +547,13 @@ export enum UserType {
    * @generated from enum value: SERVICE_ACCOUNT = 3;
    */
   SERVICE_ACCOUNT = 3,
+
+  /**
+   * External CI/CD workload identity.
+   *
+   * @generated from enum value: WORKLOAD_IDENTITY = 4;
+   */
+  WORKLOAD_IDENTITY = 4,
 }
 
 /**

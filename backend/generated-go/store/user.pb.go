@@ -33,6 +33,8 @@ const (
 	PrincipalType_SERVICE_ACCOUNT PrincipalType = 2
 	// SYSTEM_BOT represents the internal system bot performing operations.
 	PrincipalType_SYSTEM_BOT PrincipalType = 3
+	// WORKLOAD_IDENTITY represents external CI/CD workload identity.
+	PrincipalType_WORKLOAD_IDENTITY PrincipalType = 4
 )
 
 // Enum value maps for PrincipalType.
@@ -42,12 +44,14 @@ var (
 		1: "END_USER",
 		2: "SERVICE_ACCOUNT",
 		3: "SYSTEM_BOT",
+		4: "WORKLOAD_IDENTITY",
 	}
 	PrincipalType_value = map[string]int32{
 		"PRINCIPAL_TYPE_UNSPECIFIED": 0,
 		"END_USER":                   1,
 		"SERVICE_ACCOUNT":            2,
 		"SYSTEM_BOT":                 3,
+		"WORKLOAD_IDENTITY":          4,
 	}
 )
 
@@ -76,6 +80,53 @@ func (x PrincipalType) Number() protoreflect.EnumNumber {
 // Deprecated: Use PrincipalType.Descriptor instead.
 func (PrincipalType) EnumDescriptor() ([]byte, []int) {
 	return file_store_user_proto_rawDescGZIP(), []int{0}
+}
+
+// ProviderType identifies the CI/CD platform.
+type WorkloadIdentityConfig_ProviderType int32
+
+const (
+	WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED WorkloadIdentityConfig_ProviderType = 0
+	WorkloadIdentityConfig_GITHUB                    WorkloadIdentityConfig_ProviderType = 1
+)
+
+// Enum value maps for WorkloadIdentityConfig_ProviderType.
+var (
+	WorkloadIdentityConfig_ProviderType_name = map[int32]string{
+		0: "PROVIDER_TYPE_UNSPECIFIED",
+		1: "GITHUB",
+	}
+	WorkloadIdentityConfig_ProviderType_value = map[string]int32{
+		"PROVIDER_TYPE_UNSPECIFIED": 0,
+		"GITHUB":                    1,
+	}
+)
+
+func (x WorkloadIdentityConfig_ProviderType) Enum() *WorkloadIdentityConfig_ProviderType {
+	p := new(WorkloadIdentityConfig_ProviderType)
+	*p = x
+	return p
+}
+
+func (x WorkloadIdentityConfig_ProviderType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WorkloadIdentityConfig_ProviderType) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_user_proto_enumTypes[1].Descriptor()
+}
+
+func (WorkloadIdentityConfig_ProviderType) Type() protoreflect.EnumType {
+	return &file_store_user_proto_enumTypes[1]
+}
+
+func (x WorkloadIdentityConfig_ProviderType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WorkloadIdentityConfig_ProviderType.Descriptor instead.
+func (WorkloadIdentityConfig_ProviderType) EnumDescriptor() ([]byte, []int) {
+	return file_store_user_proto_rawDescGZIP(), []int{2, 0}
 }
 
 // MFAConfig is the MFA configuration for a user.
@@ -165,9 +216,11 @@ type UserProfile struct {
 	LastLoginTime          *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=last_login_time,json=lastLoginTime,proto3" json:"last_login_time,omitempty"`
 	LastChangePasswordTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=last_change_password_time,json=lastChangePasswordTime,proto3" json:"last_change_password_time,omitempty"`
 	// The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
-	Source        string `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Source string `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
+	// Workload identity configuration (only for WORKLOAD_IDENTITY type)
+	WorkloadIdentityConfig *WorkloadIdentityConfig `protobuf:"bytes,4,opt,name=workload_identity_config,json=workloadIdentityConfig,proto3" json:"workload_identity_config,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *UserProfile) Reset() {
@@ -221,6 +274,86 @@ func (x *UserProfile) GetSource() string {
 	return ""
 }
 
+func (x *UserProfile) GetWorkloadIdentityConfig() *WorkloadIdentityConfig {
+	if x != nil {
+		return x.WorkloadIdentityConfig
+	}
+	return nil
+}
+
+// WorkloadIdentityConfig stores OIDC configuration for workload identity.
+type WorkloadIdentityConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Provider type (currently only GITHUB is supported)
+	ProviderType WorkloadIdentityConfig_ProviderType `protobuf:"varint,1,opt,name=provider_type,json=providerType,proto3,enum=bytebase.store.WorkloadIdentityConfig_ProviderType" json:"provider_type,omitempty"`
+	// OIDC issuer URL
+	IssuerUrl string `protobuf:"bytes,2,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
+	// Allowed audiences for token validation
+	AllowedAudiences []string `protobuf:"bytes,3,rep,name=allowed_audiences,json=allowedAudiences,proto3" json:"allowed_audiences,omitempty"`
+	// Subject pattern to match against token subject claim
+	SubjectPattern string `protobuf:"bytes,4,opt,name=subject_pattern,json=subjectPattern,proto3" json:"subject_pattern,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *WorkloadIdentityConfig) Reset() {
+	*x = WorkloadIdentityConfig{}
+	mi := &file_store_user_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkloadIdentityConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkloadIdentityConfig) ProtoMessage() {}
+
+func (x *WorkloadIdentityConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_store_user_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkloadIdentityConfig.ProtoReflect.Descriptor instead.
+func (*WorkloadIdentityConfig) Descriptor() ([]byte, []int) {
+	return file_store_user_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *WorkloadIdentityConfig) GetProviderType() WorkloadIdentityConfig_ProviderType {
+	if x != nil {
+		return x.ProviderType
+	}
+	return WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED
+}
+
+func (x *WorkloadIdentityConfig) GetIssuerUrl() string {
+	if x != nil {
+		return x.IssuerUrl
+	}
+	return ""
+}
+
+func (x *WorkloadIdentityConfig) GetAllowedAudiences() []string {
+	if x != nil {
+		return x.AllowedAudiences
+	}
+	return nil
+}
+
+func (x *WorkloadIdentityConfig) GetSubjectPattern() string {
+	if x != nil {
+		return x.SubjectPattern
+	}
+	return ""
+}
+
 var File_store_user_proto protoreflect.FileDescriptor
 
 const file_store_user_proto_rawDesc = "" +
@@ -232,17 +365,29 @@ const file_store_user_proto_rawDesc = "" +
 	"\x0ftemp_otp_secret\x18\x02 \x01(\tR\rtempOtpSecret\x12%\n" +
 	"\x0erecovery_codes\x18\x03 \x03(\tR\rrecoveryCodes\x12.\n" +
 	"\x13temp_recovery_codes\x18\x04 \x03(\tR\x11tempRecoveryCodes\x12Z\n" +
-	"\x1ctemp_otp_secret_created_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\"\xc0\x01\n" +
+	"\x1ctemp_otp_secret_created_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\"\xa2\x02\n" +
 	"\vUserProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
-	"\x06source\x18\x03 \x01(\tR\x06source*b\n" +
+	"\x06source\x18\x03 \x01(\tR\x06source\x12`\n" +
+	"\x18workload_identity_config\x18\x04 \x01(\v2&.bytebase.store.WorkloadIdentityConfigR\x16workloadIdentityConfig\"\xa2\x02\n" +
+	"\x16WorkloadIdentityConfig\x12X\n" +
+	"\rprovider_type\x18\x01 \x01(\x0e23.bytebase.store.WorkloadIdentityConfig.ProviderTypeR\fproviderType\x12\x1d\n" +
+	"\n" +
+	"issuer_url\x18\x02 \x01(\tR\tissuerUrl\x12+\n" +
+	"\x11allowed_audiences\x18\x03 \x03(\tR\x10allowedAudiences\x12'\n" +
+	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern\"9\n" +
+	"\fProviderType\x12\x1d\n" +
+	"\x19PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
+	"\n" +
+	"\x06GITHUB\x10\x01*y\n" +
 	"\rPrincipalType\x12\x1e\n" +
 	"\x1aPRINCIPAL_TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bEND_USER\x10\x01\x12\x13\n" +
 	"\x0fSERVICE_ACCOUNT\x10\x02\x12\x0e\n" +
 	"\n" +
-	"SYSTEM_BOT\x10\x03B\x8c\x01\n" +
+	"SYSTEM_BOT\x10\x03\x12\x15\n" +
+	"\x11WORKLOAD_IDENTITY\x10\x04B\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tUserProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -257,23 +402,27 @@ func file_store_user_proto_rawDescGZIP() []byte {
 	return file_store_user_proto_rawDescData
 }
 
-var file_store_user_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_user_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_store_user_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_store_user_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_user_proto_goTypes = []any{
-	(PrincipalType)(0),            // 0: bytebase.store.PrincipalType
-	(*MFAConfig)(nil),             // 1: bytebase.store.MFAConfig
-	(*UserProfile)(nil),           // 2: bytebase.store.UserProfile
-	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
+	(PrincipalType)(0),                       // 0: bytebase.store.PrincipalType
+	(WorkloadIdentityConfig_ProviderType)(0), // 1: bytebase.store.WorkloadIdentityConfig.ProviderType
+	(*MFAConfig)(nil),                        // 2: bytebase.store.MFAConfig
+	(*UserProfile)(nil),                      // 3: bytebase.store.UserProfile
+	(*WorkloadIdentityConfig)(nil),           // 4: bytebase.store.WorkloadIdentityConfig
+	(*timestamppb.Timestamp)(nil),            // 5: google.protobuf.Timestamp
 }
 var file_store_user_proto_depIdxs = []int32{
-	3, // 0: bytebase.store.MFAConfig.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
-	3, // 1: bytebase.store.UserProfile.last_login_time:type_name -> google.protobuf.Timestamp
-	3, // 2: bytebase.store.UserProfile.last_change_password_time:type_name -> google.protobuf.Timestamp
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	5, // 0: bytebase.store.MFAConfig.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
+	5, // 1: bytebase.store.UserProfile.last_login_time:type_name -> google.protobuf.Timestamp
+	5, // 2: bytebase.store.UserProfile.last_change_password_time:type_name -> google.protobuf.Timestamp
+	4, // 3: bytebase.store.UserProfile.workload_identity_config:type_name -> bytebase.store.WorkloadIdentityConfig
+	1, // 4: bytebase.store.WorkloadIdentityConfig.provider_type:type_name -> bytebase.store.WorkloadIdentityConfig.ProviderType
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_user_proto_init() }
@@ -286,8 +435,8 @@ func file_store_user_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_user_proto_rawDesc), len(file_store_user_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   2,
+			NumEnums:      2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

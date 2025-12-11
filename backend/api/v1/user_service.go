@@ -201,9 +201,20 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, err
 	}
-	if principalType != storepb.PrincipalType_SERVICE_ACCOUNT && principalType != storepb.PrincipalType_END_USER {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support user and service account only"))
+	if principalType != storepb.PrincipalType_SERVICE_ACCOUNT && principalType != storepb.PrincipalType_END_USER && principalType != storepb.PrincipalType_WORKLOAD_IDENTITY {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("support user, service account, and workload identity only"))
 	}
+
+	// Validate workload identity specific requirements
+	if principalType == storepb.PrincipalType_WORKLOAD_IDENTITY {
+		if !common.IsWorkloadIdentityEmail(request.Msg.User.Email) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("workload identity email must end with %s", common.WorkloadIdentityEmailSuffix))
+		}
+		if request.Msg.User.WorkloadIdentityConfig == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("workload_identity_config is required for workload identity"))
+		}
+	}
+
 	if principalType == storepb.PrincipalType_END_USER {
 		if err := s.userCountGuard(ctx); err != nil {
 			return nil, err
@@ -222,7 +233,9 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		}
 	}
 
-	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.User.Email, principalType == storepb.PrincipalType_SERVICE_ACCOUNT, false); err != nil {
+	// Skip domain restrictions for service accounts and workload identities
+	skipDomainRestriction := principalType == storepb.PrincipalType_SERVICE_ACCOUNT || principalType == storepb.PrincipalType_WORKLOAD_IDENTITY
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.User.Email, skipDomainRestriction, false); err != nil {
 		return nil, err
 	}
 	existingUser, err := s.store.GetUserByEmail(ctx, request.Msg.User.Email)
@@ -234,13 +247,22 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	}
 
 	password := request.Msg.User.Password
-	if request.Msg.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
+	switch principalType {
+	case storepb.PrincipalType_SERVICE_ACCOUNT:
 		pwd, err := common.RandomString(20)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate access key for service account"))
 		}
 		password = fmt.Sprintf("%s%s", common.ServiceAccountAccessKeyPrefix, pwd)
-	} else {
+	case storepb.PrincipalType_WORKLOAD_IDENTITY:
+		// Workload identity uses OIDC tokens, not passwords
+		// Generate a random unusable password for security
+		pwd, err := common.RandomString(64)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate secure password for workload identity"))
+		}
+		password = pwd
+	default:
 		if password != "" {
 			if err := s.validatePassword(ctx, password); err != nil {
 				return nil, err
@@ -248,21 +270,38 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		} else {
 			pwd, err := common.RandomString(20)
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random password for service account"))
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate random password for user"))
 			}
 			password = pwd
 		}
 	}
+
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate password hash, error: %v", err))
 	}
+
+	// Build profile with workload identity config if applicable
+	var profile *storepb.UserProfile
+	if principalType == storepb.PrincipalType_WORKLOAD_IDENTITY {
+		wic := request.Msg.User.WorkloadIdentityConfig
+		profile = &storepb.UserProfile{
+			WorkloadIdentityConfig: &storepb.WorkloadIdentityConfig{
+				ProviderType:     storepb.WorkloadIdentityConfig_ProviderType(wic.ProviderType),
+				IssuerUrl:        wic.IssuerUrl,
+				AllowedAudiences: wic.AllowedAudiences,
+				SubjectPattern:   wic.SubjectPattern,
+			},
+		}
+	}
+
 	userMessage := &store.UserMessage{
 		Email:        request.Msg.User.Email,
 		Name:         request.Msg.User.Title,
 		Phone:        request.Msg.User.Phone,
 		Type:         principalType,
 		PasswordHash: string(passwordHash),
+		Profile:      profile,
 	}
 
 	user, err := s.store.CreateUser(ctx, userMessage)
@@ -719,6 +758,8 @@ func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
 		return v1pb.UserType_SYSTEM_BOT
 	case storepb.PrincipalType_SERVICE_ACCOUNT:
 		return v1pb.UserType_SERVICE_ACCOUNT
+	case storepb.PrincipalType_WORKLOAD_IDENTITY:
+		return v1pb.UserType_WORKLOAD_IDENTITY
 	default:
 		return v1pb.UserType_USER_TYPE_UNSPECIFIED
 	}
@@ -743,6 +784,17 @@ func convertToUser(ctx context.Context, user *store.UserMessage) *v1pb.User {
 		convertedUser.Groups = append(convertedUser.Groups, common.FormatGroupEmail(group))
 	}
 
+	// Add workload identity config if present
+	if user.Profile != nil && user.Profile.WorkloadIdentityConfig != nil {
+		wic := user.Profile.WorkloadIdentityConfig
+		convertedUser.WorkloadIdentityConfig = &v1pb.WorkloadIdentityConfig{
+			ProviderType:     v1pb.WorkloadIdentityConfig_ProviderType(wic.ProviderType),
+			IssuerUrl:        wic.IssuerUrl,
+			AllowedAudiences: wic.AllowedAudiences,
+			SubjectPattern:   wic.SubjectPattern,
+		}
+	}
+
 	if user.MFAConfig != nil {
 		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
 		// Only expose temporary MFA secrets and recovery codes to the user themselves
@@ -764,6 +816,8 @@ func convertToPrincipalType(userType v1pb.UserType) (storepb.PrincipalType, erro
 		t = storepb.PrincipalType_SYSTEM_BOT
 	case v1pb.UserType_SERVICE_ACCOUNT:
 		t = storepb.PrincipalType_SERVICE_ACCOUNT
+	case v1pb.UserType_WORKLOAD_IDENTITY:
+		t = storepb.PrincipalType_WORKLOAD_IDENTITY
 	default:
 		return t, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid user type %s", userType))
 	}

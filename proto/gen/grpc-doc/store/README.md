@@ -333,8 +333,10 @@
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
     - [UserProfile](#bytebase-store-UserProfile)
+    - [WorkloadIdentityConfig](#bytebase-store-WorkloadIdentityConfig)
   
     - [PrincipalType](#bytebase-store-PrincipalType)
+    - [WorkloadIdentityConfig.ProviderType](#bytebase-store-WorkloadIdentityConfig-ProviderType)
   
 - [store/worksheet.proto](#store_worksheet-proto)
     - [WorkSheetOrganizerPayload](#bytebase-store-WorkSheetOrganizerPayload)
@@ -5413,6 +5415,25 @@ MFAConfig is the MFA configuration for a user.
 | last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | source | [string](#string) |  | The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
+| workload_identity_config | [WorkloadIdentityConfig](#bytebase-store-WorkloadIdentityConfig) |  | Workload identity configuration (only for WORKLOAD_IDENTITY type) |
+
+
+
+
+
+
+<a name="bytebase-store-WorkloadIdentityConfig"></a>
+
+### WorkloadIdentityConfig
+WorkloadIdentityConfig stores OIDC configuration for workload identity.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-store-WorkloadIdentityConfig-ProviderType) |  | Provider type (currently only GITHUB is supported) |
+| issuer_url | [string](#string) |  | OIDC issuer URL |
+| allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
+| subject_pattern | [string](#string) |  | Subject pattern to match against token subject claim |
 
 
 
@@ -5432,6 +5453,19 @@ PrincipalType is the type of a principal.
 | END_USER | 1 | END_USER represents the human being using Bytebase. |
 | SERVICE_ACCOUNT | 2 | SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI. |
 | SYSTEM_BOT | 3 | SYSTEM_BOT represents the internal system bot performing operations. |
+| WORKLOAD_IDENTITY | 4 | WORKLOAD_IDENTITY represents external CI/CD workload identity. |
+
+
+
+<a name="bytebase-store-WorkloadIdentityConfig-ProviderType"></a>
+
+### WorkloadIdentityConfig.ProviderType
+ProviderType identifies the CI/CD platform.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROVIDER_TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 |  |
 
 
  

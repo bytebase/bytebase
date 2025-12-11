@@ -124,8 +124,10 @@
     - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
     - [User](#bytebase-v1-User)
     - [User.Profile](#bytebase-v1-User-Profile)
+    - [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig)
   
     - [UserType](#bytebase-v1-UserType)
+    - [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType)
   
     - [UserService](#bytebase-v1-UserService)
   
@@ -165,6 +167,8 @@
     - [AuditLogService](#bytebase-v1-AuditLogService)
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
+    - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
+    - [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse)
     - [IdentityProviderContext](#bytebase-v1-IdentityProviderContext)
     - [LoginRequest](#bytebase-v1-LoginRequest)
     - [LoginResponse](#bytebase-v1-LoginResponse)
@@ -2520,6 +2524,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
 | groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
+| workload_identity_config | [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig) |  | Workload Identity configuration (only for WORKLOAD_IDENTITY type) |
 
 
 
@@ -2542,6 +2547,24 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 
 
+
+<a name="bytebase-v1-WorkloadIdentityConfig"></a>
+
+### WorkloadIdentityConfig
+WorkloadIdentityConfig for API layer
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Platform type (currently only GITHUB is supported) |
+| issuer_url | [string](#string) |  | OIDC Issuer URL (auto-filled based on provider_type, can be overridden) |
+| allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
+| subject_pattern | [string](#string) |  | Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) |
+
+
+
+
+
  
 
 
@@ -2556,6 +2579,19 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | USER | 1 | Regular human user account. |
 | SYSTEM_BOT | 2 | System-managed bot account for automated operations. |
 | SERVICE_ACCOUNT | 3 | Service account for API integrations. |
+| WORKLOAD_IDENTITY | 4 | External CI/CD workload identity. |
+
+
+
+<a name="bytebase-v1-WorkloadIdentityConfig-ProviderType"></a>
+
+### WorkloadIdentityConfig.ProviderType
+ProviderType identifies the CI/CD platform.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROVIDER_TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 |  |
 
 
  
@@ -3058,6 +3094,37 @@ AuditLogService manages audit logs for system activities and API calls.
 
 
 
+<a name="bytebase-v1-ExchangeTokenRequest"></a>
+
+### ExchangeTokenRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  | External OIDC token (JWT) from CI/CD platform. |
+| email | [string](#string) |  | Workload Identity email for identifying which identity to authenticate as. Format: {name}@workload.bytebase.com |
+
+
+
+
+
+
+<a name="bytebase-v1-ExchangeTokenResponse"></a>
+
+### ExchangeTokenResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_token | [string](#string) |  | Bytebase access token. |
+
+
+
+
+
+
 <a name="bytebase-v1-IdentityProviderContext"></a>
 
 ### IdentityProviderContext
@@ -3169,6 +3236,7 @@ AuthService handles user authentication operations.
 | ----------- | ------------ | ------------- | ------------|
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Authenticates a user and returns access tokens. Permissions required: None |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Logs out the current user session. Permissions required: None |
+| ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse) | Exchanges an external OIDC token for a Bytebase access token. Used by CI/CD pipelines with Workload Identity Federation. Permissions required: None (validates via OIDC token) |
 
  
 

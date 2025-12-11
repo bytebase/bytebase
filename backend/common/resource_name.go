@@ -528,6 +528,11 @@ func FormatGroupEmail(email string) string {
 	return fmt.Sprintf("%s%s", GroupPrefix, email)
 }
 
+// IsWorkloadIdentityEmail checks if the email is a workload identity email.
+func IsWorkloadIdentityEmail(email string) bool {
+	return strings.HasSuffix(email, WorkloadIdentityEmailSuffix)
+}
+
 func FormatReviewConfig(id string) string {
 	return fmt.Sprintf("%s%s", ReviewConfigPrefix, id)
 }

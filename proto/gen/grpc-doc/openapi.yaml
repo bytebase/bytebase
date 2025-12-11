@@ -263,6 +263,34 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/auth:exchangeToken:
+        post:
+            tags:
+                - AuthService
+            description: |-
+                Exchanges an external OIDC token for a Bytebase access token.
+                 Used by CI/CD pipelines with Workload Identity Federation.
+                 Permissions required: None (validates via OIDC token)
+            operationId: AuthService_ExchangeToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExchangeTokenRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExchangeTokenResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/cel/batchDeparse:
         post:
             tags:
@@ -7980,6 +8008,7 @@ components:
                         - USER
                         - SYSTEM_BOT
                         - SERVICE_ACCOUNT
+                        - WORKLOAD_IDENTITY
                     type: string
                     description: The type of user.
                     format: enum
@@ -10030,6 +10059,23 @@ components:
                 comment:
                     type: string
                     description: The comment is the comment of an event.
+        ExchangeTokenRequest:
+            type: object
+            properties:
+                token:
+                    type: string
+                    description: External OIDC token (JWT) from CI/CD platform.
+                email:
+                    type: string
+                    description: |-
+                        Workload Identity email for identifying which identity to authenticate as.
+                         Format: {name}@workload.bytebase.com
+        ExchangeTokenResponse:
+            type: object
+            properties:
+                accessToken:
+                    type: string
+                    description: Bytebase access token.
         ExportAuditLogsRequest:
             required:
                 - parent
@@ -15376,6 +15422,7 @@ components:
                         - USER
                         - SYSTEM_BOT
                         - SERVICE_ACCOUNT
+                        - WORKLOAD_IDENTITY
                     type: string
                     description: The type of user account.
                     format: enum
@@ -15419,6 +15466,10 @@ components:
                     description: |-
                         The groups for the user.
                          Format: groups/{email}
+                workloadIdentityConfig:
+                    allOf:
+                        - $ref: '#/components/schemas/WorkloadIdentityConfig'
+                    description: Workload Identity configuration (only for WORKLOAD_IDENTITY type)
         User_Profile:
             type: object
             properties:
@@ -15541,6 +15592,28 @@ components:
                          - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
                          - NOTIFY_ISSUE_APPROVED
                          - NOTIFY_PIPELINE_ROLLOUT
+        WorkloadIdentityConfig:
+            type: object
+            properties:
+                providerType:
+                    enum:
+                        - PROVIDER_TYPE_UNSPECIFIED
+                        - GITHUB
+                    type: string
+                    description: Platform type (currently only GITHUB is supported)
+                    format: enum
+                issuerUrl:
+                    type: string
+                    description: OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+                allowedAudiences:
+                    type: array
+                    items:
+                        type: string
+                    description: Allowed audiences for token validation
+                subjectPattern:
+                    type: string
+                    description: Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+            description: WorkloadIdentityConfig for API layer
         Worksheet:
             required:
                 - name

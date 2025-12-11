@@ -19,6 +19,9 @@ const (
 
 	// ServiceAccountAccessKeyPrefix is the prefix for service account access key.
 	ServiceAccountAccessKeyPrefix = "bbs_"
+
+	// WorkloadIdentityEmailSuffix is the email suffix for workload identities.
+	WorkloadIdentityEmailSuffix = "@workload.bytebase.com"
 )
 
 // DefaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
