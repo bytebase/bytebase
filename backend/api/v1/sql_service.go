@@ -149,7 +149,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			queryContext,
 		)
 
-		s.createQueryHistory(database, store.QueryHistoryTypeQuery, request.Statement, user.ID, duration, queryErr)
+		s.createQueryHistory(database, store.QueryHistoryTypeQuery, request.Statement, user.Email, duration, queryErr)
 		response := &v1pb.AdminExecuteResponse{}
 		if queryErr != nil {
 			response.Results = []*v1pb.QueryResult{
@@ -259,7 +259,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	)
 
 	// Update activity.
-	s.createQueryHistory(database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr)
+	s.createQueryHistory(database, store.QueryHistoryTypeQuery, statement, user.Email, duration, queryErr)
 
 	if queryErr != nil {
 		if len(results) == 0 {
@@ -868,7 +868,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	}
 	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, dataSource)
 
-	s.createQueryHistory(database, store.QueryHistoryTypeExport, statement, user.ID, duration, exportErr)
+	s.createQueryHistory(database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
 	if exportErr != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New(exportErr.Error()))
@@ -1213,13 +1213,13 @@ func doEncrypt(exports []*encryptContent, password string) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userUID int, duration time.Duration, queryErr error) {
+func (s *SQLService) createQueryHistory(database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userEmail string, duration time.Duration, queryErr error) {
 	qh := &store.QueryHistoryMessage{
-		CreatorUID: userUID,
-		ProjectID:  database.ProjectID,
-		Database:   common.FormatDatabase(database.InstanceID, database.DatabaseName),
-		Statement:  statement,
-		Type:       queryType,
+		Creator:   userEmail,
+		ProjectID: database.ProjectID,
+		Database:  common.FormatDatabase(database.InstanceID, database.DatabaseName),
+		Statement: statement,
+		Type:      queryType,
 		Payload: &storepb.QueryHistoryPayload{
 			Error:    nil,
 			Duration: durationpb.New(duration),
@@ -1269,9 +1269,9 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 	}
 
 	find := &store.FindQueryHistoryMessage{
-		CreatorUID: &user.ID,
-		Limit:      &limitPlusOne,
-		Offset:     &offset.offset,
+		Creator: &user.Email,
+		Limit:   &limitPlusOne,
+		Offset:  &offset.offset,
 	}
 	filterQ, err := store.GetListQueryHistoryFilter(request.Filter)
 	if err != nil {

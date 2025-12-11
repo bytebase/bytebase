@@ -32,7 +32,7 @@ type QueryHistoryMessage struct {
 	CreatedAt time.Time
 
 	// Related fields
-	CreatorUID int
+	Creator string
 	// ProjectID is the project resource id.
 	ProjectID string
 
@@ -46,8 +46,8 @@ type QueryHistoryMessage struct {
 
 // FindQueryHistoryMessage is the API message for finding query histories.
 type FindQueryHistoryMessage struct {
-	CreatorUID *int
-	ProjectID  *string
+	Creator   *string
+	ProjectID *string
 	// Instance is the instance resource name like instances/{instance}.
 	Instance *string
 	// Database is database resource name like instances/{instance}/databases/{database}.
@@ -68,7 +68,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 
 	q := qb.Q().Space(`
 		INSERT INTO query_history (
-			creator_id,
+			creator,
 			project_id,
 			database,
 			statement,
@@ -80,7 +80,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 			id,
 			created_at
 	`,
-		create.CreatorUID,
+		create.Creator,
 		create.ProjectID,
 		create.Database,
 		create.Statement,
@@ -117,7 +117,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 	q := qb.Q().Space(`
 		SELECT
 			query_history.id,
-			query_history.creator_id,
+			query_history.creator,
 			query_history.created_at,
 			query_history.project_id,
 			query_history.database,
@@ -131,8 +131,8 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
 	}
-	if v := find.CreatorUID; v != nil {
-		q.And("query_history.creator_id = ?", *v)
+	if v := find.Creator; v != nil {
+		q.And("query_history.creator = ?", *v)
 	}
 	if v := find.ProjectID; v != nil {
 		q.And("query_history.project_id = ?", *v)
@@ -177,7 +177,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		var payloadStr string
 		if err := rows.Scan(
 			&queryHistory.UID,
-			&queryHistory.CreatorUID,
+			&queryHistory.Creator,
 			&queryHistory.CreatedAt,
 			&queryHistory.ProjectID,
 			&queryHistory.Database,

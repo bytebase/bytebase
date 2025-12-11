@@ -259,7 +259,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		rolloutV1.Plan = request.Rollout.GetPlan()
 		return connect.NewResponse(rolloutV1), nil
 	}
-	pipelineUID, err := s.store.CreatePipelineAIO(ctx, planID, pipelineCreate, user.ID)
+	pipelineUID, err := s.store.CreatePipelineAIO(ctx, planID, pipelineCreate, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pipeline, error: %v", err))
 	}
@@ -588,7 +588,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 
-	ok, err = s.canUserRunEnvironmentTasks(ctx, user, project, issueN, environmentToRun, rollout.CreatorUID)
+	ok, err = s.canUserRunEnvironmentTasks(ctx, user, project, issueN, environmentToRun, rollout.Creator)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the user can run tasks, error: %v", err))
 	}
@@ -636,7 +636,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return a.TaskUID - b.TaskUID
 	})
 
-	if err := s.store.CreatePendingTaskRuns(ctx, user.ID, taskRunCreates...); err != nil {
+	if err := s.store.CreatePendingTaskRuns(ctx, user.Email, taskRunCreates...); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pending task runs, error %v", err))
 	}
 
@@ -724,7 +724,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	}
 
 	for environment := range environmentSet {
-		ok, err = s.canUserSkipEnvironmentTasks(ctx, user, project, issueN, environment, rollout.CreatorUID)
+		ok, err = s.canUserRunEnvironmentTasks(ctx, user, project, issueN, environment, rollout.Creator)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the user can skip tasks, error: %v", err))
 		}
@@ -742,7 +742,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	}
 
 	if issueN != nil {
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, request.Tasks, storepb.TaskRun_SKIPPED, user.ID, request.Reason); err != nil {
+		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, request.Tasks, storepb.TaskRun_SKIPPED, user.Email, request.Reason); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issueN.UID, log.BBError(err))
 		}
 	}
@@ -819,7 +819,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	environment := formatEnvironmentFromStageID(stageID)
-	ok, err = s.canUserCancelEnvironmentTaskRun(ctx, user, project, issueN, environment, rollout.CreatorUID)
+	ok, err = s.canUserCancelEnvironmentTaskRun(ctx, user, project, issueN, environment, rollout.Creator)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the user can run tasks, error: %v", err))
 	}
@@ -1050,10 +1050,10 @@ func GetValidRolloutPolicyForEnvironment(ctx context.Context, stores *store.Stor
 }
 
 // canUserRunEnvironmentTasks returns if a user can run the tasks in an environment.
-func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, _ int) (bool, error) {
+func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, _ string) (bool, error) {
 	// For data export issues, only the creator can run tasks.
 	if issue != nil && issue.Type == storepb.Issue_DATABASE_EXPORT {
-		return issue.Creator.ID == user.ID, nil
+		return issue.Creator.Email == user.Email, nil
 	}
 
 	// Users with bb.taskRuns.create can always create task runs.
@@ -1093,12 +1093,8 @@ func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *s
 	return false, nil
 }
 
-func (s *RolloutService) canUserCancelEnvironmentTaskRun(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, creatorUID int) (bool, error) {
-	return s.canUserRunEnvironmentTasks(ctx, user, project, issue, environment, creatorUID)
-}
-
-func (s *RolloutService) canUserSkipEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, creatorUID int) (bool, error) {
-	return s.canUserRunEnvironmentTasks(ctx, user, project, issue, environment, creatorUID)
+func (s *RolloutService) canUserCancelEnvironmentTaskRun(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, creator string) (bool, error) {
+	return s.canUserRunEnvironmentTasks(ctx, user, project, issue, environment, creator)
 }
 
 // getRolloutWithTasks retrieves a pipeline by ID with its tasks populated.

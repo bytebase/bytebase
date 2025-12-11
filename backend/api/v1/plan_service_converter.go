@@ -37,7 +37,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		PlanCheckRunStatusCount: map[string]int32{},
 	}
 
-	creator, err := s.GetUserByID(ctx, plan.CreatorUID)
+	creator, err := s.GetUserByEmail(ctx, plan.Creator)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get plan creator")
 	}

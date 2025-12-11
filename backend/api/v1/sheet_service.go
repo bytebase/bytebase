@@ -67,7 +67,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, user.ID, request.Msg.Sheet)
+	storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, user.Email, request.Msg.Sheet)
 	sheet, err := s.sheetManager.CreateSheet(ctx, storeSheetCreate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
@@ -111,12 +111,12 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("Sheet Parent %q does not match BatchCreateSheetsRequest.Parent %q", r.Parent, request.Msg.Parent))
 		}
 
-		storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, user.ID, r.Sheet)
+		storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, user.Email, r.Sheet)
 
 		sheetCreates = append(sheetCreates, storeSheetCreate)
 	}
 
-	sheets, err := s.sheetManager.BatchCreateSheets(ctx, sheetCreates, project.ResourceID, user.ID)
+	sheets, err := s.sheetManager.BatchCreateSheets(ctx, sheetCreates, project.ResourceID, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}
@@ -234,8 +234,8 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *connect.Request
 	}
 
 	sheetPatch := &store.PatchSheetMessage{
-		UID:       sheet.UID,
-		UpdaterID: user.ID,
+		UID:     sheet.UID,
+		Updater: user.Email,
 	}
 
 	for _, path := range request.Msg.UpdateMask.Paths {
@@ -271,7 +271,7 @@ func (s *SheetService) findSheet(ctx context.Context, find *store.FindSheetMessa
 }
 
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
-	creator, err := s.store.GetUserByID(ctx, sheet.CreatorID)
+	creator, err := s.store.GetUserByEmail(ctx, sheet.Creator)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get creator"))
 	}
@@ -306,10 +306,10 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	}, nil
 }
 
-func convertToStoreSheetMessage(projectID string, creatorID int, sheet *v1pb.Sheet) *store.SheetMessage {
+func convertToStoreSheetMessage(projectID string, creator string, sheet *v1pb.Sheet) *store.SheetMessage {
 	sheetMessage := &store.SheetMessage{
 		ProjectID: projectID,
-		CreatorID: creatorID,
+		Creator:   creator,
 		Title:     sheet.Title,
 		Statement: string(sheet.Content),
 		Payload:   &storepb.SheetPayload{},

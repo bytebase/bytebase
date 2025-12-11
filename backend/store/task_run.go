@@ -24,14 +24,14 @@ type TaskRunMessage struct {
 	SheetUID    *int
 
 	// Output only.
-	ID        int
-	CreatorID int
-	Creator   *UserMessage
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	ProjectID string
-	StartedAt *time.Time
-	RunAt     *time.Time
+	ID           int
+	CreatorEmail string
+	Creator      *UserMessage
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	ProjectID    string
+	StartedAt    *time.Time
+	RunAt        *time.Time
 }
 
 // FindTaskRunMessage is the message for finding task runs.
@@ -49,7 +49,7 @@ type TaskRunStatusPatch struct {
 	ID int
 
 	// Standard fields
-	UpdaterID int
+	Updater string
 
 	// Domain specific fields
 	Status storepb.TaskRun_Status
@@ -62,7 +62,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 	q := qb.Q().Space(`
 		SELECT
 			task_run.id,
-			task_run.creator_id,
+			task_run.creator,
 			task_run.created_at,
 			task_run.updated_at,
 			task_run.task_id,
@@ -125,7 +125,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 		var statusString string
 		if err := rows.Scan(
 			&taskRun.ID,
-			&taskRun.CreatorID,
+			&taskRun.CreatorEmail,
 			&taskRun.CreatedAt,
 			&taskRun.UpdatedAt,
 			&taskRun.TaskUID,
@@ -166,7 +166,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 	}
 
 	for _, taskRun := range taskRuns {
-		creator, err := s.GetUserByID(ctx, taskRun.CreatorID)
+		creator, err := s.GetUserByEmail(ctx, taskRun.CreatorEmail)
 		if err != nil {
 			return nil, err
 		}
@@ -261,7 +261,7 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 // - Uses WHERE NOT EXISTS to skip tasks that already have active (PENDING/RUNNING/DONE) task runs
 // - Uses ON CONFLICT DO NOTHING to handle race conditions where two requests try to create the same task run
 // - The unique constraint on (task_id, attempt) ensures no duplicates
-func (s *Store) CreatePendingTaskRuns(ctx context.Context, creatorID int, creates ...*TaskRunMessage) error {
+func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creates ...*TaskRunMessage) error {
 	if len(creates) == 0 {
 		return nil
 	}
@@ -282,7 +282,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creatorID int, create
 	// 4. Uses ON CONFLICT DO NOTHING to handle race conditions
 	q := qb.Q().Space(`
 		INSERT INTO task_run (
-			creator_id,
+			creator,
 			task_id,
 			sheet_id,
 			run_at,
@@ -308,7 +308,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creatorID int, create
 			AND task_run.status IN (?, ?, ?)
 		)
 		ON CONFLICT (task_id, attempt) DO NOTHING
-	`, creatorID, storepb.TaskRun_PENDING.String(), taskUIDs, sheetUIDs, runAts,
+	`, creator, storepb.TaskRun_PENDING.String(), taskUIDs, sheetUIDs, runAts,
 		storepb.TaskRun_PENDING.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
 
 	query, args, err := q.ToSQL()
@@ -342,7 +342,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 
 	q := qb.Q().Space("UPDATE task_run SET ?", set).
 		Space("WHERE id = ?", patch.ID).
-		Space("RETURNING id, creator_id, created_at, updated_at, task_id, status, code, result")
+		Space("RETURNING id, creator, created_at, updated_at, task_id, status, code, result")
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -353,7 +353,7 @@ func (*Store) patchTaskRunStatusImpl(ctx context.Context, txn *sql.Tx, patch *Ta
 	var statusString string
 	if err := txn.QueryRowContext(ctx, query, args...).Scan(
 		&taskRun.ID,
-		&taskRun.CreatorID,
+		&taskRun.CreatorEmail,
 		&taskRun.CreatedAt,
 		&taskRun.UpdatedAt,
 		&taskRun.TaskUID,

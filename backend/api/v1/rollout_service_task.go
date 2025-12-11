@@ -143,7 +143,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			return nil, err
 		}
 		sheet, err := sheetManager.CreateSheet(ctx, &store.SheetMessage{
-			CreatorID: common.SystemBotID,
+			Creator:   common.SystemBotEmail,
 			ProjectID: project.ResourceID,
 			Title:     fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement: statement,

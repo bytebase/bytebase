@@ -247,21 +247,20 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 	}
 
 	create := &store.TaskRunMessage{
-		CreatorID: common.SystemBotID,
-		TaskUID:   task.ID,
+		TaskUID: task.ID,
 	}
 	if task.Payload.GetSheetId() != 0 {
 		sheetUID := int(task.Payload.GetSheetId())
 		create.SheetUID = &sheetUID
 	}
 
-	if err := s.store.CreatePendingTaskRuns(ctx, common.SystemBotID, create); err != nil {
+	if err := s.store.CreatePendingTaskRuns(ctx, common.SystemBotEmail, create); err != nil {
 		return errors.Wrapf(err, "failed to create pending task runs")
 	}
 
 	if issue != nil {
 		tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, common.FormatStageID(task.Environment), taskUID)}
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_PENDING, common.SystemBotID, ""); err != nil {
+		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_PENDING, common.SystemBotEmail, ""); err != nil {
 			slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 		}
 	}
@@ -347,9 +346,9 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 	}
 
 	if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
-		ID:        taskRun.ID,
-		UpdaterID: common.SystemBotID,
-		Status:    storepb.TaskRun_RUNNING,
+		ID:      taskRun.ID,
+		Updater: common.SystemBotEmail,
+		Status:  storepb.TaskRun_RUNNING,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to update task run status to running")
 	}
@@ -606,11 +605,11 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 		code := common.Ok
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:        taskRun.ID,
-			UpdaterID: common.SystemBotID,
-			Status:    storepb.TaskRun_CANCELED,
-			Code:      &code,
-			Result:    &result,
+			ID:      taskRun.ID,
+			Updater: common.SystemBotEmail,
+			Status:  storepb.TaskRun_CANCELED,
+			Code:    &code,
+			Result:  &result,
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as CANCELED",
@@ -649,11 +648,11 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 		code := common.ErrorCode(err)
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:        taskRun.ID,
-			UpdaterID: common.SystemBotID,
-			Status:    storepb.TaskRun_FAILED,
-			Code:      &code,
-			Result:    &result,
+			ID:      taskRun.ID,
+			Updater: common.SystemBotEmail,
+			Status:  storepb.TaskRun_FAILED,
+			Code:    &code,
+			Result:  &result,
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as FAILED",
@@ -673,7 +672,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 				return nil
 			}
 			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, common.FormatStageID(task.Environment), task.ID)}
-			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_FAILED, common.SystemBotID, "")
+			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_FAILED, common.SystemBotEmail, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
@@ -693,11 +692,11 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 		code := common.Ok
 		result := string(resultBytes)
 		taskRunStatusPatch := &store.TaskRunStatusPatch{
-			ID:        taskRun.ID,
-			UpdaterID: common.SystemBotID,
-			Status:    storepb.TaskRun_DONE,
-			Code:      &code,
-			Result:    &result,
+			ID:      taskRun.ID,
+			Updater: common.SystemBotEmail,
+			Status:  storepb.TaskRun_DONE,
+			Code:    &code,
+			Result:  &result,
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {
 			slog.Error("Failed to mark task as DONE",
@@ -717,7 +716,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 				return nil
 			}
 			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, common.FormatStageID(task.Environment), task.ID)}
-			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_DONE, common.SystemBotID, "")
+			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_DONE, common.SystemBotEmail, "")
 		}(); err != nil {
 			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
@@ -877,7 +876,7 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 						_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 							IssueUID: issueN.UID,
 							Payload:  p,
-						}, common.SystemBotID)
+						}, common.SystemBotEmail)
 						return err
 					}
 					return nil
@@ -936,7 +935,7 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 									},
 								},
 							},
-						}, common.SystemBotID); err != nil {
+						}, common.SystemBotEmail); err != nil {
 							return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
 						}
 

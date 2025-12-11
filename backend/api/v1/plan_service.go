@@ -260,7 +260,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, planMessage.Config.GetSpecs(), deployment, project); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline from the plan, please check you request, error: %v", err))
 	}
-	plan, err := s.store.CreatePlan(ctx, planMessage, user.ID)
+	plan, err := s.store.CreatePlan(ctx, planMessage, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan, error: %v", err))
 	}
@@ -336,7 +336,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	ok, err = func() (bool, error) {
-		if oldPlan.CreatorUID == user.ID {
+		if oldPlan.Creator == user.Email {
 			return true, nil
 		}
 		return s.iamManager.CheckPermission(ctx, iam.PermissionPlansUpdate, user, oldPlan.ProjectID)
@@ -724,7 +724,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			}
 
 			for _, issueCommentCreate := range issueCommentCreates {
-				if _, err := s.store.CreateIssueComment(ctx, issueCommentCreate, user.ID); err != nil {
+				if _, err := s.store.CreateIssueComment(ctx, issueCommentCreate, user.Email); err != nil {
 					slog.Warn("failed to create issue comments", "issueUID", issue.UID, log.BBError(err))
 				}
 			}

@@ -94,7 +94,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 
 	// Batch create sheets if needed.
 	if len(sheetsToCreate) > 0 {
-		createdSheets, err := s.sheetManager.BatchCreateSheets(ctx, sheetsToCreate, project.ResourceID, user.ID)
+		createdSheets, err := s.sheetManager.BatchCreateSheets(ctx, sheetsToCreate, project.ResourceID, user.Email)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheets"))
 		}
@@ -123,7 +123,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		},
 	}
 
-	release, err := s.store.CreateRelease(ctx, releaseMessage, user.ID)
+	release, err := s.store.CreateRelease(ctx, releaseMessage, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create release"))
 	}
@@ -430,7 +430,7 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 	}
 	r.Name = common.FormatReleaseName(project.ResourceID, release.UID)
 
-	creator, err := s.GetUserByID(ctx, release.CreatorUID)
+	creator, err := s.GetUserByEmail(ctx, release.Creator)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get release creator")
 	}
