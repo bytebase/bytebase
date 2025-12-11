@@ -7231,6 +7231,7 @@ paths:
                 - UserService
             description: |-
                 Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+                 Note: Email updates are not supported through this API. Use UpdateEmail instead.
                  Permissions required: bb.users.update (or self)
             operationId: UserService_UpdateUser
             parameters:
@@ -7309,6 +7310,40 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/UndeleteUserRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/users/{user}:updateEmail:
+        post:
+            tags:
+                - UserService
+            description: |-
+                Updates a user's email address.
+                 Permissions required: bb.users.updateEmail
+            operationId: UserService_UpdateEmail
+            parameters:
+                - name: user
+                  in: path
+                  description: The user id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateEmailRequest'
                 required: true
             responses:
                 "200":
@@ -15303,6 +15338,20 @@ components:
                     description: |-
                         If set to true, and the database is not found, a new database will be created.
                          In this situation, `update_mask` is ignored.
+        UpdateEmailRequest:
+            required:
+                - name
+                - email
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: |-
+                        The name of the user whose email to update.
+                         Format: users/{user email}
+                email:
+                    type: string
+                    description: The new email address.
         UpdateInstanceRequest:
             required:
                 - instance

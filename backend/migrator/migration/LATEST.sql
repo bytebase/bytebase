@@ -30,6 +30,8 @@ CREATE TABLE principal (
     profile jsonb NOT NULL DEFAULT '{}'
 );
 
+CREATE UNIQUE INDEX idx_principal_unique_email ON principal(email);
+
 -- Setting
 CREATE TABLE setting (
     id serial PRIMARY KEY,

@@ -112,6 +112,7 @@ roles:
       - bb.users.list
       - bb.users.undelete
       - bb.users.update
+      - bb.users.updateEmail
       - bb.worksheets.get
       - bb.worksheets.manage
       - bb.workspaces.getIamPolicy

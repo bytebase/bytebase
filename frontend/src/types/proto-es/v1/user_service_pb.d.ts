@@ -277,6 +277,32 @@ export declare type UndeleteUserRequest = Message<"bytebase.v1.UndeleteUserReque
 export declare const UndeleteUserRequestSchema: GenMessage<UndeleteUserRequest>;
 
 /**
+ * @generated from message bytebase.v1.UpdateEmailRequest
+ */
+export declare type UpdateEmailRequest = Message<"bytebase.v1.UpdateEmailRequest"> & {
+  /**
+   * The name of the user whose email to update.
+   * Format: users/{user email}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The new email address.
+   *
+   * @generated from field: string email = 2;
+   */
+  email: string;
+};
+
+/**
+ * Describes the message bytebase.v1.UpdateEmailRequest.
+ * Use `create(UpdateEmailRequestSchema)` to create a new message.
+ */
+export declare const UpdateEmailRequestSchema: GenMessage<UpdateEmailRequest>;
+
+/**
  * @generated from message bytebase.v1.User
  */
 export declare type User = Message<"bytebase.v1.User"> & {
@@ -614,6 +640,7 @@ export declare const UserService: GenService<{
   },
   /**
    * Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+   * Note: Email updates are not supported through this API. Use UpdateEmail instead.
    * Permissions required: bb.users.update (or self)
    *
    * @generated from rpc bytebase.v1.UserService.UpdateUser
@@ -643,6 +670,17 @@ export declare const UserService: GenService<{
   undeleteUser: {
     methodKind: "unary";
     input: typeof UndeleteUserRequestSchema;
+    output: typeof UserSchema;
+  },
+  /**
+   * Updates a user's email address.
+   * Permissions required: bb.users.updateEmail
+   *
+   * @generated from rpc bytebase.v1.UserService.UpdateEmail
+   */
+  updateEmail: {
+    methodKind: "unary";
+    input: typeof UpdateEmailRequestSchema;
     output: typeof UserSchema;
   },
 }>;
