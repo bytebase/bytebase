@@ -20,7 +20,7 @@ type clientRegistrationRequest struct {
 
 type clientRegistrationResponse struct {
 	ClientID                string   `json:"client_id"`
-	ClientSecret            string   `json:"client_secret"`
+	ClientSecret            string   `json:"client_secret,omitempty"`
 	ClientName              string   `json:"client_name"`
 	RedirectURIs            []string `json:"redirect_uris"`
 	GrantTypes              []string `json:"grant_types"`
@@ -66,11 +66,11 @@ func (s *Service) handleRegister(c echo.Context) error {
 		}
 	}
 
-	// Validate token_endpoint_auth_method (default to client_secret_basic)
+	// Validate token_endpoint_auth_method (default to none for public clients)
 	if req.TokenEndpointAuthMethod == "" {
-		req.TokenEndpointAuthMethod = "client_secret_basic"
+		req.TokenEndpointAuthMethod = "none"
 	}
-	allowedAuthMethods := []string{"client_secret_basic", "client_secret_post"}
+	allowedAuthMethods := []string{"none"}
 	if !slices.Contains(allowedAuthMethods, req.TokenEndpointAuthMethod) {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_client_metadata", "unsupported token_endpoint_auth_method")
 	}
@@ -104,12 +104,16 @@ func (s *Service) handleRegister(c echo.Context) error {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to create client")
 	}
 
-	return c.JSON(http.StatusCreated, &clientRegistrationResponse{
+	resp := &clientRegistrationResponse{
 		ClientID:                clientID,
-		ClientSecret:            clientSecret,
 		ClientName:              req.ClientName,
 		RedirectURIs:            req.RedirectURIs,
 		GrantTypes:              req.GrantTypes,
 		TokenEndpointAuthMethod: req.TokenEndpointAuthMethod,
-	})
+	}
+	// Only include client_secret for confidential clients
+	if req.TokenEndpointAuthMethod != "none" {
+		resp.ClientSecret = clientSecret
+	}
+	return c.JSON(http.StatusCreated, resp)
 }
