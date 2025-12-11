@@ -11,41 +11,41 @@ import (
 
 var (
 	// allowedDomains maps webhook types to their allowed domains.
-	allowedDomains = map[storepb.ProjectWebhook_Type][]string{
-		storepb.ProjectWebhook_SLACK: {
+	allowedDomains = map[storepb.WebhookType][]string{
+		storepb.WebhookType_SLACK: {
 			"hooks.slack.com",
 			"hooks.slack-gov.com",
 		},
-		storepb.ProjectWebhook_DISCORD: {
+		storepb.WebhookType_DISCORD: {
 			"discord.com",
 			"discordapp.com",
 		},
-		storepb.ProjectWebhook_TEAMS: {
+		storepb.WebhookType_TEAMS: {
 			".office.com",    // Matches *.office.com
 			".office365.com", // Matches *.office365.com
 		},
-		storepb.ProjectWebhook_DINGTALK: {
+		storepb.WebhookType_DINGTALK: {
 			"oapi.dingtalk.com",
 			"api.dingtalk.com",
 		},
-		storepb.ProjectWebhook_FEISHU: {
+		storepb.WebhookType_FEISHU: {
 			"open.feishu.cn",
 		},
-		storepb.ProjectWebhook_LARK: {
+		storepb.WebhookType_LARK: {
 			"open.larksuite.com",
 		},
-		storepb.ProjectWebhook_WECOM: {
+		storepb.WebhookType_WECOM: {
 			"qyapi.weixin.qq.com",
 		},
 	}
 
 	// TestOnlyAllowedDomains contains additional domains allowed for testing purposes only.
 	// This should only be modified in test files.
-	TestOnlyAllowedDomains = map[storepb.ProjectWebhook_Type][]string{}
+	TestOnlyAllowedDomains = map[storepb.WebhookType][]string{}
 )
 
 // ValidateWebhookURL validates that the webhook URL matches the allowed domains for the webhook type.
-func ValidateWebhookURL(webhookType storepb.ProjectWebhook_Type, webhookURL string) error {
+func ValidateWebhookURL(webhookType storepb.WebhookType, webhookURL string) error {
 	// Parse URL
 	u, err := url.Parse(webhookURL)
 	if err != nil {

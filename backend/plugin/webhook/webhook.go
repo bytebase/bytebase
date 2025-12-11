@@ -16,7 +16,7 @@ import (
 
 var (
 	receiverMu sync.RWMutex
-	receivers  = make(map[storepb.ProjectWebhook_Type]Receiver)
+	receivers  = make(map[storepb.WebhookType]Receiver)
 	// Based on the local test, Teams sometimes cannot finish the request in 1 second, so use 3s.
 	Timeout = 3 * time.Second
 )
@@ -249,7 +249,7 @@ func (c *Context) GetMetaListZh() []Meta {
 // Register makes a receiver available by the webhook type
 // If Register is called twice with the same type or if receiver is nil,
 // it panics.
-func Register(webhookType storepb.ProjectWebhook_Type, r Receiver) {
+func Register(webhookType storepb.WebhookType, r Receiver) {
 	receiverMu.Lock()
 	defer receiverMu.Unlock()
 	if r == nil {
@@ -262,7 +262,7 @@ func Register(webhookType storepb.ProjectWebhook_Type, r Receiver) {
 }
 
 // Post posts the message to webhook.
-func Post(webhookType storepb.ProjectWebhook_Type, context Context) error {
+func Post(webhookType storepb.WebhookType, context Context) error {
 	receiverMu.RLock()
 	r, ok := receivers[webhookType]
 	receiverMu.RUnlock()

@@ -24,12 +24,8 @@ import {
   Changelog_Status,
   Changelog_Type,
 } from "@/types/proto-es/v1/database_service_pb";
-import { extractIssueUID, getAffectedTableDisplayName } from "@/utils";
-import {
-  changelogLink,
-  getAffectedTablesOfChangelog,
-  getChangelogChangeType,
-} from "@/utils/v1/changelog";
+import { extractIssueUID } from "@/utils";
+import { changelogLink, getChangelogChangeType } from "@/utils/v1/changelog";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
 
@@ -118,26 +114,6 @@ const columnList = computed(() => {
       width: 160,
       resizable: true,
       render: (changelog) => changelog.version || "-",
-    },
-    {
-      key: "tables",
-      title: t("db.tables"),
-      width: "15rem",
-      resizable: true,
-      ellipsis: true,
-      render: (changelog) => {
-        const tables = getAffectedTablesOfChangelog(changelog);
-        if (tables.length === 0) return "-";
-        return (
-          <p class="flex gap-x-2 truncate">
-            {tables.map((table) => (
-              <span class={table.dropped ? "text-gray-400 italic" : ""}>
-                {getAffectedTableDisplayName(table)}
-              </span>
-            ))}
-          </p>
-        );
-      },
     },
     {
       key: "statement",

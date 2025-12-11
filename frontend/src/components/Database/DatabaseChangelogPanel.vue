@@ -1,14 +1,5 @@
 <template>
   <div class="flex flex-col gap-y-4" v-bind="$attrs">
-    <div class="w-full flex flex-row justify-between items-center gap-x-2">
-      <div class="flex flex-row justify-start items-center gap-x-4">
-        <div class="w-52">
-          <AffectedTablesSelect
-            v-model:tables="state.selectedAffectedTables"
-            :database="database"
-          />
-        </div>
-      </div>
       <div class="flex flex-row justify-end items-center grow gap-x-2">
         <BBSpin
           v-if="state.loading"
@@ -69,7 +60,7 @@
           </template>
         </TooltipButton>
       </div>
-    </div>
+
 
     <PagedTable
       ref="changedlogPagedTable"
@@ -111,15 +102,12 @@ import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import saveAs from "file-saver";
 import JSZip from "jszip";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAlert, BBSpin } from "@/bbkit";
-import {
-  AffectedTablesSelect,
-  ChangelogDataTable,
-} from "@/components/Changelog";
+import { ChangelogDataTable } from "@/components/Changelog";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
@@ -129,7 +117,7 @@ import {
   useChangelogStore,
   useDatabaseV1Store,
 } from "@/store";
-import type { ComposedDatabase, SearchChangeLogParams, Table } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -146,7 +134,6 @@ interface LocalState {
   loading: boolean;
   selectedChangelogNames: string[];
   isExporting: boolean;
-  selectedAffectedTables: Table[];
 }
 
 const props = defineProps<{
@@ -165,26 +152,10 @@ const state = reactive<LocalState>({
   loading: false,
   selectedChangelogNames: [],
   isExporting: false,
-  selectedAffectedTables: [],
 });
 
-const searchChangeLogParams = computed(
-  (): SearchChangeLogParams => ({
-    tables: state.selectedAffectedTables,
-  })
-);
-
 const searchChangelogFilter = computed(() => {
-  const filter: string[] = [];
-  if (
-    searchChangeLogParams.value.tables &&
-    searchChangeLogParams.value.tables.length > 0
-  ) {
-    filter.push(
-      `table = "${searchChangeLogParams.value.tables.map((table) => `tableExists('${props.database.databaseName}', '${table.schema}', '${table.table}')`).join(" || ")}"`
-    );
-  }
-  return filter.join(" && ");
+  return "";
 });
 
 const fetchChangelogList = async ({
@@ -207,11 +178,6 @@ const fetchChangelogList = async ({
     list: changelogs,
   };
 };
-
-watch(
-  () => searchChangelogFilter.value,
-  () => changedlogPagedTable.value?.refresh()
-);
 
 const { allowAlterSchema } = useDatabaseDetailContext();
 

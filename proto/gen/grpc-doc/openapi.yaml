@@ -8181,7 +8181,7 @@ components:
             properties:
                 type:
                     enum:
-                        - TYPE_UNSPECIFIED
+                        - WEBHOOK_TYPE_UNSPECIFIED
                         - SLACK
                         - DISCORD
                         - TEAMS
@@ -8916,11 +8916,6 @@ components:
                         - SDL
                     type: string
                     format: enum
-                dumpVersionMismatch:
-                    type: boolean
-                    description: |-
-                        True if this changelog's dump version differs from current engine dump version.
-                         When true and drift is detected, the drift may be a false positive from Bytebase upgrade.
         CheckConstraintMetadata:
             type: object
             properties:
@@ -15478,7 +15473,7 @@ components:
                          format: projects/{project}/webhooks/{webhook}
                 type:
                     enum:
-                        - TYPE_UNSPECIFIED
+                        - WEBHOOK_TYPE_UNSPECIFIED
                         - SLACK
                         - DISCORD
                         - TEAMS
@@ -15487,7 +15482,9 @@ components:
                         - WECOM
                         - LARK
                     type: string
-                    description: type is the type of the webhook.
+                    description: |-
+                        Webhook integration type.
+                         type is the type of the webhook.
                     format: enum
                 title:
                     type: string

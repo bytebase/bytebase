@@ -25,7 +25,7 @@ func getFeishuConfig(setting *storepb.AppIMSetting) *storepb.AppIMSetting_Feishu
 		return nil
 	}
 	for _, s := range setting.Settings {
-		if s.Type == storepb.ProjectWebhook_FEISHU {
+		if s.Type == storepb.WebhookType_FEISHU {
 			return s.GetFeishu()
 		}
 	}
@@ -109,7 +109,7 @@ type Webhook struct {
 }
 
 func init() {
-	webhook.Register(storepb.ProjectWebhook_FEISHU, &feishuReceiver{})
+	webhook.Register(storepb.WebhookType_FEISHU, &feishuReceiver{})
 }
 
 // feishuReceiver is the receiver for Feishu.

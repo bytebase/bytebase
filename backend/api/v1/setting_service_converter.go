@@ -340,7 +340,7 @@ func convertAppIMSetting(v1Setting *v1pb.AppIMSetting) (*storepb.AppIMSetting, e
 	}
 
 	storeSetting := &storepb.AppIMSetting{}
-	findIMType := map[v1pb.Webhook_Type]bool{}
+	findIMType := map[v1pb.WebhookType]bool{}
 	for _, setting := range v1Setting.Settings {
 		if findIMType[setting.Type] {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("duplicate im type %v", setting.Type.String()))
@@ -348,25 +348,25 @@ func convertAppIMSetting(v1Setting *v1pb.AppIMSetting) (*storepb.AppIMSetting, e
 		findIMType[setting.Type] = true
 
 		imSetting := &storepb.AppIMSetting_IMSetting{
-			Type: storepb.ProjectWebhook_Type(setting.Type),
+			Type: storepb.WebhookType(setting.Type),
 		}
 		// Handle based on Type field since protobuf-es may serialize oneof incorrectly.
 		// The oneof payload type may not match the Type field due to serialization issues.
 		switch setting.Type {
-		case v1pb.Webhook_SLACK:
+		case v1pb.WebhookType_SLACK:
 			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Slack{
 				Slack: &storepb.AppIMSetting_Slack{
 					Token: setting.GetSlack().GetToken(),
 				},
 			}
-		case v1pb.Webhook_FEISHU:
+		case v1pb.WebhookType_FEISHU:
 			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Feishu{
 				Feishu: &storepb.AppIMSetting_Feishu{
 					AppId:     setting.GetFeishu().GetAppId(),
 					AppSecret: setting.GetFeishu().GetAppSecret(),
 				},
 			}
-		case v1pb.Webhook_WECOM:
+		case v1pb.WebhookType_WECOM:
 			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Wecom{
 				Wecom: &storepb.AppIMSetting_Wecom{
 					CorpId:  setting.GetWecom().GetCorpId(),
@@ -374,14 +374,14 @@ func convertAppIMSetting(v1Setting *v1pb.AppIMSetting) (*storepb.AppIMSetting, e
 					Secret:  setting.GetWecom().GetSecret(),
 				},
 			}
-		case v1pb.Webhook_LARK:
+		case v1pb.WebhookType_LARK:
 			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Lark{
 				Lark: &storepb.AppIMSetting_Lark{
 					AppId:     setting.GetLark().GetAppId(),
 					AppSecret: setting.GetLark().GetAppSecret(),
 				},
 			}
-		case v1pb.Webhook_DINGTALK:
+		case v1pb.WebhookType_DINGTALK:
 			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Dingtalk{
 				Dingtalk: &storepb.AppIMSetting_DingTalk{
 					ClientId:     setting.GetDingtalk().GetClientId(),
@@ -389,7 +389,7 @@ func convertAppIMSetting(v1Setting *v1pb.AppIMSetting) (*storepb.AppIMSetting, e
 					RobotCode:    setting.GetDingtalk().GetRobotCode(),
 				},
 			}
-		case v1pb.Webhook_TEAMS:
+		case v1pb.WebhookType_TEAMS:
 			imSetting.Payload = &storepb.AppIMSetting_IMSetting_Teams{
 				Teams: &storepb.AppIMSetting_Teams{
 					TenantId:     setting.GetTeams().GetTenantId(),
@@ -414,30 +414,30 @@ func convertToAppIMSetting(storeSetting *storepb.AppIMSetting) *v1pb.AppIMSettin
 	v1Setting := &v1pb.AppIMSetting{}
 	for _, setting := range storeSetting.Settings {
 		imSetting := &v1pb.AppIMSetting_IMSetting{
-			Type: v1pb.Webhook_Type(setting.Type),
+			Type: v1pb.WebhookType(setting.Type),
 		}
 		switch setting.Type {
-		case storepb.ProjectWebhook_SLACK:
+		case storepb.WebhookType_SLACK:
 			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Slack{
 				Slack: &v1pb.AppIMSetting_Slack{},
 			}
-		case storepb.ProjectWebhook_FEISHU:
+		case storepb.WebhookType_FEISHU:
 			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Feishu{
 				Feishu: &v1pb.AppIMSetting_Feishu{},
 			}
-		case storepb.ProjectWebhook_WECOM:
+		case storepb.WebhookType_WECOM:
 			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Wecom{
 				Wecom: &v1pb.AppIMSetting_Wecom{},
 			}
-		case storepb.ProjectWebhook_LARK:
+		case storepb.WebhookType_LARK:
 			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Lark{
 				Lark: &v1pb.AppIMSetting_Lark{},
 			}
-		case storepb.ProjectWebhook_DINGTALK:
+		case storepb.WebhookType_DINGTALK:
 			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Dingtalk{
 				Dingtalk: &v1pb.AppIMSetting_DingTalk{},
 			}
-		case storepb.ProjectWebhook_TEAMS:
+		case storepb.WebhookType_TEAMS:
 			imSetting.Payload = &v1pb.AppIMSetting_IMSetting_Teams{
 				Teams: &v1pb.AppIMSetting_Teams{},
 			}

@@ -26,7 +26,7 @@ func getWecomConfig(setting *storepb.AppIMSetting) *storepb.AppIMSetting_Wecom {
 		return nil
 	}
 	for _, s := range setting.Settings {
-		if s.Type == storepb.ProjectWebhook_WECOM {
+		if s.Type == storepb.WebhookType_WECOM {
 			return s.GetWecom()
 		}
 	}
@@ -51,7 +51,7 @@ type Webhook struct {
 }
 
 func init() {
-	webhook.Register(storepb.ProjectWebhook_WECOM, &Receiver{})
+	webhook.Register(storepb.WebhookType_WECOM, &Receiver{})
 }
 
 // Receiver is the receiver for WeCom.

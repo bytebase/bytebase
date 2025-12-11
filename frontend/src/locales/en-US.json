@@ -1626,9 +1626,7 @@
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "export": "Export Changelog",
     "need-to-select-first": "Need to select changelog first",
-    "all-tables": "All tables",
-    "affected-tables": "Affected Tables",
-    "select-affection-tables": "Select affected tables",
+
     "rollback-tip": "Select a specific DDL changelog to rollback."
   },
   "database": {
@@ -1781,7 +1779,6 @@
         "self": "Schema drift detected",
         "description": "The schema is different from the last applied schema. This may cause application errors and should be resolved."
       },
-      "format-version-mismatch-caveat": "Note: If you recently upgraded Bytebase, this may be a false positive due to schema dump format changes.",
       "new-baseline": {
         "self": "New baseline",
         "successfully-established": "Successfully established new baseline"

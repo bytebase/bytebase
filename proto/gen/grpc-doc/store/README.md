@@ -14,6 +14,7 @@
     - [RiskLevel](#bytebase-store-RiskLevel)
     - [SchemaChangeType](#bytebase-store-SchemaChangeType)
     - [VCSType](#bytebase-store-VCSType)
+    - [WebhookType](#bytebase-store-WebhookType)
   
 - [store/advice.proto](#store_advice-proto)
     - [Advice](#bytebase-store-Advice)
@@ -231,7 +232,6 @@
     - [ProjectWebhook](#bytebase-store-ProjectWebhook)
   
     - [Activity.Type](#bytebase-store-Activity-Type)
-    - [ProjectWebhook.Type](#bytebase-store-ProjectWebhook-Type)
   
 - [store/query_history.proto](#store_query_history-proto)
     - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
@@ -519,6 +519,24 @@ VCSType represents the type of version control system.
 | GITLAB | 2 |  |
 | BITBUCKET | 3 |  |
 | AZURE_DEVOPS | 4 |  |
+
+
+
+<a name="bytebase-store-WebhookType"></a>
+
+### WebhookType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| WEBHOOK_TYPE_UNSPECIFIED | 0 | Unspecified type. |
+| SLACK | 1 | Slack integration. |
+| DISCORD | 2 | Discord integration. |
+| TEAMS | 3 | Microsoft Teams integration. |
+| DINGTALK | 4 | DingTalk integration. |
+| FEISHU | 5 | Feishu integration. |
+| WECOM | 6 | WeCom (WeChat Work) integration. |
+| LARK | 8 | Lark integration. |
 
 
  
@@ -3821,7 +3839,7 @@ Activity types for webhook notifications.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [ProjectWebhook.Type](#bytebase-store-ProjectWebhook-Type) |  | Webhook type. |
+| type | [WebhookType](#bytebase-store-WebhookType) |  | Webhook type. |
 | title | [string](#string) |  | Webhook title. |
 | url | [string](#string) |  | Webhook URL. |
 | activities | [Activity.Type](#bytebase-store-Activity-Type) | repeated | List of activities that trigger this webhook. |
@@ -3855,24 +3873,6 @@ ISSUE_CREATE represents creating an issue. |
 | ISSUE_APPROVAL_NOTIFY | 21 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 22 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
-
-
-
-<a name="bytebase-store-ProjectWebhook-Type"></a>
-
-### ProjectWebhook.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| SLACK | 1 | Slack integration. |
-| DISCORD | 2 | Discord integration. |
-| TEAMS | 3 | Microsoft Teams integration. |
-| DINGTALK | 4 | DingTalk integration. |
-| FEISHU | 5 | Feishu integration. |
-| WECOM | 6 | WeCom (WeChat Work) integration. |
-| LARK | 8 | Lark integration. |
 
 
  
@@ -4528,7 +4528,7 @@ The severity level for SQL review rules.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [ProjectWebhook.Type](#bytebase-store-ProjectWebhook-Type) |  |  |
+| type | [WebhookType](#bytebase-store-WebhookType) |  |  |
 | slack | [AppIMSetting.Slack](#bytebase-store-AppIMSetting-Slack) |  |  |
 | feishu | [AppIMSetting.Feishu](#bytebase-store-AppIMSetting-Feishu) |  |  |
 | wecom | [AppIMSetting.Wecom](#bytebase-store-AppIMSetting-Wecom) |  |  |
