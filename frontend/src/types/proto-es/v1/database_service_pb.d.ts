@@ -3097,42 +3097,6 @@ export declare type ListChangelogsRequest = Message<"bytebase.v1.ListChangelogsR
    * @generated from field: bytebase.v1.ChangelogView view = 4;
    */
   view: ChangelogView;
-
-  /**
-   * The filter of the changelogs.
-   * follow the
-   * [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form)
-   * syntax. Support filter by type, source or table. For example: table =
-   * "tableExists('{database}', '{schema}', '{table}')" table =
-   * "tableExists('db', 'public', 'table1') || tableExists('db', 'public',
-   * 'table2')"
-   *
-   * The table filter follow the CEL syntax.
-   * currently, we have one function for CEL:
-   * - tableExists(database, schema, table): return true if the table exists in
-   * changed resources.
-   *
-   * examples:
-   * Use
-   *   tableExists("db", "public", "table1")
-   * to filter the changelogs which have the table "table1" in the schema
-   * "public" of the database "db". For MySQL, the schema is always "", such as
-   * tableExists("db", "", "table1").
-   *
-   * Combine multiple functions with "&&" and "||", we MUST use the Disjunctive
-   * Normal Form(DNF). In other words, the CEL expression consists of several
-   * parts connected by OR operators. For example, the following expression is
-   * valid:
-   * (
-   *  tableExists("db", "public", "table1") &&
-   *  tableExists("db", "public", "table2")
-   * ) || (
-   *  tableExists("db", "public", "table3")
-   * )
-   *
-   * @generated from field: string filter = 5;
-   */
-  filter: string;
 };
 
 /**

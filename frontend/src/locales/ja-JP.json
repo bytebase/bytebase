@@ -2053,6 +2053,7 @@
     "hex-format": "16進形式",
     "boolean-format": "ブール形式",
     "text-format": "テキスト形式",
+    "show-in-editor": "エディタで表示",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "未保存のワークシートを閉じてもよろしいですか?",

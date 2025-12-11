@@ -3,16 +3,11 @@ package store
 import (
 	"context"
 	"fmt"
-	"slices"
-	"strings"
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
-
-	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -51,9 +46,8 @@ type FindChangelogMessage struct {
 	InstanceID   *string
 	DatabaseName *string
 
-	TypeList        []string
-	Status          *ChangelogStatus
-	ResourcesFilter *string
+	TypeList []string
+	Status   *ChangelogStatus
 
 	Limit  *int
 	Offset *int
@@ -214,15 +208,6 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 	if v := find.DatabaseName; v != nil {
 		q.And("changelog.db_name = ?", *v)
 	}
-	if v := find.ResourcesFilter; v != nil {
-		text, err := generateResourceFilter(*v, "changelog.payload")
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate resource filter from %q", *v)
-		}
-		if text != "" {
-			q.And(text)
-		}
-	}
 	if v := find.Status; v != nil {
 		q.And("changelog.status = ?", string(*v))
 	}
@@ -302,241 +287,4 @@ func (s *Store) GetChangelog(ctx context.Context, find *FindChangelogMessage) (*
 		return nil, errors.Errorf("found %d changelogs with find %v, expect 1", len(changelogs), *find)
 	}
 	return changelogs[0], nil
-}
-
-type resourceDatabase struct {
-	name    string
-	schemas schemaMap
-}
-
-type databaseMap map[string]*resourceDatabase
-
-type resourceSchema struct {
-	name   string
-	tables tableMap
-}
-
-type schemaMap map[string]*resourceSchema
-
-type resourceTable struct {
-	name string
-}
-
-type tableMap map[string]*resourceTable
-
-// The CEL filter MUST be a Disjunctive Normal Form (DNF) expression.
-// In other words, the CEL expression consists of several parts connected by OR operators.
-// For example, the following expression is valid:
-// (
-//
-//	tableExists("db", "public", "table1") &&
-//	tableExists("db", "public", "table2")
-//
-// ) || (
-//
-//	tableExists("db", "public", "table3")
-//
-// )
-// .
-func generateResourceFilter(filter string, jsonbFieldName string) (string, error) {
-	env, err := cel.NewEnv(
-		cel.Function("tableExists",
-			cel.Overload("tableExists_string",
-				[]*cel.Type{cel.StringType, cel.StringType, cel.StringType},
-				cel.BoolType,
-			),
-		),
-	)
-	if err != nil {
-		return "", err
-	}
-
-	ast, iss := env.Compile(filter)
-	if iss != nil && iss.Err() != nil {
-		return "", iss.Err()
-	}
-
-	rewriter := &expressionRewriter{
-		metaMap: make(databaseMap),
-	}
-
-	parsedExpr, err := cel.AstToParsedExpr(ast)
-	if err != nil {
-		return "", err
-	}
-	if err := rewriter.rewriteExpression(parsedExpr.Expr); err != nil {
-		return "", err
-	}
-
-	if len(rewriter.metaMap) != 0 {
-		if err := rewriter.appendDNFPart(); err != nil {
-			return "", err
-		}
-	}
-
-	if len(rewriter.dnfParts) == 0 {
-		return "", nil
-	}
-
-	var buf strings.Builder
-	if len(rewriter.dnfParts) > 1 {
-		if _, err := buf.WriteString("("); err != nil {
-			return "", err
-		}
-	}
-	for i, part := range rewriter.dnfParts {
-		if i > 0 {
-			if _, err := buf.WriteString(" OR "); err != nil {
-				return "", err
-			}
-		}
-		if _, err := buf.WriteString(fmt.Sprintf("(%s @> '", jsonbFieldName)); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString(part); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString("'::jsonb)"); err != nil {
-			return "", err
-		}
-	}
-	if len(rewriter.dnfParts) > 1 {
-		if _, err := buf.WriteString(")"); err != nil {
-			return "", err
-		}
-	}
-	return buf.String(), nil
-}
-
-type expressionRewriter struct {
-	metaMap  databaseMap
-	dnfParts []string
-}
-
-func (r *expressionRewriter) appendDNFPart() error {
-	if r.metaMap == nil {
-		return nil
-	}
-
-	defer func() {
-		r.metaMap = make(databaseMap)
-	}()
-
-	var meta storepb.ChangedResources
-	for _, dbMeta := range r.metaMap {
-		db := &storepb.ChangedResourceDatabase{
-			Name: dbMeta.name,
-		}
-		for _, schemaMeta := range dbMeta.schemas {
-			schema := &storepb.ChangedResourceSchema{
-				Name: schemaMeta.name,
-			}
-			for _, tableMeta := range schemaMeta.tables {
-				table := &storepb.ChangedResourceTable{
-					Name: tableMeta.name,
-				}
-				schema.Tables = append(schema.Tables, table)
-			}
-			slices.SortFunc(schema.Tables, func(a, b *storepb.ChangedResourceTable) int {
-				if a.Name < b.Name {
-					return -1
-				} else if a.Name > b.Name {
-					return 1
-				}
-				return 0
-			})
-			db.Schemas = append(db.Schemas, schema)
-		}
-		slices.SortFunc(db.Schemas, func(a, b *storepb.ChangedResourceSchema) int {
-			if a.Name < b.Name {
-				return -1
-			} else if a.Name > b.Name {
-				return 1
-			}
-			return 0
-		})
-		meta.Databases = append(meta.Databases, db)
-	}
-	slices.SortFunc(meta.Databases, func(a, b *storepb.ChangedResourceDatabase) int {
-		if a.Name < b.Name {
-			return -1
-		} else if a.Name > b.Name {
-			return 1
-		}
-		return 0
-	})
-
-	text, err := protojson.Marshal(&storepb.InstanceChangeHistoryPayload{
-		ChangedResources: &meta,
-	})
-	if err != nil {
-		return err
-	}
-	r.dnfParts = append(r.dnfParts, string(text))
-	return nil
-}
-
-func (r *expressionRewriter) rewriteExpression(expr *exprpb.Expr) error {
-	switch e := expr.ExprKind.(type) {
-	case *exprpb.Expr_CallExpr:
-		switch e.CallExpr.Function {
-		case "_||_":
-			for _, arg := range e.CallExpr.Args {
-				if err := r.rewriteExpression(arg); err != nil {
-					return err
-				}
-				if err := r.appendDNFPart(); err != nil {
-					return err
-				}
-			}
-		case "_&&_":
-			for _, arg := range e.CallExpr.Args {
-				if err := r.rewriteExpression(arg); err != nil {
-					return err
-				}
-			}
-		case "tableExists":
-			if len(e.CallExpr.Args) != 3 {
-				return errors.Errorf("invalid tableExists function call: %v, expected three arguments buf got %d", e.CallExpr, len(e.CallExpr.Args))
-			}
-			var args []string
-			for _, arg := range e.CallExpr.Args {
-				switch a := arg.ExprKind.(type) {
-				case *exprpb.Expr_ConstExpr:
-					switch a.ConstExpr.ConstantKind.(type) {
-					case *exprpb.Constant_StringValue:
-						args = append(args, a.ConstExpr.GetStringValue())
-					default:
-						return errors.Errorf("invalid tableExists function call: %v, expected string arguments buf got %v", e.CallExpr, arg)
-					}
-				default:
-					return errors.Errorf("invalid tableExists function call: %v, expected constant arguments buf got %v", e.CallExpr, arg)
-				}
-			}
-			database, ok := r.metaMap[args[0]]
-			if !ok {
-				database = &resourceDatabase{
-					name:    args[0],
-					schemas: make(schemaMap),
-				}
-				r.metaMap[args[0]] = database
-			}
-			schema, ok := database.schemas[args[1]]
-			if !ok {
-				schema = &resourceSchema{
-					name:   args[1],
-					tables: make(tableMap),
-				}
-				database.schemas[args[1]] = schema
-			}
-			schema.tables[args[2]] = &resourceTable{
-				name: args[2],
-			}
-		default:
-			// Ignore other function calls
-		}
-	default:
-		return errors.Errorf("invalid expression: %v", expr)
-	}
-	return nil
 }

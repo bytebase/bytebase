@@ -2,7 +2,6 @@ export * from "./actuator";
 export * from "./appProfile";
 export * from "./approvalFlow";
 export * from "./auditLog";
-export * from "./changelog";
 export * from "./common";
 export * from "./const";
 export * from "./dataSource";

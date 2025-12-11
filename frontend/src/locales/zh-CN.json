@@ -2053,6 +2053,7 @@
     "hex-format": "十六进制格式",
     "boolean-format": "布尔格式",
     "text-format": "文本格式",
+    "show-in-editor": "在编辑器中显示",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "确定关闭未保存的工作表？",
