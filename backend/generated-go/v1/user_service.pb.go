@@ -136,7 +136,7 @@ func (WorkloadIdentityConfig_ProviderType) EnumDescriptor() ([]byte, []int) {
 type GetUserRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the user to retrieve.
-	// Format: users/{user uid or user email}
+	// Format: users/{email}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -182,7 +182,7 @@ func (x *GetUserRequest) GetName() string {
 type BatchGetUsersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The user names to retrieve.
-	// Format: users/{user uid or user email}
+	// Format: users/{email}
 	Names         []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -476,7 +476,7 @@ type UpdateUserRequest struct {
 	// The user to update.
 	//
 	// The user's `name` field is used to identify the user to update.
-	// Format: users/{user}
+	// Format: users/{email}
 	User *User `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
@@ -569,7 +569,7 @@ func (x *UpdateUserRequest) GetAllowMissing() bool {
 type DeleteUserRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the user to delete.
-	// Format: users/{user}
+	// Format: users/{email}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -615,7 +615,7 @@ func (x *DeleteUserRequest) GetName() string {
 type UndeleteUserRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the deleted user.
-	// Format: users/{user}
+	// Format: users/{email}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -661,7 +661,8 @@ func (x *UndeleteUserRequest) GetName() string {
 type UpdateEmailRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the user whose email to update.
-	// Format: users/{user email}
+	// Format: users/{email}
+	// Note: This is the current (old) email address. The new email is specified in the 'email' field.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The new email address.
 	Email         string `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
@@ -716,7 +717,7 @@ func (x *UpdateEmailRequest) GetEmail() string {
 type User struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the user.
-	// Format: users/{user}. {user} is a system-generated unique ID.
+	// Format: users/{email} for API requests. Internally stored as users/{uid}.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The lifecycle state of the user account.
 	State State `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
@@ -1065,7 +1066,7 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x12UpdateEmailRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/UserR\x04name\x12\x19\n" +
-	"\x05email\x18\x02 \x01(\tB\x03\xe0A\x02R\x05email\"\xfb\x06\n" +
+	"\x05email\x18\x02 \x01(\tB\x03\xe0A\x02R\x05email\"\xfc\x06\n" +
 	"\x04User\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
@@ -1088,8 +1089,8 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\aProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
-	"\x06source\x18\x03 \x01(\tR\x06source:$\xeaA!\n" +
-	"\x11bytebase.com/User\x12\fusers/{user}\"\x9f\x02\n" +
+	"\x06source\x18\x03 \x01(\tR\x06source:%\xeaA\"\n" +
+	"\x11bytebase.com/User\x12\rusers/{email}\"\x9f\x02\n" +
 	"\x16WorkloadIdentityConfig\x12U\n" +
 	"\rprovider_type\x18\x01 \x01(\x0e20.bytebase.v1.WorkloadIdentityConfig.ProviderTypeR\fproviderType\x12\x1d\n" +
 	"\n" +

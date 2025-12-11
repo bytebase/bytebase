@@ -116,7 +116,7 @@ service UserService {
 
 message GetUserRequest {
   // The name of the user to retrieve.
-  // Format: users/{user uid or user email}
+  // Format: users/{email}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
@@ -125,7 +125,7 @@ message GetUserRequest {
 
 message BatchGetUsersRequest {
   // The user names to retrieve.
-  // Format: users/{user uid or user email}
+  // Format: users/{email}
   repeated string names = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
@@ -198,7 +198,7 @@ message UpdateUserRequest {
   // The user to update.
   //
   // The user's `name` field is used to identify the user to update.
-  // Format: users/{user}
+  // Format: users/{email}
   User user = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
@@ -221,7 +221,7 @@ message UpdateUserRequest {
 
 message DeleteUserRequest {
   // The name of the user to delete.
-  // Format: users/{user}
+  // Format: users/{email}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
@@ -230,7 +230,7 @@ message DeleteUserRequest {
 
 message UndeleteUserRequest {
   // The name of the deleted user.
-  // Format: users/{user}
+  // Format: users/{email}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
@@ -239,7 +239,8 @@ message UndeleteUserRequest {
 
 message UpdateEmailRequest {
   // The name of the user whose email to update.
-  // Format: users/{user email}
+  // Format: users/{email}
+  // Note: This is the current (old) email address. The new email is specified in the 'email' field.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
@@ -252,11 +253,11 @@ message UpdateEmailRequest {
 message User {
   option (google.api.resource) = {
     type: "bytebase.com/User"
-    pattern: "users/{user}"
+    pattern: "users/{email}"
   };
 
   // The name of the user.
-  // Format: users/{user}. {user} is a system-generated unique ID.
+  // Format: users/{email} for API requests. Internally stored as users/{uid}.
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The lifecycle state of the user account.

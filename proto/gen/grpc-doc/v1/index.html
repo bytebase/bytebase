@@ -7050,7 +7050,7 @@ Permissions required: bb.settings.set</p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>The user names to retrieve.
-Format: users/{user uid or user email} </p></td>
+Format: users/{email} </p></td>
                 </tr>
               
             </tbody>
@@ -7123,7 +7123,7 @@ Format: users/{user uid or user email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the user to delete.
-Format: users/{user} </p></td>
+Format: users/{email} </p></td>
                 </tr>
               
             </tbody>
@@ -7148,7 +7148,7 @@ Format: users/{user} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the user to retrieve.
-Format: users/{user uid or user email} </p></td>
+Format: users/{email} </p></td>
                 </tr>
               
             </tbody>
@@ -7279,7 +7279,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the deleted user.
-Format: users/{user} </p></td>
+Format: users/{email} </p></td>
                 </tr>
               
             </tbody>
@@ -7304,7 +7304,8 @@ Format: users/{user} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the user whose email to update.
-Format: users/{user email} </p></td>
+Format: users/{email}
+Note: This is the current (old) email address. The new email is specified in the &#39;email&#39; field. </p></td>
                 </tr>
               
                 <tr>
@@ -7338,7 +7339,7 @@ Format: users/{user email} </p></td>
                   <td><p>The user to update.
 
 The user&#39;s `name` field is used to identify the user to update.
-Format: users/{user} </p></td>
+Format: users/{email} </p></td>
                 </tr>
               
                 <tr>
@@ -7400,7 +7401,7 @@ In this situation, `update_mask` is ignored. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the user.
-Format: users/{user}. {user} is a system-generated unique ID. </p></td>
+Format: users/{email} for API requests. Internally stored as users/{uid}. </p></td>
                 </tr>
               
                 <tr>

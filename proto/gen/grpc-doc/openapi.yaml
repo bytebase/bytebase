@@ -7372,7 +7372,7 @@ paths:
                   in: query
                   description: |-
                     The user names to retrieve.
-                     Format: users/{user uid or user email}
+                     Format: users/{email}
                   schema:
                     type: array
                     items:
@@ -15302,7 +15302,7 @@ components:
                     type: string
                     description: |-
                         The name of the deleted user.
-                         Format: users/{user}
+                         Format: users/{email}
         UpdateDatabaseRequest:
             required:
                 - database
@@ -15335,7 +15335,8 @@ components:
                     type: string
                     description: |-
                         The name of the user whose email to update.
-                         Format: users/{user email}
+                         Format: users/{email}
+                         Note: This is the current (old) email address. The new email is specified in the 'email' field.
                 email:
                     type: string
                     description: The new email address.
@@ -15395,7 +15396,7 @@ components:
                     type: string
                     description: |-
                         The name of the user.
-                         Format: users/{user}. {user} is a system-generated unique ID.
+                         Format: users/{email} for API requests. Internally stored as users/{uid}.
                 state:
                     enum:
                         - STATE_UNSPECIFIED

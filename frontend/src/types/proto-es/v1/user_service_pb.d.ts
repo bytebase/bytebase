@@ -18,7 +18,7 @@ export declare const file_v1_user_service: GenFile;
 export declare type GetUserRequest = Message<"bytebase.v1.GetUserRequest"> & {
   /**
    * The name of the user to retrieve.
-   * Format: users/{user uid or user email}
+   * Format: users/{email}
    *
    * @generated from field: string name = 1;
    */
@@ -37,7 +37,7 @@ export declare const GetUserRequestSchema: GenMessage<GetUserRequest>;
 export declare type BatchGetUsersRequest = Message<"bytebase.v1.BatchGetUsersRequest"> & {
   /**
    * The user names to retrieve.
-   * Format: users/{user uid or user email}
+   * Format: users/{email}
    *
    * @generated from field: repeated string names = 1;
    */
@@ -188,7 +188,7 @@ export declare type UpdateUserRequest = Message<"bytebase.v1.UpdateUserRequest">
    * The user to update.
    *
    * The user's `name` field is used to identify the user to update.
-   * Format: users/{user}
+   * Format: users/{email}
    *
    * @generated from field: bytebase.v1.User user = 1;
    */
@@ -244,7 +244,7 @@ export declare const UpdateUserRequestSchema: GenMessage<UpdateUserRequest>;
 export declare type DeleteUserRequest = Message<"bytebase.v1.DeleteUserRequest"> & {
   /**
    * The name of the user to delete.
-   * Format: users/{user}
+   * Format: users/{email}
    *
    * @generated from field: string name = 1;
    */
@@ -263,7 +263,7 @@ export declare const DeleteUserRequestSchema: GenMessage<DeleteUserRequest>;
 export declare type UndeleteUserRequest = Message<"bytebase.v1.UndeleteUserRequest"> & {
   /**
    * The name of the deleted user.
-   * Format: users/{user}
+   * Format: users/{email}
    *
    * @generated from field: string name = 1;
    */
@@ -282,7 +282,8 @@ export declare const UndeleteUserRequestSchema: GenMessage<UndeleteUserRequest>;
 export declare type UpdateEmailRequest = Message<"bytebase.v1.UpdateEmailRequest"> & {
   /**
    * The name of the user whose email to update.
-   * Format: users/{user email}
+   * Format: users/{email}
+   * Note: This is the current (old) email address. The new email is specified in the 'email' field.
    *
    * @generated from field: string name = 1;
    */
@@ -308,7 +309,7 @@ export declare const UpdateEmailRequestSchema: GenMessage<UpdateEmailRequest>;
 export declare type User = Message<"bytebase.v1.User"> & {
   /**
    * The name of the user.
-   * Format: users/{user}. {user} is a system-generated unique ID.
+   * Format: users/{email} for API requests. Internally stored as users/{uid}.
    *
    * @generated from field: string name = 1;
    */
