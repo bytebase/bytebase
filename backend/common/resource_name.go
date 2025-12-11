@@ -56,8 +56,9 @@ const (
 	MetadataSuffix  = "/metadata"
 	CatalogSuffix   = "/catalog"
 
-	UserBindingPrefix  = "user:"
-	GroupBindingPrefix = "group:"
+	UserBindingPrefix             = "user:"
+	GroupBindingPrefix            = "group:"
+	WorkloadIdentityBindingPrefix = "workloadIdentity:"
 )
 
 // GetProjectID returns the project ID from a resource name.
@@ -526,6 +527,16 @@ func FormatUserUID(uid int) string {
 
 func FormatGroupEmail(email string) string {
 	return fmt.Sprintf("%s%s", GroupPrefix, email)
+}
+
+// IsWorkloadIdentityEmail checks if the email is a workload identity email.
+func IsWorkloadIdentityEmail(email string) bool {
+	return strings.HasSuffix(email, WorkloadIdentityEmailSuffix)
+}
+
+// FormatWorkloadIdentityMember formats a workload identity email as an IAM member.
+func FormatWorkloadIdentityMember(email string) string {
+	return fmt.Sprintf("%s%s", WorkloadIdentityBindingPrefix, email)
 }
 
 func FormatReviewConfig(id string) string {
