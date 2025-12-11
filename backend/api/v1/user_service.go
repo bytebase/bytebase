@@ -654,19 +654,19 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersUndelete))
 	}
 
-	userID, err := common.GetUserID(request.Msg.Name)
+	email, err := common.GetUserEmail(request.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	user, err := s.store.GetUserByID(ctx, userID)
+	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
 	}
 	if user == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %d not found", userID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", email))
 	}
 	if !user.MemberDeleted {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("user %q is already active", userID))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("user %q is already active", email))
 	}
 	if user.Type == storepb.PrincipalType_END_USER {
 		if err := s.userCountGuard(ctx); err != nil {
