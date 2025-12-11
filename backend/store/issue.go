@@ -340,7 +340,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	q := qb.Q().Space(`
 		SELECT
 			issue.id,
-			issue.creatorEmail,
+			issue.creator,
 			issue.created_at,
 			issue.updated_at,
 			issue.project,
