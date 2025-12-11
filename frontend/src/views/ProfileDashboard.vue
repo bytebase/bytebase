@@ -95,7 +95,7 @@
             </dt>
             <dd class="mt-1 text-sm text-main">
               <EmailInput
-                v-if="state.editing"
+                v-if="state.editing && allowEditEmail"
                 v-model:value="state.editingUser!.email"
               />
               <template v-else>
@@ -359,6 +359,11 @@ const allowEdit = computed(() => {
     return false;
   }
   return isSelf.value || hasWorkspacePermissionV2("bb.policies.update");
+});
+
+// Only admins can change email.
+const allowEditEmail = computed(() => {
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const allowSaveEdit = computed(() => {
