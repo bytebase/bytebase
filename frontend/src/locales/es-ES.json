@@ -2053,6 +2053,7 @@
     "hex-format": "Formato hexadecimal",
     "boolean-format": "Formato booleano",
     "text-format": "Formato de texto",
+    "show-in-editor": "Mostrar en el editor",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "¿Cerrar la hoja no guardada?",

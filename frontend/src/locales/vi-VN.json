@@ -2053,6 +2053,7 @@
     "hex-format": "Định dạng thập lục phân",
     "boolean-format": "Định dạng Boolean",
     "text-format": "Định dạng văn bản",
+    "show-in-editor": "Hiển thị trong trình soạn thảo",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
         "title": "Đóng trang tính chưa lưu?",
