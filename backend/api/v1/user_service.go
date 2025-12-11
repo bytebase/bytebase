@@ -756,7 +756,7 @@ func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
 
 func convertToUser(ctx context.Context, user *store.UserMessage) *v1pb.User {
 	convertedUser := &v1pb.User{
-		Name:     common.FormatUserUID(user.ID),
+		Name:     common.FormatUserEmail(user.Email),
 		State:    convertDeletedToState(user.MemberDeleted),
 		Email:    user.Email,
 		Phone:    user.Phone,
