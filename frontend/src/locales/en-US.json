@@ -1135,6 +1135,10 @@
       "rollout": "Rollout",
       "statement-empty": "Statement is empty"
     },
+    "checks": {
+      "no-results-match-filters": "No results match your filters",
+      "no-check-results": "No check results"
+    },
     "spec": {
       "change": "Change",
       "type": {
