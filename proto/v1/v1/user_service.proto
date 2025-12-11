@@ -257,7 +257,7 @@ message User {
   };
 
   // The name of the user.
-  // Format: users/{email} for API requests. Internally stored as users/{uid}.
+  // Format: users/{email}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The lifecycle state of the user account.

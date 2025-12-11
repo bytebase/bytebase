@@ -2510,7 +2510,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user. Format: users/{email} for API requests. Internally stored as users/{uid}. |
+| name | [string](#string) |  | The name of the user. Format: users/{email} |
 | state | [State](#bytebase-v1-State) |  | The lifecycle state of the user account. |
 | email | [string](#string) |  | The email address of the user, used for login and notifications. |
 | title | [string](#string) |  | The display title or full name of the user. |

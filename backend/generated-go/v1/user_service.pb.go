@@ -717,7 +717,7 @@ func (x *UpdateEmailRequest) GetEmail() string {
 type User struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the user.
-	// Format: users/{email} for API requests. Internally stored as users/{uid}.
+	// Format: users/{email}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The lifecycle state of the user account.
 	State State `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`

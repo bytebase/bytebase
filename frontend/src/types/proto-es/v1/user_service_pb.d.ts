@@ -309,7 +309,7 @@ export declare const UpdateEmailRequestSchema: GenMessage<UpdateEmailRequest>;
 export declare type User = Message<"bytebase.v1.User"> & {
   /**
    * The name of the user.
-   * Format: users/{email} for API requests. Internally stored as users/{uid}.
+   * Format: users/{email}
    *
    * @generated from field: string name = 1;
    */
