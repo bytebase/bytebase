@@ -49,8 +49,7 @@ func (s *Service) RegisterRoutes(g *echo.Group) {
 	g.POST("/oauth2/register", s.handleRegister)
 	g.GET("/oauth2/authorize", s.handleAuthorizeGet)
 	g.POST("/oauth2/authorize", s.handleAuthorizePost)
-	// TODO: Uncomment when token.go is implemented
-	// g.POST("/oauth2/token", s.handleToken)
+	g.POST("/oauth2/token", s.handleToken)
 	// TODO: Uncomment when revoke.go is implemented
 	// g.POST("/oauth2/revoke", s.handleRevoke)
 }
