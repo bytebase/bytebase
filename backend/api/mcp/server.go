@@ -11,12 +11,14 @@ import (
 
 // EchoInput is the input for the echo tool.
 type EchoInput struct {
-	Message string `json:"message" jsonschema:"description=The message to echo back"`
+	// The message to echo back.
+	Message string `json:"message"`
 }
 
 // EchoOutput is the output for the echo tool.
 type EchoOutput struct {
-	Echo string `json:"echo" jsonschema:"description=The echoed message"`
+	// The echoed message.
+	Echo string `json:"echo"`
 }
 
 // Server is the MCP server for Bytebase.
@@ -57,7 +59,7 @@ func (*Server) handleEcho(_ context.Context, _ *mcp.CallToolRequest, input EchoI
 	output := EchoOutput{Echo: input.Message}
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
-			mcp.TextContent{Text: output.Echo},
+			&mcp.TextContent{Text: output.Echo},
 		},
 	}, output, nil
 }
