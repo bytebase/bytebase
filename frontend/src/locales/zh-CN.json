@@ -473,7 +473,6 @@
       "system-bot": "机器人助手",
       "service-account": "服务账号",
       "workload-identity": "工作负载标识",
-      "create-workload-identity": "创建工作负载标识",
       "workload-identity-platform": "平台",
       "workload-identity-owner": "组织 / 用户名",
       "workload-identity-repo": "仓库",

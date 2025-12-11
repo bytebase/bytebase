@@ -473,7 +473,6 @@
       "system-bot": "System Bot",
       "service-account": "Service Account",
       "workload-identity": "Workload Identity",
-      "create-workload-identity": "Create Workload Identity",
       "workload-identity-platform": "Platform",
       "workload-identity-owner": "Organization / Username",
       "workload-identity-repo": "Repository",
