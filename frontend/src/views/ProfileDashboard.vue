@@ -361,9 +361,9 @@ const allowEdit = computed(() => {
   return isSelf.value || hasWorkspacePermissionV2("bb.policies.update");
 });
 
-// Only admins can change email.
+// Only users with bb.users.updateEmail permission can change email.
 const allowEditEmail = computed(() => {
-  return hasWorkspacePermissionV2("bb.policies.update");
+  return hasWorkspacePermissionV2("bb.users.updateEmail");
 });
 
 const allowSaveEdit = computed(() => {
@@ -399,12 +399,11 @@ const saveEdit = async () => {
   const userPatch = state.editingUser;
   if (!userPatch) return;
 
+  const emailChanged = userPatch.email !== user.value.email;
   const updateMaskPaths: string[] = [];
+
   if (userPatch.title !== user.value.title) {
     updateMaskPaths.push("title");
-  }
-  if (userPatch.email !== user.value.email) {
-    updateMaskPaths.push("email");
   }
   if (userPatch.phone !== user.value.phone) {
     updateMaskPaths.push("phone");
@@ -412,17 +411,26 @@ const saveEdit = async () => {
   if (userPatch.password !== "") {
     updateMaskPaths.push("password");
   }
+
   try {
-    await userStore.updateUser(
-      create(UpdateUserRequestSchema, {
-        user: userPatch,
-        updateMask: create(FieldMaskSchema, {
-          paths: updateMaskPaths,
-        }),
-        regenerateRecoveryCodes: false,
-        regenerateTempMfaSecret: false,
-      })
-    );
+    // Update email using dedicated UpdateEmail API if changed
+    if (emailChanged) {
+      await userStore.updateEmail(user.value.email, userPatch.email);
+    }
+
+    // Update other fields using UpdateUser API if any changed
+    if (updateMaskPaths.length > 0) {
+      await userStore.updateUser(
+        create(UpdateUserRequestSchema, {
+          user: userPatch,
+          updateMask: create(FieldMaskSchema, {
+            paths: updateMaskPaths,
+          }),
+          regenerateRecoveryCodes: false,
+          regenerateTempMfaSecret: false,
+        })
+      );
+    }
   } catch (error) {
     pushNotification({
       module: "bytebase",
@@ -436,7 +444,7 @@ const saveEdit = async () => {
   state.editing = false;
 
   // If we update email, we need to redirect to the new email.
-  if (updateMaskPaths.includes("email") && props.principalEmail) {
+  if (emailChanged && props.principalEmail) {
     router.replace({
       name: WORKSPACE_ROUTE_USER_PROFILE,
       params: {

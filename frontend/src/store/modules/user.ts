@@ -143,6 +143,18 @@ export const useUserStore = defineStore("user", () => {
     return setUser(response);
   };
 
+  const updateEmail = async (oldEmail: string, newEmail: string) => {
+    const originData = await getOrFetchUserByIdentifier(oldEmail);
+    if (!originData) {
+      throw new Error(`user with email ${oldEmail} not found`);
+    }
+    const response = await userServiceClientConnect.updateEmail({
+      name: `users/${oldEmail}`,
+      email: newEmail,
+    });
+    return setUser(response);
+  };
+
   const archiveUser = async (user: User) => {
     const request = create(DeleteUserRequestSchema, {
       name: user.name,
@@ -232,6 +244,7 @@ export const useUserStore = defineStore("user", () => {
     fetchUserList,
     createUser,
     updateUser,
+    updateEmail,
     batchGetUsers,
     getOrFetchUserByIdentifier,
     getUserByIdentifier,

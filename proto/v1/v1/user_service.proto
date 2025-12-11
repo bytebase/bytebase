@@ -68,6 +68,7 @@ service UserService {
   }
 
   // Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+  // Note: Email updates are not supported through this API. Use UpdateEmail instead.
   // Permissions required: bb.users.update (or self)
   rpc UpdateUser(UpdateUserRequest) returns (User) {
     option (google.api.http) = {
@@ -96,6 +97,19 @@ service UserService {
       body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
+  }
+
+  // Updates a user's email address.
+  // Permissions required: bb.users.updateEmail
+  rpc UpdateEmail(UpdateEmailRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:updateEmail"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name,email";
+    option (bytebase.v1.permission) = "bb.users.updateEmail";
+    option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
   }
 }
@@ -221,6 +235,18 @@ message UndeleteUserRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
   ];
+}
+
+message UpdateEmailRequest {
+  // The name of the user whose email to update.
+  // Format: users/{user email}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"}
+  ];
+
+  // The new email address.
+  string email = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message User {

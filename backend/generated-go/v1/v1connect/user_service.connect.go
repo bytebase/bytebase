@@ -53,6 +53,8 @@ const (
 	// UserServiceUndeleteUserProcedure is the fully-qualified name of the UserService's UndeleteUser
 	// RPC.
 	UserServiceUndeleteUserProcedure = "/bytebase.v1.UserService/UndeleteUser"
+	// UserServiceUpdateEmailProcedure is the fully-qualified name of the UserService's UpdateEmail RPC.
+	UserServiceUpdateEmailProcedure = "/bytebase.v1.UserService/UpdateEmail"
 )
 
 // UserServiceClient is a client for the bytebase.v1.UserService service.
@@ -76,6 +78,7 @@ type UserServiceClient interface {
 	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
 	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+	// Note: Email updates are not supported through this API. Use UpdateEmail instead.
 	// Permissions required: bb.users.update (or self)
 	UpdateUser(context.Context, *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error)
 	// Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
@@ -84,6 +87,9 @@ type UserServiceClient interface {
 	// Restores a deleted user.
 	// Permissions required: bb.users.undelete
 	UndeleteUser(context.Context, *connect.Request[v1.UndeleteUserRequest]) (*connect.Response[v1.User], error)
+	// Updates a user's email address.
+	// Permissions required: bb.users.updateEmail
+	UpdateEmail(context.Context, *connect.Request[v1.UpdateEmailRequest]) (*connect.Response[v1.User], error)
 }
 
 // NewUserServiceClient constructs a client for the bytebase.v1.UserService service. By default, it
@@ -145,6 +151,12 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(userServiceMethods.ByName("UndeleteUser")),
 			connect.WithClientOptions(opts...),
 		),
+		updateEmail: connect.NewClient[v1.UpdateEmailRequest, v1.User](
+			httpClient,
+			baseURL+UserServiceUpdateEmailProcedure,
+			connect.WithSchema(userServiceMethods.ByName("UpdateEmail")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -158,6 +170,7 @@ type userServiceClient struct {
 	updateUser     *connect.Client[v1.UpdateUserRequest, v1.User]
 	deleteUser     *connect.Client[v1.DeleteUserRequest, emptypb.Empty]
 	undeleteUser   *connect.Client[v1.UndeleteUserRequest, v1.User]
+	updateEmail    *connect.Client[v1.UpdateEmailRequest, v1.User]
 }
 
 // GetUser calls bytebase.v1.UserService.GetUser.
@@ -200,6 +213,11 @@ func (c *userServiceClient) UndeleteUser(ctx context.Context, req *connect.Reque
 	return c.undeleteUser.CallUnary(ctx, req)
 }
 
+// UpdateEmail calls bytebase.v1.UserService.UpdateEmail.
+func (c *userServiceClient) UpdateEmail(ctx context.Context, req *connect.Request[v1.UpdateEmailRequest]) (*connect.Response[v1.User], error) {
+	return c.updateEmail.CallUnary(ctx, req)
+}
+
 // UserServiceHandler is an implementation of the bytebase.v1.UserService service.
 type UserServiceHandler interface {
 	// Get the user.
@@ -221,6 +239,7 @@ type UserServiceHandler interface {
 	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
 	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+	// Note: Email updates are not supported through this API. Use UpdateEmail instead.
 	// Permissions required: bb.users.update (or self)
 	UpdateUser(context.Context, *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error)
 	// Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
@@ -229,6 +248,9 @@ type UserServiceHandler interface {
 	// Restores a deleted user.
 	// Permissions required: bb.users.undelete
 	UndeleteUser(context.Context, *connect.Request[v1.UndeleteUserRequest]) (*connect.Response[v1.User], error)
+	// Updates a user's email address.
+	// Permissions required: bb.users.updateEmail
+	UpdateEmail(context.Context, *connect.Request[v1.UpdateEmailRequest]) (*connect.Response[v1.User], error)
 }
 
 // NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -286,6 +308,12 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("UndeleteUser")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceUpdateEmailHandler := connect.NewUnaryHandler(
+		UserServiceUpdateEmailProcedure,
+		svc.UpdateEmail,
+		connect.WithSchema(userServiceMethods.ByName("UpdateEmail")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceGetUserProcedure:
@@ -304,6 +332,8 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 			userServiceDeleteUserHandler.ServeHTTP(w, r)
 		case UserServiceUndeleteUserProcedure:
 			userServiceUndeleteUserHandler.ServeHTTP(w, r)
+		case UserServiceUpdateEmailProcedure:
+			userServiceUpdateEmailHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -343,4 +373,8 @@ func (UnimplementedUserServiceHandler) DeleteUser(context.Context, *connect.Requ
 
 func (UnimplementedUserServiceHandler) UndeleteUser(context.Context, *connect.Request[v1.UndeleteUserRequest]) (*connect.Response[v1.User], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.UndeleteUser is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) UpdateEmail(context.Context, *connect.Request[v1.UpdateEmailRequest]) (*connect.Response[v1.User], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.UpdateEmail is not implemented"))
 }

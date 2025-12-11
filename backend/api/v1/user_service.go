@@ -382,17 +382,8 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	for _, path := range request.Msg.UpdateMask.Paths {
 		switch path {
 		case "email":
-			if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.User.Email, user.Type == storepb.PrincipalType_SERVICE_ACCOUNT, false); err != nil {
-				return nil, err
-			}
-			existedUser, err := s.store.GetUserByEmail(ctx, request.Msg.User.Email)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find user list, error: %v", err))
-			}
-			if existedUser != nil && existedUser.ID != user.ID {
-				return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s is already existed", request.Msg.User.Email))
-			}
-			patch.Email = &request.Msg.User.Email
+			// Email updates are not supported through UpdateUser. Use UpdateEmail API instead.
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email updates are not supported through UpdateUser, use UpdateEmail API instead"))
 		case "title":
 			patch.Name = &request.Msg.User.Title
 		case "password":
@@ -659,6 +650,64 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+	return connect.NewResponse(convertToUser(ctx, user)), nil
+}
+
+// UpdateEmail updates a user's email address.
+func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[v1pb.UpdateEmailRequest]) (*connect.Response[v1pb.User], error) {
+	callerUser, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
+	}
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersUpdateEmail, callerUser)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+	}
+	if !ok {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersUpdateEmail))
+	}
+
+	// Get user by email from the name field
+	email, err := common.GetUserEmail(request.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	user, err := s.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
+	}
+	if user == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user not found"))
+	}
+	if user.MemberDeleted {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user has been deleted"))
+	}
+
+	// Check if new email is the same as current email (no-op)
+	if user.Email == request.Msg.Email {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("new email is the same as current email"))
+	}
+
+	// Validate email format and domain restrictions
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.Email, user.Type == storepb.PrincipalType_SERVICE_ACCOUNT, false); err != nil {
+		return nil, err
+	}
+
+	// Check if email already exists
+	existedUser, err := s.store.GetUserByEmail(ctx, request.Msg.Email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find user by email, error: %v", err))
+	}
+	if existedUser != nil && existedUser.ID != user.ID {
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s already exists", request.Msg.Email))
+	}
+
+	// Update the email
+	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Email: &request.Msg.Email})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update user email, error: %v", err))
+	}
+
 	return connect.NewResponse(convertToUser(ctx, user)), nil
 }
 

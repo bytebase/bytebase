@@ -171,6 +171,22 @@ func (x *UndeleteUserRequest) Equal(y *UndeleteUserRequest) bool {
 	return true
 }
 
+func (x *UpdateEmailRequest) Equal(y *UpdateEmailRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Email != y.Email {
+		return false
+	}
+	return true
+}
+
 func (x *User_Profile) Equal(y *User_Profile) bool {
 	if x == y {
 		return true
