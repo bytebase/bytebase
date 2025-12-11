@@ -224,15 +224,19 @@ const useTableResize = (options: TableResizeOptions) => {
   });
 
   const getTableProps = () => {
-    const widthValue = state.isAutoAdjusting ? "auto" : `${effectiveWidth.value}px`;
-    const tableLayout: "auto" | "fixed" = state.isAutoAdjusting ? "auto" : "fixed";
+    const widthValue = state.isAutoAdjusting
+      ? "auto"
+      : `${effectiveWidth.value}px`;
+    const tableLayout: "auto" | "fixed" = state.isAutoAdjusting
+      ? "auto"
+      : "fixed";
     return {
       style: {
         width: widthValue,
         tableLayout,
       },
     };
-  }
+  };
 
   onBeforeUnmount(() => {
     toggleDragStyle(table, false);
