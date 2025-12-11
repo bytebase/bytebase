@@ -50,8 +50,7 @@ func (s *Service) RegisterRoutes(g *echo.Group) {
 	g.GET("/oauth2/authorize", s.handleAuthorizeGet)
 	g.POST("/oauth2/authorize", s.handleAuthorizePost)
 	g.POST("/oauth2/token", s.handleToken)
-	// TODO: Uncomment when revoke.go is implemented
-	// g.POST("/oauth2/revoke", s.handleRevoke)
+	g.POST("/oauth2/revoke", s.handleRevoke)
 }
 
 // nolint:unused
