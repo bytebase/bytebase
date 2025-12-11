@@ -9740,7 +9740,6 @@ RoleService manages workspace roles and permissions.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The name of the parent of the taskRuns. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage. |
 | task_runs | [string](#string) | repeated | The taskRuns to cancel. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-| reason | [string](#string) |  | The reason for canceling the task runs. |
 
 
 
@@ -9767,7 +9766,6 @@ RoleService manages workspace roles and permissions.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The name of the parent of the tasks. Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
 | tasks | [string](#string) | repeated | The tasks to run. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
-| reason | [string](#string) |  | The reason for running the tasks. |
 | run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The task run should run after run_time. |
 
 
