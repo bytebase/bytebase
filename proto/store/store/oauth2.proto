@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message OAuth2ClientConfig {
+  string client_name = 1;
+  repeated string redirect_uris = 2;
+  repeated string grant_types = 3;
+  string token_endpoint_auth_method = 4;
+}
+
+message OAuth2AuthorizationCodeConfig {
+  string redirect_uri = 1;
+  string code_challenge = 2;
+  string code_challenge_method = 3;
+}
