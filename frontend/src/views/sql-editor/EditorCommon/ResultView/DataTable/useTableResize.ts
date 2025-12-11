@@ -64,14 +64,51 @@ const useTableResize = (options: TableResizeOptions) => {
 
       const scale = containerWidth.value / table.value.scrollWidth;
       const thList = Array.from(table.value.querySelectorAll("th"));
-      state.columns = thList
-        .map((th) =>
-          Math.max(
-            th.getBoundingClientRect().width,
-            th.getBoundingClientRect().width * scale
-          )
-        )
-        .map((width) => ({ width }));
+      const lastIndex = thList.length - 1;
+
+      // First pass: calculate base widths for all columns except the last
+      const baseWidths = thList.map((th, index) => {
+        // For the first column (index column), use scrollWidth to get exact content width
+        if (index === 0) {
+          const content = th.firstElementChild as HTMLElement | null;
+          if (content) {
+            // scrollWidth gives the content width (includes padding but not margin)
+            const thStyle = getComputedStyle(th);
+            const contentStyle = getComputedStyle(content);
+            const borderLeft = parseFloat(thStyle.borderLeftWidth) || 0;
+            const borderRight = parseFloat(thStyle.borderRightWidth) || 0;
+            const marginLeft = parseFloat(contentStyle.marginLeft) || 0;
+            const marginRight = parseFloat(contentStyle.marginRight) || 0;
+            return (
+              content.scrollWidth +
+              borderLeft +
+              borderRight +
+              marginLeft +
+              marginRight
+            );
+          }
+        }
+        const width = th.getBoundingClientRect().width;
+        return Math.max(width, width * scale);
+      });
+
+      // For the last column, subtract any extra width that was added to fill container
+      const containerW = options.containerRef?.value?.clientWidth || 0;
+      const sumWithoutLast = baseWidths
+        .slice(0, lastIndex)
+        .reduce((a, b) => a + b, 0);
+      const lastColWidth = baseWidths[lastIndex];
+      const expectedTotal = sumWithoutLast + lastColWidth;
+      // If table was expanded to fill container, remove that extra from last column
+      if (expectedTotal > containerW && lastColWidth > options.minWidth) {
+        const extraWidth = expectedTotal - containerW;
+        baseWidths[lastIndex] = Math.max(
+          options.minWidth,
+          lastColWidth - extraWidth
+        );
+      }
+
+      state.columns = baseWidths.map((width) => ({ width }));
       // After calculating the width, use fixed layout to keep the width stable.
       state.isAutoAdjusting = false;
     });
@@ -89,8 +126,18 @@ const useTableResize = (options: TableResizeOptions) => {
       index,
       initialWidth: actualWidth,
     };
-    // Sync state with actual DOM width
-    state.columns[index].width = actualWidth;
+    // Sync state with actual DOM width, but for the last column,
+    // exclude the extra space that was added to fill the container
+    const isLastColumn = index === state.columns.length - 1;
+    if (isLastColumn) {
+      const containerW = options.containerRef?.value?.clientWidth || 0;
+      const total = sumBy(state.columns, (col) => col.width);
+      const extraWidth = Math.max(0, containerW - total);
+      // Store actual width minus extra space
+      state.columns[index].width = actualWidth - extraWidth;
+    } else {
+      state.columns[index].width = actualWidth;
+    }
     toggleDragStyle(table, true);
   };
 
@@ -122,7 +169,21 @@ const useTableResize = (options: TableResizeOptions) => {
   const getColumnProps = (index: number) => {
     const column = state.columns[index];
     if (!column) return {};
-    const widthValue = state.isAutoAdjusting ? "auto" : `${column.width}px`;
+    // For the first column (index column), use "1px" during auto-adjusting to shrink to content
+    const autoWidth = index === 0 ? "1px" : "auto";
+
+    // Calculate actual width including extra space for the last column
+    let actualWidth = column.width;
+    if (!state.isAutoAdjusting) {
+      const containerW = options.containerRef?.value?.clientWidth || 0;
+      const total = sumBy(state.columns, (col) => col.width);
+      const extraWidth = Math.max(0, containerW - total);
+      if (extraWidth > 0 && index === state.columns.length - 1) {
+        actualWidth = column.width + extraWidth;
+      }
+    }
+
+    const widthValue = state.isAutoAdjusting ? autoWidth : `${actualWidth}px`;
     return {
       style: {
         width: widthValue,
@@ -137,22 +198,41 @@ const useTableResize = (options: TableResizeOptions) => {
 
   const getColumnWidth = (index: number): number => {
     const column = state.columns[index];
-    return column?.width ?? 0;
+    if (!column) return 0;
+
+    // When effectiveWidth > totalWidth, add extra space to the last column
+    const containerW = options.containerRef?.value?.clientWidth || 0;
+    const total = sumBy(state.columns, (col) => col.width);
+    const extraWidth = Math.max(0, containerW - total);
+
+    // Add extra width to the last column
+    if (extraWidth > 0 && index === state.columns.length - 1) {
+      return column.width + extraWidth;
+    }
+
+    return column.width;
   };
 
   const totalWidth = computed(() => {
     return sumBy(state.columns, (col) => col.width);
   });
 
-  const tableProps = computed(() => {
-    const widthValue = state.isAutoAdjusting ? "auto" : `${totalWidth.value}px`;
+  // Effective width is the max of totalWidth and container width
+  const effectiveWidth = computed(() => {
+    const containerW = options.containerRef?.value?.clientWidth || 0;
+    return Math.max(totalWidth.value, containerW);
+  });
+
+  const getTableProps = () => {
+    const widthValue = state.isAutoAdjusting ? "auto" : `${effectiveWidth.value}px`;
+    const tableLayout: "auto" | "fixed" = state.isAutoAdjusting ? "auto" : "fixed";
     return {
       style: {
         width: widthValue,
-        tableLayout: state.isAutoAdjusting ? "auto" : "fixed",
+        tableLayout,
       },
     };
-  });
+  }
 
   onBeforeUnmount(() => {
     toggleDragStyle(table, false);
@@ -162,7 +242,7 @@ const useTableResize = (options: TableResizeOptions) => {
     reset,
     getColumnProps,
     getColumnWidth,
-    tableProps,
+    getTableProps,
     totalWidth,
     startResizing,
   };

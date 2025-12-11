@@ -7,7 +7,7 @@
       <table
         ref="tableRef"
         class="relative border-collapse -mx-px"
-        v-bind="tableResize.tableProps"
+        v-bind="tableResize.getTableProps()"
       >
       <thead
         class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-1 drop-shadow-xs"
@@ -16,16 +16,16 @@
           <!-- header for the index -->
           <th
             :key="`${setIndex}-0-index`"
-            class="`group relative px-2 py-2 tracking-wider border-x border-block-border dark:border-zinc-500"
+            class="group relative py-2 shrink-0 tracking-wider border-x border-block-border dark:border-zinc-500 w-px whitespace-nowrap"
             v-bind="tableResize.getColumnProps(0)"
           >
             <!-- Use the max index to calculate the cell width -->
             <div
               :class="[
-                'textinfolabel opacity-0',
+                'textinfolabel pr-1 opacity-0',
                 selectionDisabled
-                  ? ''
-                  : 'ml-2',
+                  ? 'pl-1'
+                  : 'pl-4',
               ]"
             >{{ rows.length }}</div>
             <div
@@ -38,8 +38,9 @@
           <th
             v-for="(header, columnIndex) of columns"
             :key="`${setIndex}-${columnIndex + 1}-${header.id}`"
-            class="group relative px-3 py-2 min-w-8 text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-x border-block-border dark:border-zinc-500"
+            class="group relative px-3 py-2 min-w-8 text-left text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border-block-border dark:border-zinc-500"
             :class="{
+              'border-r': columnIndex < (columns.length - 1),
               'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800':
                 !selectionDisabled,
               'bg-accent/10! dark:bg-accent/40!':
@@ -110,7 +111,6 @@
       ref="virtualListRef"
       :items="rows"
       :item-size="ROW_HEIGHT"
-      :style="{ width: `${tableResize.totalWidth.value}px` }"
     >
       <template #default="{ item: row, index: rowIndex }: { item: { item: QueryRow; }; index: number; }">
         <div
@@ -124,7 +124,7 @@
           <!-- the index cell  -->
           <div
             :key="`${setIndex}-${rowIndex}-0`"
-            class="relative flex items-center pl-3 shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
+            class="relative flex items-center shrink-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border-block-border dark:border-zinc-500 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
             :class="{
               'border-r': true,
               'border-b': true,
@@ -139,10 +139,10 @@
           >
             <NPerformantEllipsis
               :class="[
-                'overflow-hidden textinfolabel',
+                'textinfolabel pr-1',
                 selectionDisabled
-                  ? ''
-                  : 'ml-2',
+                  ? 'pl-1'
+                  : 'pl-4',
               ]"
             >
               {{ rowIndex + 1 }}
