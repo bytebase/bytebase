@@ -282,6 +282,29 @@ message User {
   // The groups for the user.
   // Format: groups/{email}
   repeated string groups = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Workload Identity configuration (only for WORKLOAD_IDENTITY type)
+  WorkloadIdentityConfig workload_identity_config = 16;
+}
+
+// WorkloadIdentityConfig for API layer
+message WorkloadIdentityConfig {
+  // Platform type
+  ProviderType provider_type = 1;
+  // OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+  string issuer_url = 2;
+  // Allowed audiences for token validation
+  repeated string allowed_audiences = 3;
+  // Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+  string subject_pattern = 4;
+}
+
+enum ProviderType {
+  PROVIDER_TYPE_UNSPECIFIED = 0;
+  PROVIDER_GITHUB = 1;
+  PROVIDER_GITLAB = 2;
+  PROVIDER_BITBUCKET = 3;
+  PROVIDER_AZURE_DEVOPS = 4;
 }
 
 enum UserType {
@@ -293,4 +316,6 @@ enum UserType {
   SYSTEM_BOT = 2;
   // Service account for API integrations.
   SERVICE_ACCOUNT = 3;
+  // External CI/CD workload identity.
+  WORKLOAD_IDENTITY = 4;
 }

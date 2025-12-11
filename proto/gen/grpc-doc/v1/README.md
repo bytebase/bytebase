@@ -123,7 +123,9 @@
     - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
     - [User](#bytebase-v1-User)
     - [User.Profile](#bytebase-v1-User-Profile)
+    - [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig)
   
+    - [ProviderType](#bytebase-v1-ProviderType)
     - [UserType](#bytebase-v1-UserType)
   
     - [UserService](#bytebase-v1-UserService)
@@ -2503,6 +2505,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
 | groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
+| workload_identity_config | [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig) |  | Workload Identity configuration (only for WORKLOAD_IDENTITY type) |
 
 
 
@@ -2525,7 +2528,40 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 
 
+
+<a name="bytebase-v1-WorkloadIdentityConfig"></a>
+
+### WorkloadIdentityConfig
+WorkloadIdentityConfig for API layer
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| provider_type | [ProviderType](#bytebase-v1-ProviderType) |  | Platform type |
+| issuer_url | [string](#string) |  | OIDC Issuer URL (auto-filled based on provider_type, can be overridden) |
+| allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
+| subject_pattern | [string](#string) |  | Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) |
+
+
+
+
+
  
+
+
+<a name="bytebase-v1-ProviderType"></a>
+
+### ProviderType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROVIDER_TYPE_UNSPECIFIED | 0 |  |
+| PROVIDER_GITHUB | 1 |  |
+| PROVIDER_GITLAB | 2 |  |
+| PROVIDER_BITBUCKET | 3 |  |
+| PROVIDER_AZURE_DEVOPS | 4 |  |
+
 
 
 <a name="bytebase-v1-UserType"></a>
@@ -2539,6 +2575,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | USER | 1 | Regular human user account. |
 | SYSTEM_BOT | 2 | System-managed bot account for automated operations. |
 | SERVICE_ACCOUNT | 3 | Service account for API integrations. |
+| WORKLOAD_IDENTITY | 4 | External CI/CD workload identity. |
 
 
  

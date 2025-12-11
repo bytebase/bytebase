@@ -7945,6 +7945,7 @@ components:
                         - USER
                         - SYSTEM_BOT
                         - SERVICE_ACCOUNT
+                        - WORKLOAD_IDENTITY
                     type: string
                     description: The type of user.
                     format: enum
@@ -15327,6 +15328,7 @@ components:
                         - USER
                         - SYSTEM_BOT
                         - SERVICE_ACCOUNT
+                        - WORKLOAD_IDENTITY
                     type: string
                     description: The type of user account.
                     format: enum
@@ -15370,6 +15372,10 @@ components:
                     description: |-
                         The groups for the user.
                          Format: groups/{email}
+                workloadIdentityConfig:
+                    allOf:
+                        - $ref: '#/components/schemas/WorkloadIdentityConfig'
+                    description: Workload Identity configuration (only for WORKLOAD_IDENTITY type)
         User_Profile:
             type: object
             properties:
@@ -15492,6 +15498,31 @@ components:
                          - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
                          - NOTIFY_ISSUE_APPROVED
                          - NOTIFY_PIPELINE_ROLLOUT
+        WorkloadIdentityConfig:
+            type: object
+            properties:
+                providerType:
+                    enum:
+                        - PROVIDER_TYPE_UNSPECIFIED
+                        - PROVIDER_GITHUB
+                        - PROVIDER_GITLAB
+                        - PROVIDER_BITBUCKET
+                        - PROVIDER_AZURE_DEVOPS
+                    type: string
+                    description: Platform type
+                    format: enum
+                issuerUrl:
+                    type: string
+                    description: OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+                allowedAudiences:
+                    type: array
+                    items:
+                        type: string
+                    description: Allowed audiences for token validation
+                subjectPattern:
+                    type: string
+                    description: Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+            description: WorkloadIdentityConfig for API layer
         Worksheet:
             required:
                 - name
