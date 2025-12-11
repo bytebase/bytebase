@@ -387,6 +387,10 @@
       "backing-up": "バックアップ中...",
       "retry-attempt": "試行 {current}/{max}",
       "computing": "コンピューティング..."
+    },
+    "log-viewer": {
+      "multiple-deploys-notice": "実行中にサーバーの再起動が検出されました。ログはデプロイごとにグループ化されています。",
+      "deployment-n": "デプロイ #{n}"
     }
   },
   "banner": {

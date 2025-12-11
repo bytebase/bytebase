@@ -104,3 +104,42 @@ export const groupEntriesByType = (
 
   return groups;
 };
+
+// Get unique deploy IDs from entries, preserving order of first appearance
+export const getUniqueDeployIds = (entries: TaskRunLogEntry[]): string[] => {
+  if (!entries.length) return [];
+
+  const sortedEntries = [...entries].sort((a, b) => {
+    return getTimestampMs(a.logTime) - getTimestampMs(b.logTime);
+  });
+
+  const seen = new Set<string>();
+  const deployIds: string[] = [];
+
+  for (const entry of sortedEntries) {
+    const deployId = entry.deployId || "";
+    if (deployId && !seen.has(deployId)) {
+      seen.add(deployId);
+      deployIds.push(deployId);
+    }
+  }
+
+  return deployIds;
+};
+
+// Group entries by deploy ID, maintaining time order within each group
+export const groupEntriesByDeploy = (
+  entries: TaskRunLogEntry[]
+): Map<string, TaskRunLogEntry[]> => {
+  const result = new Map<string, TaskRunLogEntry[]>();
+
+  for (const entry of entries) {
+    const deployId = entry.deployId || "unknown";
+    if (!result.has(deployId)) {
+      result.set(deployId, []);
+    }
+    result.get(deployId)!.push(entry);
+  }
+
+  return result;
+};
