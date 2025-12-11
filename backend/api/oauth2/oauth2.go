@@ -46,6 +46,9 @@ func NewService(store *store.Store, secret, externalURL string) *Service {
 
 func (s *Service) RegisterRoutes(g *echo.Group) {
 	g.GET("/.well-known/oauth-authorization-server", s.handleDiscovery)
+	g.GET("/.well-known/oauth-authorization-server/*", s.handleDiscovery)
+	g.GET("/.well-known/oauth-protected-resource", s.handleProtectedResourceMetadata)
+	g.GET("/.well-known/oauth-protected-resource/*", s.handleProtectedResourceMetadata)
 	g.POST("/oauth2/register", s.handleRegister)
 	g.GET("/oauth2/authorize", s.handleAuthorizeGet)
 	g.POST("/oauth2/authorize", s.handleAuthorizePost)
