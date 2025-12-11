@@ -415,7 +415,7 @@ const saveEdit = async () => {
   try {
     // Update email using dedicated UpdateEmail API if changed
     if (emailChanged) {
-      await userStore.updateEmail(userPatch.name, userPatch.email);
+      await userStore.updateEmail(user.value.email, userPatch.email);
     }
 
     // Update other fields using UpdateUser API if any changed

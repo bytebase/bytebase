@@ -610,7 +610,7 @@ func (x *UndeleteUserRequest) GetName() string {
 type UpdateEmailRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the user whose email to update.
-	// Format: users/{user}
+	// Format: users/{user email}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The new email address.
 	Email         string `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`

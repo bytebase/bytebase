@@ -238,7 +238,7 @@ message UndeleteUserRequest {
 
 message UpdateEmailRequest {
   // The name of the user whose email to update.
-  // Format: users/{user}
+  // Format: users/{user email}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}

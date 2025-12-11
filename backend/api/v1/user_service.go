@@ -676,19 +676,20 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", iam.PermissionUsersUpdateEmail))
 	}
 
-	userID, err := common.GetUserID(request.Msg.Name)
+	// Get user by email from the name field
+	email, err := common.GetUserEmail(request.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	user, err := s.store.GetUserByID(ctx, userID)
+	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
 	}
 	if user == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %d not found", userID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user not found"))
 	}
 	if user.MemberDeleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q has been deleted", userID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user has been deleted"))
 	}
 
 	// Check if new email is the same as current email (no-op)

@@ -143,14 +143,14 @@ export const useUserStore = defineStore("user", () => {
     return setUser(response);
   };
 
-  const updateEmail = async (name: string, email: string) => {
-    const originData = await getOrFetchUserByIdentifier(name);
+  const updateEmail = async (oldEmail: string, newEmail: string) => {
+    const originData = await getOrFetchUserByIdentifier(oldEmail);
     if (!originData) {
-      throw new Error(`user with name ${name} not found`);
+      throw new Error(`user with email ${oldEmail} not found`);
     }
     const response = await userServiceClientConnect.updateEmail({
-      name,
-      email,
+      name: `users/${oldEmail}`,
+      email: newEmail,
     });
     return setUser(response);
   };

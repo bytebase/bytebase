@@ -282,7 +282,7 @@ export declare const UndeleteUserRequestSchema: GenMessage<UndeleteUserRequest>;
 export declare type UpdateEmailRequest = Message<"bytebase.v1.UpdateEmailRequest"> & {
   /**
    * The name of the user whose email to update.
-   * Format: users/{user}
+   * Format: users/{user email}
    *
    * @generated from field: string name = 1;
    */

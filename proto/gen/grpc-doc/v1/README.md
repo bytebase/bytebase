@@ -2468,7 +2468,7 @@ For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@by
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user whose email to update. Format: users/{user} |
+| name | [string](#string) |  | The name of the user whose email to update. Format: users/{user email} |
 | email | [string](#string) |  | The new email address. |
 
 
