@@ -14,6 +14,7 @@ import (
 
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
+	"github.com/bytebase/bytebase/backend/api/oauth2"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -23,6 +24,7 @@ func configureEchoRouters(
 	e *echo.Echo,
 	lspServer *lsp.Server,
 	directorySyncServer *directorysync.Service,
+	oauth2Service *oauth2.Service,
 	profile *config.Profile,
 ) {
 	e.Use(recoverMiddleware)
@@ -77,6 +79,9 @@ func configureEchoRouters(
 	hookGroup := e.Group(webhookAPIPrefix)
 	scimGroup := hookGroup.Group(scimAPIPrefix)
 	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
+
+	// OAuth2 server.
+	oauth2Service.RegisterRoutes(e.Group(""))
 }
 
 func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
