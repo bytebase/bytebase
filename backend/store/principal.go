@@ -225,13 +225,13 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
 		),`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
-		from.Space(`INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
+		from.Space(`INNER JOIN project_members ON (CONCAT('users/', principal.email) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
 	} else {
 		with.Space(`WITH`)
 	}
 
 	// Join the user_group table to find groups for each user.
-	// The user will be stored in the user_group.payload.members.member field, the member is in the "users/{id}" format
+	// The user will be stored in the user_group.payload.members.member field, the member is in the "users/{email}" format
 	with.Space(`user_groups AS (
 		SELECT
 			principal.id AS user_id,
@@ -239,7 +239,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		FROM principal
 		LEFT JOIN user_group ON EXISTS (
 			SELECT 1 FROM jsonb_array_elements(user_group.payload->'members') AS m
-			WHERE m->>'member' = CONCAT('users/', principal.id)
+			WHERE m->>'member' = CONCAT('users/', principal.email)
 		)
 		GROUP BY principal.id
 	)`)

@@ -636,7 +636,7 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 		}
 		var isBBGroupMember bool
 		for _, member := range bbGroup.Payload.Members {
-			if member.Member == common.FormatUserUID(user.ID) {
+			if member.Member == common.FormatUserEmail(user.Email) {
 				isBBGroupMember = true
 				break
 			}
@@ -646,12 +646,12 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 				// Add the user to the group.
 				bbGroup.Payload.Members = append(bbGroup.Payload.Members, &storepb.GroupMember{
 					Role:   storepb.GroupMember_MEMBER,
-					Member: common.FormatUserUID(user.ID),
+					Member: common.FormatUserEmail(user.Email),
 				})
 			} else {
 				// Remove the user from the group.
 				bbGroup.Payload.Members = slices.DeleteFunc(bbGroup.Payload.Members, func(member *storepb.GroupMember) bool {
-					return member.Member == common.FormatUserUID(user.ID)
+					return member.Member == common.FormatUserEmail(user.Email)
 				})
 			}
 			if _, err := s.store.UpdateGroup(ctx, &store.UpdateGroupMessage{

@@ -7,10 +7,14 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestCheck(t *testing.T) {
-	userID := 123
+	testUser := &store.UserMessage{
+		ID:    123,
+		Email: "test@example.com",
+	}
 
 	roles, err := loadPredefinedRoles()
 	require.NoError(t, err)
@@ -31,7 +35,7 @@ func TestCheck(t *testing.T) {
 				Bindings: []*storepb.Binding{
 					{
 						Role:    "roles/workspaceMember",
-						Members: []string{"users/123"},
+						Members: []string{"users/test@example.com"},
 					},
 				},
 			},
@@ -44,7 +48,7 @@ func TestCheck(t *testing.T) {
 				Bindings: []*storepb.Binding{
 					{
 						Role:    "roles/workspaceAdmin",
-						Members: []string{"users/123"},
+						Members: []string{"users/test@example.com"},
 					},
 				},
 			},
@@ -57,7 +61,7 @@ func TestCheck(t *testing.T) {
 				Bindings: []*storepb.Binding{
 					{
 						Role:    "roles/workspaceAdmin",
-						Members: []string{"users/321"},
+						Members: []string{"users/other@example.com"},
 					},
 				},
 			},
@@ -70,7 +74,7 @@ func TestCheck(t *testing.T) {
 				Bindings: []*storepb.Binding{
 					{
 						Role:    "roles/workspaceAdmin",
-						Members: []string{"users/321", common.AllUsers},
+						Members: []string{"users/other@example.com", common.AllUsers},
 					},
 				},
 			},
@@ -89,14 +93,14 @@ func TestCheck(t *testing.T) {
 			},
 			groupMembers: map[string]map[string]bool{
 				"groups/eng@bytebase.com": {
-					"users/123": true,
+					"users/test@example.com": true,
 				},
 			},
 			want: true,
 		}}
 
 	for i, test := range tests {
-		got := check(userID, test.permission, test.policy, rolePermissions, test.groupMembers)
+		got := check(testUser, test.permission, test.policy, rolePermissions, test.groupMembers)
 		if got != test.want {
 			require.Equal(t, test.want, got, i)
 		}

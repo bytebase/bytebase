@@ -301,7 +301,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	if firstEndUser {
 		// The first end user should be workspace admin.
 		updateRole := &store.PatchIamPolicyMessage{
-			Member: common.FormatUserUID(user.ID),
+			Member: common.FormatUserEmail(user.Email),
 			Roles:  []string{common.FormatRole(common.WorkspaceAdmin)},
 		}
 		if _, err := s.store.PatchWorkspaceIamPolicy(ctx, updateRole); err != nil {
@@ -581,7 +581,7 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 	if err != nil {
 		return nil, err
 	}
-	hasExtraWorkspaceAdmin, err := s.hasExtraWorkspaceAdmin(ctx, policy.Policy, user.ID)
+	hasExtraWorkspaceAdmin, err := s.hasExtraWorkspaceAdmin(ctx, policy.Policy, user)
 	if err != nil {
 		return nil, err
 	}
@@ -610,9 +610,9 @@ func (s *UserService) getActiveUserCount(ctx context.Context) (int, error) {
 	return activeEndUserCount, nil
 }
 
-func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storepb.IamPolicy, userID int) (bool, error) {
+func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storepb.IamPolicy, user *store.UserMessage) (bool, error) {
 	workspaceAdminRole := common.FormatRole(common.WorkspaceAdmin)
-	userMember := common.FormatUserUID(userID)
+	userMember := common.FormatUserEmail(user.Email)
 
 	for _, binding := range policy.GetBindings() {
 		if binding.GetRole() != workspaceAdminRole {

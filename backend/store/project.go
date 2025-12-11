@@ -210,7 +210,7 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 			{
 				Role: common.FormatRole(common.ProjectOwner),
 				Members: []string{
-					common.FormatUserUID(user.ID),
+					common.FormatUserEmail(user.Email),
 				},
 				Condition: &expr.Expr{},
 			},

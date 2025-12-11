@@ -111,7 +111,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 			continue
 		}
 		// Append
-		binding.Members = append(binding.Members, common.FormatUserUID(newUser.ID))
+		binding.Members = append(binding.Members, common.FormatUserEmail(newUser.Email))
 		updated = true
 		break
 	}
@@ -123,7 +123,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 		condition.Description = fmt.Sprintf("#%d", issue.UID)
 		policyMessage.Policy.Bindings = append(policyMessage.Policy.Bindings, &storepb.Binding{
 			Role:      grantRequest.Role,
-			Members:   []string{common.FormatUserUID(newUser.ID)},
+			Members:   []string{common.FormatUserEmail(newUser.Email)},
 			Condition: condition,
 		})
 	}

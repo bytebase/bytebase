@@ -2376,7 +2376,7 @@ Example: projects/{project} </p></td>
                   <td>user</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: users/{userUID}. </p></td>
+                  <td><p>Format: users/{email}. </p></td>
                 </tr>
               
                 <tr>
@@ -6168,7 +6168,7 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
                   <td></td>
                   <td><p>Member is the principal who belongs to this group.
 
-Format: users/{userUID}. </p></td>
+Format: users/{email}. </p></td>
                 </tr>
               
                 <tr>
@@ -8042,7 +8042,7 @@ Format: roles/EXPORTER. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The user who will receive the role.
-Format: users/{userUID}. </p></td>
+Format: users/{email}. </p></td>
                 </tr>
               
                 <tr>
@@ -9541,7 +9541,7 @@ Format: roles/{role} </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>Specifies the principals requesting access for a Bytebase resource.
-For users, the member should be: users/{userUID}
+For users, the member should be: users/{email}
 For groups, the member should be: groups/{email} </p></td>
                 </tr>
               
@@ -9702,7 +9702,7 @@ A binding binds one or more members or groups to a single role. </p></td>
                   <td></td>
                   <td><p>Member is the principal who binds to this exception policy instance.
 
-Format: users/{userUID} or groups/{group email} </p></td>
+Format: users/{email} or groups/{group email} </p></td>
                 </tr>
               
                 <tr>

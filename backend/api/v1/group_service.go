@@ -46,7 +46,7 @@ func (s *GroupService) GetGroup(ctx context.Context, req *connect.Request[v1pb.G
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found the group %v", req.Msg.Name))
 	}
 
-	result, err := s.convertToV1Group(ctx, group)
+	result, err := s.convertToV1Group(group)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (s *GroupService) ListGroups(ctx context.Context, request *connect.Request[
 		NextPageToken: nextPageToken,
 	}
 	for _, groupMessage := range groups {
-		group, err := s.convertToV1Group(ctx, groupMessage)
+		group, err := s.convertToV1Group(groupMessage)
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +138,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, req *connect.Request[v1p
 		return nil, err
 	}
 
-	result, err := s.convertToV1Group(ctx, group)
+	result, err := s.convertToV1Group(group)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 		return nil, err
 	}
 
-	result, err := s.convertToV1Group(ctx, groupMessage)
+	result, err := s.convertToV1Group(groupMessage)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func (s *GroupService) DeleteGroup(ctx context.Context, req *connect.Request[v1p
 }
 
 func (s *GroupService) checkPermission(ctx context.Context, group *store.GroupMessage, user *store.UserMessage, permission string) error {
-	userName := common.FormatUserUID(user.ID)
+	userName := common.FormatUserEmail(user.Email)
 
 	ok, err := func() (bool, error) {
 		for _, member := range group.Payload.GetMembers() {
@@ -292,7 +292,7 @@ func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Gr
 		}
 
 		m := &storepb.GroupMember{
-			Member: common.FormatUserUID(user.ID),
+			Member: common.FormatUserEmail(user.Email),
 		}
 		switch member.Role {
 		case v1pb.GroupMember_MEMBER:
@@ -327,7 +327,7 @@ func (s *GroupService) convertToGroupMessage(ctx context.Context, request *v1pb.
 	return groupMessage, nil
 }
 
-func (s *GroupService) convertToV1Group(ctx context.Context, groupMessage *store.GroupMessage) (*v1pb.Group, error) {
+func (*GroupService) convertToV1Group(groupMessage *store.GroupMessage) (*v1pb.Group, error) {
 	if groupMessage == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("cannot found group"))
 	}
@@ -347,20 +347,8 @@ func (s *GroupService) convertToV1Group(ctx context.Context, groupMessage *store
 	}
 
 	for _, member := range groupMessage.Payload.Members {
-		uid, err := common.GetUserID(member.Member)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get member id"))
-		}
-		user, err := s.store.GetUserByID(ctx, uid)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get member"))
-		}
-		if user == nil {
-			continue
-		}
-
 		m := &v1pb.GroupMember{
-			Member: common.FormatUserEmail(user.Email),
+			Member: member.Member,
 			Role:   v1pb.GroupMember_ROLE_UNSPECIFIED,
 		}
 		switch member.Role {

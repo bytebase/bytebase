@@ -22,7 +22,7 @@ message AuditLog {
   // Example: projects/{project}
   string resource = 3;
 
-  // Format: users/{userUID}.
+  // Format: users/{email}.
   string user = 4;
 
   Severity severity = 5;

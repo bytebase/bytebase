@@ -215,7 +215,7 @@ type GrantRequest struct {
 	// Format: roles/EXPORTER.
 	Role string `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
 	// The user who will receive the role.
-	// Format: users/{userUID}.
+	// Format: users/{email}.
 	User string `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
 	// Optional conditional expression that limits when the grant applies.
 	Condition *expr.Expr `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`

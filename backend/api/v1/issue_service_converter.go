@@ -56,9 +56,16 @@ func (s *IssueService) getUserRoleMap(ctx context.Context, projectResourceID str
 		return map[string]bool{}
 	}
 
-	return utils.GetUserFormattedRolesMap(ctx, s.store, &store.UserMessage{
-		ID: principalUID,
-	}, policy.Policy, workspacePolicy.Policy)
+	user, err := s.store.GetUserByID(ctx, principalUID)
+	if err != nil {
+		slog.Error("failed to get user", log.BBError(err), slog.Int("user_id", principalUID))
+		return map[string]bool{}
+	}
+	if user == nil {
+		return map[string]bool{}
+	}
+
+	return utils.GetUserFormattedRolesMap(ctx, s.store, user, policy.Policy, workspacePolicy.Policy)
 }
 
 func (s *IssueService) isIssueNextApprover(ctx context.Context, issue *v1pb.Issue, projectResourceID string, principalUID int) bool {
@@ -75,10 +82,7 @@ func (s *IssueService) isIssueNextApprover(ctx context.Context, issue *v1pb.Issu
 func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMessage) (*v1pb.Issue, error) {
 	issuePayload := issue.Payload
 
-	convertedGrantRequest, err := convertToGrantRequest(ctx, s.store, issuePayload.GrantRequest)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert GrantRequest")
-	}
+	convertedGrantRequest := convertToGrantRequest(issuePayload.GrantRequest)
 
 	releasers, err := s.convertToIssueReleasers(ctx, issue)
 	if err != nil {
@@ -301,27 +305,16 @@ func convertToApprovalFlow(flow *storepb.ApprovalFlow) *v1pb.ApprovalFlow {
 	}
 }
 
-func convertToGrantRequest(ctx context.Context, s *store.Store, v *storepb.GrantRequest) (*v1pb.GrantRequest, error) {
+func convertToGrantRequest(v *storepb.GrantRequest) *v1pb.GrantRequest {
 	if v == nil {
-		return nil, nil
-	}
-	uid, err := common.GetUserID(v.User)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get user uid from %q", v.User)
-	}
-	user, err := s.GetUserByID(ctx, uid)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get user by uid %q", uid)
-	}
-	if user == nil {
-		return nil, errors.Errorf("user %q not found", v.User)
+		return nil
 	}
 	return &v1pb.GrantRequest{
 		Role:       v.Role,
-		User:       common.FormatUserEmail(user.Email),
+		User:       v.User,
 		Condition:  v.Condition,
 		Expiration: v.Expiration,
-	}, nil
+	}
 }
 
 func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantRequest) (*storepb.GrantRequest, error) {
@@ -341,7 +334,7 @@ func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantReque
 	}
 	return &storepb.GrantRequest{
 		Role:       v.Role,
-		User:       common.FormatUserUID(user.ID),
+		User:       common.FormatUserEmail(user.Email),
 		Condition:  v.Condition,
 		Expiration: v.Expiration,
 	}, nil
