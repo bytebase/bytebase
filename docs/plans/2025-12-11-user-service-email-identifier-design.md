@@ -231,3 +231,124 @@ If there are external API clients:
 - Frontend uses emails in all user resource paths
 - All tests pass with email-based paths
 - Documentation updated for API clients
+
+---
+
+## Implementation Notes
+
+**Implementation Completed:** 2025-12-11
+
+All UserService endpoints now exclusively accept email-based identifiers in resource paths (`users/{email}`). The implementation was completed across proto definitions, backend services, frontend code, and tests.
+
+### Changes Made
+
+#### Proto Changes
+- Updated `proto/v1/v1/user_service.proto`:
+  - Changed User resource pattern from `pattern: "users/{user}"` to `pattern: "users/{email}"`
+  - Updated all request message comments (GetUserRequest, BatchGetUsersRequest, UpdateUserRequest, DeleteUserRequest, UndeleteUserRequest, UpdateEmailRequest) to specify "Format: users/{email}"
+  - Updated User.name field comment to document "Format: users/{email} for API requests. Internally stored as users/{uid}."
+- Generated proto code via `buf generate`
+- Commits: `77dc9f54c7`
+
+#### Backend Changes
+- Updated `backend/api/v1/user_service.go`:
+  - **GetUser**: Replaced UID/email fallback logic with email-only parsing using `common.GetUserEmail()`
+  - **UpdateUser**: Changed from `GetUserID()` to `GetUserEmail()` and replaced `GetUserByID()` with `GetUserByEmail()`
+  - **DeleteUser**: Changed from `GetUserID()` to `GetUserEmail()` and replaced `GetUserByID()` with `GetUserByEmail()`
+  - **UndeleteUser**: Changed from `GetUserID()` to `GetUserEmail()` and replaced `GetUserByID()` with `GetUserByEmail()`
+  - **convertToUser**: Updated to use `FormatUserEmail()` instead of `FormatUserUID()` for resource name formatting, with fallback to UID for users with empty email
+- All error messages updated to use email identifiers for consistency
+- Commits: `3830495207`, `25f766ca1d`, `36585fc87d`, `a0c045cb50`, `b0553832bd`
+
+#### Frontend Changes
+- Updated `frontend/src/types/v1/user.ts`:
+  - Changed `SYSTEM_BOT_USER_NAME` constant to use `SYSTEM_BOT_EMAIL` instead of `SYSTEM_BOT_ID`
+  - Updated `allUsersUser` to use `ALL_USERS_USER_EMAIL` instead of `ALL_USERS_USER_ID`
+  - Removed unused `ALL_USERS_USER_ID` constant
+- All user resource names now constructed with email addresses
+- Commit: `b0553832bd`
+
+#### Tests
+- Added `backend/api/v1/user_service_test.go`:
+  - New `TestConvertToUser` with comprehensive test cases:
+    - User with valid email (formats as `users/{email}`)
+    - User with empty email (formats as `users/{uid}` fallback)
+    - Service account with email
+  - All tests pass successfully
+- Commit: `23fc2b0bd4`
+
+### Verification Steps
+
+All verification steps completed successfully:
+
+1. **Proto Validation**
+   - `buf format -w proto` - File formatted
+   - `buf lint proto` - No linting errors
+   - `cd proto && buf generate` - Code generation successful
+
+2. **Backend Validation**
+   - `gofmt -w backend/api/v1/user_service.go` - File formatted
+   - `golangci-lint run --allow-parallel-runners` - No linting errors
+   - All backend methods updated and tested
+
+3. **Frontend Validation**
+   - `pnpm --dir frontend biome:check` - Format and lint passed
+   - `pnpm --dir frontend type-check` - Type checks passed
+
+4. **Build Verification**
+   - Backend builds successfully
+   - All unit tests pass
+
+5. **Git Status**
+   - All changes committed with descriptive commit messages
+   - Working tree clean
+
+### Migration Requirements
+
+**Breaking Change:** All API clients must update to use email addresses in user resource paths.
+
+**Before:**
+```
+users/101
+users/42
+```
+
+**After:**
+```
+users/alice@example.com
+users/bob@company.com
+```
+
+**Backend Behavior:**
+- All UserService methods now exclusively parse email from resource paths
+- User lookup changed from UID-based to email-based queries
+- Error messages use email identifiers for better clarity
+- Fallback to UID format only for internal users with empty email addresses
+
+**Frontend Behavior:**
+- All user resource names constructed with email addresses
+- System bot and special users use email constants
+- ConnectRPC client automatically handles URL encoding of special characters in emails
+
+**No Database Migration Required:**
+- Email unique index already exists (commit `2121f49a4e`)
+- Internal storage format unchanged (still uses UID internally)
+- Only API resource path format changed
+
+### Deployment Considerations
+
+- Frontend and backend should be deployed together to avoid compatibility issues
+- External API clients must be updated before or during deployment
+- This is marked as a breaking change in the PR
+
+### Related Commits
+
+- Design document: `e632362438`
+- Implementation plan: `6941123b81`
+- Proto changes: `77dc9f54c7`
+- Backend GetUser: `3830495207`
+- Backend UpdateUser: `25f766ca1d`
+- Backend DeleteUser: `36585fc87d`
+- Backend UndeleteUser: `a0c045cb50`
+- Frontend and convertToUser: `b0553832bd`
+- Tests and validation: `23fc2b0bd4`
