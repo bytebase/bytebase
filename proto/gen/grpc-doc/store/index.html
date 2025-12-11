@@ -1506,9 +1506,17 @@
                   <a href="#bytebase.store.UserProfile"><span class="badge">M</span>UserProfile</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.WorkloadIdentityConfig"><span class="badge">M</span>WorkloadIdentityConfig</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.store.PrincipalType"><span class="badge">E</span>PrincipalType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ProviderType"><span class="badge">E</span>ProviderType</a>
                 </li>
               
               
@@ -14379,6 +14387,51 @@ The indexes of the executed commands. </p></td>
 
         
       
+        <h3 id="bytebase.store.WorkloadIdentityConfig">WorkloadIdentityConfig</h3>
+        <p>WorkloadIdentityConfig stores OIDC configuration for workload identity.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>provider_type</td>
+                  <td><a href="#bytebase.store.ProviderType">ProviderType</a></td>
+                  <td></td>
+                  <td><p>Provider type (e.g., PROVIDER_GITHUB, PROVIDER_GITLAB) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issuer_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>OIDC issuer URL </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allowed_audiences</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Allowed audiences for token validation </p></td>
+                </tr>
+              
+                <tr>
+                  <td>subject_pattern</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Subject pattern to match against token subject claim </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
         <h3 id="bytebase.store.PrincipalType">PrincipalType</h3>
@@ -14411,6 +14464,53 @@ The indexes of the executed commands. </p></td>
                 <td>SYSTEM_BOT</td>
                 <td>3</td>
                 <td><p>SYSTEM_BOT represents the internal system bot performing operations.</p></td>
+              </tr>
+            
+              <tr>
+                <td>WORKLOAD_IDENTITY</td>
+                <td>4</td>
+                <td><p>WORKLOAD_IDENTITY represents external CI/CD workload identity.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.ProviderType">ProviderType</h3>
+        <p>ProviderType identifies the CI/CD platform for workload identity.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PROVIDER_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PROVIDER_GITHUB</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PROVIDER_GITLAB</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PROVIDER_BITBUCKET</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PROVIDER_AZURE_DEVOPS</td>
+                <td>4</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>
