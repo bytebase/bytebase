@@ -150,10 +150,10 @@ export const migrateDraftsFromCache = async (project: string) => {
         });
         await worksheetStore.createWorksheet(
           create(WorksheetSchema, {
-            title: draft.title,
+            title: tab.title,
             database: connection.database,
-            content: new TextEncoder().encode(draft.statement),
-            project: project,
+            content: new TextEncoder().encode(tab.statement),
+            project,
             visibility: Worksheet_Visibility.PRIVATE,
           })
         );
