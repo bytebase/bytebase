@@ -166,6 +166,8 @@
     - [AuditLogService](#bytebase-v1-AuditLogService)
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
+    - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
+    - [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse)
     - [IdentityProviderContext](#bytebase-v1-IdentityProviderContext)
     - [LoginRequest](#bytebase-v1-LoginRequest)
     - [LoginResponse](#bytebase-v1-LoginResponse)
@@ -3077,6 +3079,39 @@ AuditLogService manages audit logs for system activities and API calls.
 
 
 
+<a name="bytebase-v1-ExchangeTokenRequest"></a>
+
+### ExchangeTokenRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  | External OIDC token (JWT) from CI/CD platform. |
+| email | [string](#string) |  | Workload Identity email for identifying which identity to authenticate as. Format: {name}@workload.bytebase.com |
+
+
+
+
+
+
+<a name="bytebase-v1-ExchangeTokenResponse"></a>
+
+### ExchangeTokenResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_token | [string](#string) |  | Bytebase access token. |
+| token_type | [string](#string) |  | Token type (always &#34;Bearer&#34;). |
+| expires_in | [int32](#int32) |  | Token expiration in seconds (default: 3600). |
+
+
+
+
+
+
 <a name="bytebase-v1-IdentityProviderContext"></a>
 
 ### IdentityProviderContext
@@ -3188,6 +3223,7 @@ AuthService handles user authentication operations.
 | ----------- | ------------ | ------------- | ------------|
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Authenticates a user and returns access tokens. Permissions required: None |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Logs out the current user session. Permissions required: None |
+| ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse) | Exchanges an external OIDC token for a Bytebase access token. Used by CI/CD pipelines with Workload Identity Federation. Permissions required: None (validates via OIDC token) |
 
  
 

@@ -803,6 +803,14 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.ExchangeTokenRequest"><span class="badge">M</span>ExchangeTokenRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ExchangeTokenResponse"><span class="badge">M</span>ExchangeTokenResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.IdentityProviderContext"><span class="badge">M</span>IdentityProviderContext</a>
                 </li>
               
@@ -9067,6 +9075,76 @@ Permissions required: bb.auditLogs.export</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.ExchangeTokenRequest">ExchangeTokenRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>External OIDC token (JWT) from CI/CD platform. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Workload Identity email for identifying which identity to authenticate as.
+Format: {name}@workload.bytebase.com </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ExchangeTokenResponse">ExchangeTokenResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>access_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Bytebase access token. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>token_type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Token type (always &#34;Bearer&#34;). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expires_in</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Token expiration in seconds (default: 3600). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.IdentityProviderContext">IdentityProviderContext</h3>
         <p>Context for identity provider authentication.</p>
 
@@ -9302,6 +9380,15 @@ Permissions required: None</p></td>
 Permissions required: None</p></td>
               </tr>
             
+              <tr>
+                <td>ExchangeToken</td>
+                <td><a href="#bytebase.v1.ExchangeTokenRequest">ExchangeTokenRequest</a></td>
+                <td><a href="#bytebase.v1.ExchangeTokenResponse">ExchangeTokenResponse</a></td>
+                <td><p>Exchanges an external OIDC token for a Bytebase access token.
+Used by CI/CD pipelines with Workload Identity Federation.
+Permissions required: None (validates via OIDC token)</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -9336,6 +9423,16 @@ Permissions required: None</p></td>
                 <td>Logout</td>
                 <td>POST</td>
                 <td>/v1/auth/logout</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ExchangeToken</td>
+                <td>POST</td>
+                <td>/v1/auth:exchangeToken</td>
                 <td>*</td>
               </tr>
               

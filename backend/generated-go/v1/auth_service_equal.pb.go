@@ -110,3 +110,38 @@ func (x *LogoutRequest) Equal(y *LogoutRequest) bool {
 	}
 	return true
 }
+
+func (x *ExchangeTokenRequest) Equal(y *ExchangeTokenRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Token != y.Token {
+		return false
+	}
+	if x.Email != y.Email {
+		return false
+	}
+	return true
+}
+
+func (x *ExchangeTokenResponse) Equal(y *ExchangeTokenResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.AccessToken != y.AccessToken {
+		return false
+	}
+	if x.TokenType != y.TokenType {
+		return false
+	}
+	if x.ExpiresIn != y.ExpiresIn {
+		return false
+	}
+	return true
+}

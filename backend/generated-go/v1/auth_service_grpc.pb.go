@@ -20,8 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_Login_FullMethodName  = "/bytebase.v1.AuthService/Login"
-	AuthService_Logout_FullMethodName = "/bytebase.v1.AuthService/Logout"
+	AuthService_Login_FullMethodName         = "/bytebase.v1.AuthService/Login"
+	AuthService_Logout_FullMethodName        = "/bytebase.v1.AuthService/Logout"
+	AuthService_ExchangeToken_FullMethodName = "/bytebase.v1.AuthService/ExchangeToken"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -36,6 +37,10 @@ type AuthServiceClient interface {
 	// Logs out the current user session.
 	// Permissions required: None
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Exchanges an external OIDC token for a Bytebase access token.
+	// Used by CI/CD pipelines with Workload Identity Federation.
+	// Permissions required: None (validates via OIDC token)
+	ExchangeToken(ctx context.Context, in *ExchangeTokenRequest, opts ...grpc.CallOption) (*ExchangeTokenResponse, error)
 }
 
 type authServiceClient struct {
@@ -66,6 +71,16 @@ func (c *authServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts 
 	return out, nil
 }
 
+func (c *authServiceClient) ExchangeToken(ctx context.Context, in *ExchangeTokenRequest, opts ...grpc.CallOption) (*ExchangeTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExchangeTokenResponse)
+	err := c.cc.Invoke(ctx, AuthService_ExchangeToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -78,6 +93,10 @@ type AuthServiceServer interface {
 	// Logs out the current user session.
 	// Permissions required: None
 	Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error)
+	// Exchanges an external OIDC token for a Bytebase access token.
+	// Used by CI/CD pipelines with Workload Identity Federation.
+	// Permissions required: None (validates via OIDC token)
+	ExchangeToken(context.Context, *ExchangeTokenRequest) (*ExchangeTokenResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -93,6 +112,9 @@ func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*Lo
 }
 func (UnimplementedAuthServiceServer) Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method Logout not implemented")
+}
+func (UnimplementedAuthServiceServer) ExchangeToken(context.Context, *ExchangeTokenRequest) (*ExchangeTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ExchangeToken not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -151,6 +173,24 @@ func _AuthService_Logout_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_ExchangeToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExchangeTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ExchangeToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ExchangeToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ExchangeToken(ctx, req.(*ExchangeTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -165,6 +205,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Logout",
 			Handler:    _AuthService_Logout_Handler,
+		},
+		{
+			MethodName: "ExchangeToken",
+			Handler:    _AuthService_ExchangeToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

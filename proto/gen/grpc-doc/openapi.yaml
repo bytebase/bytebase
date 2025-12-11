@@ -263,6 +263,34 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/auth:exchangeToken:
+        post:
+            tags:
+                - AuthService
+            description: |-
+                Exchanges an external OIDC token for a Bytebase access token.
+                 Used by CI/CD pipelines with Workload Identity Federation.
+                 Permissions required: None (validates via OIDC token)
+            operationId: AuthService_ExchangeToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExchangeTokenRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExchangeTokenResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/cel/batchDeparse:
         post:
             tags:
@@ -9996,6 +10024,30 @@ components:
                 comment:
                     type: string
                     description: The comment is the comment of an event.
+        ExchangeTokenRequest:
+            type: object
+            properties:
+                token:
+                    type: string
+                    description: External OIDC token (JWT) from CI/CD platform.
+                email:
+                    type: string
+                    description: |-
+                        Workload Identity email for identifying which identity to authenticate as.
+                         Format: {name}@workload.bytebase.com
+        ExchangeTokenResponse:
+            type: object
+            properties:
+                accessToken:
+                    type: string
+                    description: Bytebase access token.
+                tokenType:
+                    type: string
+                    description: Token type (always "Bearer").
+                expiresIn:
+                    type: integer
+                    description: 'Token expiration in seconds (default: 3600).'
+                    format: int32
         ExportAuditLogsRequest:
             required:
                 - parent

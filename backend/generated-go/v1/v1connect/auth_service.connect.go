@@ -38,6 +38,9 @@ const (
 	AuthServiceLoginProcedure = "/bytebase.v1.AuthService/Login"
 	// AuthServiceLogoutProcedure is the fully-qualified name of the AuthService's Logout RPC.
 	AuthServiceLogoutProcedure = "/bytebase.v1.AuthService/Logout"
+	// AuthServiceExchangeTokenProcedure is the fully-qualified name of the AuthService's ExchangeToken
+	// RPC.
+	AuthServiceExchangeTokenProcedure = "/bytebase.v1.AuthService/ExchangeToken"
 )
 
 // AuthServiceClient is a client for the bytebase.v1.AuthService service.
@@ -48,6 +51,10 @@ type AuthServiceClient interface {
 	// Logs out the current user session.
 	// Permissions required: None
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[emptypb.Empty], error)
+	// Exchanges an external OIDC token for a Bytebase access token.
+	// Used by CI/CD pipelines with Workload Identity Federation.
+	// Permissions required: None (validates via OIDC token)
+	ExchangeToken(context.Context, *connect.Request[v1.ExchangeTokenRequest]) (*connect.Response[v1.ExchangeTokenResponse], error)
 }
 
 // NewAuthServiceClient constructs a client for the bytebase.v1.AuthService service. By default, it
@@ -73,13 +80,20 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(authServiceMethods.ByName("Logout")),
 			connect.WithClientOptions(opts...),
 		),
+		exchangeToken: connect.NewClient[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse](
+			httpClient,
+			baseURL+AuthServiceExchangeTokenProcedure,
+			connect.WithSchema(authServiceMethods.ByName("ExchangeToken")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	login  *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	logout *connect.Client[v1.LogoutRequest, emptypb.Empty]
+	login         *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	logout        *connect.Client[v1.LogoutRequest, emptypb.Empty]
+	exchangeToken *connect.Client[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse]
 }
 
 // Login calls bytebase.v1.AuthService.Login.
@@ -92,6 +106,11 @@ func (c *authServiceClient) Logout(ctx context.Context, req *connect.Request[v1.
 	return c.logout.CallUnary(ctx, req)
 }
 
+// ExchangeToken calls bytebase.v1.AuthService.ExchangeToken.
+func (c *authServiceClient) ExchangeToken(ctx context.Context, req *connect.Request[v1.ExchangeTokenRequest]) (*connect.Response[v1.ExchangeTokenResponse], error) {
+	return c.exchangeToken.CallUnary(ctx, req)
+}
+
 // AuthServiceHandler is an implementation of the bytebase.v1.AuthService service.
 type AuthServiceHandler interface {
 	// Authenticates a user and returns access tokens.
@@ -100,6 +119,10 @@ type AuthServiceHandler interface {
 	// Logs out the current user session.
 	// Permissions required: None
 	Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[emptypb.Empty], error)
+	// Exchanges an external OIDC token for a Bytebase access token.
+	// Used by CI/CD pipelines with Workload Identity Federation.
+	// Permissions required: None (validates via OIDC token)
+	ExchangeToken(context.Context, *connect.Request[v1.ExchangeTokenRequest]) (*connect.Response[v1.ExchangeTokenResponse], error)
 }
 
 // NewAuthServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -121,12 +144,20 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(authServiceMethods.ByName("Logout")),
 		connect.WithHandlerOptions(opts...),
 	)
+	authServiceExchangeTokenHandler := connect.NewUnaryHandler(
+		AuthServiceExchangeTokenProcedure,
+		svc.ExchangeToken,
+		connect.WithSchema(authServiceMethods.ByName("ExchangeToken")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AuthServiceLoginProcedure:
 			authServiceLoginHandler.ServeHTTP(w, r)
 		case AuthServiceLogoutProcedure:
 			authServiceLogoutHandler.ServeHTTP(w, r)
+		case AuthServiceExchangeTokenProcedure:
+			authServiceExchangeTokenHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -142,4 +173,8 @@ func (UnimplementedAuthServiceHandler) Login(context.Context, *connect.Request[v
 
 func (UnimplementedAuthServiceHandler) Logout(context.Context, *connect.Request[v1.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.Logout is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) ExchangeToken(context.Context, *connect.Request[v1.ExchangeTokenRequest]) (*connect.Response[v1.ExchangeTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.ExchangeToken is not implemented"))
 }

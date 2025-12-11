@@ -208,6 +208,64 @@ export declare type LogoutRequest = Message<"bytebase.v1.LogoutRequest"> & {
 export declare const LogoutRequestSchema: GenMessage<LogoutRequest>;
 
 /**
+ * @generated from message bytebase.v1.ExchangeTokenRequest
+ */
+export declare type ExchangeTokenRequest = Message<"bytebase.v1.ExchangeTokenRequest"> & {
+  /**
+   * External OIDC token (JWT) from CI/CD platform.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+
+  /**
+   * Workload Identity email for identifying which identity to authenticate as.
+   * Format: {name}@workload.bytebase.com
+   *
+   * @generated from field: string email = 2;
+   */
+  email: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ExchangeTokenRequest.
+ * Use `create(ExchangeTokenRequestSchema)` to create a new message.
+ */
+export declare const ExchangeTokenRequestSchema: GenMessage<ExchangeTokenRequest>;
+
+/**
+ * @generated from message bytebase.v1.ExchangeTokenResponse
+ */
+export declare type ExchangeTokenResponse = Message<"bytebase.v1.ExchangeTokenResponse"> & {
+  /**
+   * Bytebase access token.
+   *
+   * @generated from field: string access_token = 1;
+   */
+  accessToken: string;
+
+  /**
+   * Token type (always "Bearer").
+   *
+   * @generated from field: string token_type = 2;
+   */
+  tokenType: string;
+
+  /**
+   * Token expiration in seconds (default: 3600).
+   *
+   * @generated from field: int32 expires_in = 3;
+   */
+  expiresIn: number;
+};
+
+/**
+ * Describes the message bytebase.v1.ExchangeTokenResponse.
+ * Use `create(ExchangeTokenResponseSchema)` to create a new message.
+ */
+export declare const ExchangeTokenResponseSchema: GenMessage<ExchangeTokenResponse>;
+
+/**
  * AuthService handles user authentication operations.
  *
  * @generated from service bytebase.v1.AuthService
@@ -234,6 +292,18 @@ export declare const AuthService: GenService<{
     methodKind: "unary";
     input: typeof LogoutRequestSchema;
     output: typeof EmptySchema;
+  },
+  /**
+   * Exchanges an external OIDC token for a Bytebase access token.
+   * Used by CI/CD pipelines with Workload Identity Federation.
+   * Permissions required: None (validates via OIDC token)
+   *
+   * @generated from rpc bytebase.v1.AuthService.ExchangeToken
+   */
+  exchangeToken: {
+    methodKind: "unary";
+    input: typeof ExchangeTokenRequestSchema;
+    output: typeof ExchangeTokenResponseSchema;
   },
 }>;
 
