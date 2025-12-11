@@ -41,6 +41,7 @@
     "downloadjs": "1.4.7",
     "elkjs": "^0.11.0",
     "emittery": "^1.2.0",
+    "events": "^3.3.0",
     "file-saver": "^2.0.5",
     "highlight.js": "11.11.1",
     "html-query-plan": "^2.6.1",
