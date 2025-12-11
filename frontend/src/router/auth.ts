@@ -17,12 +17,12 @@ export const OAUTH2_CONSENT_MODULE = "oauth2.consent";
 const authRoutes: RouteRecordRaw[] = [
   {
     path: "/oauth2/consent",
-    name: OAUTH2_CONSENT_MODULE,
-    meta: { title: () => t("oauth2.consent.title") },
     component: SplashLayout,
     children: [
       {
         path: "",
+        name: OAUTH2_CONSENT_MODULE,
+        meta: { title: () => t("oauth2.consent.title") },
         component: () => import("@/views/OAuth2Consent.vue"),
       },
     ],
