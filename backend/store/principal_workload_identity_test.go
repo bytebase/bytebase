@@ -14,7 +14,7 @@ func TestWorkloadIdentityConfigInUserMessage(t *testing.T) {
 	// Create a UserMessage with WorkloadIdentityConfig in the Profile
 	profile := &storepb.UserProfile{
 		WorkloadIdentityConfig: &storepb.WorkloadIdentityConfig{
-			ProviderType:     storepb.ProviderType_PROVIDER_GITHUB,
+			ProviderType:     storepb.WorkloadIdentityConfig_GITHUB,
 			IssuerUrl:        "https://token.actions.githubusercontent.com",
 			AllowedAudiences: []string{"https://github.com/myorg"},
 			SubjectPattern:   "repo:myorg/myrepo:ref:refs/heads/main",
@@ -30,7 +30,7 @@ func TestWorkloadIdentityConfigInUserMessage(t *testing.T) {
 
 	// Verify the config values
 	wic := user.Profile.WorkloadIdentityConfig
-	require.Equal(t, storepb.ProviderType_PROVIDER_GITHUB, wic.ProviderType)
+	require.Equal(t, storepb.WorkloadIdentityConfig_GITHUB, wic.ProviderType)
 	require.Equal(t, "https://token.actions.githubusercontent.com", wic.IssuerUrl)
 	require.Equal(t, []string{"https://github.com/myorg"}, wic.AllowedAudiences)
 	require.Equal(t, "repo:myorg/myrepo:ref:refs/heads/main", wic.SubjectPattern)
@@ -47,7 +47,7 @@ func TestCreateUserMessageWithWorkloadIdentityConfig(t *testing.T) {
 	// Create a user with workload identity config
 	profile := &storepb.UserProfile{
 		WorkloadIdentityConfig: &storepb.WorkloadIdentityConfig{
-			ProviderType:     storepb.ProviderType_PROVIDER_GITHUB,
+			ProviderType:     storepb.WorkloadIdentityConfig_GITHUB,
 			IssuerUrl:        "https://token.actions.githubusercontent.com",
 			AllowedAudiences: []string{"https://github.com/myorg"},
 			SubjectPattern:   "repo:myorg/*",
@@ -75,7 +75,7 @@ func TestUpdateUserMessageWithWorkloadIdentityConfig(t *testing.T) {
 	patch := &UpdateUserMessage{
 		Profile: &storepb.UserProfile{
 			WorkloadIdentityConfig: &storepb.WorkloadIdentityConfig{
-				ProviderType:     storepb.ProviderType_PROVIDER_GITHUB,
+				ProviderType:     storepb.WorkloadIdentityConfig_GITHUB,
 				IssuerUrl:        "https://token.actions.githubusercontent.com",
 				AllowedAudiences: []string{"https://github.com/myorg"},
 				SubjectPattern:   "repo:myorg/*",
