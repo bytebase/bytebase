@@ -35,10 +35,23 @@ func ValidateToken(ctx context.Context, tokenString string, config *storepb.Work
 		return nil, errors.Wrap(err, "failed to fetch JWKS")
 	}
 
-	// Verify signature and extract claims
-	var claims TokenClaims
-	if err := token.Claims(jwks, &claims); err != nil {
+	// Use jwt.Claims which handles audience as both string and []string
+	var registeredClaims jwt.Claims
+	if err := token.Claims(jwks, &registeredClaims); err != nil {
 		return nil, errors.Wrap(err, "failed to verify token signature")
+	}
+
+	// Convert to our TokenClaims format
+	claims := &TokenClaims{
+		Issuer:   registeredClaims.Issuer,
+		Subject:  registeredClaims.Subject,
+		Audience: registeredClaims.Audience,
+	}
+	if registeredClaims.Expiry != nil {
+		claims.Expiry = registeredClaims.Expiry.Time().Unix()
+	}
+	if registeredClaims.IssuedAt != nil {
+		claims.IssuedAt = registeredClaims.IssuedAt.Time().Unix()
 	}
 
 	// Validate issuer
@@ -46,8 +59,8 @@ func ValidateToken(ctx context.Context, tokenString string, config *storepb.Work
 		return nil, errors.Errorf("issuer mismatch: expected %q, got %q", config.IssuerUrl, claims.Issuer)
 	}
 
-	// Validate audience
-	if !validateAudience(claims.Audience, config.AllowedAudiences) {
+	// Validate audience (skip if no allowed audiences configured)
+	if len(config.AllowedAudiences) > 0 && !validateAudience(claims.Audience, config.AllowedAudiences) {
 		return nil, errors.Errorf("audience mismatch: token has %v, allowed %v", claims.Audience, config.AllowedAudiences)
 	}
 
@@ -61,7 +74,7 @@ func ValidateToken(ctx context.Context, tokenString string, config *storepb.Work
 		return nil, errors.New("token has expired")
 	}
 
-	return &claims, nil
+	return claims, nil
 }
 
 func validateAudience(tokenAudience []string, allowedAudiences []string) bool {
