@@ -60,7 +60,7 @@ func (s *Service) handleDiscovery(c echo.Context) error {
 		ResponseTypesSupported:            []string{"code"},
 		GrantTypesSupported:               []string{"authorization_code", "refresh_token"},
 		CodeChallengeMethodsSupported:     []string{"S256"},
-		TokenEndpointAuthMethodsSupported: []string{"client_secret_basic", "client_secret_post"},
+		TokenEndpointAuthMethodsSupported: []string{"none"},
 	}
 	return c.JSON(http.StatusOK, metadata)
 }
