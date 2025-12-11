@@ -10,7 +10,6 @@
   
     - [Engine](#bytebase-store-Engine)
     - [ExportFormat](#bytebase-store-ExportFormat)
-    - [MaskingLevel](#bytebase-store-MaskingLevel)
     - [RiskLevel](#bytebase-store-RiskLevel)
     - [SchemaChangeType](#bytebase-store-SchemaChangeType)
     - [VCSType](#bytebase-store-VCSType)
@@ -463,20 +462,6 @@ ExportFormat represents the file format for exported data.
 | JSON | 2 |  |
 | SQL | 3 |  |
 | XLSX | 4 |  |
-
-
-
-<a name="bytebase-store-MaskingLevel"></a>
-
-### MaskingLevel
-MaskingLevel represents the level of data masking applied to sensitive information.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASKING_LEVEL_UNSPECIFIED | 0 |  |
-| NONE | 1 | No masking applied. |
-| PARTIAL | 2 | Partial masking (e.g., showing first/last characters). |
-| FULL | 3 | Full masking (all characters masked). |
 
 
 

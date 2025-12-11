@@ -51,17 +51,6 @@ enum VCSType {
   AZURE_DEVOPS = 4;
 }
 
-// MaskingLevel represents the level of data masking applied to sensitive information.
-enum MaskingLevel {
-  MASKING_LEVEL_UNSPECIFIED = 0;
-  // No masking applied.
-  NONE = 1;
-  // Partial masking (e.g., showing first/last characters).
-  PARTIAL = 2;
-  // Full masking (all characters masked).
-  FULL = 3;
-}
-
 // ExportFormat represents the file format for exported data.
 enum ExportFormat {
   FORMAT_UNSPECIFIED = 0;
