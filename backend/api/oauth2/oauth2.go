@@ -1,19 +1,20 @@
 package oauth2
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"net/url"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -31,17 +32,26 @@ const (
 )
 
 type Service struct {
-	store       *store.Store
-	secret      string
-	externalURL string
+	store   *store.Store
+	profile *config.Profile
+	secret  string
 }
 
-func NewService(store *store.Store, secret, externalURL string) *Service {
+func NewService(store *store.Store, profile *config.Profile, secret string) *Service {
 	return &Service{
-		store:       store,
-		secret:      secret,
-		externalURL: strings.TrimSuffix(externalURL, "/"),
+		store:   store,
+		profile: profile,
+		secret:  secret,
 	}
+}
+
+// getExternalURL returns the effective external URL from profile flag or workspace setting.
+func (s *Service) getExternalURL(ctx context.Context) string {
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
+	if err != nil {
+		return s.profile.ExternalURL
+	}
+	return common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
 }
 
 func (s *Service) RegisterRoutes(g *echo.Group) {
@@ -187,29 +197,4 @@ func oauth2ErrorRedirect(c echo.Context, redirectURI, state, errorCode, descript
 	}
 	u.RawQuery = q.Encode()
 	return c.Redirect(http.StatusFound, u.String())
-}
-
-// nolint:unused
-func (s *Service) issuer() string {
-	return s.externalURL
-}
-
-// nolint:unused
-func (s *Service) authorizationEndpoint() string {
-	return fmt.Sprintf("%s/oauth2/authorize", s.externalURL)
-}
-
-// nolint:unused
-func (s *Service) tokenEndpoint() string {
-	return fmt.Sprintf("%s/oauth2/token", s.externalURL)
-}
-
-// nolint:unused
-func (s *Service) registrationEndpoint() string {
-	return fmt.Sprintf("%s/oauth2/register", s.externalURL)
-}
-
-// nolint:unused
-func (s *Service) revocationEndpoint() string {
-	return fmt.Sprintf("%s/oauth2/revoke", s.externalURL)
 }

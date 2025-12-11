@@ -218,7 +218,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager, profile)
-	oauth2Service := oauth2.NewService(stores, secret, profile.ExternalURL)
+	oauth2Service := oauth2.NewService(stores, profile, secret)
 	mcpServer := mcp.NewServer()
 
 	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {

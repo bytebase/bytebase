@@ -1,7 +1,9 @@
 package oauth2
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -27,13 +29,34 @@ type protectedResourceMetadata struct {
 	ResourceDocumentation       string   `json:"resource_documentation,omitempty"`
 }
 
+// getBaseURL returns the base URL to use for OAuth2 endpoints.
+// It uses externalURL from profile/setting if configured, otherwise derives from the request.
+func (s *Service) getBaseURL(c echo.Context) string {
+	ctx := c.Request().Context()
+	if externalURL := s.getExternalURL(ctx); externalURL != "" {
+		return strings.TrimSuffix(externalURL, "/")
+	}
+	// Derive from request as fallback
+	req := c.Request()
+	scheme := "https"
+	if req.TLS == nil {
+		scheme = "http"
+	}
+	// Check X-Forwarded-Proto header for reverse proxy setups
+	if proto := req.Header.Get("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+	return fmt.Sprintf("%s://%s", scheme, req.Host)
+}
+
 func (s *Service) handleDiscovery(c echo.Context) error {
+	baseURL := s.getBaseURL(c)
 	metadata := &authorizationServerMetadata{
-		Issuer:                            s.issuer(),
-		AuthorizationEndpoint:             s.authorizationEndpoint(),
-		TokenEndpoint:                     s.tokenEndpoint(),
-		RegistrationEndpoint:              s.registrationEndpoint(),
-		RevocationEndpoint:                s.revocationEndpoint(),
+		Issuer:                            baseURL,
+		AuthorizationEndpoint:             fmt.Sprintf("%s/oauth2/authorize", baseURL),
+		TokenEndpoint:                     fmt.Sprintf("%s/oauth2/token", baseURL),
+		RegistrationEndpoint:              fmt.Sprintf("%s/oauth2/register", baseURL),
+		RevocationEndpoint:                fmt.Sprintf("%s/oauth2/revoke", baseURL),
 		ResponseTypesSupported:            []string{"code"},
 		GrantTypesSupported:               []string{"authorization_code", "refresh_token"},
 		CodeChallengeMethodsSupported:     []string{"S256"},
@@ -45,9 +68,10 @@ func (s *Service) handleDiscovery(c echo.Context) error {
 // handleProtectedResourceMetadata returns RFC 9728 protected resource metadata.
 // This tells clients which authorization server protects this resource.
 func (s *Service) handleProtectedResourceMetadata(c echo.Context) error {
+	baseURL := s.getBaseURL(c)
 	metadata := &protectedResourceMetadata{
-		Resource:               s.externalURL,
-		AuthorizationServers:   []string{s.externalURL},
+		Resource:               baseURL,
+		AuthorizationServers:   []string{baseURL},
 		BearerMethodsSupported: []string{"header"},
 	}
 	return c.JSON(http.StatusOK, metadata)
