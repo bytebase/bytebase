@@ -460,11 +460,11 @@ export declare const User_ProfileSchema: GenMessage<User_Profile>;
  */
 export declare type WorkloadIdentityConfig = Message<"bytebase.v1.WorkloadIdentityConfig"> & {
   /**
-   * Platform type
+   * Platform type (currently only GITHUB is supported)
    *
-   * @generated from field: bytebase.v1.ProviderType provider_type = 1;
+   * @generated from field: bytebase.v1.WorkloadIdentityConfig.ProviderType provider_type = 1;
    */
-  providerType: ProviderType;
+  providerType: WorkloadIdentityConfig_ProviderType;
 
   /**
    * OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
@@ -495,39 +495,26 @@ export declare type WorkloadIdentityConfig = Message<"bytebase.v1.WorkloadIdenti
 export declare const WorkloadIdentityConfigSchema: GenMessage<WorkloadIdentityConfig>;
 
 /**
- * @generated from enum bytebase.v1.ProviderType
+ * ProviderType identifies the CI/CD platform.
+ *
+ * @generated from enum bytebase.v1.WorkloadIdentityConfig.ProviderType
  */
-export enum ProviderType {
+export enum WorkloadIdentityConfig_ProviderType {
   /**
    * @generated from enum value: PROVIDER_TYPE_UNSPECIFIED = 0;
    */
   PROVIDER_TYPE_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: PROVIDER_GITHUB = 1;
+   * @generated from enum value: GITHUB = 1;
    */
-  PROVIDER_GITHUB = 1,
-
-  /**
-   * @generated from enum value: PROVIDER_GITLAB = 2;
-   */
-  PROVIDER_GITLAB = 2,
-
-  /**
-   * @generated from enum value: PROVIDER_BITBUCKET = 3;
-   */
-  PROVIDER_BITBUCKET = 3,
-
-  /**
-   * @generated from enum value: PROVIDER_AZURE_DEVOPS = 4;
-   */
-  PROVIDER_AZURE_DEVOPS = 4,
+  GITHUB = 1,
 }
 
 /**
- * Describes the enum bytebase.v1.ProviderType.
+ * Describes the enum bytebase.v1.WorkloadIdentityConfig.ProviderType.
  */
-export declare const ProviderTypeSchema: GenEnum<ProviderType>;
+export declare const WorkloadIdentityConfig_ProviderTypeSchema: GenEnum<WorkloadIdentityConfig_ProviderType>;
 
 /**
  * @generated from enum bytebase.v1.UserType

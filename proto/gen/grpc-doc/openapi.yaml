@@ -15598,12 +15598,9 @@ components:
                 providerType:
                     enum:
                         - PROVIDER_TYPE_UNSPECIFIED
-                        - PROVIDER_GITHUB
-                        - PROVIDER_GITLAB
-                        - PROVIDER_BITBUCKET
-                        - PROVIDER_AZURE_DEVOPS
+                        - GITHUB
                     type: string
-                    description: Platform type
+                    description: Platform type (currently only GITHUB is supported)
                     format: enum
                 issuerUrl:
                     type: string

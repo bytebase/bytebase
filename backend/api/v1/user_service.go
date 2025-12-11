@@ -287,7 +287,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		wic := request.Msg.User.WorkloadIdentityConfig
 		profile = &storepb.UserProfile{
 			WorkloadIdentityConfig: &storepb.WorkloadIdentityConfig{
-				ProviderType:     storepb.ProviderType(wic.ProviderType),
+				ProviderType:     storepb.WorkloadIdentityConfig_ProviderType(wic.ProviderType),
 				IssuerUrl:        wic.IssuerUrl,
 				AllowedAudiences: wic.AllowedAudiences,
 				SubjectPattern:   wic.SubjectPattern,
@@ -788,7 +788,7 @@ func convertToUser(ctx context.Context, user *store.UserMessage) *v1pb.User {
 	if user.Profile != nil && user.Profile.WorkloadIdentityConfig != nil {
 		wic := user.Profile.WorkloadIdentityConfig
 		convertedUser.WorkloadIdentityConfig = &v1pb.WorkloadIdentityConfig{
-			ProviderType:     v1pb.ProviderType(wic.ProviderType),
+			ProviderType:     v1pb.WorkloadIdentityConfig_ProviderType(wic.ProviderType),
 			IssuerUrl:        wic.IssuerUrl,
 			AllowedAudiences: wic.AllowedAudiences,
 			SubjectPattern:   wic.SubjectPattern,

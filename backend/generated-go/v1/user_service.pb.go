@@ -26,61 +26,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ProviderType int32
-
-const (
-	ProviderType_PROVIDER_TYPE_UNSPECIFIED ProviderType = 0
-	ProviderType_PROVIDER_GITHUB           ProviderType = 1
-	ProviderType_PROVIDER_GITLAB           ProviderType = 2
-	ProviderType_PROVIDER_BITBUCKET        ProviderType = 3
-	ProviderType_PROVIDER_AZURE_DEVOPS     ProviderType = 4
-)
-
-// Enum value maps for ProviderType.
-var (
-	ProviderType_name = map[int32]string{
-		0: "PROVIDER_TYPE_UNSPECIFIED",
-		1: "PROVIDER_GITHUB",
-		2: "PROVIDER_GITLAB",
-		3: "PROVIDER_BITBUCKET",
-		4: "PROVIDER_AZURE_DEVOPS",
-	}
-	ProviderType_value = map[string]int32{
-		"PROVIDER_TYPE_UNSPECIFIED": 0,
-		"PROVIDER_GITHUB":           1,
-		"PROVIDER_GITLAB":           2,
-		"PROVIDER_BITBUCKET":        3,
-		"PROVIDER_AZURE_DEVOPS":     4,
-	}
-)
-
-func (x ProviderType) Enum() *ProviderType {
-	p := new(ProviderType)
-	*p = x
-	return p
-}
-
-func (x ProviderType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ProviderType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_user_service_proto_enumTypes[0].Descriptor()
-}
-
-func (ProviderType) Type() protoreflect.EnumType {
-	return &file_v1_user_service_proto_enumTypes[0]
-}
-
-func (x ProviderType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ProviderType.Descriptor instead.
-func (ProviderType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_user_service_proto_rawDescGZIP(), []int{0}
-}
-
 type UserType int32
 
 const (
@@ -125,11 +70,11 @@ func (x UserType) String() string {
 }
 
 func (UserType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_user_service_proto_enumTypes[1].Descriptor()
+	return file_v1_user_service_proto_enumTypes[0].Descriptor()
 }
 
 func (UserType) Type() protoreflect.EnumType {
-	return &file_v1_user_service_proto_enumTypes[1]
+	return &file_v1_user_service_proto_enumTypes[0]
 }
 
 func (x UserType) Number() protoreflect.EnumNumber {
@@ -138,7 +83,54 @@ func (x UserType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use UserType.Descriptor instead.
 func (UserType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_user_service_proto_rawDescGZIP(), []int{1}
+	return file_v1_user_service_proto_rawDescGZIP(), []int{0}
+}
+
+// ProviderType identifies the CI/CD platform.
+type WorkloadIdentityConfig_ProviderType int32
+
+const (
+	WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED WorkloadIdentityConfig_ProviderType = 0
+	WorkloadIdentityConfig_GITHUB                    WorkloadIdentityConfig_ProviderType = 1
+)
+
+// Enum value maps for WorkloadIdentityConfig_ProviderType.
+var (
+	WorkloadIdentityConfig_ProviderType_name = map[int32]string{
+		0: "PROVIDER_TYPE_UNSPECIFIED",
+		1: "GITHUB",
+	}
+	WorkloadIdentityConfig_ProviderType_value = map[string]int32{
+		"PROVIDER_TYPE_UNSPECIFIED": 0,
+		"GITHUB":                    1,
+	}
+)
+
+func (x WorkloadIdentityConfig_ProviderType) Enum() *WorkloadIdentityConfig_ProviderType {
+	p := new(WorkloadIdentityConfig_ProviderType)
+	*p = x
+	return p
+}
+
+func (x WorkloadIdentityConfig_ProviderType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WorkloadIdentityConfig_ProviderType) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_user_service_proto_enumTypes[1].Descriptor()
+}
+
+func (WorkloadIdentityConfig_ProviderType) Type() protoreflect.EnumType {
+	return &file_v1_user_service_proto_enumTypes[1]
+}
+
+func (x WorkloadIdentityConfig_ProviderType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WorkloadIdentityConfig_ProviderType.Descriptor instead.
+func (WorkloadIdentityConfig_ProviderType) EnumDescriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{11, 0}
 }
 
 type GetUserRequest struct {
@@ -898,8 +890,8 @@ func (x *User) GetWorkloadIdentityConfig() *WorkloadIdentityConfig {
 // WorkloadIdentityConfig for API layer
 type WorkloadIdentityConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Platform type
-	ProviderType ProviderType `protobuf:"varint,1,opt,name=provider_type,json=providerType,proto3,enum=bytebase.v1.ProviderType" json:"provider_type,omitempty"`
+	// Platform type (currently only GITHUB is supported)
+	ProviderType WorkloadIdentityConfig_ProviderType `protobuf:"varint,1,opt,name=provider_type,json=providerType,proto3,enum=bytebase.v1.WorkloadIdentityConfig_ProviderType" json:"provider_type,omitempty"`
 	// OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
 	IssuerUrl string `protobuf:"bytes,2,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
 	// Allowed audiences for token validation
@@ -940,11 +932,11 @@ func (*WorkloadIdentityConfig) Descriptor() ([]byte, []int) {
 	return file_v1_user_service_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *WorkloadIdentityConfig) GetProviderType() ProviderType {
+func (x *WorkloadIdentityConfig) GetProviderType() WorkloadIdentityConfig_ProviderType {
 	if x != nil {
 		return x.ProviderType
 	}
-	return ProviderType_PROVIDER_TYPE_UNSPECIFIED
+	return WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED
 }
 
 func (x *WorkloadIdentityConfig) GetIssuerUrl() string {
@@ -1097,19 +1089,17 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
 	"\x06source\x18\x03 \x01(\tR\x06source:$\xeaA!\n" +
-	"\x11bytebase.com/User\x12\fusers/{user}\"\xcd\x01\n" +
-	"\x16WorkloadIdentityConfig\x12>\n" +
-	"\rprovider_type\x18\x01 \x01(\x0e2\x19.bytebase.v1.ProviderTypeR\fproviderType\x12\x1d\n" +
+	"\x11bytebase.com/User\x12\fusers/{user}\"\x9f\x02\n" +
+	"\x16WorkloadIdentityConfig\x12U\n" +
+	"\rprovider_type\x18\x01 \x01(\x0e20.bytebase.v1.WorkloadIdentityConfig.ProviderTypeR\fproviderType\x12\x1d\n" +
 	"\n" +
 	"issuer_url\x18\x02 \x01(\tR\tissuerUrl\x12+\n" +
 	"\x11allowed_audiences\x18\x03 \x03(\tR\x10allowedAudiences\x12'\n" +
-	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern*\x8a\x01\n" +
+	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern\"9\n" +
 	"\fProviderType\x12\x1d\n" +
-	"\x19PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
-	"\x0fPROVIDER_GITHUB\x10\x01\x12\x13\n" +
-	"\x0fPROVIDER_GITLAB\x10\x02\x12\x16\n" +
-	"\x12PROVIDER_BITBUCKET\x10\x03\x12\x19\n" +
-	"\x15PROVIDER_AZURE_DEVOPS\x10\x04*k\n" +
+	"\x19PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
+	"\n" +
+	"\x06GITHUB\x10\x01*k\n" +
 	"\bUserType\x12\x19\n" +
 	"\x15USER_TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04USER\x10\x01\x12\x0e\n" +
@@ -1148,25 +1138,25 @@ func file_v1_user_service_proto_rawDescGZIP() []byte {
 var file_v1_user_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_v1_user_service_proto_goTypes = []any{
-	(ProviderType)(0),              // 0: bytebase.v1.ProviderType
-	(UserType)(0),                  // 1: bytebase.v1.UserType
-	(*GetUserRequest)(nil),         // 2: bytebase.v1.GetUserRequest
-	(*BatchGetUsersRequest)(nil),   // 3: bytebase.v1.BatchGetUsersRequest
-	(*BatchGetUsersResponse)(nil),  // 4: bytebase.v1.BatchGetUsersResponse
-	(*ListUsersRequest)(nil),       // 5: bytebase.v1.ListUsersRequest
-	(*ListUsersResponse)(nil),      // 6: bytebase.v1.ListUsersResponse
-	(*CreateUserRequest)(nil),      // 7: bytebase.v1.CreateUserRequest
-	(*UpdateUserRequest)(nil),      // 8: bytebase.v1.UpdateUserRequest
-	(*DeleteUserRequest)(nil),      // 9: bytebase.v1.DeleteUserRequest
-	(*UndeleteUserRequest)(nil),    // 10: bytebase.v1.UndeleteUserRequest
-	(*UpdateEmailRequest)(nil),     // 11: bytebase.v1.UpdateEmailRequest
-	(*User)(nil),                   // 12: bytebase.v1.User
-	(*WorkloadIdentityConfig)(nil), // 13: bytebase.v1.WorkloadIdentityConfig
-	(*User_Profile)(nil),           // 14: bytebase.v1.User.Profile
-	(*fieldmaskpb.FieldMask)(nil),  // 15: google.protobuf.FieldMask
-	(State)(0),                     // 16: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),  // 17: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),          // 18: google.protobuf.Empty
+	(UserType)(0),                            // 0: bytebase.v1.UserType
+	(WorkloadIdentityConfig_ProviderType)(0), // 1: bytebase.v1.WorkloadIdentityConfig.ProviderType
+	(*GetUserRequest)(nil),                   // 2: bytebase.v1.GetUserRequest
+	(*BatchGetUsersRequest)(nil),             // 3: bytebase.v1.BatchGetUsersRequest
+	(*BatchGetUsersResponse)(nil),            // 4: bytebase.v1.BatchGetUsersResponse
+	(*ListUsersRequest)(nil),                 // 5: bytebase.v1.ListUsersRequest
+	(*ListUsersResponse)(nil),                // 6: bytebase.v1.ListUsersResponse
+	(*CreateUserRequest)(nil),                // 7: bytebase.v1.CreateUserRequest
+	(*UpdateUserRequest)(nil),                // 8: bytebase.v1.UpdateUserRequest
+	(*DeleteUserRequest)(nil),                // 9: bytebase.v1.DeleteUserRequest
+	(*UndeleteUserRequest)(nil),              // 10: bytebase.v1.UndeleteUserRequest
+	(*UpdateEmailRequest)(nil),               // 11: bytebase.v1.UpdateEmailRequest
+	(*User)(nil),                             // 12: bytebase.v1.User
+	(*WorkloadIdentityConfig)(nil),           // 13: bytebase.v1.WorkloadIdentityConfig
+	(*User_Profile)(nil),                     // 14: bytebase.v1.User.Profile
+	(*fieldmaskpb.FieldMask)(nil),            // 15: google.protobuf.FieldMask
+	(State)(0),                               // 16: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),            // 17: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                    // 18: google.protobuf.Empty
 }
 var file_v1_user_service_proto_depIdxs = []int32{
 	12, // 0: bytebase.v1.BatchGetUsersResponse.users:type_name -> bytebase.v1.User
@@ -1175,11 +1165,11 @@ var file_v1_user_service_proto_depIdxs = []int32{
 	12, // 3: bytebase.v1.UpdateUserRequest.user:type_name -> bytebase.v1.User
 	15, // 4: bytebase.v1.UpdateUserRequest.update_mask:type_name -> google.protobuf.FieldMask
 	16, // 5: bytebase.v1.User.state:type_name -> bytebase.v1.State
-	1,  // 6: bytebase.v1.User.user_type:type_name -> bytebase.v1.UserType
+	0,  // 6: bytebase.v1.User.user_type:type_name -> bytebase.v1.UserType
 	17, // 7: bytebase.v1.User.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
 	14, // 8: bytebase.v1.User.profile:type_name -> bytebase.v1.User.Profile
 	13, // 9: bytebase.v1.User.workload_identity_config:type_name -> bytebase.v1.WorkloadIdentityConfig
-	0,  // 10: bytebase.v1.WorkloadIdentityConfig.provider_type:type_name -> bytebase.v1.ProviderType
+	1,  // 10: bytebase.v1.WorkloadIdentityConfig.provider_type:type_name -> bytebase.v1.WorkloadIdentityConfig.ProviderType
 	17, // 11: bytebase.v1.User.Profile.last_login_time:type_name -> google.protobuf.Timestamp
 	17, // 12: bytebase.v1.User.Profile.last_change_password_time:type_name -> google.protobuf.Timestamp
 	2,  // 13: bytebase.v1.UserService.GetUser:input_type -> bytebase.v1.GetUserRequest

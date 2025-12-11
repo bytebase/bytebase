@@ -15,9 +15,9 @@ type PlatformPreset struct {
 
 // GetPlatformPreset returns the OIDC preset for a given provider type.
 // Currently only GitHub Actions is supported.
-func GetPlatformPreset(providerType storepb.ProviderType) *PlatformPreset {
+func GetPlatformPreset(providerType storepb.WorkloadIdentityConfig_ProviderType) *PlatformPreset {
 	switch providerType {
-	case storepb.ProviderType_PROVIDER_GITHUB:
+	case storepb.WorkloadIdentityConfig_GITHUB:
 		return &PlatformPreset{
 			IssuerURL:       "https://token.actions.githubusercontent.com",
 			AudiencePattern: "https://github.com/%s",
@@ -30,8 +30,8 @@ func GetPlatformPreset(providerType storepb.ProviderType) *PlatformPreset {
 
 // BuildSubjectPattern builds a subject pattern from provider-specific inputs.
 // Currently only GitHub Actions is supported.
-func BuildSubjectPattern(providerType storepb.ProviderType, owner, repo, branch string) string {
-	if providerType != storepb.ProviderType_PROVIDER_GITHUB {
+func BuildSubjectPattern(providerType storepb.WorkloadIdentityConfig_ProviderType, owner, repo, branch string) string {
+	if providerType != storepb.WorkloadIdentityConfig_GITHUB {
 		return ""
 	}
 

@@ -652,11 +652,11 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.ProviderType"><span class="badge">E</span>ProviderType</a>
+                  <a href="#bytebase.v1.UserType"><span class="badge">E</span>UserType</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UserType"><span class="badge">E</span>UserType</a>
+                  <a href="#bytebase.v1.WorkloadIdentityConfig.ProviderType"><span class="badge">E</span>WorkloadIdentityConfig.ProviderType</a>
                 </li>
               
               
@@ -7560,9 +7560,9 @@ Format: groups/{email} </p></td>
               
                 <tr>
                   <td>provider_type</td>
-                  <td><a href="#bytebase.v1.ProviderType">ProviderType</a></td>
+                  <td><a href="#bytebase.v1.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</a></td>
                   <td></td>
-                  <td><p>Platform type </p></td>
+                  <td><p>Platform type (currently only GITHUB is supported) </p></td>
                 </tr>
               
                 <tr>
@@ -7594,47 +7594,6 @@ Format: groups/{email} </p></td>
         
       
 
-      
-        <h3 id="bytebase.v1.ProviderType">ProviderType</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>PROVIDER_TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROVIDER_GITHUB</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROVIDER_GITLAB</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROVIDER_BITBUCKET</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROVIDER_AZURE_DEVOPS</td>
-                <td>4</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
         <h3 id="bytebase.v1.UserType">UserType</h3>
         <p></p>
@@ -7672,6 +7631,29 @@ Format: groups/{email} </p></td>
                 <td>WORKLOAD_IDENTITY</td>
                 <td>4</td>
                 <td><p>External CI/CD workload identity.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</h3>
+        <p>ProviderType identifies the CI/CD platform.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PROVIDER_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GITHUB</td>
+                <td>1</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>

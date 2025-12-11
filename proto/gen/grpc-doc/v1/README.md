@@ -126,8 +126,8 @@
     - [User.Profile](#bytebase-v1-User-Profile)
     - [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig)
   
-    - [ProviderType](#bytebase-v1-ProviderType)
     - [UserType](#bytebase-v1-UserType)
+    - [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType)
   
     - [UserService](#bytebase-v1-UserService)
   
@@ -2556,7 +2556,7 @@ WorkloadIdentityConfig for API layer
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| provider_type | [ProviderType](#bytebase-v1-ProviderType) |  | Platform type |
+| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Platform type (currently only GITHUB is supported) |
 | issuer_url | [string](#string) |  | OIDC Issuer URL (auto-filled based on provider_type, can be overridden) |
 | allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
 | subject_pattern | [string](#string) |  | Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) |
@@ -2566,21 +2566,6 @@ WorkloadIdentityConfig for API layer
 
 
  
-
-
-<a name="bytebase-v1-ProviderType"></a>
-
-### ProviderType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PROVIDER_TYPE_UNSPECIFIED | 0 |  |
-| PROVIDER_GITHUB | 1 |  |
-| PROVIDER_GITLAB | 2 |  |
-| PROVIDER_BITBUCKET | 3 |  |
-| PROVIDER_AZURE_DEVOPS | 4 |  |
-
 
 
 <a name="bytebase-v1-UserType"></a>
@@ -2595,6 +2580,18 @@ WorkloadIdentityConfig for API layer
 | SYSTEM_BOT | 2 | System-managed bot account for automated operations. |
 | SERVICE_ACCOUNT | 3 | Service account for API integrations. |
 | WORKLOAD_IDENTITY | 4 | External CI/CD workload identity. |
+
+
+
+<a name="bytebase-v1-WorkloadIdentityConfig-ProviderType"></a>
+
+### WorkloadIdentityConfig.ProviderType
+ProviderType identifies the CI/CD platform.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROVIDER_TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 |  |
 
 
  

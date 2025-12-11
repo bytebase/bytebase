@@ -1516,7 +1516,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.ProviderType"><span class="badge">E</span>ProviderType</a>
+                  <a href="#bytebase.store.WorkloadIdentityConfig.ProviderType"><span class="badge">E</span>WorkloadIdentityConfig.ProviderType</a>
                 </li>
               
               
@@ -14406,9 +14406,9 @@ The indexes of the executed commands. </p></td>
               
                 <tr>
                   <td>provider_type</td>
-                  <td><a href="#bytebase.store.ProviderType">ProviderType</a></td>
+                  <td><a href="#bytebase.store.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</a></td>
                   <td></td>
-                  <td><p>Provider type (e.g., PROVIDER_GITHUB, PROVIDER_GITLAB) </p></td>
+                  <td><p>Provider type (currently only GITHUB is supported) </p></td>
                 </tr>
               
                 <tr>
@@ -14482,8 +14482,8 @@ The indexes of the executed commands. </p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.store.ProviderType">ProviderType</h3>
-        <p>ProviderType identifies the CI/CD platform for workload identity.</p>
+        <h3 id="bytebase.store.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</h3>
+        <p>ProviderType identifies the CI/CD platform.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -14497,26 +14497,8 @@ The indexes of the executed commands. </p></td>
               </tr>
             
               <tr>
-                <td>PROVIDER_GITHUB</td>
+                <td>GITHUB</td>
                 <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROVIDER_GITLAB</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROVIDER_BITBUCKET</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PROVIDER_AZURE_DEVOPS</td>
-                <td>4</td>
                 <td><p></p></td>
               </tr>
             

@@ -298,16 +298,16 @@ import {
 import { emptyUser, PresetRoleType } from "@/types";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
-  ProviderType,
   UserSchema,
   UserType,
+  WorkloadIdentityConfig_ProviderType,
   WorkloadIdentityConfigSchema,
 } from "@/types/proto-es/v1/user_service_pb";
 import UserPassword from "./UserPassword.vue";
 
 interface WifState {
   emailPrefix: string;
-  providerType: ProviderType;
+  providerType: WorkloadIdentityConfig_ProviderType;
   owner: string;
   repo: string;
   branch: string;
@@ -344,7 +344,7 @@ const state = reactive<LocalState>({
   passwordConfirm: "",
   wif: {
     emailPrefix: "",
-    providerType: ProviderType.PROVIDER_GITHUB,
+    providerType: WorkloadIdentityConfig_ProviderType.GITHUB,
     owner: "",
     repo: "",
     branch: "",
@@ -356,19 +356,19 @@ const state = reactive<LocalState>({
 });
 
 const platformOptions = [
-  { label: "GitHub Actions", value: ProviderType.PROVIDER_GITHUB },
+  { label: "GitHub Actions", value: WorkloadIdentityConfig_ProviderType.GITHUB },
 ];
 
 const platformPresets: Partial<
-  Record<ProviderType, { issuerUrl: string; audience: string }>
+  Record<WorkloadIdentityConfig_ProviderType, { issuerUrl: string; audience: string }>
 > = {
-  [ProviderType.PROVIDER_GITHUB]: {
+  [WorkloadIdentityConfig_ProviderType.GITHUB]: {
     issuerUrl: "https://token.actions.githubusercontent.com",
     audience: "",
   },
 };
 
-const onPlatformChange = (value: ProviderType) => {
+const onPlatformChange = (value: WorkloadIdentityConfig_ProviderType) => {
   const preset = platformPresets[value];
   if (preset) {
     state.wif.issuerUrl = preset.issuerUrl;

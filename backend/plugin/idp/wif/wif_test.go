@@ -117,7 +117,7 @@ func TestValidateAudience(t *testing.T) {
 func TestBuildSubjectPattern(t *testing.T) {
 	tests := []struct {
 		name         string
-		providerType storepb.ProviderType
+		providerType storepb.WorkloadIdentityConfig_ProviderType
 		owner        string
 		repo         string
 		branch       string
@@ -125,7 +125,7 @@ func TestBuildSubjectPattern(t *testing.T) {
 	}{
 		{
 			name:         "github with all fields",
-			providerType: storepb.ProviderType_PROVIDER_GITHUB,
+			providerType: storepb.WorkloadIdentityConfig_GITHUB,
 			owner:        "myorg",
 			repo:         "myrepo",
 			branch:       "main",
@@ -133,7 +133,7 @@ func TestBuildSubjectPattern(t *testing.T) {
 		},
 		{
 			name:         "github without branch",
-			providerType: storepb.ProviderType_PROVIDER_GITHUB,
+			providerType: storepb.WorkloadIdentityConfig_GITHUB,
 			owner:        "myorg",
 			repo:         "myrepo",
 			branch:       "",
@@ -141,7 +141,7 @@ func TestBuildSubjectPattern(t *testing.T) {
 		},
 		{
 			name:         "github without repo",
-			providerType: storepb.ProviderType_PROVIDER_GITHUB,
+			providerType: storepb.WorkloadIdentityConfig_GITHUB,
 			owner:        "myorg",
 			repo:         "",
 			branch:       "",
@@ -149,7 +149,7 @@ func TestBuildSubjectPattern(t *testing.T) {
 		},
 		{
 			name:         "unsupported provider",
-			providerType: storepb.ProviderType_PROVIDER_TYPE_UNSPECIFIED,
+			providerType: storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED,
 			owner:        "owner",
 			repo:         "repo",
 			branch:       "main",
@@ -168,19 +168,19 @@ func TestBuildSubjectPattern(t *testing.T) {
 func TestGetPlatformPreset(t *testing.T) {
 	tests := []struct {
 		name         string
-		providerType storepb.ProviderType
+		providerType storepb.WorkloadIdentityConfig_ProviderType
 		expectNil    bool
 		issuerURL    string
 	}{
 		{
 			name:         "github preset",
-			providerType: storepb.ProviderType_PROVIDER_GITHUB,
+			providerType: storepb.WorkloadIdentityConfig_GITHUB,
 			expectNil:    false,
 			issuerURL:    "https://token.actions.githubusercontent.com",
 		},
 		{
 			name:         "unsupported provider returns nil",
-			providerType: storepb.ProviderType_PROVIDER_TYPE_UNSPECIFIED,
+			providerType: storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED,
 			expectNil:    true,
 		},
 	}

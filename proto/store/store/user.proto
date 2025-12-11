@@ -19,15 +19,6 @@ enum PrincipalType {
   WORKLOAD_IDENTITY = 4;
 }
 
-// ProviderType identifies the CI/CD platform for workload identity.
-enum ProviderType {
-  PROVIDER_TYPE_UNSPECIFIED = 0;
-  PROVIDER_GITHUB = 1;
-  PROVIDER_GITLAB = 2;
-  PROVIDER_BITBUCKET = 3;
-  PROVIDER_AZURE_DEVOPS = 4;
-}
-
 // MFAConfig is the MFA configuration for a user.
 message MFAConfig {
   // The otp_secret is the secret key used to validate the OTP code.
@@ -57,7 +48,13 @@ message UserProfile {
 
 // WorkloadIdentityConfig stores OIDC configuration for workload identity.
 message WorkloadIdentityConfig {
-  // Provider type (e.g., PROVIDER_GITHUB, PROVIDER_GITLAB)
+  // ProviderType identifies the CI/CD platform.
+  enum ProviderType {
+    PROVIDER_TYPE_UNSPECIFIED = 0;
+    GITHUB = 1;
+  }
+
+  // Provider type (currently only GITHUB is supported)
   ProviderType provider_type = 1;
   // OIDC issuer URL
   string issuer_url = 2;

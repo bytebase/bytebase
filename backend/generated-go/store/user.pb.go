@@ -82,60 +82,51 @@ func (PrincipalType) EnumDescriptor() ([]byte, []int) {
 	return file_store_user_proto_rawDescGZIP(), []int{0}
 }
 
-// ProviderType identifies the CI/CD platform for workload identity.
-type ProviderType int32
+// ProviderType identifies the CI/CD platform.
+type WorkloadIdentityConfig_ProviderType int32
 
 const (
-	ProviderType_PROVIDER_TYPE_UNSPECIFIED ProviderType = 0
-	ProviderType_PROVIDER_GITHUB           ProviderType = 1
-	ProviderType_PROVIDER_GITLAB           ProviderType = 2
-	ProviderType_PROVIDER_BITBUCKET        ProviderType = 3
-	ProviderType_PROVIDER_AZURE_DEVOPS     ProviderType = 4
+	WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED WorkloadIdentityConfig_ProviderType = 0
+	WorkloadIdentityConfig_GITHUB                    WorkloadIdentityConfig_ProviderType = 1
 )
 
-// Enum value maps for ProviderType.
+// Enum value maps for WorkloadIdentityConfig_ProviderType.
 var (
-	ProviderType_name = map[int32]string{
+	WorkloadIdentityConfig_ProviderType_name = map[int32]string{
 		0: "PROVIDER_TYPE_UNSPECIFIED",
-		1: "PROVIDER_GITHUB",
-		2: "PROVIDER_GITLAB",
-		3: "PROVIDER_BITBUCKET",
-		4: "PROVIDER_AZURE_DEVOPS",
+		1: "GITHUB",
 	}
-	ProviderType_value = map[string]int32{
+	WorkloadIdentityConfig_ProviderType_value = map[string]int32{
 		"PROVIDER_TYPE_UNSPECIFIED": 0,
-		"PROVIDER_GITHUB":           1,
-		"PROVIDER_GITLAB":           2,
-		"PROVIDER_BITBUCKET":        3,
-		"PROVIDER_AZURE_DEVOPS":     4,
+		"GITHUB":                    1,
 	}
 )
 
-func (x ProviderType) Enum() *ProviderType {
-	p := new(ProviderType)
+func (x WorkloadIdentityConfig_ProviderType) Enum() *WorkloadIdentityConfig_ProviderType {
+	p := new(WorkloadIdentityConfig_ProviderType)
 	*p = x
 	return p
 }
 
-func (x ProviderType) String() string {
+func (x WorkloadIdentityConfig_ProviderType) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (ProviderType) Descriptor() protoreflect.EnumDescriptor {
+func (WorkloadIdentityConfig_ProviderType) Descriptor() protoreflect.EnumDescriptor {
 	return file_store_user_proto_enumTypes[1].Descriptor()
 }
 
-func (ProviderType) Type() protoreflect.EnumType {
+func (WorkloadIdentityConfig_ProviderType) Type() protoreflect.EnumType {
 	return &file_store_user_proto_enumTypes[1]
 }
 
-func (x ProviderType) Number() protoreflect.EnumNumber {
+func (x WorkloadIdentityConfig_ProviderType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use ProviderType.Descriptor instead.
-func (ProviderType) EnumDescriptor() ([]byte, []int) {
-	return file_store_user_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use WorkloadIdentityConfig_ProviderType.Descriptor instead.
+func (WorkloadIdentityConfig_ProviderType) EnumDescriptor() ([]byte, []int) {
+	return file_store_user_proto_rawDescGZIP(), []int{2, 0}
 }
 
 // MFAConfig is the MFA configuration for a user.
@@ -293,8 +284,8 @@ func (x *UserProfile) GetWorkloadIdentityConfig() *WorkloadIdentityConfig {
 // WorkloadIdentityConfig stores OIDC configuration for workload identity.
 type WorkloadIdentityConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Provider type (e.g., PROVIDER_GITHUB, PROVIDER_GITLAB)
-	ProviderType ProviderType `protobuf:"varint,1,opt,name=provider_type,json=providerType,proto3,enum=bytebase.store.ProviderType" json:"provider_type,omitempty"`
+	// Provider type (currently only GITHUB is supported)
+	ProviderType WorkloadIdentityConfig_ProviderType `protobuf:"varint,1,opt,name=provider_type,json=providerType,proto3,enum=bytebase.store.WorkloadIdentityConfig_ProviderType" json:"provider_type,omitempty"`
 	// OIDC issuer URL
 	IssuerUrl string `protobuf:"bytes,2,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
 	// Allowed audiences for token validation
@@ -335,11 +326,11 @@ func (*WorkloadIdentityConfig) Descriptor() ([]byte, []int) {
 	return file_store_user_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *WorkloadIdentityConfig) GetProviderType() ProviderType {
+func (x *WorkloadIdentityConfig) GetProviderType() WorkloadIdentityConfig_ProviderType {
 	if x != nil {
 		return x.ProviderType
 	}
-	return ProviderType_PROVIDER_TYPE_UNSPECIFIED
+	return WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED
 }
 
 func (x *WorkloadIdentityConfig) GetIssuerUrl() string {
@@ -379,26 +370,24 @@ const file_store_user_proto_rawDesc = "" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
 	"\x06source\x18\x03 \x01(\tR\x06source\x12`\n" +
-	"\x18workload_identity_config\x18\x04 \x01(\v2&.bytebase.store.WorkloadIdentityConfigR\x16workloadIdentityConfig\"\xd0\x01\n" +
-	"\x16WorkloadIdentityConfig\x12A\n" +
-	"\rprovider_type\x18\x01 \x01(\x0e2\x1c.bytebase.store.ProviderTypeR\fproviderType\x12\x1d\n" +
+	"\x18workload_identity_config\x18\x04 \x01(\v2&.bytebase.store.WorkloadIdentityConfigR\x16workloadIdentityConfig\"\xa2\x02\n" +
+	"\x16WorkloadIdentityConfig\x12X\n" +
+	"\rprovider_type\x18\x01 \x01(\x0e23.bytebase.store.WorkloadIdentityConfig.ProviderTypeR\fproviderType\x12\x1d\n" +
 	"\n" +
 	"issuer_url\x18\x02 \x01(\tR\tissuerUrl\x12+\n" +
 	"\x11allowed_audiences\x18\x03 \x03(\tR\x10allowedAudiences\x12'\n" +
-	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern*y\n" +
+	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern\"9\n" +
+	"\fProviderType\x12\x1d\n" +
+	"\x19PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
+	"\n" +
+	"\x06GITHUB\x10\x01*y\n" +
 	"\rPrincipalType\x12\x1e\n" +
 	"\x1aPRINCIPAL_TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bEND_USER\x10\x01\x12\x13\n" +
 	"\x0fSERVICE_ACCOUNT\x10\x02\x12\x0e\n" +
 	"\n" +
 	"SYSTEM_BOT\x10\x03\x12\x15\n" +
-	"\x11WORKLOAD_IDENTITY\x10\x04*\x8a\x01\n" +
-	"\fProviderType\x12\x1d\n" +
-	"\x19PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
-	"\x0fPROVIDER_GITHUB\x10\x01\x12\x13\n" +
-	"\x0fPROVIDER_GITLAB\x10\x02\x12\x16\n" +
-	"\x12PROVIDER_BITBUCKET\x10\x03\x12\x19\n" +
-	"\x15PROVIDER_AZURE_DEVOPS\x10\x04B\x8c\x01\n" +
+	"\x11WORKLOAD_IDENTITY\x10\x04B\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tUserProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -416,19 +405,19 @@ func file_store_user_proto_rawDescGZIP() []byte {
 var file_store_user_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_store_user_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_user_proto_goTypes = []any{
-	(PrincipalType)(0),             // 0: bytebase.store.PrincipalType
-	(ProviderType)(0),              // 1: bytebase.store.ProviderType
-	(*MFAConfig)(nil),              // 2: bytebase.store.MFAConfig
-	(*UserProfile)(nil),            // 3: bytebase.store.UserProfile
-	(*WorkloadIdentityConfig)(nil), // 4: bytebase.store.WorkloadIdentityConfig
-	(*timestamppb.Timestamp)(nil),  // 5: google.protobuf.Timestamp
+	(PrincipalType)(0),                       // 0: bytebase.store.PrincipalType
+	(WorkloadIdentityConfig_ProviderType)(0), // 1: bytebase.store.WorkloadIdentityConfig.ProviderType
+	(*MFAConfig)(nil),                        // 2: bytebase.store.MFAConfig
+	(*UserProfile)(nil),                      // 3: bytebase.store.UserProfile
+	(*WorkloadIdentityConfig)(nil),           // 4: bytebase.store.WorkloadIdentityConfig
+	(*timestamppb.Timestamp)(nil),            // 5: google.protobuf.Timestamp
 }
 var file_store_user_proto_depIdxs = []int32{
 	5, // 0: bytebase.store.MFAConfig.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
 	5, // 1: bytebase.store.UserProfile.last_login_time:type_name -> google.protobuf.Timestamp
 	5, // 2: bytebase.store.UserProfile.last_change_password_time:type_name -> google.protobuf.Timestamp
 	4, // 3: bytebase.store.UserProfile.workload_identity_config:type_name -> bytebase.store.WorkloadIdentityConfig
-	1, // 4: bytebase.store.WorkloadIdentityConfig.provider_type:type_name -> bytebase.store.ProviderType
+	1, // 4: bytebase.store.WorkloadIdentityConfig.provider_type:type_name -> bytebase.store.WorkloadIdentityConfig.ProviderType
 	5, // [5:5] is the sub-list for method output_type
 	5, // [5:5] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name

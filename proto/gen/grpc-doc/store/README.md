@@ -336,7 +336,7 @@
     - [WorkloadIdentityConfig](#bytebase-store-WorkloadIdentityConfig)
   
     - [PrincipalType](#bytebase-store-PrincipalType)
-    - [ProviderType](#bytebase-store-ProviderType)
+    - [WorkloadIdentityConfig.ProviderType](#bytebase-store-WorkloadIdentityConfig-ProviderType)
   
 - [store/worksheet.proto](#store_worksheet-proto)
     - [WorkSheetOrganizerPayload](#bytebase-store-WorkSheetOrganizerPayload)
@@ -5430,7 +5430,7 @@ WorkloadIdentityConfig stores OIDC configuration for workload identity.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| provider_type | [ProviderType](#bytebase-store-ProviderType) |  | Provider type (e.g., PROVIDER_GITHUB, PROVIDER_GITLAB) |
+| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-store-WorkloadIdentityConfig-ProviderType) |  | Provider type (currently only GITHUB is supported) |
 | issuer_url | [string](#string) |  | OIDC issuer URL |
 | allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
 | subject_pattern | [string](#string) |  | Subject pattern to match against token subject claim |
@@ -5457,18 +5457,15 @@ PrincipalType is the type of a principal.
 
 
 
-<a name="bytebase-store-ProviderType"></a>
+<a name="bytebase-store-WorkloadIdentityConfig-ProviderType"></a>
 
-### ProviderType
-ProviderType identifies the CI/CD platform for workload identity.
+### WorkloadIdentityConfig.ProviderType
+ProviderType identifies the CI/CD platform.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | PROVIDER_TYPE_UNSPECIFIED | 0 |  |
-| PROVIDER_GITHUB | 1 |  |
-| PROVIDER_GITLAB | 2 |  |
-| PROVIDER_BITBUCKET | 3 |  |
-| PROVIDER_AZURE_DEVOPS | 4 |  |
+| GITHUB | 1 |  |
 
 
  
