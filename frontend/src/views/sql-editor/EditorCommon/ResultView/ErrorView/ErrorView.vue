@@ -56,7 +56,11 @@ const failingStatement = computed(() => {
 });
 
 const canShowInEditor = computed(() => {
-  return hasErrorPosition.value || !!failingStatement.value || !!props.executeParams?.selection;
+  return (
+    hasErrorPosition.value ||
+    !!failingStatement.value ||
+    !!props.executeParams?.selection
+  );
 });
 
 const hasErrorPosition = computed(() => {
@@ -97,7 +101,14 @@ const findStatementRange = (): IRange | undefined => {
   }
 
   // Try with semicolon if not found
-  matches = model.findMatches(statement + ";", false, false, false, null, false);
+  matches = model.findMatches(
+    statement + ";",
+    false,
+    false,
+    false,
+    null,
+    false
+  );
   if (matches.length > 0) {
     return matches[0].range;
   }
