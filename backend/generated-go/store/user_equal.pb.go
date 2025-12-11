@@ -54,6 +54,9 @@ func (x *UserProfile) Equal(y *UserProfile) bool {
 	if x.Source != y.Source {
 		return false
 	}
+	if !x.WorkloadIdentityConfig.Equal(y.WorkloadIdentityConfig) {
+		return false
+	}
 	return true
 }
 

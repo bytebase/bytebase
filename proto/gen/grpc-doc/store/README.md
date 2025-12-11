@@ -5415,6 +5415,7 @@ MFAConfig is the MFA configuration for a user.
 | last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | source | [string](#string) |  | The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
+| workload_identity_config | [WorkloadIdentityConfig](#bytebase-store-WorkloadIdentityConfig) |  | Workload identity configuration (only for WORKLOAD_IDENTITY type) |
 
 
 

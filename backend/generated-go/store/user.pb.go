@@ -225,9 +225,11 @@ type UserProfile struct {
 	LastLoginTime          *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=last_login_time,json=lastLoginTime,proto3" json:"last_login_time,omitempty"`
 	LastChangePasswordTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=last_change_password_time,json=lastChangePasswordTime,proto3" json:"last_change_password_time,omitempty"`
 	// The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
-	Source        string `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Source string `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
+	// Workload identity configuration (only for WORKLOAD_IDENTITY type)
+	WorkloadIdentityConfig *WorkloadIdentityConfig `protobuf:"bytes,4,opt,name=workload_identity_config,json=workloadIdentityConfig,proto3" json:"workload_identity_config,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *UserProfile) Reset() {
@@ -279,6 +281,13 @@ func (x *UserProfile) GetSource() string {
 		return x.Source
 	}
 	return ""
+}
+
+func (x *UserProfile) GetWorkloadIdentityConfig() *WorkloadIdentityConfig {
+	if x != nil {
+		return x.WorkloadIdentityConfig
+	}
+	return nil
 }
 
 // WorkloadIdentityConfig stores OIDC configuration for workload identity.
@@ -365,11 +374,12 @@ const file_store_user_proto_rawDesc = "" +
 	"\x0ftemp_otp_secret\x18\x02 \x01(\tR\rtempOtpSecret\x12%\n" +
 	"\x0erecovery_codes\x18\x03 \x03(\tR\rrecoveryCodes\x12.\n" +
 	"\x13temp_recovery_codes\x18\x04 \x03(\tR\x11tempRecoveryCodes\x12Z\n" +
-	"\x1ctemp_otp_secret_created_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\"\xc0\x01\n" +
+	"\x1ctemp_otp_secret_created_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\"\xa2\x02\n" +
 	"\vUserProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
-	"\x06source\x18\x03 \x01(\tR\x06source\"\xd0\x01\n" +
+	"\x06source\x18\x03 \x01(\tR\x06source\x12`\n" +
+	"\x18workload_identity_config\x18\x04 \x01(\v2&.bytebase.store.WorkloadIdentityConfigR\x16workloadIdentityConfig\"\xd0\x01\n" +
 	"\x16WorkloadIdentityConfig\x12A\n" +
 	"\rprovider_type\x18\x01 \x01(\x0e2\x1c.bytebase.store.ProviderTypeR\fproviderType\x12\x1d\n" +
 	"\n" +
@@ -417,12 +427,13 @@ var file_store_user_proto_depIdxs = []int32{
 	5, // 0: bytebase.store.MFAConfig.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
 	5, // 1: bytebase.store.UserProfile.last_login_time:type_name -> google.protobuf.Timestamp
 	5, // 2: bytebase.store.UserProfile.last_change_password_time:type_name -> google.protobuf.Timestamp
-	1, // 3: bytebase.store.WorkloadIdentityConfig.provider_type:type_name -> bytebase.store.ProviderType
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	4, // 3: bytebase.store.UserProfile.workload_identity_config:type_name -> bytebase.store.WorkloadIdentityConfig
+	1, // 4: bytebase.store.WorkloadIdentityConfig.provider_type:type_name -> bytebase.store.ProviderType
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_store_user_proto_init() }
