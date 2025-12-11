@@ -50,8 +50,8 @@ type IssueMessage struct {
 	UpdatedAt time.Time
 
 	// Internal fields.
-	projectID  string
-	creatorUID int
+	projectID string
+	creator   string
 }
 
 // UpdateIssueMessage is the message for updating an issue.
@@ -73,7 +73,7 @@ type FindIssueMessage struct {
 	PipelineID *int // Filter by pipeline_id (computed from plan)
 	// To support pagination, we add into creator.
 	// Only principleID or one of the following three fields can be set.
-	CreatorID       *int
+	CreatorID       *string
 	CreatedAtBefore *time.Time
 	CreatedAtAfter  *time.Time
 	Types           *[]storepb.Issue_Type
@@ -131,7 +131,7 @@ func (s *Store) GetIssue(ctx context.Context, find *FindIssueMessage) (*IssueMes
 }
 
 // CreateIssue creates a new issue.
-func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage, creatorID int) (*IssueMessage, error) {
+func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage, creator string) (*IssueMessage, error) {
 	create.Status = storepb.Issue_OPEN
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
@@ -141,7 +141,7 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage, creatorID
 
 	q := qb.Q().Space(`
 		INSERT INTO issue (
-			creator_id,
+			creator,
 			project,
 			plan_id,
 			name,
@@ -153,7 +153,7 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage, creatorID
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id`,
-		creatorID,
+		creator,
 		create.Project.ResourceID,
 		create.PlanUID,
 		create.Title,
@@ -288,7 +288,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.instance = ? AND task.db_name = ?)", *find.InstanceID, *find.DatabaseName)
 	}
 	if v := find.CreatorID; v != nil {
-		where.And("issue.creator_id = ?", *v)
+		where.And("issue.creator = ?", *v)
 	}
 	if v := find.CreatedAtBefore; v != nil {
 		where.And("issue.created_at < ?", *v)
@@ -340,7 +340,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	q := qb.Q().Space(`
 		SELECT
 			issue.id,
-			issue.creator_id,
+			issue.creator,
 			issue.created_at,
 			issue.updated_at,
 			issue.project,
@@ -418,7 +418,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		var typeString string
 		if err := rows.Scan(
 			&issue.UID,
-			&issue.creatorUID,
+			&issue.creator,
 			&issue.CreatedAt,
 			&issue.UpdatedAt,
 			&issue.projectID,
@@ -466,7 +466,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			return nil, err
 		}
 		issue.Project = project
-		creator, err := s.GetUserByID(ctx, issue.creatorUID)
+		creator, err := s.GetUserByEmail(ctx, issue.creator)
 		if err != nil {
 			return nil, err
 		}

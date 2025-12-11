@@ -194,7 +194,7 @@ func (s *IssueService) getIssueFind(
 					if variable == "current_approver" {
 						filterIssue.ApproverID = &user.ID
 					} else {
-						issueFind.CreatorID = &user.ID
+						issueFind.CreatorID = &user.Email
 					}
 				default:
 					return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %q with %v operator", variable, celoperators.Equals))
@@ -489,7 +489,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.ID)
+	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
 	}
@@ -579,7 +579,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.ID)
+	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
 	}
@@ -683,7 +683,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.ID)
+	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
 	}
@@ -784,7 +784,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
-		}, user.ID); err != nil {
+		}, user.Email); err != nil {
 			return err
 		}
 		return nil
@@ -954,7 +954,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
-		}, user.ID)
+		}, user.Email)
 		return err
 	}(); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
@@ -1053,7 +1053,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload:  p,
-		}, user.ID); err != nil {
+		}, user.Email); err != nil {
 			return err
 		}
 		return nil
@@ -1253,7 +1253,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		s.webhookManager.CreateEvent(ctx, e)
 	}
 	for _, create := range issueCommentCreates {
-		if _, err := s.store.CreateIssueComment(ctx, create, user.ID); err != nil {
+		if _, err := s.store.CreateIssueComment(ctx, create, user.Email); err != nil {
 			slog.Warn("failed to create issue comment", "issue id", issue.UID, log.BBError(err))
 		}
 	}
@@ -1343,7 +1343,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 							},
 						},
 					},
-				}, user.ID); err != nil {
+				}, user.Email); err != nil {
 					errs = multierr.Append(errs, errors.Wrapf(err, "failed to create issue comment after change the issue status"))
 					return
 				}
@@ -1436,7 +1436,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 		Payload: &storepb.IssueCommentPayload{
 			Comment: req.Msg.IssueComment.Comment,
 		},
-	}, user.ID)
+	}, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue comment: %v", err))
 	}

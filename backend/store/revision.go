@@ -20,10 +20,10 @@ type RevisionMessage struct {
 	Payload      *storepb.RevisionPayload
 
 	// output only
-	UID        int64
-	CreatedAt  time.Time
-	DeleterUID *int
-	DeletedAt  *time.Time
+	UID       int64
+	CreatedAt time.Time
+	Deleter   *string
+	DeletedAt *time.Time
 }
 
 type FindRevisionMessage struct {
@@ -50,7 +50,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			instance,
 			db_name,
 			created_at,
-			deleter_id,
+			deleter,
 			deleted_at,
 			version,
 			payload
@@ -115,7 +115,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			&r.InstanceID,
 			&r.DatabaseName,
 			&r.CreatedAt,
-			&r.DeleterUID,
+			&r.Deleter,
 			&r.DeletedAt,
 			&r.Version,
 			&p,
@@ -206,10 +206,10 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 	return revision, nil
 }
 
-func (s *Store) DeleteRevision(ctx context.Context, uid int64, instanceID, databaseName string, deleterUID int) error {
+func (s *Store) DeleteRevision(ctx context.Context, uid int64, instanceID, databaseName string, deleter string) error {
 	query :=
 		`UPDATE revision
-		SET deleter_id = $1, deleted_at = now()
+		SET deleter = $1, deleted_at = now()
 		WHERE id = $2 AND instance = $3 AND db_name = $4`
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -218,7 +218,7 @@ func (s *Store) DeleteRevision(ctx context.Context, uid int64, instanceID, datab
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, query, deleterUID, uid, instanceID, databaseName); err != nil {
+	if _, err := tx.ExecContext(ctx, query, deleter, uid, instanceID, databaseName); err != nil {
 		return errors.Wrapf(err, "failed to exec")
 	}
 

@@ -221,7 +221,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		UpdateTime: timestamppb.New(rollout.UpdatedAt),
 	}
 
-	creator, err := s.GetUserByID(ctx, rollout.CreatorUID)
+	creator, err := s.GetUserByEmail(ctx, rollout.Creator)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get rollout creator")
 	}

@@ -262,7 +262,7 @@ func (s *RevisionService) DeleteRevision(
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	if err := s.store.DeleteRevision(ctx, revisionUID, instanceID, databaseName, user.ID); err != nil {
+	if err := s.store.DeleteRevision(ctx, revisionUID, instanceID, databaseName, user.Email); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete revision %v", request.Name))
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -323,15 +323,8 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		Type:          convertToRevisionType(revision.Payload.Type),
 	}
 
-	if revision.DeleterUID != nil {
-		deleter, err := s.GetUserByID(ctx, *revision.DeleterUID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get deleter")
-		}
-		if deleter == nil {
-			return nil, errors.Errorf("deleter %v not found", *revision.DeleterUID)
-		}
-		r.Deleter = common.FormatUserEmail(deleter.Email)
+	if revision.Deleter != nil {
+		r.Deleter = common.FormatUserEmail(*revision.Deleter)
 	}
 	if revision.DeletedAt != nil {
 		r.DeleteTime = timestamppb.New(*revision.DeletedAt)

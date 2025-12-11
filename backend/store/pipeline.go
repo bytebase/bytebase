@@ -21,9 +21,9 @@ type PipelineMessage struct {
 	ProjectID string
 	Tasks     []*TaskMessage
 	// Output only.
-	ID         int
-	CreatorUID int
-	CreatedAt  time.Time
+	ID        int
+	Creator   string
+	CreatedAt time.Time
 	// The UpdatedAt is a latest time of task/taskRun updates.
 	// If there are no tasks, it will be the same as CreatedAt.
 	UpdatedAt time.Time
@@ -41,7 +41,7 @@ type PipelineFind struct {
 }
 
 // CreatePipelineAIO creates a pipeline with tasks all in one.
-func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *PipelineMessage, creatorUID int) (createdPipelineUID int, err error) {
+func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *PipelineMessage, creator string) (createdPipelineUID int, err error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin tx")
@@ -54,7 +54,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 	}
 	invalidateCacheF := func() {}
 	if pipelineUIDMaybe == nil {
-		createdPipeline, err := s.createPipeline(ctx, tx, pipeline, creatorUID)
+		createdPipeline, err := s.createPipeline(ctx, tx, pipeline, creator)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to create pipeline")
 		}
@@ -167,25 +167,25 @@ func lockPlanAndGetPipelineUID(ctx context.Context, txn *sql.Tx, planUID int64) 
 	return nil, nil
 }
 
-func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineMessage, creatorUID int) (*PipelineMessage, error) {
+func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineMessage, creator string) (*PipelineMessage, error) {
 	q := qb.Q().Space(`
 		INSERT INTO pipeline (
 			project,
-			creator_id
+			creator
 		)
 		VALUES (
 			?,
 			?
 		)
 		RETURNING id, created_at
-	`, create.ProjectID, creatorUID)
+	`, create.ProjectID, creator)
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 	pipeline := &PipelineMessage{
-		ProjectID:  create.ProjectID,
-		CreatorUID: creatorUID,
+		ProjectID: create.ProjectID,
+		Creator:   creator,
 	}
 	if err := txn.QueryRowContext(ctx, query, args...).Scan(
 		&pipeline.ID,
@@ -233,7 +233,7 @@ func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*Pipel
 	q := qb.Q().Space(`
 		SELECT
 			pipeline.id,
-			pipeline.creator_id,
+			pipeline.creator,
 			pipeline.created_at,
 			pipeline.project,
 			issue.id,
@@ -292,7 +292,7 @@ func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*Pipel
 		var pipeline PipelineMessage
 		if err := rows.Scan(
 			&pipeline.ID,
-			&pipeline.CreatorUID,
+			&pipeline.Creator,
 			&pipeline.CreatedAt,
 			&pipeline.ProjectID,
 			&pipeline.IssueID,
@@ -356,7 +356,7 @@ func (s *Store) GetListRolloutFilter(ctx context.Context, filter string) (*qb.Qu
 					if err != nil {
 						return nil, errors.Errorf("failed to get user %v with error %v", value, err.Error())
 					}
-					return qb.Q().Space("pipeline.creator_id = ?", user.ID), nil
+					return qb.Q().Space("pipeline.creator = ?", user.Email), nil
 				case "task_type":
 					taskType, ok := value.(string)
 					if !ok {

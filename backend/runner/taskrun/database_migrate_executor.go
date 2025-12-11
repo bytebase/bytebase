@@ -120,7 +120,7 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 								},
 							},
 						},
-					}, common.SystemBotID); err != nil {
+					}, common.SystemBotEmail); err != nil {
 						slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
 					}
 				}
@@ -440,7 +440,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 						},
 					},
 				},
-			}, common.SystemBotID); err != nil {
+			}, common.SystemBotEmail); err != nil {
 				slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err))
 			}
 		}

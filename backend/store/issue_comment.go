@@ -20,7 +20,7 @@ type IssueCommentMessage struct {
 	Payload   *storepb.IssueCommentPayload
 	Creator   *UserMessage
 
-	creatorUID int
+	creator string
 }
 
 type FindIssueCommentMessage struct {
@@ -55,7 +55,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 	q := qb.Q().Space(`
 		SELECT
 			id,
-			creator_id,
+			creator,
 			created_at,
 			updated_at,
 			issue_id,
@@ -99,7 +99,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		var p []byte
 		if err := rows.Scan(
 			&ic.UID,
-			&ic.creatorUID,
+			&ic.creator,
 			&ic.CreatedAt,
 			&ic.UpdatedAt,
 			&ic.IssueUID,
@@ -118,7 +118,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 	}
 
 	for _, ic := range issueComments {
-		creator, err := s.GetUserByID(ctx, ic.creatorUID)
+		creator, err := s.GetUserByEmail(ctx, ic.creator)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get creator")
 		}
@@ -128,7 +128,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 	return issueComments, nil
 }
 
-func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID int, tasks []string, status storepb.TaskRun_Status, creatorUID int, comment string) error {
+func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID int, tasks []string, status storepb.TaskRun_Status, creator string, comment string) error {
 	create := &IssueCommentMessage{
 		IssueUID: issueUID,
 		Payload: &storepb.IssueCommentPayload{
@@ -142,11 +142,11 @@ func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID
 		},
 	}
 
-	_, err := s.CreateIssueComment(ctx, create, creatorUID)
+	_, err := s.CreateIssueComment(ctx, create, creator)
 	return err
 }
 
-func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage, creatorUID int) (*IssueCommentMessage, error) {
+func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage, creator string) (*IssueCommentMessage, error) {
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal payload")
@@ -154,7 +154,7 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 
 	q := qb.Q().Space(`
 		INSERT INTO issue_comment (
-			creator_id,
+			creator,
 			issue_id,
 			payload
 		) VALUES (
@@ -162,7 +162,7 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 			?,
 			?
 		) RETURNING id, created_at, updated_at
-	`, creatorUID, create.IssueUID, payload)
+	`, creator, create.IssueUID, payload)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -173,12 +173,12 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 		return nil, errors.Wrapf(err, "failed to insert")
 	}
 
-	create.creatorUID = creatorUID
-	creator, err := s.GetUserByID(ctx, creatorUID)
+	c, err := s.GetUserByEmail(ctx, creator)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get creator")
 	}
-	create.Creator = creator
+	create.Creator = c
+	create.creator = creator
 
 	return create, nil
 }

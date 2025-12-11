@@ -19,10 +19,10 @@ type ReleaseMessage struct {
 	Payload   *storepb.ReleasePayload
 
 	// output only
-	UID        int64
-	Deleted    bool
-	CreatorUID int
-	At         time.Time
+	UID     int64
+	Deleted bool
+	Creator string
+	At      time.Time
 }
 
 type FindReleaseMessage struct {
@@ -41,7 +41,7 @@ type UpdateReleaseMessage struct {
 	Payload *storepb.ReleasePayload
 }
 
-func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, creatorUID int) (*ReleaseMessage, error) {
+func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, creator string) (*ReleaseMessage, error) {
 	p, err := protojson.Marshal(release.Payload)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal release payload")
@@ -49,7 +49,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 
 	q := qb.Q().Space(`
 		INSERT INTO release (
-			creator_id,
+			creator,
 			project,
 			digest,
 			payload
@@ -59,7 +59,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 			?,
 			?
 		) RETURNING id, created_at
-	`, creatorUID, release.ProjectID, release.Digest, p)
+	`, creator, release.ProjectID, release.Digest, p)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	}
 
 	release.UID = id
-	release.CreatorUID = creatorUID
+	release.Creator = creator
 	release.At = createdTime
 
 	return release, nil
@@ -114,7 +114,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			deleted,
 			project,
 			digest,
-			creator_id,
+			creator,
 			created_at,
 			payload
 		FROM release
@@ -171,7 +171,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			&r.Deleted,
 			&r.ProjectID,
 			&r.Digest,
-			&r.CreatorUID,
+			&r.Creator,
 			&r.At,
 			&payload,
 		); err != nil {
