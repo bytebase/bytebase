@@ -191,11 +191,6 @@ func (s *Service) revocationEndpoint() string {
 
 // Handler stubs - to be implemented in separate files
 // nolint:unused,revive,staticcheck
-func (_ *Service) handleDiscovery(_ echo.Context) error {
-	panic("not implemented")
-}
-
-// nolint:unused,revive,staticcheck
 func (_ *Service) handleRegister(_ echo.Context) error {
 	panic("not implemented")
 }
