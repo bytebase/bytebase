@@ -387,6 +387,10 @@
       "backing-up": "backing up...",
       "retry-attempt": "attempt {current}/{max}",
       "computing": "computing..."
+    },
+    "log-viewer": {
+      "multiple-deploys-notice": "Server restart detected during execution. Logs are grouped by deployment.",
+      "deployment-n": "Deployment #{n}"
     }
   },
   "banner": {

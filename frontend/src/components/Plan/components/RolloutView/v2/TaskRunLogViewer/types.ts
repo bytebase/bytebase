@@ -30,3 +30,8 @@ export interface EntryGroup {
   type: TaskRunLogEntry_Type;
   entries: import("@/types/proto-es/v1/rollout_service_pb").TaskRunLogEntry[];
 }
+
+export interface DeployGroup {
+  deployId: string;
+  sections: Section[];
+}

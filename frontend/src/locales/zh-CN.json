@@ -387,6 +387,10 @@
       "backing-up": "备份中...",
       "retry-attempt": "第 {current}/{max} 次尝试",
       "computing": "计算中..."
+    },
+    "log-viewer": {
+      "multiple-deploys-notice": "检测到执行期间服务重启，日志按部署分组显示。",
+      "deployment-n": "部署 #{n}"
     }
   },
   "banner": {
