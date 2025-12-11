@@ -56,9 +56,16 @@ func (s *IssueService) getUserRoleMap(ctx context.Context, projectResourceID str
 		return map[string]bool{}
 	}
 
-	return utils.GetUserFormattedRolesMap(ctx, s.store, &store.UserMessage{
-		ID: principalUID,
-	}, policy.Policy, workspacePolicy.Policy)
+	user, err := s.store.GetUserByID(ctx, principalUID)
+	if err != nil {
+		slog.Error("failed to get user", log.BBError(err), slog.Int("user_id", principalUID))
+		return map[string]bool{}
+	}
+	if user == nil {
+		return map[string]bool{}
+	}
+
+	return utils.GetUserFormattedRolesMap(ctx, s.store, user, policy.Policy, workspacePolicy.Policy)
 }
 
 func (s *IssueService) isIssueNextApprover(ctx context.Context, issue *v1pb.Issue, projectResourceID string, principalUID int) bool {
