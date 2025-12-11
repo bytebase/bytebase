@@ -640,15 +640,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pending task runs, error %v", err))
 	}
 
-	if issueN != nil {
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, request.Tasks, storepb.TaskRun_PENDING, user.ID, request.Reason); err != nil {
-			slog.Warn("failed to create issue comment", "issueUID", issueN.UID, log.BBError(err))
-		}
-	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
 		Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
-		Comment: request.Reason,
 		Issue:   webhook.NewIssue(issueN),
 		Project: webhook.NewProject(project),
 		Rollout: webhook.NewRollout(rollout),
@@ -834,14 +828,12 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	var taskRunIDs []int
-	var taskNames []string
 	for _, taskRun := range request.TaskRuns {
-		projectID, rolloutID, stageID, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
+		_, _, _, _, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		taskRunIDs = append(taskRunIDs, taskRunID)
-		taskNames = append(taskNames, common.FormatTask(projectID, rolloutID, stageID, taskID))
 	}
 
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
@@ -872,15 +864,9 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch patch task run status to canceled, error: %v", err))
 	}
 
-	if issueN != nil {
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, taskNames, storepb.TaskRun_CANCELED, user.ID, request.Reason); err != nil {
-			slog.Warn("failed to create issue comment", "issueUID", issueN.UID, log.BBError(err))
-		}
-	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
 		Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
-		Comment: request.Reason,
 		Issue:   webhook.NewIssue(issueN),
 		Rollout: webhook.NewRollout(rollout),
 		Project: webhook.NewProject(project),

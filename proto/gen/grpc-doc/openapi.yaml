@@ -8384,9 +8384,6 @@ components:
                     description: |-
                         The taskRuns to cancel.
                          Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-                reason:
-                    type: string
-                    description: The reason for canceling the task runs.
         BatchCancelTaskRunsResponse:
             type: object
             properties: {}
@@ -8552,9 +8549,6 @@ components:
                     description: |-
                         The tasks to run.
                          Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-                reason:
-                    type: string
-                    description: The reason for running the tasks.
                 runTime:
                     type: string
                     description: The task run should run after run_time.
