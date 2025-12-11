@@ -23,6 +23,7 @@ import authRoutes, {
   AUTH_OIDC_CALLBACK_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
   AUTH_SIGNIN_MODULE,
+  OAUTH2_CONSENT_MODULE,
 } from "./auth";
 import dashboardRoutes from "./dashboard";
 import {
@@ -88,6 +89,12 @@ router.beforeEach((to, from, next) => {
     to.name === AUTH_OAUTH_CALLBACK_MODULE ||
     to.name === AUTH_OIDC_CALLBACK_MODULE
   ) {
+    next();
+    return;
+  }
+
+  // OAuth2 consent page requires login but should not redirect away
+  if (to.name === OAUTH2_CONSENT_MODULE) {
     next();
     return;
   }
