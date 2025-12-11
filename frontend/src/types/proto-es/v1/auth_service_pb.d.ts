@@ -243,20 +243,6 @@ export declare type ExchangeTokenResponse = Message<"bytebase.v1.ExchangeTokenRe
    * @generated from field: string access_token = 1;
    */
   accessToken: string;
-
-  /**
-   * Token type (always "Bearer").
-   *
-   * @generated from field: string token_type = 2;
-   */
-  tokenType: string;
-
-  /**
-   * Token expiration in seconds (default: 3600).
-   *
-   * @generated from field: int32 expires_in = 3;
-   */
-  expiresIn: number;
 };
 
 /**

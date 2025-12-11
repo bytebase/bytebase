@@ -741,7 +741,5 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 
 	return connect.NewResponse(&v1pb.ExchangeTokenResponse{
 		AccessToken: token,
-		TokenType:   "Bearer",
-		ExpiresIn:   3600, // 1 hour
 	}), nil
 }

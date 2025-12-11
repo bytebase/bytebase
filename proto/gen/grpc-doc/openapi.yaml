@@ -10076,13 +10076,6 @@ components:
                 accessToken:
                     type: string
                     description: Bytebase access token.
-                tokenType:
-                    type: string
-                    description: Token type (always "Bearer").
-                expiresIn:
-                    type: integer
-                    description: 'Token expiration in seconds (default: 3600).'
-                    format: int32
         ExportAuditLogsRequest:
             required:
                 - parent

@@ -3122,8 +3122,6 @@ AuditLogService manages audit logs for system activities and API calls.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | access_token | [string](#string) |  | Bytebase access token. |
-| token_type | [string](#string) |  | Token type (always &#34;Bearer&#34;). |
-| expires_in | [int32](#int32) |  | Token expiration in seconds (default: 3600). |
 
 
 

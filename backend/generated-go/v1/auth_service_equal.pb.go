@@ -137,11 +137,5 @@ func (x *ExchangeTokenResponse) Equal(y *ExchangeTokenResponse) bool {
 	if x.AccessToken != y.AccessToken {
 		return false
 	}
-	if x.TokenType != y.TokenType {
-		return false
-	}
-	if x.ExpiresIn != y.ExpiresIn {
-		return false
-	}
 	return true
 }

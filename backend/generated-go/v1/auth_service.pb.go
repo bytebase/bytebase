@@ -476,11 +476,7 @@ func (x *ExchangeTokenRequest) GetEmail() string {
 type ExchangeTokenResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Bytebase access token.
-	AccessToken string `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	// Token type (always "Bearer").
-	TokenType string `protobuf:"bytes,2,opt,name=token_type,json=tokenType,proto3" json:"token_type,omitempty"`
-	// Token expiration in seconds (default: 3600).
-	ExpiresIn     int32 `protobuf:"varint,3,opt,name=expires_in,json=expiresIn,proto3" json:"expires_in,omitempty"`
+	AccessToken   string `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -522,20 +518,6 @@ func (x *ExchangeTokenResponse) GetAccessToken() string {
 	return ""
 }
 
-func (x *ExchangeTokenResponse) GetTokenType() string {
-	if x != nil {
-		return x.TokenType
-	}
-	return ""
-}
-
-func (x *ExchangeTokenResponse) GetExpiresIn() int32 {
-	if x != nil {
-		return x.ExpiresIn
-	}
-	return 0
-}
-
 var File_v1_auth_service_proto protoreflect.FileDescriptor
 
 const file_v1_auth_service_proto_rawDesc = "" +
@@ -571,13 +553,9 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\rLogoutRequest\"B\n" +
 	"\x14ExchangeTokenRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\"x\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\":\n" +
 	"\x15ExchangeTokenResponse\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x1d\n" +
-	"\n" +
-	"token_type\x18\x02 \x01(\tR\ttokenType\x12\x1d\n" +
-	"\n" +
-	"expires_in\x18\x03 \x01(\x05R\texpiresIn2\xd6\x02\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken2\xd6\x02\n" +
 	"\vAuthService\x12a\n" +
 	"\x05Login\x12\x19.bytebase.v1.LoginRequest\x1a\x1a.bytebase.v1.LoginResponse\"!\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/auth/login\x12`\n" +
 	"\x06Logout\x12\x1a.bytebase.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\"\"\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logout\x12\x81\x01\n" +
