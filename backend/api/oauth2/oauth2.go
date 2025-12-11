@@ -49,8 +49,30 @@ func (s *Service) RegisterRoutes(g *echo.Group) {
 	g.POST("/oauth2/register", s.handleRegister)
 	g.GET("/oauth2/authorize", s.handleAuthorizeGet)
 	g.POST("/oauth2/authorize", s.handleAuthorizePost)
+	g.GET("/oauth2/clients/:clientID", s.handleGetClient)
 	g.POST("/oauth2/token", s.handleToken)
 	g.POST("/oauth2/revoke", s.handleRevoke)
+}
+
+// handleGetClient returns public client info for the consent page.
+func (s *Service) handleGetClient(c echo.Context) error {
+	ctx := c.Request().Context()
+	clientID := c.Param("clientID")
+
+	client, err := s.store.GetOAuth2Client(ctx, clientID)
+	if err != nil {
+		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to lookup client")
+	}
+	if client == nil {
+		return oauth2Error(c, http.StatusNotFound, "invalid_client", "client not found")
+	}
+
+	// Return only public info (no secret)
+	return c.JSON(http.StatusOK, map[string]any{
+		"client_id":     client.ClientID,
+		"client_name":   client.Config.ClientName,
+		"redirect_uris": client.Config.RedirectUris,
+	})
 }
 
 // nolint:unused

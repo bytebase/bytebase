@@ -61,16 +61,16 @@ func (s *Service) handleAuthorizeGet(c echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, "invalid_request", "code_challenge_method must be S256")
 	}
 
-	// Check if user is logged in
-	accessToken := getTokenFromEchoRequest(c)
-	if accessToken == "" {
-		// Redirect to login page with return URL
-		loginURL := fmt.Sprintf("/auth/login?redirect=%s", url.QueryEscape(c.Request().URL.String()))
-		return c.Redirect(http.StatusFound, loginURL)
-	}
-
-	// Return consent page HTML
-	return renderConsentPage(c, client.Config.ClientName, clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
+	// Redirect to frontend consent page
+	// The frontend will handle login if needed and display consent UI
+	consentURL := fmt.Sprintf("/oauth2/consent?client_id=%s&redirect_uri=%s&state=%s&code_challenge=%s&code_challenge_method=%s",
+		url.QueryEscape(clientID),
+		url.QueryEscape(redirectURI),
+		url.QueryEscape(state),
+		url.QueryEscape(codeChallenge),
+		url.QueryEscape(codeChallengeMethod),
+	)
+	return c.Redirect(http.StatusFound, consentURL)
 }
 
 func (s *Service) handleAuthorizePost(c echo.Context) error {
@@ -174,46 +174,6 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 	}
 	u.RawQuery = q.Encode()
 	return c.Redirect(http.StatusFound, u.String())
-}
-
-func renderConsentPage(c echo.Context, clientName, clientID, redirectURI, state, codeChallenge, codeChallengeMethod string) error {
-	html := fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<head>
-    <title>Authorize Application</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
-        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; width: 100%%; }
-        h1 { margin: 0 0 1rem; font-size: 1.5rem; }
-        p { color: #666; margin: 0 0 1.5rem; }
-        .app-name { font-weight: bold; color: #333; }
-        .buttons { display: flex; gap: 1rem; }
-        button { flex: 1; padding: 0.75rem; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
-        .allow { background: #4f46e5; color: white; }
-        .allow:hover { background: #4338ca; }
-        .deny { background: #e5e5e5; color: #333; }
-        .deny:hover { background: #d4d4d4; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Authorize Application</h1>
-        <p><span class="app-name">%s</span> is requesting access to your Bytebase account.</p>
-        <form method="POST" action="/oauth2/authorize">
-            <input type="hidden" name="client_id" value="%s">
-            <input type="hidden" name="redirect_uri" value="%s">
-            <input type="hidden" name="state" value="%s">
-            <input type="hidden" name="code_challenge" value="%s">
-            <input type="hidden" name="code_challenge_method" value="%s">
-            <div class="buttons">
-                <button type="submit" name="action" value="deny" class="deny">Deny</button>
-                <button type="submit" name="action" value="allow" class="allow">Allow</button>
-            </div>
-        </form>
-    </div>
-</body>
-</html>`, clientName, clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
-	return c.HTML(http.StatusOK, html)
 }
 
 // getTokenFromEchoRequest extracts the access token from an Echo request.
