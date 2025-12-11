@@ -50,8 +50,8 @@ type IssueMessage struct {
 	UpdatedAt time.Time
 
 	// Internal fields.
-	projectID string
-	creator   string
+	projectID    string
+	creatorEmail string
 }
 
 // UpdateIssueMessage is the message for updating an issue.
@@ -71,7 +71,7 @@ type FindIssueMessage struct {
 	ProjectIDs *[]string
 	PlanUID    *int64
 	PipelineID *int // Filter by pipeline_id (computed from plan)
-	// To support pagination, we add into creator.
+	// To support pagination, we add into creatorEmail.
 	// Only principleID or one of the following three fields can be set.
 	CreatorID       *string
 	CreatedAtBefore *time.Time
@@ -340,7 +340,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	q := qb.Q().Space(`
 		SELECT
 			issue.id,
-			issue.creator,
+			issue.creatorEmail,
 			issue.created_at,
 			issue.updated_at,
 			issue.project,
@@ -418,7 +418,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		var typeString string
 		if err := rows.Scan(
 			&issue.UID,
-			&issue.creator,
+			&issue.creatorEmail,
 			&issue.CreatedAt,
 			&issue.UpdatedAt,
 			&issue.projectID,
@@ -466,7 +466,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			return nil, err
 		}
 		issue.Project = project
-		creator, err := s.GetUserByEmail(ctx, issue.creator)
+		creator, err := s.GetUserByEmail(ctx, issue.creatorEmail)
 		if err != nil {
 			return nil, err
 		}

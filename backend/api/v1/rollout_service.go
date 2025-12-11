@@ -1097,10 +1097,6 @@ func (s *RolloutService) canUserCancelEnvironmentTaskRun(ctx context.Context, us
 	return s.canUserRunEnvironmentTasks(ctx, user, project, issue, environment, creator)
 }
 
-func (s *RolloutService) canUserSkipEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, creator string) (bool, error) {
-	return s.canUserRunEnvironmentTasks(ctx, user, project, issue, environment, creator)
-}
-
 // getRolloutWithTasks retrieves a pipeline by ID with its tasks populated.
 func (s *RolloutService) getRolloutWithTasks(ctx context.Context, projectID string, rolloutID int) (*store.PipelineMessage, error) {
 	pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{

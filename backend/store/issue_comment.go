@@ -20,7 +20,7 @@ type IssueCommentMessage struct {
 	Payload   *storepb.IssueCommentPayload
 	Creator   *UserMessage
 
-	creator string
+	creatorEmail string
 }
 
 type FindIssueCommentMessage struct {
@@ -99,7 +99,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		var p []byte
 		if err := rows.Scan(
 			&ic.UID,
-			&ic.creator,
+			&ic.creatorEmail,
 			&ic.CreatedAt,
 			&ic.UpdatedAt,
 			&ic.IssueUID,
@@ -118,7 +118,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 	}
 
 	for _, ic := range issueComments {
-		creator, err := s.GetUserByEmail(ctx, ic.creator)
+		creator, err := s.GetUserByEmail(ctx, ic.creatorEmail)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get creator")
 		}
@@ -178,7 +178,7 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 		return nil, errors.Wrapf(err, "failed to get creator")
 	}
 	create.Creator = c
-	create.creator = creator
+	create.creatorEmail = creator
 
 	return create, nil
 }
