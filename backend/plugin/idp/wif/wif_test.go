@@ -197,3 +197,58 @@ func TestGetPlatformPreset(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateIssuerURL(t *testing.T) {
+	tests := []struct {
+		name      string
+		issuerURL string
+		wantErr   bool
+	}{
+		{
+			name:      "valid https url",
+			issuerURL: "https://token.actions.githubusercontent.com",
+			wantErr:   false,
+		},
+		{
+			name:      "http url rejected",
+			issuerURL: "http://example.com",
+			wantErr:   true,
+		},
+		{
+			name:      "localhost rejected",
+			issuerURL: "https://localhost",
+			wantErr:   true,
+		},
+		{
+			name:      "private ip 127.x rejected",
+			issuerURL: "https://127.0.0.1",
+			wantErr:   true,
+		},
+		{
+			name:      "private ip 10.x rejected",
+			issuerURL: "https://10.0.0.1",
+			wantErr:   true,
+		},
+		{
+			name:      "private ip 192.168.x rejected",
+			issuerURL: "https://192.168.1.1",
+			wantErr:   true,
+		},
+		{
+			name:      "empty url rejected",
+			issuerURL: "",
+			wantErr:   true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateIssuerURL(tc.issuerURL)
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

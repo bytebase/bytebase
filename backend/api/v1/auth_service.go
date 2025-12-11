@@ -710,6 +710,10 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	}
 
 	// Get workload identity config
+	if user.Profile == nil {
+		return nil, connect.NewError(connect.CodeInternal,
+			errors.New("workload identity profile not found"))
+	}
 	wicConfig := user.Profile.GetWorkloadIdentityConfig()
 	if wicConfig == nil {
 		return nil, connect.NewError(connect.CodeInternal,
