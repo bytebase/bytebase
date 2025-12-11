@@ -41,6 +41,10 @@
             v-if="user.userType === UserType.SERVICE_ACCOUNT"
             :size="tagSize"
           />
+          <WorkloadIdentityTag
+            v-if="user.userType === UserType.WORKLOAD_IDENTITY"
+            :size="tagSize"
+          />
           <NTag v-if="user.mfaEnabled" :size="tagSize" type="success" round>
             {{ $t("two-factor.enabled") }}
           </NTag>
@@ -87,6 +91,7 @@ import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
+import WorkloadIdentityTag from "@/components/misc/WorkloadIdentityTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { CopyButton } from "@/components/v2";

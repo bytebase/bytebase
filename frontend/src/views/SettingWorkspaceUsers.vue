@@ -117,6 +117,16 @@
           </NPopover>
           <NButton
             v-if="allowCreateUser"
+            class="capitalize"
+            @click="state.showCreateWorkloadIdentityDrawer = true"
+          >
+            <template #icon>
+              <PlusIcon class="h-5 w-5" />
+            </template>
+            {{ $t(`settings.members.workload-identity`) }}
+          </NButton>
+          <NButton
+            v-if="allowCreateUser"
             type="primary"
             class="capitalize"
             @click="handleCreateUser"
@@ -176,6 +186,11 @@
     @close="state.showCreateUserDrawer = false"
     @created="handleUserCreated"
   />
+  <CreateWorkloadIdentityDrawer
+    v-if="state.showCreateWorkloadIdentityDrawer"
+    @close="state.showCreateWorkloadIdentityDrawer = false"
+    @created="handleUserCreated"
+  />
   <CreateGroupDrawer
     v-if="state.showCreateGroupDrawer"
     :group="state.editingGroup"
@@ -202,6 +217,7 @@ import { FeatureBadge } from "@/components/FeatureGuard";
 import AADSyncDrawer from "@/components/User/Settings/AADSyncDrawer.vue";
 import CreateGroupDrawer from "@/components/User/Settings/CreateGroupDrawer.vue";
 import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
+import CreateWorkloadIdentityDrawer from "@/components/User/Settings/CreateWorkloadIdentityDrawer.vue";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import UserDataTableByGroup from "@/components/User/Settings/UserDataTableByGroup/index.vue";
 import { SearchBox } from "@/components/v2";
@@ -236,6 +252,7 @@ type LocalState = {
   inactiveUserFilterText: string;
   showInactiveUserList: boolean;
   showCreateUserDrawer: boolean;
+  showCreateWorkloadIdentityDrawer: boolean;
   showCreateGroupDrawer: boolean;
   showAadSyncDrawer: boolean;
   editingGroup?: Group;
@@ -251,6 +268,7 @@ const state = reactive<LocalState>({
   inactiveUserFilterText: "",
   showInactiveUserList: false,
   showCreateUserDrawer: false,
+  showCreateWorkloadIdentityDrawer: false,
   showCreateGroupDrawer: false,
   showAadSyncDrawer: false,
 });
