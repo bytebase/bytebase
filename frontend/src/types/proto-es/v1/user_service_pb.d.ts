@@ -550,6 +550,7 @@ export declare const UserService: GenService<{
   },
   /**
    * Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+   * Note: Email updates are not supported through this API. Use UpdateEmail instead.
    * Permissions required: bb.users.update (or self)
    *
    * @generated from rpc bytebase.v1.UserService.UpdateUser

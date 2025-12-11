@@ -56,6 +56,7 @@ type UserServiceClient interface {
 	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
 	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+	// Note: Email updates are not supported through this API. Use UpdateEmail instead.
 	// Permissions required: bb.users.update (or self)
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*User, error)
 	// Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
@@ -192,6 +193,7 @@ type UserServiceServer interface {
 	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(context.Context, *CreateUserRequest) (*User, error)
 	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+	// Note: Email updates are not supported through this API. Use UpdateEmail instead.
 	// Permissions required: bb.users.update (or self)
 	UpdateUser(context.Context, *UpdateUserRequest) (*User, error)
 	// Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.

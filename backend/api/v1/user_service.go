@@ -382,17 +382,8 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	for _, path := range request.Msg.UpdateMask.Paths {
 		switch path {
 		case "email":
-			if err := validateEmailWithDomains(ctx, s.licenseService, s.store, request.Msg.User.Email, user.Type == storepb.PrincipalType_SERVICE_ACCOUNT, false); err != nil {
-				return nil, err
-			}
-			existedUser, err := s.store.GetUserByEmail(ctx, request.Msg.User.Email)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find user list, error: %v", err))
-			}
-			if existedUser != nil && existedUser.ID != user.ID {
-				return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s is already existed", request.Msg.User.Email))
-			}
-			patch.Email = &request.Msg.User.Email
+			// Email updates are not supported through UpdateUser. Use UpdateEmail API instead.
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email updates are not supported through UpdateUser, use UpdateEmail API instead"))
 		case "title":
 			patch.Name = &request.Msg.User.Title
 		case "password":

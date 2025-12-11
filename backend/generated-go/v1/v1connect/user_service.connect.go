@@ -78,6 +78,7 @@ type UserServiceClient interface {
 	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
 	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+	// Note: Email updates are not supported through this API. Use UpdateEmail instead.
 	// Permissions required: bb.users.update (or self)
 	UpdateUser(context.Context, *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error)
 	// Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
@@ -238,6 +239,7 @@ type UserServiceHandler interface {
 	// Permissions required: bb.users.create (only when Disallow Signup is enabled)
 	CreateUser(context.Context, *connect.Request[v1.CreateUserRequest]) (*connect.Response[v1.User], error)
 	// Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+	// Note: Email updates are not supported through this API. Use UpdateEmail instead.
 	// Permissions required: bb.users.update (or self)
 	UpdateUser(context.Context, *connect.Request[v1.UpdateUserRequest]) (*connect.Response[v1.User], error)
 	// Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
