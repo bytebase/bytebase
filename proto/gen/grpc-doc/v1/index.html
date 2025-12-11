@@ -631,6 +631,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.UpdateEmailRequest"><span class="badge">M</span>UpdateEmailRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateUserRequest"><span class="badge">M</span>UpdateUserRequest</a>
                 </li>
               
@@ -7269,6 +7273,38 @@ Format: users/{user} </p></td>
 
         
       
+        <h3 id="bytebase.v1.UpdateEmailRequest">UpdateEmailRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the user whose email to update.
+Format: users/{user} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The new email address. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UpdateUserRequest">UpdateUserRequest</h3>
         <p></p>
 
@@ -7605,6 +7641,14 @@ Permissions required: bb.users.delete</p></td>
 Permissions required: bb.users.undelete</p></td>
               </tr>
             
+              <tr>
+                <td>UpdateEmail</td>
+                <td><a href="#bytebase.v1.UpdateEmailRequest">UpdateEmailRequest</a></td>
+                <td><a href="#bytebase.v1.User">User</a></td>
+                <td><p>Updates a user&#39;s email address.
+Permissions required: bb.users.updateEmail</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -7699,6 +7743,16 @@ Permissions required: bb.users.undelete</p></td>
                 <td>UndeleteUser</td>
                 <td>POST</td>
                 <td>/v1/{name=users/*}:undelete</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateEmail</td>
+                <td>POST</td>
+                <td>/v1/{name=users/*}:updateEmail</td>
                 <td>*</td>
               </tr>
               
