@@ -7,7 +7,7 @@ option go_package = "generated-go/store";
 message GroupMember {
   // Member is the principal who belongs to this group.
   //
-  // Format: users/{userUID}.
+  // Format: users/{email}.
   string member = 1;
 
   enum Role {

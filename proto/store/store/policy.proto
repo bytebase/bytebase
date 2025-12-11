@@ -72,7 +72,7 @@ message MaskingExceptionPolicy {
 
     // Member is the principal who binds to this exception policy instance.
     //
-    // Format: users/{userUID} or groups/{group email}
+    // Format: users/{email} or groups/{group email}
     string member = 4;
 
     // The condition that is associated with this exception policy instance.
@@ -106,7 +106,7 @@ message Binding {
   string role = 1;
 
   // Specifies the principals requesting access for a Bytebase resource.
-  // For users, the member should be: users/{userUID}
+  // For users, the member should be: users/{email}
   // For groups, the member should be: groups/{email}
   repeated string members = 2;
 

@@ -74,7 +74,7 @@ type GroupMember struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Member is the principal who belongs to this group.
 	//
-	// Format: users/{userUID}.
+	// Format: users/{email}.
 	Member        string           `protobuf:"bytes,1,opt,name=member,proto3" json:"member,omitempty"`
 	Role          GroupMember_Role `protobuf:"varint,2,opt,name=role,proto3,enum=bytebase.store.GroupMember_Role" json:"role,omitempty"`
 	unknownFields protoimpl.UnknownFields

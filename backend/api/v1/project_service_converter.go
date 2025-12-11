@@ -159,22 +159,14 @@ func convertToV1WebhookType(tp storepb.WebhookType) v1pb.WebhookType {
 	}
 }
 
-func convertToV1MemberInBinding(ctx context.Context, stores *store.Store, member string) string {
+func convertToV1MemberInBinding(_ context.Context, _ *store.Store, member string) string {
 	if strings.HasPrefix(member, common.UserNamePrefix) {
-		userUID, err := common.GetUserID(member)
+		email, err := common.GetUserEmail(member)
 		if err != nil {
-			slog.Error("failed to user id from member", slog.String("member", member), log.BBError(err))
+			slog.Error("failed to get user email from member", slog.String("member", member), log.BBError(err))
 			return ""
 		}
-		user, err := stores.GetUserByID(ctx, userUID)
-		if err != nil {
-			slog.Error("failed to get user", slog.String("member", member), log.BBError(err))
-			return ""
-		}
-		if user == nil {
-			return ""
-		}
-		return fmt.Sprintf("%s%s", common.UserBindingPrefix, user.Email)
+		return fmt.Sprintf("%s%s", common.UserBindingPrefix, email)
 	} else if strings.HasPrefix(member, common.GroupPrefix) {
 		email, err := common.GetGroupEmail(member)
 		if err != nil {
@@ -280,7 +272,7 @@ func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, mem
 		if user == nil {
 			return "", connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", member))
 		}
-		return common.FormatUserUID(user.ID), nil
+		return common.FormatUserEmail(user.Email), nil
 	} else if strings.HasPrefix(member, common.GroupBindingPrefix) {
 		email := strings.TrimPrefix(member, common.GroupBindingPrefix)
 		return common.FormatGroupEmail(email), nil

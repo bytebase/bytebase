@@ -1,7 +1,6 @@
 package store
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -139,10 +138,7 @@ func TestGetSearchAuditLogsFilter_WithoutUserLookup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a mock store for testing without database
-			// For tests that don't require user lookup, we use context.TODO()
-			s := &Store{}
-			q, err := GetSearchAuditLogsFilter(context.TODO(), s, tt.filter)
+			q, err := GetSearchAuditLogsFilter(tt.filter)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -209,8 +205,7 @@ func TestGetSearchAuditLogsFilter_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &Store{}
-			q, err := GetSearchAuditLogsFilter(context.TODO(), s, tt.filter)
+			q, err := GetSearchAuditLogsFilter(tt.filter)
 
 			if tt.wantErr {
 				require.Error(t, err, tt.description)

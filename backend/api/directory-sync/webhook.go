@@ -550,7 +550,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					}
 
 					member := &storepb.GroupMember{
-						Member: common.FormatUserUID(user.ID),
+						Member: common.FormatUserEmail(user.Email),
 						Role:   storepb.GroupMember_MEMBER,
 					}
 					index := slices.IndexFunc(group.Payload.Members, func(m *storepb.GroupMember) bool {

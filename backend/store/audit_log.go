@@ -131,7 +131,7 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 	return logs, nil
 }
 
-func GetSearchAuditLogsFilter(ctx context.Context, s *Store, filter string) (*qb.Query, error) {
+func GetSearchAuditLogsFilter(filter string) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -181,22 +181,6 @@ func GetSearchAuditLogsFilter(ctx context.Context, s *Store, filter string) (*qb
 				case "resource", "method", "user", "severity":
 				default:
 					return nil, errors.Errorf("unknown variable %s", variable)
-				}
-				if variable == "user" {
-					// Convert user email to user id.
-					// e.g. users/y@bb.com -> users/101
-					email := strings.TrimPrefix(value, "users/")
-					if email == "" {
-						return nil, errors.New("invalid empty creator identifier")
-					}
-					user, err := s.GetUserByEmail(ctx, email)
-					if err != nil {
-						return nil, errors.Wrapf(err, `failed to find user "%s"`, email)
-					}
-					if user == nil {
-						return nil, errors.Errorf("cannot found user %s", email)
-					}
-					value = fmt.Sprintf("%s%d", common.UserNamePrefix, user.ID)
 				}
 				return qb.Q().Space(fmt.Sprintf("payload->>'%s' = ?", variable), value), nil
 
