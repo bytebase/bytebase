@@ -357,9 +357,6 @@ const state = reactive<LocalState>({
 
 const platformOptions = [
   { label: "GitHub Actions", value: ProviderType.PROVIDER_GITHUB },
-  { label: "GitLab CI", value: ProviderType.PROVIDER_GITLAB },
-  { label: "Bitbucket Pipelines", value: ProviderType.PROVIDER_BITBUCKET },
-  { label: "Azure DevOps", value: ProviderType.PROVIDER_AZURE_DEVOPS },
 ];
 
 const platformPresets: Record<
@@ -369,18 +366,6 @@ const platformPresets: Record<
   [ProviderType.PROVIDER_GITHUB]: {
     issuerUrl: "https://token.actions.githubusercontent.com",
     audience: "",
-  },
-  [ProviderType.PROVIDER_GITLAB]: {
-    issuerUrl: "https://gitlab.com",
-    audience: "https://gitlab.com",
-  },
-  [ProviderType.PROVIDER_BITBUCKET]: {
-    issuerUrl: "",
-    audience: "",
-  },
-  [ProviderType.PROVIDER_AZURE_DEVOPS]: {
-    issuerUrl: "",
-    audience: "api://AzureADTokenExchange",
   },
   [ProviderType.PROVIDER_TYPE_UNSPECIFIED]: {
     issuerUrl: "",
@@ -398,28 +383,16 @@ const onPlatformChange = (value: ProviderType) => {
 
 // Auto-build subject pattern based on platform and inputs
 const computedSubjectPattern = computed(() => {
-  const { providerType, owner, repo, branch } = state.wif;
+  const { owner, repo, branch } = state.wif;
 
-  switch (providerType) {
-    case ProviderType.PROVIDER_GITHUB:
-      if (!repo) {
-        return `repo:${owner}/*`;
-      }
-      if (!branch) {
-        return `repo:${owner}/${repo}:*`;
-      }
-      return `repo:${owner}/${repo}:ref:refs/heads/${branch}`;
-    case ProviderType.PROVIDER_GITLAB:
-      if (!repo) {
-        return `project_path:${owner}/*`;
-      }
-      if (!branch) {
-        return `project_path:${owner}/${repo}:*`;
-      }
-      return `project_path:${owner}/${repo}:ref_type:branch:ref:${branch}`;
-    default:
-      return "";
+  // GitHub Actions subject pattern
+  if (!repo) {
+    return `repo:${owner}/*`;
   }
+  if (!branch) {
+    return `repo:${owner}/${repo}:*`;
+  }
+  return `repo:${owner}/${repo}:ref:refs/heads/${branch}`;
 });
 
 // Watch for owner/repo/branch changes and update subject pattern

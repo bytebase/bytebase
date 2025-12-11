@@ -14,6 +14,7 @@ type PlatformPreset struct {
 }
 
 // GetPlatformPreset returns the OIDC preset for a given provider type.
+// Currently only GitHub Actions is supported.
 func GetPlatformPreset(providerType storepb.ProviderType) *PlatformPreset {
 	switch providerType {
 	case storepb.ProviderType_PROVIDER_GITHUB:
@@ -22,54 +23,23 @@ func GetPlatformPreset(providerType storepb.ProviderType) *PlatformPreset {
 			AudiencePattern: "https://github.com/%s",
 			SubjectPattern:  "repo:%s/%s:ref:refs/heads/%s",
 		}
-	case storepb.ProviderType_PROVIDER_GITLAB:
-		return &PlatformPreset{
-			IssuerURL:       "https://gitlab.com",
-			AudiencePattern: "https://gitlab.com",
-			SubjectPattern:  "project_path:%s/%s:ref_type:branch:ref:%s",
-		}
-	case storepb.ProviderType_PROVIDER_BITBUCKET:
-		return &PlatformPreset{
-			IssuerURL:       "https://api.bitbucket.org/2.0/workspaces/%s/pipelines-config/identity/oidc",
-			AudiencePattern: "ari:cloud:bitbucket::workspace/%s",
-			SubjectPattern:  "%s:*",
-		}
-	case storepb.ProviderType_PROVIDER_AZURE_DEVOPS:
-		return &PlatformPreset{
-			IssuerURL:       "https://vstoken.dev.azure.com/%s",
-			AudiencePattern: "api://AzureADTokenExchange",
-			SubjectPattern:  "sc://%s/%s/%s",
-		}
 	default:
 		return nil
 	}
 }
 
 // BuildSubjectPattern builds a subject pattern from provider-specific inputs.
+// Currently only GitHub Actions is supported.
 func BuildSubjectPattern(providerType storepb.ProviderType, owner, repo, branch string) string {
-	preset := GetPlatformPreset(providerType)
-	if preset == nil {
+	if providerType != storepb.ProviderType_PROVIDER_GITHUB {
 		return ""
 	}
 
-	switch providerType {
-	case storepb.ProviderType_PROVIDER_GITHUB:
-		if repo == "" {
-			return fmt.Sprintf("repo:%s/*", owner)
-		}
-		if branch == "" {
-			return fmt.Sprintf("repo:%s/%s:*", owner, repo)
-		}
-		return fmt.Sprintf("repo:%s/%s:ref:refs/heads/%s", owner, repo, branch)
-	case storepb.ProviderType_PROVIDER_GITLAB:
-		if repo == "" {
-			return fmt.Sprintf("project_path:%s/*", owner)
-		}
-		if branch == "" {
-			return fmt.Sprintf("project_path:%s/%s:*", owner, repo)
-		}
-		return fmt.Sprintf("project_path:%s/%s:ref_type:branch:ref:%s", owner, repo, branch)
-	default:
-		return ""
+	if repo == "" {
+		return fmt.Sprintf("repo:%s/*", owner)
 	}
+	if branch == "" {
+		return fmt.Sprintf("repo:%s/%s:*", owner, repo)
+	}
+	return fmt.Sprintf("repo:%s/%s:ref:refs/heads/%s", owner, repo, branch)
 }

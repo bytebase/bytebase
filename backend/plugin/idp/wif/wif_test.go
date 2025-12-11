@@ -51,18 +51,6 @@ func TestMatchSubjectPattern(t *testing.T) {
 			pattern:  "repo:other-owner/*",
 			expected: false,
 		},
-		{
-			name:     "gitlab project path pattern",
-			subject:  "project_path:mygroup/myproject:ref_type:branch:ref:main",
-			pattern:  "project_path:mygroup/myproject:*",
-			expected: true,
-		},
-		{
-			name:     "gitlab group wildcard",
-			subject:  "project_path:mygroup/myproject:ref_type:branch:ref:main",
-			pattern:  "project_path:mygroup/*",
-			expected: true,
-		},
 	}
 
 	for _, tc := range tests {
@@ -116,12 +104,6 @@ func TestValidateAudience(t *testing.T) {
 			allowedAudiences: []string{},
 			expected:         false,
 		},
-		{
-			name:             "gitlab audience",
-			tokenAudience:    []string{"https://gitlab.com"},
-			allowedAudiences: []string{"https://gitlab.com"},
-			expected:         true,
-		},
 	}
 
 	for _, tc := range tests {
@@ -166,30 +148,6 @@ func TestBuildSubjectPattern(t *testing.T) {
 			expected:     "repo:myorg/*",
 		},
 		{
-			name:         "gitlab with all fields",
-			providerType: storepb.ProviderType_PROVIDER_GITLAB,
-			owner:        "mygroup",
-			repo:         "myproject",
-			branch:       "develop",
-			expected:     "project_path:mygroup/myproject:ref_type:branch:ref:develop",
-		},
-		{
-			name:         "gitlab without branch",
-			providerType: storepb.ProviderType_PROVIDER_GITLAB,
-			owner:        "mygroup",
-			repo:         "myproject",
-			branch:       "",
-			expected:     "project_path:mygroup/myproject:*",
-		},
-		{
-			name:         "gitlab without repo",
-			providerType: storepb.ProviderType_PROVIDER_GITLAB,
-			owner:        "mygroup",
-			repo:         "",
-			branch:       "",
-			expected:     "project_path:mygroup/*",
-		},
-		{
 			name:         "unsupported provider",
 			providerType: storepb.ProviderType_PROVIDER_TYPE_UNSPECIFIED,
 			owner:        "owner",
@@ -221,25 +179,7 @@ func TestGetPlatformPreset(t *testing.T) {
 			issuerURL:    "https://token.actions.githubusercontent.com",
 		},
 		{
-			name:         "gitlab preset",
-			providerType: storepb.ProviderType_PROVIDER_GITLAB,
-			expectNil:    false,
-			issuerURL:    "https://gitlab.com",
-		},
-		{
-			name:         "bitbucket preset",
-			providerType: storepb.ProviderType_PROVIDER_BITBUCKET,
-			expectNil:    false,
-			issuerURL:    "https://api.bitbucket.org/2.0/workspaces/%s/pipelines-config/identity/oidc",
-		},
-		{
-			name:         "azure devops preset",
-			providerType: storepb.ProviderType_PROVIDER_AZURE_DEVOPS,
-			expectNil:    false,
-			issuerURL:    "https://vstoken.dev.azure.com/%s",
-		},
-		{
-			name:         "unspecified provider returns nil",
+			name:         "unsupported provider returns nil",
 			providerType: storepb.ProviderType_PROVIDER_TYPE_UNSPECIFIED,
 			expectNil:    true,
 		},
