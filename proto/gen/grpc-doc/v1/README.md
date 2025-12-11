@@ -2342,7 +2342,7 @@ SettingService manages workspace-level settings and configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| names | [string](#string) | repeated | The user names to retrieve. Format: users/{user uid or user email} |
+| names | [string](#string) | repeated | The user names to retrieve. Format: users/{email} |
 
 
 
@@ -2387,7 +2387,7 @@ SettingService manages workspace-level settings and configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user to delete. Format: users/{user} |
+| name | [string](#string) |  | The name of the user to delete. Format: users/{email} |
 
 
 
@@ -2402,7 +2402,7 @@ SettingService manages workspace-level settings and configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user to retrieve. Format: users/{user uid or user email} |
+| name | [string](#string) |  | The name of the user to retrieve. Format: users/{email} |
 
 
 
@@ -2457,7 +2457,7 @@ For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@by
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted user. Format: users/{user} |
+| name | [string](#string) |  | The name of the deleted user. Format: users/{email} |
 
 
 
@@ -2472,7 +2472,7 @@ For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@by
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user whose email to update. Format: users/{user email} |
+| name | [string](#string) |  | The name of the user whose email to update. Format: users/{email} Note: This is the current (old) email address. The new email is specified in the &#39;email&#39; field. |
 | email | [string](#string) |  | The new email address. |
 
 
@@ -2490,7 +2490,7 @@ For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@by
 | ----- | ---- | ----- | ----------- |
 | user | [User](#bytebase-v1-User) |  | The user to update.
 
-The user&#39;s `name` field is used to identify the user to update. Format: users/{user} |
+The user&#39;s `name` field is used to identify the user to update. Format: users/{email} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
 | regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user. This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. |
@@ -2510,7 +2510,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user. Format: users/{user}. {user} is a system-generated unique ID. |
+| name | [string](#string) |  | The name of the user. Format: users/{email} |
 | state | [State](#bytebase-v1-State) |  | The lifecycle state of the user account. |
 | email | [string](#string) |  | The email address of the user, used for login and notifications. |
 | title | [string](#string) |  | The display title or full name of the user. |
