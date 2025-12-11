@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"strings"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -42,25 +41,6 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 	}
 	if req.Msg.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
 		find.ShowFull = true
-	}
-
-	filters, err := ParseFilter(req.Msg.Filter)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	for _, expr := range filters {
-		if expr.Operator != ComparatorTypeEqual {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`only support "=" operation for filter`))
-		}
-		switch expr.Key {
-		case "type":
-			find.TypeList = strings.Split(expr.Value, " | ")
-		case "table":
-			resourcesFilter := expr.Value
-			find.ResourcesFilter = &resourcesFilter
-		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid filter key %q", expr.Key))
-		}
 	}
 
 	changelogs, err := s.store.ListChangelogs(ctx, find)

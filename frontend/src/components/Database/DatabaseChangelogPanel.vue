@@ -154,10 +154,6 @@ const state = reactive<LocalState>({
   isExporting: false,
 });
 
-const searchChangelogFilter = computed(() => {
-  return "";
-});
-
 const fetchChangelogList = async ({
   pageToken,
   pageSize,
@@ -168,7 +164,6 @@ const fetchChangelogList = async ({
   const { nextPageToken, changelogs } = await changelogStore.fetchChangelogList(
     {
       parent: props.database.name,
-      filter: searchChangelogFilter.value,
       pageSize,
       pageToken,
     }
