@@ -9,7 +9,6 @@ import {
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   defaultSQLEditorTab,
-  emptySQLEditorConnection,
   extractWorksheetConnection,
   useDynamicLocalStorage,
   WebStorageHelper,
