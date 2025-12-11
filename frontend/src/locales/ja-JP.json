@@ -57,6 +57,9 @@
     "skip": "飛び越える",
     "skipped": "スキップ",
     "dismiss": "閉じる",
+    "allow": "許可",
+    "deny": "拒否",
+    "go-back": "戻る",
     "back": "戻る",
     "next": "次のステップ",
     "edit": "編集",
@@ -2918,5 +2921,13 @@
     },
     "last-visit": "最終訪問",
     "changelog-for-version": "{version} の変更履歴"
+  },
+  "oauth2": {
+    "consent": {
+      "title": "認証リクエスト",
+      "description": "{clientName} があなたのアカウントへのアクセスを要求しています",
+      "permissions": "このアプリケーションは以下のことができます:",
+      "permission-access": "あなたの権限で Bytebase アカウントにアクセス"
+    }
   }
 }

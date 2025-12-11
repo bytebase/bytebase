@@ -57,6 +57,9 @@
     "skip": "Saltar",
     "skipped": "Omitido",
     "dismiss": "Descartar",
+    "allow": "Permitir",
+    "deny": "Denegar",
+    "go-back": "Volver",
     "back": "Volver",
     "next": "Siguiente",
     "edit": "Editar",
@@ -2918,5 +2921,13 @@
     },
     "last-visit": "Última visita",
     "changelog-for-version": "Registro de cambios para {version}"
+  },
+  "oauth2": {
+    "consent": {
+      "title": "Solicitud de autorización",
+      "description": "{clientName} está solicitando acceso a tu cuenta",
+      "permissions": "Esta aplicación podrá:",
+      "permission-access": "Acceder a tu cuenta de Bytebase con tus permisos"
+    }
   }
 }

@@ -57,6 +57,9 @@
     "skip": "Skip",
     "skipped": "Skipped",
     "dismiss": "Dismiss",
+    "allow": "Allow",
+    "deny": "Deny",
+    "go-back": "Go back",
     "back": "Back",
     "next": "Next",
     "edit": "Edit",
@@ -2919,5 +2922,13 @@
     },
     "last-visit": "Last visit",
     "changelog-for-version": "Changelog for {version}"
+  },
+  "oauth2": {
+    "consent": {
+      "title": "Authorization Request",
+      "description": "{clientName} is requesting access to your account",
+      "permissions": "This application will be able to:",
+      "permission-access": "Access your Bytebase account with your permissions"
+    }
   }
 }
