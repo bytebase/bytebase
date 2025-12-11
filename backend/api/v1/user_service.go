@@ -368,11 +368,11 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
 	}
 
-	userID, err := common.GetUserID(request.Msg.User.Name)
+	email, err := common.GetUserEmail(request.Msg.User.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	user, err := s.store.GetUserByID(ctx, userID)
+	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
 	}
@@ -389,13 +389,13 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 				User: request.Msg.User,
 			}))
 		}
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %d not found", userID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", email))
 	}
 	if user.MemberDeleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q has been deleted", userID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q has been deleted", email))
 	}
 
-	if callerUser.ID != userID {
+	if callerUser.ID != user.ID {
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersUpdate, callerUser)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
