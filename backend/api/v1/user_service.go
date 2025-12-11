@@ -58,27 +58,16 @@ func NewUserService(store *store.Store, secret string, licenseService *enterpris
 
 // GetUser gets a user.
 func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb.GetUserRequest]) (*connect.Response[v1pb.User], error) {
-	userID, err := common.GetUserID(request.Msg.Name)
-	var user *store.UserMessage
+	email, err := common.GetUserEmail(request.Msg.Name)
 	if err != nil {
-		email, err := common.GetUserEmail(request.Msg.Name)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		u, err := s.store.GetUserByEmail(ctx, email)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
-		}
-		user = u
-	} else {
-		u, err := s.store.GetUserByID(ctx, userID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
-		}
-		user = u
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	user, err := s.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
 	}
 	if user == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %d not found", userID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", email))
 	}
 	return connect.NewResponse(convertToUser(ctx, user)), nil
 }
