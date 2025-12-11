@@ -356,11 +356,17 @@ const state = reactive<LocalState>({
 });
 
 const platformOptions = [
-  { label: "GitHub Actions", value: WorkloadIdentityConfig_ProviderType.GITHUB },
+  {
+    label: "GitHub Actions",
+    value: WorkloadIdentityConfig_ProviderType.GITHUB,
+  },
 ];
 
 const platformPresets: Partial<
-  Record<WorkloadIdentityConfig_ProviderType, { issuerUrl: string; audience: string }>
+  Record<
+    WorkloadIdentityConfig_ProviderType,
+    { issuerUrl: string; audience: string }
+  >
 > = {
   [WorkloadIdentityConfig_ProviderType.GITHUB]: {
     issuerUrl: "https://token.actions.githubusercontent.com",
