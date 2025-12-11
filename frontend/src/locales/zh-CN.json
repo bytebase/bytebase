@@ -1136,7 +1136,9 @@
       "statement-empty": "变更语句为空"
     },
     "checks": {
-      "self": "检查"
+      "self": "检查",
+      "no-results-match-filters": "没有匹配筛选条件的结果",
+      "no-check-results": "没有检查结果"
     },
     "spec": {
       "change": "变更项",
