@@ -56,11 +56,7 @@ const failingStatement = computed(() => {
 });
 
 const canShowInEditor = computed(() => {
-  return (
-    hasErrorPosition.value ||
-    !!failingStatement.value ||
-    !!props.executeParams?.selection
-  );
+  return hasErrorPosition.value || !!failingStatement.value;
 });
 
 const hasErrorPosition = computed(() => {
@@ -117,30 +113,18 @@ const findStatementRange = (): IRange | undefined => {
 };
 
 const highlightRange = computed((): IRange | undefined => {
-  const selection = props.executeParams?.selection;
-
   // Priority 1: Exact error position from syntax error
   if (hasErrorPosition.value && errorPosition.value) {
     const [line, col] = positionWithOffset(
       errorPosition.value.line,
       errorPosition.value.column,
-      selection
+      props.executeParams?.selection
     );
     return new Selection(line, col, line, col);
   }
 
   // Priority 2: Find the specific failing statement in editor
-  const statementRange = findStatementRange();
-  if (statementRange) {
-    return statementRange;
-  }
-
-  // Priority 3: Fall back to user selection (for single statement execution)
-  if (selection && !selection.isEmpty()) {
-    return selection;
-  }
-
-  return undefined;
+  return findStatementRange();
 });
 
 const positionLabel = computed(() => {
