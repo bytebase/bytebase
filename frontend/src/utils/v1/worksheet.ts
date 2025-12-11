@@ -110,7 +110,9 @@ export const setDefaultDataSourceForConn = (
   }
 };
 
-export const extractWorksheetConnection = async (worksheet: Worksheet) => {
+export const extractWorksheetConnection = async (worksheet: {
+  database: string;
+}) => {
   const connection = emptySQLEditorConnection();
   if (worksheet.database) {
     try {

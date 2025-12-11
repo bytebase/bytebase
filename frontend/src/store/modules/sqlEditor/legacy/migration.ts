@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { omit } from "lodash-es";
+import { isUndefined, omit, omitBy } from "lodash-es";
 import { computed, reactive } from "vue";
 import type { EditorPanelViewState, SQLEditorTab } from "@/types";
 import { DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
@@ -9,6 +9,7 @@ import {
 } from "@/types/proto-es/v1/worksheet_service_pb";
 import {
   defaultSQLEditorTab,
+  extractWorksheetConnection,
   useDynamicLocalStorage,
   WebStorageHelper,
 } from "@/utils";
@@ -135,18 +136,27 @@ export const migrateDraftsFromCache = async (project: string) => {
 
   const drafts = [...draftTabList.value];
   for (const draft of drafts) {
-    const viewState = viewStateByTab.value.get(draft.id);
-    if ((!viewState || viewState.view === "CODE") && draft.statement) {
+    const tab = {
+      ...defaultSQLEditorTab(),
+      ...omitBy(draft, isUndefined),
+    };
+    const viewState = viewStateByTab.value.get(tab.id);
+    if ((!viewState || viewState.view === "CODE") && tab.statement) {
       // only store the draft with content
-      await worksheetStore.createWorksheet(
-        create(WorksheetSchema, {
-          title: draft.title,
-          database: draft.connection.database,
-          content: new TextEncoder().encode(draft.statement),
-          project: project,
-          visibility: Worksheet_Visibility.PRIVATE,
-        })
-      );
+      try {
+        const connection = await extractWorksheetConnection({
+          database: tab.connection.database,
+        });
+        await worksheetStore.createWorksheet(
+          create(WorksheetSchema, {
+            title: tab.title,
+            database: connection.database,
+            content: new TextEncoder().encode(tab.statement),
+            project,
+            visibility: Worksheet_Visibility.PRIVATE,
+          })
+        );
+      } catch {}
     }
     const index = draftTabList.value.findIndex((d) => d.id === draft.id);
     if (index >= 0) {
