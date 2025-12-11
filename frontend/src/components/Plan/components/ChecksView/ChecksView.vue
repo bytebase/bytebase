@@ -305,15 +305,11 @@ const filteredResultsMap = computed(() => {
 
 // Check type configuration lookup
 const checkTypeConfig: Partial<
-  Record<
-    PlanCheckRun_Type,
-    { icon: typeof FileCodeIcon; labelKey: string; descriptionKey?: string }
-  >
+  Record<PlanCheckRun_Type, { icon: typeof FileCodeIcon; labelKey: string }>
 > = {
   [PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE]: {
     icon: SearchCodeIcon,
     labelKey: "task.check-type.sql-review.self",
-    descriptionKey: "task.check-type.sql-review.description",
   },
   [PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT]: {
     icon: FileCodeIcon,
@@ -339,8 +335,12 @@ const getCheckTypeLabel = (type: PlanCheckRun_Type) => {
 };
 
 const getCheckTypeDescription = (type: PlanCheckRun_Type) => {
-  const key = checkTypeConfig[type]?.descriptionKey;
-  return key ? t(key) : undefined;
+  switch (type) {
+    case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
+      return t("task.check-type.sql-review.description");
+    default:
+      return undefined;
+  }
 };
 
 const formatTime = (timestamp: Timestamp | undefined): string => {

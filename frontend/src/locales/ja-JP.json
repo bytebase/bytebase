@@ -1136,7 +1136,9 @@
       "statement-empty": "ステートメントが空です"
     },
     "checks": {
-      "self": "小切手"
+      "self": "小切手",
+      "no-results-match-filters": "フィルターに一致する結果がありません",
+      "no-check-results": "チェック結果がありません"
     },
     "spec": {
       "change": "変化",

@@ -1136,7 +1136,9 @@
       "statement-empty": "Câu lệnh trống rỗng"
     },
     "checks": {
-      "self": "Kiểm tra"
+      "self": "Kiểm tra",
+      "no-results-match-filters": "Không có kết quả nào phù hợp với bộ lọc của bạn",
+      "no-check-results": "Không có kết quả kiểm tra"
     },
     "spec": {
       "change": "Thay đổi",

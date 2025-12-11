@@ -1136,7 +1136,9 @@
       "statement-empty": "La declaración está vacía"
     },
     "checks": {
-      "self": "Cheques"
+      "self": "Cheques",
+      "no-results-match-filters": "No hay resultados que coincidan con sus filtros",
+      "no-check-results": "Sin resultados de verificación"
     },
     "spec": {
       "change": "Cambiar",
