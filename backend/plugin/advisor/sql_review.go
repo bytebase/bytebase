@@ -2,13 +2,13 @@ package advisor
 
 import (
 	"context"
+	"fmt"
 	"regexp"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 
@@ -142,7 +142,13 @@ func SQLReviewCheck(
 			checkContext,
 		)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to check statement")
+			errorAdvices = append(errorAdvices, &storepb.Advice{
+				Status:  storepb.Advice_ERROR,
+				Code:    code.Internal.Int32(),
+				Title:   ruleType.String(),
+				Content: fmt.Sprintf("Rule check failed: %v", err),
+			})
+			continue
 		}
 
 		for _, advice := range adviceList {

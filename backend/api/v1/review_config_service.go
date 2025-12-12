@@ -371,7 +371,8 @@ func validateSQLReviewRule(rule *v1pb.SQLReviewRule) error {
 		storepb.SQLReviewRule_INDEX_TOTAL_NUMBER_LIMIT,
 		storepb.SQLReviewRule_TABLE_TEXT_FIELDS_TOTAL_LENGTH,
 		storepb.SQLReviewRule_TABLE_LIMIT_SIZE,
-		storepb.SQLReviewRule_SYSTEM_COMMENT_LENGTH:
+		storepb.SQLReviewRule_SYSTEM_COMMENT_LENGTH,
+		storepb.SQLReviewRule_ADVICE_ONLINE_MIGRATION:
 		payload := rule.GetNumberPayload()
 		if payload == nil {
 			return errors.Errorf("rule %s requires number payload", ruleType)
@@ -504,7 +505,6 @@ func validateSQLReviewRule(rule *v1pb.SQLReviewRule) error {
 		storepb.SQLReviewRule_SYSTEM_EVENT_DISALLOW_CREATE,
 		storepb.SQLReviewRule_SYSTEM_VIEW_DISALLOW_CREATE,
 		storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOW_CREATE,
-		storepb.SQLReviewRule_ADVICE_ONLINE_MIGRATION,
 		storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK:
 		// These rules should not have any payload
 		if rule.Payload != nil {
