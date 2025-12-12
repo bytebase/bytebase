@@ -38,3 +38,10 @@ plugins:
     opt: paths=source_relative,enum_type=string
     types:
       - bytebase.v1
+  - remote: buf.build/community/sudorandom-connect-openapi
+    out: ../backend/api/mcp/gen
+    opt:
+      - features=connectrpc;gnostic;protovalidate
+      - path=openapi.yaml
+    types:
+      - bytebase.v1
