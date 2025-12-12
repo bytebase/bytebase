@@ -37,6 +37,8 @@ const (
 	AccessTokenAudienceFmt = "bb.user.access.%s"
 	// MFATempTokenAudienceFmt is the format of the MFA temp token audience.
 	MFATempTokenAudienceFmt = "bb.user.mfa-temp.%s"
+	// OAuth2AccessTokenAudience is the audience for OAuth2 access tokens.
+	OAuth2AccessTokenAudience = "bb.oauth2.access"
 	apiTokenDuration        = 1 * time.Hour
 	// DefaultTokenDuration is the default token expiration duration.
 	DefaultTokenDuration = 7 * 24 * time.Hour
@@ -168,15 +170,14 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 
 	// Accept both user access tokens (bb.user.access.{mode}) and OAuth2 access tokens (bb.oauth2.access)
 	validUserAudience := fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode)
-	validOAuth2Audience := "bb.oauth2.access"
-	isOAuth2Token := audienceContains(claims.Audience, validOAuth2Audience)
+	isOAuth2Token := audienceContains(claims.Audience, OAuth2AccessTokenAudience)
 	isUserToken := audienceContains(claims.Audience, validUserAudience)
 	if !isUserToken && !isOAuth2Token {
 		return nil, nil, errs.Errorf(
 			"invalid access token, audience mismatch, got %q, expected %q or %q. you may send request to the wrong environment",
 			claims.Audience,
 			validUserAudience,
-			validOAuth2Audience,
+			OAuth2AccessTokenAudience,
 		)
 	}
 

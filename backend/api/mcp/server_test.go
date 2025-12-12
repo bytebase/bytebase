@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 )
@@ -118,7 +119,7 @@ func generateValidToken(t *testing.T, secret string) string {
 	claims := jwt.MapClaims{
 		"iss": "bytebase",
 		"sub": "test@example.com",
-		"aud": "bb.oauth2.access",
+		"aud": auth.OAuth2AccessTokenAudience,
 		"exp": time.Now().Add(time.Hour).Unix(),
 		"iat": time.Now().Unix(),
 	}
@@ -134,7 +135,7 @@ func generateExpiredToken(t *testing.T, secret string) string {
 	claims := jwt.MapClaims{
 		"iss": "bytebase",
 		"sub": "test@example.com",
-		"aud": "bb.oauth2.access",
+		"aud": auth.OAuth2AccessTokenAudience,
 		"exp": time.Now().Add(-time.Hour).Unix(), // expired
 		"iat": time.Now().Add(-2 * time.Hour).Unix(),
 	}

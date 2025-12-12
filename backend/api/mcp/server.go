@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -115,7 +116,7 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token")
 		}
 
-		// Validate audience - must be bb.oauth2.access
+		// Validate audience - must be OAuth2 access token
 		aud, ok := claims["aud"]
 		if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token: missing audience")
@@ -124,10 +125,10 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		validAudience := false
 		switch v := aud.(type) {
 		case string:
-			validAudience = v == "bb.oauth2.access"
+			validAudience = v == auth.OAuth2AccessTokenAudience
 		case []any:
 			for _, a := range v {
-				if str, ok := a.(string); ok && str == "bb.oauth2.access" {
+				if str, ok := a.(string); ok && str == auth.OAuth2AccessTokenAudience {
 					validAudience = true
 					break
 				}

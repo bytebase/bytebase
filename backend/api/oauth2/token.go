@@ -10,6 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -203,7 +204,7 @@ func (s *Service) issueTokens(c echo.Context, client *store.OAuth2ClientMessage,
 	claims := jwt.MapClaims{
 		"iss":       "bytebase",
 		"sub":       userEmail,
-		"aud":       "bb.oauth2.access",
+		"aud":       auth.OAuth2AccessTokenAudience,
 		"exp":       now.Add(accessTokenExpiry).Unix(),
 		"iat":       now.Unix(),
 		"client_id": client.ClientID,
