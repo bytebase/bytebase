@@ -176,13 +176,13 @@
           </div>
         </div>
 
-        <!-- Only show reason/comment input if issue is available -->
+        <!-- shouldShowComment: only show if issue is available -->
         <div
           v-if="shouldShowComment"
-          class="flex flex-col gap-y-1 shrink-0 border-t pt-2"
+          class="flex flex-col gap-y-1 shrink-0"
         >
-          <p class="text-control">
-            {{ $t("common.comment") }}
+          <p class="font-medium text-control">
+            {{ $t("common.reason") }}
           </p>
           <NInput
             v-model:value="comment"
