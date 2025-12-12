@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// nolint:unused
 const (
 	clientIDPrefix     = "bb_oauth_"
 	clientSecretPrefix = "bb_secret_"
@@ -91,7 +90,6 @@ func (s *Service) handleGetClient(c echo.Context) error {
 	})
 }
 
-// nolint:unused
 func generateRandomString(length int) (string, error) {
 	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {
@@ -100,7 +98,6 @@ func generateRandomString(length int) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(bytes), nil
 }
 
-// nolint:unused
 func generateClientID() (string, error) {
 	random, err := generateRandomString(24)
 	if err != nil {
@@ -109,7 +106,6 @@ func generateClientID() (string, error) {
 	return clientIDPrefix + random, nil
 }
 
-// nolint:unused
 func generateClientSecret() (string, error) {
 	random, err := generateRandomString(32)
 	if err != nil {
@@ -118,7 +114,6 @@ func generateClientSecret() (string, error) {
 	return clientSecretPrefix + random, nil
 }
 
-// nolint:unused
 func generateAuthCode() (string, error) {
 	random, err := generateRandomString(32)
 	if err != nil {
@@ -127,7 +122,6 @@ func generateAuthCode() (string, error) {
 	return authCodePrefix + random, nil
 }
 
-// nolint:unused
 func generateRefreshToken() (string, error) {
 	random, err := generateRandomString(32)
 	if err != nil {
@@ -136,7 +130,6 @@ func generateRefreshToken() (string, error) {
 	return refreshTokenPrefix + random, nil
 }
 
-// nolint:unused
 func hashSecret(secret string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost)
 	if err != nil {
@@ -145,18 +138,15 @@ func hashSecret(secret string) (string, error) {
 	return string(hash), nil
 }
 
-// nolint:unused
 func verifySecret(hash, secret string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(secret)) == nil
 }
 
-// nolint:unused
 func hashToken(token string) string {
 	hash := sha256.Sum256([]byte(token))
 	return base64.RawURLEncoding.EncodeToString(hash[:])
 }
 
-// nolint:unused
 func verifyPKCE(codeVerifier, codeChallenge, method string) bool {
 	if method != "S256" {
 		return false
@@ -166,12 +156,10 @@ func verifyPKCE(codeVerifier, codeChallenge, method string) bool {
 	return computed == codeChallenge
 }
 
-// nolint:unused
 func validateRedirectURI(uri string, allowedURIs []string) bool {
 	return slices.Contains(allowedURIs, uri)
 }
 
-// nolint:unused
 func isLocalhostURI(uri string) bool {
 	parsed, err := url.Parse(uri)
 	if err != nil {
@@ -181,7 +169,6 @@ func isLocalhostURI(uri string) bool {
 	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
-// nolint:unused
 func oauth2Error(c echo.Context, statusCode int, errorCode, description string) error {
 	return c.JSON(statusCode, map[string]string{
 		"error":             errorCode,
@@ -189,7 +176,6 @@ func oauth2Error(c echo.Context, statusCode int, errorCode, description string) 
 	})
 }
 
-// nolint:unused
 func oauth2ErrorRedirect(c echo.Context, redirectURI, state, errorCode, description string) error {
 	u, _ := url.Parse(redirectURI)
 	q := u.Query()
@@ -206,7 +192,6 @@ func oauth2ErrorRedirect(c echo.Context, redirectURI, state, errorCode, descript
 
 // buildRedirectHTML creates an HTML page that redirects to the given URL.
 // This is used to work around CSP form-action restrictions.
-// nolint:unused
 func buildRedirectHTML(redirectURL string) string {
 	// HTML escape the URL for safe embedding
 	escaped := html.EscapeString(redirectURL)
