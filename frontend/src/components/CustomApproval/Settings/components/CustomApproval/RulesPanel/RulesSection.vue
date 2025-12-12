@@ -12,14 +12,75 @@
       </NButton>
     </div>
 
-    <NDataTable
-      size="small"
-      :columns="columns"
-      :data="rules"
-      :striped="true"
-      :bordered="true"
-      :row-key="(row: LocalApprovalRule) => row.uid"
-    />
+    <div class="rules-table border border-gray-200 rounded-sm text-sm">
+      <!-- Table Header -->
+      <div
+        class="rules-table-header grid bg-gray-50 border-b border-gray-200 font-medium text-gray-600"
+      >
+        <div class="px-2 py-2 w-10"></div>
+        <div class="px-3 py-2">{{ $t("common.title") }}</div>
+        <div class="px-3 py-2">{{ $t("cel.condition.self") }}</div>
+        <div class="px-3 py-2">{{ $t("custom-approval.approval-flow.self") }}</div>
+        <div class="px-3 py-2 w-24">{{ $t("common.operations") }}</div>
+      </div>
+
+      <!-- Draggable Body -->
+      <Draggable
+        v-model="localRules"
+        item-key="uid"
+        handle=".drag-handle"
+        animation="150"
+        ghost-class="rules-row-ghost"
+        @end="handleDragEnd"
+      >
+        <template #item="{ element: rule, index }">
+          <div
+            class="rules-table-row grid border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+            :class="{ 'bg-gray-50/50': index % 2 === 1 }"
+          >
+            <div class="px-2 py-2 w-10 flex items-center justify-center">
+              <GripVerticalIcon
+                class="drag-handle w-4 h-4 text-gray-400 cursor-grab active:cursor-grabbing"
+              />
+            </div>
+            <div class="px-3 py-2 truncate" :title="rule.title">
+              {{ rule.title || "-" }}
+            </div>
+            <div class="px-3 py-2 truncate">
+              <code class="text-xs">{{ rule.condition || "true" }}</code>
+            </div>
+            <div class="px-3 py-2 truncate">
+              {{ formatApprovalFlow(rule.flow) }}
+            </div>
+            <div class="px-3 py-2 w-24 flex items-center gap-x-1">
+              <MiniActionButton @click="handleEditRule(rule)">
+                <PencilIcon class="w-3" />
+              </MiniActionButton>
+              <NPopconfirm
+                :positive-text="$t('common.confirm')"
+                :negative-text="$t('common.cancel')"
+                @positive-click="handleDeleteRule(rule)"
+              >
+                <template #trigger>
+                  <MiniActionButton>
+                    <TrashIcon class="w-3" />
+                  </MiniActionButton>
+                </template>
+                {{ $t("common.confirm") }}?
+              </NPopconfirm>
+            </div>
+          </div>
+        </template>
+      </Draggable>
+
+      <!-- Empty State -->
+      <div
+        v-if="localRules.length === 0"
+        class="px-3 py-4 text-center text-gray-400"
+      >
+        {{ $t("common.no-data") }}
+      </div>
+    </div>
 
     <RuleEditModal
       v-model:show="showModal"
@@ -32,12 +93,17 @@
   </div>
 </template>
 
-<script lang="tsx" setup>
-import { PencilIcon, PlusIcon, TrashIcon } from "lucide-vue-next";
-import type { DataTableColumn } from "naive-ui";
-import { NButton, NDataTable, NPopconfirm } from "naive-ui";
-import { computed, ref } from "vue";
+<script lang="ts" setup>
+import {
+  GripVerticalIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+} from "lucide-vue-next";
+import { NButton, NPopconfirm } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import Draggable from "vuedraggable";
 import { MiniActionButton } from "@/components/v2";
 import { pushNotification, useWorkspaceApprovalSettingStore } from "@/store";
 import type { LocalApprovalRule } from "@/types";
@@ -65,58 +131,42 @@ const editingRule = ref<LocalApprovalRule | undefined>();
 
 const rules = computed(() => store.getRulesBySource(props.source));
 
+// Local copy for dragging - synced with store
+const localRules = ref<LocalApprovalRule[]>([]);
+
+watch(
+  rules,
+  (newRules) => {
+    localRules.value = [...newRules];
+  },
+  { immediate: true }
+);
+
 const sourceDisplayText = computed(() => approvalSourceText(props.source));
 
-const columns = computed((): DataTableColumn<LocalApprovalRule>[] => [
-  {
-    title: t("common.title"),
-    key: "title",
-    width: 200,
-    resizable: true,
-    ellipsis: { tooltip: true },
-    render: (row) => row.title || "-",
-  },
-  {
-    title: t("cel.condition.self"),
-    key: "condition",
-    ellipsis: { tooltip: true },
-    resizable: true,
-    render: (row) => <code class="text-xs">{row.condition || "true"}</code>,
-  },
-  {
-    title: t("custom-approval.approval-flow.self"),
-    key: "flow",
-    width: 280,
-    resizable: true,
-    render: (row) => formatApprovalFlow(row.flow),
-  },
-  {
-    title: t("common.operations"),
-    key: "operations",
-    width: 100,
-    render: (row) => (
-      <div class="flex gap-x-1">
-        <MiniActionButton onClick={() => handleEditRule(row)}>
-          <PencilIcon class="w-3" />
-        </MiniActionButton>
-        <NPopconfirm
-          onPositiveClick={() => handleDeleteRule(row)}
-          positiveText={t("common.confirm")}
-          negativeText={t("common.cancel")}
-        >
-          {{
-            trigger: () => (
-              <MiniActionButton>
-                <TrashIcon class="w-3" />
-              </MiniActionButton>
-            ),
-            default: () => t("common.confirm") + "?",
-          }}
-        </NPopconfirm>
-      </div>
-    ),
-  },
-]);
+const handleDragEnd = async (event: { oldIndex: number; newIndex: number }) => {
+  const { oldIndex, newIndex } = event;
+  if (oldIndex === newIndex) return;
+
+  if (!context.hasFeature.value) {
+    context.showFeatureModal.value = true;
+    // Revert local change
+    localRules.value = [...rules.value];
+    return;
+  }
+
+  try {
+    await store.reorderRules(props.source, oldIndex, newIndex);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.updated"),
+    });
+  } catch {
+    // Revert local change on error
+    localRules.value = [...rules.value];
+  }
+};
 
 const handleAddRule = () => {
   if (!context.hasFeature.value) {
@@ -173,3 +223,15 @@ const handleSaveRule = async (ruleData: Partial<LocalApprovalRule>) => {
   }
 };
 </script>
+
+<style scoped>
+.rules-table-header,
+.rules-table-row {
+  grid-template-columns: 40px 200px 1fr 280px 96px;
+}
+
+.rules-row-ghost {
+  opacity: 0.5;
+  background: #e0f2fe;
+}
+</style>

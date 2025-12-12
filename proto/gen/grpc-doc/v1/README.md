@@ -120,11 +120,14 @@
     - [ListUsersRequest](#bytebase-v1-ListUsersRequest)
     - [ListUsersResponse](#bytebase-v1-ListUsersResponse)
     - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
+    - [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest)
     - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
     - [User](#bytebase-v1-User)
     - [User.Profile](#bytebase-v1-User-Profile)
+    - [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig)
   
     - [UserType](#bytebase-v1-UserType)
+    - [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType)
   
     - [UserService](#bytebase-v1-UserService)
   
@@ -164,6 +167,8 @@
     - [AuditLogService](#bytebase-v1-AuditLogService)
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
+    - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
+    - [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse)
     - [IdentityProviderContext](#bytebase-v1-IdentityProviderContext)
     - [LoginRequest](#bytebase-v1-LoginRequest)
     - [LoginResponse](#bytebase-v1-LoginResponse)
@@ -2337,7 +2342,7 @@ SettingService manages workspace-level settings and configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| names | [string](#string) | repeated | The user names to retrieve. Format: users/{user uid or user email} |
+| names | [string](#string) | repeated | The user names to retrieve. Format: users/{email} |
 
 
 
@@ -2382,7 +2387,7 @@ SettingService manages workspace-level settings and configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user to delete. Format: users/{user} |
+| name | [string](#string) |  | The name of the user to delete. Format: users/{email} |
 
 
 
@@ -2397,7 +2402,7 @@ SettingService manages workspace-level settings and configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user to retrieve. Format: users/{user uid or user email} |
+| name | [string](#string) |  | The name of the user to retrieve. Format: users/{email} |
 
 
 
@@ -2452,7 +2457,23 @@ For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@by
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted user. Format: users/{user} |
+| name | [string](#string) |  | The name of the deleted user. Format: users/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateEmailRequest"></a>
+
+### UpdateEmailRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the user whose email to update. Format: users/{email} Note: This is the current (old) email address. The new email is specified in the &#39;email&#39; field. |
+| email | [string](#string) |  | The new email address. |
 
 
 
@@ -2469,7 +2490,7 @@ For example: name == &#34;ed&#34; name.matches(&#34;ed&#34;) email == &#34;ed@by
 | ----- | ---- | ----- | ----------- |
 | user | [User](#bytebase-v1-User) |  | The user to update.
 
-The user&#39;s `name` field is used to identify the user to update. Format: users/{user} |
+The user&#39;s `name` field is used to identify the user to update. Format: users/{email} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
 | regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user. This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. |
@@ -2489,7 +2510,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the user. Format: users/{user}. {user} is a system-generated unique ID. |
+| name | [string](#string) |  | The name of the user. Format: users/{email} |
 | state | [State](#bytebase-v1-State) |  | The lifecycle state of the user account. |
 | email | [string](#string) |  | The email address of the user, used for login and notifications. |
 | title | [string](#string) |  | The display title or full name of the user. |
@@ -2503,6 +2524,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
 | groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
+| workload_identity_config | [WorkloadIdentityConfig](#bytebase-v1-WorkloadIdentityConfig) |  | Workload Identity configuration (only for WORKLOAD_IDENTITY type) |
 
 
 
@@ -2525,6 +2547,24 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 
 
+
+<a name="bytebase-v1-WorkloadIdentityConfig"></a>
+
+### WorkloadIdentityConfig
+WorkloadIdentityConfig for API layer
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Platform type (currently only GITHUB is supported) |
+| issuer_url | [string](#string) |  | OIDC Issuer URL (auto-filled based on provider_type, can be overridden) |
+| allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
+| subject_pattern | [string](#string) |  | Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) |
+
+
+
+
+
  
 
 
@@ -2539,6 +2579,19 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | USER | 1 | Regular human user account. |
 | SYSTEM_BOT | 2 | System-managed bot account for automated operations. |
 | SERVICE_ACCOUNT | 3 | Service account for API integrations. |
+| WORKLOAD_IDENTITY | 4 | External CI/CD workload identity. |
+
+
+
+<a name="bytebase-v1-WorkloadIdentityConfig-ProviderType"></a>
+
+### WorkloadIdentityConfig.ProviderType
+ProviderType identifies the CI/CD platform.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROVIDER_TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 |  |
 
 
  
@@ -2558,9 +2611,10 @@ UserService manages user accounts and authentication.
 | GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. Permissions required: None |
 | ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. Permissions required: bb.users.list |
 | CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user. When Disallow Signup is enabled, requires bb.users.create permission; otherwise any user can sign up. Permissions required: bb.users.create (only when Disallow Signup is enabled) |
-| UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user. Permissions required: bb.users.update (or self) |
+| UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user. Note: Email updates are not supported through this API. Use UpdateEmail instead. Permissions required: bb.users.update (or self) |
 | DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |
 | UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Restores a deleted user. Permissions required: bb.users.undelete |
+| UpdateEmail | [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest) | [User](#bytebase-v1-User) | Updates a user&#39;s email address. Permissions required: bb.users.updateEmail |
 
  
 
@@ -3040,6 +3094,37 @@ AuditLogService manages audit logs for system activities and API calls.
 
 
 
+<a name="bytebase-v1-ExchangeTokenRequest"></a>
+
+### ExchangeTokenRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| token | [string](#string) |  | External OIDC token (JWT) from CI/CD platform. |
+| email | [string](#string) |  | Workload Identity email for identifying which identity to authenticate as. Format: {name}@workload.bytebase.com |
+
+
+
+
+
+
+<a name="bytebase-v1-ExchangeTokenResponse"></a>
+
+### ExchangeTokenResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| access_token | [string](#string) |  | Bytebase access token. |
+
+
+
+
+
+
 <a name="bytebase-v1-IdentityProviderContext"></a>
 
 ### IdentityProviderContext
@@ -3151,6 +3236,7 @@ AuthService handles user authentication operations.
 | ----------- | ------------ | ------------- | ------------|
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Authenticates a user and returns access tokens. Permissions required: None |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Logs out the current user session. Permissions required: None |
+| ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse) | Exchanges an external OIDC token for a Bytebase access token. Used by CI/CD pipelines with Workload Identity Federation. Permissions required: None (validates via OIDC token) |
 
  
 
@@ -9654,7 +9740,6 @@ RoleService manages workspace roles and permissions.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The name of the parent of the taskRuns. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage. |
 | task_runs | [string](#string) | repeated | The taskRuns to cancel. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
-| reason | [string](#string) |  | The reason for canceling the task runs. |
 
 
 
@@ -9681,7 +9766,6 @@ RoleService manages workspace roles and permissions.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The name of the parent of the tasks. Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
 | tasks | [string](#string) | repeated | The tasks to run. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
-| reason | [string](#string) |  | The reason for running the tasks. |
 | run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The task run should run after run_time. |
 
 

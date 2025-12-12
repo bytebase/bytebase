@@ -1506,9 +1506,17 @@
                   <a href="#bytebase.store.UserProfile"><span class="badge">M</span>UserProfile</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.WorkloadIdentityConfig"><span class="badge">M</span>WorkloadIdentityConfig</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.store.PrincipalType"><span class="badge">E</span>PrincipalType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.WorkloadIdentityConfig.ProviderType"><span class="badge">E</span>WorkloadIdentityConfig.ProviderType</a>
                 </li>
               
               
@@ -2368,7 +2376,7 @@ Example: projects/{project} </p></td>
                   <td>user</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: users/{userUID}. </p></td>
+                  <td><p>Format: users/{email}. </p></td>
                 </tr>
               
                 <tr>
@@ -6160,7 +6168,7 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
                   <td></td>
                   <td><p>Member is the principal who belongs to this group.
 
-Format: users/{userUID}. </p></td>
+Format: users/{email}. </p></td>
                 </tr>
               
                 <tr>
@@ -8034,7 +8042,7 @@ Format: roles/EXPORTER. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The user who will receive the role.
-Format: users/{userUID}. </p></td>
+Format: users/{email}. </p></td>
                 </tr>
               
                 <tr>
@@ -9533,7 +9541,7 @@ Format: roles/{role} </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>Specifies the principals requesting access for a Bytebase resource.
-For users, the member should be: users/{userUID}
+For users, the member should be: users/{email}
 For groups, the member should be: groups/{email} </p></td>
                 </tr>
               
@@ -9694,7 +9702,7 @@ A binding binds one or more members or groups to a single role. </p></td>
                   <td></td>
                   <td><p>Member is the principal who binds to this exception policy instance.
 
-Format: users/{userUID} or groups/{group email} </p></td>
+Format: users/{email} or groups/{group email} </p></td>
                 </tr>
               
                 <tr>
@@ -14372,6 +14380,58 @@ The indexes of the executed commands. </p></td>
                   <td><p>The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. </p></td>
                 </tr>
               
+                <tr>
+                  <td>workload_identity_config</td>
+                  <td><a href="#bytebase.store.WorkloadIdentityConfig">WorkloadIdentityConfig</a></td>
+                  <td></td>
+                  <td><p>Workload identity configuration (only for WORKLOAD_IDENTITY type) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.WorkloadIdentityConfig">WorkloadIdentityConfig</h3>
+        <p>WorkloadIdentityConfig stores OIDC configuration for workload identity.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>provider_type</td>
+                  <td><a href="#bytebase.store.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</a></td>
+                  <td></td>
+                  <td><p>Provider type (currently only GITHUB is supported) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issuer_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>OIDC issuer URL </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allowed_audiences</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Allowed audiences for token validation </p></td>
+                </tr>
+              
+                <tr>
+                  <td>subject_pattern</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Subject pattern to match against token subject claim </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -14411,6 +14471,35 @@ The indexes of the executed commands. </p></td>
                 <td>SYSTEM_BOT</td>
                 <td>3</td>
                 <td><p>SYSTEM_BOT represents the internal system bot performing operations.</p></td>
+              </tr>
+            
+              <tr>
+                <td>WORKLOAD_IDENTITY</td>
+                <td>4</td>
+                <td><p>WORKLOAD_IDENTITY represents external CI/CD workload identity.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</h3>
+        <p>ProviderType identifies the CI/CD platform.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PROVIDER_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GITHUB</td>
+                <td>1</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>

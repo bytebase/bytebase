@@ -39,7 +39,7 @@ type WorkSheetMessage struct {
 	InstanceID   *string
 	DatabaseName *string
 
-	CreatorID int
+	Creator string
 
 	Title      string
 	Statement  string
@@ -75,8 +75,8 @@ type PatchWorkSheetMessage struct {
 }
 
 // GetWorkSheet gets a sheet.
-func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage, currentPrincipalID int) (*WorkSheetMessage, error) {
-	sheets, err := s.ListWorkSheets(ctx, find, currentPrincipalID)
+func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage, currentPrincipal string) (*WorkSheetMessage, error) {
+	sheets, err := s.ListWorkSheets(ctx, find, currentPrincipal)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage, cu
 }
 
 // ListWorkSheets returns a list of sheets.
-func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, currentPrincipalID int) ([]*WorkSheetMessage, error) {
+func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, currentPrincipal string) ([]*WorkSheetMessage, error) {
 	statementField := fmt.Sprintf("LEFT(worksheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
 		statementField = "worksheet.statement"
@@ -101,7 +101,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 	q := qb.Q().Space(fmt.Sprintf(`
 		SELECT
 			worksheet.id,
-			worksheet.creator_id,
+			worksheet.creator,
 			worksheet.created_at,
 			worksheet.updated_at,
 			worksheet.project,
@@ -113,8 +113,8 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			OCTET_LENGTH(worksheet.statement),
 			COALESCE(worksheet_organizer.payload, '{}')
 		FROM worksheet
-		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet_id = worksheet.id AND worksheet_organizer.principal_id = %d
-		WHERE TRUE`, statementField, currentPrincipalID))
+		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet_id = worksheet.id AND worksheet_organizer.principal = '%s'
+		WHERE TRUE`, statementField, currentPrincipal))
 
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
@@ -148,7 +148,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 		var payloadBytes []byte
 		if err := rows.Scan(
 			&sheet.UID,
-			&sheet.CreatorID,
+			&sheet.Creator,
 			&sheet.CreatedAt,
 			&sheet.UpdatedAt,
 			&sheet.ProjectID,
@@ -197,7 +197,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 
 	q := qb.Q().Space(`
 		INSERT INTO worksheet (
-			creator_id,
+			creator,
 			project,
 			instance,
 			db_name,
@@ -208,7 +208,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id, created_at, updated_at, OCTET_LENGTH(statement)
-	`, create.CreatorID, create.ProjectID, create.InstanceID, create.DatabaseName, create.Title, create.Statement, create.Visibility, payload)
+	`, create.Creator, create.ProjectID, create.InstanceID, create.DatabaseName, create.Title, create.Statement, create.Visibility, payload)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -328,18 +328,18 @@ type WorksheetOrganizerMessage struct {
 
 	// Related fields
 	WorksheetUID int
-	PrincipalUID int
+	Principal    string
 	Payload      *storepb.WorkSheetOrganizerPayload
 }
 
-func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetUID, principalUID int) (*WorksheetOrganizerMessage, error) {
+func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetUID int, principal string) (*WorksheetOrganizerMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
 			id,
 			payload
 		FROM worksheet_organizer
-		WHERE worksheet_id = ? AND principal_id = ?
-	`, worksheetUID, principalUID)
+		WHERE worksheet_id = ? AND principal = ?
+	`, worksheetUID, principal)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -348,7 +348,7 @@ func (s *Store) GetWorksheetOrganizer(ctx context.Context, worksheetUID, princip
 
 	worksheetOrganizer := WorksheetOrganizerMessage{
 		WorksheetUID: worksheetUID,
-		PrincipalUID: principalUID,
+		Principal:    principal,
 		Payload:      &storepb.WorkSheetOrganizerPayload{},
 	}
 	var payload []byte
@@ -385,18 +385,18 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 	q := qb.Q().Space(`
 	  INSERT INTO worksheet_organizer (
 			worksheet_id,
-			principal_id,
+			principal,
 			payload
 		)
 		VALUES (?, ?, ?)
-		ON CONFLICT(worksheet_id, principal_id) DO UPDATE SET
+		ON CONFLICT(worksheet_id, principal) DO UPDATE SET
 			payload = EXCLUDED.payload
 		RETURNING
 			id,
 			worksheet_id,
-			principal_id,
+			principal,
 			payload
-	`, patch.WorksheetUID, patch.PrincipalUID, payloadStr)
+	`, patch.WorksheetUID, patch.Principal, payloadStr)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -408,7 +408,7 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&worksheetOrganizer.UID,
 		&worksheetOrganizer.WorksheetUID,
-		&worksheetOrganizer.PrincipalUID,
+		&worksheetOrganizer.Principal,
 		&payload,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -429,7 +429,7 @@ func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, patch *WorksheetOr
 	return &worksheetOrganizer, nil
 }
 
-func GetListSheetFilter(ctx context.Context, s *Store, callerID int, filter string) (*qb.Query, error) {
+func GetListSheetFilter(ctx context.Context, s *Store, caller string, filter string) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -445,19 +445,21 @@ func GetListSheetFilter(ctx context.Context, s *Store, callerID int, filter stri
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
 
-	getUserID := func(name string) (int, error) {
+	getUserID := func(name string) (string, error) {
 		creatorEmail := strings.TrimPrefix(name, "users/")
 		if creatorEmail == "" {
-			return 0, errors.New("invalid empty creator identifier")
+			return "", errors.New("invalid empty creator identifier")
 		}
+		// Assuming we trust the email or validate existence elsewhere, or we can keep GetUserByEmail if strict validation needed.
+		// For now, let's keep validation but return email.
 		user, err := s.GetUserByEmail(ctx, creatorEmail)
 		if err != nil {
-			return 0, errors.Errorf("failed to get user: %v", err)
+			return "", errors.Errorf("failed to get user: %v", err)
 		}
 		if user == nil {
-			return 0, errors.Errorf("user with email %s not found", creatorEmail)
+			return "", errors.Errorf("user with email %s not found", creatorEmail)
 		}
-		return user.ID, nil
+		return user.Email, nil
 	}
 
 	parseToSQL := func(variable, value any) (*qb.Query, error) {
@@ -467,10 +469,10 @@ func GetListSheetFilter(ctx context.Context, s *Store, callerID int, filter stri
 			if err != nil {
 				return nil, err
 			}
-			return qb.Q().Space("worksheet.creator_id = ?", userID), nil
+			return qb.Q().Space("worksheet.creator = ?", userID), nil
 		case "starred":
 			if starred, ok := value.(bool); ok {
-				return qb.Q().Space("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = ? AND (payload->>'starred')::boolean = ?)", callerID, starred), nil
+				return qb.Q().Space("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal = ? AND (payload->>'starred')::boolean = ?)", caller, starred), nil
 			}
 			return qb.Q().Space("TRUE"), nil
 		case "visibility":
@@ -523,7 +525,7 @@ func GetListSheetFilter(ctx context.Context, s *Store, callerID int, filter stri
 				if err != nil {
 					return nil, err
 				}
-				return qb.Q().Space("worksheet.creator_id != ?", userID), nil
+				return qb.Q().Space("worksheet.creator != ?", userID), nil
 			case celoperators.In:
 				variable, value := getVariableAndValueFromExpr(expr)
 				if variable != "visibility" {

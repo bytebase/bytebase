@@ -103,7 +103,7 @@ type AuditLog struct {
 	// The resource name.
 	// Example: projects/{project}
 	Resource string `protobuf:"bytes,3,opt,name=resource,proto3" json:"resource,omitempty"`
-	// Format: users/{userUID}.
+	// Format: users/{email}.
 	User     string            `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
 	Severity AuditLog_Severity `protobuf:"varint,5,opt,name=severity,proto3,enum=bytebase.store.AuditLog_Severity" json:"severity,omitempty"`
 	// Marshalled request.

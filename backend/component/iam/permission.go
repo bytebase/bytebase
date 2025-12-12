@@ -113,6 +113,7 @@ const (
 	PermissionUsersList               Permission = "bb.users.list"
 	PermissionUsersUndelete           Permission = "bb.users.undelete"
 	PermissionUsersUpdate             Permission = "bb.users.update"
+	PermissionUsersUpdateEmail        Permission = "bb.users.updateEmail"
 	PermissionWorksheetsGet           Permission = "bb.worksheets.get"
 	PermissionWorksheetsManage        Permission = "bb.worksheets.manage"
 	PermissionWorkspacesGetIamPolicy  Permission = "bb.workspaces.getIamPolicy"
@@ -230,6 +231,7 @@ var allPermissions = []Permission{
 	PermissionUsersList,
 	PermissionUsersUndelete,
 	PermissionUsersUpdate,
+	PermissionUsersUpdateEmail,
 	PermissionWorksheetsGet,
 	PermissionWorksheetsManage,
 	PermissionWorkspacesGetIamPolicy,

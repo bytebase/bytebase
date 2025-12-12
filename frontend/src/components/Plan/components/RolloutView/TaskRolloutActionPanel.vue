@@ -365,7 +365,11 @@ const issueApprovalStatus = computed(() => {
   };
 });
 
-const shouldShowComment = computed(() => !isNullOrUndefined(issue?.value));
+// Only show comment/reason field for SKIP action (stored in task.skipped_reason)
+// RUN and CANCEL don't store reasons permanently
+const shouldShowComment = computed(
+  () => props.action === "SKIP" && !isNullOrUndefined(issue?.value)
+);
 
 // Plan check error validation based on rollout policy checkers
 const planCheckError = computed(() => {
@@ -789,7 +793,6 @@ const handleConfirm = async () => {
           const request = create(BatchRunTasksRequestSchema, {
             parent: `${rollout.value.name}/stages/${stageId}`,
             tasks: stageTasks.map((task) => task.name),
-            reason: comment.value,
           });
           addRunTimeToRequest(request);
           await rolloutServiceClientConnect.batchRunTasks(request);
@@ -799,7 +802,6 @@ const handleConfirm = async () => {
         const request = create(BatchRunTasksRequestSchema, {
           parent: targetStage.value.name,
           tasks: eligibleTasks.value.map((task) => task.name),
-          reason: comment.value,
         });
         addRunTimeToRequest(request);
         await rolloutServiceClientConnect.batchRunTasks(request);
@@ -914,7 +916,6 @@ const cancelTasks = async () => {
         const request = create(BatchCancelTaskRunsRequestSchema, {
           parent: `${stageName}/tasks/-`,
           taskRuns: taskRunNames,
-          reason: comment.value,
         });
         return rolloutServiceClientConnect.batchCancelTaskRuns(request);
       }

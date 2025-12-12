@@ -418,6 +418,106 @@ func (*LogoutRequest) Descriptor() ([]byte, []int) {
 	return file_v1_auth_service_proto_rawDescGZIP(), []int{5}
 }
 
+type ExchangeTokenRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// External OIDC token (JWT) from CI/CD platform.
+	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	// Workload Identity email for identifying which identity to authenticate as.
+	// Format: {name}@workload.bytebase.com
+	Email         string `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExchangeTokenRequest) Reset() {
+	*x = ExchangeTokenRequest{}
+	mi := &file_v1_auth_service_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExchangeTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExchangeTokenRequest) ProtoMessage() {}
+
+func (x *ExchangeTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_auth_service_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExchangeTokenRequest.ProtoReflect.Descriptor instead.
+func (*ExchangeTokenRequest) Descriptor() ([]byte, []int) {
+	return file_v1_auth_service_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ExchangeTokenRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *ExchangeTokenRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type ExchangeTokenResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Bytebase access token.
+	AccessToken   string `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExchangeTokenResponse) Reset() {
+	*x = ExchangeTokenResponse{}
+	mi := &file_v1_auth_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExchangeTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExchangeTokenResponse) ProtoMessage() {}
+
+func (x *ExchangeTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_auth_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExchangeTokenResponse.ProtoReflect.Descriptor instead.
+func (*ExchangeTokenResponse) Descriptor() ([]byte, []int) {
+	return file_v1_auth_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ExchangeTokenResponse) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
 var File_v1_auth_service_proto protoreflect.FileDescriptor
 
 const file_v1_auth_service_proto_rawDesc = "" +
@@ -450,10 +550,16 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x16require_reset_password\x18\x03 \x01(\bR\x14requireResetPassword\x12%\n" +
 	"\x04user\x18\x04 \x01(\v2\x11.bytebase.v1.UserR\x04userB\x11\n" +
 	"\x0f_mfa_temp_token\"\x0f\n" +
-	"\rLogoutRequest2\xd2\x01\n" +
+	"\rLogoutRequest\"B\n" +
+	"\x14ExchangeTokenRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\":\n" +
+	"\x15ExchangeTokenResponse\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken2\xd6\x02\n" +
 	"\vAuthService\x12a\n" +
 	"\x05Login\x12\x19.bytebase.v1.LoginRequest\x1a\x1a.bytebase.v1.LoginResponse\"!\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/auth/login\x12`\n" +
-	"\x06Logout\x12\x1a.bytebase.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\"\"\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logoutB\xa6\x01\n" +
+	"\x06Logout\x12\x1a.bytebase.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\"\"\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logout\x12\x81\x01\n" +
+	"\rExchangeToken\x12!.bytebase.v1.ExchangeTokenRequest\x1a\".bytebase.v1.ExchangeTokenResponse\")\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/auth:exchangeTokenB\xa6\x01\n" +
 	"\x0fcom.bytebase.v1B\x10AuthServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -468,7 +574,7 @@ func file_v1_auth_service_proto_rawDescGZIP() []byte {
 	return file_v1_auth_service_proto_rawDescData
 }
 
-var file_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_v1_auth_service_proto_goTypes = []any{
 	(*LoginRequest)(nil),                  // 0: bytebase.v1.LoginRequest
 	(*IdentityProviderContext)(nil),       // 1: bytebase.v1.IdentityProviderContext
@@ -476,20 +582,24 @@ var file_v1_auth_service_proto_goTypes = []any{
 	(*OIDCIdentityProviderContext)(nil),   // 3: bytebase.v1.OIDCIdentityProviderContext
 	(*LoginResponse)(nil),                 // 4: bytebase.v1.LoginResponse
 	(*LogoutRequest)(nil),                 // 5: bytebase.v1.LogoutRequest
-	(*User)(nil),                          // 6: bytebase.v1.User
-	(*emptypb.Empty)(nil),                 // 7: google.protobuf.Empty
+	(*ExchangeTokenRequest)(nil),          // 6: bytebase.v1.ExchangeTokenRequest
+	(*ExchangeTokenResponse)(nil),         // 7: bytebase.v1.ExchangeTokenResponse
+	(*User)(nil),                          // 8: bytebase.v1.User
+	(*emptypb.Empty)(nil),                 // 9: google.protobuf.Empty
 }
 var file_v1_auth_service_proto_depIdxs = []int32{
 	1, // 0: bytebase.v1.LoginRequest.idp_context:type_name -> bytebase.v1.IdentityProviderContext
 	2, // 1: bytebase.v1.IdentityProviderContext.oauth2_context:type_name -> bytebase.v1.OAuth2IdentityProviderContext
 	3, // 2: bytebase.v1.IdentityProviderContext.oidc_context:type_name -> bytebase.v1.OIDCIdentityProviderContext
-	6, // 3: bytebase.v1.LoginResponse.user:type_name -> bytebase.v1.User
+	8, // 3: bytebase.v1.LoginResponse.user:type_name -> bytebase.v1.User
 	0, // 4: bytebase.v1.AuthService.Login:input_type -> bytebase.v1.LoginRequest
 	5, // 5: bytebase.v1.AuthService.Logout:input_type -> bytebase.v1.LogoutRequest
-	4, // 6: bytebase.v1.AuthService.Login:output_type -> bytebase.v1.LoginResponse
-	7, // 7: bytebase.v1.AuthService.Logout:output_type -> google.protobuf.Empty
-	6, // [6:8] is the sub-list for method output_type
-	4, // [4:6] is the sub-list for method input_type
+	6, // 6: bytebase.v1.AuthService.ExchangeToken:input_type -> bytebase.v1.ExchangeTokenRequest
+	4, // 7: bytebase.v1.AuthService.Login:output_type -> bytebase.v1.LoginResponse
+	9, // 8: bytebase.v1.AuthService.Logout:output_type -> google.protobuf.Empty
+	7, // 9: bytebase.v1.AuthService.ExchangeToken:output_type -> bytebase.v1.ExchangeTokenResponse
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
 	4, // [4:4] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name
@@ -514,7 +624,7 @@ func file_v1_auth_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_auth_service_proto_rawDesc), len(file_v1_auth_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

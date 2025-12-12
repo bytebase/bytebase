@@ -39,7 +39,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_AUDIT_LOG); err != nil {
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
-	filterQ, err := store.GetSearchAuditLogsFilter(ctx, s.store, request.Msg.Filter)
+	filterQ, err := store.GetSearchAuditLogsFilter(request.Msg.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -89,10 +89,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 		}
 	}
 
-	v1AuditLogs, err := convertToAuditLogs(ctx, s.store, auditLogs)
-	if err != nil {
-		return nil, err
-	}
+	v1AuditLogs := convertToAuditLogs(ctx, s.store, auditLogs)
 	return connect.NewResponse(&v1pb.SearchAuditLogsResponse{
 		AuditLogs:     v1AuditLogs,
 		NextPageToken: nextPageToken,
@@ -159,35 +156,19 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *connect.
 	return connect.NewResponse(&v1pb.ExportAuditLogsResponse{Content: content, NextPageToken: searchAuditLogsResult.Msg.NextPageToken}), nil
 }
 
-func convertToAuditLogs(ctx context.Context, stores *store.Store, auditLogs []*store.AuditLog) ([]*v1pb.AuditLog, error) {
+func convertToAuditLogs(_ context.Context, _ *store.Store, auditLogs []*store.AuditLog) []*v1pb.AuditLog {
 	var ls []*v1pb.AuditLog
 	for _, log := range auditLogs {
-		l, err := convertToAuditLog(ctx, stores, log)
-		if err != nil {
-			return nil, err
-		}
-		ls = append(ls, l)
+		ls = append(ls, convertToAuditLog(log))
 	}
-	return ls, nil
+	return ls
 }
 
-func convertToAuditLog(ctx context.Context, stores *store.Store, l *store.AuditLog) (*v1pb.AuditLog, error) {
-	var user string
-	if l.Payload.User != "" {
-		uid, err := common.GetUserID(l.Payload.User)
-		if err != nil {
-			return nil, err
-		}
-		u, err := stores.GetUserByID(ctx, uid)
-		if err != nil {
-			return nil, err
-		}
-		user = common.FormatUserEmail(u.Email)
-	}
+func convertToAuditLog(l *store.AuditLog) *v1pb.AuditLog {
 	return &v1pb.AuditLog{
 		Name:        fmt.Sprintf("%s/%s%d", l.Payload.Parent, common.AuditLogPrefix, l.ID),
 		CreateTime:  timestamppb.New(l.CreatedAt),
-		User:        user,
+		User:        l.Payload.User,
 		Method:      l.Payload.Method,
 		Severity:    convertToAuditLogSeverity(l.Payload.Severity),
 		Resource:    l.Payload.Resource,
@@ -196,7 +177,7 @@ func convertToAuditLog(ctx context.Context, stores *store.Store, l *store.AuditL
 		Status:      l.Payload.Status,
 		Latency:     l.Payload.Latency,
 		ServiceData: l.Payload.ServiceData,
-	}, nil
+	}
 }
 
 func convertToAuditLogSeverity(s storepb.AuditLog_Severity) v1pb.AuditLog_Severity {

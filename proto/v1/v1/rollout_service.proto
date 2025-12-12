@@ -149,9 +149,6 @@ message BatchRunTasksRequest {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
 
-  // The reason for running the tasks.
-  string reason = 3 [(buf.validate.field).string.max_len = 1000];
-
   // The task run should run after run_time.
   optional google.protobuf.Timestamp run_time = 4;
 }
@@ -180,9 +177,6 @@ message BatchCancelTaskRunsRequest {
   // The taskRuns to cancel.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   repeated string task_runs = 2;
-
-  // The reason for canceling the task runs.
-  string reason = 3 [(buf.validate.field).string.max_len = 1000];
 }
 
 message BatchCancelTaskRunsResponse {}

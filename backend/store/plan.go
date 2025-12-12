@@ -28,11 +28,11 @@ type PlanMessage struct {
 	Description string
 	Config      *storepb.PlanConfig
 	// output only
-	UID        int64
-	CreatorUID int
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	Deleted    bool
+	UID       int64
+	Creator   string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Deleted   bool
 }
 
 // FindPlanMessage is the message to find a plan.
@@ -59,7 +59,7 @@ type UpdatePlanMessage struct {
 }
 
 // CreatePlan creates a new plan.
-func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID int) (*PlanMessage, error) {
+func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator string) (*PlanMessage, error) {
 	config, err := protojson.Marshal(plan.Config)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal plan config")
@@ -67,7 +67,7 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 
 	q := qb.Q().Space(`
 		INSERT INTO plan (
-			creator_id,
+			creator,
 			project,
 			pipeline_id,
 			name,
@@ -76,7 +76,7 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 		) VALUES (
 			?, ?, ?, ?, ?, ?
 		) RETURNING id, created_at, updated_at
-	`, creatorUID, plan.ProjectID, plan.PipelineUID, plan.Name, plan.Description, config)
+	`, creator, plan.ProjectID, plan.PipelineUID, plan.Name, plan.Description, config)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -99,7 +99,7 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creatorUID in
 	}
 
 	plan.UID = id
-	plan.CreatorUID = creatorUID
+	plan.Creator = creator
 	return plan, nil
 }
 
@@ -123,7 +123,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	q := qb.Q().Space(`
 		SELECT
 			plan.id,
-			plan.creator_id,
+			plan.creator,
 			plan.created_at,
 			plan.updated_at,
 			plan.project,
@@ -190,7 +190,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		var config []byte
 		if err := rows.Scan(
 			&plan.UID,
-			&plan.CreatorUID,
+			&plan.Creator,
 			&plan.CreatedAt,
 			&plan.UpdatedAt,
 			&plan.ProjectID,
@@ -324,7 +324,7 @@ func (s *Store) GetListPlanFilter(ctx context.Context, filter string) (*qb.Query
 					if err != nil {
 						return nil, errors.Errorf("failed to get user %v with error %v", value, err.Error())
 					}
-					return qb.Q().Space("plan.creator_id = ?", user.ID), nil
+					return qb.Q().Space("plan.creator = ?", user.Email), nil
 				case "has_pipeline":
 					hasPipeline, ok := value.(bool)
 					if !ok {

@@ -112,6 +112,8 @@ type controller struct {
 	workspaceServiceClient       v1connect.WorkspaceServiceClient
 	releaseServiceClient         v1connect.ReleaseServiceClient
 	revisionServiceClient        v1connect.RevisionServiceClient
+	groupServiceClient           v1connect.GroupServiceClient
+	auditLogServiceClient        v1connect.AuditLogServiceClient
 
 	project *v1pb.Project
 
@@ -296,6 +298,8 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.workspaceServiceClient = v1connect.NewWorkspaceServiceClient(ctl.client, baseURL, interceptors)
 	ctl.releaseServiceClient = v1connect.NewReleaseServiceClient(ctl.client, baseURL, interceptors)
 	ctl.revisionServiceClient = v1connect.NewRevisionServiceClient(ctl.client, baseURL, interceptors)
+	ctl.groupServiceClient = v1connect.NewGroupServiceClient(ctl.client, baseURL, interceptors)
+	ctl.auditLogServiceClient = v1connect.NewAuditLogServiceClient(ctl.client, baseURL, interceptors)
 
 	if err := ctl.waitForHealthz(ctx); err != nil {
 		return nil, errors.Wrap(err, "failed to wait for healthz")

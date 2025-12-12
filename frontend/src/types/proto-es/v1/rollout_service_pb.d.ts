@@ -34,13 +34,6 @@ export declare type BatchRunTasksRequest = Message<"bytebase.v1.BatchRunTasksReq
   tasks: string[];
 
   /**
-   * The reason for running the tasks.
-   *
-   * @generated from field: string reason = 3;
-   */
-  reason: string;
-
-  /**
    * The task run should run after run_time.
    *
    * @generated from field: optional google.protobuf.Timestamp run_time = 4;
@@ -132,13 +125,6 @@ export declare type BatchCancelTaskRunsRequest = Message<"bytebase.v1.BatchCance
    * @generated from field: repeated string task_runs = 2;
    */
   taskRuns: string[];
-
-  /**
-   * The reason for canceling the task runs.
-   *
-   * @generated from field: string reason = 3;
-   */
-  reason: string;
 };
 
 /**

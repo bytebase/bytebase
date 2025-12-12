@@ -54,17 +54,20 @@
         <CheckCircleIcon class="w-12 h-12 text-control-light opacity-50 mb-4" />
         <div class="text-lg text-control-light">
           {{
-            hasFilters ? "No results match your filters" : "No check results"
+            hasFilters
+              ? $t("plan.checks.no-results-match-filters")
+              : $t("plan.checks.no-check-results")
           }}
         </div>
       </div>
-      <div v-else class="divide-y">
-        <!-- Group by check run -->
-        <div
-          v-for="checkRun in filteredCheckRuns"
-          :key="checkRun.name"
-          class="px-2 py-4"
-        >
+      <div v-else>
+        <div class="divide-y">
+          <!-- Group by check run -->
+          <div
+            v-for="checkRun in filteredCheckRuns"
+            :key="checkRun.name"
+            class="px-2 py-4"
+          >
           <!-- Check Run Header -->
           <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
             <div class="flex items-center gap-3 shrink-0">
@@ -98,7 +101,7 @@
           <!-- Results for this check run -->
           <div class="flex flex-col gap-y-2 pl-8">
             <CheckResultItem
-              v-for="(result, idx) in getFilteredResults(checkRun)"
+              v-for="(result, idx) in filteredResultsMap.get(checkRun.name)"
               :key="idx"
               :status="getCheckResultStatus(result.status)"
               :title="result.title"
@@ -118,6 +121,16 @@
               "
             />
           </div>
+        </div>
+        </div>
+        <!-- Load more button -->
+        <div v-if="hasMore" class="flex justify-center py-4">
+          <button
+            class="text-sm text-accent hover:underline"
+            @click="loadMore"
+          >
+            {{ $t("common.load-more") }} ({{ remainingCount }})
+          </button>
         </div>
       </div>
     </div>
@@ -143,6 +156,7 @@ import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import {
   type PlanCheckRun,
+  type PlanCheckRun_Result,
   PlanCheckRun_ResultSchema,
   PlanCheckRun_Status,
   PlanCheckRun_Type,
@@ -161,6 +175,14 @@ const props = defineProps<{
 const { t } = useI18n();
 
 const selectedStatus = ref<Advice_Level | undefined>(props.defaultStatus);
+
+// Pagination - load more
+const PAGE_SIZE = 10;
+const displayCount = ref(PAGE_SIZE);
+
+const loadMore = () => {
+  displayCount.value += PAGE_SIZE;
+};
 
 const hasFilters = computed(() => {
   return selectedStatus.value !== undefined;
@@ -204,22 +226,17 @@ const toggleSelectedStatus = (status: Advice_Level) => {
   } else {
     selectedStatus.value = status; // Select the new status
   }
+  // Reset pagination when filter changes
+  displayCount.value = PAGE_SIZE;
 };
 
 const getItemClass = (status: Advice_Level) => {
-  const classes: string[] = [];
-
-  if (selectedStatus.value === status) {
-    classes.push("bg-gray-100 rounded-lg px-2 py-1");
-  } else {
-    // Add some padding to align with selected items
-    classes.push("px-2 py-1");
-  }
-
-  return classes;
+  return selectedStatus.value === status
+    ? "bg-gray-100 rounded-lg px-2 py-1"
+    : "px-2 py-1";
 };
 
-const filteredCheckRuns = computed(() => {
+const allFilteredCheckRuns = computed(() => {
   return props.planCheckRuns.filter((checkRun) => {
     // Filter by status - check if any result matches the selected status
     if (selectedStatus.value !== undefined) {
@@ -242,61 +259,79 @@ const filteredCheckRuns = computed(() => {
   });
 });
 
-const getFilteredResults = (checkRun: PlanCheckRun) => {
-  let results = checkRun.results.filter((result) => {
-    return (
-      selectedStatus.value === undefined ||
-      result.status === selectedStatus.value
-    );
-  });
+// Paginated check runs
+const filteredCheckRuns = computed(() => {
+  return allFilteredCheckRuns.value.slice(0, displayCount.value);
+});
 
-  // For failed check runs, add a synthetic error result if filtering for errors or no filter
-  if (
-    checkRun.status === PlanCheckRun_Status.FAILED &&
-    (selectedStatus.value === undefined ||
-      selectedStatus.value === Advice_Level.ERROR)
-  ) {
-    // Create a synthetic error result for the failed check run
-    const syntheticResult = create(PlanCheckRun_ResultSchema, {
-      status: Advice_Level.ERROR,
-      title: "Check Failed",
-      content: checkRun.error || "Plan check run failed",
-      code: 0,
+const hasMore = computed(() => {
+  return allFilteredCheckRuns.value.length > displayCount.value;
+});
+
+const remainingCount = computed(() => {
+  return allFilteredCheckRuns.value.length - displayCount.value;
+});
+
+// Memoized filtered results for each check run
+const filteredResultsMap = computed(() => {
+  const map = new Map<string, PlanCheckRun_Result[]>();
+  for (const checkRun of filteredCheckRuns.value) {
+    let results = checkRun.results.filter((result) => {
+      return (
+        selectedStatus.value === undefined ||
+        result.status === selectedStatus.value
+      );
     });
-    results = [syntheticResult, ...results];
-  }
 
-  return results;
+    // For failed check runs, add a synthetic error result if filtering for errors or no filter
+    if (
+      checkRun.status === PlanCheckRun_Status.FAILED &&
+      (selectedStatus.value === undefined ||
+        selectedStatus.value === Advice_Level.ERROR)
+    ) {
+      const syntheticResult = create(PlanCheckRun_ResultSchema, {
+        status: Advice_Level.ERROR,
+        title: "Check Failed",
+        content: checkRun.error || "Plan check run failed",
+        code: 0,
+      });
+      results = [syntheticResult, ...results];
+    }
+
+    map.set(checkRun.name, results);
+  }
+  return map;
+});
+
+// Check type configuration lookup
+const checkTypeConfig: Partial<
+  Record<PlanCheckRun_Type, { icon: typeof FileCodeIcon; labelKey: string }>
+> = {
+  [PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE]: {
+    icon: SearchCodeIcon,
+    labelKey: "task.check-type.sql-review.self",
+  },
+  [PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT]: {
+    icon: FileCodeIcon,
+    labelKey: "task.check-type.summary-report",
+  },
+  [PlanCheckRun_Type.DATABASE_CONNECT]: {
+    icon: DatabaseIcon,
+    labelKey: "task.check-type.connection",
+  },
+  [PlanCheckRun_Type.DATABASE_GHOST_SYNC]: {
+    icon: ShieldIcon,
+    labelKey: "task.check-type.ghost-sync",
+  },
 };
 
 const getCheckTypeIcon = (type: PlanCheckRun_Type) => {
-  switch (type) {
-    case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
-      return SearchCodeIcon;
-    case PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT:
-      return FileCodeIcon;
-    case PlanCheckRun_Type.DATABASE_CONNECT:
-      return DatabaseIcon;
-    case PlanCheckRun_Type.DATABASE_GHOST_SYNC:
-      return ShieldIcon;
-    default:
-      return FileCodeIcon;
-  }
+  return checkTypeConfig[type]?.icon ?? FileCodeIcon;
 };
 
 const getCheckTypeLabel = (type: PlanCheckRun_Type) => {
-  switch (type) {
-    case PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE:
-      return t("task.check-type.sql-review.self");
-    case PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT:
-      return t("task.check-type.summary-report");
-    case PlanCheckRun_Type.DATABASE_CONNECT:
-      return t("task.check-type.connection");
-    case PlanCheckRun_Type.DATABASE_GHOST_SYNC:
-      return t("task.check-type.ghost-sync");
-    default:
-      return type.toString();
-  }
+  const key = checkTypeConfig[type]?.labelKey;
+  return key ? t(key) : type.toString();
 };
 
 const getCheckTypeDescription = (type: PlanCheckRun_Type) => {
@@ -315,18 +350,17 @@ const formatTime = (timestamp: Timestamp | undefined): string => {
   );
 };
 
+const adviceLevelToStatus: Partial<
+  Record<Advice_Level, "SUCCESS" | "WARNING" | "ERROR">
+> = {
+  [Advice_Level.ERROR]: "ERROR",
+  [Advice_Level.WARNING]: "WARNING",
+  [Advice_Level.SUCCESS]: "SUCCESS",
+};
+
 const getCheckResultStatus = (
   status: Advice_Level
 ): "SUCCESS" | "WARNING" | "ERROR" => {
-  switch (status) {
-    case Advice_Level.ERROR:
-      return "ERROR";
-    case Advice_Level.WARNING:
-      return "WARNING";
-    case Advice_Level.SUCCESS:
-      return "SUCCESS";
-    default:
-      return "SUCCESS";
-  }
+  return adviceLevelToStatus[status] ?? "SUCCESS";
 };
 </script>

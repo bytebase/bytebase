@@ -263,6 +263,34 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/auth:exchangeToken:
+        post:
+            tags:
+                - AuthService
+            description: |-
+                Exchanges an external OIDC token for a Bytebase access token.
+                 Used by CI/CD pipelines with Workload Identity Federation.
+                 Permissions required: None (validates via OIDC token)
+            operationId: AuthService_ExchangeToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExchangeTokenRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExchangeTokenResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/cel/batchDeparse:
         post:
             tags:
@@ -7203,6 +7231,7 @@ paths:
                 - UserService
             description: |-
                 Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+                 Note: Email updates are not supported through this API. Use UpdateEmail instead.
                  Permissions required: bb.users.update (or self)
             operationId: UserService_UpdateUser
             parameters:
@@ -7295,6 +7324,40 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/users/{user}:updateEmail:
+        post:
+            tags:
+                - UserService
+            description: |-
+                Updates a user's email address.
+                 Permissions required: bb.users.updateEmail
+            operationId: UserService_UpdateEmail
+            parameters:
+                - name: user
+                  in: path
+                  description: The user id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateEmailRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/users:batchGet:
         get:
             tags:
@@ -7309,7 +7372,7 @@ paths:
                   in: query
                   description: |-
                     The user names to retrieve.
-                     Format: users/{user uid or user email}
+                     Format: users/{email}
                   schema:
                     type: array
                     items:
@@ -7945,6 +8008,7 @@ components:
                         - USER
                         - SYSTEM_BOT
                         - SERVICE_ACCOUNT
+                        - WORKLOAD_IDENTITY
                     type: string
                     description: The type of user.
                     format: enum
@@ -8349,9 +8413,6 @@ components:
                     description: |-
                         The taskRuns to cancel.
                          Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-                reason:
-                    type: string
-                    description: The reason for canceling the task runs.
         BatchCancelTaskRunsResponse:
             type: object
             properties: {}
@@ -8517,9 +8578,6 @@ components:
                     description: |-
                         The tasks to run.
                          Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-                reason:
-                    type: string
-                    description: The reason for running the tasks.
                 runTime:
                     type: string
                     description: The task run should run after run_time.
@@ -9995,6 +10053,23 @@ components:
                 comment:
                     type: string
                     description: The comment is the comment of an event.
+        ExchangeTokenRequest:
+            type: object
+            properties:
+                token:
+                    type: string
+                    description: External OIDC token (JWT) from CI/CD platform.
+                email:
+                    type: string
+                    description: |-
+                        Workload Identity email for identifying which identity to authenticate as.
+                         Format: {name}@workload.bytebase.com
+        ExchangeTokenResponse:
+            type: object
+            properties:
+                accessToken:
+                    type: string
+                    description: Bytebase access token.
         ExportAuditLogsRequest:
             required:
                 - parent
@@ -15227,7 +15302,7 @@ components:
                     type: string
                     description: |-
                         The name of the deleted user.
-                         Format: users/{user}
+                         Format: users/{email}
         UpdateDatabaseRequest:
             required:
                 - database
@@ -15250,6 +15325,21 @@ components:
                     description: |-
                         If set to true, and the database is not found, a new database will be created.
                          In this situation, `update_mask` is ignored.
+        UpdateEmailRequest:
+            required:
+                - name
+                - email
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: |-
+                        The name of the user whose email to update.
+                         Format: users/{email}
+                         Note: This is the current (old) email address. The new email is specified in the 'email' field.
+                email:
+                    type: string
+                    description: The new email address.
         UpdateInstanceRequest:
             required:
                 - instance
@@ -15306,7 +15396,7 @@ components:
                     type: string
                     description: |-
                         The name of the user.
-                         Format: users/{user}. {user} is a system-generated unique ID.
+                         Format: users/{email}
                 state:
                     enum:
                         - STATE_UNSPECIFIED
@@ -15327,6 +15417,7 @@ components:
                         - USER
                         - SYSTEM_BOT
                         - SERVICE_ACCOUNT
+                        - WORKLOAD_IDENTITY
                     type: string
                     description: The type of user account.
                     format: enum
@@ -15370,6 +15461,10 @@ components:
                     description: |-
                         The groups for the user.
                          Format: groups/{email}
+                workloadIdentityConfig:
+                    allOf:
+                        - $ref: '#/components/schemas/WorkloadIdentityConfig'
+                    description: Workload Identity configuration (only for WORKLOAD_IDENTITY type)
         User_Profile:
             type: object
             properties:
@@ -15492,6 +15587,28 @@ components:
                          - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
                          - NOTIFY_ISSUE_APPROVED
                          - NOTIFY_PIPELINE_ROLLOUT
+        WorkloadIdentityConfig:
+            type: object
+            properties:
+                providerType:
+                    enum:
+                        - PROVIDER_TYPE_UNSPECIFIED
+                        - GITHUB
+                    type: string
+                    description: Platform type (currently only GITHUB is supported)
+                    format: enum
+                issuerUrl:
+                    type: string
+                    description: OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+                allowedAudiences:
+                    type: array
+                    items:
+                        type: string
+                    description: Allowed audiences for token validation
+                subjectPattern:
+                    type: string
+                    description: Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+            description: WorkloadIdentityConfig for API layer
         Worksheet:
             required:
                 - name

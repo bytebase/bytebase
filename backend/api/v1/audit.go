@@ -151,7 +151,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 
 	var user string
 	if u, ok := GetUserFromContext(ctx); ok {
-		user = common.FormatUserUID(u.ID)
+		user = common.FormatUserEmail(u.Email)
 	} else {
 		// Try to get user from successful login response.
 		if loginResponse, ok := response.(*v1pb.LoginResponse); ok {

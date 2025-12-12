@@ -15,6 +15,8 @@ enum PrincipalType {
   SERVICE_ACCOUNT = 2;
   // SYSTEM_BOT represents the internal system bot performing operations.
   SYSTEM_BOT = 3;
+  // WORKLOAD_IDENTITY represents external CI/CD workload identity.
+  WORKLOAD_IDENTITY = 4;
 }
 
 // MFAConfig is the MFA configuration for a user.
@@ -40,4 +42,24 @@ message UserProfile {
   google.protobuf.Timestamp last_change_password_time = 2;
   // The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
   string source = 3;
+  // Workload identity configuration (only for WORKLOAD_IDENTITY type)
+  WorkloadIdentityConfig workload_identity_config = 4;
+}
+
+// WorkloadIdentityConfig stores OIDC configuration for workload identity.
+message WorkloadIdentityConfig {
+  // ProviderType identifies the CI/CD platform.
+  enum ProviderType {
+    PROVIDER_TYPE_UNSPECIFIED = 0;
+    GITHUB = 1;
+  }
+
+  // Provider type (currently only GITHUB is supported)
+  ProviderType provider_type = 1;
+  // OIDC issuer URL
+  string issuer_url = 2;
+  // Allowed audiences for token validation
+  repeated string allowed_audiences = 3;
+  // Subject pattern to match against token subject claim
+  string subject_pattern = 4;
 }

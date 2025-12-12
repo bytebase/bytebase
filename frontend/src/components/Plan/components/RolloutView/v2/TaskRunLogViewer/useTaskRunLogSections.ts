@@ -16,12 +16,14 @@ import {
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import { extractSheetCommandByIndex } from "@/utils";
 import { addToSet, deleteFromSet } from "../utils/reactivity";
-import type { DisplayItem, Section, SectionStatus } from "./types";
+import type { DeployGroup, DisplayItem, Section, SectionStatus } from "./types";
 import {
   formatDuration,
   formatRelativeTime,
   formatTime,
   getTimestampMs,
+  getUniqueDeployIds,
+  groupEntriesByDeploy,
   groupEntriesByType,
   hasError,
   isComplete,
@@ -37,9 +39,14 @@ const STATUS_CONFIG: Record<SectionStatus, { icon: Component; class: string }> =
 
 export interface UseTaskRunLogSectionsReturn {
   sections: ComputedRef<Section[]>;
+  hasMultipleDeploys: ComputedRef<boolean>;
+  deployGroups: ComputedRef<DeployGroup[]>;
   expandedSections: Ref<Set<string>>;
+  expandedDeploys: Ref<Set<string>>;
   toggleSection: (sectionId: string) => void;
+  toggleDeploy: (deployId: string) => void;
   isSectionExpanded: (sectionId: string) => boolean;
+  isDeployExpanded: (deployId: string) => boolean;
 }
 
 export const useTaskRunLogSections = (
@@ -50,6 +57,8 @@ export const useTaskRunLogSections = (
 
   const expandedSections = ref<Set<string>>(new Set());
   const userCollapsedSections = ref<Set<string>>(new Set());
+  const expandedDeploys = ref<Set<string>>(new Set());
+  const userCollapsedDeploys = ref<Set<string>>(new Set());
 
   const getSectionLabel = (type: TaskRunLogEntry_Type): string => {
     const labelMap: Partial<Record<TaskRunLogEntry_Type, string>> = {
@@ -207,16 +216,23 @@ export const useTaskRunLogSections = (
     return "running";
   };
 
-  const sections = computed((): Section[] => {
-    const entriesValue = toValue(entries);
-    if (!entriesValue.length) return [];
+  const buildSectionsFromEntries = (
+    entriesList: TaskRunLogEntry[],
+    idPrefix = "",
+    forceError = false
+  ): Section[] => {
+    if (!entriesList.length) return [];
 
-    const groups = groupEntriesByType(entriesValue);
+    const groups = groupEntriesByType(entriesList);
 
     return groups.map((group, groupIdx) => {
       const { type, entries: groupEntries } = group;
 
-      const status = calculateSectionStatus(groupEntries);
+      // For interrupted deployments, treat "running" as "error"
+      let status = calculateSectionStatus(groupEntries);
+      if (forceError && status === "running") {
+        status = "error";
+      }
 
       const timestamps = groupEntries
         .map((e) => getTimestampMs(e.logTime))
@@ -229,7 +245,9 @@ export const useTaskRunLogSections = (
       const statusCfg = STATUS_CONFIG[status];
 
       return {
-        id: `section-${groupIdx}`,
+        id: idPrefix
+          ? `${idPrefix}-section-${groupIdx}`
+          : `section-${groupIdx}`,
         type,
         label: getSectionLabel(type),
         status,
@@ -238,6 +256,40 @@ export const useTaskRunLogSections = (
         duration: durationMs > 0 ? formatDuration(durationMs) : "",
         entryCount: groupEntries.length,
         items,
+      };
+    });
+  };
+
+  const sections = computed((): Section[] => {
+    const entriesValue = toValue(entries);
+    return buildSectionsFromEntries(entriesValue);
+  });
+
+  const hasMultipleDeploys = computed((): boolean => {
+    const entriesValue = toValue(entries);
+    const deployIds = getUniqueDeployIds(entriesValue);
+    return deployIds.length > 1;
+  });
+
+  const deployGroups = computed((): DeployGroup[] => {
+    const entriesValue = toValue(entries);
+    if (!entriesValue.length) return [];
+
+    const deployIds = getUniqueDeployIds(entriesValue);
+    if (deployIds.length <= 1) return [];
+
+    const entriesByDeploy = groupEntriesByDeploy(entriesValue);
+
+    return deployIds.map((deployId, idx) => {
+      const deployEntries = entriesByDeploy.get(deployId) || [];
+      const isLatestDeploy = idx === deployIds.length - 1;
+      return {
+        deployId,
+        sections: buildSectionsFromEntries(
+          deployEntries,
+          deployId,
+          !isLatestDeploy // forceError: true for non-latest deploys
+        ),
       };
     });
   });
@@ -252,8 +304,22 @@ export const useTaskRunLogSections = (
     }
   };
 
+  const toggleDeploy = (deployId: string) => {
+    if (expandedDeploys.value.has(deployId)) {
+      deleteFromSet(expandedDeploys, deployId);
+      addToSet(userCollapsedDeploys, deployId);
+    } else {
+      addToSet(expandedDeploys, deployId);
+      deleteFromSet(userCollapsedDeploys, deployId);
+    }
+  };
+
   const isSectionExpanded = (sectionId: string): boolean => {
     return expandedSections.value.has(sectionId);
+  };
+
+  const isDeployExpanded = (deployId: string): boolean => {
+    return expandedDeploys.value.has(deployId);
   };
 
   // Auto-expand error sections (respecting user's manual collapse)
@@ -272,10 +338,38 @@ export const useTaskRunLogSections = (
     { immediate: true }
   );
 
+  // Auto-expand all deploys and error sections in deploy groups
+  watch(
+    deployGroups,
+    (newDeployGroups) => {
+      for (const deployGroup of newDeployGroups) {
+        // Auto-expand all deploy groups by default
+        if (!userCollapsedDeploys.value.has(deployGroup.deployId)) {
+          addToSet(expandedDeploys, deployGroup.deployId);
+        }
+        // Auto-expand error sections within deploy groups
+        for (const section of deployGroup.sections) {
+          if (
+            section.status === "error" &&
+            !userCollapsedSections.value.has(section.id)
+          ) {
+            addToSet(expandedSections, section.id);
+          }
+        }
+      }
+    },
+    { immediate: true }
+  );
+
   return {
     sections,
+    hasMultipleDeploys,
+    deployGroups,
     expandedSections,
+    expandedDeploys,
     toggleSection,
+    toggleDeploy,
     isSectionExpanded,
+    isDeployExpanded,
   };
 };

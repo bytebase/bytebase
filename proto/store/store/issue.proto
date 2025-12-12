@@ -49,7 +49,7 @@ message GrantRequest {
   // Format: roles/EXPORTER.
   string role = 1;
   // The user who will receive the role.
-  // Format: users/{userUID}.
+  // Format: users/{email}.
   string user = 2;
   // Optional conditional expression that limits when the grant applies.
   google.type.Expr condition = 3;

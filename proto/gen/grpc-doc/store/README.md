@@ -333,8 +333,10 @@
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
     - [UserProfile](#bytebase-store-UserProfile)
+    - [WorkloadIdentityConfig](#bytebase-store-WorkloadIdentityConfig)
   
     - [PrincipalType](#bytebase-store-PrincipalType)
+    - [WorkloadIdentityConfig.ProviderType](#bytebase-store-WorkloadIdentityConfig-ProviderType)
   
 - [store/worksheet.proto](#store_worksheet-proto)
     - [WorkSheetOrganizerPayload](#bytebase-store-WorkSheetOrganizerPayload)
@@ -696,7 +698,7 @@ Status represents the approver&#39;s decision state.
 | parent | [string](#string) |  | The project or workspace the audit log belongs to. Formats: - projects/{project} - workspaces/{workspace} |
 | method | [string](#string) |  | Example: /bytebase.v1.SQLService/Query |
 | resource | [string](#string) |  | The resource name. Example: projects/{project} |
-| user | [string](#string) |  | Format: users/{userUID}. |
+| user | [string](#string) |  | Format: users/{email}. |
 | severity | [AuditLog.Severity](#bytebase-store-AuditLog-Severity) |  |  |
 | request | [string](#string) |  | Marshalled request. |
 | response | [string](#string) |  | Marshalled response. Some fields are omitted because they are too large or contain sensitive information. |
@@ -2056,7 +2058,7 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | ----- | ---- | ----- | ----------- |
 | member | [string](#string) |  | Member is the principal who belongs to this group.
 
-Format: users/{userUID}. |
+Format: users/{email}. |
 | role | [GroupMember.Role](#bytebase-store-GroupMember-Role) |  |  |
 
 
@@ -2721,7 +2723,7 @@ GrantRequest contains details for requesting database access permissions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | role | [string](#string) |  | The role being requested for the user. Format: roles/EXPORTER. |
-| user | [string](#string) |  | The user who will receive the role. Format: users/{userUID}. |
+| user | [string](#string) |  | The user who will receive the role. Format: users/{email}. |
 | condition | [google.type.Expr](#google-type-Expr) |  | Optional conditional expression that limits when the grant applies. |
 | expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | Duration after which the grant automatically expires. |
 
@@ -3384,7 +3386,7 @@ Type is the database change type.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
-| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{userUID} For groups, the member should be: groups/{email} |
+| members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: users/{email} For groups, the member should be: groups/{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
 
 
@@ -3466,7 +3468,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action by which the user can access sensitive data. |
 | member | [string](#string) |  | Member is the principal who binds to this exception policy instance.
 
-Format: users/{userUID} or groups/{group email} |
+Format: users/{email} or groups/{group email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
 
 
@@ -5413,6 +5415,25 @@ MFAConfig is the MFA configuration for a user.
 | last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | source | [string](#string) |  | The source indicates where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
+| workload_identity_config | [WorkloadIdentityConfig](#bytebase-store-WorkloadIdentityConfig) |  | Workload identity configuration (only for WORKLOAD_IDENTITY type) |
+
+
+
+
+
+
+<a name="bytebase-store-WorkloadIdentityConfig"></a>
+
+### WorkloadIdentityConfig
+WorkloadIdentityConfig stores OIDC configuration for workload identity.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-store-WorkloadIdentityConfig-ProviderType) |  | Provider type (currently only GITHUB is supported) |
+| issuer_url | [string](#string) |  | OIDC issuer URL |
+| allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
+| subject_pattern | [string](#string) |  | Subject pattern to match against token subject claim |
 
 
 
@@ -5432,6 +5453,19 @@ PrincipalType is the type of a principal.
 | END_USER | 1 | END_USER represents the human being using Bytebase. |
 | SERVICE_ACCOUNT | 2 | SERVICE_ACCOUNT represents the external service calling Bytebase OpenAPI. |
 | SYSTEM_BOT | 3 | SYSTEM_BOT represents the internal system bot performing operations. |
+| WORKLOAD_IDENTITY | 4 | WORKLOAD_IDENTITY represents external CI/CD workload identity. |
+
+
+
+<a name="bytebase-store-WorkloadIdentityConfig-ProviderType"></a>
+
+### WorkloadIdentityConfig.ProviderType
+ProviderType identifies the CI/CD platform.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PROVIDER_TYPE_UNSPECIFIED | 0 |  |
+| GITHUB | 1 |  |
 
 
  

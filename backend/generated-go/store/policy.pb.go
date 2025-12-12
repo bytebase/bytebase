@@ -579,7 +579,7 @@ type Binding struct {
 	// Format: roles/{role}
 	Role string `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
 	// Specifies the principals requesting access for a Bytebase resource.
-	// For users, the member should be: users/{userUID}
+	// For users, the member should be: users/{email}
 	// For groups, the member should be: groups/{email}
 	Members []string `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
 	// The condition that is associated with this binding.
@@ -992,7 +992,7 @@ type MaskingExceptionPolicy_MaskingException struct {
 	Action MaskingExceptionPolicy_MaskingException_Action `protobuf:"varint,1,opt,name=action,proto3,enum=bytebase.store.MaskingExceptionPolicy_MaskingException_Action" json:"action,omitempty"`
 	// Member is the principal who binds to this exception policy instance.
 	//
-	// Format: users/{userUID} or groups/{group email}
+	// Format: users/{email} or groups/{group email}
 	Member string `protobuf:"bytes,4,opt,name=member,proto3" json:"member,omitempty"`
 	// The condition that is associated with this exception policy instance.
 	Condition     *expr.Expr `protobuf:"bytes,5,opt,name=condition,proto3" json:"condition,omitempty"`

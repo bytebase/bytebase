@@ -20,7 +20,7 @@ import (
 type SheetMessage struct {
 	ProjectID string
 
-	CreatorID int
+	Creator string
 
 	Title     string
 	Statement string
@@ -46,7 +46,7 @@ type FindSheetMessage struct {
 	// Used to find the creator's sheet list.
 	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
 	// It does not make sense to set both `CreatorID` and `ExcludedCreatorID`.
-	CreatorID *int
+	Creator *string
 
 	// LoadFull is used if we want to load the full sheet.
 	LoadFull bool
@@ -58,7 +58,7 @@ type FindSheetMessage struct {
 // PatchSheetMessage is the message to patch a sheet.
 type PatchSheetMessage struct {
 	UID       int
-	UpdaterID int
+	Updater   string
 	Statement *string
 }
 
@@ -119,7 +119,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 	q := qb.Q().Space(fmt.Sprintf(`
 		SELECT
 			sheet.id,
-			sheet.creator_id,
+			sheet.creator,
 			sheet.created_at,
 			sheet.project,
 			sheet.name,
@@ -134,8 +134,8 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 	if v := find.UID; v != nil {
 		q.And("sheet.id = ?", *v)
 	}
-	if v := find.CreatorID; v != nil {
-		q.And("sheet.creator_id = ?", *v)
+	if v := find.Creator; v != nil {
+		q.And("sheet.creator = ?", *v)
 	}
 	if v := find.ProjectID; v != nil {
 		q.And("sheet.project = ?", *v)
@@ -164,7 +164,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 		var payload []byte
 		if err := rows.Scan(
 			&sheet.UID,
-			&sheet.CreatorID,
+			&sheet.Creator,
 			&sheet.CreatedAt,
 			&sheet.ProjectID,
 			&sheet.Title,
@@ -214,7 +214,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 
 	q := qb.Q().Space(`
 		INSERT INTO sheet (
-			creator_id,
+			creator,
 			project,
 			name,
 			sha256,
@@ -222,7 +222,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		)
 		VALUES (?, ?, ?, ?, ?)
 		RETURNING id, created_at
-	`, create.CreatorID, create.ProjectID, create.Title, create.Sha256, payload)
+	`, create.Creator, create.ProjectID, create.Title, create.Sha256, payload)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -255,7 +255,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 // BatchCreateSheet creates a new sheet.
 // You should not use this function directly to create sheets.
 // Use BatchCreateSheet in component/sheet instead.
-func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates []*SheetMessage, creatorUID int) ([]*SheetMessage, error) {
+func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates []*SheetMessage, creator string) ([]*SheetMessage, error) {
 	var names []string
 	var statements []string
 	var sha256s [][]byte
@@ -283,7 +283,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates 
 
 	q := qb.Q().Space(`
 		INSERT INTO sheet (
-			creator_id,
+			creator,
 			project,
 			name,
 			sha256,
@@ -295,7 +295,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates 
 			unnest(CAST(? AS BYTEA[])),
 			unnest(CAST(? AS JSONB[]))
 		RETURNING id, created_at
-	`, creatorUID, projectID, names, sha256s, payloads)
+	`, creator, projectID, names, sha256s, payloads)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -315,7 +315,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates 
 	defer rows.Close()
 
 	for i := 0; rows.Next(); i++ {
-		creates[i].CreatorID = creatorUID
+		creates[i].Creator = creator
 
 		if err := rows.Scan(
 			&creates[i].UID,

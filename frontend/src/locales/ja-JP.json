@@ -387,6 +387,10 @@
       "backing-up": "バックアップ中...",
       "retry-attempt": "試行 {current}/{max}",
       "computing": "コンピューティング..."
+    },
+    "log-viewer": {
+      "multiple-deploys-notice": "実行中にサーバーの再起動が検出されました。ログはデプロイごとにグループ化されています。",
+      "deployment-n": "デプロイ #{n}"
     }
   },
   "banner": {
@@ -472,6 +476,17 @@
       },
       "system-bot": "ロボットアシスタント",
       "service-account": "サービスアカウント",
+      "workload-identity": "Workload Identity",
+      "workload-identity-platform": "Platform",
+      "workload-identity-owner": "Organization / Username",
+      "workload-identity-repo": "Repository",
+      "workload-identity-branch": "Branch",
+      "workload-identity-advanced": "Advanced Settings",
+      "workload-identity-issuer": "Issuer URL",
+      "workload-identity-audience": "Audience",
+      "workload-identity-subject": "Subject Pattern",
+      "workload-identity-repo-hint": "Leave empty for all repositories in the organization",
+      "workload-identity-branch-hint": "Leave empty for all branches",
       "copy-service-key": "サービスキーをコピーする",
       "reset-service-key": "サービスキーのリセット",
       "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
@@ -1135,6 +1150,11 @@
       "rollout": "ロールアウトする",
       "statement-empty": "ステートメントが空です"
     },
+    "checks": {
+      "self": "小切手",
+      "no-results-match-filters": "フィルターに一致する結果がありません",
+      "no-check-results": "チェック結果がありません"
+    },
     "spec": {
       "change": "変化",
       "type": {
@@ -1186,9 +1206,6 @@
       "some-databases-not-meeting-requirements": "一部のデータベース ({databases}) は要件を満たしていません",
       "some-databases-have-issues": "{count} データベースに問題があります | {count} データベースに問題があります",
       "configuration-has-issues": "構成に {count} 個の問題があります | 構成に {count} 個の問題があります"
-    },
-    "checks": {
-      "self": "小切手"
     },
     "refresh-indicator": {
       "last-refresh": "最終更新: {time}"
@@ -1626,7 +1643,6 @@
     "establish-database-baseline": "ベースライン「{name}」を作成します",
     "export": "変更履歴のエクスポート",
     "need-to-select-first": "最初に変更履歴を選択する必要があります",
-
     "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。"
   },
   "database": {

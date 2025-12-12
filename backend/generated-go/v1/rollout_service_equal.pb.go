@@ -21,9 +21,6 @@ func (x *BatchRunTasksRequest) Equal(y *BatchRunTasksRequest) bool {
 			return false
 		}
 	}
-	if x.Reason != y.Reason {
-		return false
-	}
 	if p, q := x.RunTime, y.RunTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
@@ -91,9 +88,6 @@ func (x *BatchCancelTaskRunsRequest) Equal(y *BatchCancelTaskRunsRequest) bool {
 		if x.TaskRuns[i] != y.TaskRuns[i] {
 			return false
 		}
-	}
-	if x.Reason != y.Reason {
-		return false
 	}
 	return true
 }

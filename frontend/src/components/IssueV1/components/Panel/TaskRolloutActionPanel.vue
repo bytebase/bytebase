@@ -108,7 +108,8 @@
           :database="database"
         />
 
-        <div class="flex flex-col gap-y-1 shrink-0">
+        <!-- Only show comment/reason field for SKIP action -->
+        <div v-if="action === 'SKIP'" class="flex flex-col gap-y-1 shrink-0">
           <p class="font-medium text-control">
             {{ $t("common.comment") }}
           </p>
@@ -677,7 +678,6 @@ const handleConfirm = async (action: TaskRolloutAction) => {
       const request = create(BatchRunTasksRequestSchema, {
         parent: stage.name,
         tasks: filteredTasks.value.map((task) => task.name),
-        reason: comment.value,
       });
       if (runTimeInMS.value !== undefined) {
         // Convert timestamp to protobuf Timestamp format
@@ -712,7 +712,6 @@ const handleConfirm = async (action: TaskRolloutAction) => {
         const request = create(BatchCancelTaskRunsRequestSchema, {
           parent: `${stage.name}/tasks/-`,
           taskRuns: taskRunListToCancel.map((taskRun) => taskRun.name),
-          reason: comment.value,
         });
         await rolloutServiceClientConnect.batchCancelTaskRuns(request);
       }

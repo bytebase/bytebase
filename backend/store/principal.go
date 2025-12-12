@@ -225,13 +225,13 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
 		),`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
-		from.Space(`INNER JOIN project_members ON (CONCAT('users/', principal.id) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
+		from.Space(`INNER JOIN project_members ON (CONCAT('users/', principal.email) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
 	} else {
 		with.Space(`WITH`)
 	}
 
 	// Join the user_group table to find groups for each user.
-	// The user will be stored in the user_group.payload.members.member field, the member is in the "users/{id}" format
+	// The user will be stored in the user_group.payload.members.member field, the member is in the "users/{email}" format
 	with.Space(`user_groups AS (
 		SELECT
 			principal.id AS user_id,
@@ -239,7 +239,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		FROM principal
 		LEFT JOIN user_group ON EXISTS (
 			SELECT 1 FROM jsonb_array_elements(user_group.payload->'members') AS m
-			WHERE m->>'member' = CONCAT('users/', principal.id)
+			WHERE m->>'member' = CONCAT('users/', principal.email)
 		)
 		GROUP BY principal.id
 	)`)
@@ -488,4 +488,341 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 	s.userIDCache.Add(currentUser.ID, user)
 	s.userEmailCache.Add(user.Email, user)
 	return user, nil
+}
+
+// UpdateUserEmail updates a user's email and all related references.
+func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail string) (*UserMessage, error) {
+	newEmail = strings.ToLower(newEmail)
+
+	// Fetch affected issues for cache invalidation later.
+	// We need to fetch both issue ID and pipeline ID (via plan).
+	// We do this before the transaction/update because finding by old creator is straightforward.
+	issueQuery := qb.Q().Space(`
+		SELECT
+			issue.id,
+			plan.pipeline_id
+		FROM issue
+		LEFT JOIN plan ON issue.plan_id = plan.id
+		WHERE issue.creator = ?
+	`, user.Email)
+	issueSQL, issueArgs, err := issueQuery.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build select issue sql")
+	}
+
+	rows, err := s.GetDB().QueryContext(ctx, issueSQL, issueArgs...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query affected issues")
+	}
+	defer rows.Close()
+
+	type issueInvalidation struct {
+		id          int
+		pipelineUID *int
+	}
+	var issuesToInvalidate []issueInvalidation
+	for rows.Next() {
+		var info issueInvalidation
+		if err := rows.Scan(&info.id, &info.pipelineUID); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan issue info")
+		}
+		issuesToInvalidate = append(issuesToInvalidate, info)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to scan issue rows")
+	}
+	rows.Close()
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	// 1. Update Principal table
+	// Because we have ON UPDATE CASCADE on foreign keys (issue.creator, etc.),
+	// this will automatically update the creator field in:
+	// - issue
+	// - issue_comment
+	// - simple table references (plan, pipeline, task_run, etc.)
+	query := qb.Q().Space("UPDATE principal SET email = ? WHERE id = ?", newEmail, user.ID)
+	sqlStr, args, err := query.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build update principal sql")
+	}
+	if _, err := tx.ExecContext(ctx, sqlStr, args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to update principal email")
+	}
+
+	// 2. Update GrantRequest in Issue payload
+	// The user in GrantRequest is stored as "users/{email}" within the JSON payload.
+	// We use text replacement for the specific path.
+	oldUserRef := common.FormatUserEmail(user.Email)
+	newUserRef := common.FormatUserEmail(newEmail)
+
+	// 'grantRequest' is the json key for grant_request field in Issue proto
+	query = qb.Q().Space(`
+		UPDATE issue 
+		SET payload = jsonb_set(payload, '{grantRequest,user}', to_jsonb(?::text)) 
+		WHERE payload->'grantRequest'->>'user' = ?`,
+		newUserRef, oldUserRef)
+	sqlStr, args, err = query.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build update grant request sql")
+	}
+	if _, err := tx.ExecContext(ctx, sqlStr, args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to update issue grant request")
+	}
+
+	// 3. Update Policies
+	// Update IAM policies: bindings->members array contains user references
+	// Update MASKING_EXCEPTION policies: maskingExceptions->member field contains user references
+	var invalidatedPolicies []struct {
+		ResourceType storepb.Policy_Resource
+		Resource     string
+		Type         storepb.Policy_Type
+	}
+
+	// 3a. Update IAM policy bindings
+	iamPolicySQL := `
+		UPDATE policy
+		SET payload = (
+			SELECT jsonb_set(
+				policy.payload,
+				'{bindings}',
+				COALESCE(
+					(
+						SELECT jsonb_agg(
+							jsonb_set(
+								binding,
+								'{members}',
+								COALESCE(
+									(
+										SELECT jsonb_agg(
+											CASE WHEN member = $1 THEN $2::text ELSE member END
+										)
+										FROM jsonb_array_elements_text(binding->'members') AS member
+									),
+									'[]'::jsonb
+								)
+							)
+						)
+						FROM jsonb_array_elements(policy.payload->'bindings') AS binding
+					),
+					'[]'::jsonb
+				)
+			)
+		)
+		WHERE type = $3
+		  AND payload ? 'bindings'
+		  AND EXISTS (
+			  SELECT 1
+			  FROM jsonb_array_elements(payload->'bindings') AS binding,
+				   jsonb_array_elements_text(binding->'members') AS member
+			  WHERE member = $1
+		  )
+		RETURNING resource_type, resource, type`
+
+	rows, err = tx.QueryContext(ctx, iamPolicySQL, oldUserRef, newUserRef, storepb.Policy_IAM.String())
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to update IAM policies")
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var resourceTypeStr, resource, typeStr string
+		if err := rows.Scan(&resourceTypeStr, &resource, &typeStr); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan updated IAM policy")
+		}
+
+		var invalidation struct {
+			ResourceType storepb.Policy_Resource
+			Resource     string
+			Type         storepb.Policy_Type
+		}
+		invalidation.Resource = resource
+
+		if val, ok := storepb.Policy_Resource_value[resourceTypeStr]; ok {
+			invalidation.ResourceType = storepb.Policy_Resource(val)
+		}
+		if val, ok := storepb.Policy_Type_value[typeStr]; ok {
+			invalidation.Type = storepb.Policy_Type(val)
+		}
+		invalidatedPolicies = append(invalidatedPolicies, invalidation)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+
+	// 3b. Update MASKING_EXCEPTION policy maskingExceptions
+	maskingPolicySQL := `
+		UPDATE policy
+		SET payload = (
+			SELECT jsonb_set(
+				policy.payload,
+				'{maskingExceptions}',
+				COALESCE(
+					(
+						SELECT jsonb_agg(
+							CASE
+								WHEN exception->>'member' = $1 THEN
+									jsonb_set(exception, '{member}', to_jsonb($2::text))
+								ELSE exception
+							END
+						)
+						FROM jsonb_array_elements(policy.payload->'maskingExceptions') AS exception
+					),
+					'[]'::jsonb
+				)
+			)
+		)
+		WHERE type = $3
+		  AND payload ? 'maskingExceptions'
+		  AND EXISTS (
+			  SELECT 1
+			  FROM jsonb_array_elements(payload->'maskingExceptions') AS exception
+			  WHERE exception->>'member' = $1
+		  )
+		RETURNING resource_type, resource, type`
+
+	rows, err = tx.QueryContext(ctx, maskingPolicySQL, oldUserRef, newUserRef, storepb.Policy_MASKING_EXCEPTION.String())
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to update MASKING_EXCEPTION policies")
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var resourceTypeStr, resource, typeStr string
+		if err := rows.Scan(&resourceTypeStr, &resource, &typeStr); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan updated MASKING_EXCEPTION policy")
+		}
+
+		var invalidation struct {
+			ResourceType storepb.Policy_Resource
+			Resource     string
+			Type         storepb.Policy_Type
+		}
+		invalidation.Resource = resource
+
+		if val, ok := storepb.Policy_Resource_value[resourceTypeStr]; ok {
+			invalidation.ResourceType = storepb.Policy_Resource(val)
+		}
+		if val, ok := storepb.Policy_Type_value[typeStr]; ok {
+			invalidation.Type = storepb.Policy_Type(val)
+		}
+		invalidatedPolicies = append(invalidatedPolicies, invalidation)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+
+	// 4. Update User Groups
+	// Update user_group.payload to replace old user reference with new one in members array.
+	// Members are stored as GroupMember objects with member field in "users/{email}" format.
+	userGroupSQL := `
+		UPDATE user_group
+		SET payload = (
+			SELECT jsonb_set(
+				user_group.payload,
+				'{members}',
+				COALESCE(
+					(
+						SELECT jsonb_agg(
+							CASE
+								WHEN member->>'member' = $1 THEN
+									jsonb_set(member, '{member}', to_jsonb($2::text))
+								ELSE member
+							END
+						)
+						FROM jsonb_array_elements(user_group.payload->'members') AS member
+					),
+					'[]'::jsonb
+				)
+			)
+		)
+		WHERE payload ? 'members'
+		  AND EXISTS (
+			  SELECT 1
+			  FROM jsonb_array_elements(payload->'members') AS member
+			  WHERE member->>'member' = $1
+		  )
+		RETURNING email`
+
+	rows, err = tx.QueryContext(ctx, userGroupSQL, oldUserRef, newUserRef)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to update user_group memberships")
+	}
+	defer rows.Close()
+
+	var invalidatedGroupEmails []string
+	for rows.Next() {
+		var email sql.NullString
+		if err := rows.Scan(&email); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan updated group")
+		}
+		if email.Valid {
+			invalidatedGroupEmails = append(invalidatedGroupEmails, email.String)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	rows.Close()
+
+	// 5. Update Audit Logs
+	// Update audit_log.payload to replace old user reference with new one.
+	// User is stored in the 'user' field in "users/{email}" format.
+	query = qb.Q().Space(`
+		UPDATE audit_log
+		SET payload = jsonb_set(payload, '{user}', to_jsonb(?::text))
+		WHERE payload->>'user' = ?`,
+		newUserRef, oldUserRef)
+
+	sqlStr, args, err = query.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build update audit_log sql")
+	}
+
+	if _, err := tx.ExecContext(ctx, sqlStr, args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to update audit_log user references")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	// 6. Update caches
+	s.userIDCache.Remove(user.ID)
+	s.userEmailCache.Remove(user.Email)
+
+	// Invalidate issue caches
+	for _, issue := range issuesToInvalidate {
+		s.issueCache.Remove(issue.id)
+		if issue.pipelineUID != nil {
+			s.issueByPipelineCache.Remove(*issue.pipelineUID)
+		}
+	}
+
+	// Invalidate policy cache for updated policies
+	for _, p := range invalidatedPolicies {
+		s.policyCache.Remove(getPolicyCacheKey(p.ResourceType, p.Resource, p.Type))
+	}
+
+	// Invalidate group cache for updated groups
+	for _, email := range invalidatedGroupEmails {
+		s.groupCache.Remove(email)
+	}
+
+	// Fetch updated user
+	updatedUser, err := s.GetUserByID(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	// Re-populate user cache
+	s.userIDCache.Add(updatedUser.ID, updatedUser)
+	s.userEmailCache.Add(updatedUser.Email, updatedUser)
+
+	return updatedUser, nil
 }

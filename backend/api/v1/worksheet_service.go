@@ -80,7 +80,7 @@ func (s *WorksheetService) CreateWorksheet(
 		}
 		database = db
 	}
-	storeWorksheetCreate, err := convertToStoreWorksheetMessage(project, database, user.ID, request.Worksheet)
+	storeWorksheetCreate, err := convertToStoreWorksheetMessage(project, database, user.Email, request.Worksheet)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to convert worksheet: %v", err))
 	}
@@ -154,13 +154,13 @@ func (s *WorksheetService) SearchWorksheets(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("filter should not be empty"))
 	}
 
-	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.ID, request.Filter)
+	filterQ, err := store.GetListSheetFilter(ctx, s.store, user.Email, request.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	worksheetFind.FilterQ = filterQ
 
-	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind, user.ID)
+	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list worksheets: %v", err))
 	}
@@ -221,7 +221,7 @@ func (s *WorksheetService) UpdateWorksheet(
 	}
 	worksheet, err := s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
 		UID: &worksheetUID,
-	}, user.ID)
+	}, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
 	}
@@ -278,7 +278,7 @@ func (s *WorksheetService) UpdateWorksheet(
 
 	worksheet, err = s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
 		UID: &worksheetUID,
-	}, user.ID)
+	}, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
 	}
@@ -310,7 +310,7 @@ func (s *WorksheetService) DeleteWorksheet(
 	}
 	worksheet, err := s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
 		UID: &worksheetUID,
-	}, user.ID)
+	}, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
 	}
@@ -365,7 +365,7 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	worksheetOrganizerUpsert, err := s.store.GetWorksheetOrganizer(ctx, worksheetUID, user.ID)
+	worksheetOrganizerUpsert, err := s.store.GetWorksheetOrganizer(ctx, worksheetUID, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found worksheet organizer with error: %v", err))
 	}
@@ -413,7 +413,7 @@ func (s *WorksheetService) findWorksheet(ctx context.Context, find *store.FindWo
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	worksheet, err := s.store.GetWorkSheet(ctx, find, user.ID)
+	worksheet, err := s.store.GetWorkSheet(ctx, find, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get worksheet: %v", err))
 	}
@@ -434,7 +434,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 	}
 
 	// Worksheet creator and workspace "bb.worksheets.manage" can always write.
-	if worksheet.CreatorID == user.ID {
+	if worksheet.Creator == user.Email {
 		return true, nil
 	}
 	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsManage, user)
@@ -471,7 +471,7 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	}
 
 	// Worksheet creator and workspace bb.worksheets.get can always read.
-	if worksheet.CreatorID == user.ID {
+	if worksheet.Creator == user.Email {
 		return true, nil
 	}
 	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionWorksheetsManage, user)
@@ -540,7 +540,7 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 		// Keep VISIBILITY_UNSPECIFIED
 	}
 
-	creator, err := s.store.GetUserByID(ctx, worksheet.CreatorID)
+	creator, err := s.store.GetUserByEmail(ctx, worksheet.Creator)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get creator: %v", err))
 	}
@@ -570,7 +570,7 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 	}, nil
 }
 
-func convertToStoreWorksheetMessage(project *store.ProjectMessage, database *store.DatabaseMessage, creatorID int, worksheet *v1pb.Worksheet) (*store.WorkSheetMessage, error) {
+func convertToStoreWorksheetMessage(project *store.ProjectMessage, database *store.DatabaseMessage, creator string, worksheet *v1pb.Worksheet) (*store.WorkSheetMessage, error) {
 	visibility, err := convertToStoreWorksheetVisibility(worksheet.Visibility)
 	if err != nil {
 		return nil, err
@@ -578,7 +578,7 @@ func convertToStoreWorksheetMessage(project *store.ProjectMessage, database *sto
 
 	worksheetMessage := &store.WorkSheetMessage{
 		ProjectID:  project.ResourceID,
-		CreatorID:  creatorID,
+		Creator:    creator,
 		Title:      worksheet.Title,
 		Statement:  string(worksheet.Content),
 		Visibility: visibility,

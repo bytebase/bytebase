@@ -37,6 +37,8 @@ const (
 	UserType_SYSTEM_BOT UserType = 2
 	// Service account for API integrations.
 	UserType_SERVICE_ACCOUNT UserType = 3
+	// External CI/CD workload identity.
+	UserType_WORKLOAD_IDENTITY UserType = 4
 )
 
 // Enum value maps for UserType.
@@ -46,12 +48,14 @@ var (
 		1: "USER",
 		2: "SYSTEM_BOT",
 		3: "SERVICE_ACCOUNT",
+		4: "WORKLOAD_IDENTITY",
 	}
 	UserType_value = map[string]int32{
 		"USER_TYPE_UNSPECIFIED": 0,
 		"USER":                  1,
 		"SYSTEM_BOT":            2,
 		"SERVICE_ACCOUNT":       3,
+		"WORKLOAD_IDENTITY":     4,
 	}
 )
 
@@ -82,10 +86,57 @@ func (UserType) EnumDescriptor() ([]byte, []int) {
 	return file_v1_user_service_proto_rawDescGZIP(), []int{0}
 }
 
+// ProviderType identifies the CI/CD platform.
+type WorkloadIdentityConfig_ProviderType int32
+
+const (
+	WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED WorkloadIdentityConfig_ProviderType = 0
+	WorkloadIdentityConfig_GITHUB                    WorkloadIdentityConfig_ProviderType = 1
+)
+
+// Enum value maps for WorkloadIdentityConfig_ProviderType.
+var (
+	WorkloadIdentityConfig_ProviderType_name = map[int32]string{
+		0: "PROVIDER_TYPE_UNSPECIFIED",
+		1: "GITHUB",
+	}
+	WorkloadIdentityConfig_ProviderType_value = map[string]int32{
+		"PROVIDER_TYPE_UNSPECIFIED": 0,
+		"GITHUB":                    1,
+	}
+)
+
+func (x WorkloadIdentityConfig_ProviderType) Enum() *WorkloadIdentityConfig_ProviderType {
+	p := new(WorkloadIdentityConfig_ProviderType)
+	*p = x
+	return p
+}
+
+func (x WorkloadIdentityConfig_ProviderType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WorkloadIdentityConfig_ProviderType) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_user_service_proto_enumTypes[1].Descriptor()
+}
+
+func (WorkloadIdentityConfig_ProviderType) Type() protoreflect.EnumType {
+	return &file_v1_user_service_proto_enumTypes[1]
+}
+
+func (x WorkloadIdentityConfig_ProviderType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WorkloadIdentityConfig_ProviderType.Descriptor instead.
+func (WorkloadIdentityConfig_ProviderType) EnumDescriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{11, 0}
+}
+
 type GetUserRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the user to retrieve.
-	// Format: users/{user uid or user email}
+	// Format: users/{email}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -131,7 +182,7 @@ func (x *GetUserRequest) GetName() string {
 type BatchGetUsersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The user names to retrieve.
-	// Format: users/{user uid or user email}
+	// Format: users/{email}
 	Names         []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -425,7 +476,7 @@ type UpdateUserRequest struct {
 	// The user to update.
 	//
 	// The user's `name` field is used to identify the user to update.
-	// Format: users/{user}
+	// Format: users/{email}
 	User *User `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
@@ -518,7 +569,7 @@ func (x *UpdateUserRequest) GetAllowMissing() bool {
 type DeleteUserRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the user to delete.
-	// Format: users/{user}
+	// Format: users/{email}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -564,7 +615,7 @@ func (x *DeleteUserRequest) GetName() string {
 type UndeleteUserRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the deleted user.
-	// Format: users/{user}
+	// Format: users/{email}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -607,10 +658,66 @@ func (x *UndeleteUserRequest) GetName() string {
 	return ""
 }
 
+type UpdateEmailRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The name of the user whose email to update.
+	// Format: users/{email}
+	// Note: This is the current (old) email address. The new email is specified in the 'email' field.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The new email address.
+	Email         string `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateEmailRequest) Reset() {
+	*x = UpdateEmailRequest{}
+	mi := &file_v1_user_service_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateEmailRequest) ProtoMessage() {}
+
+func (x *UpdateEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_user_service_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateEmailRequest.ProtoReflect.Descriptor instead.
+func (*UpdateEmailRequest) Descriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *UpdateEmailRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *UpdateEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
 type User struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the user.
-	// Format: users/{user}. {user} is a system-generated unique ID.
+	// Format: users/{email}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The lifecycle state of the user account.
 	State State `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
@@ -639,14 +746,16 @@ type User struct {
 	Profile *User_Profile `protobuf:"bytes,13,opt,name=profile,proto3" json:"profile,omitempty"`
 	// The groups for the user.
 	// Format: groups/{email}
-	Groups        []string `protobuf:"bytes,14,rep,name=groups,proto3" json:"groups,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Groups []string `protobuf:"bytes,14,rep,name=groups,proto3" json:"groups,omitempty"`
+	// Workload Identity configuration (only for WORKLOAD_IDENTITY type)
+	WorkloadIdentityConfig *WorkloadIdentityConfig `protobuf:"bytes,16,opt,name=workload_identity_config,json=workloadIdentityConfig,proto3" json:"workload_identity_config,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *User) Reset() {
 	*x = User{}
-	mi := &file_v1_user_service_proto_msgTypes[9]
+	mi := &file_v1_user_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -658,7 +767,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_user_service_proto_msgTypes[9]
+	mi := &file_v1_user_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -671,7 +780,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_v1_user_service_proto_rawDescGZIP(), []int{9}
+	return file_v1_user_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *User) GetName() string {
@@ -772,6 +881,86 @@ func (x *User) GetGroups() []string {
 	return nil
 }
 
+func (x *User) GetWorkloadIdentityConfig() *WorkloadIdentityConfig {
+	if x != nil {
+		return x.WorkloadIdentityConfig
+	}
+	return nil
+}
+
+// WorkloadIdentityConfig for API layer
+type WorkloadIdentityConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Platform type (currently only GITHUB is supported)
+	ProviderType WorkloadIdentityConfig_ProviderType `protobuf:"varint,1,opt,name=provider_type,json=providerType,proto3,enum=bytebase.v1.WorkloadIdentityConfig_ProviderType" json:"provider_type,omitempty"`
+	// OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+	IssuerUrl string `protobuf:"bytes,2,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
+	// Allowed audiences for token validation
+	AllowedAudiences []string `protobuf:"bytes,3,rep,name=allowed_audiences,json=allowedAudiences,proto3" json:"allowed_audiences,omitempty"`
+	// Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+	SubjectPattern string `protobuf:"bytes,4,opt,name=subject_pattern,json=subjectPattern,proto3" json:"subject_pattern,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *WorkloadIdentityConfig) Reset() {
+	*x = WorkloadIdentityConfig{}
+	mi := &file_v1_user_service_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkloadIdentityConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkloadIdentityConfig) ProtoMessage() {}
+
+func (x *WorkloadIdentityConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_user_service_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkloadIdentityConfig.ProtoReflect.Descriptor instead.
+func (*WorkloadIdentityConfig) Descriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *WorkloadIdentityConfig) GetProviderType() WorkloadIdentityConfig_ProviderType {
+	if x != nil {
+		return x.ProviderType
+	}
+	return WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED
+}
+
+func (x *WorkloadIdentityConfig) GetIssuerUrl() string {
+	if x != nil {
+		return x.IssuerUrl
+	}
+	return ""
+}
+
+func (x *WorkloadIdentityConfig) GetAllowedAudiences() []string {
+	if x != nil {
+		return x.AllowedAudiences
+	}
+	return nil
+}
+
+func (x *WorkloadIdentityConfig) GetSubjectPattern() string {
+	if x != nil {
+		return x.SubjectPattern
+	}
+	return ""
+}
+
 type User_Profile struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The last time the user successfully logged in.
@@ -786,7 +975,7 @@ type User_Profile struct {
 
 func (x *User_Profile) Reset() {
 	*x = User_Profile{}
-	mi := &file_v1_user_service_proto_msgTypes[10]
+	mi := &file_v1_user_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -798,7 +987,7 @@ func (x *User_Profile) String() string {
 func (*User_Profile) ProtoMessage() {}
 
 func (x *User_Profile) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_user_service_proto_msgTypes[10]
+	mi := &file_v1_user_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -811,7 +1000,7 @@ func (x *User_Profile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User_Profile.ProtoReflect.Descriptor instead.
 func (*User_Profile) Descriptor() ([]byte, []int) {
-	return file_v1_user_service_proto_rawDescGZIP(), []int{9, 0}
+	return file_v1_user_service_proto_rawDescGZIP(), []int{10, 0}
 }
 
 func (x *User_Profile) GetLastLoginTime() *timestamppb.Timestamp {
@@ -873,7 +1062,11 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x11bytebase.com/UserR\x04name\"D\n" +
 	"\x13UndeleteUserRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/UserR\x04name\"\x9c\x06\n" +
+	"\x11bytebase.com/UserR\x04name\"^\n" +
+	"\x12UpdateEmailRequest\x12-\n" +
+	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/UserR\x04name\x12\x19\n" +
+	"\x05email\x18\x02 \x01(\tB\x03\xe0A\x02R\x05email\"\xfc\x06\n" +
 	"\x04User\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
@@ -891,18 +1084,30 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x1ctemp_otp_secret_created_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\x12\x14\n" +
 	"\x05phone\x18\f \x01(\tR\x05phone\x123\n" +
 	"\aprofile\x18\r \x01(\v2\x19.bytebase.v1.User.ProfileR\aprofile\x12\x1b\n" +
-	"\x06groups\x18\x0e \x03(\tB\x03\xe0A\x03R\x06groups\x1a\xbc\x01\n" +
+	"\x06groups\x18\x0e \x03(\tB\x03\xe0A\x03R\x06groups\x12]\n" +
+	"\x18workload_identity_config\x18\x10 \x01(\v2#.bytebase.v1.WorkloadIdentityConfigR\x16workloadIdentityConfig\x1a\xbc\x01\n" +
 	"\aProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
-	"\x06source\x18\x03 \x01(\tR\x06source:$\xeaA!\n" +
-	"\x11bytebase.com/User\x12\fusers/{user}*T\n" +
+	"\x06source\x18\x03 \x01(\tR\x06source:%\xeaA\"\n" +
+	"\x11bytebase.com/User\x12\rusers/{email}\"\x9f\x02\n" +
+	"\x16WorkloadIdentityConfig\x12U\n" +
+	"\rprovider_type\x18\x01 \x01(\x0e20.bytebase.v1.WorkloadIdentityConfig.ProviderTypeR\fproviderType\x12\x1d\n" +
+	"\n" +
+	"issuer_url\x18\x02 \x01(\tR\tissuerUrl\x12+\n" +
+	"\x11allowed_audiences\x18\x03 \x03(\tR\x10allowedAudiences\x12'\n" +
+	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern\"9\n" +
+	"\fProviderType\x12\x1d\n" +
+	"\x19PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
+	"\n" +
+	"\x06GITHUB\x10\x01*k\n" +
 	"\bUserType\x12\x19\n" +
 	"\x15USER_TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04USER\x10\x01\x12\x0e\n" +
 	"\n" +
 	"SYSTEM_BOT\x10\x02\x12\x13\n" +
-	"\x0fSERVICE_ACCOUNT\x10\x032\xb7\a\n" +
+	"\x0fSERVICE_ACCOUNT\x10\x03\x12\x15\n" +
+	"\x11WORKLOAD_IDENTITY\x10\x042\xd3\b\n" +
 	"\vUserService\x12p\n" +
 	"\aGetUser\x12\x1b.bytebase.v1.GetUserRequest\x1a\x11.bytebase.v1.User\"5\xdaA\x04name\x8a\xea0\fbb.users.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/{name=users/*}\x12\x86\x01\n" +
 	"\rBatchGetUsers\x12!.bytebase.v1.BatchGetUsersRequest\x1a\".bytebase.v1.BatchGetUsersResponse\".\x8a\xea0\fbb.users.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/users:batchGet\x12Y\n" +
@@ -914,7 +1119,9 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"UpdateUser\x12\x1e.bytebase.v1.UpdateUserRequest\x1a\x11.bytebase.v1.User\"@\xdaA\x10user,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1f:\x04user2\x17/v1/{user.name=users/*}\x12o\n" +
 	"\n" +
 	"DeleteUser\x12\x1e.bytebase.v1.DeleteUserRequest\x1a\x16.google.protobuf.Empty\")\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=users/*}\x12s\n" +
-	"\fUndeleteUser\x12 .bytebase.v1.UndeleteUserRequest\x1a\x11.bytebase.v1.User\".\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/{name=users/*}:undeleteB\xa6\x01\n" +
+	"\fUndeleteUser\x12 .bytebase.v1.UndeleteUserRequest\x1a\x11.bytebase.v1.User\".\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/{name=users/*}:undelete\x12\x99\x01\n" +
+	"\vUpdateEmail\x12\x1f.bytebase.v1.UpdateEmailRequest\x1a\x11.bytebase.v1.User\"V\xdaA\n" +
+	"name,email\x8a\xea0\x14bb.users.updateEmail\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/{name=users/*}:updateEmailB\xa6\x01\n" +
 	"\x0fcom.bytebase.v1B\x10UserServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -929,59 +1136,66 @@ func file_v1_user_service_proto_rawDescGZIP() []byte {
 	return file_v1_user_service_proto_rawDescData
 }
 
-var file_v1_user_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_v1_user_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_v1_user_service_proto_goTypes = []any{
-	(UserType)(0),                 // 0: bytebase.v1.UserType
-	(*GetUserRequest)(nil),        // 1: bytebase.v1.GetUserRequest
-	(*BatchGetUsersRequest)(nil),  // 2: bytebase.v1.BatchGetUsersRequest
-	(*BatchGetUsersResponse)(nil), // 3: bytebase.v1.BatchGetUsersResponse
-	(*ListUsersRequest)(nil),      // 4: bytebase.v1.ListUsersRequest
-	(*ListUsersResponse)(nil),     // 5: bytebase.v1.ListUsersResponse
-	(*CreateUserRequest)(nil),     // 6: bytebase.v1.CreateUserRequest
-	(*UpdateUserRequest)(nil),     // 7: bytebase.v1.UpdateUserRequest
-	(*DeleteUserRequest)(nil),     // 8: bytebase.v1.DeleteUserRequest
-	(*UndeleteUserRequest)(nil),   // 9: bytebase.v1.UndeleteUserRequest
-	(*User)(nil),                  // 10: bytebase.v1.User
-	(*User_Profile)(nil),          // 11: bytebase.v1.User.Profile
-	(*fieldmaskpb.FieldMask)(nil), // 12: google.protobuf.FieldMask
-	(State)(0),                    // 13: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),         // 15: google.protobuf.Empty
+	(UserType)(0),                            // 0: bytebase.v1.UserType
+	(WorkloadIdentityConfig_ProviderType)(0), // 1: bytebase.v1.WorkloadIdentityConfig.ProviderType
+	(*GetUserRequest)(nil),                   // 2: bytebase.v1.GetUserRequest
+	(*BatchGetUsersRequest)(nil),             // 3: bytebase.v1.BatchGetUsersRequest
+	(*BatchGetUsersResponse)(nil),            // 4: bytebase.v1.BatchGetUsersResponse
+	(*ListUsersRequest)(nil),                 // 5: bytebase.v1.ListUsersRequest
+	(*ListUsersResponse)(nil),                // 6: bytebase.v1.ListUsersResponse
+	(*CreateUserRequest)(nil),                // 7: bytebase.v1.CreateUserRequest
+	(*UpdateUserRequest)(nil),                // 8: bytebase.v1.UpdateUserRequest
+	(*DeleteUserRequest)(nil),                // 9: bytebase.v1.DeleteUserRequest
+	(*UndeleteUserRequest)(nil),              // 10: bytebase.v1.UndeleteUserRequest
+	(*UpdateEmailRequest)(nil),               // 11: bytebase.v1.UpdateEmailRequest
+	(*User)(nil),                             // 12: bytebase.v1.User
+	(*WorkloadIdentityConfig)(nil),           // 13: bytebase.v1.WorkloadIdentityConfig
+	(*User_Profile)(nil),                     // 14: bytebase.v1.User.Profile
+	(*fieldmaskpb.FieldMask)(nil),            // 15: google.protobuf.FieldMask
+	(State)(0),                               // 16: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),            // 17: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                    // 18: google.protobuf.Empty
 }
 var file_v1_user_service_proto_depIdxs = []int32{
-	10, // 0: bytebase.v1.BatchGetUsersResponse.users:type_name -> bytebase.v1.User
-	10, // 1: bytebase.v1.ListUsersResponse.users:type_name -> bytebase.v1.User
-	10, // 2: bytebase.v1.CreateUserRequest.user:type_name -> bytebase.v1.User
-	10, // 3: bytebase.v1.UpdateUserRequest.user:type_name -> bytebase.v1.User
-	12, // 4: bytebase.v1.UpdateUserRequest.update_mask:type_name -> google.protobuf.FieldMask
-	13, // 5: bytebase.v1.User.state:type_name -> bytebase.v1.State
+	12, // 0: bytebase.v1.BatchGetUsersResponse.users:type_name -> bytebase.v1.User
+	12, // 1: bytebase.v1.ListUsersResponse.users:type_name -> bytebase.v1.User
+	12, // 2: bytebase.v1.CreateUserRequest.user:type_name -> bytebase.v1.User
+	12, // 3: bytebase.v1.UpdateUserRequest.user:type_name -> bytebase.v1.User
+	15, // 4: bytebase.v1.UpdateUserRequest.update_mask:type_name -> google.protobuf.FieldMask
+	16, // 5: bytebase.v1.User.state:type_name -> bytebase.v1.State
 	0,  // 6: bytebase.v1.User.user_type:type_name -> bytebase.v1.UserType
-	14, // 7: bytebase.v1.User.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
-	11, // 8: bytebase.v1.User.profile:type_name -> bytebase.v1.User.Profile
-	14, // 9: bytebase.v1.User.Profile.last_login_time:type_name -> google.protobuf.Timestamp
-	14, // 10: bytebase.v1.User.Profile.last_change_password_time:type_name -> google.protobuf.Timestamp
-	1,  // 11: bytebase.v1.UserService.GetUser:input_type -> bytebase.v1.GetUserRequest
-	2,  // 12: bytebase.v1.UserService.BatchGetUsers:input_type -> bytebase.v1.BatchGetUsersRequest
-	15, // 13: bytebase.v1.UserService.GetCurrentUser:input_type -> google.protobuf.Empty
-	4,  // 14: bytebase.v1.UserService.ListUsers:input_type -> bytebase.v1.ListUsersRequest
-	6,  // 15: bytebase.v1.UserService.CreateUser:input_type -> bytebase.v1.CreateUserRequest
-	7,  // 16: bytebase.v1.UserService.UpdateUser:input_type -> bytebase.v1.UpdateUserRequest
-	8,  // 17: bytebase.v1.UserService.DeleteUser:input_type -> bytebase.v1.DeleteUserRequest
-	9,  // 18: bytebase.v1.UserService.UndeleteUser:input_type -> bytebase.v1.UndeleteUserRequest
-	10, // 19: bytebase.v1.UserService.GetUser:output_type -> bytebase.v1.User
-	3,  // 20: bytebase.v1.UserService.BatchGetUsers:output_type -> bytebase.v1.BatchGetUsersResponse
-	10, // 21: bytebase.v1.UserService.GetCurrentUser:output_type -> bytebase.v1.User
-	5,  // 22: bytebase.v1.UserService.ListUsers:output_type -> bytebase.v1.ListUsersResponse
-	10, // 23: bytebase.v1.UserService.CreateUser:output_type -> bytebase.v1.User
-	10, // 24: bytebase.v1.UserService.UpdateUser:output_type -> bytebase.v1.User
-	15, // 25: bytebase.v1.UserService.DeleteUser:output_type -> google.protobuf.Empty
-	10, // 26: bytebase.v1.UserService.UndeleteUser:output_type -> bytebase.v1.User
-	19, // [19:27] is the sub-list for method output_type
-	11, // [11:19] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	17, // 7: bytebase.v1.User.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
+	14, // 8: bytebase.v1.User.profile:type_name -> bytebase.v1.User.Profile
+	13, // 9: bytebase.v1.User.workload_identity_config:type_name -> bytebase.v1.WorkloadIdentityConfig
+	1,  // 10: bytebase.v1.WorkloadIdentityConfig.provider_type:type_name -> bytebase.v1.WorkloadIdentityConfig.ProviderType
+	17, // 11: bytebase.v1.User.Profile.last_login_time:type_name -> google.protobuf.Timestamp
+	17, // 12: bytebase.v1.User.Profile.last_change_password_time:type_name -> google.protobuf.Timestamp
+	2,  // 13: bytebase.v1.UserService.GetUser:input_type -> bytebase.v1.GetUserRequest
+	3,  // 14: bytebase.v1.UserService.BatchGetUsers:input_type -> bytebase.v1.BatchGetUsersRequest
+	18, // 15: bytebase.v1.UserService.GetCurrentUser:input_type -> google.protobuf.Empty
+	5,  // 16: bytebase.v1.UserService.ListUsers:input_type -> bytebase.v1.ListUsersRequest
+	7,  // 17: bytebase.v1.UserService.CreateUser:input_type -> bytebase.v1.CreateUserRequest
+	8,  // 18: bytebase.v1.UserService.UpdateUser:input_type -> bytebase.v1.UpdateUserRequest
+	9,  // 19: bytebase.v1.UserService.DeleteUser:input_type -> bytebase.v1.DeleteUserRequest
+	10, // 20: bytebase.v1.UserService.UndeleteUser:input_type -> bytebase.v1.UndeleteUserRequest
+	11, // 21: bytebase.v1.UserService.UpdateEmail:input_type -> bytebase.v1.UpdateEmailRequest
+	12, // 22: bytebase.v1.UserService.GetUser:output_type -> bytebase.v1.User
+	4,  // 23: bytebase.v1.UserService.BatchGetUsers:output_type -> bytebase.v1.BatchGetUsersResponse
+	12, // 24: bytebase.v1.UserService.GetCurrentUser:output_type -> bytebase.v1.User
+	6,  // 25: bytebase.v1.UserService.ListUsers:output_type -> bytebase.v1.ListUsersResponse
+	12, // 26: bytebase.v1.UserService.CreateUser:output_type -> bytebase.v1.User
+	12, // 27: bytebase.v1.UserService.UpdateUser:output_type -> bytebase.v1.User
+	18, // 28: bytebase.v1.UserService.DeleteUser:output_type -> google.protobuf.Empty
+	12, // 29: bytebase.v1.UserService.UndeleteUser:output_type -> bytebase.v1.User
+	12, // 30: bytebase.v1.UserService.UpdateEmail:output_type -> bytebase.v1.User
+	22, // [22:31] is the sub-list for method output_type
+	13, // [13:22] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_v1_user_service_proto_init() }
@@ -997,8 +1211,8 @@ func file_v1_user_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_user_service_proto_rawDesc), len(file_v1_user_service_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   11,
+			NumEnums:      2,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

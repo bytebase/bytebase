@@ -31,6 +31,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
+	"github.com/bytebase/bytebase/backend/plugin/idp/wif"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
@@ -635,7 +636,7 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 		}
 		var isBBGroupMember bool
 		for _, member := range bbGroup.Payload.Members {
-			if member.Member == common.FormatUserUID(user.ID) {
+			if member.Member == common.FormatUserEmail(user.Email) {
 				isBBGroupMember = true
 				break
 			}
@@ -645,12 +646,12 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 				// Add the user to the group.
 				bbGroup.Payload.Members = append(bbGroup.Payload.Members, &storepb.GroupMember{
 					Role:   storepb.GroupMember_MEMBER,
-					Member: common.FormatUserUID(user.ID),
+					Member: common.FormatUserEmail(user.Email),
 				})
 			} else {
 				// Remove the user from the group.
 				bbGroup.Payload.Members = slices.DeleteFunc(bbGroup.Payload.Members, func(member *storepb.GroupMember) bool {
-					return member.Member == common.FormatUserUID(user.ID)
+					return member.Member == common.FormatUserEmail(user.Email)
 				})
 			}
 			if _, err := s.store.UpdateGroup(ctx, &store.UpdateGroupMessage{
@@ -671,4 +672,78 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 	}
 
 	return nil
+}
+
+// ExchangeToken exchanges an external OIDC token for a Bytebase access token.
+// Used by CI/CD pipelines with Workload Identity Federation.
+func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1pb.ExchangeTokenRequest]) (*connect.Response[v1pb.ExchangeTokenResponse], error) {
+	request := req.Msg
+
+	if request.Token == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("token is required"))
+	}
+	if request.Email == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("email is required"))
+	}
+
+	// Validate email format
+	if !common.IsWorkloadIdentityEmail(request.Email) {
+		return nil, connect.NewError(connect.CodeInvalidArgument,
+			errors.Errorf("email must end with %s", common.WorkloadIdentityEmailSuffix))
+	}
+
+	// Find workload identity by email
+	user, err := s.store.GetUserByEmail(ctx, request.Email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workload identity"))
+	}
+	if user == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("workload identity %q not found", request.Email))
+	}
+	if user.Type != storepb.PrincipalType_WORKLOAD_IDENTITY {
+		return nil, connect.NewError(connect.CodeInvalidArgument,
+			errors.Errorf("email %q is not a workload identity", request.Email))
+	}
+	if user.MemberDeleted {
+		return nil, connect.NewError(connect.CodePermissionDenied,
+			errors.New("workload identity has been deactivated"))
+	}
+
+	// Get workload identity config
+	if user.Profile == nil {
+		return nil, connect.NewError(connect.CodeInternal,
+			errors.New("workload identity profile not found"))
+	}
+	wicConfig := user.Profile.GetWorkloadIdentityConfig()
+	if wicConfig == nil {
+		return nil, connect.NewError(connect.CodeInternal,
+			errors.New("workload identity config not found"))
+	}
+
+	// Validate OIDC token
+	if _, err = wif.ValidateToken(ctx, request.Token, wicConfig); err != nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated,
+			errors.Wrap(err, "token validation failed"))
+	}
+
+	// Generate Bytebase API token (1 hour duration, same as service account)
+	token, err := auth.GenerateAPIToken(user.Name, user.ID, s.profile.Mode, s.secret)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal,
+			errors.Wrap(err, "failed to generate access token"))
+	}
+
+	// Update last login time
+	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
+		Profile: &storepb.UserProfile{
+			LastLoginTime:          timestamppb.Now(),
+			WorkloadIdentityConfig: wicConfig,
+		},
+	}); err != nil {
+		slog.Error("failed to update workload identity profile", log.BBError(err), slog.String("email", user.Email))
+	}
+
+	return connect.NewResponse(&v1pb.ExchangeTokenResponse{
+		AccessToken: token,
+	}), nil
 }

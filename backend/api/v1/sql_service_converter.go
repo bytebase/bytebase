@@ -38,12 +38,12 @@ func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Level {
 }
 
 func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store.QueryHistoryMessage) (*v1pb.QueryHistory, error) {
-	user, err := s.store.GetUserByID(ctx, history.CreatorUID)
+	creator, err := s.store.GetUserByEmail(ctx, history.Creator)
 	if err != nil {
 		return nil, err
 	}
-	if user == nil {
-		return nil, errors.Errorf("cannot found user with id %d", history.CreatorUID)
+	if creator == nil {
+		return nil, errors.Errorf("cannot found user with email %s", history.Creator)
 	}
 
 	historyType := v1pb.QueryHistory_TYPE_UNSPECIFIED
@@ -60,7 +60,7 @@ func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store
 		Statement:  history.Statement,
 		Error:      history.Payload.Error,
 		Database:   history.Database,
-		Creator:    common.FormatUserEmail(user.Email),
+		Creator:    common.FormatUserEmail(creator.Email),
 		CreateTime: timestamppb.New(history.CreatedAt),
 		Duration:   history.Payload.Duration,
 		Type:       historyType,

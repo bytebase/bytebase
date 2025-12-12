@@ -56,7 +56,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 	if err != nil {
 		return false, err
 	}
-	if ok := check(user.ID, p, policyMessage.Policy, m.rolePermissions, m.groupMembers); ok {
+	if ok := check(user, p, policyMessage.Policy, m.rolePermissions, m.groupMembers); ok {
 		return true, nil
 	}
 
@@ -77,7 +77,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 			if err != nil {
 				return false, err
 			}
-			if ok := check(user.ID, p, policyMessage.Policy, m.rolePermissions, m.groupMembers); !ok {
+			if ok := check(user, p, policyMessage.Policy, m.rolePermissions, m.groupMembers); !ok {
 				allOK = false
 				break
 			}
@@ -127,8 +127,9 @@ func (m *Manager) GetPermissions(role string) (map[Permission]bool, error) {
 	return permissions, nil
 }
 
-func check(userID int, p Permission, policy *storepb.IamPolicy, rolePermissions map[string]map[Permission]bool, groupMembers map[string]map[string]bool) bool {
-	userName := common.FormatUserUID(userID)
+func check(user *store.UserMessage, p Permission, policy *storepb.IamPolicy, rolePermissions map[string]map[Permission]bool, groupMembers map[string]map[string]bool) bool {
+	userName := common.FormatUserEmail(user.Email)
+
 	for _, binding := range policy.GetBindings() {
 		permissions, ok := rolePermissions[binding.GetRole()]
 		if !ok {

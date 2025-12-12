@@ -3,111 +3,111 @@
     v-if="sections.length > 0"
     class="w-full font-mono text-xs bg-gray-50 border border-gray-200 overflow-hidden rounded"
   >
-    <div
-      v-for="section in sections"
-      :key="section.id"
-      class="border-b border-gray-200 last:border-b-0"
-    >
-      <!-- Section Header -->
+    <!-- Multi-deploy view: show deploy groups when server restarts detected -->
+    <template v-if="hasMultipleDeploys">
+      <!-- Server restart notice -->
       <div
-        class="flex items-center gap-x-2 px-3 py-1.5 bg-white hover:bg-gray-50 cursor-pointer select-none"
-        @click="toggleSection(section.id)"
+        class="flex items-center gap-x-2 px-3 py-2 bg-amber-50 border-b border-amber-200 text-amber-800"
       >
-        <!-- Expand/Collapse Icon -->
-        <component
-          :is="isSectionExpanded(section.id) ? ChevronDownIcon : ChevronRightIcon"
-          class="w-3.5 h-3.5 text-gray-400 shrink-0"
-        />
-        <!-- Status Icon -->
-        <component
-          :is="section.statusIcon"
-          class="w-3.5 h-3.5 shrink-0"
-          :class="[
-            section.statusClass,
-            { 'animate-spin': section.status === 'running' },
-          ]"
-        />
-        <!-- Section Title -->
-        <span class="text-gray-700">{{ section.label }}</span>
-        <!-- Entry Count -->
-        <span v-if="section.entryCount > 1" class="text-gray-400">
-          ({{ section.entryCount }})
-        </span>
-        <!-- Spacer -->
-        <span class="flex-1" />
-        <!-- Duration -->
-        <span v-if="section.duration" class="text-gray-500 tabular-nums">
-          {{ section.duration }}
-        </span>
+        <AlertTriangleIcon class="w-4 h-4 shrink-0" />
+        <span>{{ $t("task-run.log-viewer.multiple-deploys-notice") }}</span>
       </div>
 
-      <!-- Section Content with Virtual Scroll -->
-      <NVirtualList
-        v-if="isSectionExpanded(section.id)"
-        :items="section.items"
-        :item-size="ITEM_HEIGHT"
-        item-resizable
-        :style="{ maxHeight: `${MAX_VISIBLE_ITEMS * ITEM_HEIGHT}px` }"
-        class="bg-gray-50 border-t border-gray-100"
+      <!-- Deploy groups -->
+      <div
+        v-for="(deployGroup, deployIdx) in deployGroups"
+        :key="deployGroup.deployId"
+        class="border-b border-gray-300 last:border-b-0"
       >
-        <template #default="{ item, index }">
+        <!-- Deploy Header -->
+        <div
+          class="flex items-center gap-x-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 cursor-pointer select-none"
+          @click="toggleDeploy(deployGroup.deployId)"
+        >
+          <component
+            :is="isDeployExpanded(deployGroup.deployId) ? ChevronDownIcon : ChevronRightIcon"
+            class="w-3.5 h-3.5 text-gray-500 shrink-0"
+          />
+          <ServerIcon class="w-3.5 h-3.5 text-gray-500 shrink-0" />
+          <span class="text-gray-700 font-medium">
+            {{ $t("task-run.log-viewer.deployment-n", { n: deployIdx + 1 }) }}
+          </span>
+          <span class="text-gray-400 text-[10px] font-normal">
+            {{ deployGroup.deployId.substring(0, 8) }}
+          </span>
+        </div>
+
+        <!-- Sections within deploy group -->
+        <div v-if="isDeployExpanded(deployGroup.deployId)">
           <div
-            class="flex items-start gap-x-2 px-3 py-0.5 hover:bg-gray-100"
-            :class="{ 'border-t border-gray-100': index > 0 }"
+            v-for="section in deployGroup.sections"
+            :key="section.id"
+            class="border-b border-gray-200 last:border-b-0"
           >
-            <!-- Row Number -->
-            <span class="text-gray-300 w-6 text-right shrink-0 tabular-nums">
-              {{ index + 1 }}
-            </span>
-            <!-- Timestamp -->
-            <span class="text-gray-400 shrink-0 tabular-nums">
-              {{ item.time }}
-            </span>
-            <!-- Relative Time -->
-            <span
-              v-if="item.relativeTime"
-              class="text-gray-300 shrink-0 tabular-nums"
-            >
-              {{ item.relativeTime }}
-            </span>
-            <!-- Status Indicator -->
-            <span :class="item.levelClass" class="shrink-0">
-              {{ item.levelIndicator }}
-            </span>
-            <!-- Detail -->
-            <span :class="item.detailClass" class="break-all">
-              {{ item.detail }}
-            </span>
-            <!-- Affected Rows -->
-            <span
-              v-if="item.affectedRows !== undefined"
-              class="text-gray-400 shrink-0 ml-auto"
-            >
-              {{ item.affectedRows }} rows
-            </span>
+            <SectionHeader
+              :section="section"
+              :is-expanded="isSectionExpanded(section.id)"
+              :indent="true"
+              @toggle="toggleSection(section.id)"
+            />
+            <SectionContent
+              v-if="isSectionExpanded(section.id)"
+              :section="section"
+              :indent="true"
+            />
           </div>
-        </template>
-      </NVirtualList>
-    </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Single-deploy view: standard flat sections -->
+    <template v-else>
+      <div
+        v-for="section in sections"
+        :key="section.id"
+        class="border-b border-gray-200 last:border-b-0"
+      >
+        <SectionHeader
+          :section="section"
+          :is-expanded="isSectionExpanded(section.id)"
+          @toggle="toggleSection(section.id)"
+        />
+        <SectionContent
+          v-if="isSectionExpanded(section.id)"
+          :section="section"
+        />
+      </div>
+    </template>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ChevronDownIcon, ChevronRightIcon } from "lucide-vue-next";
-import { NVirtualList } from "naive-ui";
+import {
+  AlertTriangleIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ServerIcon,
+} from "lucide-vue-next";
 import type { TaskRunLogEntry } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+import SectionContent from "./SectionContent.vue";
+import SectionHeader from "./SectionHeader.vue";
 import { useTaskRunLogSections } from "./useTaskRunLogSections";
-
-const ITEM_HEIGHT = 20;
-const MAX_VISIBLE_ITEMS = 10;
 
 const props = defineProps<{
   entries: TaskRunLogEntry[];
   sheet?: Sheet;
 }>();
 
-const { sections, toggleSection, isSectionExpanded } = useTaskRunLogSections(
+const {
+  sections,
+  hasMultipleDeploys,
+  deployGroups,
+  toggleSection,
+  toggleDeploy,
+  isSectionExpanded,
+  isDeployExpanded,
+} = useTaskRunLogSections(
   () => props.entries,
   () => props.sheet
 );

@@ -387,6 +387,10 @@
       "backing-up": "备份中...",
       "retry-attempt": "第 {current}/{max} 次尝试",
       "computing": "计算中..."
+    },
+    "log-viewer": {
+      "multiple-deploys-notice": "检测到执行期间服务重启，日志按部署分组显示。",
+      "deployment-n": "部署 #{n}"
     }
   },
   "banner": {
@@ -472,6 +476,17 @@
       },
       "system-bot": "机器人助手",
       "service-account": "服务账号",
+      "workload-identity": "工作负载标识",
+      "workload-identity-platform": "平台",
+      "workload-identity-owner": "组织 / 用户名",
+      "workload-identity-repo": "仓库",
+      "workload-identity-branch": "分支",
+      "workload-identity-advanced": "高级设置",
+      "workload-identity-issuer": "发行者 URL",
+      "workload-identity-audience": "受众",
+      "workload-identity-subject": "主题模式",
+      "workload-identity-repo-hint": "留空表示允许组织内所有仓库",
+      "workload-identity-branch-hint": "留空表示允许所有分支",
       "copy-service-key": "复制 Service Key",
       "reset-service-key": "重置 Service Key",
       "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
@@ -1135,6 +1150,11 @@
       "rollout": "发布任务",
       "statement-empty": "变更语句为空"
     },
+    "checks": {
+      "self": "检查",
+      "no-results-match-filters": "没有匹配筛选条件的结果",
+      "no-check-results": "没有检查结果"
+    },
     "spec": {
       "change": "变更项",
       "type": {
@@ -1186,9 +1206,6 @@
       "some-databases-not-meeting-requirements": "部分数据库（{databases}）不符合要求",
       "some-databases-have-issues": "{count} 个数据库有问题 | {count} 个数据库有问题",
       "configuration-has-issues": "配置存在 {count} 个问题 | 配置存在 {count} 个问题"
-    },
-    "checks": {
-      "self": "检查"
     },
     "refresh-indicator": {
       "last-refresh": "上次刷新：{time}"
@@ -1626,7 +1643,6 @@
     "establish-database-baseline": "建立「{name}」基线",
     "export": "导出变更历史",
     "need-to-select-first": "需要先选择变更历史",
-
     "rollback-tip": "选择要回滚到的某个 DDL 历史记录。"
   },
   "database": {

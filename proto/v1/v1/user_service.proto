@@ -68,6 +68,7 @@ service UserService {
   }
 
   // Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+  // Note: Email updates are not supported through this API. Use UpdateEmail instead.
   // Permissions required: bb.users.update (or self)
   rpc UpdateUser(UpdateUserRequest) returns (User) {
     option (google.api.http) = {
@@ -98,11 +99,24 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
   }
+
+  // Updates a user's email address.
+  // Permissions required: bb.users.updateEmail
+  rpc UpdateEmail(UpdateEmailRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:updateEmail"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name,email";
+    option (bytebase.v1.permission) = "bb.users.updateEmail";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+  }
 }
 
 message GetUserRequest {
   // The name of the user to retrieve.
-  // Format: users/{user uid or user email}
+  // Format: users/{email}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
@@ -111,7 +125,7 @@ message GetUserRequest {
 
 message BatchGetUsersRequest {
   // The user names to retrieve.
-  // Format: users/{user uid or user email}
+  // Format: users/{email}
   repeated string names = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
@@ -184,7 +198,7 @@ message UpdateUserRequest {
   // The user to update.
   //
   // The user's `name` field is used to identify the user to update.
-  // Format: users/{user}
+  // Format: users/{email}
   User user = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
@@ -207,7 +221,7 @@ message UpdateUserRequest {
 
 message DeleteUserRequest {
   // The name of the user to delete.
-  // Format: users/{user}
+  // Format: users/{email}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
@@ -216,21 +230,34 @@ message DeleteUserRequest {
 
 message UndeleteUserRequest {
   // The name of the deleted user.
-  // Format: users/{user}
+  // Format: users/{email}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
   ];
 }
 
+message UpdateEmailRequest {
+  // The name of the user whose email to update.
+  // Format: users/{email}
+  // Note: This is the current (old) email address. The new email is specified in the 'email' field.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"}
+  ];
+
+  // The new email address.
+  string email = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
 message User {
   option (google.api.resource) = {
     type: "bytebase.com/User"
-    pattern: "users/{user}"
+    pattern: "users/{email}"
   };
 
   // The name of the user.
-  // Format: users/{user}. {user} is a system-generated unique ID.
+  // Format: users/{email}
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The lifecycle state of the user account.
@@ -282,6 +309,27 @@ message User {
   // The groups for the user.
   // Format: groups/{email}
   repeated string groups = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Workload Identity configuration (only for WORKLOAD_IDENTITY type)
+  WorkloadIdentityConfig workload_identity_config = 16;
+}
+
+// WorkloadIdentityConfig for API layer
+message WorkloadIdentityConfig {
+  // ProviderType identifies the CI/CD platform.
+  enum ProviderType {
+    PROVIDER_TYPE_UNSPECIFIED = 0;
+    GITHUB = 1;
+  }
+
+  // Platform type (currently only GITHUB is supported)
+  ProviderType provider_type = 1;
+  // OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+  string issuer_url = 2;
+  // Allowed audiences for token validation
+  repeated string allowed_audiences = 3;
+  // Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+  string subject_pattern = 4;
 }
 
 enum UserType {
@@ -293,4 +341,6 @@ enum UserType {
   SYSTEM_BOT = 2;
   // Service account for API integrations.
   SERVICE_ACCOUNT = 3;
+  // External CI/CD workload identity.
+  WORKLOAD_IDENTITY = 4;
 }

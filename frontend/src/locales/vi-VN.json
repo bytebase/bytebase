@@ -387,6 +387,10 @@
       "backing-up": "đang sao lưu...",
       "retry-attempt": "nỗ lực {current}/{max}",
       "computing": "tính toán..."
+    },
+    "log-viewer": {
+      "multiple-deploys-notice": "Phát hiện khởi động lại máy chủ trong quá trình thực thi. Nhật ký được nhóm theo triển khai.",
+      "deployment-n": "Triển khai #{n}"
     }
   },
   "banner": {
@@ -472,6 +476,17 @@
       },
       "system-bot": "Bot hệ thống",
       "service-account": "Tài khoản dịch vụ",
+      "workload-identity": "Workload Identity",
+      "workload-identity-platform": "Platform",
+      "workload-identity-owner": "Organization / Username",
+      "workload-identity-repo": "Repository",
+      "workload-identity-branch": "Branch",
+      "workload-identity-advanced": "Advanced Settings",
+      "workload-identity-issuer": "Issuer URL",
+      "workload-identity-audience": "Audience",
+      "workload-identity-subject": "Subject Pattern",
+      "workload-identity-repo-hint": "Leave empty for all repositories in the organization",
+      "workload-identity-branch-hint": "Leave empty for all branches",
       "copy-service-key": "Sao chép Khóa Dịch vụ",
       "reset-service-key": "Đặt lại Khóa Dịch vụ",
       "reset-service-key-alert": "Hành động này không thể hoàn tác. Khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này?",
@@ -1135,6 +1150,11 @@
       "rollout": "Triển khai",
       "statement-empty": "Câu lệnh trống rỗng"
     },
+    "checks": {
+      "self": "Kiểm tra",
+      "no-results-match-filters": "Không có kết quả nào phù hợp với bộ lọc của bạn",
+      "no-check-results": "Không có kết quả kiểm tra"
+    },
     "spec": {
       "change": "Thay đổi",
       "type": {
@@ -1186,9 +1206,6 @@
       "some-databases-not-meeting-requirements": "Một số cơ sở dữ liệu ({databases}) không đáp ứng được yêu cầu",
       "some-databases-have-issues": "{count} cơ sở dữ liệu có vấn đề | {count} cơ sở dữ liệu có vấn đề",
       "configuration-has-issues": "Cấu hình có vấn đề {count} | Cấu hình có vấn đề {count}"
-    },
-    "checks": {
-      "self": "Kiểm tra"
     },
     "refresh-indicator": {
       "last-refresh": "Làm mới lần cuối: {time}"
@@ -1626,7 +1643,6 @@
     "establish-database-baseline": "Thiết lập đường cơ sở \"{name}\"",
     "export": "Xuất Nhật ký thay đổi",
     "need-to-select-first": "Cần chọn nhật ký thay đổi trước",
-
     "rollback-tip": "Chọn một nhật ký thay đổi DDL cụ thể để hoàn tác."
   },
   "database": {

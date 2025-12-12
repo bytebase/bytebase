@@ -631,6 +631,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.UpdateEmailRequest"><span class="badge">M</span>UpdateEmailRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateUserRequest"><span class="badge">M</span>UpdateUserRequest</a>
                 </li>
               
@@ -642,9 +646,17 @@
                   <a href="#bytebase.v1.User.Profile"><span class="badge">M</span>User.Profile</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.WorkloadIdentityConfig"><span class="badge">M</span>WorkloadIdentityConfig</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.v1.UserType"><span class="badge">E</span>UserType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.WorkloadIdentityConfig.ProviderType"><span class="badge">E</span>WorkloadIdentityConfig.ProviderType</a>
                 </li>
               
               
@@ -793,6 +805,14 @@
           <li>
             <a href="#v1%2fauth_service.proto">v1/auth_service.proto</a>
             <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.ExchangeTokenRequest"><span class="badge">M</span>ExchangeTokenRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ExchangeTokenResponse"><span class="badge">M</span>ExchangeTokenResponse</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.v1.IdentityProviderContext"><span class="badge">M</span>IdentityProviderContext</a>
@@ -7030,7 +7050,7 @@ Permissions required: bb.settings.set</p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>The user names to retrieve.
-Format: users/{user uid or user email} </p></td>
+Format: users/{email} </p></td>
                 </tr>
               
             </tbody>
@@ -7103,7 +7123,7 @@ Format: users/{user uid or user email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the user to delete.
-Format: users/{user} </p></td>
+Format: users/{email} </p></td>
                 </tr>
               
             </tbody>
@@ -7128,7 +7148,7 @@ Format: users/{user} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the user to retrieve.
-Format: users/{user uid or user email} </p></td>
+Format: users/{email} </p></td>
                 </tr>
               
             </tbody>
@@ -7259,7 +7279,40 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the deleted user.
-Format: users/{user} </p></td>
+Format: users/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateEmailRequest">UpdateEmailRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the user whose email to update.
+Format: users/{email}
+Note: This is the current (old) email address. The new email is specified in the &#39;email&#39; field. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The new email address. </p></td>
                 </tr>
               
             </tbody>
@@ -7286,7 +7339,7 @@ Format: users/{user} </p></td>
                   <td><p>The user to update.
 
 The user&#39;s `name` field is used to identify the user to update.
-Format: users/{user} </p></td>
+Format: users/{email} </p></td>
                 </tr>
               
                 <tr>
@@ -7348,7 +7401,7 @@ In this situation, `update_mask` is ignored. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the user.
-Format: users/{user}. {user} is a system-generated unique ID. </p></td>
+Format: users/{email} </p></td>
                 </tr>
               
                 <tr>
@@ -7444,6 +7497,13 @@ Could be empty. </p></td>
 Format: groups/{email} </p></td>
                 </tr>
               
+                <tr>
+                  <td>workload_identity_config</td>
+                  <td><a href="#bytebase.v1.WorkloadIdentityConfig">WorkloadIdentityConfig</a></td>
+                  <td></td>
+                  <td><p>Workload Identity configuration (only for WORKLOAD_IDENTITY type) </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7489,6 +7549,51 @@ Format: groups/{email} </p></td>
 
         
       
+        <h3 id="bytebase.v1.WorkloadIdentityConfig">WorkloadIdentityConfig</h3>
+        <p>WorkloadIdentityConfig for API layer</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>provider_type</td>
+                  <td><a href="#bytebase.v1.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</a></td>
+                  <td></td>
+                  <td><p>Platform type (currently only GITHUB is supported) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issuer_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>OIDC Issuer URL (auto-filled based on provider_type, can be overridden) </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allowed_audiences</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Allowed audiences for token validation </p></td>
+                </tr>
+              
+                <tr>
+                  <td>subject_pattern</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
         <h3 id="bytebase.v1.UserType">UserType</h3>
@@ -7521,6 +7626,35 @@ Format: groups/{email} </p></td>
                 <td>SERVICE_ACCOUNT</td>
                 <td>3</td>
                 <td><p>Service account for API integrations.</p></td>
+              </tr>
+            
+              <tr>
+                <td>WORKLOAD_IDENTITY</td>
+                <td>4</td>
+                <td><p>External CI/CD workload identity.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</h3>
+        <p>ProviderType identifies the CI/CD platform.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PROVIDER_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GITHUB</td>
+                <td>1</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>
@@ -7586,6 +7720,7 @@ Permissions required: bb.users.create (only when Disallow Signup is enabled)</p>
                 <td><a href="#bytebase.v1.UpdateUserRequest">UpdateUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
                 <td><p>Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
+Note: Email updates are not supported through this API. Use UpdateEmail instead.
 Permissions required: bb.users.update (or self)</p></td>
               </tr>
             
@@ -7603,6 +7738,14 @@ Permissions required: bb.users.delete</p></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
                 <td><p>Restores a deleted user.
 Permissions required: bb.users.undelete</p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateEmail</td>
+                <td><a href="#bytebase.v1.UpdateEmailRequest">UpdateEmailRequest</a></td>
+                <td><a href="#bytebase.v1.User">User</a></td>
+                <td><p>Updates a user&#39;s email address.
+Permissions required: bb.users.updateEmail</p></td>
               </tr>
             
           </tbody>
@@ -7699,6 +7842,16 @@ Permissions required: bb.users.undelete</p></td>
                 <td>UndeleteUser</td>
                 <td>POST</td>
                 <td>/v1/{name=users/*}:undelete</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateEmail</td>
+                <td>POST</td>
+                <td>/v1/{name=users/*}:updateEmail</td>
                 <td>*</td>
               </tr>
               
@@ -8960,6 +9113,62 @@ Permissions required: bb.auditLogs.export</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.ExchangeTokenRequest">ExchangeTokenRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>External OIDC token (JWT) from CI/CD platform. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Workload Identity email for identifying which identity to authenticate as.
+Format: {name}@workload.bytebase.com </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ExchangeTokenResponse">ExchangeTokenResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>access_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Bytebase access token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.IdentityProviderContext">IdentityProviderContext</h3>
         <p>Context for identity provider authentication.</p>
 
@@ -9195,6 +9404,15 @@ Permissions required: None</p></td>
 Permissions required: None</p></td>
               </tr>
             
+              <tr>
+                <td>ExchangeToken</td>
+                <td><a href="#bytebase.v1.ExchangeTokenRequest">ExchangeTokenRequest</a></td>
+                <td><a href="#bytebase.v1.ExchangeTokenResponse">ExchangeTokenResponse</a></td>
+                <td><p>Exchanges an external OIDC token for a Bytebase access token.
+Used by CI/CD pipelines with Workload Identity Federation.
+Permissions required: None (validates via OIDC token)</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -9229,6 +9447,16 @@ Permissions required: None</p></td>
                 <td>Logout</td>
                 <td>POST</td>
                 <td>/v1/auth/logout</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ExchangeToken</td>
+                <td>POST</td>
+                <td>/v1/auth:exchangeToken</td>
                 <td>*</td>
               </tr>
               
@@ -27246,13 +27474,6 @@ Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel tas
 Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
                 </tr>
               
-                <tr>
-                  <td>reason</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The reason for canceling the task runs. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -27291,13 +27512,6 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
                   <td>repeated</td>
                   <td><p>The tasks to run.
 Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>reason</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The reason for running the tasks. </p></td>
                 </tr>
               
                 <tr>
