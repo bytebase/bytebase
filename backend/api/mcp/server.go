@@ -16,18 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// EchoInput is the input for the echo tool.
-type EchoInput struct {
-	// The message to echo back.
-	Message string `json:"message"`
-}
-
-// EchoOutput is the output for the echo tool.
-type EchoOutput struct {
-	// The echoed message.
-	Echo string `json:"echo"`
-}
-
 // Server is the MCP server for Bytebase.
 type Server struct {
 	mcpServer    *mcp.Server
@@ -70,25 +58,8 @@ func NewServer(store *store.Store, profile *config.Profile, secret string) (*Ser
 
 // registerTools registers all MCP tools.
 func (s *Server) registerTools() {
-	// Echo tool for testing
-	mcp.AddTool(s.mcpServer, &mcp.Tool{
-		Name:        "echo",
-		Description: "Echo the input message back. Useful for testing the MCP connection.",
-	}, s.handleEcho)
-
-	// API discovery and execution tools
 	s.registerSearchTool()
 	s.registerCallTool()
-}
-
-// handleEcho handles the echo tool call.
-func (*Server) handleEcho(_ context.Context, _ *mcp.CallToolRequest, input EchoInput) (*mcp.CallToolResult, EchoOutput, error) {
-	output := EchoOutput{Echo: input.Message}
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			&mcp.TextContent{Text: output.Echo},
-		},
-	}, output, nil
 }
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
