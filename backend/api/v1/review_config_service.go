@@ -318,11 +318,19 @@ func validateSQLReviewRule(rule *v1pb.SQLReviewRule) error {
 		if payload == nil {
 			return errors.Errorf("rule %s requires naming payload", ruleType)
 		}
-		if _, err := regexp.Compile(payload.Format); err != nil {
-			return errors.Wrapf(err, "invalid naming rule format pattern %q for rule %s", payload.Format, ruleType)
+		// At least one of format or maxLength must be set
+		if payload.Format == "" && payload.MaxLength <= 0 {
+			return errors.Errorf("naming rule must specify either format or max_length for rule %s", ruleType)
 		}
-		if payload.MaxLength <= 0 {
-			return errors.Errorf("naming rule max_length must be positive for rule %s, got %d", ruleType, payload.MaxLength)
+		// If format is set, validate it compiles
+		if payload.Format != "" {
+			if _, err := regexp.Compile(payload.Format); err != nil {
+				return errors.Wrapf(err, "invalid naming rule format pattern %q for rule %s", payload.Format, ruleType)
+			}
+		}
+		// If maxLength is set, validate it's positive (maxLength == 0 means not set)
+		if payload.MaxLength < 0 {
+			return errors.Errorf("naming rule max_length cannot be negative for rule %s, got %d", ruleType, payload.MaxLength)
 		}
 
 	// Naming rules with template token validation
@@ -331,14 +339,22 @@ func validateSQLReviewRule(rule *v1pb.SQLReviewRule) error {
 		if payload == nil {
 			return errors.Errorf("rule %s requires naming payload", ruleType)
 		}
-		tokens, _ := advisor.ParseTemplateTokens(payload.Format)
-		for _, token := range tokens {
-			if _, ok := advisor.TemplateNamingTokens[ruleType][token]; !ok {
-				return errors.Errorf("invalid template token %s for rule %s", token, ruleType)
+		// At least one of format or maxLength must be set
+		if payload.Format == "" && payload.MaxLength <= 0 {
+			return errors.Errorf("naming rule must specify either format or max_length for rule %s", ruleType)
+		}
+		// If format is set, validate template tokens
+		if payload.Format != "" {
+			tokens, _ := advisor.ParseTemplateTokens(payload.Format)
+			for _, token := range tokens {
+				if _, ok := advisor.TemplateNamingTokens[ruleType][token]; !ok {
+					return errors.Errorf("invalid template token %s for rule %s", token, ruleType)
+				}
 			}
 		}
-		if payload.MaxLength <= 0 {
-			return errors.Errorf("naming rule max_length must be positive for rule %s, got %d", ruleType, payload.MaxLength)
+		// If maxLength is set, validate it's positive (maxLength == 0 means not set)
+		if payload.MaxLength < 0 {
+			return errors.Errorf("naming rule max_length cannot be negative for rule %s, got %d", ruleType, payload.MaxLength)
 		}
 
 	// Number payload rules
