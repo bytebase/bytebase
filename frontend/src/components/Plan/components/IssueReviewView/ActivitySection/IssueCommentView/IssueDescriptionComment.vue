@@ -87,7 +87,7 @@ import {
   PlanSchema,
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, isValidPlanName } from "@/utils";
 import ActionCreator from "./ActionCreator.vue";
 import type { DistinctIssueComment } from "./common";
 import EditableMarkdownContent from "./EditableMarkdownContent.vue";
@@ -108,7 +108,7 @@ const state = reactive({
   isSaving: false,
 });
 
-const hasPlan = computed(() => !!plan.value.name);
+const hasPlan = computed(() => isValidPlanName(plan.value.name));
 
 const createdSentence = computed(() => {
   // In IssueReviewView context, we always show "created issue"

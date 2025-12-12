@@ -15,11 +15,11 @@ interface CommentEditState {
 }
 
 export function useCommentEdit(project: Ref<Project> | ComputedRef<Project>) {
-  const { plan } = usePlanContext();
+  const { plan, issue } = usePlanContext();
   const currentUser = useCurrentUserV1();
   const issueCommentStore = useIssueCommentStore();
 
-  const issueName = computed(() => plan.value.issue);
+  const issueName = computed(() => issue.value?.name || plan.value.issue);
 
   const state = reactive<CommentEditState>({
     editMode: false,
