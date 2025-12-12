@@ -29,7 +29,7 @@ type Server struct {
 func NewServer(store *store.Store, profile *config.Profile, secret string) (*Server, error) {
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:    "bytebase",
-		Version: "1.0.0",
+		Version: profile.Version,
 	}, nil)
 
 	// Load OpenAPI index for API discovery and execution (embedded)
