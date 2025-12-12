@@ -30,7 +30,7 @@ COPY --from=frontend /frontend-build/frontend/dist ./backend/server/dist
 # -ldflags="-w -s" means omit DWARF symbol table and the symbol table and debug information
 RUN CC=clang go build \
   --tags "${RELEASE},embed_frontend,docker" \
-  -ldflags="-extldflags '-Wl,-z,stack-size=0x1000000' -w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" \
+  -ldflags="-extldflags '-Wl,-z,stack-size=0x1000000' -w -s -X 'github.com/bytebase/bytebase/backend/args.Version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/args.GitCommit=${GIT_COMMIT}'" \
   -o bytebase ./backend/bin/server/main.go
 
 FROM alpine:3.23 AS monolithic

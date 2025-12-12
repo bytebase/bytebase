@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/args"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -29,7 +30,7 @@ type Server struct {
 func NewServer(store *store.Store, profile *config.Profile, secret string) (*Server, error) {
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:    "bytebase",
-		Version: "1.0.0",
+		Version: args.Version,
 	}, nil)
 
 	// Load OpenAPI index for API discovery and execution (embedded)

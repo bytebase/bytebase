@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/bytebase/bytebase/backend/args"
 	"github.com/bytebase/bytebase/backend/component/config"
 )
 
@@ -20,8 +21,8 @@ func getBaseProfile(dataDir string) *config.Profile {
 		IsDocker:          isDocker(),
 		DataDir:           dataDir,
 		Demo:              flags.demo,
-		Version:           version,
-		GitCommit:         gitcommit,
+		Version:           args.Version,
+		GitCommit:         args.GitCommit,
 		PgURL:             os.Getenv("PG_URL"),
 		DeployID:          uuid.NewString()[:8],
 	}

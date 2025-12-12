@@ -29,7 +29,7 @@ echo ""
 echo "Step 2 - building Bytebase backend..."
 
 OUTPUT_BINARY=$OUTPUT_DIR/bytebase
-go build -p=8 --tags "release,embed_frontend" -ldflags "-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}'" -o ${OUTPUT_BINARY} ./backend/bin/server/main.go
+go build -p=8 --tags "release,embed_frontend" -ldflags "-w -s -X 'github.com/bytebase/bytebase/backend/args.Version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/args.GitCommit=${GIT_COMMIT}'" -o ${OUTPUT_BINARY} ./backend/bin/server/main.go
 
 echo ""
 echo "${GREEN}Completed building Bytebase ${VERSION}.${NC}"
