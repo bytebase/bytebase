@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"html"
 	"net/http"
 	"net/url"
 	"slices"
@@ -196,5 +197,26 @@ func oauth2ErrorRedirect(c echo.Context, redirectURI, state, errorCode, descript
 		q.Set("state", state)
 	}
 	u.RawQuery = q.Encode()
-	return c.Redirect(http.StatusFound, u.String())
+	// Return HTML page that redirects to callback URL
+	// This avoids CSP form-action restrictions
+	return c.HTML(http.StatusOK, buildRedirectHTML(u.String()))
+}
+
+// buildRedirectHTML creates an HTML page that redirects to the given URL.
+// This is used to work around CSP form-action restrictions.
+// nolint:unused
+func buildRedirectHTML(redirectURL string) string {
+	// HTML escape the URL for safe embedding
+	escaped := html.EscapeString(redirectURL)
+	return `<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="refresh" content="0;url=` + escaped + `">
+<title>Redirecting...</title>
+</head>
+<body>
+<p>Redirecting to application...</p>
+<noscript><a href="` + escaped + `">Click here to continue</a></noscript>
+</body>
+</html>`
 }

@@ -51,8 +51,13 @@ func (s *Service) handleToken(c echo.Context) error {
 	if client == nil {
 		return oauth2Error(c, http.StatusUnauthorized, "invalid_client", "client not found")
 	}
-	if !verifySecret(client.ClientSecretHash, clientSecret) {
-		return oauth2Error(c, http.StatusUnauthorized, "invalid_client", "invalid client credentials")
+
+	// Verify client credentials based on token_endpoint_auth_method
+	// Public clients (token_endpoint_auth_method: none) don't have secrets
+	if client.Config.TokenEndpointAuthMethod != "none" {
+		if !verifySecret(client.ClientSecretHash, clientSecret) {
+			return oauth2Error(c, http.StatusUnauthorized, "invalid_client", "invalid client credentials")
+		}
 	}
 
 	// Handle grant types

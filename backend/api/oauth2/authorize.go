@@ -165,7 +165,7 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 	// Update client last active
 	_ = s.store.UpdateOAuth2ClientLastActiveAt(ctx, clientID)
 
-	// Redirect with code
+	// Build redirect URL with code
 	u, _ := url.Parse(redirectURI)
 	q := u.Query()
 	q.Set("code", code)
@@ -173,7 +173,11 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 		q.Set("state", state)
 	}
 	u.RawQuery = q.Encode()
-	return c.Redirect(http.StatusFound, u.String())
+	redirectURL := u.String()
+
+	// Return HTML page that redirects to callback URL
+	// This avoids CSP form-action restrictions
+	return c.HTML(http.StatusOK, buildRedirectHTML(redirectURL))
 }
 
 // getTokenFromEchoRequest extracts the access token from an Echo request.
