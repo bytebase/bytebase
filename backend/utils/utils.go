@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"unicode"
 
@@ -88,16 +87,16 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	}
 	updated := false
 
-	userID, err := strconv.Atoi(strings.TrimPrefix(grantRequest.User, "users/"))
-	if err != nil {
-		return err
+	email := strings.TrimPrefix(grantRequest.User, "users/")
+	if email == "" {
+		return errors.New("invalid empty user identifier")
 	}
-	newUser, err := stores.GetUserByID(ctx, userID)
+	newUser, err := stores.GetUserByEmail(ctx, email)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to find user %s", email)
 	}
 	if newUser == nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("user %v not found", userID))
+		return connect.NewError(connect.CodeInternal, errors.Errorf("user %s not found", email))
 	}
 	for _, binding := range policyMessage.Policy.Bindings {
 		if binding.Role != grantRequest.Role {
