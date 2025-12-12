@@ -154,7 +154,9 @@ const selectedEngines = computed(() => {
 
 const selectedDriftedValue = computed(() => {
   const driftedValue = getValueFromSearchParams(state.params, "drifted");
-  return driftedValue === "true" ? true : false;
+  if (driftedValue === "true") return true;
+  if (driftedValue === "false") return false;
+  return undefined;
 });
 
 const filter = computed(() => ({
