@@ -39,7 +39,7 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 	stageID := common.FormatStageID(taskRun.Environment)
 	t := &v1pb.TaskRun{
 		Name:          common.FormatTaskRun(taskRun.ProjectID, taskRun.PipelineUID, stageID, taskRun.TaskUID, taskRun.ID),
-		Creator:       common.FormatUserEmail(taskRun.Creator.Email),
+		Creator:       common.FormatUserEmail(taskRun.CreatorEmail),
 		CreateTime:    timestamppb.New(taskRun.CreatedAt),
 		UpdateTime:    timestamppb.New(taskRun.UpdatedAt),
 		Status:        convertToTaskRunStatus(taskRun.Status),
