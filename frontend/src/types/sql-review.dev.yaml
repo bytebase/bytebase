@@ -419,8 +419,7 @@ ruleList:
   - type: STATEMENT_QUERY_MINIMUM_PLAN_LEVEL
     level: WARNING
     payload:
-      required: true
-      maxLength: 64
+      level: INDEX
     engine: MYSQL
   - type: STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT
     level: WARNING
@@ -1063,23 +1062,15 @@ ruleList:
     engine: MARIADB
   - type: COLUMN_CURRENT_TIME_COUNT_LIMIT
     level: WARNING
-    payload:
-      number: 1000
     engine: MYSQL
   - type: COLUMN_CURRENT_TIME_COUNT_LIMIT
     level: WARNING
-    payload:
-      number: 1000
     engine: TIDB
   - type: COLUMN_CURRENT_TIME_COUNT_LIMIT
     level: WARNING
-    payload:
-      number: 1000
     engine: OCEANBASE
   - type: COLUMN_CURRENT_TIME_COUNT_LIMIT
     level: WARNING
-    payload:
-      number: 1000
     engine: MARIADB
   - type: COLUMN_REQUIRE_DEFAULT
     level: WARNING
