@@ -122,7 +122,6 @@ import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { extractRoleResourceName } from "@/utils";
-import { displayPermissionTitle } from "@/utils/permission";
 import { useCustomRoleSettingContext } from "../context";
 import ImportPermissionFromRoleModal from "./ImportPermissionFromRoleModal.vue";
 
@@ -165,7 +164,7 @@ const resourceId = computed({
 
 const permissionOptions = computed(() => {
   return PERMISSIONS.sort().map((p) => ({
-    label: displayPermissionTitle(p),
+    label: p,
     value: p,
   }));
 });

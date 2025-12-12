@@ -216,6 +216,7 @@
                 </label>
                 <BBTextField
                   v-model:value="identityProvider.domain"
+                  :disabled="selectedTemplate?.domainDisabled"
                   size="large"
                   class="w-full text-base"
                   :placeholder="$t('settings.sso.form.domain-description')"
@@ -455,6 +456,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
+  hasFeature,
   pushNotification,
   useActuatorV1Store,
   useSubscriptionV1Store,
@@ -487,6 +489,7 @@ import TestConnection from "./TestConnection.vue";
 
 interface IdentityProviderTemplate extends OAuth2IdentityProviderTemplate {
   feature: PlanFeature;
+  domainDisabled?: boolean;
 }
 
 const props = defineProps<{
@@ -612,6 +615,7 @@ const templateList = computed((): IdentityProviderTemplate[] => {
       title: "Google",
       name: "",
       domain: "google.com",
+      domainDisabled: !hasFeature(PlanFeature.FEATURE_ENTERPRISE_SSO),
       type: IdentityProviderType.OAUTH2,
       feature: PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO,
       config: createProto(OAuth2IdentityProviderConfigSchema, {
@@ -638,6 +642,7 @@ const templateList = computed((): IdentityProviderTemplate[] => {
       title: "GitHub",
       name: "",
       domain: "github.com",
+      domainDisabled: !hasFeature(PlanFeature.FEATURE_ENTERPRISE_SSO),
       type: IdentityProviderType.OAUTH2,
       feature: PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO,
       config: createProto(OAuth2IdentityProviderConfigSchema, {

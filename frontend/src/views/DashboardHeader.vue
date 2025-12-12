@@ -94,7 +94,6 @@ import {
   extractDatabaseResourceName,
   extractProjectResourceName,
 } from "@/utils";
-import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
@@ -191,7 +190,7 @@ const goToMyIssues = () => {
   record(myIssueLink.value.fullPath);
   // Trigger page reload manually.
   useLocalStorage<string>(
-    getComponentIdLocalStorageKey(WORKSPACE_ROUTE_MY_ISSUES),
+    `bb.components.${WORKSPACE_ROUTE_MY_ISSUES}.id`,
     ""
   ).value = uuidv4();
 };
