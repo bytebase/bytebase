@@ -334,17 +334,21 @@ func getExcludeConstraints(txn *sql.Tx) (map[db.TableKey][]*storepb.ExcludeConst
 var listForeignKeyQuery = `
 SELECT
 	n.nspname AS fk_schema,
-	conrelid::regclass AS fk_table,
+	quote_ident(fk_nsp.nspname) || '.' || quote_ident(fk_cls.relname) AS fk_table,
 	conname AS fk_name,
-	(SELECT nspname FROM pg_namespace JOIN pg_class ON pg_namespace.oid = pg_class.relnamespace WHERE c.confrelid = pg_class.oid) AS fk_ref_schema,
-	confrelid::regclass AS fk_ref_table,
+	ref_nsp.nspname AS fk_ref_schema,
+	quote_ident(ref_nsp.nspname) || '.' || quote_ident(ref_cls.relname) AS fk_ref_table,
 	confdeltype AS delete_option,
 	confupdtype AS update_option,
 	confmatchtype AS match_option,
 	pg_get_constraintdef(c.oid) AS fk_def
 FROM
 	pg_constraint c
-	JOIN pg_namespace n ON n.oid = c.connamespace` + fmt.Sprintf(`
+	JOIN pg_namespace n ON n.oid = c.connamespace
+	JOIN pg_class fk_cls ON fk_cls.oid = c.conrelid
+	JOIN pg_namespace fk_nsp ON fk_nsp.oid = fk_cls.relnamespace
+	JOIN pg_class ref_cls ON ref_cls.oid = c.confrelid
+	JOIN pg_namespace ref_nsp ON ref_nsp.oid = ref_cls.relnamespace` + fmt.Sprintf(`
 WHERE
 	n.nspname NOT IN(%s)
 	AND n.nspname NOT LIKE 'pg_temp%%'
@@ -530,13 +534,14 @@ func getListTableQuery(isAtLeastPG10 bool) string {
 	}
 	return `
 	SELECT pc.oid, tbl.schemaname, tbl.tablename,
-		pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
-		pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
+		pg_table_size(pc.oid),
+		pg_indexes_size(pc.oid),
 		GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
-		obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment,
+		obj_description(pc.oid) AS comment,
 		tbl.tableowner
 	FROM pg_catalog.pg_tables tbl
-	LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass` + fmt.Sprintf(`
+	LEFT JOIN pg_namespace n ON n.nspname = tbl.schemaname
+	LEFT JOIN pg_class pc ON pc.relname = tbl.tablename AND pc.relnamespace = n.oid AND pc.relkind IN ('r', 'p')` + fmt.Sprintf(`
 	WHERE tbl.schemaname NOT IN (%s)
 	  AND tbl.schemaname NOT LIKE 'pg_temp%%'
 	  AND tbl.schemaname NOT LIKE 'pg_toast%%'%s
@@ -780,8 +785,10 @@ SELECT
 	cols.udt_schema,
 	cols.udt_name,
 	cols.identity_generation,
-	pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
-FROM INFORMATION_SCHEMA.COLUMNS AS cols` + fmt.Sprintf(`
+	pg_catalog.col_description(c.oid, cols.ordinal_position::int) as column_comment
+FROM INFORMATION_SCHEMA.COLUMNS AS cols
+LEFT JOIN pg_namespace n ON n.nspname = cols.table_schema
+LEFT JOIN pg_class c ON c.relname = cols.table_name AND c.relnamespace = n.oid AND c.relkind IN ('r', 'v', 'm', 'p', 'f')` + fmt.Sprintf(`
 WHERE cols.table_schema NOT IN (%s)
   AND cols.table_schema NOT LIKE 'pg_temp%%'
   AND cols.table_schema NOT LIKE 'pg_toast%%'
@@ -881,13 +888,14 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 }
 
 var listMaterializedViewQuery = `
-SELECT pc.oid, schemaname, matviewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(matviewname))::regclass)
-FROM pg_catalog.pg_matviews
-	LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(schemaname), quote_ident(matviewname))::regclass` + fmt.Sprintf(`
-WHERE schemaname NOT IN (%s)
-  AND schemaname NOT LIKE 'pg_temp%%'
-  AND schemaname NOT LIKE 'pg_toast%%'
-ORDER BY schemaname, matviewname;`, pgparser.SystemSchemaWhereClause)
+SELECT pc.oid, m.schemaname, m.matviewname, m.definition, obj_description(pc.oid)
+FROM pg_catalog.pg_matviews m
+	LEFT JOIN pg_namespace n ON n.nspname = m.schemaname
+	LEFT JOIN pg_class pc ON pc.relname = m.matviewname AND pc.relnamespace = n.oid AND pc.relkind = 'm'` + fmt.Sprintf(`
+WHERE m.schemaname NOT IN (%s)
+  AND m.schemaname NOT LIKE 'pg_temp%%'
+  AND m.schemaname NOT LIKE 'pg_toast%%'
+ORDER BY m.schemaname, m.matviewname;`, pgparser.SystemSchemaWhereClause)
 
 func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.MaterializedViewMetadata, map[int]*db.TableKey, error) {
 	matviewMap := make(map[string][]*storepb.MaterializedViewMetadata)
@@ -947,13 +955,14 @@ func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.Index
 }
 
 var listViewQuery = `
-SELECT pc.oid, schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass)
-FROM pg_catalog.pg_views
-	LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass` + fmt.Sprintf(`
-WHERE schemaname NOT IN (%s)
-  AND schemaname NOT LIKE 'pg_temp%%'
-  AND schemaname NOT LIKE 'pg_toast%%'
-ORDER BY schemaname, viewname;`, pgparser.SystemSchemaWhereClause)
+SELECT pc.oid, v.schemaname, v.viewname, v.definition, obj_description(pc.oid)
+FROM pg_catalog.pg_views v
+	LEFT JOIN pg_namespace n ON n.nspname = v.schemaname
+	LEFT JOIN pg_class pc ON pc.relname = v.viewname AND pc.relnamespace = n.oid AND pc.relkind = 'v'` + fmt.Sprintf(`
+WHERE v.schemaname NOT IN (%s)
+  AND v.schemaname NOT LIKE 'pg_temp%%'
+  AND v.schemaname NOT LIKE 'pg_toast%%'
+ORDER BY v.schemaname, v.viewname;`, pgparser.SystemSchemaWhereClause)
 
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.ViewMetadata, map[int]*db.TableKey, error) {
@@ -1244,23 +1253,24 @@ func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, exte
 	query := fmt.Sprintf(`
 	SELECT
 		pc.oid,
-		schemaname,
-		sequencename,
-		data_type,
-		start_value,
-		min_value,
-		max_value,
-		increment_by,
-		cycle,
-		cache_size,
-		last_value,
+		s.schemaname,
+		s.sequencename,
+		s.data_type,
+		s.start_value,
+		s.min_value,
+		s.max_value,
+		s.increment_by,
+		s.cycle,
+		s.cache_size,
+		s.last_value,
 		pg_catalog.obj_description(pc.oid) as sequence_comment
-	FROM pg_sequences
-		LEFT JOIN pg_class as pc ON pc.oid = format('%%s.%%s', quote_ident(schemaname), quote_ident(sequencename))::regclass
-	WHERE schemaname NOT IN (%s)
-	  AND schemaname NOT LIKE 'pg_temp%%%%'
-	  AND schemaname NOT LIKE 'pg_toast%%%%'
-	ORDER BY schemaname, sequencename;`, pgparser.SystemSchemaWhereClause)
+	FROM pg_sequences s
+		LEFT JOIN pg_namespace n ON n.nspname = s.schemaname
+		LEFT JOIN pg_class pc ON pc.relname = s.sequencename AND pc.relnamespace = n.oid AND pc.relkind = 'S'
+	WHERE s.schemaname NOT IN (%s)
+	  AND s.schemaname NOT LIKE 'pg_temp%%%%'
+	  AND s.schemaname NOT LIKE 'pg_toast%%%%'
+	ORDER BY s.schemaname, s.sequencename;`, pgparser.SystemSchemaWhereClause)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
