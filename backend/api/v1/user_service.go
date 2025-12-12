@@ -731,7 +731,7 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	}
 
 	// Update the email
-	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Email: &request.Msg.Email})
+	user, err = s.store.UpdateUserEmail(ctx, user, request.Msg.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update user email, error: %v", err))
 	}

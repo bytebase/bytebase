@@ -176,7 +176,7 @@ CREATE TABLE sheet_blob (
 -- sheet table stores general statements.
 CREATE TABLE sheet (
     id serial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email),
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
     name text NOT NULL,
@@ -194,7 +194,7 @@ ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
 -- pipeline table
 CREATE TABLE pipeline (
     id serial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email),
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id)
 );
@@ -220,7 +220,7 @@ ALTER SEQUENCE task_id_seq RESTART WITH 101;
 -- task run table stores the task run
 CREATE TABLE task_run (
     id serial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email),
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     task_id integer NOT NULL REFERENCES task(id),
@@ -264,7 +264,7 @@ ALTER SEQUENCE task_run_log_id_seq RESTART WITH 101;
 CREATE TABLE plan (
     id bigserial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
-    creator text NOT NULL REFERENCES principal(email),
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
@@ -306,7 +306,7 @@ ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
 -- issue
 CREATE TABLE issue (
     id serial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email),
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
@@ -363,7 +363,7 @@ ALTER SEQUENCE audit_log_id_seq RESTART WITH 101;
 
 CREATE TABLE issue_comment (
     id bigserial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email),
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     issue_id integer NOT NULL REFERENCES issue(id),
@@ -377,7 +377,7 @@ ALTER SEQUENCE issue_comment_id_seq RESTART WITH 101;
 
 CREATE TABLE query_history (
     id bigserial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email),
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     project_id text NOT NULL, -- the project resource id
     database text NOT NULL, -- the database resource name, for example, instances/{instance}/databases/{database}
@@ -396,7 +396,7 @@ ALTER SEQUENCE query_history_id_seq RESTART WITH 101;
 -- worksheet table stores worksheets in SQL Editor.
 CREATE TABLE worksheet (
     id serial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email),
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
@@ -418,7 +418,7 @@ ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
 CREATE TABLE worksheet_organizer (
     id serial PRIMARY KEY,
     worksheet_id integer NOT NULL REFERENCES worksheet(id) ON DELETE CASCADE,
-    principal text NOT NULL REFERENCES principal(email),
+    principal text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
@@ -476,7 +476,7 @@ CREATE TABLE revision (
     instance text NOT NULL,
     db_name text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
-    deleter text REFERENCES principal(email),
+    deleter text REFERENCES principal(email) ON UPDATE CASCADE,
     deleted_at timestamptz,
     version text NOT NULL,
     -- Stored as RevisionPayload (proto/store/store/revision.proto)
@@ -526,7 +526,7 @@ CREATE TABLE release (
     id bigserial PRIMARY KEY,
     deleted boolean NOT NULL DEFAULT FALSE,
     project text NOT NULL REFERENCES project(resource_id),
-    creator text NOT NULL REFERENCES principal (email),
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     digest text NOT NULL DEFAULT '',
     -- Stored as ReleasePayload (proto/store/store/release.proto)
