@@ -23,9 +23,6 @@ type CallInput struct {
 	// Body is the JSON request body to send to the endpoint.
 	// The structure depends on the endpoint - use search_api with includeSchema=true to see the expected format.
 	Body map[string]any `json:"body,omitempty"`
-	// MaxResponseSize is the maximum response size in characters (default: 10000, max: 8MB).
-	// Use a larger value if you need to see more of a large response.
-	MaxResponseSize int `json:"maxResponseSize,omitempty"`
 }
 
 // CallOutput is the output for the call_api tool.
@@ -45,7 +42,6 @@ const callAPIDescription = `Execute a Bytebase API endpoint. **Use search_api fi
 |-----------|----------|-------------|
 | operationId | Yes | e.g., "SQLService/Query" |
 | body | No | JSON request body |
-| maxResponseSize | No | Max chars (default: 10000, max: 8MB) |
 
 **Resource names:** projects/my-project, instances/prod/databases/main
 
@@ -111,25 +107,10 @@ func (s *Server) handleCallAPI(ctx context.Context, _ *mcp.CallToolRequest, inpu
 		return nil, CallOutput{}, errors.Wrap(err, "failed to read response body")
 	}
 
-	// Get max response size
-	maxResponseSize := getMaxResponseSize(input.MaxResponseSize)
-
-	// Check for binary response
+	// Check for binary response - not supported
 	contentType := resp.Header.Get("Content-Type")
 	if isBinaryContentType(contentType) {
-		output := CallOutput{
-			Status: resp.StatusCode,
-			Response: map[string]any{
-				"_binary":     true,
-				"contentType": contentType,
-				"size":        len(respBody),
-				"message":     "Binary response not displayed. The data was returned but cannot be shown in text format.",
-			},
-		}
-		text := formatCallOutput(output, endpoint, maxResponseSize)
-		return &mcp.CallToolResult{
-			Content: []mcp.Content{&mcp.TextContent{Text: text}},
-		}, output, nil
+		return nil, CallOutput{}, errors.Errorf("binary response not supported (content-type: %s)", contentType)
 	}
 
 	// Parse JSON response
@@ -160,25 +141,13 @@ func (s *Server) handleCallAPI(ctx context.Context, _ *mcp.CallToolRequest, inpu
 		}
 	}
 
-	text := formatCallOutput(output, endpoint, maxResponseSize)
+	text := formatCallOutput(output, endpoint)
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: text}},
 	}, output, nil
 }
 
-func getMaxResponseSize(size int) int {
-	const defaultSize = 10000
-	const maxSize = 8 * 1024 * 1024 // 8MB
-	if size <= 0 {
-		return defaultSize
-	}
-	if size > maxSize {
-		return maxSize
-	}
-	return size
-}
-
-func formatCallOutput(output CallOutput, endpoint *EndpointInfo, maxResponseSize int) string {
+func formatCallOutput(output CallOutput, endpoint *EndpointInfo) string {
 	var sb strings.Builder
 
 	sb.WriteString(fmt.Sprintf("## %s\n\n", endpoint.OperationID))
@@ -191,15 +160,8 @@ func formatCallOutput(output CallOutput, endpoint *EndpointInfo, maxResponseSize
 
 	if output.Response != nil {
 		respBytes, _ := json.MarshalIndent(output.Response, "", "  ")
-		respStr := string(respBytes)
-
-		// Truncate large responses
-		if len(respStr) > maxResponseSize {
-			respStr = respStr[:maxResponseSize] + "\n... (truncated, use maxResponseSize to see more)"
-		}
-
 		sb.WriteString("**Response:**\n```json\n")
-		sb.WriteString(respStr)
+		sb.WriteString(string(respBytes))
 		sb.WriteString("\n```\n")
 	}
 
