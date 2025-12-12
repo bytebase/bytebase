@@ -41,18 +41,18 @@ func TestSearchAPIByQuery(t *testing.T) {
 		expectContain []string
 	}{
 		{
-			name:          "search for sql query",
-			query:         "execute sql",
-			expectContain: []string{"SQLService", "Query"},
+			name:          "search for sql",
+			query:         "sql",
+			expectContain: []string{"SQL"},
 		},
 		{
 			name:          "search for database",
-			query:         "list databases",
+			query:         "database",
 			expectContain: []string{"Database"},
 		},
 		{
 			name:          "search for project",
-			query:         "create project",
+			query:         "project",
 			expectContain: []string{"Project"},
 		},
 	}
@@ -90,6 +90,8 @@ func TestSearchAPIByService(t *testing.T) {
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "bytebase.v1.SQLService")
 	require.Contains(t, text, "endpoints")
+	// Browse mode should not include schema
+	require.NotContains(t, text, "Request Body")
 }
 
 func TestSearchAPIByServiceNotFound(t *testing.T) {
@@ -110,24 +112,57 @@ func TestSearchAPIByServiceNotFound(t *testing.T) {
 	require.Contains(t, text, "Available services")
 }
 
-func TestSearchAPIWithSchema(t *testing.T) {
+func TestSearchAPIDetailMode(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
 	s, err := NewServer(nil, profile, "test-secret")
 	require.NoError(t, err)
 
-	// Test with includeSchema=true
+	// Test detail mode with operationId
 	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
-		Service:       "SQLService",
-		IncludeSchema: true,
-		Limit:         1,
+		OperationID: "bytebase.v1.SQLService.Query",
 	})
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.Len(t, result.Content, 1)
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "Request body")
+	require.Contains(t, text, "bytebase.v1.SQLService.Query")
+	require.Contains(t, text, "Request Body")
 	require.Contains(t, text, "```json")
+}
+
+func TestSearchAPIDetailModeWithResponse(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	s, err := NewServer(nil, profile, "test-secret")
+	require.NoError(t, err)
+
+	// Test detail mode shows response schema
+	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
+		OperationID: "bytebase.v1.DatabaseService.ListDatabases",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Len(t, result.Content, 1)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "Response Body")
+}
+
+func TestSearchAPIDetailModeNotFound(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	s, err := NewServer(nil, profile, "test-secret")
+	require.NoError(t, err)
+
+	// Test detail mode with unknown operationId
+	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
+		OperationID: "unknown.operation.id",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Len(t, result.Content, 1)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "Unknown operationId")
 }
 
 func TestSearchAPILimit(t *testing.T) {
@@ -194,9 +229,9 @@ func TestSearchAPINoResults(t *testing.T) {
 	s, err := NewServer(nil, profile, "test-secret")
 	require.NoError(t, err)
 
-	// Test query with no results
+	// Test query with no results - use a query that truly won't match anything
 	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
-		Query: "xyznonexistentquery123",
+		Query: "zzzzqqqq",
 	})
 	require.NoError(t, err)
 	require.NotNil(t, result)

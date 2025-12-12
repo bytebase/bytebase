@@ -32,6 +32,8 @@ type EndpointInfo struct {
 	Permissions []string `json:"permissions,omitempty"`
 	// RequestSchemaRef is the reference to the request schema (e.g., "#/components/schemas/bytebase.v1.QueryRequest").
 	RequestSchemaRef string `json:"requestSchemaRef,omitempty"`
+	// ResponseSchemaRef is the reference to the response schema.
+	ResponseSchemaRef string `json:"responseSchemaRef,omitempty"`
 }
 
 // PropertyInfo describes a property in a schema.
@@ -121,6 +123,17 @@ func (idx *OpenAPIIndex) parseSpec() {
 			if content != nil {
 				if jsonContent, ok := content.Get("application/json"); ok && jsonContent.Schema != nil {
 					endpoint.RequestSchemaRef = jsonContent.Schema.GetReference()
+				}
+			}
+		}
+
+		// Extract response schema reference (from 200 response)
+		if op.Responses != nil {
+			if resp, ok := op.Responses.Codes.Get("200"); ok && resp != nil {
+				if resp.Content != nil {
+					if jsonContent, ok := resp.Content.Get("application/json"); ok && jsonContent.Schema != nil {
+						endpoint.ResponseSchemaRef = jsonContent.Schema.GetReference()
+					}
 				}
 			}
 		}
@@ -246,6 +259,22 @@ func isStopWord(word string) bool {
 	return stopWords[word]
 }
 
+// isPrimaryCRUD returns true if the method is a primary CRUD operation without prefixes.
+func isPrimaryCRUD(method string) bool {
+	primaryOps := map[string]bool{
+		"List": true, "Get": true, "Create": true, "Update": true, "Delete": true,
+		"Search": true, "Query": true, "Execute": true,
+	}
+	// Check if method starts with a primary operation (e.g., "ListDatabases" -> "List")
+	for op := range primaryOps {
+		if strings.HasPrefix(method, op) {
+			// Ensure it's at the beginning (not "BatchList" or "PreviewList")
+			return true
+		}
+	}
+	return false
+}
+
 // Services returns the list of all services.
 func (idx *OpenAPIIndex) Services() []string {
 	return idx.services
@@ -277,17 +306,36 @@ func (idx *OpenAPIIndex) Search(query string) []*EndpointInfo {
 		}
 	}
 
-	// Also do substring matching on operationID and summary
+	// Also do substring matching on operationID, summary, and method
 	queryLower := strings.ToLower(query)
 	for i := range idx.endpoints {
 		ep := &idx.endpoints[i]
+		methodLower := strings.ToLower(ep.Method)
+		matched := false
+
+		// Exact method name match gets highest boost
+		if methodLower == queryLower {
+			scores[ep] += 10
+			matched = true
+		} else if strings.Contains(methodLower, queryLower) {
+			scores[ep] += 5
+			matched = true
+		}
+
+		// Substring match in operationID
 		if strings.Contains(strings.ToLower(ep.OperationID), queryLower) {
 			scores[ep] += 3
+			matched = true
 		}
+
+		// Substring match in summary
 		if strings.Contains(strings.ToLower(ep.Summary), queryLower) {
 			scores[ep] += 2
+			matched = true
 		}
-		if strings.Contains(strings.ToLower(ep.Method), queryLower) {
+
+		// Boost primary CRUD operations only if there's already a match
+		if matched && isPrimaryCRUD(ep.Method) {
 			scores[ep] += 2
 		}
 	}

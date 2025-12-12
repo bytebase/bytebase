@@ -10,45 +10,38 @@ import (
 
 // SearchInput is the input for the search_api tool.
 type SearchInput struct {
+	// OperationID gets detailed schema for a specific endpoint.
+	// Use this after finding the endpoint you need.
+	OperationID string `json:"operationId,omitempty"`
 	// Query is a free-text search query to find relevant API endpoints.
-	// Examples: "create database", "execute sql", "list projects", "user management"
+	// Examples: "create database", "execute sql", "list projects"
 	Query string `json:"query,omitempty"`
 	// Service filters results to a specific service.
-	// Use list_services mode first to discover available services.
 	// Examples: "SQLService", "DatabaseService", "ProjectService"
 	Service string `json:"service,omitempty"`
 	// Limit is the maximum number of results to return (default: 5, max: 50).
 	Limit int `json:"limit,omitempty"`
-	// IncludeSchema includes request schema details in the results.
-	IncludeSchema bool `json:"includeSchema,omitempty"`
 }
 
 // searchAPIDescription is the description for the search_api tool.
 const searchAPIDescription = `Search and discover Bytebase API endpoints.
 
-**IMPORTANT: You MUST call search_api before call_api. Never guess operationIds or request schemas - always discover them first.**
+**IMPORTANT: You MUST call search_api before call_api. Never guess operationIds or request schemas.**
 
 ## Usage
 
-| Mode | Parameters | Use Case |
-|------|------------|----------|
-| List services | (none) | Discover available API categories |
-| Search | query="execute sql" | Find endpoints by functionality |
-| Browse | service="SQLService" | List all endpoints in a service |
-| Details | service="...", includeSchema=true | Get request schema for call_api |
+| Mode | Parameters | Result |
+|------|------------|--------|
+| List services | (none) | All available API categories |
+| Search | query="execute sql" | Matching endpoints with descriptions |
+| Browse | service="SQLService" | All endpoints in a service |
+| Details | operationId="..." | Full request/response schema |
 
-## Required Workflow
+## Workflow
 
 1. search_api(query="your task") - find relevant endpoints
-2. search_api(service="...", includeSchema=true) - get request schema
-3. call_api(operationId="...", body={...}) - execute with correct schema
-
-## Response Fields
-
-- operationId: Required for call_api
-- summary: What the endpoint does
-- permissions: Required permissions
-- requestSchema: Input parameters (with includeSchema=true)`
+2. search_api(operationId="...") - get full schema
+3. call_api(operationId="...", body={...}) - execute`
 
 func (s *Server) registerSearchTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -58,17 +51,13 @@ func (s *Server) registerSearchTool() {
 }
 
 func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, input SearchInput) (*mcp.CallToolResult, any, error) {
-	limit := input.Limit
-	if limit <= 0 {
-		limit = 5
-	}
-	if limit > 50 {
-		limit = 50
-	}
-
 	var text string
 
 	switch {
+	case input.OperationID != "":
+		// Detail mode: get full schema for a specific endpoint
+		text = s.formatEndpointDetail(input.OperationID)
+
 	case input.Query == "" && input.Service == "":
 		// List all services
 		text = s.formatServiceList()
@@ -80,7 +69,7 @@ func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, inpu
 			text = fmt.Sprintf("No endpoints found for service: %s\n\nAvailable services:\n%s",
 				input.Service, s.formatServiceList())
 		} else {
-			text = s.formatEndpoints(endpoints, limit, input.IncludeSchema)
+			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit))
 		}
 
 	default:
@@ -89,13 +78,23 @@ func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, inpu
 		if len(endpoints) == 0 {
 			text = fmt.Sprintf("No endpoints found for query: %q\n\nTry:\n- Different keywords\n- Listing services with search_api() (no parameters)\n- Browsing a service with search_api(service=\"ServiceName\")", input.Query)
 		} else {
-			text = s.formatEndpoints(endpoints, limit, input.IncludeSchema)
+			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit))
 		}
 	}
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: text}},
 	}, nil, nil
+}
+
+func (*Server) getLimit(limit int) int {
+	if limit <= 0 {
+		return 5
+	}
+	if limit > 50 {
+		return 50
+	}
+	return limit
 }
 
 func (s *Server) formatServiceList() string {
@@ -114,7 +113,7 @@ func (s *Server) formatServiceList() string {
 	return sb.String()
 }
 
-func (s *Server) formatEndpoints(endpoints []*EndpointInfo, limit int, includeSchema bool) string {
+func (s *Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
 	var sb strings.Builder
 
 	if len(endpoints) > limit {
@@ -126,35 +125,71 @@ func (s *Server) formatEndpoints(endpoints []*EndpointInfo, limit int, includeSc
 
 	for i, ep := range endpoints {
 		sb.WriteString(fmt.Sprintf("### %d. %s\n", i+1, ep.OperationID))
-		sb.WriteString(fmt.Sprintf("**%s**\n", ep.Summary))
+		sb.WriteString(fmt.Sprintf("%s\n", ep.Summary))
 
 		if len(ep.Permissions) > 0 {
 			sb.WriteString(fmt.Sprintf("Permissions: `%s`\n", strings.Join(ep.Permissions, "`, `")))
 		}
-
-		if includeSchema && ep.RequestSchemaRef != "" {
-			props := s.openAPIIndex.GetRequestSchema(ep.RequestSchemaRef)
-			if len(props) > 0 {
-				sb.WriteString("\nRequest body:\n```json\n{\n")
-				for _, prop := range props {
-					required := ""
-					if prop.Required {
-						required = " (required)"
-					}
-					desc := ""
-					if prop.Description != "" {
-						// Remove newlines for inline comment
-						cleanDesc := strings.ReplaceAll(prop.Description, "\n", " ")
-						cleanDesc = strings.ReplaceAll(cleanDesc, "\r", "")
-						desc = fmt.Sprintf(" // %s", cleanDesc)
-					}
-					sb.WriteString(fmt.Sprintf("  %q: %s%s%s\n", prop.Name, prop.Type, required, desc))
-				}
-				sb.WriteString("}\n```\n")
-			}
-		}
 		sb.WriteString("\n")
 	}
 
+	sb.WriteString("Use `search_api(operationId=\"...\")` to get full request/response schema.\n")
 	return sb.String()
+}
+
+func (s *Server) formatEndpointDetail(operationID string) string {
+	ep, ok := s.openAPIIndex.GetEndpoint(operationID)
+	if !ok {
+		return fmt.Sprintf("Unknown operationId: %s\n\nUse search_api(query=\"...\") to find valid operations.", operationID)
+	}
+
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("## %s\n\n", ep.OperationID))
+	sb.WriteString(fmt.Sprintf("%s\n\n", ep.Summary))
+
+	if len(ep.Permissions) > 0 {
+		sb.WriteString(fmt.Sprintf("**Permissions:** `%s`\n\n", strings.Join(ep.Permissions, "`, `")))
+	}
+
+	// Request schema
+	if ep.RequestSchemaRef != "" {
+		props := s.openAPIIndex.GetRequestSchema(ep.RequestSchemaRef)
+		if len(props) > 0 {
+			sb.WriteString("### Request Body\n```json\n{\n")
+			for _, prop := range props {
+				s.formatProperty(&sb, prop)
+			}
+			sb.WriteString("}\n```\n\n")
+		}
+	}
+
+	// Response schema
+	if ep.ResponseSchemaRef != "" {
+		props := s.openAPIIndex.GetRequestSchema(ep.ResponseSchemaRef) // same method works for response
+		if len(props) > 0 {
+			sb.WriteString("### Response Body\n```json\n{\n")
+			for _, prop := range props {
+				s.formatProperty(&sb, prop)
+			}
+			sb.WriteString("}\n```\n")
+		}
+	}
+
+	return sb.String()
+}
+
+func (*Server) formatProperty(sb *strings.Builder, prop PropertyInfo) {
+	required := ""
+	if prop.Required {
+		required = " (required)"
+	}
+	desc := ""
+	if prop.Description != "" {
+		// Remove newlines for inline comment
+		cleanDesc := strings.ReplaceAll(prop.Description, "\n", " ")
+		cleanDesc = strings.ReplaceAll(cleanDesc, "\r", "")
+		desc = fmt.Sprintf(" // %s", cleanDesc)
+	}
+	sb.WriteString(fmt.Sprintf("  %q: %s%s%s\n", prop.Name, prop.Type, required, desc))
 }
