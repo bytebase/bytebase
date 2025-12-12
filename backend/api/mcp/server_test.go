@@ -104,11 +104,10 @@ func TestMCPAuthMiddlewareValidToken(t *testing.T) {
 	s, err := NewServer(nil, profile, secret)
 	require.NoError(t, err)
 	handler := s.authMiddleware(func(c echo.Context) error {
-		// Verify user email is set in request context
+		// Verify access token is set in request context
 		ctx := c.Request().Context()
-		email := ctx.Value(userEmailKey{})
-		require.NotNil(t, email)
-		require.Equal(t, "test@example.com", email)
+		token := getAccessToken(ctx)
+		require.NotEmpty(t, token)
 		return c.String(http.StatusOK, "success")
 	})
 

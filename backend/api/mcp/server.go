@@ -2,7 +2,6 @@
 package mcp
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
@@ -128,18 +127,14 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token: missing subject")
 		}
 
-		// Store user email and access token in request context for MCP tools
+		// Store access token in request context for MCP tools to forward auth
 		ctx := c.Request().Context()
-		ctx = context.WithValue(ctx, userEmailKey{}, sub)
 		ctx = withAccessToken(ctx, tokenStr)
 		c.SetRequest(c.Request().WithContext(ctx))
 
 		return next(c)
 	}
 }
-
-// Context key for storing user email.
-type userEmailKey struct{}
 
 // RegisterRoutes registers the MCP server routes with Echo.
 func (s *Server) RegisterRoutes(e *echo.Echo) {
