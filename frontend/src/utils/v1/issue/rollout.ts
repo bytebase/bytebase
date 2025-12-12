@@ -2,6 +2,7 @@ import { last } from "lodash-es";
 import { useI18n } from "vue-i18n";
 import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/IssueV1";
 import { mockDatabase } from "@/components/IssueV1/logic/utils";
+import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import { useDatabaseV1Store } from "@/store";
 import {
   EMPTY_ID,
@@ -236,46 +237,13 @@ export const getStageStatus = (stage: Stage): Task_Status => {
   const tasks = stage.tasks;
   if (tasks.length === 0) return Task_Status.NOT_STARTED;
 
-  // Priority order for stage status:
-  // 1. Failed - if any task failed
-  // 2. Canceled - if any task canceled (and none failed)
-  // 3. Running - if any task is running
-  // 4. Pending - if any task is pending
-  // 5. Not Started - if all tasks are not started
-  // 6. Skipped - if all tasks are skipped
-  // 7. Done - if all tasks are done
-
-  // Check for any failed tasks
-  if (tasks.some((task) => task.status === Task_Status.FAILED)) {
-    return Task_Status.FAILED;
+  // Priority order follows TASK_STATUS_FILTERS
+  for (const status of TASK_STATUS_FILTERS) {
+    if (tasks.some((task) => task.status === status)) {
+      return status;
+    }
   }
 
-  // Check for any canceled tasks
-  if (tasks.some((task) => task.status === Task_Status.CANCELED)) {
-    return Task_Status.CANCELED;
-  }
-
-  // Check for any running tasks
-  if (tasks.some((task) => task.status === Task_Status.RUNNING)) {
-    return Task_Status.RUNNING;
-  }
-
-  // Check for any pending tasks
-  if (tasks.some((task) => task.status === Task_Status.PENDING)) {
-    return Task_Status.PENDING;
-  }
-
-  // Check if all tasks are done
-  if (tasks.every((task) => task.status === Task_Status.DONE)) {
-    return Task_Status.DONE;
-  }
-
-  // Check if all tasks are skipped
-  if (tasks.every((task) => task.status === Task_Status.SKIPPED)) {
-    return Task_Status.SKIPPED;
-  }
-
-  // Default to not started
   return Task_Status.NOT_STARTED;
 };
 
