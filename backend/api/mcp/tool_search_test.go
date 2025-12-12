@@ -261,15 +261,14 @@ func TestSearchAPINoResults(t *testing.T) {
 	require.Contains(t, text, "Try:")
 }
 
-func TestSearchAPILimitZeroShowsAll(t *testing.T) {
+func TestSearchAPIServiceShowsAll(t *testing.T) {
 	profile := &config.Profile{Mode: common.ReleaseModeDev}
 	s, err := NewServer(nil, profile, "test-secret")
 	require.NoError(t, err)
 
-	// Test limit=0 shows all endpoints in a service
+	// Test browsing a service shows all endpoints (no limit)
 	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
 		Service: "DatabaseService",
-		Limit:   0,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, result)

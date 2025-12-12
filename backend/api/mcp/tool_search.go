@@ -34,7 +34,7 @@ const searchAPIDescription = `Search and discover Bytebase API endpoints.
 |------|------------|--------|
 | List services | (none) | All available API categories |
 | Search | query="execute sql" | Matching endpoints with descriptions |
-| Browse | service="SQLService" | All endpoints in a service (use limit=0 for all) |
+| Browse | service="SQLService" | All endpoints in a service |
 | Filter | service="SQLService", query="query" | Search within a service |
 | Details | operationId="SQLService/Query" | Full request/response schema |
 
@@ -70,17 +70,17 @@ func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, inpu
 			text = fmt.Sprintf("No endpoints found for query %q in service %s\n\nTry:\n- Different keywords\n- Browsing the service with search_api(service=\"%s\")",
 				input.Query, input.Service, input.Service)
 		} else {
-			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit, false))
+			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit))
 		}
 
 	case input.Service != "":
-		// List endpoints in a service (allow showing all with limit=0)
+		// List all endpoints in a service (no limit)
 		endpoints := s.openAPIIndex.GetServiceEndpoints(input.Service)
 		if len(endpoints) == 0 {
 			text = fmt.Sprintf("No endpoints found for service: %s\n\nAvailable services:\n%s",
 				input.Service, s.formatServiceList())
 		} else {
-			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit, true))
+			text = s.formatEndpoints(endpoints, 0)
 		}
 
 	default:
@@ -89,7 +89,7 @@ func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, inpu
 		if len(endpoints) == 0 {
 			text = fmt.Sprintf("No endpoints found for query: %q\n\nTry:\n- Different keywords\n- Listing services with search_api() (no parameters)\n- Browsing a service with search_api(service=\"ServiceName\")", input.Query)
 		} else {
-			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit, false))
+			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit))
 		}
 	}
 
@@ -98,10 +98,7 @@ func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, inpu
 	}, nil, nil
 }
 
-func (*Server) getLimit(limit int, showAll bool) int {
-	if limit == 0 && showAll {
-		return 0 // 0 means no limit
-	}
+func (*Server) getLimit(limit int) int {
 	if limit <= 0 {
 		return 5
 	}
@@ -205,5 +202,11 @@ func (*Server) formatProperty(sb *strings.Builder, prop PropertyInfo) {
 		cleanDesc = strings.ReplaceAll(cleanDesc, "\r", "")
 		desc = fmt.Sprintf(" // %s", cleanDesc)
 	}
-	fmt.Fprintf(sb, "  %q: %s%s%s\n", prop.Name, prop.Type, required, desc)
+	sb.WriteString("  \"")
+	sb.WriteString(prop.Name)
+	sb.WriteString("\": ")
+	sb.WriteString(prop.Type)
+	sb.WriteString(required)
+	sb.WriteString(desc)
+	sb.WriteString("\n")
 }
