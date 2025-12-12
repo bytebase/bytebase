@@ -193,6 +193,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
+import { cloneDeep } from "lodash-es";
 import { InfoIcon } from "lucide-vue-next";
 import {
   NButton,
@@ -338,9 +339,16 @@ const selectedDatabaseGroupNames = computed(
   () => tabStore.currentTab?.batchQueryContext.databaseGroups ?? []
 );
 
-const selectedDatabaseNames = computed(
-  () => tabStore.currentTab?.batchQueryContext.databases ?? []
-);
+const selectedDatabaseNames = computed(() => {
+  const currentTab = tabStore.currentTab;
+  const databases = currentTab?.batchQueryContext.databases ?? [];
+  if (databases.length === 0 && selectedDatabaseGroupNames.value.length === 0) {
+    if (currentTab?.connection.database) {
+      databases.push(currentTab?.connection.database);
+    }
+  }
+  return databases;
+});
 
 watch(
   () => props.show,
@@ -413,12 +421,10 @@ const getQueryableDatabase = async (batchQueryContext: BatchQueryContext) => {
 };
 
 const onDatabaseSelectionUpdate = async (databases: string[]) => {
-  const batchQueryContext: BatchQueryContext = Object.assign(
-    tabStore.currentTab?.batchQueryContext ?? {},
-    {
-      databases,
-    }
-  );
+  const batchQueryContext: BatchQueryContext = cloneDeep({
+    ...tabStore.currentTab?.batchQueryContext,
+    databases,
+  });
   await onBatchQueryContextChange(batchQueryContext);
 };
 
@@ -434,15 +440,10 @@ const onDatabaseGroupSelectionUpdate = async (databaseGroups: string[]) => {
     }
   }
 
-  const batchQueryContext: BatchQueryContext = Object.assign(
-    {
-      databases: [],
-    },
-    tabStore.currentTab?.batchQueryContext,
-    {
-      databaseGroups,
-    }
-  );
+  const batchQueryContext: BatchQueryContext = cloneDeep({
+    ...(tabStore.currentTab?.batchQueryContext ?? { databases: [] }),
+    databaseGroups,
+  });
   await onBatchQueryContextChange(batchQueryContext);
 };
 
