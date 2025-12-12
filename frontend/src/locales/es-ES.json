@@ -423,6 +423,7 @@
       "users-and-groups": "Usuarios y grupos",
       "iam-and-admin": "IAM y administración",
       "im-integration": "Integración de IM",
+      "mcp": "MCP",
       "sso": "SSO",
       "subscription": "Suscripción",
       "global-masking": "Enmascaramiento Global",
@@ -525,6 +526,22 @@
     },
     "im-integration": {
       "description": "La integración de IM se utilizará para enviar mensajes directos a los usuarios para eventos de incidencias específicos. Funciona con el webhook del proyecto."
+    },
+    "mcp": {
+      "title": "Integración MCP",
+      "description": "Conecte asistentes de IA a Bytebase usando el Model Context Protocol.",
+      "setup": {
+        "external-url-warning": "La URL externa no está configurada.",
+        "configure-external-url": "Configurar URL externa en Configuración general",
+        "add-to-config": "Agregar a su configuración MCP:",
+        "run-command": "Ejecute este comando:",
+        "oauth-note": "En el primer uso, se le pedirá que autorice el acceso."
+      },
+      "first-prompt": {
+        "title": "Tu primer prompt",
+        "description": "Una vez conectado, intente preguntar a su asistente de IA:",
+        "example": "Listar todos los proyectos en mi instancia de Bytebase"
+      }
     },
     "sso": {
       "create": "Crear SSO",
@@ -1236,8 +1253,7 @@
       "self": "Escenario | Escenarios",
       "run-stage": "Etapa de ejecución",
       "confirm-create": "¿Está seguro de que desea crear tareas para esta etapa?",
-      "back-to-stage": "Volver a la etapa {stage}",
-      "no-stages": {}
+      "back-to-stage": "Volver a la etapa {stage}"
     },
     "task": {
       "selected-count": "{count} tarea seleccionada | {count} tareas seleccionadas",
@@ -2108,7 +2124,6 @@
     "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "query-time": "Tiempo de consulta",
     "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
-    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2651,9 +2666,7 @@
           "data_export": "Exportar datos",
           "request-role": "Rol de solicitud"
         }
-      },
-      "template": {},
-      "source": {}
+      }
     },
     "approval-flow": {
       "self": "Flujo de aprobación",

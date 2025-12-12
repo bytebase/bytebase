@@ -423,6 +423,7 @@
       "users-and-groups": "用户和群组",
       "iam-and-admin": "IAM & 管理",
       "im-integration": "IM",
+      "mcp": "MCP",
       "sso": "SSO",
       "subscription": "订阅",
       "global-masking": "全局数据脱敏",
@@ -525,6 +526,22 @@
     },
     "im-integration": {
       "description": "即时通讯集成用于针对特定工单事件向用户推送私信消息。需要与项目 webhook 配合使用。"
+    },
+    "mcp": {
+      "title": "MCP 集成",
+      "description": "使用模型上下文协议将 AI 助手连接到 Bytebase。",
+      "setup": {
+        "external-url-warning": "外部 URL 未配置。",
+        "configure-external-url": "在通用设置中配置外部 URL",
+        "add-to-config": "添加到您的 MCP 配置：",
+        "run-command": "运行此命令：",
+        "oauth-note": "首次使用时，系统会提示您授权访问。"
+      },
+      "first-prompt": {
+        "title": "您的第一个提示",
+        "description": "连接后，尝试向 AI 助手提问：",
+        "example": "列出我的 Bytebase 实例中的所有项目"
+      }
     },
     "sso": {
       "create": "创建 SSO",
@@ -1236,8 +1253,7 @@
       "self": "阶段 | 阶段",
       "run-stage": "运行阶段",
       "confirm-create": "确定要为此阶段创建任务吗？",
-      "back-to-stage": "返回阶段 {stage}",
-      "no-stages": {}
+      "back-to-stage": "返回阶段 {stage}"
     },
     "task": {
       "selected-count": "已选择 {count} 个任务",
@@ -2108,7 +2124,6 @@
     "allow-admin-mode-only": "实例{instance}只能通过管理员模式访问。",
     "query-time": "查询时间",
     "connection-lost": "连接丢失。下一次执行查询时将尝试重新连接。",
-    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2651,9 +2666,7 @@
           "data_export": "导出数据",
           "request-role": "请求角色"
         }
-      },
-      "template": {},
-      "source": {}
+      }
     },
     "approval-flow": {
       "self": "审批流",

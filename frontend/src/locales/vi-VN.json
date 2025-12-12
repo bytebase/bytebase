@@ -423,6 +423,7 @@
       "users-and-groups": "Người dùng & Nhóm",
       "iam-and-admin": "IAM & Quản trị",
       "im-integration": "Tích hợp",
+      "mcp": "MCP",
       "sso": "SSO",
       "subscription": "Gói đăng ký",
       "global-masking": "Che giấu toàn cục",
@@ -525,6 +526,22 @@
     },
     "im-integration": {
       "description": "Tích hợp IM sẽ được sử dụng để đẩy tin nhắn trực tiếp đến người dùng cho các sự kiện vấn đề cụ thể. Hoạt động với webhook của dự án."
+    },
+    "mcp": {
+      "title": "Tích hợp MCP",
+      "description": "Kết nối trợ lý AI với Bytebase bằng Model Context Protocol.",
+      "setup": {
+        "external-url-warning": "URL bên ngoài chưa được cấu hình.",
+        "configure-external-url": "Cấu hình URL bên ngoài trong Cài đặt chung",
+        "add-to-config": "Thêm vào cấu hình MCP:",
+        "run-command": "Chạy lệnh này:",
+        "oauth-note": "Khi sử dụng lần đầu, bạn sẽ được yêu cầu cấp quyền truy cập."
+      },
+      "first-prompt": {
+        "title": "Prompt đầu tiên của bạn",
+        "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
+        "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi"
+      }
     },
     "sso": {
       "create": "Tạo SSO",
@@ -1236,8 +1253,7 @@
       "self": "Giai đoạn | Các giai đoạn",
       "run-stage": "Chạy sân khấu",
       "confirm-create": "Bạn có chắc chắn muốn tạo tác vụ cho giai đoạn này không?",
-      "back-to-stage": "Trở lại sân khấu {stage}",
-      "no-stages": {}
+      "back-to-stage": "Trở lại sân khấu {stage}"
     },
     "task": {
       "selected-count": "{count} nhiệm vụ đã chọn | {count} nhiệm vụ đã chọn",
@@ -2108,7 +2124,6 @@
     "allow-admin-mode-only": "Phiên bản {instance} chỉ có thể truy cập ở chế độ quản trị.",
     "query-time": "Thời gian truy vấn",
     "connection-lost": "Mất kết nối. Sẽ thử kết nối lại khi thực hiện truy vấn tiếp theo.",
-    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2651,9 +2666,7 @@
           "data_export": "Xuất dữ liệu",
           "request-role": "Yêu cầu vai trò"
         }
-      },
-      "template": {},
-      "source": {}
+      }
     },
     "approval-flow": {
       "self": "Quy trình phê duyệt",
