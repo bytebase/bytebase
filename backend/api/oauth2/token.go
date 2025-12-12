@@ -108,16 +108,16 @@ func (s *Service) handleAuthorizationCodeGrant(c echo.Context, client *store.OAu
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "invalid or expired code")
 	}
 
-	// Delete code immediately (single use)
-	_ = s.store.DeleteOAuth2AuthorizationCode(ctx, req.Code)
-
-	// Validate code belongs to this client
+	// Validate code belongs to this client BEFORE deleting
+	// This prevents DoS where attacker with stolen code invalidates it for legitimate client
 	if authCode.ClientID != client.ClientID {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "code was not issued to this client")
 	}
 
 	// Validate code not expired
 	if time.Now().After(authCode.ExpiresAt) {
+		// Delete expired code
+		_ = s.store.DeleteOAuth2AuthorizationCode(ctx, req.Code)
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "code has expired")
 	}
 
@@ -133,6 +133,9 @@ func (s *Service) handleAuthorizationCodeGrant(c echo.Context, client *store.OAu
 	if !verifyPKCE(req.CodeVerifier, authCode.Config.CodeChallenge, authCode.Config.CodeChallengeMethod) {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "invalid code_verifier")
 	}
+
+	// Delete code after all validations pass (single use)
+	_ = s.store.DeleteOAuth2AuthorizationCode(ctx, req.Code)
 
 	// Get user
 	user, err := s.store.GetUserByID(ctx, authCode.UserID)
@@ -166,18 +169,21 @@ func (s *Service) handleRefreshTokenGrant(c echo.Context, client *store.OAuth2Cl
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "invalid refresh token")
 	}
 
-	// Delete token immediately (single use, will issue new one)
-	_ = s.store.DeleteOAuth2RefreshToken(ctx, tokenHash)
-
-	// Validate token belongs to this client
+	// Validate token belongs to this client BEFORE deleting
+	// This prevents DoS where attacker with stolen token invalidates it for legitimate client
 	if refreshToken.ClientID != client.ClientID {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "refresh token was not issued to this client")
 	}
 
 	// Validate not expired
 	if time.Now().After(refreshToken.ExpiresAt) {
+		// Delete expired token
+		_ = s.store.DeleteOAuth2RefreshToken(ctx, tokenHash)
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "refresh token has expired")
 	}
+
+	// Delete token after validations pass (single use, will issue new one)
+	_ = s.store.DeleteOAuth2RefreshToken(ctx, tokenHash)
 
 	// Get user
 	user, err := s.store.GetUserByID(ctx, refreshToken.UserID)

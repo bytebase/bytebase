@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/pkg/errors"
@@ -49,7 +50,7 @@ func (s *Store) GetOAuth2RefreshToken(ctx context.Context, tokenHash string) (*O
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
 		&msg.TokenHash, &msg.ClientID, &msg.UserID, &msg.ExpiresAt,
 	); err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, errors.Wrap(err, "failed to get OAuth2 refresh token")

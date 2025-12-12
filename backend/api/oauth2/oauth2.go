@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"html"
 	"net/http"
@@ -151,9 +152,14 @@ func verifyPKCE(codeVerifier, codeChallenge, method string) bool {
 	if method != "S256" {
 		return false
 	}
+	// RFC 7636: code_verifier must be 43-128 characters
+	if len(codeVerifier) < 43 || len(codeVerifier) > 128 {
+		return false
+	}
 	hash := sha256.Sum256([]byte(codeVerifier))
 	computed := base64.RawURLEncoding.EncodeToString(hash[:])
-	return computed == codeChallenge
+	// Use constant-time comparison to prevent timing attacks
+	return subtle.ConstantTimeCompare([]byte(computed), []byte(codeChallenge)) == 1
 }
 
 func validateRedirectURI(uri string, allowedURIs []string) bool {
