@@ -2124,7 +2124,6 @@
     },
     "batch-query": {
       "batch": "Hàng loạt",
-      "select-database-group": "Bạn có thể {select-database-group} để truy vấn hàng loạt",
       "description": "Truy vấn hàng loạt {database} cơ sở dữ liệu bổ sung và {group} nhóm cơ sở dữ liệu trong {project}.",
       "show-or-hide-empty-query-results": "Hiển thị / ẩn kết quả truy vấn trống",
       "select-data-source": {

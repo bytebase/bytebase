@@ -228,7 +228,7 @@ const useExecuteSQL = () => {
             dataSourceId: getDataSourceId(
               database,
               params.connection,
-              isBatch ? tab.batchQueryContext?.dataSourceType : undefined
+              isBatch ? tab.batchQueryContext.dataSourceType : undefined
             ),
           },
         }),

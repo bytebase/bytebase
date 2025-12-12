@@ -78,7 +78,7 @@ export type SQLEditorTab = {
     string /* database or instance */,
     SQLEditorDatabaseQueryContext[]
   >;
-  batchQueryContext?: BatchQueryContext;
+  batchQueryContext: BatchQueryContext;
 
   // extended fields
   treeState: {

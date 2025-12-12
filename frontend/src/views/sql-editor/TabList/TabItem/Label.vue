@@ -88,21 +88,16 @@ const confirmEdit = () => {
 
   tabStore.updateTab(tab.id, {
     title,
-    status: "DIRTY",
   });
 
   if (tab.worksheet) {
-    worksheetV1Store
-      .patchWorksheet(
-        create(WorksheetSchema, {
-          name: tab.worksheet,
-          title,
-        }),
-        ["title"]
-      )
-      .then(() => {
-        tab.status = "CLEAN";
-      });
+    worksheetV1Store.patchWorksheet(
+      create(WorksheetSchema, {
+        name: tab.worksheet,
+        title,
+      }),
+      ["title"]
+    );
   }
 
   state.editing = false;

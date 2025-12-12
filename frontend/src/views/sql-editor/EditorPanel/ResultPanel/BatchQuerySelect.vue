@@ -68,7 +68,7 @@
     <NScrollbar x-scrollable class="pb-2">
       <div class="flex flex-row justify-start items-center gap-2">
         <NButton
-          v-for="item in filteredItems"
+          v-for="(item, index) in filteredItems"
           :key="item.database.name"
           secondary
           strong
@@ -78,6 +78,9 @@
             ...getBackgroundColorRgb(item.database),
             borderTop: selectedDatabase === item.database ? '3px solid' : '',
           }"
+          @contextmenu.stop.prevent="
+            contextMenuRef?.show(index, $event)
+          "
           @click="$emit('update:selected-database', item.database)"
         >
           <RichDatabaseName :database="item.database" />
@@ -93,11 +96,12 @@
           </span>
           <XIcon
             class="ml-1 text-gray-400 w-4 h-auto hover:text-gray-600"
-            @click.stop="handleCloseSingleResultView(item.database)"
+            @click.stop="handleCloseSingleResultView(item)"
           />
         </NButton>
       </div>
     </NScrollbar>
+    <ContextMenu ref="contextMenuRef" />
   </div>
 </template>
 
@@ -117,6 +121,7 @@ import DataExportButton from "@/components/DataExportButton.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { RichDatabaseName } from "@/components/v2";
 import { DatabaseV1Table } from "@/components/v2/Model/DatabaseV1Table";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
@@ -130,6 +135,8 @@ import type { ComposedDatabase, SQLEditorDatabaseQueryContext } from "@/types";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { ExportRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { hexToRgb } from "@/utils";
+import ContextMenu from "./ContextMenu.vue";
+import { provideResultTabListContext } from "./context";
 
 const MAX_EXPORT = 20;
 
@@ -153,6 +160,8 @@ const sqlStore = useSQLStore();
 const showEmpty = ref<boolean>(true);
 const policyStore = usePolicyV1Store();
 const { project } = storeToRefs(useSQLEditorStore());
+const contextMenu = provideResultTabListContext();
+const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 
 const effectiveQueryDataPolicy = computed(() => {
   return policyStore.getEffectiveQueryDataPolicyForProject(project.value);
@@ -225,15 +234,15 @@ const isDatabaseQueryFailed = (item: BatchQueryItem) => {
   );
 };
 
-const handleCloseSingleResultView = (database: ComposedDatabase) => {
-  const contexts = tab.value?.databaseQueryContexts?.get(database.name);
+const handleCloseSingleResultView = (item: BatchQueryItem) => {
+  const contexts = tab.value?.databaseQueryContexts?.get(item.database.name);
   if (!contexts) {
     return;
   }
   for (const context of contexts) {
     context.abortController?.abort();
   }
-  tab.value?.databaseQueryContexts?.delete(database.name);
+  tab.value?.databaseQueryContexts?.delete(item.database.name);
 };
 
 // Auto select a proper database when the databases are ready.
@@ -311,4 +320,39 @@ const handleExportBtnClick = async ({
   resolve(contents);
   selectedDatabaseNameList.value = [];
 };
+
+useEmitteryEventListener(
+  contextMenu.events,
+  "close-tab",
+  async ({ index, action }) => {
+    const max = items.value.length - 1;
+    switch (action) {
+      case "CLOSE": {
+        handleCloseSingleResultView(items.value[index]);
+        return;
+      }
+      case "CLOSE_OTHERS": {
+        for (let i = max; i > index; i--) {
+          handleCloseSingleResultView(items.value[i]);
+        }
+        for (let i = index - 1; i >= 0; i--) {
+          handleCloseSingleResultView(items.value[i]);
+        }
+        return;
+      }
+      case "CLOSE_TO_THE_RIGHT": {
+        for (let i = max; i > index; i--) {
+          handleCloseSingleResultView(items.value[i]);
+        }
+        return;
+      }
+      case "CLOSE_ALL": {
+        for (let i = max; i >= 0; i--) {
+          handleCloseSingleResultView(items.value[i]);
+        }
+        return;
+      }
+    }
+  }
+);
 </script>

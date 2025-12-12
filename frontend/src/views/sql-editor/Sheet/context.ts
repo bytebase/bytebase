@@ -563,9 +563,7 @@ export const openWorksheetByName = async ({
   }
 
   const tabStore = useSQLEditorTabStore();
-  const openingSheetTab = tabStore.openTabList.find(
-    (tab) => tab.worksheet === sheet.name
-  );
+  const openingSheetTab = tabStore.getTabByWorksheet(sheet.name);
 
   if (openingSheetTab && !forceNewTab) {
     // Switch to a sheet tab if it's open already.

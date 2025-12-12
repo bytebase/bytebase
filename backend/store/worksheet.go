@@ -144,6 +144,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 	var sheets []*WorkSheetMessage
 	for rows.Next() {
 		var sheet WorkSheetMessage
+		var instanceID, databaseName sql.NullString
 		var payloadBytes []byte
 		if err := rows.Scan(
 			&sheet.UID,
@@ -151,8 +152,8 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			&sheet.CreatedAt,
 			&sheet.UpdatedAt,
 			&sheet.ProjectID,
-			&sheet.InstanceID,
-			&sheet.DatabaseName,
+			&instanceID,
+			&databaseName,
 			&sheet.Title,
 			&sheet.Statement,
 			&sheet.Visibility,
@@ -160,6 +161,12 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			&payloadBytes,
 		); err != nil {
 			return nil, err
+		}
+		if instanceID.Valid {
+			sheet.InstanceID = &instanceID.String
+		}
+		if databaseName.Valid {
+			sheet.DatabaseName = &databaseName.String
 		}
 
 		var payload storepb.WorkSheetOrganizerPayload
@@ -291,10 +298,18 @@ func patchWorkSheetImpl(ctx context.Context, txn *sql.Tx, patch *PatchWorkSheetM
 		set.Comma("visibility = ?", *v)
 	}
 	if v := patch.InstanceID; v != nil {
-		set.Comma("instance = ?", *v)
+		if *v == "" {
+			set.Comma("instance = ?", nil)
+		} else {
+			set.Comma("instance = ?", *v)
+		}
 	}
 	if v := patch.DatabaseName; v != nil {
-		set.Comma("db_name = ?", *v)
+		if *v == "" {
+			set.Comma("db_name = ?", nil)
+		} else {
+			set.Comma("db_name = ?", *v)
+		}
 	}
 
 	query, args, err := qb.Q().Space("UPDATE worksheet SET ? WHERE id = ?", set, patch.UID).ToSQL()

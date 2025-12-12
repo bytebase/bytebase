@@ -10,7 +10,7 @@
     :row-key="(data: DatabaseGroup) => data.name"
     :checked-row-keys="selectedDatabaseGroupNames"
     :row-props="rowProps"
-    :pagination="{ pageSize: 20 }"
+    :pagination="{ pageSize }"
     :paginate-single-page="false"
     @update:checked-row-keys="
       (val) => $emit('update:selected-database-group-names', val as string[])
@@ -41,10 +41,12 @@ const props = withDefaults(
     showSelection?: boolean;
     showExternalLink?: boolean;
     singleSelection?: boolean;
+    pageSize?: number;
     selectedDatabaseGroupNames?: string[];
   }>(),
   {
     bordered: true,
+    pageSize: 20,
     selectedDatabaseGroupNames: () => [],
   }
 );
@@ -77,13 +79,7 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
       width: 256,
       ellipsis: true,
       resizable: true,
-      render: (data) => {
-        return (
-          <div class="flex gap-x-2">
-            <span>{data.title}</span>
-          </div>
-        );
-      },
+      render: (data) => data.title,
     },
     {
       key: "expression",

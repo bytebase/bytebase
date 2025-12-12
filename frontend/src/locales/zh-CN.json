@@ -2124,7 +2124,6 @@
     },
     "batch-query": {
       "batch": "批量",
-      "select-database-group": "您可以{select-database-group}进行批量查询",
       "description": "批量查询 {project} 下的 {database} 个数据库和 {group} 个数据库组。",
       "show-or-hide-empty-query-results": "显示/隐藏空查询结果",
       "select-data-source": {

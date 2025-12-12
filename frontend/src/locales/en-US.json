@@ -2125,7 +2125,6 @@
     },
     "batch-query": {
       "batch": "Batch",
-      "select-database-group": "You can {select-database-group} to batch query",
       "description": "Batch query {database} additional databases and {group} database groups under {project}.",
       "show-or-hide-empty-query-results": "Show / hide empty query results",
       "select-data-source": {

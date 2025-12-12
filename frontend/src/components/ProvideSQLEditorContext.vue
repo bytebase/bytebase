@@ -136,9 +136,7 @@ const initializeProject = async () => {
 };
 
 const switchWorksheet = async (sheetName: string) => {
-  const openedSheetTab = tabStore.openTabList.find(
-    (tab) => tab.worksheet == sheetName
-  );
+  const openedSheetTab = tabStore.getTabByWorksheet(sheetName);
 
   const sheet = await worksheetStore.getOrFetchWorksheetByName(sheetName);
   if (!sheet) {

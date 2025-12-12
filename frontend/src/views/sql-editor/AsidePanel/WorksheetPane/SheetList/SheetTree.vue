@@ -62,7 +62,6 @@
 </template>
 
 <script setup lang="tsx">
-import { create } from "@bufbuild/protobuf";
 import { useDebounceFn } from "@vueuse/core";
 import {
   NDropdown,
@@ -86,10 +85,6 @@ import {
   useWorkSheetStore,
 } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
-import {
-  Worksheet_Visibility,
-  WorksheetSchema,
-} from "@/types/proto-es/v1/worksheet_service_pb";
 import { defer, isDescendantOf } from "@/utils";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import SharePopover from "@/views/sql-editor/EditorCommon/SharePopover.vue";
@@ -132,7 +127,6 @@ const {
   selectedKeys,
   expandedKeys,
   editingNode,
-  isWorksheetCreator,
   batchUpdateWorksheetFolders,
 } = useSheetContext();
 const {
@@ -275,9 +269,7 @@ const handleRenameNode = useDebounceFn(async () => {
     );
 
     // update tab title
-    const tab = tabStore.openTabList.find(
-      (t) => t.worksheet === editingNode.value?.node.worksheet?.name
-    );
+    const tab = tabStore.getTabByWorksheet(worksheet.name);
     if (tab) {
       tabStore.updateTab(tab.id, {
         title: newTitle,
@@ -398,7 +390,7 @@ const deleteWorksheets = async (worksheets: string[]) => {
     )
   );
   for (const worksheet of worksheets) {
-    const tab = tabStore.openTabList.find((tab) => tab.worksheet === worksheet);
+    const tab = tabStore.getTabByWorksheet(worksheet);
     if (tab) {
       tabStore.closeTab(tab.id);
     }
@@ -527,25 +519,11 @@ const handleDuplicateSheet = async (worksheetName: string) => {
     closeOnEsc: true,
     async onPositiveClick() {
       dialogInstance.loading = true;
-      const newWorksheet = await worksheetV1Store.createWorksheet(
-        create(WorksheetSchema, {
-          title: worksheet.title,
-          project: worksheet.project,
-          content: worksheet.content,
-          database: worksheet.database,
-          visibility: Worksheet_Visibility.PRIVATE,
-        })
-      );
-      const isCreator = isWorksheetCreator(worksheet);
-      if (isCreator) {
-        await worksheetV1Store.upsertWorksheetOrganizer(
-          {
-            worksheet: newWorksheet.name,
-            folders: worksheet.folders,
-          },
-          ["folders"]
-        );
-      }
+      await editorContext.createWorksheet({
+        title: worksheet.title,
+        folders: worksheet.folders,
+        database: worksheet.database,
+      });
       pushNotification({
         module: "bytebase",
         style: "INFO",

@@ -254,14 +254,20 @@ func (s *WorksheetService) UpdateWorksheet(
 			stringVisibility := string(visibility)
 			worksheetPatch.Visibility = &stringVisibility
 		case "database":
-			database, err := getDatabaseMessage(ctx, s.store, request.Worksheet.Database)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Worksheet.Database))
+			if request.Worksheet.Database != "" {
+				database, err := getDatabaseMessage(ctx, s.store, request.Worksheet.Database)
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Worksheet.Database))
+				}
+				if database == nil || database.Deleted {
+					return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Worksheet.Database))
+				}
+				worksheetPatch.InstanceID, worksheetPatch.DatabaseName = &database.InstanceID, &database.DatabaseName
+			} else {
+				emptyStr := ""
+				worksheetPatch.InstanceID = &emptyStr
+				worksheetPatch.DatabaseName = &emptyStr
 			}
-			if database == nil || database.Deleted {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Worksheet.Database))
-			}
-			worksheetPatch.InstanceID, worksheetPatch.DatabaseName = &database.InstanceID, &database.DatabaseName
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
 		}

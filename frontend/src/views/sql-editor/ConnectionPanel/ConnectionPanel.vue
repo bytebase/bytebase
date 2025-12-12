@@ -33,7 +33,7 @@
           </template>
         </NTooltip>
       </template>
-      <ConnectionPane />
+      <ConnectionPane :show="show" />
     </DrawerContent>
   </Drawer>
 </template>

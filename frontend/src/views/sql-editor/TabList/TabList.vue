@@ -244,38 +244,41 @@ useEmitteryEventListener(
       await new Promise((r) => requestAnimationFrame(r));
     };
 
-    if (action === "CLOSE") {
-      await remove(tab);
-      return;
-    }
     const max = openTabList.length - 1;
-    if (action === "CLOSE_OTHERS") {
-      for (let i = max; i > index; i--) {
-        await remove(openTabList[i]);
+    switch (action) {
+      case "CLOSE": {
+        await remove(tab);
+        return;
       }
-      for (let i = index - 1; i >= 0; i--) {
-        await remove(openTabList[i]);
-      }
-      return;
-    }
-    if (action === "CLOSE_TO_THE_RIGHT") {
-      for (let i = max; i > index; i--) {
-        await remove(openTabList[i]);
-      }
-      return;
-    }
-    if (action === "CLOSE_SAVED") {
-      for (let i = max; i >= 0; i--) {
-        const tab = openTabList[i];
-        if (tab.status === "CLEAN") {
-          await remove(tab);
+      case "CLOSE_OTHERS": {
+        for (let i = max; i > index; i--) {
+          await remove(openTabList[i]);
         }
+        for (let i = index - 1; i >= 0; i--) {
+          await remove(openTabList[i]);
+        }
+        return;
       }
-      return;
-    }
-    if (action === "CLOSE_ALL") {
-      for (let i = max; i >= 0; i--) {
-        await remove(openTabList[i]);
+      case "CLOSE_TO_THE_RIGHT": {
+        for (let i = max; i > index; i--) {
+          await remove(openTabList[i]);
+        }
+        return;
+      }
+      case "CLOSE_SAVED": {
+        for (let i = max; i >= 0; i--) {
+          const tab = openTabList[i];
+          if (tab.status === "CLEAN") {
+            await remove(tab);
+          }
+        }
+        return;
+      }
+      case "CLOSE_ALL": {
+        for (let i = max; i >= 0; i--) {
+          await remove(openTabList[i]);
+        }
+        return;
       }
     }
   }
