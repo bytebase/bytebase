@@ -161,7 +161,7 @@ func formatCallOutput(output CallOutput, endpoint *EndpointInfo) string {
 	if output.Response != nil {
 		respBytes, _ := json.MarshalIndent(output.Response, "", "  ")
 		sb.WriteString("**Response:**\n```json\n")
-		sb.WriteString(string(respBytes))
+		sb.Write(respBytes)
 		sb.WriteString("\n```\n")
 	}
 
