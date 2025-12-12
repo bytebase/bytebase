@@ -28,7 +28,6 @@ import {
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
   setDefaultDataSourceForConn,
-  suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
 import { type SQLEditorContext, useSQLEditorContext } from "../../context";
 

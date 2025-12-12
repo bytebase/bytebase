@@ -15,7 +15,6 @@ import type { SQLEditorTab } from "@/types";
 import { isValidDatabaseName, isValidProjectName } from "@/types";
 import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
 import {
-  type Worksheet,
   Worksheet_Visibility,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
