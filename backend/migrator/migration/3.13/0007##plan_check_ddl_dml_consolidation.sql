@@ -16,10 +16,10 @@ WHERE config ? 'changeDatabaseType';
 UPDATE review_config
 SET payload = jsonb_set(
   payload,
-  '{rules}',
+  '{sqlReviewRules}',
   COALESCE(
     (SELECT jsonb_agg(r)
-     FROM jsonb_array_elements(payload->'rules') r
+     FROM jsonb_array_elements(payload->'sqlReviewRules') r
      WHERE r->>'type' NOT IN (
        'statement.disallow-mix-in-ddl',
        'statement.disallow-mix-in-dml'
@@ -27,5 +27,5 @@ SET payload = jsonb_set(
     '[]'::jsonb
   )
 )
-WHERE payload->'rules' IS NOT NULL
-  AND jsonb_array_length(payload->'rules') > 0;
+WHERE payload->'sqlReviewRules' IS NOT NULL
+  AND jsonb_array_length(payload->'sqlReviewRules') > 0;
