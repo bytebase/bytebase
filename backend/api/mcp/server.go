@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -29,25 +30,33 @@ type EchoOutput struct {
 
 // Server is the MCP server for Bytebase.
 type Server struct {
-	mcpServer   *mcp.Server
-	httpHandler *mcp.StreamableHTTPHandler
-	store       *store.Store
-	profile     *config.Profile
-	secret      string
+	mcpServer    *mcp.Server
+	httpHandler  *mcp.StreamableHTTPHandler
+	store        *store.Store
+	profile      *config.Profile
+	secret       string
+	openAPIIndex *OpenAPIIndex
 }
 
 // NewServer creates a new MCP server.
-func NewServer(store *store.Store, profile *config.Profile, secret string) *Server {
+func NewServer(store *store.Store, profile *config.Profile, secret string) (*Server, error) {
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:    "bytebase",
 		Version: "1.0.0",
 	}, nil)
 
+	// Load OpenAPI index for API discovery and execution (embedded)
+	openAPIIndex, err := NewOpenAPIIndex()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load OpenAPI spec")
+	}
+
 	s := &Server{
-		mcpServer: mcpServer,
-		store:     store,
-		profile:   profile,
-		secret:    secret,
+		mcpServer:    mcpServer,
+		store:        store,
+		profile:      profile,
+		secret:       secret,
+		openAPIIndex: openAPIIndex,
 	}
 	s.registerTools()
 
@@ -56,7 +65,7 @@ func NewServer(store *store.Store, profile *config.Profile, secret string) *Serv
 		return s.mcpServer
 	}, nil)
 
-	return s
+	return s, nil
 }
 
 // registerTools registers all MCP tools.
@@ -66,6 +75,10 @@ func (s *Server) registerTools() {
 		Name:        "echo",
 		Description: "Echo the input message back. Useful for testing the MCP connection.",
 	}, s.handleEcho)
+
+	// API discovery and execution tools
+	s.registerSearchTool()
+	s.registerCallTool()
 }
 
 // handleEcho handles the echo tool call.
@@ -144,12 +157,18 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid token: missing subject")
 		}
 
-		// Store user email in context for downstream handlers
-		c.Set("user_email", sub)
+		// Store user email and access token in request context for MCP tools
+		ctx := c.Request().Context()
+		ctx = context.WithValue(ctx, userEmailKey{}, sub)
+		ctx = withAccessToken(ctx, tokenStr)
+		c.SetRequest(c.Request().WithContext(ctx))
 
 		return next(c)
 	}
 }
+
+// Context key for storing user email.
+type userEmailKey struct{}
 
 // RegisterRoutes registers the MCP server routes with Echo.
 func (s *Server) RegisterRoutes(e *echo.Echo) {

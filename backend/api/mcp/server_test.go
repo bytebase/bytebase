@@ -70,12 +70,13 @@ func TestMCPAuthMiddleware(t *testing.T) {
 			c := e.NewContext(req, rec)
 
 			// Create server with auth
-			s := NewServer(nil, profile, secret)
+			s, err := NewServer(nil, profile, secret)
+			require.NoError(t, err)
 			handler := s.authMiddleware(func(c echo.Context) error {
 				return c.String(http.StatusOK, "success")
 			})
 
-			err := handler(c)
+			err = handler(c)
 			if err != nil {
 				// Echo error handler
 				e.HTTPErrorHandler(err, c)
@@ -100,16 +101,18 @@ func TestMCPAuthMiddlewareValidToken(t *testing.T) {
 
 	// Create server with auth - note: we pass nil store since we're testing middleware only
 	// A full integration test would require a real store
-	s := NewServer(nil, profile, secret)
+	s, err := NewServer(nil, profile, secret)
+	require.NoError(t, err)
 	handler := s.authMiddleware(func(c echo.Context) error {
-		// Verify user email is set in context
-		email := c.Get("user_email")
+		// Verify user email is set in request context
+		ctx := c.Request().Context()
+		email := ctx.Value(userEmailKey{})
 		require.NotNil(t, email)
 		require.Equal(t, "test@example.com", email)
 		return c.String(http.StatusOK, "success")
 	})
 
-	err := handler(c)
+	err = handler(c)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
 }
