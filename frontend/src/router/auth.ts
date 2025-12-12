@@ -12,8 +12,21 @@ export const AUTH_OAUTH_CALLBACK_MODULE = "auth.oauth.callback";
 export const AUTH_OIDC_CALLBACK_MODULE = "auth.oidc.callback";
 export const AUTH_IDP_INIT_MODULE = "auth.idp.init";
 export const AUTH_2FA_SETUP_MODULE = "auth.2fa.setup";
+export const OAUTH2_CONSENT_MODULE = "oauth2.consent";
 
 const authRoutes: RouteRecordRaw[] = [
+  {
+    path: "/oauth2/consent",
+    component: SplashLayout,
+    children: [
+      {
+        path: "",
+        name: OAUTH2_CONSENT_MODULE,
+        meta: { title: () => t("oauth2.consent.title") },
+        component: () => import("@/views/OAuth2Consent.vue"),
+      },
+    ],
+  },
   {
     path: "/auth",
     name: "auth",

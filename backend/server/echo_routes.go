@@ -14,6 +14,8 @@ import (
 
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
+	"github.com/bytebase/bytebase/backend/api/mcp"
+	"github.com/bytebase/bytebase/backend/api/oauth2"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -23,6 +25,8 @@ func configureEchoRouters(
 	e *echo.Echo,
 	lspServer *lsp.Server,
 	directorySyncServer *directorysync.Service,
+	oauth2Service *oauth2.Service,
+	mcpServer *mcp.Server,
 	profile *config.Profile,
 ) {
 	e.Use(recoverMiddleware)
@@ -53,9 +57,6 @@ func configureEchoRouters(
 		},
 	}))
 
-	// Embed frontend.
-	embedFrontend(e)
-
 	e.HideBanner = true
 	e.HidePort = true
 
@@ -77,6 +78,15 @@ func configureEchoRouters(
 	hookGroup := e.Group(webhookAPIPrefix)
 	scimGroup := hookGroup.Group(scimAPIPrefix)
 	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
+
+	// OAuth2 server.
+	oauth2Service.RegisterRoutes(e)
+
+	// MCP server.
+	mcpServer.RegisterRoutes(e)
+
+	// Embed frontend (must be last to serve as fallback for SPA routes).
+	embedFrontend(e)
 }
 
 func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {

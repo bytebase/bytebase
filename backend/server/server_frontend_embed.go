@@ -106,6 +106,6 @@ func embedFrontend(e *echo.Echo) {
 
 // defaultAPIRequestSkipper is echo skipper for api requests.
 func defaultAPIRequestSkipper(c echo.Context) bool {
-	path := c.Path()
-	return common.HasPrefixes(path, "/api", "/v1", webhookAPIPrefix)
+	path := c.Request().URL.Path
+	return common.HasPrefixes(path, "/api", "/v1", "/.well-known", webhookAPIPrefix)
 }

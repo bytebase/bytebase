@@ -176,6 +176,10 @@
     - [IssueCommentPayload.TaskPriorBackup.Table](#bytebase-store-IssueCommentPayload-TaskPriorBackup-Table)
     - [IssueCommentPayload.TaskUpdate](#bytebase-store-IssueCommentPayload-TaskUpdate)
   
+- [store/oauth2.proto](#store_oauth2-proto)
+    - [OAuth2AuthorizationCodeConfig](#bytebase-store-OAuth2AuthorizationCodeConfig)
+    - [OAuth2ClientConfig](#bytebase-store-OAuth2ClientConfig)
+  
 - [store/plan.proto](#store_plan-proto)
     - [PlanConfig](#bytebase-store-PlanConfig)
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
@@ -3061,6 +3065,57 @@ Status represents the current execution state of a task run.
 | from_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
 | to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
 | to_status | [TaskRun.Status](#bytebase-store-TaskRun-Status) | optional |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_oauth2-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/oauth2.proto
+
+
+
+<a name="bytebase-store-OAuth2AuthorizationCodeConfig"></a>
+
+### OAuth2AuthorizationCodeConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| redirect_uri | [string](#string) |  |  |
+| code_challenge | [string](#string) |  |  |
+| code_challenge_method | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-OAuth2ClientConfig"></a>
+
+### OAuth2ClientConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| client_name | [string](#string) |  |  |
+| redirect_uris | [string](#string) | repeated |  |
+| grant_types | [string](#string) | repeated |  |
+| token_endpoint_auth_method | [string](#string) |  |  |
 
 
 
