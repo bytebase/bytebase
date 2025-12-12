@@ -423,6 +423,7 @@
       "users-and-groups": "用户和群组",
       "iam-and-admin": "IAM & 管理",
       "im-integration": "IM",
+      "mcp": "MCP",
       "sso": "SSO",
       "subscription": "订阅",
       "global-masking": "全局数据脱敏",
@@ -525,6 +526,52 @@
     },
     "im-integration": {
       "description": "即时通讯集成用于针对特定工单事件向用户推送私信消息。需要与项目 webhook 配合使用。"
+    },
+    "mcp": {
+      "title": "MCP 集成",
+      "description": "使用模型上下文协议将 AI 助手连接到 Bytebase。",
+      "prerequisites": {
+        "title": "前提条件",
+        "mcp-client": "支持 MCP 的客户端（Claude Desktop、Claude Code、Cursor 等）",
+        "bytebase-account": "具有相应权限的 Bytebase 账户"
+      },
+      "setup": {
+        "title": "配置",
+        "endpoint-url": "MCP 端点 URL",
+        "external-url-warning": "外部 URL 未配置。",
+        "configure-external-url": "在通用设置中配置外部 URL",
+        "claude-desktop-config": "Claude Desktop 配置",
+        "add-to-config": "添加到您的 MCP 配置：",
+        "run-command": "运行此命令：",
+        "oauth-note": "首次使用时，系统会提示您授权访问。"
+      },
+      "first-prompt": {
+        "title": "您的第一个提示",
+        "description": "连接后，尝试向 AI 助手提问：",
+        "example": "列出我的 Bytebase 实例中的所有项目"
+      },
+      "examples": {
+        "title": "示例提示",
+        "description": "连接后，尝试向 AI 助手提问：",
+        "list-databases": "列出生产实例中的所有数据库",
+        "show-schema": "显示 users 表的结构",
+        "execute-query": "在 orders 数据库上执行 SELECT 查询"
+      },
+      "what-is-mcp": {
+        "title": "什么是 MCP？",
+        "description": "MCP（模型上下文协议）是一个开放协议，允许 AI 助手直接与外部工具和服务交互。通过 Bytebase MCP 集成，您的 AI 可以通过自然对话发现 API、查询数据库、管理架构和执行 SQL。"
+      },
+      "troubleshooting": {
+        "title": "故障排除",
+        "connection-refused": {
+          "title": "连接被拒绝",
+          "description": "验证您的 Bytebase 实例可从网络访问，并且外部 URL 已正确配置。"
+        },
+        "permission-denied": {
+          "title": "权限被拒绝",
+          "description": "确保您的 Bytebase 账户具有您尝试操作所需的权限。"
+        }
+      }
     },
     "sso": {
       "create": "创建 SSO",

@@ -28,6 +28,7 @@ import {
   WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
   WORKSPACE_ROUTE_IM,
   WORKSPACE_ROUTE_LANDING,
+  WORKSPACE_ROUTE_MCP,
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_RISK_CENTER,
   WORKSPACE_ROUTE_ROLES,
@@ -236,6 +237,11 @@ export const useDashboardSidebar = () => {
           {
             title: t("settings.sidebar.im-integration"),
             name: WORKSPACE_ROUTE_IM,
+            type: "route",
+          },
+          {
+            title: t("settings.sidebar.mcp"),
+            name: WORKSPACE_ROUTE_MCP,
             type: "route",
           },
         ],

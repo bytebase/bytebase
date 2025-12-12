@@ -423,6 +423,7 @@
       "users-and-groups": "ユーザーとグループ",
       "iam-and-admin": "IAM と管理",
       "im-integration": "IM",
+      "mcp": "MCP",
       "sso": "SSO",
       "subscription": "サブスクリプション",
       "global-masking": "グローバルマスキング",
@@ -525,6 +526,52 @@
     },
     "im-integration": {
       "description": "IM 統合は、特定のイシューイベントについてユーザーにダイレクトメッセージをプッシュするために使用されます。プロジェクト Webhook と連携して動作します。"
+    },
+    "mcp": {
+      "title": "MCP 統合",
+      "description": "Model Context Protocol を使用して、AI アシスタントを Bytebase に接続します。",
+      "prerequisites": {
+        "title": "前提条件",
+        "mcp-client": "MCP 対応クライアント（Claude Desktop、Claude Code、Cursor など）",
+        "bytebase-account": "適切な権限を持つ Bytebase アカウント"
+      },
+      "setup": {
+        "title": "セットアップ",
+        "endpoint-url": "MCP エンドポイント URL",
+        "external-url-warning": "外部 URL が設定されていません。",
+        "configure-external-url": "一般設定で外部 URL を設定する",
+        "claude-desktop-config": "Claude Desktop 設定",
+        "add-to-config": "MCP 設定に追加：",
+        "run-command": "このコマンドを実行：",
+        "oauth-note": "初回使用時に、アクセスの承認を求められます。"
+      },
+      "first-prompt": {
+        "title": "最初のプロンプト",
+        "description": "接続後、AI アシスタントに聞いてみてください：",
+        "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする"
+      },
+      "examples": {
+        "title": "プロンプト例",
+        "description": "接続後、AI アシスタントに聞いてみてください：",
+        "list-databases": "本番インスタンスのすべてのデータベースをリストする",
+        "show-schema": "users テーブルのスキーマを表示する",
+        "execute-query": "orders データベースで SELECT クエリを実行する"
+      },
+      "what-is-mcp": {
+        "title": "MCP とは？",
+        "description": "MCP（Model Context Protocol）は、AI アシスタントが外部ツールやサービスと直接やり取りできるオープンプロトコルです。Bytebase MCP 統合により、AI は自然な会話を通じて API の検出、データベースのクエリ、スキーマの管理、SQL の実行が可能になります。"
+      },
+      "troubleshooting": {
+        "title": "トラブルシューティング",
+        "connection-refused": {
+          "title": "接続が拒否されました",
+          "description": "Bytebase インスタンスがネットワークからアクセス可能であり、外部 URL が正しく設定されていることを確認してください。"
+        },
+        "permission-denied": {
+          "title": "権限が拒否されました",
+          "description": "Bytebase アカウントが、試行している操作に必要な権限を持っていることを確認してください。"
+        }
+      }
     },
     "sso": {
       "create": "SSOの作成",

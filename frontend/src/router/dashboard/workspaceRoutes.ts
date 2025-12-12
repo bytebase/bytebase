@@ -29,3 +29,4 @@ export const WORKSPACE_ROUTE_IDENTITY_PROVIDERS =
 export const WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL = `${WORKSPACE_ROUTE_IDENTITY_PROVIDERS}.detail`;
 
 export const WORKSPACE_ROUTE_IM = "workspace.im";
+export const WORKSPACE_ROUTE_MCP = "workspace.mcp";

@@ -423,6 +423,7 @@
       "users-and-groups": "Người dùng & Nhóm",
       "iam-and-admin": "IAM & Quản trị",
       "im-integration": "Tích hợp",
+      "mcp": "MCP",
       "sso": "SSO",
       "subscription": "Gói đăng ký",
       "global-masking": "Che giấu toàn cục",
@@ -525,6 +526,52 @@
     },
     "im-integration": {
       "description": "Tích hợp IM sẽ được sử dụng để đẩy tin nhắn trực tiếp đến người dùng cho các sự kiện vấn đề cụ thể. Hoạt động với webhook của dự án."
+    },
+    "mcp": {
+      "title": "Tích hợp MCP",
+      "description": "Kết nối trợ lý AI với Bytebase bằng Model Context Protocol.",
+      "prerequisites": {
+        "title": "Điều kiện tiên quyết",
+        "mcp-client": "Ứng dụng khách tương thích MCP (Claude Desktop, Claude Code, Cursor, v.v.)",
+        "bytebase-account": "Tài khoản Bytebase với quyền phù hợp"
+      },
+      "setup": {
+        "title": "Thiết lập",
+        "endpoint-url": "URL điểm cuối MCP",
+        "external-url-warning": "URL bên ngoài chưa được cấu hình.",
+        "configure-external-url": "Cấu hình URL bên ngoài trong Cài đặt chung",
+        "claude-desktop-config": "Cấu hình Claude Desktop",
+        "add-to-config": "Thêm vào cấu hình MCP:",
+        "run-command": "Chạy lệnh này:",
+        "oauth-note": "Khi sử dụng lần đầu, bạn sẽ được yêu cầu cấp quyền truy cập."
+      },
+      "first-prompt": {
+        "title": "Prompt đầu tiên của bạn",
+        "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
+        "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi"
+      },
+      "examples": {
+        "title": "Ví dụ về prompt",
+        "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
+        "list-databases": "Liệt kê tất cả cơ sở dữ liệu trong phiên bản sản xuất",
+        "show-schema": "Hiển thị lược đồ của bảng users",
+        "execute-query": "Thực thi truy vấn SELECT trên cơ sở dữ liệu orders"
+      },
+      "what-is-mcp": {
+        "title": "MCP là gì?",
+        "description": "MCP (Model Context Protocol) là một giao thức mở cho phép trợ lý AI tương tác trực tiếp với các công cụ và dịch vụ bên ngoài. Với tích hợp MCP của Bytebase, AI của bạn có thể khám phá API, truy vấn cơ sở dữ liệu, quản lý lược đồ và thực thi SQL thông qua cuộc trò chuyện tự nhiên."
+      },
+      "troubleshooting": {
+        "title": "Khắc phục sự cố",
+        "connection-refused": {
+          "title": "Kết nối bị từ chối",
+          "description": "Xác minh rằng phiên bản Bytebase của bạn có thể truy cập được từ mạng và URL bên ngoài được cấu hình chính xác."
+        },
+        "permission-denied": {
+          "title": "Quyền bị từ chối",
+          "description": "Đảm bảo tài khoản Bytebase của bạn có các quyền cần thiết cho các thao tác bạn đang thực hiện."
+        }
+      }
     },
     "sso": {
       "create": "Tạo SSO",

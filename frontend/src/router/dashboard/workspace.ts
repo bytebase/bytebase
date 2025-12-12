@@ -15,6 +15,7 @@ import {
   WORKSPACE_ROUTE_IDENTITY_PROVIDERS,
   WORKSPACE_ROUTE_IM,
   WORKSPACE_ROUTE_LANDING,
+  WORKSPACE_ROUTE_MCP,
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_RISK_CENTER,
   WORKSPACE_ROUTE_ROLES,
@@ -317,6 +318,15 @@ const workspaceRoutes: RouteRecordRaw[] = [
           requiredPermissionList: () => ["bb.settings.get", "bb.settings.set"],
         },
         component: () => import("@/views/SettingWorkspaceIM.vue"),
+        props: true,
+      },
+      {
+        path: "mcp",
+        name: WORKSPACE_ROUTE_MCP,
+        meta: {
+          title: () => t("settings.sidebar.mcp"),
+        },
+        component: () => import("@/views/SettingWorkspaceMCP.vue"),
         props: true,
       },
     ],
