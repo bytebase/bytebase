@@ -175,7 +175,7 @@ WHERE payload->'grantRequest'->>'user' LIKE 'users/%'
   AND payload->'grantRequest'->>'user' NOT LIKE 'users/%@%';
 
 -- ============================================================================
--- 5. Update issue table - Approval approvers (principalId field)
+-- 5. Update issue table - Approval approvers (rename principalId to principal and convert value)
 -- ============================================================================
 UPDATE issue
 SET payload = (
@@ -186,11 +186,11 @@ SET payload = (
             (
                 SELECT jsonb_agg(
                     CASE
-                        WHEN approver->>'principalId' ~ '^\d+$' THEN
-                            jsonb_set(
-                                approver,
-                                '{principalId}',
-                                to_jsonb(COALESCE(
+                        -- If principalId exists and is numeric, convert to principal with email format
+                        WHEN approver ? 'principalId' AND approver->>'principalId' ~ '^\d+$' THEN
+                            jsonb_build_object(
+                                'status', approver->'status',
+                                'principal', to_jsonb(COALESCE(
                                     (
                                         SELECT u.email_format
                                         FROM user_id_to_email u
@@ -199,6 +199,13 @@ SET payload = (
                                     'users/' || (approver->>'principalId')
                                 ))
                             )
+                        -- If principalId exists but is already email format, rename to principal
+                        WHEN approver ? 'principalId' THEN
+                            jsonb_build_object(
+                                'status', approver->'status',
+                                'principal', approver->'principalId'
+                            )
+                        -- Otherwise keep as-is (already has principal field or no field)
                         ELSE approver
                     END
                 )
@@ -212,7 +219,7 @@ WHERE payload->'approval' ? 'approvers'
   AND EXISTS (
       SELECT 1
       FROM jsonb_array_elements(payload->'approval'->'approvers') AS approver
-      WHERE approver->>'principalId' ~ '^\d+$'
+      WHERE approver ? 'principalId'
   );
 
 -- ============================================================================

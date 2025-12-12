@@ -117,12 +117,10 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 		issueV1.ApprovalTemplate = convertToApprovalTemplate(template)
 	}
 	for _, approver := range approval.GetApprovers() {
-		convertedApprover := &v1pb.Issue_Approver{Status: v1pb.Issue_Approver_Status(approver.GetStatus())}
-		user, err := s.store.GetUserByID(ctx, int(approver.GetPrincipalId()))
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find user by id %v", approver.GetPrincipalId())
+		convertedApprover := &v1pb.Issue_Approver{
+			Status:    v1pb.Issue_Approver_Status(approver.GetStatus()),
+			Principal: approver.GetPrincipal(),
 		}
-		convertedApprover.Principal = fmt.Sprintf("users/%s", user.Email)
 		issueV1.Approvers = append(issueV1.Approvers, convertedApprover)
 	}
 	issueV1.ApprovalStatus = computeApprovalStatus(approval)
