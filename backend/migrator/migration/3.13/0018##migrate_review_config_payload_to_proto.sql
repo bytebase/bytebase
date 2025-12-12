@@ -33,7 +33,8 @@ BEGIN
                             'COLUMN_MAXIMUM_CHARACTER_LENGTH', 'COLUMN_MAXIMUM_VARCHAR_LENGTH',
                             'COLUMN_AUTO_INCREMENT_INITIAL_VALUE',
                             'INDEX_KEY_NUMBER_LIMIT', 'INDEX_TOTAL_NUMBER_LIMIT',
-                            'TABLE_TEXT_FIELDS_TOTAL_LENGTH', 'TABLE_LIMIT_SIZE', 'SYSTEM_COMMENT_LENGTH'
+                            'TABLE_TEXT_FIELDS_TOTAL_LENGTH', 'TABLE_LIMIT_SIZE', 'SYSTEM_COMMENT_LENGTH',
+                            'ADVICE_ONLINE_MIGRATION'
                         ) AND rule->>'payload' IS NOT NULL AND rule->>'payload' != '' AND rule->>'payload' != 'null' AND rule->>'payload' != '{}'
                         THEN jsonb_set(rule, '{numberPayload}', (rule->>'payload')::jsonb) - 'payload'
 
@@ -65,8 +66,83 @@ BEGIN
                             jsonb_build_object('value', COALESCE((rule->>'payload')::jsonb->>'level', 'INDEX'))
                         ) - 'payload'
 
-                        -- Rules with empty/null payload or no payload (like NAMING_FULLY_QUALIFIED,
-                        -- STATEMENT_MAX_EXECUTION_TIME, COLUMN_CURRENT_TIME_COUNT_LIMIT) - just remove payload field
+                        -- Rules with empty/null payload or no payload.
+                        -- Full list:
+                        -- TYPE_UNSPECIFIED
+                        -- ENGINE_MYSQL_USE_INNODB
+                        -- NAMING_FULLY_QUALIFIED
+                        -- NAMING_TABLE_NO_KEYWORD
+                        -- NAMING_IDENTIFIER_NO_KEYWORD
+                        -- STATEMENT_SELECT_NO_SELECT_ALL
+                        -- STATEMENT_WHERE_REQUIRE_SELECT
+                        -- STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+                        -- STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+                        -- STATEMENT_DISALLOW_ON_DEL_CASCADE
+                        -- STATEMENT_DISALLOW_RM_TBL_CASCADE
+                        -- STATEMENT_DISALLOW_COMMIT
+                        -- STATEMENT_DISALLOW_LIMIT
+                        -- STATEMENT_DISALLOW_ORDER_BY
+                        -- STATEMENT_MERGE_ALTER_TABLE
+                        -- STATEMENT_INSERT_MUST_SPECIFY_COLUMN
+                        -- STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
+                        -- STATEMENT_DML_DRY_RUN
+                        -- STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT
+                        -- STATEMENT_ADD_CHECK_NOT_VALID
+                        -- STATEMENT_ADD_FOREIGN_KEY_NOT_VALID
+                        -- STATEMENT_DISALLOW_ADD_NOT_NULL
+                        -- STATEMENT_SELECT_FULL_TABLE_SCAN
+                        -- STATEMENT_CREATE_SPECIFY_SCHEMA
+                        -- STATEMENT_CHECK_SET_ROLE_VARIABLE
+                        -- STATEMENT_DISALLOW_USING_FILESORT
+                        -- STATEMENT_DISALLOW_USING_TEMPORARY
+                        -- STATEMENT_WHERE_NO_EQUAL_NULL
+                        -- STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+                        -- STATEMENT_JOIN_STRICT_COLUMN_ATTRS
+                        -- STATEMENT_NON_TRANSACTIONAL
+                        -- STATEMENT_ADD_COLUMN_WITHOUT_POSITION
+                        -- STATEMENT_DISALLOW_OFFLINE_DDL
+                        -- STATEMENT_DISALLOW_CROSS_DB_QUERIES
+                        -- STATEMENT_MAX_EXECUTION_TIME
+                        -- STATEMENT_REQUIRE_ALGORITHM_OPTION
+                        -- STATEMENT_REQUIRE_LOCK_OPTION
+                        -- STATEMENT_OBJECT_OWNER_CHECK
+                        -- TABLE_REQUIRE_PK
+                        -- TABLE_NO_FOREIGN_KEY
+                        -- TABLE_DISALLOW_PARTITION
+                        -- TABLE_DISALLOW_TRIGGER
+                        -- TABLE_NO_DUPLICATE_INDEX
+                        -- TABLE_DISALLOW_SET_CHARSET
+                        -- TABLE_REQUIRE_CHARSET
+                        -- TABLE_REQUIRE_COLLATION
+                        -- COLUMN_NO_NULL
+                        -- COLUMN_DISALLOW_CHANGE_TYPE
+                        -- COLUMN_SET_DEFAULT_FOR_NOT_NULL
+                        -- COLUMN_DISALLOW_CHANGE
+                        -- COLUMN_DISALLOW_CHANGING_ORDER
+                        -- COLUMN_DISALLOW_DROP
+                        -- COLUMN_DISALLOW_DROP_IN_INDEX
+                        -- COLUMN_AUTO_INCREMENT_MUST_INTEGER
+                        -- COLUMN_DISALLOW_SET_CHARSET
+                        -- COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
+                        -- COLUMN_CURRENT_TIME_COUNT_LIMIT
+                        -- COLUMN_REQUIRE_DEFAULT
+                        -- COLUMN_DEFAULT_DISALLOW_VOLATILE
+                        -- COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT
+                        -- COLUMN_REQUIRE_CHARSET
+                        -- COLUMN_REQUIRE_COLLATION
+                        -- SCHEMA_BACKWARD_COMPATIBILITY
+                        -- DATABASE_DROP_EMPTY_DATABASE
+                        -- INDEX_NO_DUPLICATE_COLUMN
+                        -- INDEX_PK_TYPE_LIMIT
+                        -- INDEX_TYPE_NO_BLOB
+                        -- INDEX_CREATE_CONCURRENTLY
+                        -- INDEX_NOT_REDUNDANT
+                        -- SYSTEM_PROCEDURE_DISALLOW_CREATE
+                        -- SYSTEM_EVENT_DISALLOW_CREATE
+                        -- SYSTEM_VIEW_DISALLOW_CREATE
+                        -- SYSTEM_FUNCTION_DISALLOW_CREATE
+                        -- SYSTEM_FUNCTION_DISALLOWED_LIST
+                        -- BUILTIN_PRIOR_BACKUP_CHECK
                         ELSE rule - 'payload'
                     END
                 )
