@@ -57,9 +57,6 @@ func configureEchoRouters(
 		},
 	}))
 
-	// Embed frontend.
-	embedFrontend(e)
-
 	e.HideBanner = true
 	e.HidePort = true
 
@@ -83,10 +80,13 @@ func configureEchoRouters(
 	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
 
 	// OAuth2 server.
-	oauth2Service.RegisterRoutes(e.Group(""))
+	oauth2Service.RegisterRoutes(e)
 
 	// MCP server.
 	mcpServer.RegisterRoutes(e)
+
+	// Embed frontend (must be last to serve as fallback for SPA routes).
+	embedFrontend(e)
 }
 
 func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {

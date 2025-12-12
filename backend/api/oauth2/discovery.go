@@ -53,10 +53,10 @@ func (s *Service) handleDiscovery(c echo.Context) error {
 	baseURL := s.getBaseURL(c)
 	metadata := &authorizationServerMetadata{
 		Issuer:                            baseURL,
-		AuthorizationEndpoint:             fmt.Sprintf("%s/oauth2/authorize", baseURL),
-		TokenEndpoint:                     fmt.Sprintf("%s/oauth2/token", baseURL),
-		RegistrationEndpoint:              fmt.Sprintf("%s/oauth2/register", baseURL),
-		RevocationEndpoint:                fmt.Sprintf("%s/oauth2/revoke", baseURL),
+		AuthorizationEndpoint:             fmt.Sprintf("%s/api/oauth2/authorize", baseURL),
+		TokenEndpoint:                     fmt.Sprintf("%s/api/oauth2/token", baseURL),
+		RegistrationEndpoint:              fmt.Sprintf("%s/api/oauth2/register", baseURL),
+		RevocationEndpoint:                fmt.Sprintf("%s/api/oauth2/revoke", baseURL),
 		ResponseTypesSupported:            []string{"code"},
 		GrantTypesSupported:               []string{"authorization_code", "refresh_token"},
 		CodeChallengeMethodsSupported:     []string{"S256"},

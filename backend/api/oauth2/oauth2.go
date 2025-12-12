@@ -55,17 +55,19 @@ func (s *Service) getExternalURL(ctx context.Context) string {
 	return common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
 }
 
-func (s *Service) RegisterRoutes(g *echo.Group) {
-	g.GET("/.well-known/oauth-authorization-server", s.handleDiscovery)
-	g.GET("/.well-known/oauth-authorization-server/*", s.handleDiscovery)
-	g.GET("/.well-known/oauth-protected-resource", s.handleProtectedResourceMetadata)
-	g.GET("/.well-known/oauth-protected-resource/*", s.handleProtectedResourceMetadata)
-	g.POST("/oauth2/register", s.handleRegister)
-	g.GET("/oauth2/authorize", s.handleAuthorizeGet)
-	g.POST("/oauth2/authorize", s.handleAuthorizePost)
-	g.GET("/oauth2/clients/:clientID", s.handleGetClient)
-	g.POST("/oauth2/token", s.handleToken)
-	g.POST("/oauth2/revoke", s.handleRevoke)
+func (s *Service) RegisterRoutes(e *echo.Echo) {
+	// .well-known endpoints must stay at root (RFC 8615)
+	e.GET("/.well-known/oauth-authorization-server", s.handleDiscovery)
+	e.GET("/.well-known/oauth-authorization-server/*", s.handleDiscovery)
+	e.GET("/.well-known/oauth-protected-resource", s.handleProtectedResourceMetadata)
+	e.GET("/.well-known/oauth-protected-resource/*", s.handleProtectedResourceMetadata)
+	// OAuth2 endpoints under /api prefix
+	e.POST("/api/oauth2/register", s.handleRegister)
+	e.GET("/api/oauth2/authorize", s.handleAuthorizeGet)
+	e.POST("/api/oauth2/authorize", s.handleAuthorizePost)
+	e.GET("/api/oauth2/clients/:clientID", s.handleGetClient)
+	e.POST("/api/oauth2/token", s.handleToken)
+	e.POST("/api/oauth2/revoke", s.handleRevoke)
 }
 
 // handleGetClient returns public client info for the consent page.

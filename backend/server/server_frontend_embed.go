@@ -107,9 +107,5 @@ func embedFrontend(e *echo.Echo) {
 // defaultAPIRequestSkipper is echo skipper for api requests.
 func defaultAPIRequestSkipper(c echo.Context) bool {
 	path := c.Request().URL.Path
-	// /oauth2/consent is a frontend route, not a backend API
-	if path == "/oauth2/consent" {
-		return false
-	}
-	return common.HasPrefixes(path, "/api", "/v1", "/oauth2", "/.well-known", webhookAPIPrefix)
+	return common.HasPrefixes(path, "/api", "/v1", "/.well-known", webhookAPIPrefix)
 }
