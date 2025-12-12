@@ -258,6 +258,7 @@ import { ErrorList } from "@/components/IssueV1/components/common";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { EnvironmentV1Name } from "@/components/v2";
+import { trackPriorBackupOnTaskRun } from "@/composables/usePriorBackupTelemetry";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
@@ -297,6 +298,7 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractStageUID, isNullOrUndefined } from "@/utils";
 import { usePlanCheckStatus, usePlanContextWithRollout } from "../../logic";
+import { projectOfPlan } from "../../logic/utils";
 import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
 import { canRolloutTasks } from "./taskPermissions";
@@ -806,6 +808,14 @@ const handleConfirm = async () => {
         addRunTimeToRequest(request);
         await rolloutServiceClientConnect.batchRunTasks(request);
       }
+
+      // Track prior backup telemetry (async, non-blocking)
+      trackPriorBackupOnTaskRun(
+        eligibleTasks.value,
+        plan.value,
+        projectOfPlan(plan.value),
+        targetStage.value.environment
+      );
     } else if (props.action === "SKIP") {
       // For export tasks, group by stage/environment and make separate batch calls
       if (isDatabaseExportTask.value) {
