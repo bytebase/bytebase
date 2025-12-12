@@ -117,7 +117,7 @@ const oauthState = (route.query.state as string) || "";
 const codeChallenge = (route.query.code_challenge as string) || "";
 const codeChallengeMethod = (route.query.code_challenge_method as string) || "";
 
-const authorizeUrl = "/oauth2/authorize";
+const authorizeUrl = "/api/oauth2/authorize";
 
 onMounted(async () => {
   // Check if user is logged in
@@ -141,7 +141,7 @@ onMounted(async () => {
   // Fetch client info
   try {
     const response = await fetch(
-      `/oauth2/clients/${encodeURIComponent(clientId)}`
+      `/api/oauth2/clients/${encodeURIComponent(clientId)}`
     );
     if (!response.ok) {
       const data = await response.json();
