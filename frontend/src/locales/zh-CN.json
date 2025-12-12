@@ -57,6 +57,9 @@
     "skip": "跳过",
     "skipped": "已跳过",
     "dismiss": "关闭",
+    "allow": "允许",
+    "deny": "拒绝",
+    "go-back": "返回",
     "back": "返回",
     "next": "下一步",
     "edit": "编辑",
@@ -2917,5 +2920,13 @@
     },
     "last-visit": "上次访问",
     "changelog-for-version": "{version} 的更新日志"
+  },
+  "oauth2": {
+    "consent": {
+      "title": "授权请求",
+      "description": "{clientName} 正在请求访问您的账户",
+      "permissions": "此应用程序将能够:",
+      "permission-access": "使用您的权限访问您的 Bytebase 账户"
+    }
   }
 }

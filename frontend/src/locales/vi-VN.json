@@ -57,6 +57,9 @@
     "skip": "Bỏ qua",
     "skipped": "Đã bỏ qua",
     "dismiss": "Loại bỏ",
+    "allow": "Cho phép",
+    "deny": "Từ chối",
+    "go-back": "Quay lại",
     "back": "Quay lại",
     "next": "Tiếp theo",
     "edit": "Chỉnh sửa",
@@ -2917,5 +2920,13 @@
     },
     "last-visit": "Lần truy cập cuối",
     "changelog-for-version": "Nhật ký thay đổi cho phiên bản {version}"
+  },
+  "oauth2": {
+    "consent": {
+      "title": "Yêu cầu ủy quyền",
+      "description": "{clientName} đang yêu cầu truy cập vào tài khoản của bạn",
+      "permissions": "Ứng dụng này sẽ có thể:",
+      "permission-access": "Truy cập tài khoản Bytebase của bạn với quyền hạn của bạn"
+    }
   }
 }

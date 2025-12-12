@@ -865,6 +865,25 @@
         
           
           <li>
+            <a href="#store%2foauth2.proto">store/oauth2.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.OAuth2AuthorizationCodeConfig"><span class="badge">M</span>OAuth2AuthorizationCodeConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.OAuth2ClientConfig"><span class="badge">M</span>OAuth2ClientConfig</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fplan.proto">store/plan.proto</a>
             <ul>
               
@@ -2275,10 +2294,11 @@ False means the backend is still searching for matching templates. </p></td>
                 </tr>
               
                 <tr>
-                  <td>principal_id</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td>principal</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The ID of the principal who is the approver. </p></td>
+                  <td><p>The principal who is the approver.
+Format: users/{email}. </p></td>
                 </tr>
               
             </tbody>
@@ -8817,6 +8837,103 @@ Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></t
                   <td>to_status</td>
                   <td><a href="#bytebase.store.TaskRun.Status">TaskRun.Status</a></td>
                   <td>optional</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/oauth2.proto">store/oauth2.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.OAuth2AuthorizationCodeConfig">OAuth2AuthorizationCodeConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>redirect_uri</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>code_challenge</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>code_challenge_method</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.OAuth2ClientConfig">OAuth2ClientConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>client_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>redirect_uris</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>grant_types</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>token_endpoint_auth_method</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
                   <td><p> </p></td>
                 </tr>
               

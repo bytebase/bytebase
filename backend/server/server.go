@@ -17,6 +17,8 @@ import (
 
 	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/lsp"
+	"github.com/bytebase/bytebase/backend/api/mcp"
+	"github.com/bytebase/bytebase/backend/api/oauth2"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -35,8 +37,8 @@ import (
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
+	"github.com/bytebase/bytebase/backend/runner/cleaner"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
-	runnermigrator "github.com/bytebase/bytebase/backend/runner/migrator"
 	"github.com/bytebase/bytebase/backend/runner/monitor"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -56,13 +58,13 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	taskScheduler        *taskrun.Scheduler
-	planCheckScheduler   *plancheck.Scheduler
-	metricReporter       *metricreport.Reporter
-	schemaSyncer         *schemasync.Syncer
-	approvalRunner       *approval.Runner
-	exportArchiveCleaner *runnermigrator.ExportArchiveCleaner
-	runnerWG             sync.WaitGroup
+	taskScheduler      *taskrun.Scheduler
+	planCheckScheduler *plancheck.Scheduler
+	metricReporter     *metricreport.Reporter
+	schemaSyncer       *schemasync.Syncer
+	approvalRunner     *approval.Runner
+	dataCleaner        *cleaner.DataCleaner
+	runnerWG           sync.WaitGroup
 
 	webhookManager        *webhook.Manager
 	iamManager            *iam.Manager
@@ -206,8 +208,8 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	statementReportExecutor := plancheck.NewStatementReportExecutor(stores, sheetManager, s.dbFactory)
 	s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 
-	// Export archive cleaner
-	s.exportArchiveCleaner = runnermigrator.NewExportArchiveCleaner(stores)
+	// Data cleaner
+	s.dataCleaner = cleaner.NewDataCleaner(stores)
 
 	// Metric reporter
 	s.initMetricReporter()
@@ -216,11 +218,16 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
 
 	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager, profile)
+	oauth2Service := oauth2.NewService(stores, profile, secret)
+	mcpServer, err := mcp.NewServer(stores, profile, secret)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create MCP server")
+	}
 
 	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
-	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, profile)
+	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, oauth2Service, mcpServer, profile)
 
 	serverStarted = true
 	return s, nil
@@ -245,7 +252,7 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	go s.planCheckScheduler.Run(ctx, &s.runnerWG)
 
 	s.runnerWG.Add(1)
-	go s.exportArchiveCleaner.Run(ctx, &s.runnerWG)
+	go s.dataCleaner.Run(ctx, &s.runnerWG)
 
 	s.runnerWG.Add(1)
 	mmm := monitor.NewMemoryMonitor(s.profile)

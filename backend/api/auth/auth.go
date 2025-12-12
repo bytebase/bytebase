@@ -37,7 +37,9 @@ const (
 	AccessTokenAudienceFmt = "bb.user.access.%s"
 	// MFATempTokenAudienceFmt is the format of the MFA temp token audience.
 	MFATempTokenAudienceFmt = "bb.user.mfa-temp.%s"
-	apiTokenDuration        = 1 * time.Hour
+	// OAuth2AccessTokenAudience is the audience for OAuth2 access tokens.
+	OAuth2AccessTokenAudience = "bb.oauth2.access"
+	apiTokenDuration          = 1 * time.Hour
 	// DefaultTokenDuration is the default token expiration duration.
 	DefaultTokenDuration = 7 * 24 * time.Hour
 
@@ -166,24 +168,43 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 		return nil, nil, errs.New("failed to parse claim")
 	}
 
-	if !audienceContains(claims.Audience, fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode)) {
+	// Accept both user access tokens (bb.user.access.{mode}) and OAuth2 access tokens (bb.oauth2.access)
+	validUserAudience := fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode)
+	isOAuth2Token := audienceContains(claims.Audience, OAuth2AccessTokenAudience)
+	isUserToken := audienceContains(claims.Audience, validUserAudience)
+	if !isUserToken && !isOAuth2Token {
 		return nil, nil, errs.Errorf(
-			"invalid access token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
+			"invalid access token, audience mismatch, got %q, expected %q or %q. you may send request to the wrong environment",
 			claims.Audience,
-			fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode),
+			validUserAudience,
+			OAuth2AccessTokenAudience,
 		)
 	}
 
-	principalID, err := strconv.Atoi(claims.Subject)
-	if err != nil {
-		return nil, nil, errs.Errorf("malformed ID %q in the access token", claims.Subject)
-	}
-	user, err := in.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, nil, errs.Errorf("failed to find user ID %q in the access token", principalID)
-	}
-	if user == nil {
-		return nil, nil, errs.Errorf("user ID %q not exists in the access token", principalID)
+	var user *store.UserMessage
+	var err error
+	if isOAuth2Token {
+		// OAuth2 tokens use email as subject
+		user, err = in.store.GetUserByEmail(ctx, claims.Subject)
+		if err != nil {
+			return nil, nil, errs.Errorf("failed to find user email %q in the access token", claims.Subject)
+		}
+		if user == nil {
+			return nil, nil, errs.Errorf("user email %q not exists in the access token", claims.Subject)
+		}
+	} else {
+		// User tokens use ID as subject
+		principalID, err := strconv.Atoi(claims.Subject)
+		if err != nil {
+			return nil, nil, errs.Errorf("malformed ID %q in the access token", claims.Subject)
+		}
+		user, err = in.store.GetUserByID(ctx, principalID)
+		if err != nil {
+			return nil, nil, errs.Errorf("failed to find user ID %q in the access token", principalID)
+		}
+		if user == nil {
+			return nil, nil, errs.Errorf("user ID %q not exists in the access token", principalID)
+		}
 	}
 	if user.MemberDeleted {
 		return nil, nil, errs.Errorf("user ID %q has been deactivated by administrators", user.ID)

@@ -266,8 +266,9 @@ type IssuePayloadApproval_Approver struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The current approval status.
 	Status IssuePayloadApproval_Approver_Status `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.IssuePayloadApproval_Approver_Status" json:"status,omitempty"`
-	// The ID of the principal who is the approver.
-	PrincipalId   int32 `protobuf:"varint,2,opt,name=principal_id,json=principalId,proto3" json:"principal_id,omitempty"`
+	// The principal who is the approver.
+	// Format: users/{email}.
+	Principal     string `protobuf:"bytes,2,opt,name=principal,proto3" json:"principal,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -309,26 +310,26 @@ func (x *IssuePayloadApproval_Approver) GetStatus() IssuePayloadApproval_Approve
 	return IssuePayloadApproval_Approver_STATUS_UNSPECIFIED
 }
 
-func (x *IssuePayloadApproval_Approver) GetPrincipalId() int32 {
+func (x *IssuePayloadApproval_Approver) GetPrincipal() string {
 	if x != nil {
-		return x.PrincipalId
+		return x.Principal
 	}
-	return 0
+	return ""
 }
 
 var File_store_approval_proto protoreflect.FileDescriptor
 
 const file_store_approval_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/approval.proto\x12\x0ebytebase.store\"\xf7\x03\n" +
+	"\x14store/approval.proto\x12\x0ebytebase.store\"\xf2\x03\n" +
 	"\x14IssuePayloadApproval\x12M\n" +
 	"\x11approval_template\x18\x01 \x01(\v2 .bytebase.store.ApprovalTemplateR\x10approvalTemplate\x12K\n" +
 	"\tapprovers\x18\x02 \x03(\v2-.bytebase.store.IssuePayloadApproval.ApproverR\tapprovers\x122\n" +
 	"\x15approval_finding_done\x18\x03 \x01(\bR\x13approvalFindingDone\x124\n" +
-	"\x16approval_finding_error\x18\x04 \x01(\tR\x14approvalFindingError\x1a\xc6\x01\n" +
+	"\x16approval_finding_error\x18\x04 \x01(\tR\x14approvalFindingError\x1a\xc1\x01\n" +
 	"\bApprover\x12L\n" +
-	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x12!\n" +
-	"\fprincipal_id\x18\x02 \x01(\x05R\vprincipalId\"I\n" +
+	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x12\x1c\n" +
+	"\tprincipal\x18\x02 \x01(\tR\tprincipal\"I\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\f\n" +

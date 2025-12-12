@@ -30,9 +30,8 @@ BEGIN
                             'STATEMENT_INSERT_ROW_LIMIT', 'STATEMENT_AFFECTED_ROW_LIMIT',
                             'STATEMENT_WHERE_MAXIMUM_LOGICAL_OPERATOR_COUNT', 'STATEMENT_MAXIMUM_LIMIT_VALUE',
                             'STATEMENT_MAXIMUM_JOIN_TABLE_COUNT', 'STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION',
-                            'STATEMENT_MAX_EXECUTION_TIME', 'STATEMENT_QUERY_MINIMUM_PLAN_LEVEL',
                             'COLUMN_MAXIMUM_CHARACTER_LENGTH', 'COLUMN_MAXIMUM_VARCHAR_LENGTH',
-                            'COLUMN_AUTO_INCREMENT_INITIAL_VALUE', 'COLUMN_CURRENT_TIME_COUNT_LIMIT',
+                            'COLUMN_AUTO_INCREMENT_INITIAL_VALUE',
                             'INDEX_KEY_NUMBER_LIMIT', 'INDEX_TOTAL_NUMBER_LIMIT',
                             'TABLE_TEXT_FIELDS_TOTAL_LENGTH', 'TABLE_LIMIT_SIZE', 'SYSTEM_COMMENT_LENGTH'
                         ) AND rule->>'payload' IS NOT NULL AND rule->>'payload' != '' AND rule->>'payload' != 'null' AND rule->>'payload' != '{}'
@@ -57,16 +56,17 @@ BEGIN
                         AND rule->>'payload' IS NOT NULL AND rule->>'payload' != '' AND rule->>'payload' != 'null' AND rule->>'payload' != '{}'
                         THEN jsonb_set(rule, '{namingCasePayload}', (rule->>'payload')::jsonb) - 'payload'
 
-                        -- String rule: parse JSON string, rename field from "string" to "value", and wrap in stringPayload
-                        WHEN (rule->>'type') = 'NAMING_FULLY_QUALIFIED'
+                        -- String rule: parse JSON string, extract "level" field (or default to INDEX), and wrap in stringPayload
+                        WHEN (rule->>'type') = 'STATEMENT_QUERY_MINIMUM_PLAN_LEVEL'
                         AND rule->>'payload' IS NOT NULL AND rule->>'payload' != '' AND rule->>'payload' != 'null' AND rule->>'payload' != '{}'
                         THEN jsonb_set(
                             rule,
                             '{stringPayload}',
-                            jsonb_build_object('value', (rule->>'payload')::jsonb->>'string')
+                            jsonb_build_object('value', COALESCE((rule->>'payload')::jsonb->>'level', 'INDEX'))
                         ) - 'payload'
 
-                        -- Rules with empty/null payload or already migrated - remove payload field
+                        -- Rules with empty/null payload or no payload (like NAMING_FULLY_QUALIFIED,
+                        -- STATEMENT_MAX_EXECUTION_TIME, COLUMN_CURRENT_TIME_COUNT_LIMIT) - just remove payload field
                         ELSE rule - 'payload'
                     END
                 )

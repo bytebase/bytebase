@@ -13,7 +13,7 @@ func (x *IssuePayloadApproval_Approver) Equal(y *IssuePayloadApproval_Approver) 
 	if x.Status != y.Status {
 		return false
 	}
-	if x.PrincipalId != y.PrincipalId {
+	if x.Principal != y.Principal {
 		return false
 	}
 	return true
