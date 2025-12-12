@@ -176,7 +176,6 @@
           </div>
         </div>
 
-        <!-- shouldShowComment: only show if issue is available -->
         <div
           v-if="shouldShowComment"
           class="flex flex-col gap-y-1 shrink-0"
