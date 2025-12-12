@@ -21,8 +21,9 @@ message IssuePayloadApproval {
     // The current approval status.
     Status status = 1;
 
-    // The ID of the principal who is the approver.
-    int32 principal_id = 2;
+    // The principal who is the approver.
+    // Format: users/{email}.
+    string principal = 2;
   }
 
   // The approval template being used for this issue.

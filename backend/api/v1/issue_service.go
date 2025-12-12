@@ -746,8 +746,8 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	}
 
 	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
-		Status:      storepb.IssuePayloadApproval_Approver_APPROVED,
-		PrincipalId: int32(user.ID),
+		Status:    storepb.IssuePayloadApproval_Approver_APPROVED,
+		Principal: common.FormatUserEmail(user.Email),
 	})
 
 	approved, err := utils.CheckApprovalApproved(payload.Approval)
@@ -929,8 +929,8 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot reject because the user does not have the required permission"))
 	}
 	payload.Approval.Approvers = append(payload.Approval.Approvers, &storepb.IssuePayloadApproval_Approver{
-		Status:      storepb.IssuePayloadApproval_Approver_REJECTED,
-		PrincipalId: int32(user.ID),
+		Status:    storepb.IssuePayloadApproval_Approver_REJECTED,
+		Principal: common.FormatUserEmail(user.Email),
 	})
 
 	issue, err = s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{

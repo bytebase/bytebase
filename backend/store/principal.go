@@ -574,6 +574,41 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 		return nil, errors.Wrapf(err, "failed to update issue grant request")
 	}
 
+	// 2b. Update Approval approvers in Issue payload
+	// The principal in approvers is stored as "users/{email}" within the JSON payload.
+	// We need to update each approver's principal field if it matches the old user reference.
+	approverSQL := `
+		UPDATE issue
+		SET payload = (
+			SELECT jsonb_set(
+				issue.payload,
+				'{approval,approvers}',
+				COALESCE(
+					(
+						SELECT jsonb_agg(
+							CASE
+								WHEN approver->>'principal' = $1 THEN
+									jsonb_set(approver, '{principal}', to_jsonb($2::text))
+								ELSE approver
+							END
+						)
+						FROM jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver
+					),
+					'[]'::jsonb
+				)
+			)
+		)
+		WHERE payload->'approval' ? 'approvers'
+		  AND EXISTS (
+			  SELECT 1
+			  FROM jsonb_array_elements(payload->'approval'->'approvers') AS approver
+			  WHERE approver->>'principal' = $1
+		  )`
+
+	if _, err := tx.ExecContext(ctx, approverSQL, oldUserRef, newUserRef); err != nil {
+		return nil, errors.Wrapf(err, "failed to update issue approval approvers")
+	}
+
 	// 3. Update Policies
 	// Update IAM policies: bindings->members array contains user references
 	// Update MASKING_EXCEPTION policies: maskingExceptions->member field contains user references

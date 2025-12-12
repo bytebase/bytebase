@@ -654,7 +654,7 @@ Approver represents a user who can approve or reject an issue.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status) |  | The current approval status. |
-| principal_id | [int32](#int32) |  | The ID of the principal who is the approver. |
+| principal | [string](#string) |  | The principal who is the approver. Format: users/{email}. |
 
 
 
