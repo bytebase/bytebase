@@ -530,17 +530,9 @@
     "mcp": {
       "title": "Integración MCP",
       "description": "Conecte asistentes de IA a Bytebase usando el Model Context Protocol.",
-      "prerequisites": {
-        "title": "Requisitos previos",
-        "mcp-client": "Un cliente compatible con MCP (Claude Desktop, Claude Code, Cursor, etc.)",
-        "bytebase-account": "Una cuenta de Bytebase con los permisos apropiados"
-      },
       "setup": {
-        "title": "Configuración",
-        "endpoint-url": "URL del endpoint MCP",
         "external-url-warning": "La URL externa no está configurada.",
         "configure-external-url": "Configurar URL externa en Configuración general",
-        "claude-desktop-config": "Configuración de Claude Desktop",
         "add-to-config": "Agregar a su configuración MCP:",
         "run-command": "Ejecute este comando:",
         "oauth-note": "En el primer uso, se le pedirá que autorice el acceso."
@@ -549,28 +541,6 @@
         "title": "Tu primer prompt",
         "description": "Una vez conectado, intente preguntar a su asistente de IA:",
         "example": "Listar todos los proyectos en mi instancia de Bytebase"
-      },
-      "examples": {
-        "title": "Ejemplos de prompts",
-        "description": "Una vez conectado, intente preguntar a su asistente de IA:",
-        "list-databases": "Listar todas las bases de datos en la instancia de producción",
-        "show-schema": "Mostrar el esquema de la tabla users",
-        "execute-query": "Ejecutar una consulta SELECT en la base de datos orders"
-      },
-      "what-is-mcp": {
-        "title": "¿Qué es MCP?",
-        "description": "MCP (Model Context Protocol) es un protocolo abierto que permite a los asistentes de IA interactuar directamente con herramientas y servicios externos. Con la integración MCP de Bytebase, su IA puede descubrir APIs, consultar bases de datos, gestionar esquemas y ejecutar SQL a través de conversación natural."
-      },
-      "troubleshooting": {
-        "title": "Solución de problemas",
-        "connection-refused": {
-          "title": "Conexión rechazada",
-          "description": "Verifique que su instancia de Bytebase sea accesible desde su red y que la URL externa esté correctamente configurada."
-        },
-        "permission-denied": {
-          "title": "Permiso denegado",
-          "description": "Asegúrese de que su cuenta de Bytebase tenga los permisos necesarios para las operaciones que está intentando."
-        }
       }
     },
     "sso": {
@@ -1283,8 +1253,7 @@
       "self": "Escenario | Escenarios",
       "run-stage": "Etapa de ejecución",
       "confirm-create": "¿Está seguro de que desea crear tareas para esta etapa?",
-      "back-to-stage": "Volver a la etapa {stage}",
-      "no-stages": {}
+      "back-to-stage": "Volver a la etapa {stage}"
     },
     "task": {
       "selected-count": "{count} tarea seleccionada | {count} tareas seleccionadas",
@@ -2155,7 +2124,6 @@
     "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "query-time": "Tiempo de consulta",
     "connection-lost": "Conexión perdida. \nIntentará volver a conectarse al ejecutar la siguiente consulta.",
-    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2698,9 +2666,7 @@
           "data_export": "Exportar datos",
           "request-role": "Rol de solicitud"
         }
-      },
-      "template": {},
-      "source": {}
+      }
     },
     "approval-flow": {
       "self": "Flujo de aprobación",

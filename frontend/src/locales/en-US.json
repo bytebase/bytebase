@@ -530,17 +530,9 @@
     "mcp": {
       "title": "MCP Integration",
       "description": "Connect AI assistants to Bytebase using the Model Context Protocol.",
-      "prerequisites": {
-        "title": "Prerequisites",
-        "mcp-client": "An MCP-compatible client (Claude Desktop, Claude Code, Cursor, etc.)",
-        "bytebase-account": "A Bytebase account with appropriate permissions"
-      },
       "setup": {
-        "title": "Setup",
-        "endpoint-url": "MCP Endpoint URL",
         "external-url-warning": "External URL is not configured.",
         "configure-external-url": "Configure External URL in General Settings",
-        "claude-desktop-config": "Claude Desktop Configuration",
         "add-to-config": "Add to your MCP configuration:",
         "run-command": "Run this command:",
         "oauth-note": "On first use, you'll be prompted to authorize access."
@@ -549,28 +541,6 @@
         "title": "Your First Prompt",
         "description": "Once connected, try asking your AI assistant:",
         "example": "List all projects in my Bytebase instance"
-      },
-      "examples": {
-        "title": "Example Prompts",
-        "description": "Once connected, try asking your AI assistant:",
-        "list-databases": "List all databases in the production instance",
-        "show-schema": "Show me the schema for the users table",
-        "execute-query": "Execute a SELECT query on the orders database"
-      },
-      "what-is-mcp": {
-        "title": "What is MCP?",
-        "description": "MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact directly with external tools and services. With Bytebase MCP integration, your AI can discover APIs, query databases, manage schemas, and execute SQL through natural conversation."
-      },
-      "troubleshooting": {
-        "title": "Troubleshooting",
-        "connection-refused": {
-          "title": "Connection refused",
-          "description": "Verify that your Bytebase instance is accessible from your network and the external URL is correctly configured."
-        },
-        "permission-denied": {
-          "title": "Permission denied",
-          "description": "Ensure your Bytebase account has the required permissions for the operations you're attempting."
-        }
       }
     },
     "sso": {
@@ -1283,8 +1253,7 @@
       "self": "Stage | Stages",
       "run-stage": "Run Stage",
       "confirm-create": "Confirm to create tasks for this stage?",
-      "back-to-stage": "Back to Stage {stage}",
-      "no-stages": {}
+      "back-to-stage": "Back to Stage {stage}"
     },
     "task": {
       "selected-count": "{count} task selected | {count} tasks selected",
@@ -1693,7 +1662,6 @@
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "export": "Export Changelog",
     "need-to-select-first": "Need to select changelog first",
-
     "rollback-tip": "Select a specific DDL changelog to rollback."
   },
   "database": {
@@ -2156,7 +2124,6 @@
     "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "query-time": "Query time",
     "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
-    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2699,9 +2666,7 @@
           "data_export": "Export Data",
           "request-role": "Request Role"
         }
-      },
-      "template": {},
-      "source": {}
+      }
     },
     "approval-flow": {
       "self": "Approval Flow",
