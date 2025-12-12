@@ -210,6 +210,7 @@ func (s *Service) issueTokens(c echo.Context, client *store.OAuth2ClientMessage,
 		"client_id": client.ClientID,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token.Header["kid"] = "v1"
 	accessToken, err := token.SignedString([]byte(s.secret))
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to generate access token")
