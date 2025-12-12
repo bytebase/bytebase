@@ -88,7 +88,7 @@ func TestSearchAPIByService(t *testing.T) {
 	require.Len(t, result.Content, 1)
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "bytebase.v1.SQLService")
+	require.Contains(t, text, "SQLService/")
 	require.Contains(t, text, "endpoints")
 	// Browse mode should not include schema
 	require.NotContains(t, text, "Request Body")
@@ -117,7 +117,7 @@ func TestSearchAPIDetailMode(t *testing.T) {
 	s, err := NewServer(nil, profile, "test-secret")
 	require.NoError(t, err)
 
-	// Test detail mode with operationId
+	// Test detail mode with full operationId
 	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
 		OperationID: "bytebase.v1.SQLService.Query",
 	})
@@ -126,7 +126,26 @@ func TestSearchAPIDetailMode(t *testing.T) {
 	require.Len(t, result.Content, 1)
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "bytebase.v1.SQLService.Query")
+	require.Contains(t, text, "SQLService/Query")
+	require.Contains(t, text, "Request Body")
+	require.Contains(t, text, "```json")
+}
+
+func TestSearchAPIDetailModeShortFormat(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	s, err := NewServer(nil, profile, "test-secret")
+	require.NoError(t, err)
+
+	// Test detail mode with short operationId format (Service/Method)
+	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
+		OperationID: "SQLService/Query",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Len(t, result.Content, 1)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "SQLService/Query")
 	require.Contains(t, text, "Request Body")
 	require.Contains(t, text, "```json")
 }
@@ -240,4 +259,44 @@ func TestSearchAPINoResults(t *testing.T) {
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "No endpoints found")
 	require.Contains(t, text, "Try:")
+}
+
+func TestSearchAPILimitZeroShowsAll(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	s, err := NewServer(nil, profile, "test-secret")
+	require.NoError(t, err)
+
+	// Test limit=0 shows all endpoints in a service
+	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
+		Service: "DatabaseService",
+		Limit:   0,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Len(t, result.Content, 1)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	// Should show "Found X endpoints" not "Showing X of Y"
+	require.Contains(t, text, "Found")
+	require.NotContains(t, text, "Showing")
+}
+
+func TestSearchAPIQueryWithService(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	s, err := NewServer(nil, profile, "test-secret")
+	require.NoError(t, err)
+
+	// Test query within a specific service
+	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
+		Service: "SQLService",
+		Query:   "query",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Len(t, result.Content, 1)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "SQLService/")
+	// Should only return SQLService endpoints
+	require.NotContains(t, text, "DatabaseService/")
 }

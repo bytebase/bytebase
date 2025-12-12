@@ -2,6 +2,7 @@ package mcp
 
 import (
 	_ "embed"
+	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -167,10 +168,13 @@ func extractPermissions(description string) []string {
 		return nil
 	}
 
-	// Split by comma or space
-	perms := strings.FieldsFunc(permStr, func(r rune) bool {
-		return r == ',' || r == ' '
-	})
+	// Remove parenthetical notes like "(for project parent)"
+	if idx := strings.Index(permStr, "("); idx > 0 {
+		permStr = strings.TrimSpace(permStr[:idx])
+	}
+
+	// Split by comma
+	perms := strings.Split(permStr, ",")
 
 	var result []string
 	for _, p := range perms {
@@ -281,9 +285,22 @@ func (idx *OpenAPIIndex) Services() []string {
 }
 
 // GetEndpoint returns the endpoint info for the given operation ID.
+// Supports both full format (bytebase.v1.SQLService.Query) and short format (SQLService/Query).
 func (idx *OpenAPIIndex) GetEndpoint(operationID string) (*EndpointInfo, bool) {
-	ep, ok := idx.byOperation[operationID]
-	return ep, ok
+	// Try full format first
+	if ep, ok := idx.byOperation[operationID]; ok {
+		return ep, true
+	}
+
+	// Try short format: Service/Method -> bytebase.v1.Service.Method
+	if parts := strings.Split(operationID, "/"); len(parts) == 2 {
+		fullID := fmt.Sprintf("bytebase.v1.%s.%s", parts[0], parts[1])
+		if ep, ok := idx.byOperation[fullID]; ok {
+			return ep, true
+		}
+	}
+
+	return nil, false
 }
 
 // GetServiceEndpoints returns all endpoints for the given service.
@@ -306,11 +323,12 @@ func (idx *OpenAPIIndex) Search(query string) []*EndpointInfo {
 		}
 	}
 
-	// Also do substring matching on operationID, summary, and method
+	// Also do substring matching on operationID, summary, method, and service
 	queryLower := strings.ToLower(query)
 	for i := range idx.endpoints {
 		ep := &idx.endpoints[i]
 		methodLower := strings.ToLower(ep.Method)
+		serviceLower := strings.ToLower(ep.Service)
 		matched := false
 
 		// Exact method name match gets highest boost
@@ -319,6 +337,12 @@ func (idx *OpenAPIIndex) Search(query string) []*EndpointInfo {
 			matched = true
 		} else if strings.Contains(methodLower, queryLower) {
 			scores[ep] += 5
+			matched = true
+		}
+
+		// Service name match (e.g., "sql" matches "SQLService")
+		if strings.Contains(serviceLower, queryLower) {
+			scores[ep] += 4
 			matched = true
 		}
 
@@ -358,6 +382,18 @@ func (idx *OpenAPIIndex) Search(query string) []*EndpointInfo {
 		endpoints = append(endpoints, r.ep)
 	}
 	return endpoints
+}
+
+// SearchInService searches for endpoints matching the query within a specific service.
+func (idx *OpenAPIIndex) SearchInService(query, service string) []*EndpointInfo {
+	allResults := idx.Search(query)
+	var filtered []*EndpointInfo
+	for _, ep := range allResults {
+		if ep.Service == service {
+			filtered = append(filtered, ep)
+		}
+	}
+	return filtered
 }
 
 // GetRequestSchema returns the simplified schema properties for a request type.

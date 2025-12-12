@@ -34,14 +34,15 @@ const searchAPIDescription = `Search and discover Bytebase API endpoints.
 |------|------------|--------|
 | List services | (none) | All available API categories |
 | Search | query="execute sql" | Matching endpoints with descriptions |
-| Browse | service="SQLService" | All endpoints in a service |
-| Details | operationId="..." | Full request/response schema |
+| Browse | service="SQLService" | All endpoints in a service (use limit=0 for all) |
+| Filter | service="SQLService", query="query" | Search within a service |
+| Details | operationId="SQLService/Query" | Full request/response schema |
 
 ## Workflow
 
 1. search_api(query="your task") - find relevant endpoints
-2. search_api(operationId="...") - get full schema
-3. call_api(operationId="...", body={...}) - execute`
+2. search_api(operationId="Service/Method") - get full schema
+3. call_api(operationId="Service/Method", body={...}) - execute`
 
 func (s *Server) registerSearchTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -62,14 +63,24 @@ func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, inpu
 		// List all services
 		text = s.formatServiceList()
 
+	case input.Service != "" && input.Query != "":
+		// Search within a service
+		endpoints := s.openAPIIndex.SearchInService(input.Query, input.Service)
+		if len(endpoints) == 0 {
+			text = fmt.Sprintf("No endpoints found for query %q in service %s\n\nTry:\n- Different keywords\n- Browsing the service with search_api(service=\"%s\")",
+				input.Query, input.Service, input.Service)
+		} else {
+			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit, false))
+		}
+
 	case input.Service != "":
-		// List endpoints in a service
+		// List endpoints in a service (allow showing all with limit=0)
 		endpoints := s.openAPIIndex.GetServiceEndpoints(input.Service)
 		if len(endpoints) == 0 {
 			text = fmt.Sprintf("No endpoints found for service: %s\n\nAvailable services:\n%s",
 				input.Service, s.formatServiceList())
 		} else {
-			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit))
+			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit, true))
 		}
 
 	default:
@@ -78,7 +89,7 @@ func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, inpu
 		if len(endpoints) == 0 {
 			text = fmt.Sprintf("No endpoints found for query: %q\n\nTry:\n- Different keywords\n- Listing services with search_api() (no parameters)\n- Browsing a service with search_api(service=\"ServiceName\")", input.Query)
 		} else {
-			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit))
+			text = s.formatEndpoints(endpoints, s.getLimit(input.Limit, false))
 		}
 	}
 
@@ -87,7 +98,10 @@ func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, inpu
 	}, nil, nil
 }
 
-func (*Server) getLimit(limit int) int {
+func (*Server) getLimit(limit int, showAll bool) int {
+	if limit == 0 && showAll {
+		return 0 // 0 means no limit
+	}
 	if limit <= 0 {
 		return 5
 	}
@@ -113,10 +127,10 @@ func (s *Server) formatServiceList() string {
 	return sb.String()
 }
 
-func (s *Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
+func (*Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
 	var sb strings.Builder
 
-	if len(endpoints) > limit {
+	if limit > 0 && len(endpoints) > limit {
 		sb.WriteString(fmt.Sprintf("Showing %d of %d results:\n\n", limit, len(endpoints)))
 		endpoints = endpoints[:limit]
 	} else {
@@ -124,7 +138,7 @@ func (s *Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
 	}
 
 	for i, ep := range endpoints {
-		sb.WriteString(fmt.Sprintf("### %d. %s\n", i+1, ep.OperationID))
+		sb.WriteString(fmt.Sprintf("### %d. %s/%s\n", i+1, ep.Service, ep.Method))
 		sb.WriteString(fmt.Sprintf("%s\n", ep.Summary))
 
 		if len(ep.Permissions) > 0 {
@@ -133,7 +147,7 @@ func (s *Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString("Use `search_api(operationId=\"...\")` to get full request/response schema.\n")
+	sb.WriteString("Use `search_api(operationId=\"Service/Method\")` to get full request/response schema.\n")
 	return sb.String()
 }
 
@@ -145,7 +159,7 @@ func (s *Server) formatEndpointDetail(operationID string) string {
 
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("## %s\n\n", ep.OperationID))
+	sb.WriteString(fmt.Sprintf("## %s/%s\n\n", ep.Service, ep.Method))
 	sb.WriteString(fmt.Sprintf("%s\n\n", ep.Summary))
 
 	if len(ep.Permissions) > 0 {
@@ -191,5 +205,5 @@ func (*Server) formatProperty(sb *strings.Builder, prop PropertyInfo) {
 		cleanDesc = strings.ReplaceAll(cleanDesc, "\r", "")
 		desc = fmt.Sprintf(" // %s", cleanDesc)
 	}
-	sb.WriteString(fmt.Sprintf("  %q: %s%s%s\n", prop.Name, prop.Type, required, desc))
+	fmt.Fprintf(sb, "  %q: %s%s%s\n", prop.Name, prop.Type, required, desc)
 }
