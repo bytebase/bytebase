@@ -44,6 +44,9 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
       selection: null,
     },
     viewState: defaultViewState(),
+    batchQueryContext: {
+      databases: [],
+    },
   };
 };
 
@@ -58,7 +61,7 @@ export const emptySQLEditorConnection = (): SQLEditorConnection => {
   };
 };
 
-export const getConnectionForSQLEditorTab = (tab: SQLEditorTab) => {
+export const getConnectionForSQLEditorTab = (tab?: SQLEditorTab) => {
   const target: {
     instance: InstanceResource | undefined;
     database: ComposedDatabase | undefined;
@@ -66,6 +69,9 @@ export const getConnectionForSQLEditorTab = (tab: SQLEditorTab) => {
     instance: undefined,
     database: undefined,
   };
+  if (!tab) {
+    return target;
+  }
   const { connection } = tab;
   if (connection.database) {
     const database = useDatabaseV1Store().getDatabaseByName(

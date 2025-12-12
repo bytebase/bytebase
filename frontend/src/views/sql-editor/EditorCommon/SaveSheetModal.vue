@@ -31,28 +31,21 @@
 </template>
 
 <script lang="tsx" setup>
-import { create } from "@bufbuild/protobuf";
 import { NButton, NInput } from "naive-ui";
 import { ref } from "vue";
 import { BBModal } from "@/bbkit";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useSQLEditorTabStore, useWorkSheetStore } from "@/store";
+import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import {
-  type Worksheet,
-  Worksheet_Visibility,
-  WorksheetSchema,
-} from "@/types/proto-es/v1/worksheet_service_pb";
 import { extractWorksheetUID } from "@/utils";
 import FolderForm from "@/views/sql-editor/AsidePanel/WorksheetPane/SheetList/FolderForm.vue";
 import { useSheetContextByView } from "@/views/sql-editor/Sheet";
 import { useSQLEditorContext } from "../context";
 
-const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
-const { events: editorEvents } = useSQLEditorContext();
+const editorContext = useSQLEditorContext();
 const { getPwdForWorksheet } = useSheetContextByView("my");
 const folderFormRef = ref<InstanceType<typeof FolderForm>>();
 
@@ -70,59 +63,35 @@ const doSaveSheet = async () => {
   if (!pendingEdit.value.rawTab) {
     return close();
   }
-  const { statement, worksheet, connection } = pendingEdit.value.rawTab;
-
   if (pendingEdit.value.title === "") {
     return;
   }
 
+  const {
+    worksheet,
+    connection,
+    statement,
+    id: tabId,
+  } = pendingEdit.value.rawTab;
+  const folders = folderFormRef.value?.folders ?? [];
+
   const sheetId = Number(extractWorksheetUID(worksheet ?? ""));
-  let worksheetEntity: Worksheet | undefined;
-
   if (sheetId !== UNKNOWN_ID) {
-    const currentSheet = worksheetV1Store.getWorksheetByName(worksheet);
-    if (!currentSheet) {
-      return;
-    }
-
-    worksheetEntity = await worksheetV1Store.patchWorksheet(
-      {
-        ...currentSheet,
-        title: pendingEdit.value.title,
-        database: connection.database,
-        content: new TextEncoder().encode(statement),
-      },
-      ["title", "content", "database"]
-    );
-  } else {
-    worksheetEntity = await worksheetV1Store.createWorksheet(
-      create(WorksheetSchema, {
-        title: pendingEdit.value.title,
-        project: tabStore.project,
-        content: new TextEncoder().encode(statement),
-        database: connection.database,
-        visibility: Worksheet_Visibility.PRIVATE,
-      })
-    );
-  }
-
-  if (worksheetEntity) {
-    const folders = folderFormRef.value?.folders ?? [];
-    if (folders.length > 0) {
-      await worksheetV1Store.upsertWorksheetOrganizer(
-        {
-          worksheet: worksheetEntity.name,
-          starred: false,
-          folders,
-        },
-        ["folders"]
-      );
-    }
-
-    tabStore.updateTab(pendingEdit.value.rawTab.id, {
+    await editorContext.updateWorksheet({
+      tabId,
+      worksheet,
       title: pendingEdit.value.title,
-      status: "CLEAN",
-      worksheet: worksheetEntity.name,
+      database: connection.database,
+      statement,
+      folders,
+    });
+  } else {
+    await editorContext.createWorksheet({
+      tabId,
+      title: pendingEdit.value.title,
+      statement: pendingEdit.value.rawTab.statement,
+      database: connection.database,
+      folders,
     });
   }
 
@@ -138,21 +107,25 @@ const close = () => {
   showModal.value = false;
 };
 
-useEmitteryEventListener(editorEvents, "save-sheet", ({ tab, editTitle }) => {
-  pendingEdit.value = {
-    title: tab.title,
-    folder: "",
-    rawTab: tab,
-  };
+useEmitteryEventListener(
+  editorContext.events,
+  "save-sheet",
+  ({ tab, editTitle }) => {
+    pendingEdit.value = {
+      title: tab.title,
+      folder: "",
+      rawTab: tab,
+    };
 
-  if (needShowModal(tab) || editTitle) {
-    const worksheet = worksheetV1Store.getWorksheetByName(tab.worksheet);
-    if (worksheet) {
-      pendingEdit.value.folder = getPwdForWorksheet(worksheet);
+    if (needShowModal(tab) || editTitle) {
+      const worksheet = worksheetV1Store.getWorksheetByName(tab.worksheet);
+      if (worksheet) {
+        pendingEdit.value.folder = getPwdForWorksheet(worksheet);
+      }
+      showModal.value = true;
+      return;
     }
-    showModal.value = true;
-    return;
+    doSaveSheet();
   }
-  doSaveSheet();
-});
+);
 </script>

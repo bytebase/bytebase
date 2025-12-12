@@ -53,7 +53,7 @@
           {{
             $t("sql-editor.batch-query.select-data-source.not-match", {
               expect: getDataSourceTypeI18n(
-                tabStore.currentTab?.batchQueryContext?.dataSourceType
+                tabStore.currentTab?.batchQueryContext.dataSourceType
               ),
               actual: getDataSourceTypeI18n(dataSourceInContext(context)?.type),
             })
@@ -259,7 +259,7 @@ const dataSourceInContext = (context: SQLEditorDatabaseQueryContext) => {
 // Memoize batch mode check
 const batchModeDataSourceType = computed(() => {
   if (!tabStore.isInBatchMode) return null;
-  return tabStore.currentTab?.batchQueryContext?.dataSourceType ?? null;
+  return tabStore.currentTab?.batchQueryContext.dataSourceType ?? null;
 });
 
 const isMatchedDataSource = (context: SQLEditorDatabaseQueryContext) => {

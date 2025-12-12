@@ -4,7 +4,11 @@ import {
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import type { ComposedDatabase, QueryPermission } from "@/types";
-import { QueryPermissionQueryAny, UNKNOWN_ID } from "@/types";
+import {
+  isValidDatabaseName,
+  QueryPermissionQueryAny,
+  UNKNOWN_ID,
+} from "@/types";
 import { hasWorkspacePermissionV2 } from "../iam";
 import { extractProjectResourceName } from "./project";
 
@@ -52,6 +56,10 @@ export const isDatabaseV1Queryable = (
   schema?: string,
   table?: string
 ): boolean => {
+  if (!isValidDatabaseName(database.name)) {
+    return false;
+  }
+
   if (permissions.some((permission) => hasWorkspacePermissionV2(permission))) {
     return true;
   }

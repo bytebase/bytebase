@@ -133,6 +133,10 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     });
   });
 
+  const getTabByWorksheet = (worksheet: string) => {
+    return openTabList.value.find((item) => item.worksheet === worksheet);
+  };
+
   const currentTab = computed(() => {
     const currId = currentTabId.value;
     if (!currId) return undefined;
@@ -169,7 +173,10 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
    * @param beside `true` to add the tab beside currentTab, `false` to add the tab to the last, default to `false`
    * @returns the tab
    */
-  const addTab = (payload?: Partial<SQLEditorTab>, beside = false) => {
+  const addTab = (
+    payload?: Partial<SQLEditorTab>,
+    beside = false
+  ): SQLEditorTab => {
     const defaultTab: SQLEditorTab = {
       ...defaultSQLEditorTab(),
       ...omitBy(payload, isUndefined),
@@ -247,17 +254,21 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     }
   };
 
-  const updateTab = (id: string, payload: Partial<SQLEditorTab>) => {
+  const updateTab = (
+    id: string,
+    payload: Partial<SQLEditorTab>
+  ): SQLEditorTab | undefined => {
     const tab = getTabById(id);
     if (!tab) return;
     Object.assign(tab, payload);
     upsertCache(tab);
+    return tab;
   };
 
   const updateCurrentTab = (payload: Partial<SQLEditorTab>) => {
     const id = currentTabId.value;
     if (!id) return;
-    updateTab(id, payload);
+    return updateTab(id, payload);
   };
 
   const updateBatchQueryContext = (payload: Partial<BatchQueryContext>) => {
@@ -265,9 +276,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     if (!tab) {
       return;
     }
-    updateTab(tab.id, {
+    return updateTab(tab.id, {
       batchQueryContext: {
-        databases: tab.batchQueryContext?.databases ?? [],
         dataSourceType:
           tab.batchQueryContext?.dataSourceType ?? DataSourceType.READ_ONLY,
         ...tab.batchQueryContext,
@@ -385,6 +395,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     project,
     initProject,
     getTabById,
+    getTabByWorksheet,
     openTabList,
     currentTabId,
     currentTab,

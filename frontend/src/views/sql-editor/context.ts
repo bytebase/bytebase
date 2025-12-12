@@ -1,21 +1,25 @@
 import { create } from "@bufbuild/protobuf";
 import { useLocalStorage } from "@vueuse/core";
 import Emittery from "emittery";
+import { isUndefined } from "lodash-es";
 import { type IRange } from "monaco-editor";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, nextTick, provide, ref } from "vue";
 import {
   useProjectV1Store,
   useSQLEditorStore,
+  useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { isValidProjectName } from "@/types";
 import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
 import {
+  type Worksheet,
   Worksheet_Visibility,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
+import { extractWorksheetConnection } from "@/utils";
 import { openWorksheetByName } from "@/views/sql-editor/Sheet";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
@@ -69,15 +73,21 @@ export type SQLEditorContext = {
 
   maybeSwitchProject: (project: string) => Promise<string | undefined>;
   handleEditorPanelResize: (size: number) => void;
-  createWorksheet: ({
-    title,
-    folders,
-  }: {
+  createWorksheet: (options: {
+    tabId?: string;
     title?: string;
     folders?: string[];
     statement?: string;
     database?: string;
   }) => Promise<SQLEditorTab | undefined>;
+  updateWorksheet: (options: {
+    tabId: string;
+    worksheet: string;
+    title: string;
+    database: string;
+    statement: string;
+    folders?: string[];
+  }) => Promise<Worksheet | undefined>;
 };
 
 export const KEY = Symbol(
@@ -90,6 +100,7 @@ export const useSQLEditorContext = () => {
 
 export const provideSQLEditorContext = () => {
   const editorStore = useSQLEditorStore();
+  const tabStore = useSQLEditorTabStore();
   const projectStore = useProjectV1Store();
   const worksheetStore = useWorkSheetStore();
   const showConnectionPanel = ref(false);
@@ -114,12 +125,65 @@ export const provideSQLEditorContext = () => {
     };
   });
 
+  const updateWorksheet = async ({
+    tabId,
+    worksheet,
+    title,
+    database,
+    statement,
+    folders,
+  }: {
+    tabId: string;
+    worksheet: string;
+    title: string;
+    database: string;
+    statement: string;
+    folders?: string[];
+  }) => {
+    if (!worksheet) {
+      return;
+    }
+    const currentSheet = worksheetStore.getWorksheetByName(worksheet);
+    if (!currentSheet) {
+      return;
+    }
+
+    const updated = await worksheetStore.patchWorksheet(
+      {
+        ...currentSheet,
+        title,
+        database,
+        content: new TextEncoder().encode(statement),
+      },
+      ["title", "database", "content"]
+    );
+    if (updated && !isUndefined(folders)) {
+      await worksheetStore.upsertWorksheetOrganizer(
+        {
+          worksheet: updated.name,
+          folders: folders,
+        },
+        ["folders"]
+      );
+    }
+
+    tabStore.updateTab(tabId, {
+      status: "CLEAN",
+      title: updated?.title,
+      worksheet: updated?.name,
+    });
+
+    return updated;
+  };
+
   const createWorksheet = async ({
+    tabId,
     title = "new worksheet",
     statement = "",
     folders = [],
     database = "",
   }: {
+    tabId?: string;
     title?: string;
     statement?: string;
     folders?: string[];
@@ -145,17 +209,27 @@ export const provideSQLEditorContext = () => {
       );
     }
 
-    const tab = await openWorksheetByName({
-      worksheet: newWorksheet.name,
-      forceNewTab: true,
-    });
-    nextTick(() => {
-      if (tab && !tab.connection?.database) {
-        showConnectionPanel.value = true;
-      }
-    });
-
-    return tab;
+    if (tabId) {
+      const connection = await extractWorksheetConnection(newWorksheet);
+      return tabStore.updateTab(tabId, {
+        status: "CLEAN",
+        title,
+        statement,
+        connection,
+        worksheet: newWorksheet.name,
+      });
+    } else {
+      const tab = await openWorksheetByName({
+        worksheet: newWorksheet.name,
+        forceNewTab: true,
+      });
+      nextTick(() => {
+        if (tab && !tab.connection?.database) {
+          showConnectionPanel.value = true;
+        }
+      });
+      return tab;
+    }
   };
 
   const context: SQLEditorContext = {
@@ -190,6 +264,7 @@ export const provideSQLEditorContext = () => {
       aiPanelSize.value = 1 - size;
     },
     createWorksheet,
+    updateWorksheet,
   };
 
   provide(KEY, context);

@@ -11,6 +11,7 @@ import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSQLEditorTabStore } from "@/store";
 import {
+  type BatchQueryContext,
   type ComposedDatabase,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   instanceOfSQLEditorTreeNode,
@@ -75,7 +76,8 @@ export const useDropdown = () => {
             label: t("sql-editor.connect"),
             icon: () => <LinkIcon class="w-4 h-4" />,
             onSelect: () => {
-              setConnection(database, {
+              setConnection({
+                database,
                 context: editorContext,
                 newTab: false,
               });
@@ -87,7 +89,8 @@ export const useDropdown = () => {
             label: t("sql-editor.connect-in-new-tab"),
             icon: () => <LinkIcon class="w-4 h-4" />,
             onSelect: () => {
-              setConnection(database, {
+              setConnection({
+                database,
                 newTab: true,
                 context: editorContext,
               });
@@ -101,7 +104,8 @@ export const useDropdown = () => {
             label: t("sql-editor.connect-in-admin-mode"),
             icon: () => <WrenchIcon class="w-4 h-4" />,
             onSelect: () => {
-              setConnection(database, {
+              setConnection({
+                database,
                 mode: "ADMIN",
                 context: editorContext,
                 newTab: false,
@@ -170,32 +174,48 @@ export const useDropdown = () => {
 // setConnection will:
 // - when newTab == false && exist current tab: connect to the current tab
 // - otherwise create a new worksheet then open the tab
-export const setConnection = (
-  database: ComposedDatabase,
-  options: {
-    mode?: TabMode;
-    newTab: boolean;
-    context: SQLEditorContext;
-  }
-) => {
+export const setConnection = (options: {
+  database?: ComposedDatabase;
+  mode?: TabMode;
+  newTab: boolean;
+  context: SQLEditorContext;
+  batchQueryContext?: BatchQueryContext;
+}) => {
   const {
+    database,
     mode = DEFAULT_SQL_EDITOR_TAB_MODE,
     newTab = false,
     context,
   } = options;
   const connection: SQLEditorConnection = {
-    instance: database.instance,
-    database: database.name,
+    instance: database?.instance ?? "",
+    database: database?.name ?? "",
   };
-  setDefaultDataSourceForConn(connection, database);
+  if (database) {
+    setDefaultDataSourceForConn(connection, database);
+  }
 
   const tabStore = useSQLEditorTabStore();
+  const batchQueryContext: BatchQueryContext = Object.assign(
+    { databases: [] },
+    tabStore.currentTab?.batchQueryContext,
+    options.batchQueryContext
+  );
+
   if (!newTab && tabStore.currentTab) {
     tabStore.updateCurrentTab({
       mode,
       connection,
       status: "DIRTY",
+      batchQueryContext,
     });
+    if (tabStore.currentTab.worksheet) {
+      context.updateWorksheet({
+        ...tabStore.currentTab,
+        tabId: tabStore.currentTab.id,
+        database: connection.database,
+      });
+    }
     context.asidePanelTab.value = "SCHEMA";
   } else {
     // create new worksheet and set connection
@@ -206,7 +226,7 @@ export const setConnection = (
       })
       .then((tab) => {
         if (tab) {
-          tabStore.updateTab(tab.id, { mode });
+          tabStore.updateTab(tab.id, { mode, batchQueryContext });
           context.asidePanelTab.value = "SCHEMA";
         }
       });

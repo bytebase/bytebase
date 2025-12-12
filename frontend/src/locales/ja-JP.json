@@ -2108,7 +2108,6 @@
     },
     "batch-query": {
       "batch": "バッチ",
-      "select-database-group": "バッチクエリを実行するには{select-database-group}を使用します",
       "description": "{project} の下の {database} 個の追加データベースと {group} 個のデータベース グループに対してバッチ クエリを実行します。",
       "show-or-hide-empty-query-results": "空のクエリ結果の表示/非表示",
       "select-data-source": {
