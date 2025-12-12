@@ -24,25 +24,17 @@ type SearchInput struct {
 }
 
 // searchAPIDescription is the description for the search_api tool.
-const searchAPIDescription = `Search and discover Bytebase API endpoints.
-
-**IMPORTANT: You MUST call search_api before call_api. Never guess operationIds or request schemas.**
-
-## Usage
+const searchAPIDescription = `Discover Bytebase API endpoints. **Always call before call_api - never guess schemas.**
 
 | Mode | Parameters | Result |
 |------|------------|--------|
-| List services | (none) | All available API categories |
-| Search | query="execute sql" | Matching endpoints with descriptions |
-| Browse | service="SQLService" | All endpoints in a service |
-| Filter | service="SQLService", query="query" | Search within a service |
-| Details | operationId="SQLService/Query" | Full request/response schema |
+| List | (none) | All services |
+| Browse | service="SQLService" | All endpoints in service |
+| Search | query="database" | Matching endpoints |
+| Filter | service+query | Search within service |
+| Details | operationId="SQLService/Query" | Request/response schema |
 
-## Workflow
-
-1. search_api(query="your task") - find relevant endpoints
-2. search_api(operationId="Service/Method") - get full schema
-3. call_api(operationId="Service/Method", body={...}) - execute`
+**Workflow:** search_api() → search_api(operationId="...") → call_api(...)`
 
 func (s *Server) registerSearchTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{

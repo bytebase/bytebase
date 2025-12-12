@@ -39,32 +39,18 @@ type CallOutput struct {
 }
 
 // callAPIDescription is the description for the call_api tool.
-const callAPIDescription = `Execute a Bytebase API endpoint.
-
-**IMPORTANT: You MUST call search_api first to get the operationId and request schema. Do not guess - always discover first.**
-
-## Parameters
+const callAPIDescription = `Execute a Bytebase API endpoint. **Use search_api first to get operationId and schema.**
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| operationId | Yes | Operation to call (e.g., "SQLService/Query") |
-| body | No | Request body as JSON object |
-| maxResponseSize | No | Max response size in chars (default: 10000, max: 8MB) |
+| operationId | Yes | e.g., "SQLService/Query" |
+| body | No | JSON request body |
+| maxResponseSize | No | Max chars (default: 10000, max: 8MB) |
 
-## Resource Name Format
+**Resource names:** projects/my-project, instances/prod/databases/main
 
-Resources follow the pattern: "type/id" or "parent/id/type/id"
-- projects/my-project
-- instances/prod/databases/main
-- projects/p1/instances/i1
-
-## Example
-
-Execute SQL query:
-call_api(
-  operationId="bytebase.v1.SQLService.Query",
-  body={"name": "instances/my-instance/databases/my-db", "statement": "SELECT 1"}
-)`
+**Example:**
+call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db", "statement": "SELECT 1"})`
 
 func (s *Server) registerCallTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
