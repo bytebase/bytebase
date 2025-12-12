@@ -12,14 +12,19 @@ import {
   useWorkSheetStore,
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import { isValidProjectName } from "@/types";
+import { isValidDatabaseName, isValidProjectName } from "@/types";
 import type { GetSchemaStringRequest_ObjectType } from "@/types/proto-es/v1/database_service_pb";
 import {
   type Worksheet,
   Worksheet_Visibility,
   WorksheetSchema,
 } from "@/types/proto-es/v1/worksheet_service_pb";
-import { extractWorksheetConnection } from "@/utils";
+import {
+  extractWorksheetConnection,
+  isSimilarDefaultSQLEditorTabTitle,
+  NEW_WORKSHEET_TITLE,
+  suggestedTabTitleForSQLEditorConnection,
+} from "@/utils";
 import { openWorksheetByName } from "@/views/sql-editor/Sheet";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
@@ -80,14 +85,14 @@ export type SQLEditorContext = {
     statement?: string;
     database?: string;
   }) => Promise<SQLEditorTab | undefined>;
-  updateWorksheet: (options: {
+  maybeUpdateWorksheet: (options: {
     tabId: string;
     worksheet: string;
-    title: string;
+    title?: string;
     database: string;
     statement: string;
     folders?: string[];
-  }) => Promise<Worksheet | undefined>;
+  }) => Promise<SQLEditorTab | undefined>;
 };
 
 export const KEY = Symbol(
@@ -125,7 +130,7 @@ export const provideSQLEditorContext = () => {
     };
   });
 
-  const updateWorksheet = async ({
+  const maybeUpdateWorksheet = async ({
     tabId,
     worksheet,
     title,
@@ -134,51 +139,58 @@ export const provideSQLEditorContext = () => {
     folders,
   }: {
     tabId: string;
-    worksheet: string;
-    title: string;
+    worksheet?: string;
+    title?: string;
     database: string;
     statement: string;
     folders?: string[];
   }) => {
-    if (!worksheet) {
-      return;
-    }
-    const currentSheet = worksheetStore.getWorksheetByName(worksheet);
-    if (!currentSheet) {
-      return;
+    const connection = await extractWorksheetConnection({ database });
+    let worksheetTitle = title ?? "";
+    if (isSimilarDefaultSQLEditorTabTitle(worksheetTitle)) {
+      worksheetTitle = suggestedTabTitleForSQLEditorConnection(connection);
     }
 
-    const updated = await worksheetStore.patchWorksheet(
-      {
-        ...currentSheet,
-        title,
-        database,
-        content: new TextEncoder().encode(statement),
-      },
-      ["title", "database", "content"]
-    );
-    if (updated && !isUndefined(folders)) {
-      await worksheetStore.upsertWorksheetOrganizer(
+    if (worksheet) {
+      const currentSheet = worksheetStore.getWorksheetByName(worksheet);
+      if (!currentSheet) {
+        return;
+      }
+      if (!isSimilarDefaultSQLEditorTabTitle(currentSheet.title)) {
+        worksheetTitle = currentSheet.title;
+      }
+
+      const updated = await worksheetStore.patchWorksheet(
         {
-          worksheet: updated.name,
-          folders: folders,
+          ...currentSheet,
+          title: worksheetTitle,
+          database,
+          content: new TextEncoder().encode(statement),
         },
-        ["folders"]
+        ["title", "database", "content"]
       );
+      if (updated && !isUndefined(folders)) {
+        await worksheetStore.upsertWorksheetOrganizer(
+          {
+            worksheet: updated.name,
+            folders: folders,
+          },
+          ["folders"]
+        );
+      }
     }
 
-    tabStore.updateTab(tabId, {
+    return tabStore.updateTab(tabId, {
       status: "CLEAN",
-      title: updated?.title,
-      worksheet: updated?.name,
+      connection,
+      title: worksheetTitle,
+      worksheet,
     });
-
-    return updated;
   };
 
   const createWorksheet = async ({
     tabId,
-    title = "new worksheet",
+    title,
     statement = "",
     folders = [],
     database = "",
@@ -189,9 +201,15 @@ export const provideSQLEditorContext = () => {
     folders?: string[];
     database?: string;
   }) => {
+    let worksheetTitle = title || NEW_WORKSHEET_TITLE;
+    const connection = await extractWorksheetConnection({ database });
+    if (!title && isValidDatabaseName(database)) {
+      worksheetTitle = suggestedTabTitleForSQLEditorConnection(connection);
+    }
+
     const newWorksheet = await worksheetStore.createWorksheet(
       create(WorksheetSchema, {
-        title,
+        title: worksheetTitle,
         database,
         content: new TextEncoder().encode(statement),
         project: editorStore.project,
@@ -210,10 +228,9 @@ export const provideSQLEditorContext = () => {
     }
 
     if (tabId) {
-      const connection = await extractWorksheetConnection(newWorksheet);
       return tabStore.updateTab(tabId, {
         status: "CLEAN",
-        title,
+        title: worksheetTitle,
         statement,
         connection,
         worksheet: newWorksheet.name,
@@ -264,7 +281,7 @@ export const provideSQLEditorContext = () => {
       aiPanelSize.value = 1 - size;
     },
     createWorksheet,
-    updateWorksheet,
+    maybeUpdateWorksheet,
   };
 
   provide(KEY, context);

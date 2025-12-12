@@ -25,7 +25,7 @@
               :key="permission"
               class="text-sm leading-5"
             >
-              {{ displayPermissionTitle(permission) }}
+              {{ permission }}
             </p>
           </div>
         </div>
@@ -52,7 +52,6 @@ import { computed, reactive } from "vue";
 import { BBModal } from "@/bbkit";
 import { useRoleStore } from "@/store";
 import { displayRoleDescription, displayRoleTitle } from "@/utils";
-import { displayPermissionTitle } from "@/utils/permission";
 
 interface LocalState {
   selectedRole?: string;

@@ -77,7 +77,7 @@ const doSaveSheet = async () => {
 
   const sheetId = Number(extractWorksheetUID(worksheet ?? ""));
   if (sheetId !== UNKNOWN_ID) {
-    await editorContext.updateWorksheet({
+    await editorContext.maybeUpdateWorksheet({
       tabId,
       worksheet,
       title: pendingEdit.value.title,

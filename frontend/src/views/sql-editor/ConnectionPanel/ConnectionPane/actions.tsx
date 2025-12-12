@@ -202,33 +202,27 @@ export const setConnection = (options: {
     options.batchQueryContext
   );
 
-  if (!newTab && tabStore.currentTab) {
-    tabStore.updateCurrentTab({
-      mode,
-      connection,
-      status: "DIRTY",
-      batchQueryContext,
-    });
-    if (tabStore.currentTab.worksheet) {
-      context.updateWorksheet({
-        ...tabStore.currentTab,
+  const createOrUpdate = () => {
+    if (!newTab && tabStore.currentTab) {
+      return context.maybeUpdateWorksheet({
         tabId: tabStore.currentTab.id,
+        worksheet: tabStore.currentTab.worksheet,
+        title: tabStore.currentTab.title,
         database: connection.database,
+        statement: tabStore.currentTab.statement,
       });
     }
-    context.asidePanelTab.value = "SCHEMA";
-  } else {
+
     // create new worksheet and set connection
-    context
-      .createWorksheet({
-        title: suggestedTabTitleForSQLEditorConnection(connection),
-        database: connection.database,
-      })
-      .then((tab) => {
-        if (tab) {
-          tabStore.updateTab(tab.id, { mode, batchQueryContext });
-          context.asidePanelTab.value = "SCHEMA";
-        }
-      });
-  }
+    return context.createWorksheet({
+      database: connection.database,
+    });
+  };
+
+  createOrUpdate().then((tab) => {
+    if (tab) {
+      tabStore.updateTab(tab.id, { mode, batchQueryContext });
+      context.asidePanelTab.value = "SCHEMA";
+    }
+  });
 };

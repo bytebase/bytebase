@@ -52,7 +52,6 @@ import {
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
 } from "@/utils";
-import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 
 interface LocalState {
   params: SearchParams;
@@ -66,7 +65,7 @@ const issuePagedTable =
   ref<ComponentExposed<typeof PagedTable<ComposedIssue>>>();
 
 const viewId = useLocalStorage<string>(
-  getComponentIdLocalStorageKey(WORKSPACE_ROUTE_MY_ISSUES),
+  `bb.components.${WORKSPACE_ROUTE_MY_ISSUES}.id`,
   ""
 );
 

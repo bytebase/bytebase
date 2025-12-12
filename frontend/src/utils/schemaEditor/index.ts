@@ -1,18 +1,9 @@
-import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 
 export * from "./filter";
 
 export const engineSupportsSchemaEditor = (engine: Engine) => {
   return [Engine.MYSQL, Engine.TIDB, Engine.POSTGRES].includes(engine);
-};
-
-export const allowUsingSchemaEditor = (
-  databaseList: ComposedDatabase[]
-): boolean => {
-  return databaseList.every((db) => {
-    return engineSupportsSchemaEditor(db.instanceResource.engine);
-  });
 };
 
 export const getDataTypeSuggestionList = (engine: Engine = Engine.MYSQL) => {

@@ -3,7 +3,7 @@ import type { DataTableInst, VirtualListInst } from "naive-ui";
 import { computed, type MaybeRef, ref, unref } from "vue";
 import { nextAnimationFrame } from "./dom";
 
-export type AutoHeightDataTableOptions = {
+type AutoHeightDataTableOptions = {
   maxHeight: number | null;
 };
 const defaultAutoHeightDataTableOptions = (): AutoHeightDataTableOptions => ({

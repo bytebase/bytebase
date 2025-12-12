@@ -26,6 +26,8 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
+export const NEW_WORKSHEET_TITLE = "new worksheet";
+
 export const defaultSQLEditorTab = (): SQLEditorTab => {
   return {
     id: uuidv1(),
@@ -88,6 +90,14 @@ export const isSameSQLEditorConnection = (
   b: SQLEditorConnection
 ): boolean => {
   return a.instance === b.instance && a.database === b.database;
+};
+
+export const isSimilarDefaultSQLEditorTabTitle = (title: string) => {
+  if (!title || title === NEW_WORKSHEET_TITLE) {
+    return true;
+  }
+  const regex = /(^|\s)(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/;
+  return regex.test(title);
 };
 
 export const suggestedTabTitleForSQLEditorConnection = (
