@@ -39,7 +39,7 @@ const (
 	MFATempTokenAudienceFmt = "bb.user.mfa-temp.%s"
 	// OAuth2AccessTokenAudience is the audience for OAuth2 access tokens.
 	OAuth2AccessTokenAudience = "bb.oauth2.access"
-	apiTokenDuration        = 1 * time.Hour
+	apiTokenDuration          = 1 * time.Hour
 	// DefaultTokenDuration is the default token expiration duration.
 	DefaultTokenDuration = 7 * 24 * time.Hour
 
