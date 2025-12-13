@@ -74,25 +74,13 @@
               </NRadioGroup>
 
               <!-- External URL Warning -->
-              <BBAttention
+              <MissingExternalURLAttention
                 v-if="
-                  !externalUrl &&
-                  (selectedType === IdentityProviderType.OAUTH2 ||
-                    selectedType === IdentityProviderType.OIDC)
-                "
+                  selectedType === IdentityProviderType.OAUTH2 ||
+                    selectedType === IdentityProviderType.OIDC
+                  "
                 class="mt-6"
-                type="error"
-                :title="$t('banner.external-url')"
-                :description="
-                  $t('settings.general.workspace.external-url.description')
-                "
-              >
-                <template #action>
-                  <NButton type="primary" @click="configureSetting">
-                    {{ $t("common.configure-now") }}
-                  </NButton>
-                </template>
-              </BBAttention>
+              />
             </div>
           </div>
 
@@ -447,20 +435,14 @@ import {
 } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
-import { BBAttention, BBTextField } from "@/bbkit";
+import { BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { MissingExternalURLAttention } from "@/components/v2/Form";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import {
-  hasFeature,
-  pushNotification,
-  useActuatorV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { hasFeature, pushNotification, useSubscriptionV1Store } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import type {
@@ -502,7 +484,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const router = useRouter();
 const identityProviderStore = useIdentityProviderStore();
 const subscriptionStore = useSubscriptionV1Store();
 
@@ -583,10 +564,6 @@ const idpToCreate = computed((): IdentityProvider => {
 
   return base;
 });
-
-const externalUrl = computed(
-  () => useActuatorV1Store().serverInfo?.externalUrl ?? ""
-);
 
 const resourceId = computed(() => {
   return resourceIdField.value?.resourceId || resourceIdValue.value || "";
@@ -907,12 +884,6 @@ const handleTemplateSelect = (template: IdentityProviderTemplate) => {
 
     scopesStringOfConfig.value = template.config.scopes.join(" ");
   }
-};
-
-const configureSetting = () => {
-  router.push({
-    name: SETTING_ROUTE_WORKSPACE_GENERAL,
-  });
 };
 
 const handlePrevStep = () => {

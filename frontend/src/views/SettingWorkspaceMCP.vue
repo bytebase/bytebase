@@ -9,17 +9,7 @@
     </div>
 
     <!-- Warning if external URL not configured -->
-    <NAlert v-if="!hasExternalUrl" type="warning" :bordered="false">
-      <template #header>
-        {{ $t("settings.mcp.setup.external-url-warning") }}
-      </template>
-      <router-link
-        :to="{ name: SETTING_ROUTE_WORKSPACE_GENERAL }"
-        class="normal-link"
-      >
-        {{ $t("settings.mcp.setup.configure-external-url") }}
-      </router-link>
-    </NAlert>
+     <MissingExternalURLAttention />
 
     <!-- General JSON Config (always visible) -->
     <div class="flex flex-col gap-y-3">
@@ -27,21 +17,7 @@
         <span class="text-sm text-control-light">
           {{ $t("settings.mcp.setup.add-to-config") }}
         </span>
-        <NTooltip>
-          <template #trigger>
-            <NButton
-              quaternary
-              size="small"
-              :disabled="!hasExternalUrl"
-              @click="copyGeneralConfig"
-            >
-              <template #icon>
-                <CopyIcon class="w-4 h-4" />
-              </template>
-            </NButton>
-          </template>
-          {{ $t("common.copy") }}
-        </NTooltip>
+        <CopyButton :content="generalConfig" />
       </div>
       <NInput
         type="textarea"
@@ -53,161 +29,27 @@
     </div>
 
     <!-- CLI Quick Commands Tabs -->
-    <div class="flex flex-col gap-y-3">
+    <div class="flex flex-col gap-y-2">
       <NTabs type="line" animated>
         <!-- Claude Code -->
-        <NTabPane name="claude-code" tab="Claude Code">
-          <div class="flex flex-col gap-y-3 pt-3">
+        <NTabPane
+          v-for="tab in tabs"
+          :key="tab.id"
+          :name="tab.id"
+          :tab="tab.title"
+        >
+          <div class="flex flex-col gap-y-2 pt-3">
             <div class="flex items-center gap-x-2">
               <span class="text-sm text-control-light">
                 {{ $t("settings.mcp.setup.run-command") }}
               </span>
-              <NTooltip>
-                <template #trigger>
-                  <NButton
-                    quaternary
-                    size="small"
-                    :disabled="!hasExternalUrl"
-                    @click="copyCliCommand('claudeCode')"
-                  >
-                    <template #icon>
-                      <CopyIcon class="w-4 h-4" />
-                    </template>
-                  </NButton>
-                </template>
-                {{ $t("common.copy") }}
-              </NTooltip>
+              <CopyButton :content="tab.content" />
             </div>
             <NInput
-              :value="cliCommands.claudeCode"
+              :value="tab.content"
               readonly
               class="font-mono text-sm"
-            />
-          </div>
-        </NTabPane>
-
-        <!-- Codex -->
-        <NTabPane name="codex" tab="Codex">
-          <div class="flex flex-col gap-y-3 pt-3">
-            <div class="flex items-center gap-x-2">
-              <span class="text-sm text-control-light">
-                {{ $t("settings.mcp.setup.run-command") }}
-              </span>
-              <NTooltip>
-                <template #trigger>
-                  <NButton
-                    quaternary
-                    size="small"
-                    :disabled="!hasExternalUrl"
-                    @click="copyCliCommand('codex')"
-                  >
-                    <template #icon>
-                      <CopyIcon class="w-4 h-4" />
-                    </template>
-                  </NButton>
-                </template>
-                {{ $t("common.copy") }}
-              </NTooltip>
-            </div>
-            <NInput
-              :value="cliCommands.codex"
-              readonly
-              class="font-mono text-sm"
-            />
-          </div>
-        </NTabPane>
-
-        <!-- Copilot CLI -->
-        <NTabPane name="copilot-cli" tab="Copilot CLI">
-          <div class="flex flex-col gap-y-3 pt-3">
-            <div class="flex items-center gap-x-2">
-              <span class="text-sm text-control-light">
-                {{ $t("settings.mcp.setup.run-command") }}
-              </span>
-              <NTooltip>
-                <template #trigger>
-                  <NButton
-                    quaternary
-                    size="small"
-                    :disabled="!hasExternalUrl"
-                    @click="copyCliCommand('copilotCli')"
-                  >
-                    <template #icon>
-                      <CopyIcon class="w-4 h-4" />
-                    </template>
-                  </NButton>
-                </template>
-                {{ $t("common.copy") }}
-              </NTooltip>
-            </div>
-            <NInput
-              :value="cliCommands.copilotCli"
-              readonly
-              class="font-mono text-sm"
-            />
-          </div>
-        </NTabPane>
-
-        <!-- Gemini CLI -->
-        <NTabPane name="gemini-cli" tab="Gemini CLI">
-          <div class="flex flex-col gap-y-3 pt-3">
-            <div class="flex items-center gap-x-2">
-              <span class="text-sm text-control-light">
-                {{ $t("settings.mcp.setup.run-command") }}
-              </span>
-              <NTooltip>
-                <template #trigger>
-                  <NButton
-                    quaternary
-                    size="small"
-                    :disabled="!hasExternalUrl"
-                    @click="copyCliCommand('geminiCli')"
-                  >
-                    <template #icon>
-                      <CopyIcon class="w-4 h-4" />
-                    </template>
-                  </NButton>
-                </template>
-                {{ $t("common.copy") }}
-              </NTooltip>
-            </div>
-            <NInput
-              :value="cliCommands.geminiCli"
-              readonly
-              class="font-mono text-sm"
-            />
-          </div>
-        </NTabPane>
-
-        <!-- VS Code -->
-        <NTabPane name="vscode" tab="VS Code">
-          <div class="flex flex-col gap-y-3 pt-3">
-            <div class="flex items-center gap-x-2">
-              <span class="text-sm text-control-light">
-                {{ $t("settings.mcp.setup.add-to-config") }}
-              </span>
-              <NTooltip>
-                <template #trigger>
-                  <NButton
-                    quaternary
-                    size="small"
-                    :disabled="!hasExternalUrl"
-                    @click="copyVSCodeConfig"
-                  >
-                    <template #icon>
-                      <CopyIcon class="w-4 h-4" />
-                    </template>
-                  </NButton>
-                </template>
-                {{ $t("common.copy") }}
-              </NTooltip>
-            </div>
-            <NInput
-              type="textarea"
-              :value="vscodeConfig"
-              readonly
-              :autosize="{ minRows: 5, maxRows: 8 }"
-              class="font-mono text-sm"
+              v-bind="tab.inputProps"
             />
           </div>
         </NTabPane>
@@ -218,14 +60,15 @@
     </div>
 
     <!-- Your First Prompt -->
-    <div class="flex flex-col gap-y-2">
-      <h3 class="text-base font-medium">
+    <div class="flex flex-col gap-y-1">
+      <span class="text-sm text-control-light">
         {{ $t("settings.mcp.first-prompt.title") }}
-      </h3>
-      <p class="text-sm text-control-light">
+      </span>
+      <div class="flex items-center gap-x-2 text-sm text-control-light">
         {{ $t("settings.mcp.first-prompt.description") }}
-      </p>
-      <code class="text-sm bg-gray-100 px-3 py-2 rounded">
+        <CopyButton :content="$t('settings.mcp.first-prompt.example')" />
+      </div>
+      <code class="mt-1 text-sm bg-gray-100 px-3 py-2 rounded">
         {{ $t("settings.mcp.first-prompt.example") }}
       </code>
     </div>
@@ -233,17 +76,12 @@
 </template>
 
 <script lang="ts" setup>
-import { useClipboard } from "@vueuse/core";
-import { CopyIcon } from "lucide-vue-next";
-import { NAlert, NButton, NInput, NTabPane, NTabs, NTooltip } from "naive-ui";
+import { type InputProps, NInput, NTabPane, NTabs } from "naive-ui";
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { pushNotification, useActuatorV1Store } from "@/store";
+import { CopyButton, MissingExternalURLAttention } from "@/components/v2";
+import { useActuatorV1Store } from "@/store";
 
-const { t } = useI18n();
 const actuatorStore = useActuatorV1Store();
-const { copy } = useClipboard();
 
 const hasExternalUrl = computed(() => {
   return !actuatorStore.needConfigureExternalUrl;
@@ -289,30 +127,44 @@ const vscodeConfig = computed(() => {
   return JSON.stringify(config, null, 2);
 });
 
-const copyGeneralConfig = async () => {
-  await copy(generalConfig.value);
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.copied"),
-  });
-};
-
-const copyCliCommand = async (key: keyof typeof cliCommands.value) => {
-  await copy(cliCommands.value[key]);
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.copied"),
-  });
-};
-
-const copyVSCodeConfig = async () => {
-  await copy(vscodeConfig.value);
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("common.copied"),
-  });
-};
+const tabs = computed(
+  (): {
+    id: string;
+    title: string;
+    content: string;
+    inputProps?: InputProps;
+  }[] => {
+    return [
+      {
+        id: "claude-code",
+        title: "Claude Code",
+        content: cliCommands.value.claudeCode,
+      },
+      {
+        id: "codex",
+        title: "Codex",
+        content: cliCommands.value.codex,
+      },
+      {
+        id: "copilot-cli",
+        title: "Copilot CLI",
+        content: cliCommands.value.copilotCli,
+      },
+      {
+        id: "gemini-cli",
+        title: "Gemini CLI",
+        content: cliCommands.value.geminiCli,
+      },
+      {
+        id: "vscode",
+        title: "VS Code",
+        content: vscodeConfig.value,
+        inputProps: {
+          type: "textarea",
+          autosize: { minRows: 5, maxRows: 8 },
+        },
+      },
+    ];
+  }
+);
 </script>

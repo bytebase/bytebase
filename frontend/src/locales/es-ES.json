@@ -531,15 +531,13 @@
       "title": "Integración MCP",
       "description": "Conecte asistentes de IA a Bytebase usando el Model Context Protocol.",
       "setup": {
-        "external-url-warning": "La URL externa no está configurada.",
-        "configure-external-url": "Configurar URL externa en Configuración general",
-        "add-to-config": "Agregar a su configuración MCP:",
-        "run-command": "Ejecute este comando:",
+        "add-to-config": "Agregar a su configuración MCP",
+        "run-command": "Ejecute este comando",
         "oauth-note": "En el primer uso, se le pedirá que autorice el acceso."
       },
       "first-prompt": {
         "title": "Tu primer prompt",
-        "description": "Una vez conectado, intente preguntar a su asistente de IA:",
+        "description": "Una vez conectado, intente preguntar a su asistente de IA",
         "example": "Listar todos los proyectos en mi instancia de Bytebase"
       }
     },

@@ -14,21 +14,7 @@
             />
           </div>
 
-          <BBAttention
-            v-if="!externalUrl"
-            class="w-full border-none"
-            type="error"
-            :title="$t('banner.external-url')"
-            :description="
-              $t('settings.general.workspace.external-url.description')
-            "
-          >
-            <template #action>
-              <NButton type="primary" @click="configureSetting">
-                {{ $t("common.configure-now") }}
-              </NButton>
-            </template>
-          </BBAttention>
+          <MissingExternalURLAttention />
 
           <div class="flex flex-col gap-y-2">
             <div class="gap-x-2">
@@ -128,11 +114,9 @@ import { ReplyIcon } from "lucide-vue-next";
 import { NButton, NInput, useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
-import { BBAttention } from "@/bbkit";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { CopyButton, Drawer, DrawerContent } from "@/components/v2";
-import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
+import { MissingExternalURLAttention } from "@/components/v2/Form";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -151,7 +135,6 @@ defineEmits<{
 const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorV1Store();
 const { t } = useI18n();
-const router = useRouter();
 const scimUrlFieldRef = ref<HTMLInputElement | null>(null);
 const scimTokenFieldRef = ref<HTMLInputElement | null>(null);
 const $dialog = useDialog();
@@ -181,12 +164,6 @@ const scimToken = computed(() => {
 
 const handleSelect = (component: HTMLInputElement | null) => {
   component?.select();
-};
-
-const configureSetting = () => {
-  router.push({
-    name: SETTING_ROUTE_WORKSPACE_GENERAL,
-  });
 };
 
 const resetToken = () => {
