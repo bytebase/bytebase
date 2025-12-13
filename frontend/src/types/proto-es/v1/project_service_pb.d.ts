@@ -596,6 +596,20 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
    * @generated from field: bool enforce_sql_review = 26;
    */
   enforceSqlReview: boolean;
+
+  /**
+   * Whether to require issue approval before rollout.
+   *
+   * @generated from field: bool require_issue_approval = 27;
+   */
+  requireIssueApproval: boolean;
+
+  /**
+   * Whether to require plan check to have no error before rollout.
+   *
+   * @generated from field: bool require_plan_check_no_error = 28;
+   */
+  requirePlanCheckNoError: boolean;
 };
 
 /**

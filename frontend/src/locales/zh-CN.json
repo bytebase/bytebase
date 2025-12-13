@@ -1619,26 +1619,7 @@
       "tip": "新策略对旧工单也生效",
       "info": "拥有 “{permission}” 权限或以下角色的用户可以发布。",
       "auto": "自动发布",
-      "auto-info": "如果预检查都通过的话，会自动发布，执行变更。",
-      "checkers": {
-        "self": "控制项",
-        "required-issue-approval": {
-          "self": "工单需要通过审批",
-          "description": "工单必须先通过审批，才能继续发布任务。"
-        },
-        "plan-check-enforcement": {
-          "self": "任务检查结果控制",
-          "description": "根据任务检查的结果来控制能否发布。",
-          "error-only": {
-            "self": "仅在错误时阻止",
-            "description": "仅当任务检查发现错误时阻止发布。"
-          },
-          "strict": {
-            "self": "严格模式",
-            "description": "当任务检查发现错误或警告时均阻止发布。"
-          }
-        }
-      }
+      "auto-info": "如果预检查都通过的话，会自动发布，执行变更。"
     },
     "environment-tier": {
       "name": "环境级别",
@@ -1966,6 +1947,14 @@
         "parallel_tasks_per_rollout": {
           "self": "每个发布的并行任务数",
           "description": "控制每个发布的并行任务数量。\n将其设置为零，可以禁用任何节流。"
+        },
+        "require-issue-approval": {
+          "self": "Require issue approval",
+          "description": "Issue must be approved before rollout."
+        },
+        "require-plan-check-no-error": {
+          "self": "Require plan check no error",
+          "description": "Block rollout if plan check has errors."
         }
       },
       "project-labels": {

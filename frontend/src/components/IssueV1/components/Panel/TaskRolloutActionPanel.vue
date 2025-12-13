@@ -237,13 +237,8 @@ import {
   pushNotification,
   useCurrentProjectV1,
   useEnvironmentV1Store,
-  usePolicyByParentAndType,
 } from "@/store";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  PolicyType,
-  RolloutPolicy_Checkers_PlanCheckEnforcement,
-} from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   BatchCancelTaskRunsRequestSchema,
@@ -337,20 +332,6 @@ const database = computed(() =>
   databaseForTask(project.value, selectedTask.value)
 );
 
-// Get rollout policy for the environment
-const { policy: rolloutPolicy } = usePolicyByParentAndType(
-  computed(() => {
-    const env = database.value?.effectiveEnvironment;
-    if (!env) {
-      return { parentPath: "", policyType: PolicyType.ROLLOUT_POLICY };
-    }
-    return {
-      parentPath: env,
-      policyType: PolicyType.ROLLOUT_POLICY,
-    };
-  })
-);
-
 const stage = computed(() => {
   const firstTask = head(props.taskList);
   if (!firstTask) return undefined;
@@ -426,7 +407,7 @@ const planCheckRunList = computed(() => {
   return uniqBy(list, (checkRun) => checkRun.name);
 });
 
-// Plan check error validation based on rollout policy checkers
+// Plan check error validation based on project settings
 const planCheckError = computed(() => {
   if (
     !(
@@ -440,15 +421,8 @@ const planCheckError = computed(() => {
 
   const summary = planCheckRunSummaryForCheckRunList(planCheckRunList.value);
 
-  // Get the plan check enforcement level from the rollout policy
-  const planCheckEnforcement =
-    rolloutPolicy.value?.policy?.case === "rolloutPolicy"
-      ? rolloutPolicy.value.policy.value.checkers?.requiredStatusChecks
-          ?.planCheckEnforcement
-      : undefined;
-
   // If no enforcement is specified, default to no validation
-  if (!planCheckEnforcement) {
+  if (!project.value.requirePlanCheckNoError) {
     return undefined;
   }
 
@@ -457,27 +431,13 @@ const planCheckError = computed(() => {
       "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
     );
   }
-  // ERROR_ONLY enforcement: only block on errors
-  if (
-    planCheckEnforcement ===
-    RolloutPolicy_Checkers_PlanCheckEnforcement.ERROR_ONLY
-  ) {
-    if (summary.errorCount > 0) {
-      return t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
-      );
-    }
+
+  if (summary.errorCount > 0) {
+    return t(
+      "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+    );
   }
-  // STRICT enforcement: block on both errors and warnings
-  if (
-    planCheckEnforcement === RolloutPolicy_Checkers_PlanCheckEnforcement.STRICT
-  ) {
-    if (summary.errorCount > 0 || summary.warnCount > 0) {
-      return t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
-      );
-    }
-  }
+
   return undefined;
 });
 
@@ -504,15 +464,8 @@ const planCheckWarning = computed(() => {
     return undefined;
   }
 
-  // Get the plan check enforcement level from the rollout policy
-  const planCheckEnforcement =
-    rolloutPolicy.value?.policy?.case === "rolloutPolicy"
-      ? rolloutPolicy.value.policy.value.checkers?.requiredStatusChecks
-          ?.planCheckEnforcement
-      : undefined;
-
-  // If there's no enforcement policy, show any plan check issues as warnings
-  if (!planCheckEnforcement) {
+  // If enforcement is disabled, show any plan check issues as warnings
+  if (!project.value.requirePlanCheckNoError) {
     if (summary.runningCount > 0) {
       return t(
         "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
@@ -522,17 +475,6 @@ const planCheckWarning = computed(() => {
       return t(
         "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
       );
-    }
-  }
-
-  // Show warnings for plan check results that don't violate enforcement policy
-  if (
-    planCheckEnforcement ===
-    RolloutPolicy_Checkers_PlanCheckEnforcement.ERROR_ONLY
-  ) {
-    // Show warnings as non-blocking when ERROR_ONLY policy allows them
-    if (summary.warnCount > 0) {
-      return t("rollout.task-execution-notices");
     }
   }
 
@@ -569,10 +511,7 @@ const validationErrors = computed(() => {
     props.action === "RESTART"
   ) {
     // Issue approval errors (only if policy requires it) - HARD BLOCK
-    const requiresIssueApproval =
-      rolloutPolicy.value?.policy?.case === "rolloutPolicy"
-        ? rolloutPolicy.value.policy.value.checkers?.requiredIssueApproval
-        : false;
+    const requiresIssueApproval = project.value.requireIssueApproval;
 
     if (
       requiresIssueApproval &&
@@ -623,10 +562,7 @@ const validationWarnings = computed(() => {
     }
 
     // Issue approval warnings (when not required by policy but issue is not approved)
-    const requiresIssueApproval =
-      rolloutPolicy.value?.policy?.case === "rolloutPolicy"
-        ? rolloutPolicy.value.policy.value.checkers?.requiredIssueApproval
-        : false;
+    const requiresIssueApproval = project.value.requireIssueApproval;
 
     if (
       !requiresIssueApproval &&

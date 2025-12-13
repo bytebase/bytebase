@@ -324,6 +324,8 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		CiSamplingSize:             projectMessage.Setting.CiSamplingSize,
 		ParallelTasksPerRollout:    projectMessage.Setting.ParallelTasksPerRollout,
 		Labels:                     projectMessage.Setting.Labels,
+		RequireIssueApproval:       projectMessage.Setting.RequireIssueApproval,
+		RequirePlanCheckNoError:    projectMessage.Setting.RequirePlanCheckNoError,
 	}
 }
 
@@ -362,6 +364,8 @@ func convertToProjectMessage(resourceID string, project *v1pb.Project) *store.Pr
 		ParallelTasksPerRollout:    project.ParallelTasksPerRollout,
 		Labels:                     project.Labels,
 		EnforceSqlReview:           project.EnforceSqlReview,
+		RequireIssueApproval:       project.RequireIssueApproval,
+		RequirePlanCheckNoError:    project.RequirePlanCheckNoError,
 	}
 	return &store.ProjectMessage{
 		ResourceID: resourceID,

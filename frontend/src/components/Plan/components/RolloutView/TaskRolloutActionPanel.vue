@@ -277,10 +277,7 @@ import {
   Issue_Approver_Status,
   Issue_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  PolicyType,
-  RolloutPolicy_Checkers_PlanCheckEnforcement,
-} from "@/types/proto-es/v1/org_policy_service_pb";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import type {
   BatchRunTasksRequest,
   Stage,
@@ -329,6 +326,7 @@ const comment = ref("");
 const runTimeInMS = ref<number | undefined>(undefined);
 const bypassPolicyChecks = ref(false);
 const { statusSummary: planCheckStatus } = usePlanCheckStatus(plan);
+const project = computed(() => projectOfPlan(plan.value));
 
 // Check issue approval status using the review context
 const issueApprovalStatus = computed(() => {
@@ -372,20 +370,14 @@ const shouldShowComment = computed(
   () => props.action === "SKIP" && !isNullOrUndefined(issue?.value)
 );
 
-// Plan check error validation based on rollout policy checkers
+// Plan check error validation based on project settings
 const planCheckError = computed(() => {
   if (props.action !== "RUN") {
     return undefined;
   }
 
-  // Get the plan check enforcement level from the rollout policy
-  const planCheckEnforcement =
-    rolloutPolicy.value?.policy?.case === "rolloutPolicy"
-      ? rolloutPolicy.value.policy.value.checkers?.requiredStatusChecks
-          ?.planCheckEnforcement
-      : undefined;
   // If no enforcement is specified, default to no validation
-  if (!planCheckEnforcement) {
+  if (!project.value || !project.value.requirePlanCheckNoError) {
     return undefined;
   }
 
@@ -394,27 +386,13 @@ const planCheckError = computed(() => {
       "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
     );
   }
-  // ERROR_ONLY enforcement: only block on errors
-  if (
-    planCheckEnforcement ===
-    RolloutPolicy_Checkers_PlanCheckEnforcement.ERROR_ONLY
-  ) {
-    if (planCheckStatus.value.error > 0) {
-      return t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
-      );
-    }
+
+  if (planCheckStatus.value.error > 0) {
+    return t(
+      "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+    );
   }
-  // STRICT enforcement: block on both errors and warnings
-  if (
-    planCheckEnforcement === RolloutPolicy_Checkers_PlanCheckEnforcement.STRICT
-  ) {
-    if (planCheckStatus.value.error > 0 || planCheckStatus.value.warning > 0) {
-      return t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
-      );
-    }
-  }
+
   return undefined;
 });
 
@@ -424,34 +402,14 @@ const planCheckWarning = computed(() => {
     return undefined;
   }
 
-  // Get the plan check enforcement level from the rollout policy
-  const planCheckEnforcement =
-    rolloutPolicy.value?.policy?.case === "rolloutPolicy"
-      ? rolloutPolicy.value.policy.value.checkers?.requiredStatusChecks
-          ?.planCheckEnforcement
-      : undefined;
-
-  // If there's no enforcement policy, show any plan check issues as warnings
-  if (!planCheckEnforcement) {
+  // If enforcement is disabled, show any plan check issues as warnings
+  if (!project.value || !project.value.requirePlanCheckNoError) {
     if (planCheckStatus.value.running > 0) {
       return t(
         "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
       );
     }
     if (planCheckStatus.value.error > 0 || planCheckStatus.value.warning > 0) {
-      return t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
-      );
-    }
-  }
-
-  // Show warnings for plan check results that don't violate enforcement policy
-  if (
-    planCheckEnforcement ===
-    RolloutPolicy_Checkers_PlanCheckEnforcement.ERROR_ONLY
-  ) {
-    // Show warnings as non-blocking when ERROR_ONLY policy allows them
-    if (planCheckStatus.value.warning > 0) {
       return t(
         "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
       );
@@ -508,9 +466,7 @@ const validationErrors = computed(() => {
 
     // Issue approval errors (only if policy requires it) - HARD BLOCK
     const requiresIssueApproval =
-      rolloutPolicy.value?.policy?.case === "rolloutPolicy"
-        ? rolloutPolicy.value.policy.value.checkers?.requiredIssueApproval
-        : false;
+      project.value && project.value.requireIssueApproval;
 
     if (
       requiresIssueApproval &&
@@ -556,9 +512,7 @@ const validationWarnings = computed(() => {
 
     // Issue approval warnings (when not required by policy but issue is not approved)
     const requiresIssueApproval =
-      rolloutPolicy.value?.policy?.case === "rolloutPolicy"
-        ? rolloutPolicy.value.policy.value.checkers?.requiredIssueApproval
-        : false;
+      project.value && project.value.requireIssueApproval;
 
     if (
       !requiresIssueApproval &&

@@ -1619,26 +1619,7 @@
       "tip": "新しいポリシーは古いイシューにも適用されます",
       "info": "タスクは、「{permission}」許可または次の役割でユーザーが実行できます。",
       "auto": "自動",
-      "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が反映されます。",
-      "checkers": {
-        "self": "要件",
-        "required-issue-approval": {
-          "self": "問題の承認が必要",
-          "description": "ロールアウトを続行する前に、問題を承認する必要があります。"
-        },
-        "plan-check-enforcement": {
-          "self": "計画チェックの実施",
-          "description": "計画チェック結果に基づいてブロックのロールアウトを行います。",
-          "error-only": {
-            "self": "エラーのみブロック",
-            "description": "計画チェックでエラーが見つかった場合のみロールアウトをブロックします。"
-          },
-          "strict": {
-            "self": "厳格な施行",
-            "description": "計画チェックでエラーまたは警告が見つかった場合は、ロールアウトをブロックします。"
-          }
-        }
-      }
+      "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が反映されます。"
     },
     "environment-tier": {
       "name": "環境レベル",
@@ -1966,6 +1947,14 @@
         "parallel_tasks_per_rollout": {
           "self": "ロールアウトごとの並列タスク",
           "description": "ロールアウトあたりの並列タスクの数を制御します。\nこれをゼロに設定すると、スロットリングが無効になります。"
+        },
+        "require-issue-approval": {
+          "self": "Require issue approval",
+          "description": "Issue must be approved before rollout."
+        },
+        "require-plan-check-no-error": {
+          "self": "Require plan check no error",
+          "description": "Block rollout if plan check has errors."
         }
       },
       "project-labels": {

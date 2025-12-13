@@ -12583,6 +12583,12 @@ components:
                     description: |-
                         Whether to enforce SQL review checks to pass before issue creation.
                          If enabled, issues cannot be created when SQL review finds errors.
+                requireIssueApproval:
+                    type: boolean
+                    description: Whether to require issue approval before rollout.
+                requirePlanCheckNoError:
+                    type: boolean
+                    description: Whether to require plan check to have no error before rollout.
         Project_ExecutionRetryPolicy:
             type: object
             properties:

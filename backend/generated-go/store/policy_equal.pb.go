@@ -18,35 +18,6 @@ func (x *Policy) Equal(y *Policy) bool {
 	return true
 }
 
-func (x *RolloutPolicy_Checkers_RequiredStatusChecks) Equal(y *RolloutPolicy_Checkers_RequiredStatusChecks) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.PlanCheckEnforcement != y.PlanCheckEnforcement {
-		return false
-	}
-	return true
-}
-
-func (x *RolloutPolicy_Checkers) Equal(y *RolloutPolicy_Checkers) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.RequiredIssueApproval != y.RequiredIssueApproval {
-		return false
-	}
-	if !x.RequiredStatusChecks.Equal(y.RequiredStatusChecks) {
-		return false
-	}
-	return true
-}
-
 func (x *RolloutPolicy) Equal(y *RolloutPolicy) bool {
 	if x == y {
 		return true
@@ -64,9 +35,6 @@ func (x *RolloutPolicy) Equal(y *RolloutPolicy) bool {
 		if x.Roles[i] != y.Roles[i] {
 			return false
 		}
-	}
-	if !x.Checkers.Equal(y.Checkers) {
-		return false
 	}
 	return true
 }

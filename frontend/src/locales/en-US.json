@@ -1619,26 +1619,7 @@
       "tip": "The policy is applied to issues retroactively.",
       "info": "Tasks can be executed by users with '{permission}' permission or the following roles.",
       "auto": "Automatic",
-      "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
-      "checkers": {
-        "self": "Requirements",
-        "required-issue-approval": {
-          "self": "Require Issue Approval",
-          "description": "Issue must be approved before rollout can proceed."
-        },
-        "plan-check-enforcement": {
-          "self": "Plan Check Enforcement",
-          "description": "Block rollout based on plan check results.",
-          "error-only": {
-            "self": "Block on Errors Only",
-            "description": "Block rollout only when plan check finds errors."
-          },
-          "strict": {
-            "self": "Strict Enforcement",
-            "description": "Block rollout when plan check finds errors or warnings."
-          }
-        }
-      }
+      "auto-info": "If all check pass, the change will be rolled out and executed automatically."
     },
     "environment-tier": {
       "name": "Environment Tier",
@@ -1966,6 +1947,14 @@
         "parallel_tasks_per_rollout": {
           "self": "Parallel tasks per rollout",
           "description": "Control the number of parallel tasks per rollout. Setting this to zero disables any throttling."
+        },
+        "require-issue-approval": {
+          "self": "Require issue approval",
+          "description": "Issue must be approved before rollout."
+        },
+        "require-plan-check-no-error": {
+          "self": "Require plan check no error",
+          "description": "Block rollout if plan check has errors."
         }
       },
       "project-labels": {

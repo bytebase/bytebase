@@ -1014,14 +1014,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.RolloutPolicy.Checkers"><span class="badge">M</span>RolloutPolicy.Checkers</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.RolloutPolicy.Checkers.RequiredStatusChecks"><span class="badge">M</span>RolloutPolicy.Checkers.RequiredStatusChecks</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.TagPolicy"><span class="badge">M</span>TagPolicy</a>
                 </li>
               
@@ -1048,10 +1040,6 @@
               
                 <li>
                   <a href="#bytebase.store.Policy.Type"><span class="badge">E</span>Policy.Type</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.RolloutPolicy.Checkers.PlanCheckEnforcement"><span class="badge">E</span>RolloutPolicy.Checkers.PlanCheckEnforcement</a>
                 </li>
               
               
@@ -9983,69 +9971,6 @@ The default value is -1, means no limit. </p></td>
                   <td><p> </p></td>
                 </tr>
               
-                <tr>
-                  <td>checkers</td>
-                  <td><a href="#bytebase.store.RolloutPolicy.Checkers">RolloutPolicy.Checkers</a></td>
-                  <td></td>
-                  <td><p>Checkers that must pass before rollout execution.
-These checks are performed in UI workflows only. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.RolloutPolicy.Checkers">RolloutPolicy.Checkers</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>required_issue_approval</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether issue approval is required before proceeding with rollout. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>required_status_checks</td>
-                  <td><a href="#bytebase.store.RolloutPolicy.Checkers.RequiredStatusChecks">RolloutPolicy.Checkers.RequiredStatusChecks</a></td>
-                  <td></td>
-                  <td><p>Status checks that must pass before rollout can be executed. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.RolloutPolicy.Checkers.RequiredStatusChecks">RolloutPolicy.Checkers.RequiredStatusChecks</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>plan_check_enforcement</td>
-                  <td><a href="#bytebase.store.RolloutPolicy.Checkers.PlanCheckEnforcement">RolloutPolicy.Checkers.PlanCheckEnforcement</a></td>
-                  <td></td>
-                  <td><p>Enforcement level for plan check results during rollout validation. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -10292,35 +10217,6 @@ For example, the environment resource can have the SQL review config tag, such a
           </tbody>
         </table>
       
-        <h3 id="bytebase.store.RolloutPolicy.Checkers.PlanCheckEnforcement">RolloutPolicy.Checkers.PlanCheckEnforcement</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>PLAN_CHECK_ENFORCEMENT_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Allow rollout regardless of plan check results (no enforcement).</p></td>
-              </tr>
-            
-              <tr>
-                <td>ERROR_ONLY</td>
-                <td>1</td>
-                <td><p>Block rollout only when plan check finds errors.</p></td>
-              </tr>
-            
-              <tr>
-                <td>STRICT</td>
-                <td>2</td>
-                <td><p>Block rollout when plan check finds errors or warnings.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
 
       
 
@@ -10481,6 +10377,20 @@ For example, { &#34;environment&#34;: &#34;production&#34;, &#34;team&#34;: &#34
                   <td></td>
                   <td><p>Whether to enforce SQL review checks to pass before issue creation.
 If enabled, issues cannot be created when SQL review finds errors. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_issue_approval</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether issue approval is required before proceeding with rollout. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_plan_check_no_error</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to block rollout when plan check finds errors. </p></td>
                 </tr>
               
             </tbody>
