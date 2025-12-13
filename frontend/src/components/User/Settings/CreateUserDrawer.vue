@@ -6,7 +6,7 @@
     >
       <template #default>
         <div class="flex flex-col gap-y-6">
-          <div class="w-full mb-4 flex flex-col gap-y-2">
+          <div class="w-full flex flex-col gap-y-2">
             <div class="flex items-center gap-x-1">
               <div class="text-sm font-medium">{{ $t("common.type") }}</div>
               <a
@@ -123,7 +123,7 @@
 
             <!-- Advanced Settings -->
             <NCollapseTransition :show="state.wif.showAdvanced">
-              <div class="flex flex-col gap-y-4 mt-4 pt-4 border-t">
+              <div class="flex flex-col gap-y-6 pt-6 border-t">
                 <!-- Issuer URL -->
                 <div class="flex flex-col gap-y-2">
                   <label

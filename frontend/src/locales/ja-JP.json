@@ -531,15 +531,13 @@
       "title": "MCP 統合",
       "description": "Model Context Protocol を使用して、AI アシスタントを Bytebase に接続します。",
       "setup": {
-        "external-url-warning": "外部 URL が設定されていません。",
-        "configure-external-url": "一般設定で外部 URL を設定する",
-        "add-to-config": "MCP 設定に追加：",
-        "run-command": "このコマンドを実行：",
+        "add-to-config": "MCP 設定に追加",
+        "run-command": "このコマンドを実行",
         "oauth-note": "初回使用時に、アクセスの承認を求められます。"
       },
       "first-prompt": {
         "title": "最初のプロンプト",
-        "description": "接続後、AI アシスタントに聞いてみてください：",
+        "description": "接続後、AI アシスタントに聞いてみてください",
         "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする"
       }
     },

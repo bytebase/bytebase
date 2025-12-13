@@ -531,15 +531,13 @@
       "title": "Tích hợp MCP",
       "description": "Kết nối trợ lý AI với Bytebase bằng Model Context Protocol.",
       "setup": {
-        "external-url-warning": "URL bên ngoài chưa được cấu hình.",
-        "configure-external-url": "Cấu hình URL bên ngoài trong Cài đặt chung",
-        "add-to-config": "Thêm vào cấu hình MCP:",
-        "run-command": "Chạy lệnh này:",
+        "add-to-config": "Thêm vào cấu hình MCP",
+        "run-command": "Chạy lệnh này",
         "oauth-note": "Khi sử dụng lần đầu, bạn sẽ được yêu cầu cấp quyền truy cập."
       },
       "first-prompt": {
         "title": "Prompt đầu tiên của bạn",
-        "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
+        "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn",
         "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi"
       }
     },

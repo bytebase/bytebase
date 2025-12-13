@@ -531,15 +531,13 @@
       "title": "MCP 集成",
       "description": "使用模型上下文协议将 AI 助手连接到 Bytebase。",
       "setup": {
-        "external-url-warning": "外部 URL 未配置。",
-        "configure-external-url": "在通用设置中配置外部 URL",
-        "add-to-config": "添加到您的 MCP 配置：",
-        "run-command": "运行此命令：",
+        "add-to-config": "添加到您的 MCP 配置",
+        "run-command": "运行此命令",
         "oauth-note": "首次使用时，系统会提示您授权访问。"
       },
       "first-prompt": {
         "title": "您的第一个提示",
-        "description": "连接后，尝试向 AI 助手提问：",
+        "description": "连接后，尝试向 AI 助手提问",
         "example": "列出我的 Bytebase 实例中的所有项目"
       }
     },

@@ -8,6 +8,7 @@ import SpinnerSelect from "./SpinnerSelect.vue";
 import SpinnerSwitch from "./SpinnerSwitch.vue";
 import StepTab from "./StepTab.vue";
 import Switch from "./Switch.vue";
+import MissingExternalURLAttention from "./MissingExternalURLAttention.vue";
 
 export * from "./types";
 export {
@@ -21,4 +22,5 @@ export {
   ResourceIdField,
   Switch,
   StepTab,
+  MissingExternalURLAttention,
 };
