@@ -150,6 +150,50 @@
       <div>
         <div class="flex items-center gap-x-2">
           <Switch
+            v-model:value="state.requireIssueApproval"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{
+              $t("project.settings.issue-related.require-issue-approval.self")
+            }}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{
+            $t(
+              "project.settings.issue-related.require-issue-approval.description"
+            )
+          }}
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-x-2">
+          <Switch
+            v-model:value="state.requirePlanCheckNoError"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{
+              $t(
+                "project.settings.issue-related.require-plan-check-no-error.self"
+              )
+            }}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{
+            $t(
+              "project.settings.issue-related.require-plan-check-no-error.description"
+            )
+          }}
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-x-2">
+          <Switch
             v-model:value="state.autoEnableBackup"
             :text="true"
             :disabled="!allowUpdateIssueProjectSetting || loading"
@@ -276,50 +320,6 @@
             @update:value="handleParallelTasksPerRolloutInput"
           >
           </NInputNumber>
-        </div>
-      </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.requireIssueApproval"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
-            {{
-              $t("project.settings.issue-related.require-issue-approval.self")
-            }}
-          </span>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{
-            $t(
-              "project.settings.issue-related.require-issue-approval.description"
-            )
-          }}
-        </div>
-      </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.requirePlanCheckNoError"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
-            {{
-              $t(
-                "project.settings.issue-related.require-plan-check-no-error.self"
-              )
-            }}
-          </span>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{
-            $t(
-              "project.settings.issue-related.require-plan-check-no-error.description"
-            )
-          }}
         </div>
       </div>
     </div>
