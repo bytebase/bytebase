@@ -16,7 +16,7 @@ import (
 type OAuth2AuthorizationCodeMessage struct {
 	Code      string
 	ClientID  string
-	UserID    int
+	User      string
 	Config    *storepb.OAuth2AuthorizationCodeConfig
 	ExpiresAt time.Time
 }
@@ -28,9 +28,9 @@ func (s *Store) CreateOAuth2AuthorizationCode(ctx context.Context, create *OAuth
 	}
 
 	q := qb.Q().Space(`
-		INSERT INTO oauth2_authorization_code (code, client_id, user_id, config, expires_at)
+		INSERT INTO oauth2_authorization_code (code, client_id, user, config, expires_at)
 		VALUES (?, ?, ?, ?, ?)
-	`, create.Code, create.ClientID, create.UserID, configBytes, create.ExpiresAt)
+	`, create.Code, create.ClientID, create.User, configBytes, create.ExpiresAt)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -45,7 +45,7 @@ func (s *Store) CreateOAuth2AuthorizationCode(ctx context.Context, create *OAuth
 
 func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, code string) (*OAuth2AuthorizationCodeMessage, error) {
 	q := qb.Q().Space(`
-		SELECT code, client_id, user_id, config, expires_at
+		SELECT code, client_id, user, config, expires_at
 		FROM oauth2_authorization_code
 		WHERE code = ?
 	`, code)
@@ -58,7 +58,7 @@ func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, code string) (*O
 	msg := &OAuth2AuthorizationCodeMessage{}
 	var configBytes []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&msg.Code, &msg.ClientID, &msg.UserID, &configBytes, &msg.ExpiresAt,
+		&msg.Code, &msg.ClientID, &msg.User, &configBytes, &msg.ExpiresAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil

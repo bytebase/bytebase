@@ -139,13 +139,13 @@ func (s *Service) handleAuthorizationCodeGrant(c echo.Context, client *store.OAu
 	_ = s.store.DeleteOAuth2AuthorizationCode(ctx, req.Code)
 
 	// Get user
-	user, err := s.store.GetUserByID(ctx, authCode.UserID)
+	user, err := s.store.GetUserByEmail(ctx, authCode.User)
 	if err != nil || user == nil {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "user not found")
 	}
 
 	// Generate tokens
-	return s.issueTokens(c, client, user.ID, user.Email)
+	return s.issueTokens(c, client, user.Email)
 }
 
 func (s *Service) handleRefreshTokenGrant(c echo.Context, client *store.OAuth2ClientMessage, req *tokenRequest) error {
@@ -187,16 +187,16 @@ func (s *Service) handleRefreshTokenGrant(c echo.Context, client *store.OAuth2Cl
 	_ = s.store.DeleteOAuth2RefreshToken(ctx, tokenHash)
 
 	// Get user
-	user, err := s.store.GetUserByID(ctx, refreshToken.UserID)
+	user, err := s.store.GetUserByEmail(ctx, refreshToken.User)
 	if err != nil || user == nil {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "user not found")
 	}
 
 	// Issue new tokens
-	return s.issueTokens(c, client, user.ID, user.Email)
+	return s.issueTokens(c, client, user.Email)
 }
 
-func (s *Service) issueTokens(c echo.Context, client *store.OAuth2ClientMessage, userID int, userEmail string) error {
+func (s *Service) issueTokens(c echo.Context, client *store.OAuth2ClientMessage, userEmail string) error {
 	ctx := c.Request().Context()
 
 	// Generate access token (JWT)
@@ -228,7 +228,7 @@ func (s *Service) issueTokens(c echo.Context, client *store.OAuth2ClientMessage,
 		if _, err := s.store.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
 			TokenHash: hashToken(refreshTokenStr),
 			ClientID:  client.ClientID,
-			UserID:    userID,
+			User:      userEmail,
 			ExpiresAt: now.Add(refreshTokenExpiry),
 		}); err != nil {
 			return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to store refresh token")

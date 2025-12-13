@@ -539,6 +539,32 @@ CREATE INDEX idx_release_project ON release(project);
 
 CREATE UNIQUE INDEX idx_release_unique_project_digest ON release(project, digest) WHERE digest != '';
 
+-- OAuth2 tables
+CREATE TABLE oauth2_client (
+    client_id text PRIMARY KEY,
+    client_secret_hash text NOT NULL,
+    config jsonb NOT NULL,
+    last_active_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE oauth2_authorization_code (
+    code text PRIMARY KEY,
+    client_id text NOT NULL REFERENCES oauth2_client(client_id) ON DELETE CASCADE,
+    user text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    config jsonb NOT NULL,
+    expires_at timestamptz NOT NULL
+);
+
+CREATE TABLE oauth2_refresh_token (
+    token_hash text PRIMARY KEY,
+    client_id text NOT NULL REFERENCES oauth2_client(client_id) ON DELETE CASCADE,
+    user text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    expires_at timestamptz NOT NULL
+);
+
+CREATE INDEX idx_oauth2_authorization_code_expires_at ON oauth2_authorization_code(expires_at);
+CREATE INDEX idx_oauth2_refresh_token_expires_at ON oauth2_refresh_token(expires_at);
+CREATE INDEX idx_oauth2_client_last_active_at ON oauth2_client(last_active_at);
 
 -- Default bytebase system account id is 1.
 INSERT INTO principal (id, type, name, email, password_hash) VALUES (1, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '');
@@ -577,30 +603,3 @@ VALUES (
 -- Grant workspace member role to allUsers
 INSERT INTO policy (resource_type, resource, type, payload, inherit_from_parent, enforce)
 VALUES ('WORKSPACE', '', 'IAM', '{"bindings":[{"role":"roles/workspaceMember","members":["allUsers"]}]}', FALSE, TRUE);
-
--- OAuth2 tables
-CREATE TABLE oauth2_client (
-    client_id TEXT PRIMARY KEY,
-    client_secret_hash TEXT NOT NULL,
-    config JSONB NOT NULL,
-    last_active_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE oauth2_authorization_code (
-    code TEXT PRIMARY KEY,
-    client_id TEXT NOT NULL REFERENCES oauth2_client(client_id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES principal(id),
-    config JSONB NOT NULL,
-    expires_at TIMESTAMPTZ NOT NULL
-);
-
-CREATE TABLE oauth2_refresh_token (
-    token_hash TEXT PRIMARY KEY,
-    client_id TEXT NOT NULL REFERENCES oauth2_client(client_id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES principal(id),
-    expires_at TIMESTAMPTZ NOT NULL
-);
-
-CREATE INDEX idx_oauth2_authorization_code_expires_at ON oauth2_authorization_code(expires_at);
-CREATE INDEX idx_oauth2_refresh_token_expires_at ON oauth2_refresh_token(expires_at);
-CREATE INDEX idx_oauth2_client_last_active_at ON oauth2_client(last_active_at);

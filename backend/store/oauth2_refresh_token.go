@@ -13,15 +13,15 @@ import (
 type OAuth2RefreshTokenMessage struct {
 	TokenHash string
 	ClientID  string
-	UserID    int
+	User      string
 	ExpiresAt time.Time
 }
 
 func (s *Store) CreateOAuth2RefreshToken(ctx context.Context, create *OAuth2RefreshTokenMessage) (*OAuth2RefreshTokenMessage, error) {
 	q := qb.Q().Space(`
-		INSERT INTO oauth2_refresh_token (token_hash, client_id, user_id, expires_at)
+		INSERT INTO oauth2_refresh_token (token_hash, client_id, user, expires_at)
 		VALUES (?, ?, ?, ?)
-	`, create.TokenHash, create.ClientID, create.UserID, create.ExpiresAt)
+	`, create.TokenHash, create.ClientID, create.User, create.ExpiresAt)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -36,7 +36,7 @@ func (s *Store) CreateOAuth2RefreshToken(ctx context.Context, create *OAuth2Refr
 
 func (s *Store) GetOAuth2RefreshToken(ctx context.Context, tokenHash string) (*OAuth2RefreshTokenMessage, error) {
 	q := qb.Q().Space(`
-		SELECT token_hash, client_id, user_id, expires_at
+		SELECT token_hash, client_id, user, expires_at
 		FROM oauth2_refresh_token
 		WHERE token_hash = ?
 	`, tokenHash)
@@ -48,7 +48,7 @@ func (s *Store) GetOAuth2RefreshToken(ctx context.Context, tokenHash string) (*O
 
 	msg := &OAuth2RefreshTokenMessage{}
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&msg.TokenHash, &msg.ClientID, &msg.UserID, &msg.ExpiresAt,
+		&msg.TokenHash, &msg.ClientID, &msg.User, &msg.ExpiresAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -75,11 +75,11 @@ func (s *Store) DeleteOAuth2RefreshToken(ctx context.Context, tokenHash string) 
 	return nil
 }
 
-func (s *Store) DeleteOAuth2RefreshTokensByUserAndClient(ctx context.Context, userID int, clientID string) error {
+func (s *Store) DeleteOAuth2RefreshTokensByUserAndClient(ctx context.Context, userEmail string, clientID string) error {
 	q := qb.Q().Space(`
 		DELETE FROM oauth2_refresh_token
-		WHERE user_id = ? AND client_id = ?
-	`, userID, clientID)
+		WHERE user = ? AND client_id = ?
+	`, userEmail, clientID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
