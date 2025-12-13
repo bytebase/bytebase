@@ -21,10 +21,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -35,7 +32,6 @@ type InstanceService struct {
 	store                 *store.Store
 	profile               *config.Profile
 	licenseService        *enterprise.LicenseService
-	metricReporter        *metricreport.Reporter
 	stateCfg              *state.State
 	dbFactory             *dbfactory.DBFactory
 	schemaSyncer          *schemasync.Syncer
@@ -44,12 +40,11 @@ type InstanceService struct {
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, metricReporter *metricreport.Reporter, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager, sampleInstanceManager *sampleinstance.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager, sampleInstanceManager *sampleinstance.Manager) *InstanceService {
 	return &InstanceService{
 		store:                 store,
 		profile:               profile,
 		licenseService:        licenseService,
-		metricReporter:        metricReporter,
 		stateCfg:              stateCfg,
 		dbFactory:             dbFactory,
 		schemaSyncer:          schemaSyncer,
@@ -230,14 +225,6 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		// Sync all databases in the instance asynchronously.
 		s.schemaSyncer.SyncAllDatabases(ctx, instance)
 	}
-
-	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricapi.InstanceCreateMetricName,
-		Value: 1,
-		Labels: map[string]any{
-			"engine": instance.Metadata.GetEngine(),
-		},
-	})
 
 	result := convertInstanceMessage(instance)
 	return connect.NewResponse(result), nil

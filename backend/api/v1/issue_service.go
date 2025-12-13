@@ -24,9 +24,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	metricapi "github.com/bytebase/bytebase/backend/metric"
-	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -40,7 +37,6 @@ type IssueService struct {
 	licenseService *enterprise.LicenseService
 	profile        *config.Profile
 	iamManager     *iam.Manager
-	metricReporter *metricreport.Reporter
 }
 
 type filterIssueMessage struct {
@@ -57,7 +53,6 @@ func NewIssueService(
 	licenseService *enterprise.LicenseService,
 	profile *config.Profile,
 	iamManager *iam.Manager,
-	metricReporter *metricreport.Reporter,
 ) *IssueService {
 	return &IssueService{
 		store:          store,
@@ -66,7 +61,6 @@ func NewIssueService(
 		licenseService: licenseService,
 		profile:        profile,
 		iamManager:     iamManager,
-		metricReporter: metricReporter,
 	}
 }
 
@@ -597,14 +591,6 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
-
-	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricapi.IssueCreateMetricName,
-		Value: 1,
-		Labels: map[string]any{
-			"type": issue.Type,
-		},
-	})
 
 	return connect.NewResponse(converted), nil
 }

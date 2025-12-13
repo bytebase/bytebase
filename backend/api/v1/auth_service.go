@@ -27,13 +27,10 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/idp/wif"
-	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -71,19 +68,17 @@ type AuthService struct {
 	store          *store.Store
 	secret         string
 	licenseService *enterprise.LicenseService
-	metricReporter *metricreport.Reporter
 	profile        *config.Profile
 	stateCfg       *state.State
 	iamManager     *iam.Manager
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, licenseService *enterprise.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, stateCfg *state.State, iamManager *iam.Manager) *AuthService {
+func NewAuthService(store *store.Store, secret string, licenseService *enterprise.LicenseService, profile *config.Profile, stateCfg *state.State, iamManager *iam.Manager) *AuthService {
 	return &AuthService{
 		store:          store,
 		secret:         secret,
 		licenseService: licenseService,
-		metricReporter: metricReporter,
 		profile:        profile,
 		stateCfg:       stateCfg,
 		iamManager:     iamManager,
@@ -227,14 +222,6 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	}
 
 	response.User = convertToUser(ctx, loginUser)
-
-	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricapi.PrincipalLoginMetricName,
-		Value: 1,
-		Labels: map[string]any{
-			"email": loginUser.Email,
-		},
-	})
 
 	return resp, nil
 }
