@@ -391,9 +391,7 @@ const accessTableColumns = computed(
   }
 );
 
-const revokeAccessAlert = (
-  item: AccessUser
-) => {
+const revokeAccessAlert = (item: AccessUser) => {
   $dialog.warning({
     title: t("common.warning"),
     content: () => {
@@ -430,7 +428,7 @@ const onRemove = async (item: AccessUser) => {
 
 const onAccessControlUpdate = async (
   item: AccessUser,
-  callback: (item: AccessUser) => void,
+  callback: (item: AccessUser) => void
 ) => {
   callback(item);
   await onSubmit();
