@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -178,12 +177,6 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 		return nil
 	}
 
-	// Get rollout policy to check rollout requirements
-	rolloutPolicy, err := apiv1.GetValidRolloutPolicyForEnvironment(ctx, s.store, task.Environment)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get rollout policy for environment %s", task.Environment)
-	}
-
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return err
@@ -192,8 +185,8 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 		if issue.Status != storepb.Issue_OPEN {
 			return nil
 		}
-		// Check if issue approval is required according to the rollout policy checkers
-		if rolloutPolicy.GetCheckers().GetRequiredIssueApproval() {
+		// Check if issue approval is required according to the project settings
+		if project.Setting.RequireIssueApproval {
 			approved, err := utils.CheckIssueApproved(issue)
 			if err != nil {
 				return errors.Wrapf(err, "failed to check if the issue is approved")
@@ -204,9 +197,8 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 		}
 	}
 
-	// Check the latest plan checks based on rollout policy enforcement level
-	planCheckEnforcement := rolloutPolicy.GetCheckers().GetRequiredStatusChecks().GetPlanCheckEnforcement()
-	if planCheckEnforcement != storepb.RolloutPolicy_Checkers_PLAN_CHECK_ENFORCEMENT_UNSPECIFIED {
+	// Check the latest plan checks based on project settings (error only)
+	if project.Setting.RequirePlanCheckNoError {
 		pass, err := func() (bool, error) {
 			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
 			if err != nil {
@@ -226,12 +218,7 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 					return false, nil
 				}
 				for _, result := range run.Result.Results {
-					// Block on errors for both ERROR_ONLY and STRICT enforcement
 					if result.Status == storepb.Advice_ERROR {
-						return false, nil
-					}
-					// Block on warnings only for STRICT enforcement
-					if planCheckEnforcement == storepb.RolloutPolicy_Checkers_STRICT && result.Status == storepb.Advice_WARNING {
 						return false, nil
 					}
 				}

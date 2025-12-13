@@ -65,4 +65,10 @@ message Project {
   // Whether to enforce SQL review checks to pass before issue creation.
   // If enabled, issues cannot be created when SQL review finds errors.
   bool enforce_sql_review = 15;
+
+  // Whether issue approval is required before proceeding with rollout.
+  bool require_issue_approval = 16;
+
+  // Whether to block rollout when plan check finds errors.
+  bool require_plan_check_no_error = 17;
 }

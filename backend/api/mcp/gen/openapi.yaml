@@ -13796,6 +13796,14 @@ components:
           description: |-
             Whether to enforce SQL review checks to pass before issue creation.
              If enabled, issues cannot be created when SQL review finds errors.
+        requireIssueApproval:
+          type: boolean
+          title: require_issue_approval
+          description: Whether to require issue approval before rollout.
+        requirePlanCheckNoError:
+          type: boolean
+          title: require_plan_check_no_error
+          description: Whether to require plan check to have no error before rollout.
       title: Project
       additionalProperties: false
     bytebase.v1.Project.ExecutionRetryPolicy:

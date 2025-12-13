@@ -328,6 +328,14 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			projectSettings := project.Setting
 			projectSettings.ParallelTasksPerRollout = req.Msg.Project.ParallelTasksPerRollout
 			patch.Setting = projectSettings
+		case "require_issue_approval":
+			projectSettings := project.Setting
+			projectSettings.RequireIssueApproval = req.Msg.Project.RequireIssueApproval
+			patch.Setting = projectSettings
+		case "require_plan_check_no_error":
+			projectSettings := project.Setting
+			projectSettings.RequirePlanCheckNoError = req.Msg.Project.RequirePlanCheckNoError
+			patch.Setting = projectSettings
 		case "labels":
 			if err := validateLabels(req.Msg.Project.Labels); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)

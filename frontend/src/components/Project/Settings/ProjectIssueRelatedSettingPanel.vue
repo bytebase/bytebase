@@ -150,6 +150,50 @@
       <div>
         <div class="flex items-center gap-x-2">
           <Switch
+            v-model:value="state.requireIssueApproval"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{
+              $t("project.settings.issue-related.require-issue-approval.self")
+            }}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{
+            $t(
+              "project.settings.issue-related.require-issue-approval.description"
+            )
+          }}
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-x-2">
+          <Switch
+            v-model:value="state.requirePlanCheckNoError"
+            :text="true"
+            :disabled="!allowUpdateIssueProjectSetting || loading"
+          />
+          <span class="textlabel">
+            {{
+              $t(
+                "project.settings.issue-related.require-plan-check-no-error.self"
+              )
+            }}
+          </span>
+        </div>
+        <div class="mt-1 mb-3 text-sm text-gray-400">
+          {{
+            $t(
+              "project.settings.issue-related.require-plan-check-no-error.description"
+            )
+          }}
+        </div>
+      </div>
+      <div>
+        <div class="flex items-center gap-x-2">
+          <Switch
             v-model:value="state.autoEnableBackup"
             :text="true"
             :disabled="!allowUpdateIssueProjectSetting || loading"
@@ -320,24 +364,54 @@ interface LocalState {
   executionRetryPolicy: Project_ExecutionRetryPolicy | undefined;
   ciSamplingSize: number;
   parallelTasksPerRollout: number;
+  requireIssueApproval: boolean;
+  requirePlanCheckNoError: boolean;
 }
 
 const getInitialLocalState = (): LocalState => {
-  const project = props.project;
+  if (!props.project) {
+    return {
+      issueLabels: [],
+      forceIssueLabels: false,
+      allowModifyStatement: false,
+      autoResolveIssue: false,
+      enforceIssueTitle: false,
+      enforceSqlReview: false,
+      autoEnableBackup: false,
+      skipBackupErrors: false,
+      postgresDatabaseTenantMode: false,
+      allowSelfApproval: false,
+      executionRetryPolicy: createProto(Project_ExecutionRetryPolicySchema, {
+        maximumRetries: 0,
+      }),
+      ciSamplingSize: 0,
+      parallelTasksPerRollout: 1,
+      requireIssueApproval: false,
+      requirePlanCheckNoError: false,
+    };
+  }
   return {
-    issueLabels: [...cloneDeep(project.issueLabels)],
-    enforceSqlReview: project.enforceSqlReview,
-    allowModifyStatement: project.allowModifyStatement,
-    autoResolveIssue: project.autoResolveIssue,
-    forceIssueLabels: project.forceIssueLabels,
-    enforceIssueTitle: project.enforceIssueTitle,
-    allowSelfApproval: project.allowSelfApproval,
-    autoEnableBackup: project.autoEnableBackup,
-    skipBackupErrors: project.skipBackupErrors,
-    postgresDatabaseTenantMode: project.postgresDatabaseTenantMode,
-    executionRetryPolicy: project.executionRetryPolicy,
-    ciSamplingSize: project.ciSamplingSize,
-    parallelTasksPerRollout: project.parallelTasksPerRollout,
+    issueLabels: props.project.issueLabels,
+    forceIssueLabels: props.project.forceIssueLabels,
+    allowModifyStatement: props.project.allowModifyStatement,
+    autoResolveIssue: props.project.autoResolveIssue,
+    enforceIssueTitle: props.project.enforceIssueTitle,
+    enforceSqlReview: props.project.enforceSqlReview,
+    autoEnableBackup: props.project.autoEnableBackup,
+    skipBackupErrors: props.project.skipBackupErrors,
+    postgresDatabaseTenantMode: props.project.postgresDatabaseTenantMode,
+    allowSelfApproval: props.project.allowSelfApproval,
+    executionRetryPolicy: props.project.executionRetryPolicy
+      ? createProto(Project_ExecutionRetryPolicySchema, {
+          maximumRetries: props.project.executionRetryPolicy.maximumRetries,
+        })
+      : createProto(Project_ExecutionRetryPolicySchema, {
+          maximumRetries: 0,
+        }),
+    ciSamplingSize: props.project.ciSamplingSize,
+    parallelTasksPerRollout: props.project.parallelTasksPerRollout,
+    requireIssueApproval: props.project.requireIssueApproval,
+    requirePlanCheckNoError: props.project.requirePlanCheckNoError,
   };
 };
 
@@ -491,6 +565,12 @@ const updateMask = computed(() => {
     )
   ) {
     mask.push("parallel_tasks_per_rollout");
+  }
+  if (state.requireIssueApproval !== props.project.requireIssueApproval) {
+    mask.push("require_issue_approval");
+  }
+  if (state.requirePlanCheckNoError !== props.project.requirePlanCheckNoError) {
+    mask.push("require_plan_check_no_error");
   }
   return mask;
 });

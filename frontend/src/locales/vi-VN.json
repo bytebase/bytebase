@@ -1621,26 +1621,7 @@
       "tip": "Chính sách được áp dụng cho các vấn đề hồi tố.",
       "info": "Các tác vụ có thể được thực hiện bởi người dùng có quyền 'taskRuns.Create' hoặc các vai trò sau.",
       "auto": "Triển khai tự động",
-      "auto-info": "Nếu tất cả kiểm tra vượt qua, thay đổi sẽ được triển khai và thực hiện tự động.",
-      "checkers": {
-        "self": "Yêu cầu",
-        "required-issue-approval": {
-          "self": "Yêu cầu phê duyệt vấn đề",
-          "description": "Vấn đề phải được chấp thuận trước khi triển khai."
-        },
-        "plan-check-enforcement": {
-          "self": "Kiểm tra kế hoạch thực thi",
-          "description": "Triển khai theo khối dựa trên kết quả kiểm tra kế hoạch.",
-          "error-only": {
-            "self": "Chỉ chặn lỗi",
-            "description": "Chỉ chặn triển khai khi kiểm tra kế hoạch phát hiện lỗi."
-          },
-          "strict": {
-            "self": "Thực thi nghiêm ngặt",
-            "description": "Chặn triển khai khi kiểm tra kế hoạch phát hiện lỗi hoặc cảnh báo."
-          }
-        }
-      }
+      "auto-info": "Nếu tất cả kiểm tra vượt qua, thay đổi sẽ được triển khai và thực hiện tự động."
     },
     "environment-tier": {
       "name": "Cấp môi trường",
@@ -1968,6 +1949,14 @@
         "parallel_tasks_per_rollout": {
           "self": "Nhiệm vụ song song cho mỗi lần triển khai",
           "description": "Kiểm soát số lượng các tác vụ song song cho mỗi lần triển khai. \nĐặt điều này thành 0 vô hiệu hóa bất kỳ điều chỉnh."
+        },
+        "require-issue-approval": {
+          "self": "Require issue approval",
+          "description": "Issue must be approved before rollout."
+        },
+        "require-plan-check-no-error": {
+          "self": "Require plan check no error",
+          "description": "Block rollout if plan check has errors."
         }
       },
       "project-labels": {
