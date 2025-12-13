@@ -45,11 +45,6 @@ const (
 
 	// AccessTokenCookieName is the cookie name of access token.
 	AccessTokenCookieName = "access-token"
-
-	// GatewayMetadataAccessTokenKey is the gateway metadata key for access token.
-	GatewayMetadataAccessTokenKey = "bytebase-access-token"
-	// GatewayMetadataRequestOriginKey is the gateway metadata key for the request origin header.
-	GatewayMetadataRequestOriginKey = "bytebase-request-origin"
 )
 
 // APIAuthInterceptor is the auth interceptor for gRPC server.
