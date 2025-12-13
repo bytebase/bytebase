@@ -32,13 +32,10 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/metric"
-	metriccollector "github.com/bytebase/bytebase/backend/metric/collector"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/runner/approval"
 	"github.com/bytebase/bytebase/backend/runner/cleaner"
-	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/monitor"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -60,7 +57,6 @@ type Server struct {
 	// Asynchronous runners.
 	taskScheduler      *taskrun.Scheduler
 	planCheckScheduler *plancheck.Scheduler
-	metricReporter     *metricreport.Reporter
 	schemaSyncer       *schemasync.Syncer
 	approvalRunner     *approval.Runner
 	dataCleaner        *cleaner.DataCleaner
@@ -188,7 +184,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Configure echo server.
 	s.echoServer = echo.New()
 
-	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile)
 	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.profile, s.stateCfg, s.licenseService)
 	s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
 
@@ -211,9 +206,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Data cleaner
 	s.dataCleaner = cleaner.NewDataCleaner(stores)
 
-	// Metric reporter
-	s.initMetricReporter()
-
 	// LSP server.
 	s.lspServer = lsp.NewServer(s.store, profile, secret, s.stateCfg, s.iamManager, s.licenseService)
 
@@ -224,7 +216,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to create MCP server")
 	}
 
-	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
+	if err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager); err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
 	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, oauth2Service, mcpServer, profile)
@@ -244,9 +236,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	go s.schemaSyncer.Run(ctx, &s.runnerWG)
 	s.runnerWG.Add(1)
 	go s.approvalRunner.Run(ctx, &s.runnerWG)
-
-	s.runnerWG.Add(1)
-	go s.metricReporter.Run(ctx, &s.runnerWG)
 
 	s.runnerWG.Add(1)
 	go s.planCheckScheduler.Run(ctx, &s.runnerWG)
@@ -295,11 +284,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	slog.Info("Stopping Bytebase...")
 	slog.Info("Stopping web server...")
 
-	// Close the metric reporter
-	if s.metricReporter != nil {
-		s.metricReporter.Close()
-	}
-
 	ctx, cancel := context.WithTimeout(ctx, gracefulShutdownPeriod)
 	defer cancel()
 
@@ -336,13 +320,4 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// initMetricReporter initializes the metric reporter.
-func (s *Server) initMetricReporter() {
-	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile)
-	s.metricReporter.Register(metric.InstanceCountMetricName, metriccollector.NewInstanceCountCollector(s.store))
-	s.metricReporter.Register(metric.IssueCountMetricName, metriccollector.NewIssueCountCollector(s.store))
-	s.metricReporter.Register(metric.ProjectCountMetricName, metriccollector.NewProjectCountCollector(s.store))
-	s.metricReporter.Register(metric.UserCountMetricName, metriccollector.NewUserCountCollector(s.store))
 }

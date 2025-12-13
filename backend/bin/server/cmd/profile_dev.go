@@ -10,7 +10,5 @@ import (
 func activeProfile(dataDir string) *config.Profile {
 	p := getBaseProfile(dataDir)
 	p.Mode = common.ReleaseModeDev
-	// Metric collection is disabled in dev mode.
-	// p.MetricConnectionKey = "3zcZLeX3ahvlueEJqNyJysGfVAErsjjT"
 	return p
 }

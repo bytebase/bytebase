@@ -37,8 +37,6 @@ type Profile struct {
 	GitCommit string
 	// PgURL is the optional external PostgreSQL instance connection url
 	PgURL string
-	// MetricConnectionKey is the connection key for metric.
-	MetricConnectionKey string
 
 	// LastActiveTS is the service last active timestamp, any API calls will refresh this value.
 	LastActiveTS atomic.Int64

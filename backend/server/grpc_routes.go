@@ -32,7 +32,6 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -45,7 +44,6 @@ func configureGrpcRouters(
 	dbFactory *dbfactory.DBFactory,
 	licenseService *enterprise.LicenseService,
 	profile *config.Profile,
-	metricReporter *metricreport.Reporter,
 	stateCfg *state.State,
 	schemaSyncer *schemasync.Syncer,
 	webhookManager *webhook.Manager,
@@ -73,7 +71,7 @@ func configureGrpcRouters(
 	)
 	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleInstanceManager)
 	auditLogService := apiv1.NewAuditLogService(stores, iamManager, licenseService)
-	authService := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
+	authService := apiv1.NewAuthService(stores, secret, licenseService, profile, stateCfg, iamManager)
 	celService := apiv1.NewCelService()
 	databaseCatalogService := apiv1.NewDatabaseCatalogService(stores, licenseService)
 	databaseGroupService := apiv1.NewDatabaseGroupService(stores, profile, iamManager, licenseService)
@@ -81,8 +79,8 @@ func configureGrpcRouters(
 	groupService := apiv1.NewGroupService(stores, iamManager, licenseService)
 	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService, profile)
 	instanceRoleService := apiv1.NewInstanceRoleService(stores, dbFactory)
-	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, metricReporter, stateCfg, dbFactory, schemaSyncer, iamManager, sampleInstanceManager)
-	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager, metricReporter)
+	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, stateCfg, dbFactory, schemaSyncer, iamManager, sampleInstanceManager)
+	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager)
 	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService)
 	planService := apiv1.NewPlanService(stores, sheetManager, licenseService, dbFactory, stateCfg, profile, iamManager)
 	projectService := apiv1.NewProjectService(stores, profile, iamManager, licenseService)
@@ -94,8 +92,8 @@ func configureGrpcRouters(
 	settingService := apiv1.NewSettingService(stores, profile, licenseService, stateCfg)
 	sheetService := apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile)
 	sqlService := apiv1.NewSQLService(stores, sheetManager, schemaSyncer, dbFactory, licenseService, profile, iamManager)
-	subscriptionService := apiv1.NewSubscriptionService(stores, profile, metricReporter, licenseService)
-	userService := apiv1.NewUserService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager)
+	subscriptionService := apiv1.NewSubscriptionService(stores, profile, licenseService)
+	userService := apiv1.NewUserService(stores, secret, licenseService, profile, stateCfg, iamManager)
 	worksheetService := apiv1.NewWorksheetService(stores, iamManager)
 	workspaceService := apiv1.NewWorkspaceService(stores, iamManager)
 
@@ -112,7 +110,6 @@ func configureGrpcRouters(
 	handlerOpts := connect.WithHandlerOptions(
 		connect.WithInterceptors(
 			validateInterceptor,
-			apiv1.NewDebugInterceptor(metricReporter),
 			auth.New(stores, secret, licenseService, stateCfg, profile),
 			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 			apiv1.NewAuditInterceptor(stores, secret, profile),
