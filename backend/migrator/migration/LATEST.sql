@@ -550,7 +550,7 @@ CREATE TABLE oauth2_client (
 CREATE TABLE oauth2_authorization_code (
     code text PRIMARY KEY,
     client_id text NOT NULL REFERENCES oauth2_client(client_id) ON DELETE CASCADE,
-    user text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    user_email text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     config jsonb NOT NULL,
     expires_at timestamptz NOT NULL
 );
@@ -558,7 +558,7 @@ CREATE TABLE oauth2_authorization_code (
 CREATE TABLE oauth2_refresh_token (
     token_hash text PRIMARY KEY,
     client_id text NOT NULL REFERENCES oauth2_client(client_id) ON DELETE CASCADE,
-    user text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    user_email text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
     expires_at timestamptz NOT NULL
 );
 

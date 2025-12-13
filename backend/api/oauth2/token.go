@@ -139,7 +139,7 @@ func (s *Service) handleAuthorizationCodeGrant(c echo.Context, client *store.OAu
 	_ = s.store.DeleteOAuth2AuthorizationCode(ctx, req.Code)
 
 	// Get user
-	user, err := s.store.GetUserByEmail(ctx, authCode.User)
+	user, err := s.store.GetUserByEmail(ctx, authCode.UserEmail)
 	if err != nil || user == nil {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "user not found")
 	}
@@ -187,7 +187,7 @@ func (s *Service) handleRefreshTokenGrant(c echo.Context, client *store.OAuth2Cl
 	_ = s.store.DeleteOAuth2RefreshToken(ctx, tokenHash)
 
 	// Get user
-	user, err := s.store.GetUserByEmail(ctx, refreshToken.User)
+	user, err := s.store.GetUserByEmail(ctx, refreshToken.UserEmail)
 	if err != nil || user == nil {
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "user not found")
 	}
@@ -228,7 +228,7 @@ func (s *Service) issueTokens(c echo.Context, client *store.OAuth2ClientMessage,
 		if _, err := s.store.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
 			TokenHash: hashToken(refreshTokenStr),
 			ClientID:  client.ClientID,
-			User:      userEmail,
+			UserEmail: userEmail,
 			ExpiresAt: now.Add(refreshTokenExpiry),
 		}); err != nil {
 			return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to store refresh token")

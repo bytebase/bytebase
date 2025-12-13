@@ -155,7 +155,7 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 	if _, err := s.store.CreateOAuth2AuthorizationCode(ctx, &store.OAuth2AuthorizationCodeMessage{
 		Code:      code,
 		ClientID:  clientID,
-		User:      user.Email,
+		UserEmail: user.Email,
 		Config:    codeConfig,
 		ExpiresAt: time.Now().Add(authCodeExpiry),
 	}); err != nil {
