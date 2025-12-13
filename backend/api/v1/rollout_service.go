@@ -1053,7 +1053,7 @@ func GetValidRolloutPolicyForEnvironment(ctx context.Context, stores *store.Stor
 func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, _ string) (bool, error) {
 	// For data export issues, only the creator can run tasks.
 	if issue != nil && issue.Type == storepb.Issue_DATABASE_EXPORT {
-		return issue.Creator.Email == user.Email, nil
+		return issue.CreatorEmail == user.Email, nil
 	}
 
 	// Users with bb.taskRuns.create can always create task runs.

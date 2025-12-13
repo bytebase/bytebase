@@ -423,6 +423,7 @@
       "users-and-groups": "ユーザーとグループ",
       "iam-and-admin": "IAM と管理",
       "im-integration": "IM",
+      "mcp": "MCP",
       "sso": "SSO",
       "subscription": "サブスクリプション",
       "global-masking": "グローバルマスキング",
@@ -525,6 +526,22 @@
     },
     "im-integration": {
       "description": "IM 統合は、特定のイシューイベントについてユーザーにダイレクトメッセージをプッシュするために使用されます。プロジェクト Webhook と連携して動作します。"
+    },
+    "mcp": {
+      "title": "MCP 統合",
+      "description": "Model Context Protocol を使用して、AI アシスタントを Bytebase に接続します。",
+      "setup": {
+        "external-url-warning": "外部 URL が設定されていません。",
+        "configure-external-url": "一般設定で外部 URL を設定する",
+        "add-to-config": "MCP 設定に追加：",
+        "run-command": "このコマンドを実行：",
+        "oauth-note": "初回使用時に、アクセスの承認を求められます。"
+      },
+      "first-prompt": {
+        "title": "最初のプロンプト",
+        "description": "接続後、AI アシスタントに聞いてみてください：",
+        "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする"
+      }
     },
     "sso": {
       "create": "SSOの作成",
@@ -1236,8 +1253,7 @@
       "self": "ステージ | ステージ",
       "run-stage": "ランステージ",
       "confirm-create": "このステージのタスクを作成してもよろしいですか？",
-      "back-to-stage": "ステージに戻る {stage}",
-      "no-stages": {}
+      "back-to-stage": "ステージに戻る {stage}"
     },
     "task": {
       "selected-count": "{count} 個のタスクが選択されました | {count} 個のタスクが選択されました",
@@ -2108,7 +2124,6 @@
     "allow-admin-mode-only": "インスタンス {instance} には管理者モードでのみアクセスできます。",
     "query-time": "クエリ時間",
     "connection-lost": "接続切断。次回クエリが実行されるときに再接続が試行されます。",
-    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2651,9 +2666,7 @@
           "data_export": "データのエクスポート",
           "request-role": "ロールのリクエスト"
         }
-      },
-      "template": {},
-      "source": {}
+      }
     },
     "approval-flow": {
       "self": "承認の流れ",

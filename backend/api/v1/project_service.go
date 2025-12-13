@@ -1009,7 +1009,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 			Link:        fmt.Sprintf("%s/projects/%s/webhooks/%s", externalURL, project.ResourceID, fmt.Sprintf("%s-%d", slug.Make(webhook.Payload.GetTitle()), webhook.ID)),
 			ActorID:     common.SystemBotID,
 			ActorName:   "Bytebase",
-			ActorEmail:  s.store.GetSystemBotUser(ctx).Email,
+			ActorEmail:  common.SystemBotEmail,
 			CreatedTS:   time.Now().Unix(),
 			Issue: &webhookplugin.Issue{
 				ID:          1,
@@ -1017,7 +1017,10 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 				Status:      "OPEN",
 				Type:        "bb.issue.database.create",
 				Description: "This is a test issue",
-				Creator:     s.store.GetSystemBotUser(ctx),
+				Creator: webhookplugin.Creator{
+					Name:  "Bytebase",
+					Email: common.SystemBotEmail,
+				},
 			},
 
 			Project: &webhookplugin.Project{

@@ -423,6 +423,7 @@
       "users-and-groups": "Users & Groups",
       "iam-and-admin": "IAM & Admin",
       "im-integration": "IM",
+      "mcp": "MCP",
       "sso": "SSO",
       "subscription": "Subscription",
       "global-masking": "Global Masking",
@@ -525,6 +526,22 @@
     },
     "im-integration": {
       "description": "The IM integration will be used to push direct messages to users for specific issue events. Works with the project webhook."
+    },
+    "mcp": {
+      "title": "MCP Integration",
+      "description": "Connect AI assistants to Bytebase using the Model Context Protocol.",
+      "setup": {
+        "external-url-warning": "External URL is not configured.",
+        "configure-external-url": "Configure External URL in General Settings",
+        "add-to-config": "Add to your MCP configuration:",
+        "run-command": "Run this command:",
+        "oauth-note": "On first use, you'll be prompted to authorize access."
+      },
+      "first-prompt": {
+        "title": "Your First Prompt",
+        "description": "Once connected, try asking your AI assistant:",
+        "example": "List all projects in my Bytebase instance"
+      }
     },
     "sso": {
       "create": "Create SSO",
@@ -1236,8 +1253,7 @@
       "self": "Stage | Stages",
       "run-stage": "Run Stage",
       "confirm-create": "Confirm to create tasks for this stage?",
-      "back-to-stage": "Back to Stage {stage}",
-      "no-stages": {}
+      "back-to-stage": "Back to Stage {stage}"
     },
     "task": {
       "selected-count": "{count} task selected | {count} tasks selected",
@@ -1646,7 +1662,6 @@
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "export": "Export Changelog",
     "need-to-select-first": "Need to select changelog first",
-
     "rollback-tip": "Select a specific DDL changelog to rollback."
   },
   "database": {
@@ -2109,7 +2124,6 @@
     "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "query-time": "Query time",
     "connection-lost": "Connection lost. Will try to reconnect when executing next query.",
-    "sheet": {},
     "tab": {
       "context-menu": {
         "actions": {
@@ -2652,9 +2666,7 @@
           "data_export": "Export Data",
           "request-role": "Request Role"
         }
-      },
-      "template": {},
-      "source": {}
+      }
     },
     "approval-flow": {
       "self": "Approval Flow",

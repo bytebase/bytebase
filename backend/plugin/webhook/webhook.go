@@ -48,7 +48,12 @@ type Issue struct {
 	Status      string
 	Type        string
 	Description string
-	Creator     *store.UserMessage
+	Creator     Creator
+}
+
+type Creator struct {
+	Name  string
+	Email string
 }
 
 type Rollout struct {

@@ -174,7 +174,15 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	case storepb.Activity_NOTIFY_ISSUE_APPROVED:
 		title = "Issue approved"
 		titleZh = "工单审批通过"
-		mentionUsers = append(mentionUsers, e.Issue.Creator)
+		creatorUser, err := m.store.GetUserByEmail(ctx, e.Issue.CreatorEmail)
+		if err != nil {
+			slog.Warn("failed to get creator user for issue notification",
+				slog.String("issue_name", e.Issue.Title),
+				log.BBError(err))
+			// Continue without mentioning the creator if unable to fetch
+		} else {
+			mentionUsers = append(mentionUsers, creatorUser)
+		}
 
 	case storepb.Activity_NOTIFY_PIPELINE_ROLLOUT:
 		u := e.IssueRolloutReady
@@ -182,7 +190,14 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		titleZh = "工单待发布"
 		var usersGetters []UsersGetter
 		if u.RolloutPolicy.GetAutomatic() {
-			usersGetters = append(usersGetters, getUsersFromUsers(e.Issue.Creator))
+			creatorUser, err := m.store.GetUserByEmail(ctx, e.Issue.CreatorEmail)
+			if err != nil {
+				slog.Warn("failed to get creator user for issue notification",
+					slog.String("issue_name", e.Issue.Title),
+					log.BBError(err))
+			} else {
+				usersGetters = append(usersGetters, getUsersFromUsers(creatorUser))
+			}
 		} else {
 			for _, role := range u.RolloutPolicy.GetRoles() {
 				role := strings.TrimPrefix(role, "roles/")
@@ -235,13 +250,25 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		MentionEndUsers: mentionEndUsers,
 	}
 	if e.Issue != nil {
+		creatorName := e.Issue.CreatorEmail
+		creatorUser, err := m.store.GetUserByEmail(ctx, e.Issue.CreatorEmail)
+		if err != nil {
+			slog.Warn("failed to get creator user for webhook context",
+				slog.String("issue_name", e.Issue.Title),
+				log.BBError(err))
+		} else {
+			creatorName = creatorUser.Name
+		}
 		webhookCtx.Issue = &webhook.Issue{
 			ID:          e.Issue.UID,
 			Name:        e.Issue.Title,
 			Status:      e.Issue.Status,
 			Type:        e.Issue.Type,
 			Description: e.Issue.Description,
-			Creator:     e.Issue.Creator,
+			Creator: webhook.Creator{
+				Name:  creatorName,
+				Email: e.Issue.CreatorEmail,
+			},
 		}
 	}
 	if e.Rollout != nil {
