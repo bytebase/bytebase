@@ -997,7 +997,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	canRequest := canRequestIssue(issue.Creator, user)
+	canRequest := canRequestIssue(issue.CreatorEmail, user)
 	if !canRequest {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot request issues because you are not the issue creator"))
 	}
@@ -1529,6 +1529,6 @@ func (s *IssueService) isUserReviewer(ctx context.Context, issue *store.IssueMes
 	return roles[role]
 }
 
-func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) bool {
-	return issueCreator.ID == user.ID
+func canRequestIssue(issueCreatorEmail string, user *store.UserMessage) bool {
+	return issueCreatorEmail == user.Email
 }

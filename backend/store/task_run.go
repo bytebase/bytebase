@@ -26,7 +26,6 @@ type TaskRunMessage struct {
 	// Output only.
 	ID           int
 	CreatorEmail string
-	Creator      *UserMessage
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	ProjectID    string
@@ -164,15 +163,6 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-
-	for _, taskRun := range taskRuns {
-		creator, err := s.GetUserByEmail(ctx, taskRun.CreatorEmail)
-		if err != nil {
-			return nil, err
-		}
-		taskRun.Creator = creator
-	}
-
 	return taskRuns, nil
 }
 

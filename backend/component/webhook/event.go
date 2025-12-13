@@ -26,13 +26,13 @@ func NewIssue(i *store.IssueMessage) *Issue {
 		return nil
 	}
 	return &Issue{
-		UID:         i.UID,
-		Status:      i.Status.String(),
-		Type:        i.Type.String(),
-		Title:       i.Title,
-		Description: i.Description,
-		Creator:     i.Creator,
-		Approval:    i.Payload.GetApproval(),
+		UID:          i.UID,
+		Status:       i.Status.String(),
+		Type:         i.Type.String(),
+		Title:        i.Title,
+		Description:  i.Description,
+		CreatorEmail: i.CreatorEmail,
+		Approval:     i.Payload.GetApproval(),
 	}
 }
 
@@ -50,13 +50,13 @@ func NewRollout(r *store.PipelineMessage) *Rollout {
 }
 
 type Issue struct {
-	UID         int
-	Status      string
-	Type        string
-	Title       string
-	Description string
-	Creator     *store.UserMessage
-	Approval    *storepb.IssuePayloadApproval
+	UID          int
+	Status       string
+	Type         string
+	Title        string
+	Description  string
+	CreatorEmail string
+	Approval     *storepb.IssuePayloadApproval
 }
 
 type Project struct {

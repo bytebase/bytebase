@@ -285,7 +285,7 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error 
 }
 
 // GetListPlanFilter parses a CEL filter expression into a query builder query for listing plans.
-func (s *Store) GetListPlanFilter(ctx context.Context, filter string) (*qb.Query, error) {
+func (s *Store) GetListPlanFilter(_ context.Context, filter string) (*qb.Query, error) { // nolint:revive
 	if filter == "" {
 		return nil, nil
 	}
@@ -320,11 +320,11 @@ func (s *Store) GetListPlanFilter(ctx context.Context, filter string) (*qb.Query
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {
 				case "creator":
-					user, err := s.getUserByIdentifier(ctx, value.(string))
-					if err != nil {
-						return nil, errors.Errorf("failed to get user %v with error %v", value, err.Error())
+					creatorEmail := strings.TrimPrefix(value.(string), "users/")
+					if creatorEmail == "" {
+						return nil, errors.New("invalid empty creator identifier")
 					}
-					return qb.Q().Space("plan.creator = ?", user.Email), nil
+					return qb.Q().Space("plan.creator = ?", creatorEmail), nil
 				case "has_pipeline":
 					hasPipeline, ok := value.(bool)
 					if !ok {
@@ -428,19 +428,4 @@ func (s *Store) GetListPlanFilter(ctx context.Context, filter string) (*qb.Query
 		return nil, err
 	}
 	return qb.Q().Space("(?)", q), nil
-}
-
-func (s *Store) getUserByIdentifier(ctx context.Context, identifier string) (*UserMessage, error) {
-	email := strings.TrimPrefix(identifier, "users/")
-	if email == "" {
-		return nil, errors.New("invalid empty creator identifier")
-	}
-	user, err := s.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, errors.Errorf(`failed to find user "%s" with error: %v`, email, err)
-	}
-	if user == nil {
-		return nil, errors.Errorf("cannot found user %s", email)
-	}
-	return user, nil
 }

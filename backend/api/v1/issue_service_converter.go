@@ -95,7 +95,7 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 		Description:     issue.Description,
 		Type:            convertToIssueType(issue.Type),
 		Status:          convertToIssueStatus(issue.Status),
-		Creator:         common.FormatUserEmail(issue.Creator.Email),
+		Creator:         common.FormatUserEmail(issue.CreatorEmail),
 		CreateTime:      timestamppb.New(issue.CreatedAt),
 		UpdateTime:      timestamppb.New(issue.UpdatedAt),
 		GrantRequest:    convertedGrantRequest,
@@ -352,7 +352,7 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 		CreateTime: timestamppb.New(ic.CreatedAt),
 		UpdateTime: timestamppb.New(ic.UpdatedAt),
 		Name:       fmt.Sprintf("%s/%s%d", issueName, common.IssueCommentNamePrefix, ic.UID),
-		Creator:    common.FormatUserEmail(ic.Creator.Email),
+		Creator:    common.FormatUserEmail(ic.CreatorEmail),
 	}
 
 	switch e := ic.Payload.Event.(type) {

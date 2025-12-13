@@ -74,7 +74,14 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		Format:    v1pb.ExportFormat(task.Payload.GetFormat()),
 		Password:  "", /* do not pass the password, we will encrypt the files will password when users download them */
 	}
-	bytes, _, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, issue.Creator /* user */, instance, database, nil /* access check */, exec.schemaSyncer, dataSource)
+	creatorUser, err := exec.store.GetUserByEmail(ctx, issue.CreatorEmail)
+	if err != nil {
+		return true, nil, errors.Wrapf(err, "failed to get creator user for issue %d", issue.UID)
+	}
+	if creatorUser == nil {
+		return true, nil, errors.Errorf("creator user not found for issue %d", issue.UID)
+	}
+	bytes, _, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, creatorUser /* user */, instance, database, nil /* access check */, exec.schemaSyncer, dataSource)
 	if exportErr != nil {
 		return true, nil, errors.Wrap(exportErr, "failed to export data")
 	}

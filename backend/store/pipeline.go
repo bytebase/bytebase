@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/google/cel-go/cel"
@@ -317,7 +318,7 @@ func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*Pipel
 }
 
 // GetListRolloutFilter parses a CEL filter expression into a query builder query for listing rollouts.
-func (s *Store) GetListRolloutFilter(ctx context.Context, filter string) (*qb.Query, error) {
+func (s *Store) GetListRolloutFilter(_ context.Context, filter string) (*qb.Query, error) { // nolint:revive
 	if filter == "" {
 		return nil, nil
 	}
@@ -352,11 +353,11 @@ func (s *Store) GetListRolloutFilter(ctx context.Context, filter string) (*qb.Qu
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {
 				case "creator":
-					user, err := s.getUserByIdentifier(ctx, value.(string))
-					if err != nil {
-						return nil, errors.Errorf("failed to get user %v with error %v", value, err.Error())
+					creatorEmail := strings.TrimPrefix(value.(string), "users/")
+					if creatorEmail == "" {
+						return nil, errors.New("invalid empty creator identifier")
 					}
-					return qb.Q().Space("pipeline.creator = ?", user.Email), nil
+					return qb.Q().Space("pipeline.creator = ?", creatorEmail), nil
 				case "task_type":
 					taskType, ok := value.(string)
 					if !ok {

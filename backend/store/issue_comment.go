@@ -13,14 +13,12 @@ import (
 )
 
 type IssueCommentMessage struct {
-	UID       int
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	IssueUID  int
-	Payload   *storepb.IssueCommentPayload
-	Creator   *UserMessage
-
-	creatorEmail string
+	UID          int
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	IssueUID     int
+	Payload      *storepb.IssueCommentPayload
+	CreatorEmail string
 }
 
 type FindIssueCommentMessage struct {
@@ -99,7 +97,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		var p []byte
 		if err := rows.Scan(
 			&ic.UID,
-			&ic.creatorEmail,
+			&ic.CreatorEmail,
 			&ic.CreatedAt,
 			&ic.UpdatedAt,
 			&ic.IssueUID,
@@ -115,14 +113,6 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "rows err")
-	}
-
-	for _, ic := range issueComments {
-		creator, err := s.GetUserByEmail(ctx, ic.creatorEmail)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get creator")
-		}
-		ic.Creator = creator
 	}
 
 	return issueComments, nil
@@ -173,12 +163,7 @@ func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMess
 		return nil, errors.Wrapf(err, "failed to insert")
 	}
 
-	c, err := s.GetUserByEmail(ctx, creator)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get creator")
-	}
-	create.Creator = c
-	create.creatorEmail = creator
+	create.CreatorEmail = creator
 
 	return create, nil
 }

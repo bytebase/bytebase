@@ -45,13 +45,12 @@ type IssueMessage struct {
 
 	// The following fields are output only and not used for create().
 	UID       int
-	Creator   *UserMessage
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
 	// Internal fields.
 	projectID    string
-	creatorEmail string
+	CreatorEmail string
 }
 
 // UpdateIssueMessage is the message for updating an issue.
@@ -418,7 +417,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		var typeString string
 		if err := rows.Scan(
 			&issue.UID,
-			&issue.creatorEmail,
+			&issue.CreatorEmail,
 			&issue.CreatedAt,
 			&issue.UpdatedAt,
 			&issue.projectID,
@@ -466,11 +465,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			return nil, err
 		}
 		issue.Project = project
-		creator, err := s.GetUserByEmail(ctx, issue.creatorEmail)
-		if err != nil {
-			return nil, err
-		}
-		issue.Creator = creator
 
 		s.issueCache.Add(issue.UID, issue)
 		if issue.PipelineUID != nil {
