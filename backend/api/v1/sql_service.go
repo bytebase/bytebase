@@ -866,7 +866,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	if err != nil {
 		return nil, err
 	}
-	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, dataSource)
+	bytes, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, dataSource)
 
 	s.createQueryHistory(database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
@@ -975,10 +975,10 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 	}, nil
 }
 
-// DoExport performs SQL Editor exports with masking applied.
+// doExport performs SQL Editor exports with masking applied.
 // This is used for ad-hoc exports where users have the EXPORTER role.
 // For approved DATABASE_EXPORT tasks, see data_export_executor.go which exports without masking.
-func DoExport(
+func doExport(
 	ctx context.Context,
 	stores *store.Store,
 	dbFactory *dbfactory.DBFactory,
