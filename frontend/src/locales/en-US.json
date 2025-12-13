@@ -874,12 +874,6 @@
           "suffix-length": "Suffix Length"
         }
       },
-      "action": {
-        "self": "Action",
-        "select-action": "Select action",
-        "query": "Query",
-        "export": "Export"
-      },
       "classification": {
         "upload": "Upload classification",
         "upload-label": "You can upload classification file with JSON format.",

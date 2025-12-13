@@ -461,13 +461,6 @@ export declare const MaskingExceptionPolicySchema: GenMessage<MaskingExceptionPo
  */
 export declare type MaskingExceptionPolicy_MaskingException = Message<"bytebase.v1.MaskingExceptionPolicy.MaskingException"> & {
   /**
-   * The action that the user can perform on sensitive data.
-   *
-   * @generated from field: bytebase.v1.MaskingExceptionPolicy.MaskingException.Action action = 1;
-   */
-  action: MaskingExceptionPolicy_MaskingException_Action;
-
-  /**
    * Member is the principal who bind to this exception policy instance.
    *
    * - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
@@ -505,39 +498,6 @@ export declare type MaskingExceptionPolicy_MaskingException = Message<"bytebase.
  * Use `create(MaskingExceptionPolicy_MaskingExceptionSchema)` to create a new message.
  */
 export declare const MaskingExceptionPolicy_MaskingExceptionSchema: GenMessage<MaskingExceptionPolicy_MaskingException>;
-
-/**
- * The action that the exception permits.
- *
- * @generated from enum bytebase.v1.MaskingExceptionPolicy.MaskingException.Action
- */
-export enum MaskingExceptionPolicy_MaskingException_Action {
-  /**
-   * Unspecified action.
-   *
-   * @generated from enum value: ACTION_UNSPECIFIED = 0;
-   */
-  ACTION_UNSPECIFIED = 0,
-
-  /**
-   * Allow querying sensitive data.
-   *
-   * @generated from enum value: QUERY = 1;
-   */
-  QUERY = 1,
-
-  /**
-   * Allow exporting sensitive data.
-   *
-   * @generated from enum value: EXPORT = 2;
-   */
-  EXPORT = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.MaskingExceptionPolicy.MaskingException.Action.
- */
-export declare const MaskingExceptionPolicy_MaskingException_ActionSchema: GenEnum<MaskingExceptionPolicy_MaskingException_Action>;
 
 /**
  * Policy for configuring data masking rules.

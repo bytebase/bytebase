@@ -339,18 +339,6 @@ message QueryDataPolicy {
 message MaskingExceptionPolicy {
   // An exception allowing specific users to access masked data.
   message MaskingException {
-    // The action that the exception permits.
-    enum Action {
-      // Unspecified action.
-      ACTION_UNSPECIFIED = 0;
-      // Allow querying sensitive data.
-      QUERY = 1;
-      // Allow exporting sensitive data.
-      EXPORT = 2;
-    }
-    // The action that the user can perform on sensitive data.
-    Action action = 1;
-
     // Member is the principal who bind to this exception policy instance.
     //
     // - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.

@@ -18,29 +18,6 @@
         </div>
 
         <div class="w-full">
-          <div class="flex items-center gap-x-1 mb-2">
-            <span class="text-main">
-              {{ $t("settings.sensitive-data.action.self") }}
-            </span>
-            <RequiredStar />
-          </div>
-          <div class="flex gap-x-4">
-            <NCheckbox
-              v-for="action in ACTIONS"
-              :key="action"
-              :checked="state.supportActions.has(action)"
-              @update:checked="toggleAction(action, $event)"
-            >
-              {{
-                $t(
-                  `settings.sensitive-data.action.${MaskingExceptionPolicy_MaskingException_Action[action].toLowerCase()}`
-                )
-              }}
-            </NCheckbox>
-          </div>
-        </div>
-
-        <div class="w-full">
           <p class="mb-2 text-main">
             {{ $t("common.reason") }}
           </p>
@@ -98,7 +75,7 @@
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
 import { isUndefined } from "lodash-es";
-import { NButton, NCheckbox, NDatePicker, NInput } from "naive-ui";
+import { NButton, NDatePicker, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import DatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
@@ -113,7 +90,6 @@ import type {
   Policy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  MaskingExceptionPolicy_MaskingException_Action,
   MaskingExceptionPolicy_MaskingExceptionSchema,
   MaskingExceptionPolicySchema,
   PolicyResourceType,
@@ -138,20 +114,13 @@ interface LocalState {
   memberList: string[];
   expirationTimestamp?: number;
   processing: boolean;
-  supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
   databaseResources?: DatabaseResource[];
   description: string;
 }
 
-const ACTIONS = [
-  MaskingExceptionPolicy_MaskingException_Action.EXPORT,
-  MaskingExceptionPolicy_MaskingException_Action.QUERY,
-];
-
 const state = reactive<LocalState>({
   memberList: [],
   processing: false,
-  supportActions: new Set(ACTIONS),
   databaseResources: props.columnList.map(
     convertSensitiveColumnToDatabaseResource
   ),
@@ -163,7 +132,6 @@ const { t } = useI18n();
 
 const resetState = () => {
   state.expirationTimestamp = undefined;
-  state.supportActions = new Set(ACTIONS);
   state.memberList = [];
   state.databaseResources = undefined;
   state.processing = false;
@@ -176,9 +144,6 @@ const onDismiss = () => {
 
 const submitDisabled = computed(() => {
   if (state.memberList.length === 0) {
-    return true;
-  }
-  if (state.supportActions.size === 0) {
     return true;
   }
   if (
@@ -224,29 +189,26 @@ const getPendingUpdatePolicy = async (
     );
   }
 
-  for (const action of state.supportActions.values()) {
-    for (const member of state.memberList) {
-      const resourceExpressions = state.databaseResources?.map(
-        getExpressionsForDatabaseResource
-      ) ?? [[""]];
-      for (const expressionList of resourceExpressions) {
-        const resourceExpression = [...expressionList, ...expressions].filter(
-          (e) => e
-        );
-        maskingExceptions.push(
-          create(MaskingExceptionPolicy_MaskingExceptionSchema, {
-            member,
-            action,
-            condition: create(ExprSchema, {
-              description: state.description,
-              expression:
-                resourceExpression.length > 0
-                  ? resourceExpression.join(" && ")
-                  : "",
-            }),
-          })
-        );
-      }
+  for (const member of state.memberList) {
+    const resourceExpressions = state.databaseResources?.map(
+      getExpressionsForDatabaseResource
+    ) ?? [[""]];
+    for (const expressionList of resourceExpressions) {
+      const resourceExpression = [...expressionList, ...expressions].filter(
+        (e) => e
+      );
+      maskingExceptions.push(
+        create(MaskingExceptionPolicy_MaskingExceptionSchema, {
+          member,
+          condition: create(ExprSchema, {
+            description: state.description,
+            expression:
+              resourceExpression.length > 0
+                ? resourceExpression.join(" && ")
+                : "",
+          }),
+        })
+      );
     }
   }
 
@@ -269,16 +231,5 @@ const getPendingUpdatePolicy = async (
       }),
     },
   };
-};
-
-const toggleAction = (
-  action: MaskingExceptionPolicy_MaskingException_Action,
-  check: boolean
-) => {
-  if (check) {
-    state.supportActions.add(action);
-  } else {
-    state.supportActions.delete(action);
-  }
 };
 </script>

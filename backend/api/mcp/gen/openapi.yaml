@@ -12569,10 +12569,6 @@ components:
     bytebase.v1.MaskingExceptionPolicy.MaskingException:
       type: object
       properties:
-        action:
-          title: action
-          description: The action that the user can perform on sensitive data.
-          $ref: '#/components/schemas/bytebase.v1.MaskingExceptionPolicy.MaskingException.Action'
         member:
           type: string
           title: member
@@ -12604,14 +12600,6 @@ components:
       title: MaskingException
       additionalProperties: false
       description: An exception allowing specific users to access masked data.
-    bytebase.v1.MaskingExceptionPolicy.MaskingException.Action:
-      type: string
-      title: Action
-      enum:
-        - ACTION_UNSPECIFIED
-        - QUERY
-        - EXPORT
-      description: The action that the exception permits.
     bytebase.v1.MaskingReason:
       type: object
       properties:

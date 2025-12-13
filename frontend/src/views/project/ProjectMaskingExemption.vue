@@ -10,12 +10,6 @@
           :project-name="project.name"
           v-model:database-name="state.selectedDatabaseName"
         />
-        <MaskingActionDropdown
-          v-model:action="state.selectedAction"
-          style="width: 12rem"
-          :clearable="true"
-          :action-list="[Action.EXPORT, Action.QUERY]"
-        />
       </NInputGroup>
 
       <div class="flex-1 flex flex-row items-center justify-end gap-x-2">
@@ -73,14 +67,12 @@ import { NButton, NInputGroup } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
-import MaskingActionDropdown from "@/components/SensitiveData/components/MaskingActionDropdown.vue";
 import MaskingExceptionUserTable from "@/components/SensitiveData/MaskingExceptionUserTable.vue";
 import { type AccessUser } from "@/components/SensitiveData/types";
 import { DatabaseSelect, SearchBox } from "@/components/v2";
 import { PROJECT_V1_ROUTE_MASKING_EXEMPTION_CREATE } from "@/router/dashboard/projectV1";
 import { hasFeature, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { MaskingExceptionPolicy_MaskingException_Action as Action } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -88,7 +80,6 @@ interface LocalState {
   searchText: string;
   showFeatureModal: boolean;
   selectedDatabaseName?: string;
-  selectedAction?: Action;
 }
 
 const props = defineProps<{
@@ -117,9 +108,6 @@ const allowCreate = computed(() => {
 });
 
 const filterAccessUser = (user: AccessUser): boolean => {
-  if (state.selectedAction && !user.supportActions.has(state.selectedAction)) {
-    return false;
-  }
   if (
     state.searchText.trim() &&
     !user.key.toLowerCase().includes(state.searchText.trim())

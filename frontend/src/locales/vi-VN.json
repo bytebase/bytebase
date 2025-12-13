@@ -874,12 +874,6 @@
           "suffix-length": "Độ dài hậu tố"
         }
       },
-      "action": {
-        "self": "Hành động",
-        "select-action": "Chọn hành động",
-        "query": "Truy vấn",
-        "export": "Xuất"
-      },
       "classification": {
         "upload": "Tải lên phân loại",
         "upload-label": "Bạn có thể tải lên tệp phân loại với định dạng JSON.",

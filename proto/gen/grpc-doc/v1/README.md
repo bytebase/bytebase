@@ -412,7 +412,6 @@
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
     - [DataSourceQueryPolicy.Restriction](#bytebase-v1-DataSourceQueryPolicy-Restriction)
-    - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
     - [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement)
@@ -6726,7 +6725,6 @@ An exception allowing specific users to access masked data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action) |  | The action that the user can perform on sensitive data. |
 | member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
 
 - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. - `group:{email}`: An email address for group. |
@@ -6933,19 +6931,6 @@ Restriction level for admin data source access.
 | RESTRICTION_UNSPECIFIED | 0 | Unspecified restriction. |
 | FALLBACK | 1 | Allow querying admin data sources when there is no read-only data source. |
 | DISALLOW | 2 | Disallow querying admin data sources. |
-
-
-
-<a name="bytebase-v1-MaskingExceptionPolicy-MaskingException-Action"></a>
-
-### MaskingExceptionPolicy.MaskingException.Action
-The action that the exception permits.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 | Unspecified action. |
-| QUERY | 1 | Allow querying sensitive data. |
-| EXPORT | 2 | Allow exporting sensitive data. |
 
 
 

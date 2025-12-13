@@ -26,7 +26,7 @@ func NewQueryResultMasker(store *store.Store) *QueryResultMasker {
 }
 
 // MaskResults masks the result in-place based on the dynamic masking policy, query-span, instance and action.
-func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, user *store.UserMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) error {
+func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase.QuerySpan, results []*v1pb.QueryResult, instance *store.InstanceMessage, user *store.UserMessage) error {
 	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find classification setting")
@@ -63,7 +63,7 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		if results[i].Error != "" && len(results[i].Rows) == 0 {
 			continue
 		}
-		maskers, reasons, err := s.getMaskersForQuerySpan(ctx, m, instance, user, spans[i], action)
+		maskers, reasons, err := s.getMaskersForQuerySpan(ctx, m, instance, user, spans[i])
 		if err != nil {
 			return errors.Wrapf(err, "failed to get maskers for query span")
 		}
@@ -119,7 +119,7 @@ func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map
 }
 
 // getMaskersForQuerySpan returns the maskers for the query span.
-func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *parserbase.QuerySpan, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([]masker.Masker, []*v1pb.MaskingReason, error) {
+func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maskingLevelEvaluator, instance *store.InstanceMessage, user *store.UserMessage, span *parserbase.QuerySpan) ([]masker.Masker, []*v1pb.MaskingReason, error) {
 	if span == nil {
 		return nil, nil, nil
 	}
@@ -145,7 +145,7 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 		var effectiveMaskers []masker.Masker
 		var effectiveReasons []*MaskingEvaluation
 		for column := range spanResult.SourceColumns {
-			newMasker, reason, err := s.getMaskerForColumnResource(ctx, m, instance, column, maskingExceptionPolicyMap, action, user, semanticTypesToMasker)
+			newMasker, reason, err := s.getMaskerForColumnResource(ctx, m, instance, column, maskingExceptionPolicyMap, user, semanticTypesToMasker)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -220,7 +220,6 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	instance *store.InstanceMessage,
 	sourceColumn parserbase.ColumnResource,
 	maskingExceptionPolicyMap map[string]*storepb.MaskingExceptionPolicy,
-	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 	currentPrincipal *store.UserMessage,
 	semanticTypeToMasker map[string]masker.Masker,
 ) (masker.Masker, *MaskingEvaluation, error) {
@@ -274,10 +273,6 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	var maskingExceptionContainsCurrentPrincipal []*storepb.MaskingExceptionPolicy_MaskingException
 	if maskingExceptionPolicy != nil {
 		for _, maskingException := range maskingExceptionPolicy.MaskingExceptions {
-			if maskingException.Action != action {
-				continue
-			}
-
 			if utils.MemberContainsUser(ctx, s.store, maskingException.Member, currentPrincipal) {
 				maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
 			}

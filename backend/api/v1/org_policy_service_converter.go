@@ -158,32 +158,6 @@ func ConvertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewR
 	return ruleList, nil
 }
 
-func convertToV1PBAction(action storepb.MaskingExceptionPolicy_MaskingException_Action) v1pb.MaskingExceptionPolicy_MaskingException_Action {
-	switch action {
-	case storepb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED:
-		return v1pb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
-	case storepb.MaskingExceptionPolicy_MaskingException_QUERY:
-		return v1pb.MaskingExceptionPolicy_MaskingException_QUERY
-	case storepb.MaskingExceptionPolicy_MaskingException_EXPORT:
-		return v1pb.MaskingExceptionPolicy_MaskingException_EXPORT
-	default:
-	}
-	return v1pb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
-}
-
-func convertToStorePBAction(action v1pb.MaskingExceptionPolicy_MaskingException_Action) storepb.MaskingExceptionPolicy_MaskingException_Action {
-	switch action {
-	case v1pb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED:
-		return storepb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
-	case v1pb.MaskingExceptionPolicy_MaskingException_QUERY:
-		return storepb.MaskingExceptionPolicy_MaskingException_QUERY
-	case v1pb.MaskingExceptionPolicy_MaskingException_EXPORT:
-		return storepb.MaskingExceptionPolicy_MaskingException_EXPORT
-	default:
-	}
-	return storepb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
-}
-
 func convertToV1RolloutPolicyPayload(payloadStr string) (*v1pb.Policy_RolloutPolicy, error) {
 	p := &v1pb.RolloutPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), p); err != nil {
@@ -282,7 +256,6 @@ func (s *OrgPolicyService) convertToStorePBMaskingExceptionPolicyPayload(ctx con
 			return nil, err
 		}
 		exceptions = append(exceptions, &storepb.MaskingExceptionPolicy_MaskingException{
-			Action: convertToStorePBAction(exception.Action),
 			Member: member,
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
@@ -307,7 +280,6 @@ func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx contex
 		}
 
 		exceptions = append(exceptions, &v1pb.MaskingExceptionPolicy_MaskingException{
-			Action: convertToV1PBAction(exception.Action),
 			Member: memberInBinding,
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,

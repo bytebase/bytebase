@@ -46,9 +46,6 @@ func (x *MaskingExceptionPolicy_MaskingException) Equal(y *MaskingExceptionPolic
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Action != y.Action {
-		return false
-	}
 	if x.Member != y.Member {
 		return false
 	}

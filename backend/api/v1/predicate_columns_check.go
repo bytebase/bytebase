@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage, action storepb.MaskingExceptionPolicy_MaskingException_Action) ([][]base.ColumnResource, error) {
+func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage) ([][]base.ColumnResource, error) {
 	var result [][]base.ColumnResource
 
 	classificationSetting, err := s.store.GetDataClassificationSetting(ctx)
@@ -43,7 +43,6 @@ func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context
 			instance,
 			span.PredicateColumns,
 			maskingExceptionPolicyMap,
-			action,
 			user,
 		)
 		if err != nil {
@@ -61,7 +60,6 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 	instance *store.InstanceMessage,
 	predicateColumns base.SourceColumnSet,
 	maskingExceptionPolicyMap map[string]*storepb.MaskingExceptionPolicy,
-	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 	currentPrincipal *store.UserMessage,
 ) ([]base.ColumnResource, error) {
 	if instance != nil && !isPredicateColumnsCheckEnabled(instance.Metadata.GetEngine()) {
@@ -113,10 +111,6 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 		var maskingExceptionContainsCurrentPrincipal []*storepb.MaskingExceptionPolicy_MaskingException
 		if maskingExceptionPolicy != nil {
 			for _, maskingException := range maskingExceptionPolicy.MaskingExceptions {
-				if maskingException.Action != action {
-					continue
-				}
-
 				if utils.MemberContainsUser(ctx, s.store, maskingException.Member, currentPrincipal) {
 					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
 				}

@@ -874,12 +874,6 @@
           "suffix-length": "サフィックスの長さ"
         }
       },
-      "action": {
-        "self": "操作の種類",
-        "select-action": "アクションを選択",
-        "query": "クエリ",
-        "export": "出力"
-      },
       "classification": {
         "upload": "分類をアップロード",
         "upload-label": "データを分類・分類したJSON形式ファイルをアップロードできます。",

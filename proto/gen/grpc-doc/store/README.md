@@ -217,7 +217,6 @@
   
     - [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction)
     - [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier)
-    - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action)
     - [Policy.Resource](#bytebase-store-Policy-Resource)
     - [Policy.Type](#bytebase-store-Policy-Type)
   
@@ -3517,7 +3516,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-store-MaskingExceptionPolicy-MaskingException-Action) |  | action is the action by which the user can access sensitive data. |
 | member | [string](#string) |  | Member is the principal who binds to this exception policy instance.
 
 Format: users/{email} or groups/{group email} |
@@ -3661,19 +3659,6 @@ QueryDataPolicy is the policy configuration for querying data.
 | ENVIRONMENT_TIER_UNSPECIFIED | 0 |  |
 | PROTECTED | 1 |  |
 | UNPROTECTED | 2 |  |
-
-
-
-<a name="bytebase-store-MaskingExceptionPolicy-MaskingException-Action"></a>
-
-### MaskingExceptionPolicy.MaskingException.Action
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 |  |
-| QUERY | 1 |  |
-| EXPORT | 2 |  |
 
 
 
