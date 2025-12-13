@@ -170,10 +170,9 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 }
 
 // CreateProject creates a project.
-func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creatorID int) (*ProjectMessage, error) {
-	user, err := s.GetUserByID(ctx, creatorID)
-	if err != nil {
-		return nil, err
+func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creator *UserMessage) (*ProjectMessage, error) {
+	if creator == nil {
+		return nil, errors.Errorf("creator cannot be nil")
 	}
 	if create.Setting == nil {
 		create.Setting = &storepb.Project{}
@@ -210,7 +209,7 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 			{
 				Role: common.FormatRole(common.ProjectOwner),
 				Members: []string{
-					common.FormatUserEmail(user.Email),
+					common.FormatUserEmail(creator.Email),
 				},
 				Condition: &expr.Expr{},
 			},

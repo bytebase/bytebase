@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -13,12 +12,12 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-var systemBotUser = &UserMessage{
+// SystemBotUser is the static system bot user.
+var SystemBotUser = &UserMessage{
 	ID:    common.SystemBotID,
 	Name:  "Bytebase",
 	Email: "support@bytebase.com",
@@ -71,19 +70,6 @@ type UserStat struct {
 	Type    storepb.PrincipalType
 	Deleted bool
 	Count   int
-}
-
-// GetSystemBotUser gets the system bot.
-func (s *Store) GetSystemBotUser(ctx context.Context) *UserMessage {
-	user, err := s.GetUserByID(ctx, common.SystemBotID)
-	if err != nil {
-		slog.Error("failed to find system bot", slog.Int("id", common.SystemBotID), log.BBError(err))
-		return systemBotUser
-	}
-	if user == nil {
-		return systemBotUser
-	}
-	return user
 }
 
 // GetUserByID gets the user by ID.

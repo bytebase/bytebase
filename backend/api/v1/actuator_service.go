@@ -122,7 +122,7 @@ func (s *ActuatorService) SetupSample(
 	if !ok || user == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
-	if err := s.sampleInstanceManager.GenerateOnboardingData(ctx, user.ID, s.schemaSyncer); err != nil {
+	if err := s.sampleInstanceManager.GenerateOnboardingData(ctx, user, s.schemaSyncer); err != nil {
 		// When running inside docker on mac, we sometimes get database does not exist error.
 		// This is due to the docker overlay storage incompatibility with mac OS file system.
 		// Onboarding error is not critical, so we just emit an error log.

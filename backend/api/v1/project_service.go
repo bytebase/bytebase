@@ -204,7 +204,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, req *connect.Request
 	}
 	project, err := s.store.CreateProject(ctx,
 		projectMessage,
-		user.ID,
+		user,
 	)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
