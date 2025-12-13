@@ -11730,14 +11730,6 @@ components:
         MaskingExceptionPolicy_MaskingException:
             type: object
             properties:
-                action:
-                    enum:
-                        - ACTION_UNSPECIFIED
-                        - QUERY
-                        - EXPORT
-                    type: string
-                    description: The action that the user can perform on sensitive data.
-                    format: enum
                 member:
                     type: string
                     description: |-

@@ -131,7 +131,6 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			},
 			filteredMaskingExceptions: []*storepb.MaskingExceptionPolicy_MaskingException{
 				{
-					Action: storepb.MaskingExceptionPolicy_MaskingException_QUERY,
 					Condition: &expr.Expr{
 						Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "employees") && (resource.column_name == "salary")`,
 					},

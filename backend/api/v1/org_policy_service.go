@@ -433,9 +433,6 @@ func validatePolicyPayload(policyType storepb.Policy_Type, policy *v1pb.Policy) 
 			return connect.NewError(connect.CodeInvalidArgument, errors.New("masking exception policy must be set"))
 		}
 		for _, exception := range maskingExceptionPolicy.MaskingExceptionPolicy.MaskingExceptions {
-			if exception.Action == v1pb.MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED {
-				return connect.NewError(connect.CodeInvalidArgument, errors.New("masking exception must have action set"))
-			}
 			if _, err := common.ValidateMaskingExceptionCELExpr(exception.Condition); err != nil {
 				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid masking exception expression: %v", err))
 			}

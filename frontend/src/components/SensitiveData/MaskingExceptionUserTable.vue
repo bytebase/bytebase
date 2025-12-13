@@ -17,13 +17,7 @@ import { create } from "@bufbuild/protobuf";
 import { orderBy } from "lodash-es";
 import { InfoIcon, TrashIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
-import {
-  NCheckbox,
-  NDataTable,
-  NDatePicker,
-  NTooltip,
-  useDialog,
-} from "naive-ui";
+import { NDataTable, NDatePicker, NTooltip, useDialog } from "naive-ui";
 import type { VNodeChild } from "vue";
 import { computed, h, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
@@ -53,7 +47,6 @@ import {
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  MaskingExceptionPolicy_MaskingException_Action,
   MaskingExceptionPolicySchema,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -213,7 +206,6 @@ const getAccessUsers = async (
     type: "user",
     key: `${exception.member}:${expression}.${description}`,
     expirationTimestamp,
-    supportActions: new Set([exception.action]),
     rawExpression: expression,
     description,
     databaseResource: condition.databaseResources
@@ -257,17 +249,6 @@ const updateAccessUserList = async () => {
     return;
   }
 
-  // Exec data merge, we will merge data with same expiration time and level.
-  // For example, the exception list and merge exec should be:
-  // - 1. user1, action:export, level:FULL, expires at 2023-09-03
-  // - 2. user1, action:export, level:FULL, expires at 2023-09-04
-  // - 3. user1, action:export, level:PARTIAL, expires at 2023-09-04
-  // - 4. user1, action:query, level:PARTIAL, expires at 2023-09-04
-  // - 5. user1, action:query, level:FULL, expires at 2023-09-03
-  // After the merge we should get:
-  // - 1 & 5 is merged: user1, action:export+action, level:FULL, expires at 2023-09-03
-  // - 2 cannot merge: user1, action:export, level:FULL, expires at 2023-09-04
-  // - 3 & 4 is merged: user1, action:export+action, level:PARTIAL, expires at 2023-09-04
   const memberMap = new Map<string, AccessUser>();
   const { maskingExceptions } = policy.value.policy.value;
   const expressionList = maskingExceptions.map((e) =>
@@ -284,13 +265,7 @@ const updateAccessUserList = async () => {
       continue;
     }
 
-    const target = memberMap.get(item.key) ?? item;
-    if (memberMap.has(item.key)) {
-      for (const action of item.supportActions) {
-        target.supportActions.add(action);
-      }
-    }
-    memberMap.set(item.key, target);
+    memberMap.set(item.key, item);
   }
 
   state.rawAccessList = orderBy(
@@ -364,66 +339,6 @@ const accessTableColumns = computed(
         },
       },
       {
-        key: "export",
-        title: t("settings.sensitive-data.action.export"),
-        width: "5rem",
-        render: (item: AccessUser) => {
-          return (
-            <NCheckbox
-              checked={item.supportActions.has(
-                MaskingExceptionPolicy_MaskingException_Action.EXPORT
-              )}
-              disabled={!hasPermission.value || props.disabled}
-              onUpdateChecked={() =>
-                onAccessControlUpdate(
-                  item,
-                  (item) =>
-                    toggleAction(
-                      item,
-                      MaskingExceptionPolicy_MaskingException_Action.EXPORT
-                    ),
-                  (item) =>
-                    toggleAction(
-                      item,
-                      MaskingExceptionPolicy_MaskingException_Action.EXPORT
-                    )
-                )
-              }
-            />
-          );
-        },
-      },
-      {
-        key: "query",
-        title: t("settings.sensitive-data.action.query"),
-        width: "5rem",
-        render: (item: AccessUser) => {
-          return (
-            <NCheckbox
-              checked={item.supportActions.has(
-                MaskingExceptionPolicy_MaskingException_Action.QUERY
-              )}
-              disabled={!hasPermission.value || props.disabled}
-              onUpdate:checked={() =>
-                onAccessControlUpdate(
-                  item,
-                  (item) =>
-                    toggleAction(
-                      item,
-                      MaskingExceptionPolicy_MaskingException_Action.QUERY
-                    ),
-                  (item) =>
-                    toggleAction(
-                      item,
-                      MaskingExceptionPolicy_MaskingException_Action.QUERY
-                    )
-                )
-              }
-            />
-          );
-        },
-      },
-      {
         key: "expire",
         title: t("common.expiration"),
         render: (item: AccessUser) => {
@@ -476,20 +391,8 @@ const accessTableColumns = computed(
   }
 );
 
-const toggleAction = (
-  item: AccessUser,
-  action: MaskingExceptionPolicy_MaskingException_Action
-) => {
-  if (item.supportActions.has(action)) {
-    item.supportActions.delete(action);
-  } else {
-    item.supportActions.add(action);
-  }
-};
-
 const revokeAccessAlert = (
-  item: AccessUser,
-  revert: (item: AccessUser) => void = () => {}
+  item: AccessUser
 ) => {
   $dialog.warning({
     title: t("common.warning"),
@@ -510,11 +413,9 @@ const revokeAccessAlert = (
     positiveText: t("common.confirm"),
     closeOnEsc: false,
     maskClosable: false,
-    onClose: () => revert(item),
     onPositiveClick: async () => {
       await onRemove(item);
     },
-    onNegativeClick: () => revert(item),
   });
 };
 
@@ -530,14 +431,9 @@ const onRemove = async (item: AccessUser) => {
 const onAccessControlUpdate = async (
   item: AccessUser,
   callback: (item: AccessUser) => void,
-  revert: (item: AccessUser) => void = () => {}
 ) => {
   callback(item);
-  if (item.supportActions.size === 0) {
-    revokeAccessAlert(item, revert);
-  } else {
-    await onSubmit();
-  }
+  await onSubmit();
 };
 
 const onSubmit = async () => {
@@ -591,16 +487,13 @@ const updateExceptionPolicy = async () => {
       );
     }
     const member = getMemberBinding(accessUser);
-    for (const action of accessUser.supportActions) {
-      exceptions.push({
-        action,
-        member,
-        condition: create(ExprSchema, {
-          description: accessUser.description,
-          expression: expressions.join(" && "),
-        }),
-      });
-    }
+    exceptions.push({
+      member,
+      condition: create(ExprSchema, {
+        description: accessUser.description,
+        expression: expressions.join(" && "),
+      }),
+    });
   }
 
   policy.policy = {

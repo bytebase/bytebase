@@ -874,12 +874,6 @@
           "suffix-length": "后缀长度"
         }
       },
-      "action": {
-        "self": "操作类型",
-        "select-action": "选择操作",
-        "query": "查询",
-        "export": "导出"
-      },
       "classification": {
         "upload": "导入分类分级",
         "upload-label": "您可以上传数据分类分级的 JSON 格式文件。",

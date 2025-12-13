@@ -874,12 +874,6 @@
           "suffix-length": "Longitud del sufijo"
         }
       },
-      "action": {
-        "self": "Acción",
-        "select-action": "Seleccionar acción",
-        "query": "Consulta",
-        "export": "Exportar"
-      },
       "classification": {
         "upload": "Subir clasificación",
         "upload-label": "Puede cargar un archivo de clasificación con formato JSON.",
