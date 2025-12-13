@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -129,13 +128,8 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "invalid token audience")
 	}
 
-	// Get user from claims
-	principalID, err := strconv.Atoi(claims.Subject)
-	if err != nil {
-		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "invalid user ID")
-	}
-
-	user, err := s.store.GetUserByID(ctx, principalID)
+	// Get user from claims (subject is email)
+	user, err := s.store.GetUserByEmail(ctx, claims.Subject)
 	if err != nil || user == nil {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "user not found")
 	}
