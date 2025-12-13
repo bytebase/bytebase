@@ -19,6 +19,7 @@
 </template>
 
 <script lang="tsx" setup>
+import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
