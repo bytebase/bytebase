@@ -152,7 +152,7 @@ func (m *Manager) Port() int {
 }
 
 // GenerateOnboardingData generates onboarding data including project and instance.
-func (m *Manager) GenerateOnboardingData(ctx context.Context, userID int, schemaSyncer *schemasync.Syncer) error {
+func (m *Manager) GenerateOnboardingData(ctx context.Context, user *store.UserMessage, schemaSyncer *schemasync.Syncer) error {
 	setting := &storepb.Project{
 		AllowModifyStatement: true,
 		AutoResolveIssue:     true,
@@ -170,7 +170,7 @@ func (m *Manager) GenerateOnboardingData(ctx context.Context, userID int, schema
 			ResourceID: "project-sample",
 			Title:      "Sample Project",
 			Setting:    setting,
-		}, userID)
+		}, user)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create onboarding project")
 		}

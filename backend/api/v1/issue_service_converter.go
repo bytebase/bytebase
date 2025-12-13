@@ -35,7 +35,7 @@ func (s *IssueService) convertToIssues(ctx context.Context, issues []*store.Issu
 				slog.Error("failed to parse the issue name", log.BBError(err), slog.String("issue", v1Issue.Name))
 				continue
 			}
-			if v := issueFilter.ApproverID; v != nil && !s.isIssueNextApprover(ctx, v1Issue, projectID, *v) {
+			if v := issueFilter.Approver; v != nil && !s.isIssueNextApprover(ctx, v1Issue, projectID, v) {
 				continue
 			}
 		}
@@ -44,10 +44,14 @@ func (s *IssueService) convertToIssues(ctx context.Context, issues []*store.Issu
 	return converted, nil
 }
 
-func (s *IssueService) getUserRoleMap(ctx context.Context, projectResourceID string, principalUID int) map[string]bool {
+func (s *IssueService) getUserRoleMap(ctx context.Context, projectResourceID string, user *store.UserMessage) map[string]bool {
+	if user == nil {
+		return map[string]bool{}
+	}
+
 	policy, err := s.store.GetProjectIamPolicy(ctx, projectResourceID)
-	slog.Error("failed to get project iam policy", log.BBError(err), slog.String("project", projectResourceID))
 	if err != nil {
+		slog.Error("failed to get project iam policy", log.BBError(err), slog.String("project", projectResourceID))
 		return map[string]bool{}
 	}
 	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
@@ -56,20 +60,15 @@ func (s *IssueService) getUserRoleMap(ctx context.Context, projectResourceID str
 		return map[string]bool{}
 	}
 
-	user, err := s.store.GetUserByID(ctx, principalUID)
-	if err != nil {
-		slog.Error("failed to get user", log.BBError(err), slog.Int("user_id", principalUID))
-		return map[string]bool{}
-	}
-	if user == nil {
-		return map[string]bool{}
-	}
-
 	return utils.GetUserFormattedRolesMap(ctx, s.store, user, policy.Policy, workspacePolicy.Policy)
 }
 
-func (s *IssueService) isIssueNextApprover(ctx context.Context, issue *v1pb.Issue, projectResourceID string, principalUID int) bool {
-	roles := s.getUserRoleMap(ctx, projectResourceID, principalUID)
+func (s *IssueService) isIssueNextApprover(ctx context.Context, issue *v1pb.Issue, projectResourceID string, user *store.UserMessage) bool {
+	if user == nil {
+		return false
+	}
+
+	roles := s.getUserRoleMap(ctx, projectResourceID, user)
 	approvalRoles := issue.GetApprovalTemplate().GetFlow().GetRoles()
 	index := len(issue.Approvers)
 	if index >= len(approvalRoles) {
