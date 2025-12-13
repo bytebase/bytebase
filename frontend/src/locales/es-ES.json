@@ -1621,26 +1621,7 @@
       "tip": "La política se aplica retrospectivamente a las incidencias.",
       "info": "Las tareas pueden ser ejecutadas por usuarios con el permiso '{permission}' o los siguientes roles.",
       "auto": "Automático",
-      "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
-      "checkers": {
-        "self": "Requisitos",
-        "required-issue-approval": {
-          "self": "Requerir aprobación de emisión",
-          "description": "El problema debe ser aprobado antes de que pueda continuar la implementación."
-        },
-        "plan-check-enforcement": {
-          "self": "Control de cumplimiento del plan",
-          "description": "Implementación de bloques según los resultados de la verificación del plan.",
-          "error-only": {
-            "self": "Bloquear solo errores",
-            "description": "Bloquear la implementación solo cuando la verificación del plan encuentre errores."
-          },
-          "strict": {
-            "self": "Aplicación estricta",
-            "description": "Bloquear la implementación cuando la verificación del plan encuentra errores o advertencias."
-          }
-        }
-      }
+      "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente."
     },
     "environment-tier": {
       "name": "Nivel de Entorno",
@@ -1968,6 +1949,14 @@
         "parallel_tasks_per_rollout": {
           "self": "Tareas paralelas por despliegue",
           "description": "Controle el número de tareas paralelas por despliegue. \nEstablecer esto en cero deshabilita cualquier estrangulamiento."
+        },
+        "require-issue-approval": {
+          "self": "Require issue approval",
+          "description": "Issue must be approved before rollout."
+        },
+        "require-plan-check-no-error": {
+          "self": "Require plan check no error",
+          "description": "Block rollout if plan check has errors."
         }
       },
       "project-labels": {

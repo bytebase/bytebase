@@ -140,12 +140,6 @@ func GetDefaultRolloutPolicy() *storepb.RolloutPolicy {
 	return &storepb.RolloutPolicy{
 		Automatic: false,
 		Roles:     []string{},
-		Checkers: &storepb.RolloutPolicy_Checkers{
-			RequiredIssueApproval: true,
-			RequiredStatusChecks: &storepb.RolloutPolicy_Checkers_RequiredStatusChecks{
-				PlanCheckEnforcement: storepb.RolloutPolicy_Checkers_ERROR_ONLY,
-			},
-		},
 	}
 }
 

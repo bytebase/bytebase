@@ -596,14 +596,8 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("Not allowed to run tasks"))
 	}
 
-	// Get rollout policy to check rollout requirements
-	rolloutPolicy, err := GetValidRolloutPolicyForEnvironment(ctx, s.store, environmentToRun)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout policy, error: %v", err))
-	}
-
-	// Check if issue approval is required according to the rollout policy checkers
-	if rolloutPolicy.GetCheckers().GetRequiredIssueApproval() && issueN != nil {
+	// Check if issue approval is required according to the project settings
+	if project.Setting.RequireIssueApproval && issueN != nil {
 		approved, err := utils.CheckIssueApproved(issueN)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the issue is approved, error: %v", err))
