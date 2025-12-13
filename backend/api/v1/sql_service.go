@@ -975,7 +975,9 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 	}, nil
 }
 
-// DoExport does the export.
+// DoExport performs SQL Editor exports with masking applied.
+// This is used for ad-hoc exports where users have the EXPORTER role.
+// For approved DATABASE_EXPORT tasks, see data_export_executor.go which exports without masking.
 func DoExport(
 	ctx context.Context,
 	stores *store.Store,
