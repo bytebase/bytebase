@@ -27,13 +27,10 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	metricapi "github.com/bytebase/bytebase/backend/metric"
 	"github.com/bytebase/bytebase/backend/plugin/idp/ldap"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oauth2"
 	"github.com/bytebase/bytebase/backend/plugin/idp/oidc"
 	"github.com/bytebase/bytebase/backend/plugin/idp/wif"
-	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -71,19 +68,17 @@ type AuthService struct {
 	store          *store.Store
 	secret         string
 	licenseService *enterprise.LicenseService
-	metricReporter *metricreport.Reporter
 	profile        *config.Profile
 	stateCfg       *state.State
 	iamManager     *iam.Manager
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, licenseService *enterprise.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, stateCfg *state.State, iamManager *iam.Manager) *AuthService {
+func NewAuthService(store *store.Store, secret string, licenseService *enterprise.LicenseService, profile *config.Profile, stateCfg *state.State, iamManager *iam.Manager) *AuthService {
 	return &AuthService{
 		store:          store,
 		secret:         secret,
 		licenseService: licenseService,
-		metricReporter: metricReporter,
 		profile:        profile,
 		stateCfg:       stateCfg,
 		iamManager:     iamManager,
@@ -115,11 +110,11 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 			response.RequireResetPassword = s.needResetPassword(ctx, loginUser)
 		}
 	} else {
-		userID, err := auth.GetUserIDFromMFATempToken(*request.MfaTempToken, s.profile.Mode, s.secret)
+		userEmail, err := auth.GetUserEmailFromMFATempToken(*request.MfaTempToken, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, err
 		}
-		user, err := s.store.GetUserByID(ctx, userID)
+		user, err := s.store.GetUserByEmail(ctx, userEmail)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user, error"))
 		}
@@ -176,7 +171,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	userMFAEnabled := loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != ""
 	// We only allow MFA login (2-step) when the feature is enabled and user has enabled MFA.
 	if s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TWO_FA) == nil && !mfaSecondLogin && userMFAEnabled {
-		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, mfaTempTokenDuration)
+		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Email, s.profile.Mode, s.secret, mfaTempTokenDuration)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate MFA temp token"))
 		}
@@ -187,13 +182,13 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 
 	switch loginUser.Type {
 	case storepb.PrincipalType_END_USER:
-		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, tokenDuration)
+		token, err := auth.GenerateAccessToken(loginUser.Email, s.profile.Mode, s.secret, tokenDuration)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate API access token"))
 		}
 		response.Token = token
 	case storepb.PrincipalType_SERVICE_ACCOUNT:
-		token, err := auth.GenerateAPIToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
+		token, err := auth.GenerateAPIToken(loginUser.Email, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate API access token"))
 		}
@@ -227,14 +222,6 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	}
 
 	response.User = convertToUser(ctx, loginUser)
-
-	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricapi.PrincipalLoginMetricName,
-		Value: 1,
-		Labels: map[string]any{
-			"email": loginUser.Email,
-		},
-	})
 
 	return resp, nil
 }
@@ -727,7 +714,7 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	}
 
 	// Generate Bytebase API token (1 hour duration, same as service account)
-	token, err := auth.GenerateAPIToken(user.Name, user.ID, s.profile.Mode, s.secret)
+	token, err := auth.GenerateAPIToken(user.Email, s.profile.Mode, s.secret)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal,
 			errors.Wrap(err, "failed to generate access token"))

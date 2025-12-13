@@ -189,7 +189,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return false, err
 		}
-		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, storepb.Issue_DONE, r.store.GetSystemBotUser(ctx), ""); err != nil {
+		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, storepb.Issue_DONE, store.SystemBotUser, ""); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
 		}
 	}
@@ -234,7 +234,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			return err
 		}
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   r.store.GetSystemBotUser(ctx),
+			Actor:   store.SystemBotUser,
 			Type:    storepb.Activity_NOTIFY_PIPELINE_ROLLOUT,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
@@ -258,7 +258,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			return
 		}
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   r.store.GetSystemBotUser(ctx),
+			Actor:   store.SystemBotUser,
 			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),

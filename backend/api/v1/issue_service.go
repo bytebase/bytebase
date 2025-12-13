@@ -24,9 +24,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	metricapi "github.com/bytebase/bytebase/backend/metric"
-	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -40,13 +37,12 @@ type IssueService struct {
 	licenseService *enterprise.LicenseService
 	profile        *config.Profile
 	iamManager     *iam.Manager
-	metricReporter *metricreport.Reporter
 }
 
 type filterIssueMessage struct {
 	ApprovalStatus *v1pb.Issue_ApprovalStatus
-	// ApproverID is the principal uid.
-	ApproverID *int
+	// Approver is the user who can approve the issue.
+	Approver *store.UserMessage
 }
 
 // NewIssueService creates a new IssueService.
@@ -57,7 +53,6 @@ func NewIssueService(
 	licenseService *enterprise.LicenseService,
 	profile *config.Profile,
 	iamManager *iam.Manager,
-	metricReporter *metricreport.Reporter,
 ) *IssueService {
 	return &IssueService{
 		store:          store,
@@ -66,7 +61,6 @@ func NewIssueService(
 		licenseService: licenseService,
 		profile:        profile,
 		iamManager:     iamManager,
-		metricReporter: metricReporter,
 	}
 }
 
@@ -192,7 +186,7 @@ func (s *IssueService) getIssueFind(
 						return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user %v with error %v", value, err.Error()))
 					}
 					if variable == "current_approver" {
-						filterIssue.ApproverID = &user.ID
+						filterIssue.Approver = user
 					} else {
 						issueFind.CreatorID = &user.Email
 					}
@@ -598,14 +592,6 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
 
-	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricapi.IssueCreateMetricName,
-		Value: 1,
-		Labels: map[string]any{
-			"type": issue.Type,
-		},
-	})
-
 	return connect.NewResponse(converted), nil
 }
 
@@ -802,7 +788,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		}
 
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   s.store.GetSystemBotUser(ctx),
+			Actor:   store.SystemBotUser,
 			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
@@ -820,7 +806,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 		// notify issue approved
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   s.store.GetSystemBotUser(ctx),
+			Actor:   store.SystemBotUser,
 			Type:    storepb.Activity_NOTIFY_ISSUE_APPROVED,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
@@ -872,7 +858,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, storepb.Issue_DONE, s.store.GetSystemBotUser(ctx), ""); err != nil {
+				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, storepb.Issue_DONE, store.SystemBotUser, ""); err != nil {
 					return errors.Wrap(err, "failed to update issue status")
 				}
 			}
@@ -1030,7 +1016,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		}
 
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   s.store.GetSystemBotUser(ctx),
+			Actor:   store.SystemBotUser,
 			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
@@ -1525,7 +1511,7 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 }
 
 func (s *IssueService) isUserReviewer(ctx context.Context, issue *store.IssueMessage, role string, user *store.UserMessage) bool {
-	roles := s.getUserRoleMap(ctx, issue.Project.ResourceID, user.ID)
+	roles := s.getUserRoleMap(ctx, issue.Project.ResourceID, user)
 	return roles[role]
 }
 

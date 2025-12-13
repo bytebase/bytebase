@@ -24,9 +24,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	metricapi "github.com/bytebase/bytebase/backend/metric"
-	"github.com/bytebase/bytebase/backend/plugin/metric"
-	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -37,19 +34,17 @@ type UserService struct {
 	store          *store.Store
 	secret         string
 	licenseService *enterprise.LicenseService
-	metricReporter *metricreport.Reporter
 	profile        *config.Profile
 	stateCfg       *state.State
 	iamManager     *iam.Manager
 }
 
 // NewUserService creates a new UserService.
-func NewUserService(store *store.Store, secret string, licenseService *enterprise.LicenseService, metricReporter *metricreport.Reporter, profile *config.Profile, stateCfg *state.State, iamManager *iam.Manager) *UserService {
+func NewUserService(store *store.Store, secret string, licenseService *enterprise.LicenseService, profile *config.Profile, stateCfg *state.State, iamManager *iam.Manager) *UserService {
 	return &UserService{
 		store:          store,
 		secret:         secret,
 		licenseService: licenseService,
-		metricReporter: metricReporter,
 		profile:        profile,
 		stateCfg:       stateCfg,
 		iamManager:     iamManager,
@@ -308,20 +303,6 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 	}
-
-	isFirstUser := user.ID == common.PrincipalIDForFirstUser
-	s.metricReporter.Report(ctx, &metric.Metric{
-		Name:  metricapi.PrincipalRegistrationMetricName,
-		Value: 1,
-		Labels: map[string]any{
-			"email": user.Email,
-			"name":  user.Name,
-			"phone": user.Phone,
-			// We only send lark notification for the first principal registration.
-			// false means do not notify upfront. Later the notification will be triggered by the scheduler.
-			"lark_notified": !isFirstUser,
-		},
-	})
 
 	userResponse := convertToUser(ctx, user)
 	if request.Msg.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {

@@ -45,11 +45,6 @@ const (
 
 	// AccessTokenCookieName is the cookie name of access token.
 	AccessTokenCookieName = "access-token"
-
-	// GatewayMetadataAccessTokenKey is the gateway metadata key for access token.
-	GatewayMetadataAccessTokenKey = "bytebase-access-token"
-	// GatewayMetadataRequestOriginKey is the gateway metadata key for the request origin header.
-	GatewayMetadataRequestOriginKey = "bytebase-request-origin"
 )
 
 // APIAuthInterceptor is the auth interceptor for gRPC server.
@@ -170,9 +165,7 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 
 	// Accept both user access tokens (bb.user.access.{mode}) and OAuth2 access tokens (bb.oauth2.access)
 	validUserAudience := fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode)
-	isOAuth2Token := audienceContains(claims.Audience, OAuth2AccessTokenAudience)
-	isUserToken := audienceContains(claims.Audience, validUserAudience)
-	if !isUserToken && !isOAuth2Token {
+	if !audienceContains(claims.Audience, validUserAudience) && !audienceContains(claims.Audience, OAuth2AccessTokenAudience) {
 		return nil, nil, errs.Errorf(
 			"invalid access token, audience mismatch, got %q, expected %q or %q. you may send request to the wrong environment",
 			claims.Audience,
@@ -181,29 +174,26 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 		)
 	}
 
+	// Try to parse subject as integer ID (old tokens), otherwise treat as email (new tokens and OAuth2)
 	var user *store.UserMessage
 	var err error
-	if isOAuth2Token {
-		// OAuth2 tokens use email as subject
-		user, err = in.store.GetUserByEmail(ctx, claims.Subject)
-		if err != nil {
-			return nil, nil, errs.Errorf("failed to find user email %q in the access token", claims.Subject)
-		}
-		if user == nil {
-			return nil, nil, errs.Errorf("user email %q not exists in the access token", claims.Subject)
-		}
-	} else {
-		// User tokens use ID as subject
-		principalID, err := strconv.Atoi(claims.Subject)
-		if err != nil {
-			return nil, nil, errs.Errorf("malformed ID %q in the access token", claims.Subject)
-		}
+	if principalID, parseErr := strconv.Atoi(claims.Subject); parseErr == nil {
+		// Old token with numeric ID as subject
 		user, err = in.store.GetUserByID(ctx, principalID)
 		if err != nil {
 			return nil, nil, errs.Errorf("failed to find user ID %q in the access token", principalID)
 		}
 		if user == nil {
 			return nil, nil, errs.Errorf("user ID %q not exists in the access token", principalID)
+		}
+	} else {
+		// New token with email as subject (includes OAuth2 tokens)
+		user, err = in.store.GetUserByEmail(ctx, claims.Subject)
+		if err != nil {
+			return nil, nil, errs.Errorf("failed to find user email %q in the access token", claims.Subject)
+		}
+		if user == nil {
+			return nil, nil, errs.Errorf("user email %q not exists in the access token", claims.Subject)
 		}
 	}
 	if user.MemberDeleted {
@@ -234,8 +224,8 @@ func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr
 	return user, nil
 }
 
-// GetUserIDFromMFATempToken returns the user ID from the MFA temp token.
-func GetUserIDFromMFATempToken(token string, mode common.ReleaseMode, secret string) (int, error) {
+// GetUserEmailFromMFATempToken returns the user email from the MFA temp token.
+func GetUserEmailFromMFATempToken(token string, mode common.ReleaseMode, secret string) (string, error) {
 	claims := &claimsMessage{}
 	_, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
@@ -249,16 +239,12 @@ func GetUserIDFromMFATempToken(token string, mode common.ReleaseMode, secret str
 		return nil, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("unexpected MFA temp token kid=%v", t.Header["kid"]))
 	})
 	if err != nil {
-		return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
+		return "", connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
 	}
 	if !audienceContains(claims.Audience, fmt.Sprintf(MFATempTokenAudienceFmt, mode)) {
-		return 0, connect.NewError(connect.CodeUnauthenticated, errs.New("invalid MFA temp token, audience mismatch"))
+		return "", connect.NewError(connect.CodeUnauthenticated, errs.New("invalid MFA temp token, audience mismatch"))
 	}
-	userID, err := strconv.Atoi(claims.Subject)
-	if err != nil {
-		return 0, connect.NewError(connect.CodeUnauthenticated, errs.Errorf("malformed ID %q in the MFA temp token", claims.Subject))
-	}
-	return userID, nil
+	return claims.Subject, nil
 }
 
 // AuthenticateToken validates a JWT access token and returns the user and token expiry.
@@ -313,35 +299,35 @@ type claimsMessage struct {
 }
 
 // GenerateAPIToken generates an API token.
-func GenerateAPIToken(userName string, userID int, mode common.ReleaseMode, secret string) (string, error) {
+func GenerateAPIToken(userEmail string, mode common.ReleaseMode, secret string) (string, error) {
 	expirationTime := time.Now().Add(apiTokenDuration)
-	return generateToken(userName, userID, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(userEmail, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
 // GenerateAccessToken generates an access token for web.
-func GenerateAccessToken(userName string, userID int, mode common.ReleaseMode, secret string, tokenDuration time.Duration) (string, error) {
+func GenerateAccessToken(userEmail string, mode common.ReleaseMode, secret string, tokenDuration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(tokenDuration)
-	return generateToken(userName, userID, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(userEmail, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
 // GenerateMFATempToken generates a temporary token for MFA.
-func GenerateMFATempToken(userName string, userID int, mode common.ReleaseMode, secret string, tokenDuration time.Duration) (string, error) {
+func GenerateMFATempToken(userEmail string, mode common.ReleaseMode, secret string, tokenDuration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(tokenDuration)
-	return generateToken(userName, userID, fmt.Sprintf(MFATempTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(userEmail, fmt.Sprintf(MFATempTokenAudienceFmt, mode), expirationTime, []byte(secret))
 }
 
 // Pay attention to this function. It holds the main JWT token generation logic.
-func generateToken(userName string, userID int, aud string, expirationTime time.Time, secret []byte) (string, error) {
-	// Create the JWT claims, which includes the username and expiry time.
+func generateToken(userEmail string, aud string, expirationTime time.Time, secret []byte) (string, error) {
+	// Create the JWT claims, which includes the user email and expiry time.
 	claims := &claimsMessage{
-		Name: userName,
+		Name: userEmail,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience: jwt.ClaimStrings{aud},
 			// In JWT, the expiry time is expressed as unix milliseconds.
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    issuer,
-			Subject:   strconv.Itoa(userID),
+			Subject:   userEmail,
 		},
 	}
 
