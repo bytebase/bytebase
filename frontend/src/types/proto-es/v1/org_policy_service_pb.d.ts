@@ -230,10 +230,10 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
     case: "maskingRulePolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.MaskingExceptionPolicy masking_exception_policy = 18;
+     * @generated from field: bytebase.v1.MaskingExemptionPolicy masking_exemption_policy = 18;
      */
-    value: MaskingExceptionPolicy;
-    case: "maskingExceptionPolicy";
+    value: MaskingExemptionPolicy;
+    case: "maskingExemptionPolicy";
   } | {
     /**
      * @generated from field: bytebase.v1.TagPolicy tag_policy = 21;
@@ -435,40 +435,35 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 export declare const QueryDataPolicySchema: GenMessage<QueryDataPolicy>;
 
 /**
- * MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
+ * MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
  *
- * @generated from message bytebase.v1.MaskingExceptionPolicy
+ * @generated from message bytebase.v1.MaskingExemptionPolicy
  */
-export declare type MaskingExceptionPolicy = Message<"bytebase.v1.MaskingExceptionPolicy"> & {
+export declare type MaskingExemptionPolicy = Message<"bytebase.v1.MaskingExemptionPolicy"> & {
   /**
-   * The list of masking exceptions.
-   *
-   * @generated from field: repeated bytebase.v1.MaskingExceptionPolicy.MaskingException masking_exceptions = 1;
+   * @generated from field: repeated bytebase.v1.MaskingExemptionPolicy.Exemption exemptions = 1;
    */
-  maskingExceptions: MaskingExceptionPolicy_MaskingException[];
+  exemptions: MaskingExemptionPolicy_Exemption[];
 };
 
 /**
- * Describes the message bytebase.v1.MaskingExceptionPolicy.
- * Use `create(MaskingExceptionPolicySchema)` to create a new message.
+ * Describes the message bytebase.v1.MaskingExemptionPolicy.
+ * Use `create(MaskingExemptionPolicySchema)` to create a new message.
  */
-export declare const MaskingExceptionPolicySchema: GenMessage<MaskingExceptionPolicy>;
+export declare const MaskingExemptionPolicySchema: GenMessage<MaskingExemptionPolicy>;
 
 /**
- * An exception allowing specific users to access masked data.
- *
- * @generated from message bytebase.v1.MaskingExceptionPolicy.MaskingException
+ * @generated from message bytebase.v1.MaskingExemptionPolicy.Exemption
  */
-export declare type MaskingExceptionPolicy_MaskingException = Message<"bytebase.v1.MaskingExceptionPolicy.MaskingException"> & {
+export declare type MaskingExemptionPolicy_Exemption = Message<"bytebase.v1.MaskingExemptionPolicy.Exemption"> & {
   /**
-   * Member is the principal who bind to this exception policy instance.
+   * Members who bind to this exemption.
    *
-   * - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
-   * - `group:{email}`: An email address for group.
+   * Format: users/{email} or groups/{group email}
    *
-   * @generated from field: string member = 3;
+   * @generated from field: repeated string members = 1;
    */
-  member: string;
+  members: string[];
 
   /**
    * The condition that is associated with this exception policy instance.
@@ -488,16 +483,16 @@ export declare type MaskingExceptionPolicy_MaskingException = Message<"bytebase.
    * resource.instance_id == "local" && resource.database_name == "employee" && request.time < timestamp("2025-04-30T11:10:39.000Z")
    * resource.instance_id == "local" && resource.database_name == "employee"
    *
-   * @generated from field: google.type.Expr condition = 4;
+   * @generated from field: google.type.Expr condition = 2;
    */
   condition?: Expr;
 };
 
 /**
- * Describes the message bytebase.v1.MaskingExceptionPolicy.MaskingException.
- * Use `create(MaskingExceptionPolicy_MaskingExceptionSchema)` to create a new message.
+ * Describes the message bytebase.v1.MaskingExemptionPolicy.Exemption.
+ * Use `create(MaskingExemptionPolicy_ExemptionSchema)` to create a new message.
  */
-export declare const MaskingExceptionPolicy_MaskingExceptionSchema: GenMessage<MaskingExceptionPolicy_MaskingException>;
+export declare const MaskingExemptionPolicy_ExemptionSchema: GenMessage<MaskingExemptionPolicy_Exemption>;
 
 /**
  * Policy for configuring data masking rules.
@@ -691,11 +686,11 @@ export enum PolicyType {
   MASKING_RULE = 9,
 
   /**
-   * Data masking exception policy.
+   * Data masking exemption policy.
    *
-   * @generated from enum value: MASKING_EXCEPTION = 10;
+   * @generated from enum value: MASKING_EXEMPTION = 10;
    */
-  MASKING_EXCEPTION = 10,
+  MASKING_EXEMPTION = 10,
 
   /**
    * Resource tag policy.

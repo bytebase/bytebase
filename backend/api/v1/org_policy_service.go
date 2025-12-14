@@ -25,7 +25,7 @@ var (
 		storepb.Policy_TAG:               {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
 		storepb.Policy_QUERY_DATA:        {storepb.Policy_WORKSPACE, storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
 		storepb.Policy_MASKING_RULE:      {storepb.Policy_WORKSPACE},
-		storepb.Policy_MASKING_EXCEPTION: {storepb.Policy_PROJECT},
+		storepb.Policy_MASKING_EXEMPTION: {storepb.Policy_PROJECT},
 		storepb.Policy_IAM:               {storepb.Policy_WORKSPACE},
 		storepb.Policy_DATA_SOURCE_QUERY: {storepb.Policy_ENVIRONMENT, storepb.Policy_PROJECT},
 	}
@@ -172,7 +172,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 			"rollout_policy",
 			"disable_copy_data_policy",
 			"masking_rule_policy",
-			"masking_exception_policy",
+			"masking_exemption_policy",
 			"restrict_issue_creation_for_sql_review_policy",
 			"tag_policy",
 			"data_source_query_policy",
@@ -215,8 +215,8 @@ func pathMatchType(path string, policyType storepb.Policy_Type) bool {
 		return path == "rollout_policy"
 	case storepb.Policy_MASKING_RULE:
 		return path == "masking_rule_policy"
-	case storepb.Policy_MASKING_EXCEPTION:
-		return path == "masking_exception_policy"
+	case storepb.Policy_MASKING_EXEMPTION:
+		return path == "masking_exemption_policy"
 	case storepb.Policy_TAG:
 		return path == "tag_policy"
 	case storepb.Policy_DATA_SOURCE_QUERY:
@@ -424,20 +424,22 @@ func validatePolicyPayload(policyType storepb.Policy_Type, policy *v1pb.Policy) 
 				return connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid masking rule expression"))
 			}
 		}
-	case storepb.Policy_MASKING_EXCEPTION:
-		maskingExceptionPolicy, ok := policy.Policy.(*v1pb.Policy_MaskingExceptionPolicy)
+	case storepb.Policy_MASKING_EXEMPTION:
+		maskingExemptionPolicy, ok := policy.Policy.(*v1pb.Policy_MaskingExemptionPolicy)
 		if !ok {
 			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unmatched policy type %v and policy %v", policyType, policy.Policy))
 		}
-		if maskingExceptionPolicy.MaskingExceptionPolicy == nil {
+		if maskingExemptionPolicy.MaskingExemptionPolicy == nil {
 			return connect.NewError(connect.CodeInvalidArgument, errors.New("masking exception policy must be set"))
 		}
-		for _, exception := range maskingExceptionPolicy.MaskingExceptionPolicy.MaskingExceptions {
-			if _, err := common.ValidateMaskingExceptionCELExpr(exception.Condition); err != nil {
-				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid masking exception expression: %v", err))
+		for _, exemption := range maskingExemptionPolicy.MaskingExemptionPolicy.Exemptions {
+			if _, err := common.ValidateMaskingExemptionCELExpr(exemption.Condition); err != nil {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid masking exemption expression: %v", err))
 			}
-			if err := validateMember(exception.Member); err != nil {
-				return err
+			for _, member := range exemption.Members {
+				if err := validateMember(member); err != nil {
+					return err
+				}
 			}
 		}
 	default:
@@ -489,17 +491,17 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 			return "", errors.Wrap(err, "failed to marshal masking rule policy")
 		}
 		return string(payloadBytes), nil
-	case v1pb.PolicyType_MASKING_EXCEPTION:
+	case v1pb.PolicyType_MASKING_EXEMPTION:
 		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DATA_MASKING); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
 		}
-		payload, err := s.convertToStorePBMaskingExceptionPolicyPayload(ctx, policy.GetMaskingExceptionPolicy())
+		payload, err := s.convertToStorePBMaskingExemptionPolicyPayload(ctx, policy.GetMaskingExemptionPolicy())
 		if err != nil {
 			return "", connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal masking exception policy")
+			return "", errors.Wrap(err, "failed to marshal masking exemption policy")
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_SOURCE_QUERY:
@@ -563,14 +565,14 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, policyMessage *s
 		policy.Policy = &v1pb.Policy_MaskingRulePolicy{
 			MaskingRulePolicy: payload,
 		}
-	case storepb.Policy_MASKING_EXCEPTION:
-		maskingRulePolicy := &storepb.MaskingExceptionPolicy{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), maskingRulePolicy); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal masking exception policy")
+	case storepb.Policy_MASKING_EXEMPTION:
+		maskingExemptionPolicy := &storepb.MaskingExemptionPolicy{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policyMessage.Payload), maskingExemptionPolicy); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal masking exemption policy")
 		}
-		payload := s.convertToV1PBMaskingExceptionPolicyPayload(ctx, maskingRulePolicy)
-		policy.Policy = &v1pb.Policy_MaskingExceptionPolicy{
-			MaskingExceptionPolicy: payload,
+		payload := s.convertToV1PBMaskingExemptionPolicyPayload(ctx, maskingExemptionPolicy)
+		policy.Policy = &v1pb.Policy_MaskingExemptionPolicy{
+			MaskingExemptionPolicy: payload,
 		}
 	case storepb.Policy_DATA_SOURCE_QUERY:
 		payload, err := convertToV1PBDataSourceQueryPolicy(policyMessage.Payload)

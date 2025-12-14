@@ -218,12 +218,12 @@ func TestUpdateUserEmail(t *testing.T) {
 	maskingPolicy, err := ctl.orgPolicyServiceClient.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{
 		Parent: "projects/" + projectID,
 		Policy: &v1pb.Policy{
-			Type: v1pb.PolicyType_MASKING_EXCEPTION,
-			Policy: &v1pb.Policy_MaskingExceptionPolicy{
-				MaskingExceptionPolicy: &v1pb.MaskingExceptionPolicy{
-					MaskingExceptions: []*v1pb.MaskingExceptionPolicy_MaskingException{
+			Type: v1pb.PolicyType_MASKING_EXEMPTION,
+			Policy: &v1pb.Policy_MaskingExemptionPolicy{
+				MaskingExemptionPolicy: &v1pb.MaskingExemptionPolicy{
+					Exemptions: []*v1pb.MaskingExemptionPolicy_Exemption{
 						{
-							Member:    fmt.Sprintf("user:%s", originalEmail),
+							Members:   []string{fmt.Sprintf("user:%s", originalEmail)},
 							Condition: &expr.Expr{}, // Empty condition means access all databases without expiration
 						},
 					},
@@ -345,11 +345,11 @@ func TestUpdateUserEmail(t *testing.T) {
 		Name: maskingPolicy.Msg.Name,
 	}))
 	a.NoError(err)
-	maskingExceptions := updatedMaskingPolicy.Msg.GetMaskingExceptionPolicy().GetMaskingExceptions()
-	a.Len(maskingExceptions, 1)
-	a.Equal(fmt.Sprintf("user:%s", newEmail), maskingExceptions[0].Member, "Masking exception member should be updated to new email")
-	for _, exception := range maskingExceptions {
-		a.NotEqual(fmt.Sprintf("user:%s", originalEmail), exception.Member, "Old email should not present in masking exception")
+	maskingExemptions := updatedMaskingPolicy.Msg.GetMaskingExemptionPolicy().GetExemptions()
+	a.Len(maskingExemptions, 1)
+	a.Equal(fmt.Sprintf("user:%s", newEmail), maskingExemptions[0].Members[0], "Masking exemption member should be updated to new email")
+	for _, exemption := range maskingExemptions {
+		a.NotEqual(fmt.Sprintf("user:%s", originalEmail), exemption.Members[0], "Old email should not present in masking exemption")
 	}
 
 	// Verify Audit Logs

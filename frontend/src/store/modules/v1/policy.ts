@@ -295,8 +295,8 @@ const getUpdateMaskFromPolicyType = (policyType: PolicyType) => {
   switch (policyType) {
     case PolicyType.ROLLOUT_POLICY:
       return [PolicySchema.field.rolloutPolicy.name];
-    case PolicyType.MASKING_EXCEPTION:
-      return [PolicySchema.field.maskingExceptionPolicy.name];
+    case PolicyType.MASKING_EXEMPTION:
+      return [PolicySchema.field.maskingExemptionPolicy.name];
     case PolicyType.MASKING_RULE:
       return [PolicySchema.field.maskingRulePolicy.name];
     case PolicyType.DATA_QUERY:

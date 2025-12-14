@@ -12554,29 +12554,29 @@ components:
       title: LogoutRequest
       additionalProperties: false
       description: Request to logout current user session.
-    bytebase.v1.MaskingExceptionPolicy:
+    bytebase.v1.MaskingExemptionPolicy:
       type: object
       properties:
-        maskingExceptions:
+        exemptions:
           type: array
           items:
-            $ref: '#/components/schemas/bytebase.v1.MaskingExceptionPolicy.MaskingException'
-          title: masking_exceptions
-          description: The list of masking exceptions.
-      title: MaskingExceptionPolicy
+            $ref: '#/components/schemas/bytebase.v1.MaskingExemptionPolicy.Exemption'
+          title: exemptions
+      title: MaskingExemptionPolicy
       additionalProperties: false
-      description: MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-    bytebase.v1.MaskingExceptionPolicy.MaskingException:
+      description: MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
+    bytebase.v1.MaskingExemptionPolicy.Exemption:
       type: object
       properties:
-        member:
-          type: string
-          title: member
+        members:
+          type: array
+          items:
+            type: string
+          title: members
           description: |-
-            Member is the principal who bind to this exception policy instance.
+            Members who bind to this exemption.
 
-             - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
-             - `group:{email}`: An email address for group.
+             Format: users/{email} or groups/{group email}
         condition:
           title: condition
           description: |-
@@ -12597,9 +12597,8 @@ components:
              resource.instance_id == "local" && resource.database_name == "employee" && request.time < timestamp("2025-04-30T11:10:39.000Z")
              resource.instance_id == "local" && resource.database_name == "employee"
           $ref: '#/components/schemas/google.type.Expr'
-      title: MaskingException
+      title: Exemption
       additionalProperties: false
-      description: An exception allowing specific users to access masked data.
     bytebase.v1.MaskingReason:
       type: object
       properties:
@@ -13511,12 +13510,12 @@ components:
               required:
                 - dataSourceQueryPolicy
             - properties:
-                maskingExceptionPolicy:
-                  title: masking_exception_policy
-                  $ref: '#/components/schemas/bytebase.v1.MaskingExceptionPolicy'
-              title: masking_exception_policy
+                maskingExemptionPolicy:
+                  title: masking_exemption_policy
+                  $ref: '#/components/schemas/bytebase.v1.MaskingExemptionPolicy'
+              title: masking_exemption_policy
               required:
-                - maskingExceptionPolicy
+                - maskingExemptionPolicy
             - properties:
                 maskingRulePolicy:
                   title: masking_rule_policy
@@ -13575,7 +13574,7 @@ components:
         - POLICY_TYPE_UNSPECIFIED
         - ROLLOUT_POLICY
         - MASKING_RULE
-        - MASKING_EXCEPTION
+        - MASKING_EXEMPTION
         - TAG
         - DATA_SOURCE_QUERY
         - DATA_QUERY

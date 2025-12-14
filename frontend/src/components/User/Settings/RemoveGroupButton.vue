@@ -95,15 +95,15 @@ const resourcesOccupied = computedAsync(async () => {
 
     const policy = await policyStore.getOrFetchPolicyByParentAndType({
       parentPath: project.name,
-      policyType: PolicyType.MASKING_EXCEPTION,
+      policyType: PolicyType.MASKING_EXEMPTION,
     });
 
     const exceptions =
-      policy?.policy?.case === "maskingExceptionPolicy"
-        ? policy.policy.value.maskingExceptions
+      policy?.policy?.case === "maskingExemptionPolicy"
+        ? policy.policy.value.exemptions
         : [];
     for (const exception of exceptions) {
-      if (exception.member === member) {
+      if (exception.members.includes(member)) {
         resources.add(project.name);
         break;
       }

@@ -205,8 +205,8 @@
     - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
     - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
-    - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
-    - [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException)
+    - [MaskingExemptionPolicy](#bytebase-store-MaskingExemptionPolicy)
+    - [MaskingExemptionPolicy.Exemption](#bytebase-store-MaskingExemptionPolicy-Exemption)
     - [MaskingRulePolicy](#bytebase-store-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-store-Policy)
@@ -3493,33 +3493,37 @@ EnvironmentTierPolicy is the tier of an environment.
 
 
 
-<a name="bytebase-store-MaskingExceptionPolicy"></a>
+<a name="bytebase-store-MaskingExemptionPolicy"></a>
 
-### MaskingExceptionPolicy
-MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| masking_exceptions | [MaskingExceptionPolicy.MaskingException](#bytebase-store-MaskingExceptionPolicy-MaskingException) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-MaskingExceptionPolicy-MaskingException"></a>
-
-### MaskingExceptionPolicy.MaskingException
-
+### MaskingExemptionPolicy
+MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| member | [string](#string) |  | Member is the principal who binds to this exception policy instance.
+| exemptions | [MaskingExemptionPolicy.Exemption](#bytebase-store-MaskingExemptionPolicy-Exemption) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-MaskingExemptionPolicy-Exemption"></a>
+
+### MaskingExemptionPolicy.Exemption
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| members | [string](#string) | repeated | Members who bind to this exemption.
 
 Format: users/{email} or groups/{group email} |
-| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. |
+| condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec If the condition is empty, means the user can access all databases without expiration.
+
+Support variables: resource.instance_id: the instance resource id. Only support &#34;==&#34; operation. resource.database_name: the database name. Only support &#34;==&#34; operation. resource.schema_name: the schema name. Only support &#34;==&#34; operation. resource.table_name: the table name. Only support &#34;==&#34; operation. resource.column_name: the column name. Only support &#34;==&#34; operation. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)` All variables should join with &#34;&amp;&amp;&#34; condition.
+
+For example: resource.instance_id == &#34;local&#34; &amp;&amp; resource.database_name == &#34;employee&#34; &amp;&amp; request.time &lt; timestamp(&#34;2025-04-30T11:10:39.000Z&#34;) resource.instance_id == &#34;local&#34; &amp;&amp; resource.database_name == &#34;employee&#34; |
 
 
 
@@ -3685,7 +3689,7 @@ QueryDataPolicy is the policy configuration for querying data.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | ROLLOUT | 1 |  |
-| MASKING_EXCEPTION | 2 |  |
+| MASKING_EXEMPTION | 2 |  |
 | QUERY_DATA | 5 |  |
 | MASKING_RULE | 6 |  |
 | IAM | 8 |  |

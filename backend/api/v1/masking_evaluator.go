@@ -81,7 +81,7 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 	schemaName, tableName, columnName,
 	databaseProjectDataClassificationID string,
 	columnConfig *storepb.ColumnCatalog,
-	filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException,
+	filteredMaskingExemptions []*storepb.MaskingExemptionPolicy_Exemption,
 ) (*MaskingEvaluation, error) {
 	eval, err := m.evaluateGlobalMaskingLevelOfColumn(databaseMessage, schemaName, tableName, columnName, databaseProjectDataClassificationID, columnConfig)
 	if err != nil {
@@ -113,7 +113,7 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 	}
 
 	if eval != nil && eval.SemanticTypeID != "" {
-		pass, err := evaluateExceptionOfColumn(databaseMessage, schemaName, tableName, columnName, filteredMaskingExceptions)
+		pass, err := evaluateExemptionOfColumn(databaseMessage, schemaName, tableName, columnName, filteredMaskingExemptions)
 		if err != nil {
 			return nil, err
 		}
@@ -187,9 +187,9 @@ func (m *maskingLevelEvaluator) evaluateGlobalMaskingLevelOfColumn(
 	return nil, nil
 }
 
-func evaluateExceptionOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName, columnName string, filteredMaskingExceptions []*storepb.MaskingExceptionPolicy_MaskingException) (bool, error) {
-	for _, filteredMaskingException := range filteredMaskingExceptions {
-		maskingExceptionAttributes := map[string]any{
+func evaluateExemptionOfColumn(databaseMessage *store.DatabaseMessage, schemaName, tableName, columnName string, filteredMaskingExemptions []*storepb.MaskingExemptionPolicy_Exemption) (bool, error) {
+	for _, filteredMaskingExemption := range filteredMaskingExemptions {
+		maskingExemptionAttributes := map[string]any{
 			"resource": map[string]any{
 				"instance_id":   databaseMessage.InstanceID,
 				"database_name": databaseMessage.DatabaseName,
@@ -201,9 +201,9 @@ func evaluateExceptionOfColumn(databaseMessage *store.DatabaseMessage, schemaNam
 				"time": time.Now(),
 			},
 		}
-		pass, err := evaluateMaskingExceptionPolicyCondition(filteredMaskingException.Condition, maskingExceptionAttributes)
+		pass, err := evaluateMaskingExemptionPolicyCondition(filteredMaskingExemption.Condition, maskingExemptionAttributes)
 		if err != nil {
-			return false, errors.Wrapf(err, "failed to evaluate masking exception policy condition")
+			return false, errors.Wrapf(err, "failed to evaluate masking exemption policy condition")
 		}
 		if pass {
 			return true, nil
@@ -228,37 +228,37 @@ func getClassificationLevelOfColumn(columnClassificationID string, classificatio
 	return *classification.LevelId
 }
 
-func evaluateMaskingExceptionPolicyCondition(expression *expr.Expr, attributes map[string]any) (bool, error) {
+func evaluateMaskingExemptionPolicyCondition(expression *expr.Expr, attributes map[string]any) (bool, error) {
 	// nil expression means allow to access all databases
 	if expression == nil || expression.Expression == "" {
 		return true, nil
 	}
-	maskingExceptionPolicyEnv, err := cel.NewEnv(
+	maskingExemptionPolicyEnv, err := cel.NewEnv(
 		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
 		cel.Variable("request", cel.MapType(cel.StringType, cel.AnyType)),
 	)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to create CEL environment for masking exception policy")
+		return false, errors.Wrapf(err, "failed to create CEL environment for masking exemption policy")
 	}
-	ast, issues := maskingExceptionPolicyEnv.Compile(expression.Expression)
+	ast, issues := maskingExemptionPolicyEnv.Compile(expression.Expression)
 	if issues != nil && issues.Err() != nil {
-		return false, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking exception policy")
+		return false, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking exemption policy")
 	}
-	prg, err := maskingExceptionPolicyEnv.Program(ast)
+	prg, err := maskingExemptionPolicyEnv.Program(ast)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to create CEL program for masking exception policy")
+		return false, errors.Wrapf(err, "failed to create CEL program for masking exemption policy")
 	}
 	out, _, err := prg.Eval(attributes)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to eval CEL program for masking exception policy")
+		return false, errors.Wrapf(err, "failed to eval CEL program for masking exemption policy")
 	}
 	val, err := out.ConvertToNative(reflect.TypeFor[bool]())
 	if err != nil {
-		return false, errors.Wrap(err, "expect bool result for masking exception policy")
+		return false, errors.Wrap(err, "expect bool result for masking exemption policy")
 	}
 	boolVar, ok := val.(bool)
 	if !ok {
-		return false, errors.Wrap(err, "expect bool result for masking exception policy")
+		return false, errors.Wrap(err, "expect bool result for masking exemption policy")
 	}
 	return boolVar, nil
 }

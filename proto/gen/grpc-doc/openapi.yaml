@@ -368,7 +368,7 @@ paths:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -414,7 +414,7 @@ paths:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -1718,7 +1718,7 @@ paths:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -1770,7 +1770,7 @@ paths:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -2593,7 +2593,7 @@ paths:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -2639,7 +2639,7 @@ paths:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -3169,7 +3169,7 @@ paths:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -3219,7 +3219,7 @@ paths:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -4857,7 +4857,7 @@ paths:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -4903,7 +4903,7 @@ paths:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -11718,25 +11718,25 @@ components:
             type: object
             properties: {}
             description: Request to logout current user session.
-        MaskingExceptionPolicy:
+        MaskingExemptionPolicy:
             type: object
             properties:
-                maskingExceptions:
+                exemptions:
                     type: array
                     items:
-                        $ref: '#/components/schemas/MaskingExceptionPolicy_MaskingException'
-                    description: The list of masking exceptions.
-            description: MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-        MaskingExceptionPolicy_MaskingException:
+                        $ref: '#/components/schemas/MaskingExemptionPolicy_Exemption'
+            description: MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
+        MaskingExemptionPolicy_Exemption:
             type: object
             properties:
-                member:
-                    type: string
+                members:
+                    type: array
+                    items:
+                        type: string
                     description: |-
-                        Member is the principal who bind to this exception policy instance.
+                        Members who bind to this exemption.
 
-                         - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
-                         - `group:{email}`: An email address for group.
+                         Format: users/{email} or groups/{group email}
                 condition:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
@@ -11757,7 +11757,6 @@ components:
                          For example:
                          resource.instance_id == "local" && resource.database_name == "employee" && request.time < timestamp("2025-04-30T11:10:39.000Z")
                          resource.instance_id == "local" && resource.database_name == "employee"
-            description: An exception allowing specific users to access masked data.
         MaskingReason:
             type: object
             properties:
@@ -12303,7 +12302,7 @@ components:
                         - POLICY_TYPE_UNSPECIFIED
                         - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -12314,8 +12313,8 @@ components:
                     $ref: '#/components/schemas/RolloutPolicy'
                 maskingRulePolicy:
                     $ref: '#/components/schemas/MaskingRulePolicy'
-                maskingExceptionPolicy:
-                    $ref: '#/components/schemas/MaskingExceptionPolicy'
+                maskingExemptionPolicy:
+                    $ref: '#/components/schemas/MaskingExemptionPolicy'
                 tagPolicy:
                     $ref: '#/components/schemas/TagPolicy'
                 dataSourceQueryPolicy:

@@ -986,11 +986,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.MaskingExceptionPolicy"><span class="badge">M</span>MaskingExceptionPolicy</a>
+                  <a href="#bytebase.store.MaskingExemptionPolicy"><span class="badge">M</span>MaskingExemptionPolicy</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.MaskingExceptionPolicy.MaskingException"><span class="badge">M</span>MaskingExceptionPolicy.MaskingException</a>
+                  <a href="#bytebase.store.MaskingExemptionPolicy.Exemption"><span class="badge">M</span>MaskingExemptionPolicy.Exemption</a>
                 </li>
               
                 <li>
@@ -9756,8 +9756,8 @@ A binding binds one or more members or groups to a single role. </p></td>
 
         
       
-        <h3 id="bytebase.store.MaskingExceptionPolicy">MaskingExceptionPolicy</h3>
-        <p>MaskingExceptionPolicy is the allowlist of users who can access sensitive data.</p>
+        <h3 id="bytebase.store.MaskingExemptionPolicy">MaskingExemptionPolicy</h3>
+        <p>MaskingExemptionPolicy is the allowlist of users who can access sensitive data.</p>
 
         
           <table class="field-table">
@@ -9767,8 +9767,8 @@ A binding binds one or more members or groups to a single role. </p></td>
             <tbody>
               
                 <tr>
-                  <td>masking_exceptions</td>
-                  <td><a href="#bytebase.store.MaskingExceptionPolicy.MaskingException">MaskingExceptionPolicy.MaskingException</a></td>
+                  <td>exemptions</td>
+                  <td><a href="#bytebase.store.MaskingExemptionPolicy.Exemption">MaskingExemptionPolicy.Exemption</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -9780,7 +9780,7 @@ A binding binds one or more members or groups to a single role. </p></td>
 
         
       
-        <h3 id="bytebase.store.MaskingExceptionPolicy.MaskingException">MaskingExceptionPolicy.MaskingException</h3>
+        <h3 id="bytebase.store.MaskingExemptionPolicy.Exemption">MaskingExemptionPolicy.Exemption</h3>
         <p></p>
 
         
@@ -9791,10 +9791,10 @@ A binding binds one or more members or groups to a single role. </p></td>
             <tbody>
               
                 <tr>
-                  <td>member</td>
+                  <td>members</td>
                   <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Member is the principal who binds to this exception policy instance.
+                  <td>repeated</td>
+                  <td><p>Members who bind to this exemption.
 
 Format: users/{email} or groups/{group email} </p></td>
                 </tr>
@@ -9803,7 +9803,22 @@ Format: users/{email} or groups/{group email} </p></td>
                   <td>condition</td>
                   <td><a href="#google.type.Expr">google.type.Expr</a></td>
                   <td></td>
-                  <td><p>The condition that is associated with this exception policy instance. </p></td>
+                  <td><p>The condition that is associated with this exception policy instance.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+If the condition is empty, means the user can access all databases without expiration.
+
+Support variables:
+resource.instance_id: the instance resource id. Only support &#34;==&#34; operation.
+resource.database_name: the database name. Only support &#34;==&#34; operation.
+resource.schema_name: the schema name. Only support &#34;==&#34; operation.
+resource.table_name: the table name. Only support &#34;==&#34; operation.
+resource.column_name: the column name. Only support &#34;==&#34; operation.
+request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`
+All variables should join with &#34;&amp;&amp;&#34; condition.
+
+For example:
+resource.instance_id == &#34;local&#34; &amp;&amp; resource.database_name == &#34;employee&#34; &amp;&amp; request.time &lt; timestamp(&#34;2025-04-30T11:10:39.000Z&#34;)
+resource.instance_id == &#34;local&#34; &amp;&amp; resource.database_name == &#34;employee&#34; </p></td>
                 </tr>
               
             </tbody>
@@ -10139,7 +10154,7 @@ For example, the environment resource can have the SQL review config tag, such a
               </tr>
             
               <tr>
-                <td>MASKING_EXCEPTION</td>
+                <td>MASKING_EXEMPTION</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
