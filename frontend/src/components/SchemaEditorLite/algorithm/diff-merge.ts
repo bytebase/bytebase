@@ -1,18 +1,5 @@
-import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual, pick } from "lodash-es";
 import type { ComposedDatabase } from "@/types";
-import type {
-  ColumnCatalog,
-  DatabaseCatalog,
-  SchemaCatalog,
-  TableCatalog,
-} from "@/types/proto-es/v1/database_catalog_service_pb";
-import {
-  ColumnCatalogSchema,
-  SchemaCatalogSchema,
-  TableCatalog_ColumnsSchema,
-  TableCatalogSchema,
-} from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   FunctionMetadata,
   ProcedureMetadata,
@@ -55,8 +42,6 @@ export class DiffMerge {
   database: ComposedDatabase;
   sourceMetadata: DatabaseMetadata;
   targetMetadata: DatabaseMetadata;
-  sourceCatalog: DatabaseCatalog;
-  targetCatalog: DatabaseCatalog;
   sourceSchemaMap = new Map<string, SchemaMetadata>();
   targetSchemaMap = new Map<string, SchemaMetadata>();
   sourceTableMap = new Map<string, TableMetadata>();
@@ -69,12 +54,6 @@ export class DiffMerge {
   targetProcedureMap = new Map<string, ProcedureMetadata>();
   sourceFunctionMap = new Map<string, FunctionMetadata>();
   targetFunctionMap = new Map<string, FunctionMetadata>();
-  sourceSchemaCatalogMap = new Map<string, SchemaCatalog>();
-  targetSchemaCatalogMap = new Map<string, SchemaCatalog>();
-  sourceTableCatalogMap = new Map<string, TableCatalog>();
-  targetTableCatalogMap = new Map<string, TableCatalog>();
-  sourceColumnCatalogMap = new Map<string, ColumnCatalog>();
-  targetColumnCatalogMap = new Map<string, ColumnCatalog>();
   timer = new TinyTimer<
     | "merge"
     | "mergeSchemas"
@@ -85,37 +64,26 @@ export class DiffMerge {
     | "mergeViews"
     | "mergeProcedures"
     | "mergeFunctions"
-    | "mergeSchemaCatalog"
-    | "mergeTableCatalog"
-    | "mergeColumnCatalog"
-    | "diffColumnCatalog"
   >("DiffMerge");
   constructor({
     context,
     database,
     sourceMetadata,
     targetMetadata,
-    sourceCatalog,
-    targetCatalog,
   }: {
     context: SchemaEditorContext;
     database: ComposedDatabase;
     sourceMetadata: DatabaseMetadata;
     targetMetadata: DatabaseMetadata;
-    sourceCatalog: DatabaseCatalog;
-    targetCatalog: DatabaseCatalog;
   }) {
     this.context = context;
     this.database = database;
     this.sourceMetadata = sourceMetadata;
     this.targetMetadata = targetMetadata;
-    this.sourceCatalog = sourceCatalog;
-    this.targetCatalog = targetCatalog;
   }
   merge() {
     this.timer.begin("merge");
     this.mergeSchemas();
-    this.mergeSchemaCatalog();
     this.timer.end("merge");
   }
   mergeSchemas() {
@@ -712,229 +680,6 @@ export class DiffMerge {
       sourceFunctions.length + targetFunctions.length
     );
   }
-  mergeSchemaCatalog() {
-    const {
-      context,
-      database,
-      sourceCatalog,
-      targetCatalog,
-      targetMetadata,
-      sourceSchemaCatalogMap,
-      targetSchemaCatalogMap,
-    } = this;
-    this.timer.begin("mergeSchemaCatalog");
-    mapSchemaCatalog({
-      database: database.name,
-      schemas: sourceCatalog.schemas,
-      map: sourceSchemaCatalogMap,
-    });
-    mapSchemaCatalog({
-      database: database.name,
-      schemas: targetCatalog.schemas,
-      map: targetSchemaCatalogMap,
-    });
-    const mergedSchemaCatalogs: SchemaCatalog[] = [];
-    for (let i = 0; i < targetMetadata.schemas.length; i++) {
-      const schema = targetMetadata.schemas[i];
-      const key = keyForResourceName({
-        database: database.name,
-        schema: schema.name,
-      });
-      const sourceSchemaCatalog = sourceSchemaCatalogMap.get(key);
-      const targetSchemaCatalog = targetSchemaCatalogMap.get(key);
-      const schemaStatus = context.getEditStatusByKey(key);
-      if (schemaStatus === "dropped") {
-        // copy source schema catalog for further restoring
-        if (sourceSchemaCatalog) {
-          mergedSchemaCatalogs.push(cloneDeep(sourceSchemaCatalog));
-        }
-      } else if (schemaStatus === "created") {
-        // use newly created schema catalog
-        if (targetSchemaCatalog) {
-          mergedSchemaCatalogs.push(targetSchemaCatalog);
-        }
-      } else {
-        // use the updated schema catalog and diff recursively
-        if (targetSchemaCatalog) {
-          mergedSchemaCatalogs.push(targetSchemaCatalog);
-        }
-        this.mergeTableCatalog(
-          schema,
-          sourceSchemaCatalog ??
-            create(SchemaCatalogSchema, { name: schema.name }),
-          targetSchemaCatalog ??
-            create(SchemaCatalogSchema, { name: schema.name })
-        );
-      }
-    }
-    targetCatalog.schemas = mergedSchemaCatalogs;
-    this.timer.end("mergeSchemaCatalog", targetCatalog.schemas.length);
-  }
-  mergeTableCatalog(
-    schema: SchemaMetadata,
-    source: SchemaCatalog,
-    target: SchemaCatalog
-  ) {
-    const { context, database, sourceTableCatalogMap, targetTableCatalogMap } =
-      this;
-    this.timer.begin("mergeTableCatalog");
-    mapTableCatalog({
-      database: database.name,
-      schema: source.name,
-      tables: source.tables,
-      map: sourceTableCatalogMap,
-    });
-    mapTableCatalog({
-      database: database.name,
-      schema: target.name,
-      tables: target.tables,
-      map: targetTableCatalogMap,
-    });
-    const mergedTableCatalogs: TableCatalog[] = [];
-    for (let i = 0; i < schema.tables.length; i++) {
-      const table = schema.tables[i];
-      const key = keyForResourceName({
-        database: database.name,
-        schema: schema.name,
-        table: table.name,
-      });
-      const sourceTableCatalog = sourceTableCatalogMap.get(key);
-      const targetTableCatalog = targetTableCatalogMap.get(key);
-      const tableStatus = context.getEditStatusByKey(key);
-      if (tableStatus === "dropped") {
-        // copy source table catalog for further restoring
-        if (sourceTableCatalog) {
-          mergedTableCatalogs.push(cloneDeep(sourceTableCatalog));
-        }
-      } else if (tableStatus === "created") {
-        // use newly created table catalog
-        if (targetTableCatalog) {
-          mergedTableCatalogs.push(targetTableCatalog);
-        }
-      } else {
-        // use the updated table catalog and diff recursively
-        if (targetTableCatalog) {
-          mergedTableCatalogs.push(targetTableCatalog);
-        }
-        this.mergeColumnCatalog(
-          schema.name,
-          table,
-          sourceTableCatalog ??
-            create(TableCatalogSchema, {
-              name: table.name,
-              kind: {
-                case: "columns",
-                value: create(TableCatalog_ColumnsSchema, {}),
-              },
-            }),
-          targetTableCatalog ??
-            create(TableCatalogSchema, {
-              name: table.name,
-              kind: {
-                case: "columns",
-                value: create(TableCatalog_ColumnsSchema, {}),
-              },
-            })
-        );
-      }
-    }
-    target.tables = mergedTableCatalogs;
-    this.timer.end("mergeTableCatalog", schema.tables.length);
-  }
-  mergeColumnCatalog(
-    schema: string,
-    table: TableMetadata,
-    source: TableCatalog,
-    target: TableCatalog
-  ) {
-    const {
-      context,
-      database,
-      sourceColumnCatalogMap,
-      targetColumnCatalogMap,
-    } = this;
-    this.timer.begin("mergeColumnCatalog");
-    mapColumnCatalog({
-      database: database.name,
-      schema,
-      table: table.name,
-      columns: source.kind?.case === "columns" ? source.kind.value.columns : [],
-      map: sourceColumnCatalogMap,
-    });
-    mapColumnCatalog({
-      database: database.name,
-      schema,
-      table: table.name,
-      columns: target.kind?.case === "columns" ? target.kind.value.columns : [],
-      map: targetColumnCatalogMap,
-    });
-    const mergedColumnCatalogs: ColumnCatalog[] = [];
-    for (let i = 0; i < table.columns.length; i++) {
-      const column = table.columns[i];
-      const key = keyForResourceName({
-        database: database.name,
-        schema,
-        table: table.name,
-        column: column.name,
-      });
-      const sourceColumnCatalog = sourceColumnCatalogMap.get(key);
-      const targetColumnCatalog = targetColumnCatalogMap.get(key);
-      const columnStatus = context.getEditStatusByKey(key);
-      if (columnStatus === "dropped") {
-        // copy source column catalog for further restoring
-        if (sourceColumnCatalog) {
-          mergedColumnCatalogs.push(cloneDeep(sourceColumnCatalog));
-        }
-      } else if (columnStatus === "created") {
-        // use newly created column catalog
-        if (targetColumnCatalog) {
-          mergedColumnCatalogs.push(targetColumnCatalog);
-        }
-      } else {
-        // use the updated column catalog and diff recursively
-        if (targetColumnCatalog) {
-          mergedColumnCatalogs.push(targetColumnCatalog);
-        }
-        this.diffColumnCatalog(
-          schema,
-          table.name,
-          sourceColumnCatalog ??
-            create(ColumnCatalogSchema, { name: column.name }),
-          targetColumnCatalog ??
-            create(ColumnCatalogSchema, { name: column.name })
-        );
-      }
-    }
-    target.kind = {
-      case: "columns",
-      value: create(TableCatalog_ColumnsSchema, {
-        columns: mergedColumnCatalogs,
-      }),
-    };
-    this.timer.end("mergeColumnCatalog", table.columns.length);
-  }
-  diffColumnCatalog(
-    schema: string,
-    table: string,
-    source: ColumnCatalog,
-    target: ColumnCatalog
-  ) {
-    this.timer.begin("diffColumnCatalog");
-
-    if (!isEqual(source, target)) {
-      const key = keyForResourceName({
-        database: this.database.name,
-        schema,
-        table,
-        column: target.name,
-      });
-      const status = this.context.getEditStatusByKey(key);
-      if (status !== "created" && status !== "dropped") {
-        this.context.markEditStatusByKey(key, "updated");
-      }
-    }
-    this.timer.end("diffColumnCatalog", 1);
-  }
 }
 
 // database schema
@@ -1043,66 +788,5 @@ const mapFunctions = (
       function: fn.name,
     });
     map.set(key, fn);
-  });
-};
-// database catalog
-const mapSchemaCatalog = ({
-  database,
-  schemas,
-  map,
-}: {
-  database: string;
-  schemas: SchemaCatalog[];
-  map: Map<string, SchemaCatalog>;
-}) => {
-  schemas.forEach((schemaCatalog) => {
-    const key = keyForResourceName({
-      database,
-      schema: schemaCatalog.name,
-    });
-    map.set(key, schemaCatalog);
-  });
-};
-const mapTableCatalog = ({
-  database,
-  schema,
-  tables,
-  map,
-}: {
-  database: string;
-  schema: string;
-  tables: TableCatalog[];
-  map: Map<string, TableCatalog>;
-}) => {
-  tables.forEach((tableCatalog) => {
-    const key = keyForResourceName({
-      database,
-      schema,
-      table: tableCatalog.name,
-    });
-    map.set(key, tableCatalog);
-  });
-};
-const mapColumnCatalog = ({
-  database,
-  schema,
-  table,
-  columns,
-  map,
-}: {
-  database: string;
-  schema: string;
-  table: string;
-  columns: ColumnCatalog[];
-  map: Map<string, ColumnCatalog>;
-}) => {
-  columns.forEach((columnCatalog) => {
-    const key = keyForResourceName({
-      database,
-      schema,
-      table,
-      column: columnCatalog.name,
-    });
-    map.set(key, columnCatalog);
   });
 };

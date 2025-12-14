@@ -54,7 +54,7 @@ import SchemaEditorLite, {
   generateDiffDDL,
 } from "@/components/SchemaEditorLite";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useDatabaseCatalogV1Store, useDBSchemaV1Store } from "@/store";
+import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
@@ -76,7 +76,6 @@ const show = computed({
 
 const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
 const dbSchemaStore = useDBSchemaV1Store();
-const dbCatalogStore = useDatabaseCatalogV1Store();
 
 const state = reactive({
   isPreparingMetadata: false,
@@ -110,25 +109,17 @@ const prepareDatabaseMetadata = async (database: ComposedDatabase) => {
   state.isPreparingMetadata = true;
   state.targets = [];
 
-  const [metadata, catalog] = await Promise.all([
-    dbSchemaStore.getOrFetchDatabaseMetadata({
-      database: database.name,
-      skipCache: true,
-      limit: 200,
-    }),
-    dbCatalogStore.getOrFetchDatabaseCatalog({
-      database: database.name,
-      skipCache: true,
-    }),
-  ]);
+  const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+    database: database.name,
+    skipCache: true,
+    limit: 200,
+  });
 
   state.targets = [
     {
       database: database,
       metadata: cloneDeep(metadata),
       baselineMetadata: metadata,
-      catalog: cloneDeep(catalog),
-      baselineCatalog: catalog,
     },
   ];
 
@@ -166,16 +157,8 @@ const handleInsertSQL = async () => {
   const target = state.targets[0];
   if (!target) return;
 
-  const {
-    database,
-    baselineMetadata,
-    baselineCatalog: _baselineCatalog,
-  } = target;
-  const { metadata, catalog: _catalog } = applyMetadataEdit(
-    database,
-    target.metadata,
-    target.catalog
-  );
+  const { database, baselineMetadata } = target;
+  const { metadata } = applyMetadataEdit(database, target.metadata);
 
   const result = await generateDiffDDL({
     database,

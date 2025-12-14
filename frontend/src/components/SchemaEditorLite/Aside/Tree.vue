@@ -195,8 +195,6 @@ const {
   getViewStatus,
   getProcedureStatus,
   getFunctionStatus,
-  getTableCatalog,
-  upsertTableCatalog,
   queuePendingScrollToTable,
   queuePendingScrollToColumn,
 } = useSchemaEditorContext();
@@ -703,25 +701,6 @@ const handleDuplicateTable = (treeNode: TreeNodeForTable) => {
       "created"
     );
   });
-
-  upsertTableCatalog(
-    {
-      database: db.name,
-      schema: schema.name,
-      table: newTable.name,
-    },
-    (config) => {
-      Object.assign(
-        config,
-        getTableCatalog({
-          database: db.name,
-          schema: schema.name,
-          table: table.name,
-        }),
-        { name: newTable.name }
-      );
-    }
-  );
 
   addTab({
     type: "table",

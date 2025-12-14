@@ -14,15 +14,12 @@ export const useRebuildMetadataEdit = (context: SchemaEditorContext) => {
   ) => {
     clearEditStatus();
 
-    const { database, catalog, baselineCatalog, metadata, baselineMetadata } =
-      target;
+    const { database, metadata, baselineMetadata } = target;
     const dm = new DiffMerge({
       context,
       database,
       sourceMetadata: baselineMetadata,
       targetMetadata: metadata,
-      sourceCatalog: baselineCatalog,
-      targetCatalog: catalog,
     });
     dm.merge();
     dm.timer.printAll();

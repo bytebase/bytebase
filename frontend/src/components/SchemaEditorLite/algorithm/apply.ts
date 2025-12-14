@@ -1,9 +1,7 @@
 import { cloneDeep } from "lodash-es";
 import type { ComposedDatabase } from "@/types";
-import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { SchemaEditorContext } from "../context";
-import { cleanupUnusedCatalog } from "./utils";
 
 export const useApplyMetadataEdit = (context: SchemaEditorContext) => {
   const {
@@ -17,8 +15,7 @@ export const useApplyMetadataEdit = (context: SchemaEditorContext) => {
 
   const applyMetadataEdit = (
     database: ComposedDatabase,
-    metadata: DatabaseMetadata,
-    catalog: DatabaseCatalog
+    metadata: DatabaseMetadata
   ) => {
     const response = cloneDeep(metadata);
     // Drop schemas
@@ -71,9 +68,7 @@ export const useApplyMetadataEdit = (context: SchemaEditorContext) => {
       });
     });
 
-    const updatedCatalog = cleanupUnusedCatalog(response, catalog);
-
-    return { metadata: response, catalog: updatedCatalog };
+    return { metadata: response };
   };
 
   return { applyMetadataEdit };
