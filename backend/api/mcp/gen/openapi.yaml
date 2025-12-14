@@ -15896,7 +15896,7 @@ components:
           description: content_size is the full size of the content, may not match the size of the `content` field.
         payload:
           title: payload
-          description: Additional metadata and configuration for the sheet.
+          description: Parsed metadata about SQL commands in the sheet.
           $ref: '#/components/schemas/bytebase.v1.SheetPayload'
         engine:
           title: engine
@@ -15904,40 +15904,17 @@ components:
           $ref: '#/components/schemas/bytebase.v1.Engine'
       title: Sheet
       additionalProperties: false
-    bytebase.v1.SheetCommand:
-      type: object
-      properties:
-        start:
-          type: integer
-          title: start
-          format: int32
-        end:
-          type: integer
-          title: end
-          format: int32
-      title: SheetCommand
-      additionalProperties: false
     bytebase.v1.SheetPayload:
       type: object
       properties:
-        type:
-          title: type
-          $ref: '#/components/schemas/bytebase.v1.SheetPayload.Type'
         commands:
           type: array
           items:
-            $ref: '#/components/schemas/bytebase.v1.SheetCommand'
+            $ref: '#/components/schemas/bytebase.v1.Range'
           title: commands
           description: The start and end position of each command in the sheet statement.
       title: SheetPayload
       additionalProperties: false
-    bytebase.v1.SheetPayload.Type:
-      type: string
-      title: Type
-      enum:
-        - TYPE_UNSPECIFIED
-        - SCHEMA_DESIGN
-      description: Type of the SheetPayload.
     bytebase.v1.SpatialIndexConfig:
       type: object
       properties:
