@@ -18051,6 +18051,10 @@ components:
             type: string
           title: temp_recovery_codes
           description: Temporary recovery codes used during MFA setup and regeneration.
+        tempOtpSecretCreatedTime:
+          title: temp_otp_secret_created_time
+          description: Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
         phone:
           type: string
           title: phone
@@ -18069,10 +18073,6 @@ components:
           description: |-
             The groups for the user.
              Format: groups/{email}
-        tempOtpSecretCreatedTime:
-          title: temp_otp_secret_created_time
-          description: Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
         workloadIdentityConfig:
           title: workload_identity_config
           description: Workload Identity configuration (only for WORKLOAD_IDENTITY type)

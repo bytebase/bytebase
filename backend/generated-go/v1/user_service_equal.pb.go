@@ -248,6 +248,9 @@ func (x *User) Equal(y *User) bool {
 			return false
 		}
 	}
+	if p, q := x.TempOtpSecretCreatedTime, y.TempOtpSecretCreatedTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
 	if x.Phone != y.Phone {
 		return false
 	}
@@ -261,9 +264,6 @@ func (x *User) Equal(y *User) bool {
 		if x.Groups[i] != y.Groups[i] {
 			return false
 		}
-	}
-	if p, q := x.TempOtpSecretCreatedTime, y.TempOtpSecretCreatedTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
 	}
 	if !x.WorkloadIdentityConfig.Equal(y.WorkloadIdentityConfig) {
 		return false

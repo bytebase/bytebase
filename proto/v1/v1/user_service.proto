@@ -287,9 +287,12 @@ message User {
   // Temporary recovery codes used during MFA setup and regeneration.
   repeated string temp_recovery_codes = 10;
 
+  // Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+  google.protobuf.Timestamp temp_otp_secret_created_time = 11;
+
   // Should be a valid E.164 compliant phone number.
   // Could be empty.
-  string phone = 11;
+  string phone = 12;
 
   message Profile {
     // The last time the user successfully logged in.
@@ -301,14 +304,11 @@ message User {
   }
 
   // User profile metadata.
-  Profile profile = 12;
+  Profile profile = 13;
 
   // The groups for the user.
   // Format: groups/{email}
-  repeated string groups = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-  google.protobuf.Timestamp temp_otp_secret_created_time = 14;
+  repeated string groups = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Workload Identity configuration (only for WORKLOAD_IDENTITY type)
   WorkloadIdentityConfig workload_identity_config = 15;

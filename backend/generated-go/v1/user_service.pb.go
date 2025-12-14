@@ -737,16 +737,16 @@ type User struct {
 	TempOtpSecret string `protobuf:"bytes,9,opt,name=temp_otp_secret,json=tempOtpSecret,proto3" json:"temp_otp_secret,omitempty"`
 	// Temporary recovery codes used during MFA setup and regeneration.
 	TempRecoveryCodes []string `protobuf:"bytes,10,rep,name=temp_recovery_codes,json=tempRecoveryCodes,proto3" json:"temp_recovery_codes,omitempty"`
+	// Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+	TempOtpSecretCreatedTime *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=temp_otp_secret_created_time,json=tempOtpSecretCreatedTime,proto3" json:"temp_otp_secret_created_time,omitempty"`
 	// Should be a valid E.164 compliant phone number.
 	// Could be empty.
-	Phone string `protobuf:"bytes,11,opt,name=phone,proto3" json:"phone,omitempty"`
+	Phone string `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
 	// User profile metadata.
-	Profile *User_Profile `protobuf:"bytes,12,opt,name=profile,proto3" json:"profile,omitempty"`
+	Profile *User_Profile `protobuf:"bytes,13,opt,name=profile,proto3" json:"profile,omitempty"`
 	// The groups for the user.
 	// Format: groups/{email}
-	Groups []string `protobuf:"bytes,13,rep,name=groups,proto3" json:"groups,omitempty"`
-	// Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-	TempOtpSecretCreatedTime *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=temp_otp_secret_created_time,json=tempOtpSecretCreatedTime,proto3" json:"temp_otp_secret_created_time,omitempty"`
+	Groups []string `protobuf:"bytes,14,rep,name=groups,proto3" json:"groups,omitempty"`
 	// Workload Identity configuration (only for WORKLOAD_IDENTITY type)
 	WorkloadIdentityConfig *WorkloadIdentityConfig `protobuf:"bytes,15,opt,name=workload_identity_config,json=workloadIdentityConfig,proto3" json:"workload_identity_config,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -853,6 +853,13 @@ func (x *User) GetTempRecoveryCodes() []string {
 	return nil
 }
 
+func (x *User) GetTempOtpSecretCreatedTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.TempOtpSecretCreatedTime
+	}
+	return nil
+}
+
 func (x *User) GetPhone() string {
 	if x != nil {
 		return x.Phone
@@ -870,13 +877,6 @@ func (x *User) GetProfile() *User_Profile {
 func (x *User) GetGroups() []string {
 	if x != nil {
 		return x.Groups
-	}
-	return nil
-}
-
-func (x *User) GetTempOtpSecretCreatedTime() *timestamppb.Timestamp {
-	if x != nil {
-		return x.TempOtpSecretCreatedTime
 	}
 	return nil
 }
@@ -1080,11 +1080,11 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"mfaEnabled\x12&\n" +
 	"\x0ftemp_otp_secret\x18\t \x01(\tR\rtempOtpSecret\x12.\n" +
 	"\x13temp_recovery_codes\x18\n" +
-	" \x03(\tR\x11tempRecoveryCodes\x12\x14\n" +
-	"\x05phone\x18\v \x01(\tR\x05phone\x123\n" +
-	"\aprofile\x18\f \x01(\v2\x19.bytebase.v1.User.ProfileR\aprofile\x12\x1b\n" +
-	"\x06groups\x18\r \x03(\tB\x03\xe0A\x03R\x06groups\x12Z\n" +
-	"\x1ctemp_otp_secret_created_time\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\x12]\n" +
+	" \x03(\tR\x11tempRecoveryCodes\x12Z\n" +
+	"\x1ctemp_otp_secret_created_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\x12\x14\n" +
+	"\x05phone\x18\f \x01(\tR\x05phone\x123\n" +
+	"\aprofile\x18\r \x01(\v2\x19.bytebase.v1.User.ProfileR\aprofile\x12\x1b\n" +
+	"\x06groups\x18\x0e \x03(\tB\x03\xe0A\x03R\x06groups\x12]\n" +
 	"\x18workload_identity_config\x18\x0f \x01(\v2#.bytebase.v1.WorkloadIdentityConfigR\x16workloadIdentityConfig\x1a\xbc\x01\n" +
 	"\aProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
@@ -1167,8 +1167,8 @@ var file_v1_user_service_proto_depIdxs = []int32{
 	15, // 4: bytebase.v1.UpdateUserRequest.update_mask:type_name -> google.protobuf.FieldMask
 	16, // 5: bytebase.v1.User.state:type_name -> bytebase.v1.State
 	0,  // 6: bytebase.v1.User.user_type:type_name -> bytebase.v1.UserType
-	14, // 7: bytebase.v1.User.profile:type_name -> bytebase.v1.User.Profile
-	17, // 8: bytebase.v1.User.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
+	17, // 7: bytebase.v1.User.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
+	14, // 8: bytebase.v1.User.profile:type_name -> bytebase.v1.User.Profile
 	13, // 9: bytebase.v1.User.workload_identity_config:type_name -> bytebase.v1.WorkloadIdentityConfig
 	1,  // 10: bytebase.v1.WorkloadIdentityConfig.provider_type:type_name -> bytebase.v1.WorkloadIdentityConfig.ProviderType
 	17, // 11: bytebase.v1.User.Profile.last_login_time:type_name -> google.protobuf.Timestamp

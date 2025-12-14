@@ -379,17 +379,24 @@ export declare type User = Message<"bytebase.v1.User"> & {
   tempRecoveryCodes: string[];
 
   /**
+   * Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+   *
+   * @generated from field: google.protobuf.Timestamp temp_otp_secret_created_time = 11;
+   */
+  tempOtpSecretCreatedTime?: Timestamp;
+
+  /**
    * Should be a valid E.164 compliant phone number.
    * Could be empty.
    *
-   * @generated from field: string phone = 11;
+   * @generated from field: string phone = 12;
    */
   phone: string;
 
   /**
    * User profile metadata.
    *
-   * @generated from field: bytebase.v1.User.Profile profile = 12;
+   * @generated from field: bytebase.v1.User.Profile profile = 13;
    */
   profile?: User_Profile;
 
@@ -397,16 +404,9 @@ export declare type User = Message<"bytebase.v1.User"> & {
    * The groups for the user.
    * Format: groups/{email}
    *
-   * @generated from field: repeated string groups = 13;
+   * @generated from field: repeated string groups = 14;
    */
   groups: string[];
-
-  /**
-   * Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-   *
-   * @generated from field: google.protobuf.Timestamp temp_otp_secret_created_time = 14;
-   */
-  tempOtpSecretCreatedTime?: Timestamp;
 
   /**
    * Workload Identity configuration (only for WORKLOAD_IDENTITY type)
