@@ -14210,9 +14210,10 @@ components:
                     type: string
                     description: content_size is the full size of the content, may not match the size of the `content` field.
                 payload:
+                    readOnly: true
                     allOf:
                         - $ref: '#/components/schemas/SheetPayload'
-                    description: Additional metadata and configuration for the sheet.
+                    description: Parsed metadata about SQL commands in the sheet.
                 engine:
                     enum:
                         - ENGINE_UNSPECIFIED
@@ -14244,28 +14245,13 @@ components:
                     type: string
                     description: The SQL dialect.
                     format: enum
-        SheetCommand:
-            type: object
-            properties:
-                start:
-                    type: integer
-                    format: int32
-                end:
-                    type: integer
-                    format: int32
         SheetPayload:
             type: object
             properties:
-                type:
-                    enum:
-                        - TYPE_UNSPECIFIED
-                        - SCHEMA_DESIGN
-                    type: string
-                    format: enum
                 commands:
                     type: array
                     items:
-                        $ref: '#/components/schemas/SheetCommand'
+                        $ref: '#/components/schemas/Range'
                     description: The start and end position of each command in the sheet statement.
         SpatialIndexConfig:
             type: object

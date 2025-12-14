@@ -2681,10 +2681,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SheetCommand"><span class="badge">M</span>SheetCommand</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.SheetPayload"><span class="badge">M</span>SheetPayload</a>
                 </li>
               
@@ -2692,10 +2688,6 @@
                   <a href="#bytebase.v1.UpdateSheetRequest"><span class="badge">M</span>UpdateSheetRequest</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.v1.SheetPayload.Type"><span class="badge">E</span>SheetPayload.Type</a>
-                </li>
               
               
               
@@ -30042,7 +30034,7 @@ set the `raw` to true in GetSheet request to retrieve the full content. </p></td
                   <td>payload</td>
                   <td><a href="#bytebase.v1.SheetPayload">SheetPayload</a></td>
                   <td></td>
-                  <td><p>Additional metadata and configuration for the sheet. </p></td>
+                  <td><p>Parsed metadata about SQL commands in the sheet. </p></td>
                 </tr>
               
                 <tr>
@@ -30050,37 +30042,6 @@ set the `raw` to true in GetSheet request to retrieve the full content. </p></td
                   <td><a href="#bytebase.v1.Engine">Engine</a></td>
                   <td></td>
                   <td><p>The SQL dialect. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SheetCommand">SheetCommand</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>start</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>end</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -30101,15 +30062,8 @@ set the `raw` to true in GetSheet request to retrieve the full content. </p></td
             <tbody>
               
                 <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.SheetPayload.Type">SheetPayload.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>commands</td>
-                  <td><a href="#bytebase.v1.SheetCommand">SheetCommand</a></td>
+                  <td><a href="#bytebase.v1.Range">Range</a></td>
                   <td>repeated</td>
                   <td><p>The start and end position of each command in the sheet statement. </p></td>
                 </tr>
@@ -30169,29 +30123,6 @@ In this situation, `update_mask` is ignored. </p></td>
         
       
 
-      
-        <h3 id="bytebase.v1.SheetPayload.Type">SheetPayload.Type</h3>
-        <p>Type of the SheetPayload.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>SCHEMA_DESIGN</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       

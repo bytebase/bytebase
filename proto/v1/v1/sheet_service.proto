@@ -155,26 +155,14 @@ message Sheet {
   // content_size is the full size of the content, may not match the size of the `content` field.
   int64 content_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Additional metadata and configuration for the sheet.
-  SheetPayload payload = 13;
+  // Parsed metadata about SQL commands in the sheet.
+  SheetPayload payload = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The SQL dialect.
   Engine engine = 14 [(google.api.field_behavior) = REQUIRED];
 }
 
 message SheetPayload {
-  // Type of the SheetPayload.
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    SCHEMA_DESIGN = 1;
-  }
-  Type type = 1;
-
   // The start and end position of each command in the sheet statement.
-  repeated SheetCommand commands = 4;
-}
-
-message SheetCommand {
-  int32 start = 1;
-  int32 end = 2;
+  repeated Range commands = 4;
 }

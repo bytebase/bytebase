@@ -655,11 +655,8 @@
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
-    - [SheetCommand](#bytebase-v1-SheetCommand)
     - [SheetPayload](#bytebase-v1-SheetPayload)
     - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
-  
-    - [SheetPayload.Type](#bytebase-v1-SheetPayload-Type)
   
     - [SheetService](#bytebase-v1-SheetService)
   
@@ -10717,24 +10714,8 @@ RolloutService manages the execution of deployment plans.
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the sheet. |
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
-| payload | [SheetPayload](#bytebase-v1-SheetPayload) |  | Additional metadata and configuration for the sheet. |
+| payload | [SheetPayload](#bytebase-v1-SheetPayload) |  | Parsed metadata about SQL commands in the sheet. |
 | engine | [Engine](#bytebase-v1-Engine) |  | The SQL dialect. |
-
-
-
-
-
-
-<a name="bytebase-v1-SheetCommand"></a>
-
-### SheetCommand
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start | [int32](#int32) |  |  |
-| end | [int32](#int32) |  |  |
 
 
 
@@ -10749,8 +10730,7 @@ RolloutService manages the execution of deployment plans.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [SheetPayload.Type](#bytebase-v1-SheetPayload-Type) |  |  |
-| commands | [SheetCommand](#bytebase-v1-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
+| commands | [Range](#bytebase-v1-Range) | repeated | The start and end position of each command in the sheet statement. |
 
 
 
@@ -10776,18 +10756,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
  
-
-
-<a name="bytebase-v1-SheetPayload-Type"></a>
-
-### SheetPayload.Type
-Type of the SheetPayload.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| SCHEMA_DESIGN | 1 |  |
-
 
  
 
