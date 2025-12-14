@@ -1726,14 +1726,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.RolloutPolicy.Checkers"><span class="badge">M</span>RolloutPolicy.Checkers</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks"><span class="badge">M</span>RolloutPolicy.Checkers.RequiredStatusChecks</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.TagPolicy"><span class="badge">M</span>TagPolicy</a>
                 </li>
               
@@ -1756,10 +1748,6 @@
               
                 <li>
                   <a href="#bytebase.v1.PolicyType"><span class="badge">E</span>PolicyType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement"><span class="badge">E</span>RolloutPolicy.Checkers.PlanCheckEnforcement</a>
                 </li>
               
               
@@ -2298,10 +2286,6 @@
               
                 <li>
                   <a href="#bytebase.v1.SQLReviewRule.NumberRulePayload"><span class="badge">M</span>SQLReviewRule.NumberRulePayload</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SQLReviewRule.RequiredColumnRulePayload"><span class="badge">M</span>SQLReviewRule.RequiredColumnRulePayload</a>
                 </li>
               
                 <li>
@@ -3006,13 +2990,13 @@ Examples:
             
               <tr>
                 <td>MIGRATE</td>
-                <td>2</td>
+                <td>1</td>
                 <td><p>Used for imperative schema migration including CREATE DATABASE.</p></td>
               </tr>
             
               <tr>
                 <td>SDL</td>
-                <td>3</td>
+                <td>2</td>
                 <td><p>Used for state-based declarative schema migration including CREATE DATABASE.</p></td>
               </tr>
             
@@ -3119,67 +3103,67 @@ Examples:
             
               <tr>
                 <td>STARROCKS</td>
-                <td>18</td>
+                <td>15</td>
                 <td><p>StarRocks analytics database.</p></td>
               </tr>
             
               <tr>
                 <td>DORIS</td>
-                <td>19</td>
+                <td>16</td>
                 <td><p>Apache Doris analytics database.</p></td>
               </tr>
             
               <tr>
                 <td>HIVE</td>
-                <td>20</td>
+                <td>17</td>
                 <td><p>Apache Hive data warehouse.</p></td>
               </tr>
             
               <tr>
                 <td>ELASTICSEARCH</td>
-                <td>21</td>
+                <td>18</td>
                 <td><p>Elasticsearch search engine.</p></td>
               </tr>
             
               <tr>
                 <td>BIGQUERY</td>
-                <td>22</td>
+                <td>19</td>
                 <td><p>Google BigQuery data warehouse.</p></td>
               </tr>
             
               <tr>
                 <td>DYNAMODB</td>
-                <td>23</td>
+                <td>20</td>
                 <td><p>Amazon DynamoDB NoSQL database.</p></td>
               </tr>
             
               <tr>
                 <td>DATABRICKS</td>
-                <td>24</td>
+                <td>21</td>
                 <td><p>Databricks lakehouse platform.</p></td>
               </tr>
             
               <tr>
                 <td>COCKROACHDB</td>
-                <td>25</td>
+                <td>22</td>
                 <td><p>CockroachDB distributed SQL database.</p></td>
               </tr>
             
               <tr>
                 <td>COSMOSDB</td>
-                <td>26</td>
+                <td>23</td>
                 <td><p>Azure Cosmos DB multi-model database.</p></td>
               </tr>
             
               <tr>
                 <td>TRINO</td>
-                <td>27</td>
+                <td>24</td>
                 <td><p>Trino distributed SQL query engine.</p></td>
               </tr>
             
               <tr>
                 <td>CASSANDRA</td>
-                <td>28</td>
+                <td>25</td>
                 <td><p>Apache Cassandra NoSQL database.</p></td>
               </tr>
             
@@ -3384,7 +3368,7 @@ Examples:
             
               <tr>
                 <td>LARK</td>
-                <td>8</td>
+                <td>7</td>
                 <td><p>Lark integration.</p></td>
               </tr>
             
@@ -6843,43 +6827,43 @@ Default to this mode.</p></td>
             
               <tr>
                 <td>WORKSPACE_PROFILE</td>
-                <td>4</td>
+                <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>WORKSPACE_APPROVAL</td>
-                <td>5</td>
+                <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>APP_IM</td>
-                <td>8</td>
+                <td>3</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>AI</td>
-                <td>10</td>
+                <td>4</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>DATA_CLASSIFICATION</td>
-                <td>14</td>
+                <td>5</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>SEMANTIC_TYPES</td>
-                <td>15</td>
+                <td>6</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>ENVIRONMENT</td>
-                <td>19</td>
+                <td>7</td>
                 <td><p></p></td>
               </tr>
             
@@ -19211,69 +19195,6 @@ The default value is -1, means no limit. </p></td>
                   <td><p>The roles that can approve rollout execution. </p></td>
                 </tr>
               
-                <tr>
-                  <td>checkers</td>
-                  <td><a href="#bytebase.v1.RolloutPolicy.Checkers">RolloutPolicy.Checkers</a></td>
-                  <td></td>
-                  <td><p>Checkers that must pass before rollout execution.
-These checks are performed in UI workflows only. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.RolloutPolicy.Checkers">RolloutPolicy.Checkers</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>required_issue_approval</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether issue approval is required before proceeding with rollout. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>required_status_checks</td>
-                  <td><a href="#bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks">RolloutPolicy.Checkers.RequiredStatusChecks</a></td>
-                  <td></td>
-                  <td><p>Status checks that must pass before rollout can be executed. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks">RolloutPolicy.Checkers.RequiredStatusChecks</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>plan_check_enforcement</td>
-                  <td><a href="#bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement">RolloutPolicy.Checkers.PlanCheckEnforcement</a></td>
-                  <td></td>
-                  <td><p>Enforcement level for plan check results during rollout validation. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -19464,68 +19385,39 @@ In this situation, `update_mask` is ignored. </p></td>
               </tr>
             
               <tr>
-                <td>ROLLOUT_POLICY</td>
-                <td>11</td>
-                <td><p>Rollout deployment policy.</p></td>
-              </tr>
-            
-              <tr>
                 <td>MASKING_RULE</td>
-                <td>9</td>
+                <td>1</td>
                 <td><p>Data masking rule policy.</p></td>
               </tr>
             
               <tr>
                 <td>MASKING_EXEMPTION</td>
-                <td>10</td>
+                <td>2</td>
                 <td><p>Data masking exemption policy.</p></td>
               </tr>
             
               <tr>
+                <td>ROLLOUT_POLICY</td>
+                <td>3</td>
+                <td><p>Rollout deployment policy.</p></td>
+              </tr>
+            
+              <tr>
                 <td>TAG</td>
-                <td>13</td>
+                <td>4</td>
                 <td><p>Resource tag policy.</p></td>
               </tr>
             
               <tr>
                 <td>DATA_SOURCE_QUERY</td>
-                <td>14</td>
+                <td>5</td>
                 <td><p>Data source query restrictions policy.</p></td>
               </tr>
             
               <tr>
                 <td>DATA_QUERY</td>
-                <td>16</td>
+                <td>6</td>
                 <td><p>Query data access policy.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement">RolloutPolicy.Checkers.PlanCheckEnforcement</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>PLAN_CHECK_ENFORCEMENT_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Allow rollout regardless of plan check results (no enforcement).</p></td>
-              </tr>
-            
-              <tr>
-                <td>ERROR_ONLY</td>
-                <td>1</td>
-                <td><p>Block rollout only when plan check finds errors.</p></td>
-              </tr>
-            
-              <tr>
-                <td>STRICT</td>
-                <td>2</td>
-                <td><p>Block rollout when plan check finds errors or warnings.</p></td>
               </tr>
             
           </tbody>
@@ -20126,6 +20018,13 @@ TODO: use range instead </p></td>
                 </tr>
               
                 <tr>
+                  <td>engine</td>
+                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
+                  <td></td>
+                  <td><p>The database engine of the schema. </p></td>
+                </tr>
+              
+                <tr>
                   <td>source_catalog</td>
                   <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
                   <td></td>
@@ -20137,13 +20036,6 @@ TODO: use range instead </p></td>
                   <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>engine</td>
-                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
-                  <td></td>
-                  <td><p>The database engine of the schema. </p></td>
                 </tr>
               
             </tbody>
@@ -22784,25 +22676,25 @@ In this situation, `update_mask` is ignored. </p></td>
             
               <tr>
                 <td>DATABASE_STATEMENT_ADVISE</td>
-                <td>3</td>
+                <td>2</td>
                 <td><p>SQL review check that analyzes statements against configured SQL review rules.</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_STATEMENT_SUMMARY_REPORT</td>
-                <td>5</td>
+                <td>3</td>
                 <td><p>Summary report check that generates impact analysis for the statements.</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_CONNECT</td>
-                <td>6</td>
+                <td>4</td>
                 <td><p>Connection check that verifies database connectivity.</p></td>
               </tr>
             
               <tr>
                 <td>DATABASE_GHOST_SYNC</td>
-                <td>7</td>
+                <td>5</td>
                 <td><p>Ghost sync check that validates gh-ost online schema change compatibility.</p></td>
               </tr>
             
@@ -23993,20 +23885,6 @@ It should not be empty, and should be a subset of the following:
               </tr>
             
               <tr>
-                <td>NOTIFY_ISSUE_APPROVED</td>
-                <td>23</td>
-                <td><p>Notifications via webhooks.
-
-NOTIFY_ISSUE_APPROVED represents the issue approved notification.</p></td>
-              </tr>
-            
-              <tr>
-                <td>NOTIFY_PIPELINE_ROLLOUT</td>
-                <td>24</td>
-                <td><p>NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.</p></td>
-              </tr>
-            
-              <tr>
                 <td>ISSUE_CREATE</td>
                 <td>1</td>
                 <td><p>Issue related activity types.
@@ -24033,21 +23911,35 @@ ISSUE_CREATE represents creating an issue.</p></td>
               </tr>
             
               <tr>
-                <td>ISSUE_APPROVAL_NOTIFY</td>
-                <td>21</td>
-                <td><p>ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.</p></td>
-              </tr>
-            
-              <tr>
                 <td>ISSUE_PIPELINE_STAGE_STATUS_UPDATE</td>
                 <td>5</td>
                 <td><p>ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.</p></td>
               </tr>
             
               <tr>
+                <td>ISSUE_APPROVAL_NOTIFY</td>
+                <td>6</td>
+                <td><p>ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.</p></td>
+              </tr>
+            
+              <tr>
                 <td>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE</td>
-                <td>22</td>
+                <td>7</td>
                 <td><p>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.</p></td>
+              </tr>
+            
+              <tr>
+                <td>NOTIFY_ISSUE_APPROVED</td>
+                <td>8</td>
+                <td><p>Notifications via webhooks.
+
+NOTIFY_ISSUE_APPROVED represents the issue approved notification.</p></td>
+              </tr>
+            
+              <tr>
+                <td>NOTIFY_PIPELINE_ROLLOUT</td>
+                <td>9</td>
+                <td><p>NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.</p></td>
               </tr>
             
           </tbody>
@@ -25440,13 +25332,6 @@ Format: {resource}/{resource id}, e.g., environments/test. </p></td>
                 </tr>
               
                 <tr>
-                  <td>required_column_payload</td>
-                  <td><a href="#bytebase.v1.SQLReviewRule.RequiredColumnRulePayload">SQLReviewRule.RequiredColumnRulePayload</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>string_payload</td>
                   <td><a href="#bytebase.v1.SQLReviewRule.StringRulePayload">SQLReviewRule.StringRulePayload</a></td>
                   <td></td>
@@ -25574,30 +25459,6 @@ Format: {resource}/{resource id}, e.g., environments/test. </p></td>
                   <td>number</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SQLReviewRule.RequiredColumnRulePayload">SQLReviewRule.RequiredColumnRulePayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>column_list</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
               
@@ -29374,17 +29235,17 @@ Use payload DatabaseUpdate.</p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_SDL</td>
-                <td>6</td>
-                <td><p>Database SDL (Schema Definition Language) task that synchronizes declarative schema.
-Use payload DatabaseUpdate.</p></td>
+                <td>DATABASE_EXPORT</td>
+                <td>4</td>
+                <td><p>Database export task that exports query results or table data.
+Use payload DatabaseDataExport.</p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_EXPORT</td>
+                <td>DATABASE_SDL</td>
                 <td>5</td>
-                <td><p>Database export task that exports query results or table data.
-Use payload DatabaseDataExport.</p></td>
+                <td><p>Database SDL (Schema Definition Language) task that synchronizes declarative schema.
+Use payload DatabaseUpdate.</p></td>
               </tr>
             
           </tbody>
@@ -30514,350 +30375,344 @@ In this situation, `update_mask` is ignored. </p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_SCHEMA_TEMPLATE</td>
-                <td>15</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>FEATURE_ROLLOUT_POLICY</td>
-                <td>16</td>
+                <td>14</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_WEB_BASED_SQL_EDITOR</td>
-                <td>17</td>
+                <td>15</td>
                 <td><p>SQL Editor &amp; Development</p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_SQL_EDITOR_ADMIN_MODE</td>
-                <td>18</td>
+                <td>16</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_NATURAL_LANGUAGE_TO_SQL</td>
-                <td>19</td>
+                <td>17</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_AI_QUERY_EXPLANATION</td>
-                <td>20</td>
+                <td>18</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_AI_QUERY_SUGGESTIONS</td>
-                <td>21</td>
+                <td>19</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_AUTO_COMPLETE</td>
-                <td>22</td>
+                <td>20</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_SCHEMA_DIAGRAM</td>
-                <td>23</td>
+                <td>21</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_SCHEMA_EDITOR</td>
-                <td>24</td>
+                <td>22</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_DATA_EXPORT</td>
-                <td>25</td>
+                <td>23</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_DATA_OFFLINE_EXPORT</td>
-                <td>26</td>
+                <td>24</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_QUERY_HISTORY</td>
-                <td>27</td>
+                <td>25</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS</td>
-                <td>28</td>
+                <td>26</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_BATCH_QUERY</td>
-                <td>29</td>
+                <td>27</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_INSTANCE_READ_ONLY_CONNECTION</td>
-                <td>30</td>
+                <td>28</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_QUERY_POLICY</td>
-                <td>31</td>
+                <td>29</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_RESTRICT_COPYING_DATA</td>
-                <td>32</td>
+                <td>30</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_IAM</td>
-                <td>33</td>
+                <td>31</td>
                 <td><p>Security &amp; Compliance</p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_INSTANCE_SSL_CONNECTION</td>
-                <td>34</td>
+                <td>32</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL</td>
-                <td>35</td>
+                <td>33</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION</td>
-                <td>36</td>
+                <td>34</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_GOOGLE_AND_GITHUB_SSO</td>
-                <td>37</td>
+                <td>35</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_USER_GROUPS</td>
-                <td>38</td>
+                <td>36</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_DISALLOW_SELF_SERVICE_SIGNUP</td>
-                <td>39</td>
+                <td>37</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_CUSTOM_INSTANCE_SYNC_TIME</td>
-                <td>41</td>
+                <td>38</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT</td>
-                <td>42</td>
+                <td>39</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_RISK_ASSESSMENT</td>
-                <td>43</td>
+                <td>40</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_APPROVAL_WORKFLOW</td>
-                <td>44</td>
+                <td>41</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_AUDIT_LOG</td>
-                <td>45</td>
+                <td>42</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_ENTERPRISE_SSO</td>
-                <td>46</td>
+                <td>43</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_TWO_FA</td>
-                <td>47</td>
+                <td>44</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_PASSWORD_RESTRICTIONS</td>
-                <td>48</td>
+                <td>45</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_DISALLOW_PASSWORD_SIGNIN</td>
-                <td>49</td>
+                <td>46</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_CUSTOM_ROLES</td>
-                <td>50</td>
+                <td>47</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_REQUEST_ROLE_WORKFLOW</td>
-                <td>51</td>
+                <td>48</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_DATA_MASKING</td>
-                <td>52</td>
+                <td>49</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_DATA_CLASSIFICATION</td>
-                <td>53</td>
+                <td>50</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_SCIM</td>
-                <td>54</td>
+                <td>51</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_DIRECTORY_SYNC</td>
-                <td>55</td>
+                <td>52</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_SIGN_IN_FREQUENCY_CONTROL</td>
-                <td>56</td>
+                <td>53</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_EXTERNAL_SECRET_MANAGER</td>
-                <td>57</td>
+                <td>54</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_USER_EMAIL_DOMAIN_RESTRICTION</td>
-                <td>58</td>
+                <td>55</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_PROJECT_MANAGEMENT</td>
-                <td>59</td>
+                <td>56</td>
                 <td><p>Administration &amp; Support</p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_ENVIRONMENT_MANAGEMENT</td>
-                <td>60</td>
+                <td>57</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_IM_NOTIFICATIONS</td>
-                <td>61</td>
+                <td>58</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_TERRAFORM_PROVIDER</td>
-                <td>62</td>
+                <td>59</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_DATABASE_GROUPS</td>
-                <td>63</td>
+                <td>60</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_ENVIRONMENT_TIERS</td>
-                <td>64</td>
+                <td>61</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_DASHBOARD_ANNOUNCEMENT</td>
-                <td>65</td>
+                <td>62</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_API_INTEGRATION_GUIDANCE</td>
-                <td>66</td>
+                <td>63</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_CUSTOM_LOGO</td>
-                <td>67</td>
+                <td>64</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_WATERMARK</td>
-                <td>68</td>
+                <td>65</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_ROADMAP_PRIORITIZATION</td>
-                <td>69</td>
+                <td>66</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_CUSTOM_MSA</td>
-                <td>70</td>
+                <td>67</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_COMMUNITY_SUPPORT</td>
-                <td>71</td>
+                <td>68</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_EMAIL_SUPPORT</td>
-                <td>72</td>
+                <td>69</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
                 <td>FEATURE_DEDICATED_SUPPORT_WITH_SLA</td>
-                <td>73</td>
+                <td>70</td>
                 <td><p></p></td>
               </tr>
             

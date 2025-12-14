@@ -138,19 +138,19 @@ message ActuatorInfo {
   string workspace_id = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Whether debug mode is enabled.
-  bool debug = 15;
+  bool debug = 14;
 
   // List of features that are not licensed.
-  repeated string unlicensed_features = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated string unlicensed_features = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Whether password-based signin is disabled (except for workspace admins).
-  bool disallow_password_signin = 20 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool disallow_password_signin = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Password complexity and restriction requirements.
-  WorkspaceProfileSetting.PasswordRestriction password_restriction = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
+  WorkspaceProfileSetting.PasswordRestriction password_restriction = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Whether the Bytebase instance is running in Docker.
-  bool docker = 22 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool docker = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // User statistics by type and state.
   message StatUser {
@@ -163,16 +163,16 @@ message ActuatorInfo {
   }
 
   // Statistics about users in the system.
-  repeated StatUser user_stats = 23 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated StatUser user_stats = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The number of activated database instances.
-  int32 activated_instance_count = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 activated_instance_count = 20 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The total number of database instances.
-  int32 total_instance_count = 25 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int32 total_instance_count = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Whether sample data setup is enabled.
-  bool enable_sample = 26 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool enable_sample = 22 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
-  bool external_url_from_flag = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool external_url_from_flag = 23 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

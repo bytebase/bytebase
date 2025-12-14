@@ -247,7 +247,6 @@
     - [SQLReviewRule.NamingCaseRulePayload](#bytebase-store-SQLReviewRule-NamingCaseRulePayload)
     - [SQLReviewRule.NamingRulePayload](#bytebase-store-SQLReviewRule-NamingRulePayload)
     - [SQLReviewRule.NumberRulePayload](#bytebase-store-SQLReviewRule-NumberRulePayload)
-    - [SQLReviewRule.RequiredColumnRulePayload](#bytebase-store-SQLReviewRule-RequiredColumnRulePayload)
     - [SQLReviewRule.StringArrayRulePayload](#bytebase-store-SQLReviewRule-StringArrayRulePayload)
     - [SQLReviewRule.StringRulePayload](#bytebase-store-SQLReviewRule-StringRulePayload)
   
@@ -438,17 +437,17 @@ Engine represents the type of database system.
 | REDSHIFT | 12 |  |
 | MARIADB | 13 |  |
 | OCEANBASE | 14 |  |
-| STARROCKS | 18 |  |
-| DORIS | 19 |  |
-| HIVE | 20 |  |
-| ELASTICSEARCH | 21 |  |
-| BIGQUERY | 22 |  |
-| DYNAMODB | 23 |  |
-| DATABRICKS | 24 |  |
-| COCKROACHDB | 25 |  |
-| COSMOSDB | 26 |  |
-| TRINO | 27 |  |
-| CASSANDRA | 28 |  |
+| STARROCKS | 15 |  |
+| DORIS | 16 |  |
+| HIVE | 17 |  |
+| ELASTICSEARCH | 18 |  |
+| BIGQUERY | 19 |  |
+| DYNAMODB | 20 |  |
+| DATABRICKS | 21 |  |
+| COCKROACHDB | 22 |  |
+| COSMOSDB | 23 |  |
+| TRINO | 24 |  |
+| CASSANDRA | 25 |  |
 
 
 
@@ -523,7 +522,7 @@ VCSType represents the type of version control system.
 | DINGTALK | 4 | DingTalk integration. |
 | FEISHU | 5 | Feishu integration. |
 | WECOM | 6 | WeCom (WeChat Work) integration. |
-| LARK | 8 | Lark integration. |
+| LARK | 7 | Lark integration. |
 
 
  
@@ -2224,10 +2223,10 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | issuer | [string](#string) |  |  |
 | client_id | [string](#string) |  |  |
 | client_secret | [string](#string) |  |  |
+| scopes | [string](#string) | repeated |  |
 | field_mapping | [FieldMapping](#bytebase-store-FieldMapping) |  |  |
 | skip_tls_verify | [bool](#bool) |  |  |
 | auth_style | [OAuth2AuthStyle](#bytebase-store-OAuth2AuthStyle) |  |  |
-| scopes | [string](#string) | repeated |  |
 
 
 
@@ -2896,12 +2895,12 @@ TaskRunResult contains the outcome and metadata from a task run execution.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | detail | [string](#string) |  | Detailed execution information or error message. |
-| changelog | [string](#string) |  | Resource name of the changelog entry created by this run. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | version | [string](#string) |  | Schema version after the migration was applied. |
 | start_position | [Position](#bytebase-store-Position) |  | Starting position in the SQL statement where an error occurred. |
 | end_position | [Position](#bytebase-store-Position) |  | Ending position in the SQL statement where an error occurred. |
 | export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
 | prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | Backup details that can be used to rollback changes. |
+| changelog | [string](#string) |  | Resource name of the changelog entry created by this run. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 
 
 
@@ -3287,8 +3286,8 @@ Type is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| MIGRATE | 2 | Used for imperative schema migration including CREATE DATABASE. |
-| SDL | 3 | Used for state-based declarative schema migration including CREATE DATABASE. |
+| MIGRATE | 1 | Used for imperative schema migration including CREATE DATABASE. |
+| SDL | 2 | Used for state-based declarative schema migration including CREATE DATABASE. |
 
 
  
@@ -3690,11 +3689,11 @@ QueryDataPolicy is the policy configuration for querying data.
 | TYPE_UNSPECIFIED | 0 |  |
 | ROLLOUT | 1 |  |
 | MASKING_EXEMPTION | 2 |  |
-| QUERY_DATA | 5 |  |
-| MASKING_RULE | 6 |  |
-| IAM | 8 |  |
-| TAG | 9 |  |
-| DATA_SOURCE_QUERY | 10 |  |
+| QUERY_DATA | 3 |  |
+| MASKING_RULE | 4 |  |
+| IAM | 5 |  |
+| TAG | 6 |  |
+| DATA_SOURCE_QUERY | 7 |  |
 
 
  
@@ -3845,19 +3844,19 @@ Activity type enumeration.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| NOTIFY_ISSUE_APPROVED | 23 | Notifications via webhooks.
-
-NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
-| NOTIFY_PIPELINE_ROLLOUT | 24 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
 | ISSUE_CREATE | 1 | Issue related activity types.
 
 ISSUE_CREATE represents creating an issue. |
 | ISSUE_COMMENT_CREATE | 2 | ISSUE_COMMENT_CREATE represents commenting on an issue. |
 | ISSUE_FIELD_UPDATE | 3 | ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc. |
 | ISSUE_STATUS_UPDATE | 4 | ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL for now. |
-| ISSUE_APPROVAL_NOTIFY | 21 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
-| ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 22 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
+| ISSUE_APPROVAL_NOTIFY | 6 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
+| ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 7 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
+| NOTIFY_ISSUE_APPROVED | 8 | Notifications via webhooks.
+
+NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
+| NOTIFY_PIPELINE_ROLLOUT | 9 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
 
 
  
@@ -4006,7 +4005,6 @@ ISSUE_CREATE represents creating an issue. |
 | number_payload | [SQLReviewRule.NumberRulePayload](#bytebase-store-SQLReviewRule-NumberRulePayload) |  |  |
 | string_array_payload | [SQLReviewRule.StringArrayRulePayload](#bytebase-store-SQLReviewRule-StringArrayRulePayload) |  |  |
 | comment_convention_payload | [SQLReviewRule.CommentConventionRulePayload](#bytebase-store-SQLReviewRule-CommentConventionRulePayload) |  |  |
-| required_column_payload | [SQLReviewRule.RequiredColumnRulePayload](#bytebase-store-SQLReviewRule-RequiredColumnRulePayload) |  |  |
 | string_payload | [SQLReviewRule.StringRulePayload](#bytebase-store-SQLReviewRule-StringRulePayload) |  |  |
 | naming_case_payload | [SQLReviewRule.NamingCaseRulePayload](#bytebase-store-SQLReviewRule-NamingCaseRulePayload) |  |  |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
@@ -4072,21 +4070,6 @@ Payload message types for SQL review rules
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | number | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-SQLReviewRule-RequiredColumnRulePayload"></a>
-
-### SQLReviewRule.RequiredColumnRulePayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| column_list | [string](#string) | repeated |  |
 
 
 
@@ -4402,8 +4385,8 @@ The severity level for SQL review rules.
 | ----- | ---- | ----- | ----------- |
 | prefix_len | [int32](#int32) |  |  |
 | suffix_len | [int32](#int32) |  |  |
-| substitution | [string](#string) |  |  |
 | type | [Algorithm.InnerOuterMask.MaskType](#bytebase-store-Algorithm-InnerOuterMask-MaskType) |  |  |
+| substitution | [string](#string) |  |  |
 
 
 
@@ -4698,6 +4681,7 @@ The severity level for SQL review rules.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
 | id | [string](#string) |  | The resource id of the environment. This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | title | [string](#string) |  | The display name of the environment. |
 | tags | [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry) | repeated |  |
@@ -4915,13 +4899,13 @@ The severity level for SQL review rules.
 | ---- | ------ | ----------- |
 | SETTING_NAME_UNSPECIFIED | 0 |  |
 | SYSTEM | 1 |  |
-| WORKSPACE_PROFILE | 4 |  |
-| WORKSPACE_APPROVAL | 5 |  |
-| APP_IM | 8 | 7 was ENTERPRISE_LICENSE, migrated to SYSTEM setting |
-| AI | 10 |  |
-| DATA_CLASSIFICATION | 14 |  |
-| SEMANTIC_TYPES | 15 |  |
-| ENVIRONMENT | 19 |  |
+| WORKSPACE_PROFILE | 2 |  |
+| WORKSPACE_APPROVAL | 3 |  |
+| APP_IM | 4 |  |
+| AI | 5 |  |
+| DATA_CLASSIFICATION | 6 |  |
+| SEMANTIC_TYPES | 7 |  |
+| ENVIRONMENT | 8 |  |
 
 
 
@@ -4948,9 +4932,9 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | ALERT_LEVEL_UNSPECIFIED | 0 |  |
-| ALERT_LEVEL_INFO | 1 |  |
-| ALERT_LEVEL_WARNING | 2 |  |
-| ALERT_LEVEL_CRITICAL | 3 |  |
+| INFO | 1 |  |
+| WARNING | 2 |  |
+| CRITICAL | 3 |  |
 
 
 
@@ -4989,7 +4973,7 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-store-Engine) |  | The SQL dialect. |
+| engine | [Engine](#bytebase-store-Engine) |  | The SQL dialect of the sheet. |
 | commands | [Range](#bytebase-store-Range) | repeated | The start and end position of each command in the sheet statement. |
 
 
@@ -5033,10 +5017,10 @@ Task is the metadata for database operation tasks.
 | schema_version | [string](#string) |  | Schema version after migration is applied. |
 | enable_prior_backup | [bool](#bool) |  | Whether to create an automatic backup before applying changes. |
 | flags | [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry) | repeated | Configuration flags for gh-ost migration tool. |
-| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 | task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  | Source information if task is created from a release. |
 | password | [string](#string) |  | Password to encrypt the exported data archive. |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  | Format of the exported data (SQL, CSV, JSON, etc). |
+| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 
 
 
@@ -5086,8 +5070,8 @@ Type represents the type of database operation to perform.
 | TASK_TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_CREATE | 1 | Create a new database. |
 | DATABASE_MIGRATE | 2 | Apply schema/data migrations to an existing database. |
-| DATABASE_EXPORT | 5 | Export data from a database. |
-| DATABASE_SDL | 6 | Apply declarative schema changes (state-based migration). |
+| DATABASE_EXPORT | 3 | Export data from a database. |
+| DATABASE_SDL | 4 | Apply declarative schema changes (state-based migration). |
 
 
  

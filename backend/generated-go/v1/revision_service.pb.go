@@ -465,37 +465,37 @@ type Revision struct {
 	// Format: projects/{project}/releases/{release}
 	// Can be empty.
 	Release    string                 `protobuf:"bytes,2,opt,name=release,proto3" json:"release,omitempty"`
-	CreateTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	// Format: users/hello@world.com
 	// Can be empty.
-	Deleter string `protobuf:"bytes,5,opt,name=deleter,proto3" json:"deleter,omitempty"`
+	Deleter string `protobuf:"bytes,4,opt,name=deleter,proto3" json:"deleter,omitempty"`
 	// Can be empty.
-	DeleteTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=delete_time,json=deleteTime,proto3" json:"delete_time,omitempty"`
+	DeleteTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=delete_time,json=deleteTime,proto3" json:"delete_time,omitempty"`
 	// Format: projects/{project}/releases/{release}/files/{id}
 	// Can be empty.
-	File string `protobuf:"bytes,7,opt,name=file,proto3" json:"file,omitempty"`
+	File string `protobuf:"bytes,6,opt,name=file,proto3" json:"file,omitempty"`
 	// The schema version string for this revision.
-	Version string `protobuf:"bytes,8,opt,name=version,proto3" json:"version,omitempty"`
+	Version string `protobuf:"bytes,7,opt,name=version,proto3" json:"version,omitempty"`
 	// The sheet that holds the content.
 	// Format: projects/{project}/sheets/{sheet}
-	Sheet string `protobuf:"bytes,9,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	Sheet string `protobuf:"bytes,8,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The SHA256 hash value of the sheet.
-	SheetSha256 string `protobuf:"bytes,10,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
+	SheetSha256 string `protobuf:"bytes,9,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// The statement is used for preview purpose.
-	Statement string `protobuf:"bytes,11,opt,name=statement,proto3" json:"statement,omitempty"`
+	Statement string `protobuf:"bytes,10,opt,name=statement,proto3" json:"statement,omitempty"`
 	// The size of the statement in bytes.
-	StatementSize int64 `protobuf:"varint,12,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
+	StatementSize int64 `protobuf:"varint,11,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
 	// The issue associated with the revision.
 	// Can be empty.
 	// Format: projects/{project}/issues/{issue}
-	Issue string `protobuf:"bytes,13,opt,name=issue,proto3" json:"issue,omitempty"`
+	Issue string `protobuf:"bytes,12,opt,name=issue,proto3" json:"issue,omitempty"`
 	// The task run associated with the revision.
 	// Can be empty.
 	// Format:
 	// projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-	TaskRun string `protobuf:"bytes,14,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
+	TaskRun string `protobuf:"bytes,13,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
 	// The type of the revision.
-	Type          Revision_Type `protobuf:"varint,15,opt,name=type,proto3,enum=bytebase.v1.Revision_Type" json:"type,omitempty"`
+	Type          Revision_Type `protobuf:"varint,14,opt,name=type,proto3,enum=bytebase.v1.Revision_Type" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -663,24 +663,24 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x123\n" +
 	"\arelease\x18\x02 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x12@\n" +
-	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12\x1d\n" +
-	"\adeleter\x18\x05 \x01(\tB\x03\xe0A\x03R\adeleter\x12@\n" +
-	"\vdelete_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\adeleter\x18\x04 \x01(\tB\x03\xe0A\x03R\adeleter\x12@\n" +
+	"\vdelete_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"deleteTime\x12\x12\n" +
-	"\x04file\x18\a \x01(\tR\x04file\x12\x18\n" +
-	"\aversion\x18\b \x01(\tR\aversion\x12-\n" +
-	"\x05sheet\x18\t \x01(\tB\x17\xfaA\x14\n" +
+	"\x04file\x18\x06 \x01(\tR\x04file\x12\x18\n" +
+	"\aversion\x18\a \x01(\tR\aversion\x12-\n" +
+	"\x05sheet\x18\b \x01(\tB\x17\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x05sheet\x12&\n" +
-	"\fsheet_sha256\x18\n" +
-	" \x01(\tB\x03\xe0A\x03R\vsheetSha256\x12!\n" +
-	"\tstatement\x18\v \x01(\tB\x03\xe0A\x03R\tstatement\x12*\n" +
-	"\x0estatement_size\x18\f \x01(\x03B\x03\xe0A\x03R\rstatementSize\x12-\n" +
-	"\x05issue\x18\r \x01(\tB\x17\xfaA\x14\n" +
+	"\fsheet_sha256\x18\t \x01(\tB\x03\xe0A\x03R\vsheetSha256\x12!\n" +
+	"\tstatement\x18\n" +
+	" \x01(\tB\x03\xe0A\x03R\tstatement\x12*\n" +
+	"\x0estatement_size\x18\v \x01(\x03B\x03\xe0A\x03R\rstatementSize\x12-\n" +
+	"\x05issue\x18\f \x01(\tB\x17\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x05issue\x124\n" +
-	"\btask_run\x18\x0e \x01(\tB\x19\xfaA\x16\n" +
+	"\btask_run\x18\r \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\ataskRun\x12.\n" +
-	"\x04type\x18\x0f \x01(\x0e2\x1a.bytebase.v1.Revision.TypeR\x04type\"<\n" +
+	"\x04type\x18\x0e \x01(\x0e2\x1a.bytebase.v1.Revision.TypeR\x04type\"<\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +

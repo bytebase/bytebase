@@ -23,9 +23,6 @@ func (x *TaskRunResult) Equal(y *TaskRunResult) bool {
 	if x.Detail != y.Detail {
 		return false
 	}
-	if x.Changelog != y.Changelog {
-		return false
-	}
 	if x.Version != y.Version {
 		return false
 	}
@@ -39,6 +36,9 @@ func (x *TaskRunResult) Equal(y *TaskRunResult) bool {
 		return false
 	}
 	if !x.PriorBackupDetail.Equal(y.PriorBackupDetail) {
+		return false
+	}
+	if x.Changelog != y.Changelog {
 		return false
 	}
 	return true

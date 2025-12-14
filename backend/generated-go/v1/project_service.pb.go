@@ -31,12 +31,6 @@ type Activity_Type int32
 const (
 	// Unspecified type.
 	Activity_TYPE_UNSPECIFIED Activity_Type = 0
-	// Notifications via webhooks.
-	//
-	// NOTIFY_ISSUE_APPROVED represents the issue approved notification.
-	Activity_NOTIFY_ISSUE_APPROVED Activity_Type = 23
-	// NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
-	Activity_NOTIFY_PIPELINE_ROLLOUT Activity_Type = 24
 	// Issue related activity types.
 	//
 	// ISSUE_CREATE represents creating an issue.
@@ -47,39 +41,45 @@ const (
 	Activity_ISSUE_FIELD_UPDATE Activity_Type = 3
 	// ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
 	Activity_ISSUE_STATUS_UPDATE Activity_Type = 4
-	// ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
-	Activity_ISSUE_APPROVAL_NOTIFY Activity_Type = 21
 	// ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
 	Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE Activity_Type = 5
+	// ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
+	Activity_ISSUE_APPROVAL_NOTIFY Activity_Type = 6
 	// ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
-	Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE Activity_Type = 22
+	Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE Activity_Type = 7
+	// Notifications via webhooks.
+	//
+	// NOTIFY_ISSUE_APPROVED represents the issue approved notification.
+	Activity_NOTIFY_ISSUE_APPROVED Activity_Type = 8
+	// NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
+	Activity_NOTIFY_PIPELINE_ROLLOUT Activity_Type = 9
 )
 
 // Enum value maps for Activity_Type.
 var (
 	Activity_Type_name = map[int32]string{
-		0:  "TYPE_UNSPECIFIED",
-		23: "NOTIFY_ISSUE_APPROVED",
-		24: "NOTIFY_PIPELINE_ROLLOUT",
-		1:  "ISSUE_CREATE",
-		2:  "ISSUE_COMMENT_CREATE",
-		3:  "ISSUE_FIELD_UPDATE",
-		4:  "ISSUE_STATUS_UPDATE",
-		21: "ISSUE_APPROVAL_NOTIFY",
-		5:  "ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
-		22: "ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE",
+		0: "TYPE_UNSPECIFIED",
+		1: "ISSUE_CREATE",
+		2: "ISSUE_COMMENT_CREATE",
+		3: "ISSUE_FIELD_UPDATE",
+		4: "ISSUE_STATUS_UPDATE",
+		5: "ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
+		6: "ISSUE_APPROVAL_NOTIFY",
+		7: "ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE",
+		8: "NOTIFY_ISSUE_APPROVED",
+		9: "NOTIFY_PIPELINE_ROLLOUT",
 	}
 	Activity_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED":                      0,
-		"NOTIFY_ISSUE_APPROVED":                 23,
-		"NOTIFY_PIPELINE_ROLLOUT":               24,
 		"ISSUE_CREATE":                          1,
 		"ISSUE_COMMENT_CREATE":                  2,
 		"ISSUE_FIELD_UPDATE":                    3,
 		"ISSUE_STATUS_UPDATE":                   4,
-		"ISSUE_APPROVAL_NOTIFY":                 21,
 		"ISSUE_PIPELINE_STAGE_STATUS_UPDATE":    5,
-		"ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE": 22,
+		"ISSUE_APPROVAL_NOTIFY":                 6,
+		"ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE": 7,
+		"NOTIFY_ISSUE_APPROVED":                 8,
+		"NOTIFY_PIPELINE_ROLLOUT":               9,
 	}
 )
 
@@ -916,49 +916,49 @@ type Project struct {
 	// Format: projects/{project}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The lifecycle state of the project.
-	State State `protobuf:"varint,3,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
+	State State `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
 	// The title or name of a project. It's not unique within the workspace.
-	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	// The list of webhooks configured for the project.
-	Webhooks []*Webhook `protobuf:"bytes,11,rep,name=webhooks,proto3" json:"webhooks,omitempty"`
+	Webhooks []*Webhook `protobuf:"bytes,4,rep,name=webhooks,proto3" json:"webhooks,omitempty"`
 	// The data classification configuration ID for the project.
-	DataClassificationConfigId string `protobuf:"bytes,12,opt,name=data_classification_config_id,json=dataClassificationConfigId,proto3" json:"data_classification_config_id,omitempty"`
+	DataClassificationConfigId string `protobuf:"bytes,5,opt,name=data_classification_config_id,json=dataClassificationConfigId,proto3" json:"data_classification_config_id,omitempty"`
 	// Labels available for tagging issues in this project.
-	IssueLabels []*Label `protobuf:"bytes,13,rep,name=issue_labels,json=issueLabels,proto3" json:"issue_labels,omitempty"`
+	IssueLabels []*Label `protobuf:"bytes,6,rep,name=issue_labels,json=issueLabels,proto3" json:"issue_labels,omitempty"`
 	// Force issue labels to be used when creating an issue.
-	ForceIssueLabels bool `protobuf:"varint,14,opt,name=force_issue_labels,json=forceIssueLabels,proto3" json:"force_issue_labels,omitempty"`
+	ForceIssueLabels bool `protobuf:"varint,7,opt,name=force_issue_labels,json=forceIssueLabels,proto3" json:"force_issue_labels,omitempty"`
 	// Allow modifying SQL statements after issue is created.
-	AllowModifyStatement bool `protobuf:"varint,15,opt,name=allow_modify_statement,json=allowModifyStatement,proto3" json:"allow_modify_statement,omitempty"`
+	AllowModifyStatement bool `protobuf:"varint,8,opt,name=allow_modify_statement,json=allowModifyStatement,proto3" json:"allow_modify_statement,omitempty"`
 	// Enable automatic issue resolution when tasks complete.
-	AutoResolveIssue bool `protobuf:"varint,16,opt,name=auto_resolve_issue,json=autoResolveIssue,proto3" json:"auto_resolve_issue,omitempty"`
+	AutoResolveIssue bool `protobuf:"varint,9,opt,name=auto_resolve_issue,json=autoResolveIssue,proto3" json:"auto_resolve_issue,omitempty"`
 	// Enforce issue title to be created by user instead of generated by Bytebase.
-	EnforceIssueTitle bool `protobuf:"varint,17,opt,name=enforce_issue_title,json=enforceIssueTitle,proto3" json:"enforce_issue_title,omitempty"`
+	EnforceIssueTitle bool `protobuf:"varint,10,opt,name=enforce_issue_title,json=enforceIssueTitle,proto3" json:"enforce_issue_title,omitempty"`
 	// Whether to automatically enable backup for database changes.
-	AutoEnableBackup bool `protobuf:"varint,18,opt,name=auto_enable_backup,json=autoEnableBackup,proto3" json:"auto_enable_backup,omitempty"`
+	AutoEnableBackup bool `protobuf:"varint,11,opt,name=auto_enable_backup,json=autoEnableBackup,proto3" json:"auto_enable_backup,omitempty"`
 	// Whether to skip backup errors and continue with data migration.
-	SkipBackupErrors bool `protobuf:"varint,19,opt,name=skip_backup_errors,json=skipBackupErrors,proto3" json:"skip_backup_errors,omitempty"`
+	SkipBackupErrors bool `protobuf:"varint,12,opt,name=skip_backup_errors,json=skipBackupErrors,proto3" json:"skip_backup_errors,omitempty"`
 	// Whether to enable database tenant mode for PostgreSQL.
 	// If enabled, issues will include "set role <db_owner>" statement.
-	PostgresDatabaseTenantMode bool `protobuf:"varint,20,opt,name=postgres_database_tenant_mode,json=postgresDatabaseTenantMode,proto3" json:"postgres_database_tenant_mode,omitempty"`
+	PostgresDatabaseTenantMode bool `protobuf:"varint,13,opt,name=postgres_database_tenant_mode,json=postgresDatabaseTenantMode,proto3" json:"postgres_database_tenant_mode,omitempty"`
 	// Whether to allow issue creators to self-approve their own issues.
-	AllowSelfApproval bool `protobuf:"varint,21,opt,name=allow_self_approval,json=allowSelfApproval,proto3" json:"allow_self_approval,omitempty"`
+	AllowSelfApproval bool `protobuf:"varint,14,opt,name=allow_self_approval,json=allowSelfApproval,proto3" json:"allow_self_approval,omitempty"`
 	// Execution retry policy for task runs.
-	ExecutionRetryPolicy *Project_ExecutionRetryPolicy `protobuf:"bytes,22,opt,name=execution_retry_policy,json=executionRetryPolicy,proto3" json:"execution_retry_policy,omitempty"`
+	ExecutionRetryPolicy *Project_ExecutionRetryPolicy `protobuf:"bytes,15,opt,name=execution_retry_policy,json=executionRetryPolicy,proto3" json:"execution_retry_policy,omitempty"`
 	// The maximum number of database rows to sample during CI data validation.
 	// Without specification, sampling is disabled, resulting in full validation.
-	CiSamplingSize int32 `protobuf:"varint,23,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
+	CiSamplingSize int32 `protobuf:"varint,16,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
 	// The maximum number of parallel tasks allowed during rollout execution.
-	ParallelTasksPerRollout int32 `protobuf:"varint,24,opt,name=parallel_tasks_per_rollout,json=parallelTasksPerRollout,proto3" json:"parallel_tasks_per_rollout,omitempty"`
+	ParallelTasksPerRollout int32 `protobuf:"varint,17,opt,name=parallel_tasks_per_rollout,json=parallelTasksPerRollout,proto3" json:"parallel_tasks_per_rollout,omitempty"`
 	// Labels are key-value pairs that can be attached to the project.
 	// For example, { "environment": "production", "team": "backend" }
-	Labels map[string]string `protobuf:"bytes,25,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Labels map[string]string `protobuf:"bytes,18,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// Whether to enforce SQL review checks to pass before issue creation.
 	// If enabled, issues cannot be created when SQL review finds errors.
-	EnforceSqlReview bool `protobuf:"varint,26,opt,name=enforce_sql_review,json=enforceSqlReview,proto3" json:"enforce_sql_review,omitempty"`
+	EnforceSqlReview bool `protobuf:"varint,19,opt,name=enforce_sql_review,json=enforceSqlReview,proto3" json:"enforce_sql_review,omitempty"`
 	// Whether to require issue approval before rollout.
-	RequireIssueApproval bool `protobuf:"varint,27,opt,name=require_issue_approval,json=requireIssueApproval,proto3" json:"require_issue_approval,omitempty"`
+	RequireIssueApproval bool `protobuf:"varint,20,opt,name=require_issue_approval,json=requireIssueApproval,proto3" json:"require_issue_approval,omitempty"`
 	// Whether to require plan check to have no error before rollout.
-	RequirePlanCheckNoError bool `protobuf:"varint,28,opt,name=require_plan_check_no_error,json=requirePlanCheckNoError,proto3" json:"require_plan_check_no_error,omitempty"`
+	RequirePlanCheckNoError bool `protobuf:"varint,21,opt,name=require_plan_check_no_error,json=requirePlanCheckNoError,proto3" json:"require_plan_check_no_error,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -1705,35 +1705,36 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05color\x18\x02 \x01(\tR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xf9\t\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xf3\t\n" +
 	"\aProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
-	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
-	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x120\n" +
-	"\bwebhooks\x18\v \x03(\v2\x14.bytebase.v1.WebhookR\bwebhooks\x12A\n" +
-	"\x1ddata_classification_config_id\x18\f \x01(\tR\x1adataClassificationConfigId\x125\n" +
-	"\fissue_labels\x18\r \x03(\v2\x12.bytebase.v1.LabelR\vissueLabels\x12,\n" +
-	"\x12force_issue_labels\x18\x0e \x01(\bR\x10forceIssueLabels\x124\n" +
-	"\x16allow_modify_statement\x18\x0f \x01(\bR\x14allowModifyStatement\x12,\n" +
-	"\x12auto_resolve_issue\x18\x10 \x01(\bR\x10autoResolveIssue\x12.\n" +
-	"\x13enforce_issue_title\x18\x11 \x01(\bR\x11enforceIssueTitle\x12,\n" +
-	"\x12auto_enable_backup\x18\x12 \x01(\bR\x10autoEnableBackup\x12,\n" +
-	"\x12skip_backup_errors\x18\x13 \x01(\bR\x10skipBackupErrors\x12A\n" +
-	"\x1dpostgres_database_tenant_mode\x18\x14 \x01(\bR\x1apostgresDatabaseTenantMode\x12.\n" +
-	"\x13allow_self_approval\x18\x15 \x01(\bR\x11allowSelfApproval\x12_\n" +
-	"\x16execution_retry_policy\x18\x16 \x01(\v2).bytebase.v1.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x12(\n" +
-	"\x10ci_sampling_size\x18\x17 \x01(\x05R\x0eciSamplingSize\x12;\n" +
-	"\x1aparallel_tasks_per_rollout\x18\x18 \x01(\x05R\x17parallelTasksPerRollout\x128\n" +
-	"\x06labels\x18\x19 \x03(\v2 .bytebase.v1.Project.LabelsEntryR\x06labels\x12,\n" +
-	"\x12enforce_sql_review\x18\x1a \x01(\bR\x10enforceSqlReview\x124\n" +
-	"\x16require_issue_approval\x18\x1b \x01(\bR\x14requireIssueApproval\x12<\n" +
-	"\x1brequire_plan_check_no_error\x18\x1c \x01(\bR\x17requirePlanCheckNoError\x1a?\n" +
+	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
+	"\x05title\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x120\n" +
+	"\bwebhooks\x18\x04 \x03(\v2\x14.bytebase.v1.WebhookR\bwebhooks\x12A\n" +
+	"\x1ddata_classification_config_id\x18\x05 \x01(\tR\x1adataClassificationConfigId\x125\n" +
+	"\fissue_labels\x18\x06 \x03(\v2\x12.bytebase.v1.LabelR\vissueLabels\x12,\n" +
+	"\x12force_issue_labels\x18\a \x01(\bR\x10forceIssueLabels\x124\n" +
+	"\x16allow_modify_statement\x18\b \x01(\bR\x14allowModifyStatement\x12,\n" +
+	"\x12auto_resolve_issue\x18\t \x01(\bR\x10autoResolveIssue\x12.\n" +
+	"\x13enforce_issue_title\x18\n" +
+	" \x01(\bR\x11enforceIssueTitle\x12,\n" +
+	"\x12auto_enable_backup\x18\v \x01(\bR\x10autoEnableBackup\x12,\n" +
+	"\x12skip_backup_errors\x18\f \x01(\bR\x10skipBackupErrors\x12A\n" +
+	"\x1dpostgres_database_tenant_mode\x18\r \x01(\bR\x1apostgresDatabaseTenantMode\x12.\n" +
+	"\x13allow_self_approval\x18\x0e \x01(\bR\x11allowSelfApproval\x12_\n" +
+	"\x16execution_retry_policy\x18\x0f \x01(\v2).bytebase.v1.Project.ExecutionRetryPolicyR\x14executionRetryPolicy\x12(\n" +
+	"\x10ci_sampling_size\x18\x10 \x01(\x05R\x0eciSamplingSize\x12;\n" +
+	"\x1aparallel_tasks_per_rollout\x18\x11 \x01(\x05R\x17parallelTasksPerRollout\x128\n" +
+	"\x06labels\x18\x12 \x03(\v2 .bytebase.v1.Project.LabelsEntryR\x06labels\x12,\n" +
+	"\x12enforce_sql_review\x18\x13 \x01(\bR\x10enforceSqlReview\x124\n" +
+	"\x16require_issue_approval\x18\x14 \x01(\bR\x14requireIssueApproval\x12<\n" +
+	"\x1brequire_plan_check_no_error\x18\x15 \x01(\bR\x17requirePlanCheckNoError\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:-\xeaA*\n" +
-	"\x14bytebase.com/Project\x12\x12projects/{project}J\x04\b\x02\x10\x03\"\x80\x01\n" +
+	"\x14bytebase.com/Project\x12\x12projects/{project}\"\x80\x01\n" +
 	"\x11AddWebhookRequest\x126\n" +
 	"\aproject\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\aproject\x123\n" +
@@ -1761,16 +1762,16 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xac\x02\n" +
 	"\bActivity\"\x9f\x02\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
-	"\x15NOTIFY_ISSUE_APPROVED\x10\x17\x12\x1b\n" +
-	"\x17NOTIFY_PIPELINE_ROLLOUT\x10\x18\x12\x10\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fISSUE_CREATE\x10\x01\x12\x18\n" +
 	"\x14ISSUE_COMMENT_CREATE\x10\x02\x12\x16\n" +
 	"\x12ISSUE_FIELD_UPDATE\x10\x03\x12\x17\n" +
-	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12\x19\n" +
-	"\x15ISSUE_APPROVAL_NOTIFY\x10\x15\x12&\n" +
-	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12)\n" +
-	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x162\x9d\x12\n" +
+	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12&\n" +
+	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12\x19\n" +
+	"\x15ISSUE_APPROVAL_NOTIFY\x10\x06\x12)\n" +
+	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\a\x12\x19\n" +
+	"\x15NOTIFY_ISSUE_APPROVED\x10\b\x12\x1b\n" +
+	"\x17NOTIFY_PIPELINE_ROLLOUT\x10\t2\x9d\x12\n" +
 	"\x0eProjectService\x12\x7f\n" +
 	"\n" +
 	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x84\x01\n" +

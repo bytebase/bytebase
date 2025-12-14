@@ -6481,15 +6481,15 @@ components:
       title: Type
       enum:
         - TYPE_UNSPECIFIED
-        - NOTIFY_ISSUE_APPROVED
-        - NOTIFY_PIPELINE_ROLLOUT
         - ISSUE_CREATE
         - ISSUE_COMMENT_CREATE
         - ISSUE_FIELD_UPDATE
         - ISSUE_STATUS_UPDATE
-        - ISSUE_APPROVAL_NOTIFY
         - ISSUE_PIPELINE_STAGE_STATUS_UPDATE
+        - ISSUE_APPROVAL_NOTIFY
         - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
+        - NOTIFY_ISSUE_APPROVED
+        - NOTIFY_PIPELINE_ROLLOUT
       description: Activity type enumeration.
     bytebase.v1.ActuatorInfo:
       type: object
@@ -9465,16 +9465,16 @@ components:
           title: target_metadata
           description: The metadata of the target schema.
           $ref: '#/components/schemas/bytebase.v1.DatabaseMetadata'
+        engine:
+          title: engine
+          description: The database engine of the schema.
+          $ref: '#/components/schemas/bytebase.v1.Engine'
         sourceCatalog:
           title: source_catalog
           $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
         targetCatalog:
           title: target_catalog
           $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
-        engine:
-          title: engine
-          description: The database engine of the schema.
-          $ref: '#/components/schemas/bytebase.v1.Engine'
       title: DiffMetadataRequest
       additionalProperties: false
     bytebase.v1.DiffMetadataResponse:
@@ -13382,7 +13382,6 @@ components:
         - FEATURE_SCHEDULED_ROLLOUT_TIME
         - FEATURE_DATABASE_CHANGELOG
         - FEATURE_SCHEMA_DRIFT_DETECTION
-        - FEATURE_SCHEMA_TEMPLATE
         - FEATURE_ROLLOUT_POLICY
         - FEATURE_WEB_BASED_SQL_EDITOR
         - FEATURE_SQL_EDITOR_ADMIN_MODE
@@ -13572,9 +13571,9 @@ components:
       title: PolicyType
       enum:
         - POLICY_TYPE_UNSPECIFIED
-        - ROLLOUT_POLICY
         - MASKING_RULE
         - MASKING_EXEMPTION
+        - ROLLOUT_POLICY
         - TAG
         - DATA_SOURCE_QUERY
         - DATA_QUERY
@@ -14633,44 +14632,9 @@ components:
             type: string
           title: roles
           description: The roles that can approve rollout execution.
-        checkers:
-          title: checkers
-          description: |-
-            Checkers that must pass before rollout execution.
-             These checks are performed in UI workflows only.
-          $ref: '#/components/schemas/bytebase.v1.RolloutPolicy.Checkers'
       title: RolloutPolicy
       additionalProperties: false
       description: Rollout policy configuration.
-    bytebase.v1.RolloutPolicy.Checkers:
-      type: object
-      properties:
-        requiredIssueApproval:
-          type: boolean
-          title: required_issue_approval
-          description: Whether issue approval is required before proceeding with rollout.
-        requiredStatusChecks:
-          title: required_status_checks
-          description: Status checks that must pass before rollout can be executed.
-          $ref: '#/components/schemas/bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks'
-      title: Checkers
-      additionalProperties: false
-    bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement:
-      type: string
-      title: PlanCheckEnforcement
-      enum:
-        - PLAN_CHECK_ENFORCEMENT_UNSPECIFIED
-        - ERROR_ONLY
-        - STRICT
-    bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks:
-      type: object
-      properties:
-        planCheckEnforcement:
-          title: plan_check_enforcement
-          description: Enforcement level for plan check results during rollout validation.
-          $ref: '#/components/schemas/bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement'
-      title: RequiredStatusChecks
-      additionalProperties: false
     bytebase.v1.RowValue:
       type: object
       oneOf:
@@ -14908,13 +14872,6 @@ components:
               required:
                 - numberPayload
             - properties:
-                requiredColumnPayload:
-                  title: required_column_payload
-                  $ref: '#/components/schemas/bytebase.v1.SQLReviewRule.RequiredColumnRulePayload'
-              title: required_column_payload
-              required:
-                - requiredColumnPayload
-            - properties:
                 stringArrayPayload:
                   title: string_array_payload
                   $ref: '#/components/schemas/bytebase.v1.SQLReviewRule.StringArrayRulePayload'
@@ -14980,16 +14937,6 @@ components:
           title: number
           format: int32
       title: NumberRulePayload
-      additionalProperties: false
-    bytebase.v1.SQLReviewRule.RequiredColumnRulePayload:
-      type: object
-      properties:
-        columnList:
-          type: array
-          items:
-            type: string
-          title: column_list
-      title: RequiredColumnRulePayload
       additionalProperties: false
     bytebase.v1.SQLReviewRule.StringArrayRulePayload:
       type: object
@@ -16603,8 +16550,8 @@ components:
         - GENERAL
         - DATABASE_CREATE
         - DATABASE_MIGRATE
-        - DATABASE_SDL
         - DATABASE_EXPORT
+        - DATABASE_SDL
     bytebase.v1.TaskMetadata:
       type: object
       properties:

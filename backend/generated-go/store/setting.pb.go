@@ -7,6 +7,7 @@
 package store
 
 import (
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -28,39 +29,38 @@ type SettingName int32
 const (
 	SettingName_SETTING_NAME_UNSPECIFIED SettingName = 0
 	SettingName_SYSTEM                   SettingName = 1
-	SettingName_WORKSPACE_PROFILE        SettingName = 4
-	SettingName_WORKSPACE_APPROVAL       SettingName = 5
-	// 7 was ENTERPRISE_LICENSE, migrated to SYSTEM setting
-	SettingName_APP_IM              SettingName = 8
-	SettingName_AI                  SettingName = 10
-	SettingName_DATA_CLASSIFICATION SettingName = 14
-	SettingName_SEMANTIC_TYPES      SettingName = 15
-	SettingName_ENVIRONMENT         SettingName = 19
+	SettingName_WORKSPACE_PROFILE        SettingName = 2
+	SettingName_WORKSPACE_APPROVAL       SettingName = 3
+	SettingName_APP_IM                   SettingName = 4
+	SettingName_AI                       SettingName = 5
+	SettingName_DATA_CLASSIFICATION      SettingName = 6
+	SettingName_SEMANTIC_TYPES           SettingName = 7
+	SettingName_ENVIRONMENT              SettingName = 8
 )
 
 // Enum value maps for SettingName.
 var (
 	SettingName_name = map[int32]string{
-		0:  "SETTING_NAME_UNSPECIFIED",
-		1:  "SYSTEM",
-		4:  "WORKSPACE_PROFILE",
-		5:  "WORKSPACE_APPROVAL",
-		8:  "APP_IM",
-		10: "AI",
-		14: "DATA_CLASSIFICATION",
-		15: "SEMANTIC_TYPES",
-		19: "ENVIRONMENT",
+		0: "SETTING_NAME_UNSPECIFIED",
+		1: "SYSTEM",
+		2: "WORKSPACE_PROFILE",
+		3: "WORKSPACE_APPROVAL",
+		4: "APP_IM",
+		5: "AI",
+		6: "DATA_CLASSIFICATION",
+		7: "SEMANTIC_TYPES",
+		8: "ENVIRONMENT",
 	}
 	SettingName_value = map[string]int32{
 		"SETTING_NAME_UNSPECIFIED": 0,
 		"SYSTEM":                   1,
-		"WORKSPACE_PROFILE":        4,
-		"WORKSPACE_APPROVAL":       5,
-		"APP_IM":                   8,
-		"AI":                       10,
-		"DATA_CLASSIFICATION":      14,
-		"SEMANTIC_TYPES":           15,
-		"ENVIRONMENT":              19,
+		"WORKSPACE_PROFILE":        2,
+		"WORKSPACE_APPROVAL":       3,
+		"APP_IM":                   4,
+		"AI":                       5,
+		"DATA_CLASSIFICATION":      6,
+		"SEMANTIC_TYPES":           7,
+		"ENVIRONMENT":              8,
 	}
 )
 
@@ -148,24 +148,24 @@ type WorkspaceProfileSetting_Announcement_AlertLevel int32
 
 const (
 	WorkspaceProfileSetting_Announcement_ALERT_LEVEL_UNSPECIFIED WorkspaceProfileSetting_Announcement_AlertLevel = 0
-	WorkspaceProfileSetting_Announcement_ALERT_LEVEL_INFO        WorkspaceProfileSetting_Announcement_AlertLevel = 1
-	WorkspaceProfileSetting_Announcement_ALERT_LEVEL_WARNING     WorkspaceProfileSetting_Announcement_AlertLevel = 2
-	WorkspaceProfileSetting_Announcement_ALERT_LEVEL_CRITICAL    WorkspaceProfileSetting_Announcement_AlertLevel = 3
+	WorkspaceProfileSetting_Announcement_INFO                    WorkspaceProfileSetting_Announcement_AlertLevel = 1
+	WorkspaceProfileSetting_Announcement_WARNING                 WorkspaceProfileSetting_Announcement_AlertLevel = 2
+	WorkspaceProfileSetting_Announcement_CRITICAL                WorkspaceProfileSetting_Announcement_AlertLevel = 3
 )
 
 // Enum value maps for WorkspaceProfileSetting_Announcement_AlertLevel.
 var (
 	WorkspaceProfileSetting_Announcement_AlertLevel_name = map[int32]string{
 		0: "ALERT_LEVEL_UNSPECIFIED",
-		1: "ALERT_LEVEL_INFO",
-		2: "ALERT_LEVEL_WARNING",
-		3: "ALERT_LEVEL_CRITICAL",
+		1: "INFO",
+		2: "WARNING",
+		3: "CRITICAL",
 	}
 	WorkspaceProfileSetting_Announcement_AlertLevel_value = map[string]int32{
 		"ALERT_LEVEL_UNSPECIFIED": 0,
-		"ALERT_LEVEL_INFO":        1,
-		"ALERT_LEVEL_WARNING":     2,
-		"ALERT_LEVEL_CRITICAL":    3,
+		"INFO":                    1,
+		"WARNING":                 2,
+		"CRITICAL":                3,
 	}
 )
 
@@ -427,35 +427,35 @@ type WorkspaceProfileSetting struct {
 	// Require 2FA for all users.
 	Require_2Fa bool `protobuf:"varint,3,opt,name=require_2fa,json=require2fa,proto3" json:"require_2fa,omitempty"`
 	// The duration for token.
-	TokenDuration *durationpb.Duration `protobuf:"bytes,6,opt,name=token_duration,json=tokenDuration,proto3" json:"token_duration,omitempty"`
+	TokenDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=token_duration,json=tokenDuration,proto3" json:"token_duration,omitempty"`
 	// The setting of custom announcement
-	Announcement *WorkspaceProfileSetting_Announcement `protobuf:"bytes,7,opt,name=announcement,proto3" json:"announcement,omitempty"`
+	Announcement *WorkspaceProfileSetting_Announcement `protobuf:"bytes,5,opt,name=announcement,proto3" json:"announcement,omitempty"`
 	// The max duration for role expired.
-	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,8,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
+	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,6,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
 	// The workspace domain, e.g., bytebase.com.
-	Domains []string `protobuf:"bytes,9,rep,name=domains,proto3" json:"domains,omitempty"`
+	Domains []string `protobuf:"bytes,7,rep,name=domains,proto3" json:"domains,omitempty"`
 	// Only user and group from the domains can be created and login.
-	EnforceIdentityDomain bool `protobuf:"varint,10,opt,name=enforce_identity_domain,json=enforceIdentityDomain,proto3" json:"enforce_identity_domain,omitempty"`
+	EnforceIdentityDomain bool `protobuf:"varint,8,opt,name=enforce_identity_domain,json=enforceIdentityDomain,proto3" json:"enforce_identity_domain,omitempty"`
 	// The workspace database change mode.
-	DatabaseChangeMode WorkspaceProfileSetting_DatabaseChangeMode `protobuf:"varint,11,opt,name=database_change_mode,json=databaseChangeMode,proto3,enum=bytebase.store.WorkspaceProfileSetting_DatabaseChangeMode" json:"database_change_mode,omitempty"`
+	DatabaseChangeMode WorkspaceProfileSetting_DatabaseChangeMode `protobuf:"varint,9,opt,name=database_change_mode,json=databaseChangeMode,proto3,enum=bytebase.store.WorkspaceProfileSetting_DatabaseChangeMode" json:"database_change_mode,omitempty"`
 	// Whether to disallow password signin. (Except workspace admins)
-	DisallowPasswordSignin bool `protobuf:"varint,12,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
+	DisallowPasswordSignin bool `protobuf:"varint,10,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
 	// Whether to enable metric collection for the workspace.
-	EnableMetricCollection bool `protobuf:"varint,13,opt,name=enable_metric_collection,json=enableMetricCollection,proto3" json:"enable_metric_collection,omitempty"`
+	EnableMetricCollection bool `protobuf:"varint,11,opt,name=enable_metric_collection,json=enableMetricCollection,proto3" json:"enable_metric_collection,omitempty"`
 	// The session expiration time if not activity detected for the user. Value <= 0 means no limit.
-	InactiveSessionTimeout *durationpb.Duration `protobuf:"bytes,14,opt,name=inactive_session_timeout,json=inactiveSessionTimeout,proto3" json:"inactive_session_timeout,omitempty"`
+	InactiveSessionTimeout *durationpb.Duration `protobuf:"bytes,12,opt,name=inactive_session_timeout,json=inactiveSessionTimeout,proto3" json:"inactive_session_timeout,omitempty"`
 	// Whether to enable audit logging to stdout in structured JSON format.
 	// Requires TEAM or ENTERPRISE license.
-	EnableAuditLogStdout bool `protobuf:"varint,15,opt,name=enable_audit_log_stdout,json=enableAuditLogStdout,proto3" json:"enable_audit_log_stdout,omitempty"`
+	EnableAuditLogStdout bool `protobuf:"varint,13,opt,name=enable_audit_log_stdout,json=enableAuditLogStdout,proto3" json:"enable_audit_log_stdout,omitempty"`
 	// Whether to display watermark on pages.
 	// Requires ENTERPRISE license.
-	Watermark bool `protobuf:"varint,16,opt,name=watermark,proto3" json:"watermark,omitempty"`
+	Watermark bool `protobuf:"varint,14,opt,name=watermark,proto3" json:"watermark,omitempty"`
 	// The token for directory sync authentication.
-	DirectorySyncToken string `protobuf:"bytes,17,opt,name=directory_sync_token,json=directorySyncToken,proto3" json:"directory_sync_token,omitempty"`
+	DirectorySyncToken string `protobuf:"bytes,15,opt,name=directory_sync_token,json=directorySyncToken,proto3" json:"directory_sync_token,omitempty"`
 	// The branding logo as a data URI (e.g. data:image/png;base64,...).
-	BrandingLogo string `protobuf:"bytes,18,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
+	BrandingLogo string `protobuf:"bytes,16,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
 	// Password restriction settings.
-	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,19,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
+	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,17,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -788,19 +788,19 @@ type isAlgorithm_Mask interface {
 }
 
 type Algorithm_FullMask_ struct {
-	FullMask *Algorithm_FullMask `protobuf:"bytes,5,opt,name=full_mask,json=fullMask,proto3,oneof"`
+	FullMask *Algorithm_FullMask `protobuf:"bytes,1,opt,name=full_mask,json=fullMask,proto3,oneof"`
 }
 
 type Algorithm_RangeMask_ struct {
-	RangeMask *Algorithm_RangeMask `protobuf:"bytes,6,opt,name=range_mask,json=rangeMask,proto3,oneof"`
+	RangeMask *Algorithm_RangeMask `protobuf:"bytes,2,opt,name=range_mask,json=rangeMask,proto3,oneof"`
 }
 
 type Algorithm_Md5Mask struct {
-	Md5Mask *Algorithm_MD5Mask `protobuf:"bytes,7,opt,name=md5_mask,json=md5Mask,proto3,oneof"`
+	Md5Mask *Algorithm_MD5Mask `protobuf:"bytes,3,opt,name=md5_mask,json=md5Mask,proto3,oneof"`
 }
 
 type Algorithm_InnerOuterMask_ struct {
-	InnerOuterMask *Algorithm_InnerOuterMask `protobuf:"bytes,8,opt,name=inner_outer_mask,json=innerOuterMask,proto3,oneof"`
+	InnerOuterMask *Algorithm_InnerOuterMask `protobuf:"bytes,4,opt,name=inner_outer_mask,json=innerOuterMask,proto3,oneof"`
 }
 
 func (*Algorithm_FullMask_) isAlgorithm_Mask() {}
@@ -1593,8 +1593,8 @@ type Algorithm_InnerOuterMask struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
 	PrefixLen     int32                             `protobuf:"varint,1,opt,name=prefix_len,json=prefixLen,proto3" json:"prefix_len,omitempty"`
 	SuffixLen     int32                             `protobuf:"varint,2,opt,name=suffix_len,json=suffixLen,proto3" json:"suffix_len,omitempty"`
-	Substitution  string                            `protobuf:"bytes,3,opt,name=substitution,proto3" json:"substitution,omitempty"`
-	Type          Algorithm_InnerOuterMask_MaskType `protobuf:"varint,4,opt,name=type,proto3,enum=bytebase.store.Algorithm_InnerOuterMask_MaskType" json:"type,omitempty"`
+	Type          Algorithm_InnerOuterMask_MaskType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.store.Algorithm_InnerOuterMask_MaskType" json:"type,omitempty"`
+	Substitution  string                            `protobuf:"bytes,4,opt,name=substitution,proto3" json:"substitution,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1643,18 +1643,18 @@ func (x *Algorithm_InnerOuterMask) GetSuffixLen() int32 {
 	return 0
 }
 
-func (x *Algorithm_InnerOuterMask) GetSubstitution() string {
-	if x != nil {
-		return x.Substitution
-	}
-	return ""
-}
-
 func (x *Algorithm_InnerOuterMask) GetType() Algorithm_InnerOuterMask_MaskType {
 	if x != nil {
 		return x.Type
 	}
 	return Algorithm_InnerOuterMask_MASK_TYPE_UNSPECIFIED
+}
+
+func (x *Algorithm_InnerOuterMask) GetSubstitution() string {
+	if x != nil {
+		return x.Substitution
+	}
+	return ""
 }
 
 type Algorithm_RangeMask_Slice struct {
@@ -2287,14 +2287,15 @@ func (*AppIMSetting_IMSetting_Teams) isAppIMSetting_IMSetting_Payload() {}
 
 type EnvironmentSetting_Environment struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The resource id of the environment.
 	// This value should be 4-63 characters, and valid characters
 	// are /[a-z][0-9]-/.
-	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id string `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
 	// The display name of the environment.
-	Title         string            `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Tags          map[string]string `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Color         string            `protobuf:"bytes,4,opt,name=color,proto3" json:"color,omitempty"`
+	Title         string            `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Tags          map[string]string `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Color         string            `protobuf:"bytes,5,opt,name=color,proto3" json:"color,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2329,6 +2330,13 @@ func (*EnvironmentSetting_Environment) Descriptor() ([]byte, []int) {
 	return file_store_setting_proto_rawDescGZIP(), []int{8, 0}
 }
 
+func (x *EnvironmentSetting_Environment) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 func (x *EnvironmentSetting_Environment) GetId() string {
 	if x != nil {
 		return x.Id
@@ -2361,42 +2369,42 @@ var File_store_setting_proto protoreflect.FileDescriptor
 
 const file_store_setting_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"m\n" +
+	"\x13store/setting.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x16google/type/expr.proto\x1a\x14store/approval.proto\x1a\x12store/common.proto\"m\n" +
 	"\rSystemSetting\x12\x1f\n" +
 	"\vauth_secret\x18\x01 \x01(\tR\n" +
 	"authSecret\x12!\n" +
 	"\fworkspace_id\x18\x02 \x01(\tR\vworkspaceId\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicense\"\x8a\x0e\n" +
+	"\alicense\x18\x03 \x01(\tR\alicense\"\xe6\r\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
 	"\vrequire_2fa\x18\x03 \x01(\bR\n" +
 	"require2fa\x12@\n" +
-	"\x0etoken_duration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\rtokenDuration\x12X\n" +
-	"\fannouncement\x18\a \x01(\v24.bytebase.store.WorkspaceProfileSetting.AnnouncementR\fannouncement\x12Q\n" +
-	"\x17maximum_role_expiration\x18\b \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\x18\n" +
-	"\adomains\x18\t \x03(\tR\adomains\x126\n" +
-	"\x17enforce_identity_domain\x18\n" +
-	" \x01(\bR\x15enforceIdentityDomain\x12l\n" +
-	"\x14database_change_mode\x18\v \x01(\x0e2:.bytebase.store.WorkspaceProfileSetting.DatabaseChangeModeR\x12databaseChangeMode\x128\n" +
-	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\x128\n" +
-	"\x18enable_metric_collection\x18\r \x01(\bR\x16enableMetricCollection\x12S\n" +
-	"\x18inactive_session_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
-	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
-	"\twatermark\x18\x10 \x01(\bR\twatermark\x120\n" +
-	"\x14directory_sync_token\x18\x11 \x01(\tR\x12directorySyncToken\x12#\n" +
-	"\rbranding_logo\x18\x12 \x01(\tR\fbrandingLogo\x12n\n" +
-	"\x14password_restriction\x18\x13 \x01(\v2;.bytebase.store.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x1a\x81\x02\n" +
+	"\x0etoken_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\rtokenDuration\x12X\n" +
+	"\fannouncement\x18\x05 \x01(\v24.bytebase.store.WorkspaceProfileSetting.AnnouncementR\fannouncement\x12Q\n" +
+	"\x17maximum_role_expiration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\x18\n" +
+	"\adomains\x18\a \x03(\tR\adomains\x126\n" +
+	"\x17enforce_identity_domain\x18\b \x01(\bR\x15enforceIdentityDomain\x12l\n" +
+	"\x14database_change_mode\x18\t \x01(\x0e2:.bytebase.store.WorkspaceProfileSetting.DatabaseChangeModeR\x12databaseChangeMode\x128\n" +
+	"\x18disallow_password_signin\x18\n" +
+	" \x01(\bR\x16disallowPasswordSignin\x128\n" +
+	"\x18enable_metric_collection\x18\v \x01(\bR\x16enableMetricCollection\x12S\n" +
+	"\x18inactive_session_timeout\x18\f \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
+	"\x17enable_audit_log_stdout\x18\r \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
+	"\twatermark\x18\x0e \x01(\bR\twatermark\x120\n" +
+	"\x14directory_sync_token\x18\x0f \x01(\tR\x12directorySyncToken\x12#\n" +
+	"\rbranding_logo\x18\x10 \x01(\tR\fbrandingLogo\x12n\n" +
+	"\x14password_restriction\x18\x11 \x01(\v2;.bytebase.store.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x1a\xdd\x01\n" +
 	"\fAnnouncement\x12U\n" +
 	"\x05level\x18\x01 \x01(\x0e2?.bytebase.store.WorkspaceProfileSetting.Announcement.AlertLevelR\x05level\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x12\n" +
-	"\x04link\x18\x03 \x01(\tR\x04link\"r\n" +
+	"\x04link\x18\x03 \x01(\tR\x04link\"N\n" +
 	"\n" +
 	"AlertLevel\x12\x1b\n" +
-	"\x17ALERT_LEVEL_UNSPECIFIED\x10\x00\x12\x14\n" +
-	"\x10ALERT_LEVEL_INFO\x10\x01\x12\x17\n" +
-	"\x13ALERT_LEVEL_WARNING\x10\x02\x12\x18\n" +
-	"\x14ALERT_LEVEL_CRITICAL\x10\x03\x1a\x93\x03\n" +
+	"\x17ALERT_LEVEL_UNSPECIFIED\x10\x00\x12\b\n" +
+	"\x04INFO\x10\x01\x12\v\n" +
+	"\aWARNING\x10\x02\x12\f\n" +
+	"\bCRITICAL\x10\x03\x1a\x93\x03\n" +
 	"\x13PasswordRestriction\x12\x1d\n" +
 	"\n" +
 	"min_length\x18\x01 \x01(\x05R\tminLength\x12%\n" +
@@ -2444,11 +2452,11 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12k\n" +
 	"\x05value\x18\x02 \x01(\v2U.bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassificationR\x05value:\x028\x01\"\xa0\x06\n" +
 	"\tAlgorithm\x12A\n" +
-	"\tfull_mask\x18\x05 \x01(\v2\".bytebase.store.Algorithm.FullMaskH\x00R\bfullMask\x12D\n" +
+	"\tfull_mask\x18\x01 \x01(\v2\".bytebase.store.Algorithm.FullMaskH\x00R\bfullMask\x12D\n" +
 	"\n" +
-	"range_mask\x18\x06 \x01(\v2#.bytebase.store.Algorithm.RangeMaskH\x00R\trangeMask\x12>\n" +
-	"\bmd5_mask\x18\a \x01(\v2!.bytebase.store.Algorithm.MD5MaskH\x00R\amd5Mask\x12T\n" +
-	"\x10inner_outer_mask\x18\b \x01(\v2(.bytebase.store.Algorithm.InnerOuterMaskH\x00R\x0einnerOuterMask\x1a.\n" +
+	"range_mask\x18\x02 \x01(\v2#.bytebase.store.Algorithm.RangeMaskH\x00R\trangeMask\x12>\n" +
+	"\bmd5_mask\x18\x03 \x01(\v2!.bytebase.store.Algorithm.MD5MaskH\x00R\amd5Mask\x12T\n" +
+	"\x10inner_outer_mask\x18\x04 \x01(\v2(.bytebase.store.Algorithm.InnerOuterMaskH\x00R\x0einnerOuterMask\x1a.\n" +
 	"\bFullMask\x12\"\n" +
 	"\fsubstitution\x18\x01 \x01(\tR\fsubstitution\x1a\xa3\x01\n" +
 	"\tRangeMask\x12A\n" +
@@ -2463,9 +2471,9 @@ const file_store_setting_proto_rawDesc = "" +
 	"\n" +
 	"prefix_len\x18\x01 \x01(\x05R\tprefixLen\x12\x1d\n" +
 	"\n" +
-	"suffix_len\x18\x02 \x01(\x05R\tsuffixLen\x12\"\n" +
-	"\fsubstitution\x18\x03 \x01(\tR\fsubstitution\x12E\n" +
-	"\x04type\x18\x04 \x01(\x0e21.bytebase.store.Algorithm.InnerOuterMask.MaskTypeR\x04type\";\n" +
+	"suffix_len\x18\x02 \x01(\x05R\tsuffixLen\x12E\n" +
+	"\x04type\x18\x03 \x01(\x0e21.bytebase.store.Algorithm.InnerOuterMask.MaskTypeR\x04type\x12\"\n" +
+	"\fsubstitution\x18\x04 \x01(\tR\fsubstitution\";\n" +
 	"\bMaskType\x12\x19\n" +
 	"\x15MASK_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05INNER\x10\x01\x12\t\n" +
@@ -2527,14 +2535,15 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x06CLAUDE\x10\x02\x12\n" +
 	"\n" +
 	"\x06GEMINI\x10\x03\x12\x10\n" +
-	"\fAZURE_OPENAI\x10\x04\"\xbb\x02\n" +
+	"\fAZURE_OPENAI\x10\x04\"\xd4\x02\n" +
 	"\x12EnvironmentSetting\x12R\n" +
-	"\fenvironments\x18\x01 \x03(\v2..bytebase.store.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xd0\x01\n" +
-	"\vEnvironment\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x12L\n" +
-	"\x04tags\x18\x03 \x03(\v28.bytebase.store.EnvironmentSetting.Environment.TagsEntryR\x04tags\x12\x14\n" +
-	"\x05color\x18\x04 \x01(\tR\x05color\x1a7\n" +
+	"\fenvironments\x18\x01 \x03(\v2..bytebase.store.EnvironmentSetting.EnvironmentR\fenvironments\x1a\xe9\x01\n" +
+	"\vEnvironment\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12L\n" +
+	"\x04tags\x18\x04 \x03(\v28.bytebase.store.EnvironmentSetting.Environment.TagsEntryR\x04tags\x12\x14\n" +
+	"\x05color\x18\x05 \x01(\tR\x05color\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xb8\x01\n" +
@@ -2542,15 +2551,14 @@ const file_store_setting_proto_rawDesc = "" +
 	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
 	"\x06SYSTEM\x10\x01\x12\x15\n" +
-	"\x11WORKSPACE_PROFILE\x10\x04\x12\x16\n" +
-	"\x12WORKSPACE_APPROVAL\x10\x05\x12\n" +
+	"\x11WORKSPACE_PROFILE\x10\x02\x12\x16\n" +
+	"\x12WORKSPACE_APPROVAL\x10\x03\x12\n" +
 	"\n" +
-	"\x06APP_IM\x10\b\x12\x06\n" +
-	"\x02AI\x10\n" +
-	"\x12\x17\n" +
-	"\x13DATA_CLASSIFICATION\x10\x0e\x12\x12\n" +
-	"\x0eSEMANTIC_TYPES\x10\x0f\x12\x0f\n" +
-	"\vENVIRONMENT\x10\x13B\x8f\x01\n" +
+	"\x06APP_IM\x10\x04\x12\x06\n" +
+	"\x02AI\x10\x05\x12\x17\n" +
+	"\x13DATA_CLASSIFICATION\x10\x06\x12\x12\n" +
+	"\x0eSEMANTIC_TYPES\x10\a\x12\x0f\n" +
+	"\vENVIRONMENT\x10\bB\x8f\x01\n" +
 	"\x12com.bytebase.storeB\fSettingProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

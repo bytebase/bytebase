@@ -55,9 +55,6 @@ func (x *Task) Equal(y *Task) bool {
 			return false
 		}
 	}
-	if x.EnableGhost != y.EnableGhost {
-		return false
-	}
 	if !x.TaskReleaseSource.Equal(y.TaskReleaseSource) {
 		return false
 	}
@@ -65,6 +62,9 @@ func (x *Task) Equal(y *Task) bool {
 		return false
 	}
 	if x.Format != y.Format {
+		return false
+	}
+	if x.EnableGhost != y.EnableGhost {
 		return false
 	}
 	return true

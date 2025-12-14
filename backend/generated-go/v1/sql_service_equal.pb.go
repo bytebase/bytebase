@@ -531,13 +531,13 @@ func (x *DiffMetadataRequest) Equal(y *DiffMetadataRequest) bool {
 	if !x.TargetMetadata.Equal(y.TargetMetadata) {
 		return false
 	}
+	if x.Engine != y.Engine {
+		return false
+	}
 	if !x.SourceCatalog.Equal(y.SourceCatalog) {
 		return false
 	}
 	if !x.TargetCatalog.Equal(y.TargetCatalog) {
-		return false
-	}
-	if x.Engine != y.Engine {
 		return false
 	}
 	return true

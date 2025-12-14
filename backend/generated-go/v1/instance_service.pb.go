@@ -1406,20 +1406,20 @@ type Instance struct {
 	// Whether the instance is activated for use.
 	Activation bool `protobuf:"varint,10,opt,name=activation,proto3" json:"activation,omitempty"`
 	// Database roles available in this instance.
-	Roles []*InstanceRole `protobuf:"bytes,12,rep,name=roles,proto3" json:"roles,omitempty"`
+	Roles []*InstanceRole `protobuf:"bytes,11,rep,name=roles,proto3" json:"roles,omitempty"`
 	// How often the instance is synced.
-	SyncInterval *durationpb.Duration `protobuf:"bytes,13,opt,name=sync_interval,json=syncInterval,proto3" json:"sync_interval,omitempty"`
+	SyncInterval *durationpb.Duration `protobuf:"bytes,12,opt,name=sync_interval,json=syncInterval,proto3" json:"sync_interval,omitempty"`
 	// The maximum number of connections.
 	// The default is 10 if the value is unset or zero.
-	MaximumConnections int32 `protobuf:"varint,14,opt,name=maximum_connections,json=maximumConnections,proto3" json:"maximum_connections,omitempty"`
+	MaximumConnections int32 `protobuf:"varint,13,opt,name=maximum_connections,json=maximumConnections,proto3" json:"maximum_connections,omitempty"`
 	// Enable sync for following databases.
 	// Default empty, means sync all schemas & databases.
-	SyncDatabases []string `protobuf:"bytes,15,rep,name=sync_databases,json=syncDatabases,proto3" json:"sync_databases,omitempty"`
+	SyncDatabases []string `protobuf:"bytes,14,rep,name=sync_databases,json=syncDatabases,proto3" json:"sync_databases,omitempty"`
 	// The last time the instance was synced.
-	LastSyncTime *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=last_sync_time,json=lastSyncTime,proto3" json:"last_sync_time,omitempty"`
+	LastSyncTime *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=last_sync_time,json=lastSyncTime,proto3" json:"last_sync_time,omitempty"`
 	// Labels are key-value pairs that can be attached to the instance.
 	// For example, { "org_group": "infrastructure", "environment": "production" }
-	Labels        map[string]string `protobuf:"bytes,17,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Labels        map[string]string `protobuf:"bytes,16,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2836,12 +2836,12 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"activation\x18\n" +
 	" \x01(\bR\n" +
 	"activation\x124\n" +
-	"\x05roles\x18\f \x03(\v2\x19.bytebase.v1.InstanceRoleB\x03\xe0A\x03R\x05roles\x12>\n" +
-	"\rsync_interval\x18\r \x01(\v2\x19.google.protobuf.DurationR\fsyncInterval\x12/\n" +
-	"\x13maximum_connections\x18\x0e \x01(\x05R\x12maximumConnections\x12%\n" +
-	"\x0esync_databases\x18\x0f \x03(\tR\rsyncDatabases\x12E\n" +
-	"\x0elast_sync_time\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\flastSyncTime\x129\n" +
-	"\x06labels\x18\x11 \x03(\v2!.bytebase.v1.Instance.LabelsEntryR\x06labels\x1a9\n" +
+	"\x05roles\x18\v \x03(\v2\x19.bytebase.v1.InstanceRoleB\x03\xe0A\x03R\x05roles\x12>\n" +
+	"\rsync_interval\x18\f \x01(\v2\x19.google.protobuf.DurationR\fsyncInterval\x12/\n" +
+	"\x13maximum_connections\x18\r \x01(\x05R\x12maximumConnections\x12%\n" +
+	"\x0esync_databases\x18\x0e \x03(\tR\rsyncDatabases\x12E\n" +
+	"\x0elast_sync_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\flastSyncTime\x129\n" +
+	"\x06labels\x18\x10 \x03(\v2!.bytebase.v1.Instance.LabelsEntryR\x06labels\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:0\xeaA-\n" +

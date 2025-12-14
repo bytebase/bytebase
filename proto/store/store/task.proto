@@ -16,9 +16,9 @@ message Task {
     // Apply schema/data migrations to an existing database.
     DATABASE_MIGRATE = 2;
     // Export data from a database.
-    DATABASE_EXPORT = 5;
+    DATABASE_EXPORT = 3;
     // Apply declarative schema changes (state-based migration).
-    DATABASE_SDL = 6;
+    DATABASE_SDL = 4;
   }
 
   // Whether the task was skipped during execution.
@@ -47,8 +47,6 @@ message Task {
   bool enable_prior_backup = 11;
   // Configuration flags for gh-ost migration tool.
   map<string, string> flags = 12;
-  // Whether to use gh-ost for online schema migration.
-  bool enable_ghost = 17;
   // Source information if task is created from a release.
   TaskReleaseSource task_release_source = 13;
 
@@ -56,6 +54,8 @@ message Task {
   string password = 14;
   // Format of the exported data (SQL, CSV, JSON, etc).
   ExportFormat format = 15;
+  // Whether to use gh-ost for online schema migration.
+  bool enable_ghost = 16;
 }
 
 // TaskReleaseSource contains information about the release file this task originated from.

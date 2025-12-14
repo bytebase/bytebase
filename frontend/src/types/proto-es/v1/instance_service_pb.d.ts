@@ -600,14 +600,14 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
   /**
    * Database roles available in this instance.
    *
-   * @generated from field: repeated bytebase.v1.InstanceRole roles = 12;
+   * @generated from field: repeated bytebase.v1.InstanceRole roles = 11;
    */
   roles: InstanceRole[];
 
   /**
    * How often the instance is synced.
    *
-   * @generated from field: google.protobuf.Duration sync_interval = 13;
+   * @generated from field: google.protobuf.Duration sync_interval = 12;
    */
   syncInterval?: Duration;
 
@@ -615,7 +615,7 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
    * The maximum number of connections.
    * The default is 10 if the value is unset or zero.
    *
-   * @generated from field: int32 maximum_connections = 14;
+   * @generated from field: int32 maximum_connections = 13;
    */
   maximumConnections: number;
 
@@ -623,14 +623,14 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
    * Enable sync for following databases.
    * Default empty, means sync all schemas & databases.
    *
-   * @generated from field: repeated string sync_databases = 15;
+   * @generated from field: repeated string sync_databases = 14;
    */
   syncDatabases: string[];
 
   /**
    * The last time the instance was synced.
    *
-   * @generated from field: google.protobuf.Timestamp last_sync_time = 16;
+   * @generated from field: google.protobuf.Timestamp last_sync_time = 15;
    */
   lastSyncTime?: Timestamp;
 
@@ -638,7 +638,7 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
    * Labels are key-value pairs that can be attached to the instance.
    * For example, { "org_group": "infrastructure", "environment": "production" }
    *
-   * @generated from field: map<string, string> labels = 17;
+   * @generated from field: map<string, string> labels = 16;
    */
   labels: { [key: string]: string };
 };

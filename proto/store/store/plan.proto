@@ -10,7 +10,7 @@ option go_package = "generated-go/store";
 message PlanConfig {
   repeated Spec specs = 1;
 
-  Deployment deployment = 4;
+  Deployment deployment = 2;
   message Spec {
     // A UUID4 string that uniquely identifies the Spec.
     string id = 5;
@@ -60,9 +60,9 @@ message PlanConfig {
     enum Type {
       TYPE_UNSPECIFIED = 0;
       // Used for imperative schema migration including CREATE DATABASE.
-      MIGRATE = 2;
+      MIGRATE = 1;
       // Used for state-based declarative schema migration including CREATE DATABASE.
-      SDL = 3;
+      SDL = 2;
     }
     Type type = 3;
 

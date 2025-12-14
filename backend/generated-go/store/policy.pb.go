@@ -29,34 +29,34 @@ const (
 	Policy_TYPE_UNSPECIFIED  Policy_Type = 0
 	Policy_ROLLOUT           Policy_Type = 1
 	Policy_MASKING_EXEMPTION Policy_Type = 2
-	Policy_QUERY_DATA        Policy_Type = 5
-	Policy_MASKING_RULE      Policy_Type = 6
-	Policy_IAM               Policy_Type = 8
-	Policy_TAG               Policy_Type = 9
-	Policy_DATA_SOURCE_QUERY Policy_Type = 10
+	Policy_QUERY_DATA        Policy_Type = 3
+	Policy_MASKING_RULE      Policy_Type = 4
+	Policy_IAM               Policy_Type = 5
+	Policy_TAG               Policy_Type = 6
+	Policy_DATA_SOURCE_QUERY Policy_Type = 7
 )
 
 // Enum value maps for Policy_Type.
 var (
 	Policy_Type_name = map[int32]string{
-		0:  "TYPE_UNSPECIFIED",
-		1:  "ROLLOUT",
-		2:  "MASKING_EXEMPTION",
-		5:  "QUERY_DATA",
-		6:  "MASKING_RULE",
-		8:  "IAM",
-		9:  "TAG",
-		10: "DATA_SOURCE_QUERY",
+		0: "TYPE_UNSPECIFIED",
+		1: "ROLLOUT",
+		2: "MASKING_EXEMPTION",
+		3: "QUERY_DATA",
+		4: "MASKING_RULE",
+		5: "IAM",
+		6: "TAG",
+		7: "DATA_SOURCE_QUERY",
 	}
 	Policy_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED":  0,
 		"ROLLOUT":           1,
 		"MASKING_EXEMPTION": 2,
-		"QUERY_DATA":        5,
-		"MASKING_RULE":      6,
-		"IAM":               8,
-		"TAG":               9,
-		"DATA_SOURCE_QUERY": 10,
+		"QUERY_DATA":        3,
+		"MASKING_RULE":      4,
+		"IAM":               5,
+		"TAG":               6,
+		"DATA_SOURCE_QUERY": 7,
 	}
 )
 
@@ -919,12 +919,11 @@ const file_store_policy_proto_rawDesc = "" +
 	"\aROLLOUT\x10\x01\x12\x15\n" +
 	"\x11MASKING_EXEMPTION\x10\x02\x12\x0e\n" +
 	"\n" +
-	"QUERY_DATA\x10\x05\x12\x10\n" +
-	"\fMASKING_RULE\x10\x06\x12\a\n" +
-	"\x03IAM\x10\b\x12\a\n" +
-	"\x03TAG\x10\t\x12\x15\n" +
-	"\x11DATA_SOURCE_QUERY\x10\n" +
-	"\"Q\n" +
+	"QUERY_DATA\x10\x03\x12\x10\n" +
+	"\fMASKING_RULE\x10\x04\x12\a\n" +
+	"\x03IAM\x10\x05\x12\a\n" +
+	"\x03TAG\x10\x06\x12\x15\n" +
+	"\x11DATA_SOURCE_QUERY\x10\a\"Q\n" +
 	"\bResource\x12\x18\n" +
 	"\x14RESOURCE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +

@@ -728,17 +728,17 @@ type User struct {
 	// The type of user account.
 	UserType UserType `protobuf:"varint,5,opt,name=user_type,json=userType,proto3,enum=bytebase.v1.UserType" json:"user_type,omitempty"`
 	// The password for authentication. Only used during user creation or password updates.
-	Password string `protobuf:"bytes,7,opt,name=password,proto3" json:"password,omitempty"`
+	Password string `protobuf:"bytes,6,opt,name=password,proto3" json:"password,omitempty"`
 	// The service key for service account authentication. Only used for service accounts.
-	ServiceKey string `protobuf:"bytes,8,opt,name=service_key,json=serviceKey,proto3" json:"service_key,omitempty"`
+	ServiceKey string `protobuf:"bytes,7,opt,name=service_key,json=serviceKey,proto3" json:"service_key,omitempty"`
 	// The mfa_enabled flag means if the user has enabled MFA.
-	MfaEnabled bool `protobuf:"varint,9,opt,name=mfa_enabled,json=mfaEnabled,proto3" json:"mfa_enabled,omitempty"`
+	MfaEnabled bool `protobuf:"varint,8,opt,name=mfa_enabled,json=mfaEnabled,proto3" json:"mfa_enabled,omitempty"`
 	// Temporary OTP secret used during MFA setup and regeneration.
-	TempOtpSecret string `protobuf:"bytes,10,opt,name=temp_otp_secret,json=tempOtpSecret,proto3" json:"temp_otp_secret,omitempty"`
+	TempOtpSecret string `protobuf:"bytes,9,opt,name=temp_otp_secret,json=tempOtpSecret,proto3" json:"temp_otp_secret,omitempty"`
 	// Temporary recovery codes used during MFA setup and regeneration.
-	TempRecoveryCodes []string `protobuf:"bytes,11,rep,name=temp_recovery_codes,json=tempRecoveryCodes,proto3" json:"temp_recovery_codes,omitempty"`
+	TempRecoveryCodes []string `protobuf:"bytes,10,rep,name=temp_recovery_codes,json=tempRecoveryCodes,proto3" json:"temp_recovery_codes,omitempty"`
 	// Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-	TempOtpSecretCreatedTime *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=temp_otp_secret_created_time,json=tempOtpSecretCreatedTime,proto3" json:"temp_otp_secret_created_time,omitempty"`
+	TempOtpSecretCreatedTime *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=temp_otp_secret_created_time,json=tempOtpSecretCreatedTime,proto3" json:"temp_otp_secret_created_time,omitempty"`
 	// Should be a valid E.164 compliant phone number.
 	// Could be empty.
 	Phone string `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
@@ -748,7 +748,7 @@ type User struct {
 	// Format: groups/{email}
 	Groups []string `protobuf:"bytes,14,rep,name=groups,proto3" json:"groups,omitempty"`
 	// Workload Identity configuration (only for WORKLOAD_IDENTITY type)
-	WorkloadIdentityConfig *WorkloadIdentityConfig `protobuf:"bytes,16,opt,name=workload_identity_config,json=workloadIdentityConfig,proto3" json:"workload_identity_config,omitempty"`
+	WorkloadIdentityConfig *WorkloadIdentityConfig `protobuf:"bytes,15,opt,name=workload_identity_config,json=workloadIdentityConfig,proto3" json:"workload_identity_config,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -1073,19 +1073,19 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1e\n" +
 	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x122\n" +
 	"\tuser_type\x18\x05 \x01(\x0e2\x15.bytebase.v1.UserTypeR\buserType\x12\x1f\n" +
-	"\bpassword\x18\a \x01(\tB\x03\xe0A\x04R\bpassword\x12$\n" +
-	"\vservice_key\x18\b \x01(\tB\x03\xe0A\x04R\n" +
+	"\bpassword\x18\x06 \x01(\tB\x03\xe0A\x04R\bpassword\x12$\n" +
+	"\vservice_key\x18\a \x01(\tB\x03\xe0A\x04R\n" +
 	"serviceKey\x12\x1f\n" +
-	"\vmfa_enabled\x18\t \x01(\bR\n" +
+	"\vmfa_enabled\x18\b \x01(\bR\n" +
 	"mfaEnabled\x12&\n" +
-	"\x0ftemp_otp_secret\x18\n" +
-	" \x01(\tR\rtempOtpSecret\x12.\n" +
-	"\x13temp_recovery_codes\x18\v \x03(\tR\x11tempRecoveryCodes\x12Z\n" +
-	"\x1ctemp_otp_secret_created_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\x12\x14\n" +
+	"\x0ftemp_otp_secret\x18\t \x01(\tR\rtempOtpSecret\x12.\n" +
+	"\x13temp_recovery_codes\x18\n" +
+	" \x03(\tR\x11tempRecoveryCodes\x12Z\n" +
+	"\x1ctemp_otp_secret_created_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\x12\x14\n" +
 	"\x05phone\x18\f \x01(\tR\x05phone\x123\n" +
 	"\aprofile\x18\r \x01(\v2\x19.bytebase.v1.User.ProfileR\aprofile\x12\x1b\n" +
 	"\x06groups\x18\x0e \x03(\tB\x03\xe0A\x03R\x06groups\x12]\n" +
-	"\x18workload_identity_config\x18\x10 \x01(\v2#.bytebase.v1.WorkloadIdentityConfigR\x16workloadIdentityConfig\x1a\xbc\x01\n" +
+	"\x18workload_identity_config\x18\x0f \x01(\v2#.bytebase.v1.WorkloadIdentityConfigR\x16workloadIdentityConfig\x1a\xbc\x01\n" +
 	"\aProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +

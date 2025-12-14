@@ -353,10 +353,10 @@ func (x *Algorithm_InnerOuterMask) Equal(y *Algorithm_InnerOuterMask) bool {
 	if x.SuffixLen != y.SuffixLen {
 		return false
 	}
-	if x.Substitution != y.Substitution {
+	if x.Type != y.Type {
 		return false
 	}
-	if x.Type != y.Type {
+	if x.Substitution != y.Substitution {
 		return false
 	}
 	return true
@@ -612,6 +612,9 @@ func (x *EnvironmentSetting_Environment) Equal(y *EnvironmentSetting_Environment
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
 	}
 	if x.Id != y.Id {
 		return false

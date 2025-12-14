@@ -288,28 +288,28 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
    * Can be empty.
    * Format: projects/{project}/rollouts/{rollout}
    *
-   * @generated from field: string rollout = 15;
+   * @generated from field: string rollout = 4;
    */
   rollout: string;
 
   /**
    * The title of the plan.
    *
-   * @generated from field: string title = 4;
+   * @generated from field: string title = 5;
    */
   title: string;
 
   /**
    * The description of the plan.
    *
-   * @generated from field: string description = 5;
+   * @generated from field: string description = 6;
    */
   description: string;
 
   /**
    * The deployment specs for the plan.
    *
-   * @generated from field: repeated bytebase.v1.Plan.Spec specs = 14;
+   * @generated from field: repeated bytebase.v1.Plan.Spec specs = 7;
    */
   specs: Plan_Spec[];
 
@@ -343,7 +343,7 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
   planCheckRunStatusCount: { [key: string]: number };
 
   /**
-   * @generated from field: bytebase.v1.Plan.Deployment deployment = 13;
+   * @generated from field: bytebase.v1.Plan.Deployment deployment = 12;
    */
   deployment?: Plan_Deployment;
 };
@@ -361,7 +361,7 @@ export declare type Plan_Spec = Message<"bytebase.v1.Plan.Spec"> & {
   /**
    * A UUID4 string that uniquely identifies the Spec.
    *
-   * @generated from field: string id = 5;
+   * @generated from field: string id = 1;
    */
   id: string;
 
@@ -370,19 +370,19 @@ export declare type Plan_Spec = Message<"bytebase.v1.Plan.Spec"> & {
    */
   config: {
     /**
-     * @generated from field: bytebase.v1.Plan.CreateDatabaseConfig create_database_config = 1;
+     * @generated from field: bytebase.v1.Plan.CreateDatabaseConfig create_database_config = 2;
      */
     value: Plan_CreateDatabaseConfig;
     case: "createDatabaseConfig";
   } | {
     /**
-     * @generated from field: bytebase.v1.Plan.ChangeDatabaseConfig change_database_config = 2;
+     * @generated from field: bytebase.v1.Plan.ChangeDatabaseConfig change_database_config = 3;
      */
     value: Plan_ChangeDatabaseConfig;
     case: "changeDatabaseConfig";
   } | {
     /**
-     * @generated from field: bytebase.v1.Plan.ExportDataConfig export_data_config = 7;
+     * @generated from field: bytebase.v1.Plan.ExportDataConfig export_data_config = 4;
      */
     value: Plan_ExportDataConfig;
     case: "exportDataConfig";
@@ -474,7 +474,7 @@ export declare type Plan_ChangeDatabaseConfig = Message<"bytebase.v1.Plan.Change
    * Multi-database format: [instances/{instance-id}/databases/{database-name}].
    * Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
    *
-   * @generated from field: repeated string targets = 10;
+   * @generated from field: repeated string targets = 1;
    */
   targets: string[];
 
@@ -490,33 +490,33 @@ export declare type Plan_ChangeDatabaseConfig = Message<"bytebase.v1.Plan.Change
    * The resource name of the release.
    * Format: projects/{project}/releases/{release}
    *
-   * @generated from field: string release = 9;
+   * @generated from field: string release = 3;
    */
   release: string;
 
   /**
    * Type is the database change type.
    *
-   * @generated from field: bytebase.v1.DatabaseChangeType type = 3;
+   * @generated from field: bytebase.v1.DatabaseChangeType type = 4;
    */
   type: DatabaseChangeType;
 
   /**
-   * @generated from field: map<string, string> ghost_flags = 7;
+   * @generated from field: map<string, string> ghost_flags = 5;
    */
   ghostFlags: { [key: string]: string };
 
   /**
    * If set, a backup of the modified data will be created automatically before any changes are applied.
    *
-   * @generated from field: bool enable_prior_backup = 8;
+   * @generated from field: bool enable_prior_backup = 6;
    */
   enablePriorBackup: boolean;
 
   /**
    * Whether to use gh-ost for online schema migration.
    *
-   * @generated from field: bool enable_ghost = 12;
+   * @generated from field: bool enable_ghost = 7;
    */
   enableGhost: boolean;
 };
@@ -536,7 +536,7 @@ export declare type Plan_ExportDataConfig = Message<"bytebase.v1.Plan.ExportData
    * Multi-database format: [instances/{instance-id}/databases/{database-name}].
    * Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
    *
-   * @generated from field: repeated string targets = 5;
+   * @generated from field: repeated string targets = 1;
    */
   targets: string[];
 
@@ -774,43 +774,43 @@ export declare type PlanCheckRun = Message<"bytebase.v1.PlanCheckRun"> & {
   name: string;
 
   /**
-   * @generated from field: bytebase.v1.PlanCheckRun.Type type = 3;
+   * @generated from field: bytebase.v1.PlanCheckRun.Type type = 2;
    */
   type: PlanCheckRun_Type;
 
   /**
-   * @generated from field: bytebase.v1.PlanCheckRun.Status status = 4;
+   * @generated from field: bytebase.v1.PlanCheckRun.Status status = 3;
    */
   status: PlanCheckRun_Status;
 
   /**
    * Format: instances/{instance}/databases/{database}
    *
-   * @generated from field: string target = 5;
+   * @generated from field: string target = 4;
    */
   target: string;
 
   /**
    * Format: project/{project}/sheets/{sheet}
    *
-   * @generated from field: string sheet = 6;
+   * @generated from field: string sheet = 5;
    */
   sheet: string;
 
   /**
-   * @generated from field: repeated bytebase.v1.PlanCheckRun.Result results = 7;
+   * @generated from field: repeated bytebase.v1.PlanCheckRun.Result results = 6;
    */
   results: PlanCheckRun_Result[];
 
   /**
    * error is set if the Status is FAILED.
    *
-   * @generated from field: string error = 8;
+   * @generated from field: string error = 7;
    */
   error: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp create_time = 9;
+   * @generated from field: google.protobuf.Timestamp create_time = 8;
    */
   createTime?: Timestamp;
 };
@@ -941,30 +941,30 @@ export enum PlanCheckRun_Type {
   /**
    * SQL review check that analyzes statements against configured SQL review rules.
    *
-   * @generated from enum value: DATABASE_STATEMENT_ADVISE = 3;
+   * @generated from enum value: DATABASE_STATEMENT_ADVISE = 2;
    */
-  DATABASE_STATEMENT_ADVISE = 3,
+  DATABASE_STATEMENT_ADVISE = 2,
 
   /**
    * Summary report check that generates impact analysis for the statements.
    *
-   * @generated from enum value: DATABASE_STATEMENT_SUMMARY_REPORT = 5;
+   * @generated from enum value: DATABASE_STATEMENT_SUMMARY_REPORT = 3;
    */
-  DATABASE_STATEMENT_SUMMARY_REPORT = 5,
+  DATABASE_STATEMENT_SUMMARY_REPORT = 3,
 
   /**
    * Connection check that verifies database connectivity.
    *
-   * @generated from enum value: DATABASE_CONNECT = 6;
+   * @generated from enum value: DATABASE_CONNECT = 4;
    */
-  DATABASE_CONNECT = 6,
+  DATABASE_CONNECT = 4,
 
   /**
    * Ghost sync check that validates gh-ost online schema change compatibility.
    *
-   * @generated from enum value: DATABASE_GHOST_SYNC = 7;
+   * @generated from enum value: DATABASE_GHOST_SYNC = 5;
    */
-  DATABASE_GHOST_SYNC = 7,
+  DATABASE_GHOST_SYNC = 5,
 }
 
 /**

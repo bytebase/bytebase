@@ -315,25 +315,25 @@ type ActuatorInfo struct {
 	// The unique identifier for the workspace.
 	WorkspaceId string `protobuf:"bytes,13,opt,name=workspace_id,json=workspaceId,proto3" json:"workspace_id,omitempty"`
 	// Whether debug mode is enabled.
-	Debug bool `protobuf:"varint,15,opt,name=debug,proto3" json:"debug,omitempty"`
+	Debug bool `protobuf:"varint,14,opt,name=debug,proto3" json:"debug,omitempty"`
 	// List of features that are not licensed.
-	UnlicensedFeatures []string `protobuf:"bytes,19,rep,name=unlicensed_features,json=unlicensedFeatures,proto3" json:"unlicensed_features,omitempty"`
+	UnlicensedFeatures []string `protobuf:"bytes,15,rep,name=unlicensed_features,json=unlicensedFeatures,proto3" json:"unlicensed_features,omitempty"`
 	// Whether password-based signin is disabled (except for workspace admins).
-	DisallowPasswordSignin bool `protobuf:"varint,20,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
+	DisallowPasswordSignin bool `protobuf:"varint,16,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
 	// Password complexity and restriction requirements.
-	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,21,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
+	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,17,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
 	// Whether the Bytebase instance is running in Docker.
-	Docker bool `protobuf:"varint,22,opt,name=docker,proto3" json:"docker,omitempty"`
+	Docker bool `protobuf:"varint,18,opt,name=docker,proto3" json:"docker,omitempty"`
 	// Statistics about users in the system.
-	UserStats []*ActuatorInfo_StatUser `protobuf:"bytes,23,rep,name=user_stats,json=userStats,proto3" json:"user_stats,omitempty"`
+	UserStats []*ActuatorInfo_StatUser `protobuf:"bytes,19,rep,name=user_stats,json=userStats,proto3" json:"user_stats,omitempty"`
 	// The number of activated database instances.
-	ActivatedInstanceCount int32 `protobuf:"varint,24,opt,name=activated_instance_count,json=activatedInstanceCount,proto3" json:"activated_instance_count,omitempty"`
+	ActivatedInstanceCount int32 `protobuf:"varint,20,opt,name=activated_instance_count,json=activatedInstanceCount,proto3" json:"activated_instance_count,omitempty"`
 	// The total number of database instances.
-	TotalInstanceCount int32 `protobuf:"varint,25,opt,name=total_instance_count,json=totalInstanceCount,proto3" json:"total_instance_count,omitempty"`
+	TotalInstanceCount int32 `protobuf:"varint,21,opt,name=total_instance_count,json=totalInstanceCount,proto3" json:"total_instance_count,omitempty"`
 	// Whether sample data setup is enabled.
-	EnableSample bool `protobuf:"varint,26,opt,name=enable_sample,json=enableSample,proto3" json:"enable_sample,omitempty"`
+	EnableSample bool `protobuf:"varint,22,opt,name=enable_sample,json=enableSample,proto3" json:"enable_sample,omitempty"`
 	// Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
-	ExternalUrlFromFlag bool `protobuf:"varint,27,opt,name=external_url_from_flag,json=externalUrlFromFlag,proto3" json:"external_url_from_flag,omitempty"`
+	ExternalUrlFromFlag bool `protobuf:"varint,23,opt,name=external_url_from_flag,json=externalUrlFromFlag,proto3" json:"external_url_from_flag,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -626,17 +626,17 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\vrequire_2fa\x18\f \x01(\bB\x03\xe0A\x03R\n" +
 	"require2fa\x12&\n" +
 	"\fworkspace_id\x18\r \x01(\tB\x03\xe0A\x03R\vworkspaceId\x12\x14\n" +
-	"\x05debug\x18\x0f \x01(\bR\x05debug\x124\n" +
-	"\x13unlicensed_features\x18\x13 \x03(\tB\x03\xe0A\x03R\x12unlicensedFeatures\x12=\n" +
-	"\x18disallow_password_signin\x18\x14 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
-	"\x14password_restriction\x18\x15 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12\x1b\n" +
-	"\x06docker\x18\x16 \x01(\bB\x03\xe0A\x03R\x06docker\x12F\n" +
+	"\x05debug\x18\x0e \x01(\bR\x05debug\x124\n" +
+	"\x13unlicensed_features\x18\x0f \x03(\tB\x03\xe0A\x03R\x12unlicensedFeatures\x12=\n" +
+	"\x18disallow_password_signin\x18\x10 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
+	"\x14password_restriction\x18\x11 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12\x1b\n" +
+	"\x06docker\x18\x12 \x01(\bB\x03\xe0A\x03R\x06docker\x12F\n" +
 	"\n" +
-	"user_stats\x18\x17 \x03(\v2\".bytebase.v1.ActuatorInfo.StatUserB\x03\xe0A\x03R\tuserStats\x12=\n" +
-	"\x18activated_instance_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\x16activatedInstanceCount\x125\n" +
-	"\x14total_instance_count\x18\x19 \x01(\x05B\x03\xe0A\x03R\x12totalInstanceCount\x12(\n" +
-	"\renable_sample\x18\x1a \x01(\bB\x03\xe0A\x03R\fenableSample\x128\n" +
-	"\x16external_url_from_flag\x18\x1b \x01(\bB\x03\xe0A\x03R\x13externalUrlFromFlag\x1a~\n" +
+	"user_stats\x18\x13 \x03(\v2\".bytebase.v1.ActuatorInfo.StatUserB\x03\xe0A\x03R\tuserStats\x12=\n" +
+	"\x18activated_instance_count\x18\x14 \x01(\x05B\x03\xe0A\x03R\x16activatedInstanceCount\x125\n" +
+	"\x14total_instance_count\x18\x15 \x01(\x05B\x03\xe0A\x03R\x12totalInstanceCount\x12(\n" +
+	"\renable_sample\x18\x16 \x01(\bB\x03\xe0A\x03R\fenableSample\x128\n" +
+	"\x16external_url_from_flag\x18\x17 \x01(\bB\x03\xe0A\x03R\x13externalUrlFromFlag\x1a~\n" +
 	"\bStatUser\x122\n" +
 	"\tuser_type\x18\x01 \x01(\x0e2\x15.bytebase.v1.UserTypeR\buserType\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +

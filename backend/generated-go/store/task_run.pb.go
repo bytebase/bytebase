@@ -136,21 +136,21 @@ type TaskRunResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Detailed execution information or error message.
 	Detail string `protobuf:"bytes,1,opt,name=detail,proto3" json:"detail,omitempty"`
+	// Schema version after the migration was applied.
+	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	// Starting position in the SQL statement where an error occurred.
+	StartPosition *Position `protobuf:"bytes,3,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
+	// Ending position in the SQL statement where an error occurred.
+	EndPosition *Position `protobuf:"bytes,4,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
+	// UID of the export archive generated for export tasks.
+	ExportArchiveUid int32 `protobuf:"varint,5,opt,name=export_archive_uid,json=exportArchiveUid,proto3" json:"export_archive_uid,omitempty"`
+	// Backup details that can be used to rollback changes.
+	PriorBackupDetail *PriorBackupDetail `protobuf:"bytes,6,opt,name=prior_backup_detail,json=priorBackupDetail,proto3" json:"prior_backup_detail,omitempty"`
 	// Resource name of the changelog entry created by this run.
 	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-	Changelog string `protobuf:"bytes,8,opt,name=changelog,proto3" json:"changelog,omitempty"`
-	// Schema version after the migration was applied.
-	Version string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
-	// Starting position in the SQL statement where an error occurred.
-	StartPosition *Position `protobuf:"bytes,4,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
-	// Ending position in the SQL statement where an error occurred.
-	EndPosition *Position `protobuf:"bytes,5,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
-	// UID of the export archive generated for export tasks.
-	ExportArchiveUid int32 `protobuf:"varint,6,opt,name=export_archive_uid,json=exportArchiveUid,proto3" json:"export_archive_uid,omitempty"`
-	// Backup details that can be used to rollback changes.
-	PriorBackupDetail *PriorBackupDetail `protobuf:"bytes,7,opt,name=prior_backup_detail,json=priorBackupDetail,proto3" json:"prior_backup_detail,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	Changelog     string `protobuf:"bytes,7,opt,name=changelog,proto3" json:"changelog,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TaskRunResult) Reset() {
@@ -190,13 +190,6 @@ func (x *TaskRunResult) GetDetail() string {
 	return ""
 }
 
-func (x *TaskRunResult) GetChangelog() string {
-	if x != nil {
-		return x.Changelog
-	}
-	return ""
-}
-
 func (x *TaskRunResult) GetVersion() string {
 	if x != nil {
 		return x.Version
@@ -230,6 +223,13 @@ func (x *TaskRunResult) GetPriorBackupDetail() *PriorBackupDetail {
 		return x.PriorBackupDetail
 	}
 	return nil
+}
+
+func (x *TaskRunResult) GetChangelog() string {
+	if x != nil {
+		return x.Changelog
+	}
+	return ""
 }
 
 // PriorBackupDetail contains information about automatic backups created before migration.
@@ -590,13 +590,13 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\vNOT_STARTED\x10\x06\x12\v\n" +
 	"\aSKIPPED\x10\a\"\xde\x02\n" +
 	"\rTaskRunResult\x12\x16\n" +
-	"\x06detail\x18\x01 \x01(\tR\x06detail\x12\x1c\n" +
-	"\tchangelog\x18\b \x01(\tR\tchangelog\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\tR\aversion\x12?\n" +
-	"\x0estart_position\x18\x04 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
-	"\fend_position\x18\x05 \x01(\v2\x18.bytebase.store.PositionR\vendPosition\x12,\n" +
-	"\x12export_archive_uid\x18\x06 \x01(\x05R\x10exportArchiveUid\x12Q\n" +
-	"\x13prior_backup_detail\x18\a \x01(\v2!.bytebase.store.PriorBackupDetailR\x11priorBackupDetail\"\xcd\x03\n" +
+	"\x06detail\x18\x01 \x01(\tR\x06detail\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\x12?\n" +
+	"\x0estart_position\x18\x03 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
+	"\fend_position\x18\x04 \x01(\v2\x18.bytebase.store.PositionR\vendPosition\x12,\n" +
+	"\x12export_archive_uid\x18\x05 \x01(\x05R\x10exportArchiveUid\x12Q\n" +
+	"\x13prior_backup_detail\x18\x06 \x01(\v2!.bytebase.store.PriorBackupDetailR\x11priorBackupDetail\x12\x1c\n" +
+	"\tchangelog\x18\a \x01(\tR\tchangelog\"\xcd\x03\n" +
 	"\x11PriorBackupDetail\x12<\n" +
 	"\x05items\x18\x01 \x03(\v2&.bytebase.store.PriorBackupDetail.ItemR\x05items\x1a\xf9\x02\n" +
 	"\x04Item\x12O\n" +

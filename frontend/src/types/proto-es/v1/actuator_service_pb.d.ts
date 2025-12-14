@@ -226,70 +226,70 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   /**
    * Whether debug mode is enabled.
    *
-   * @generated from field: bool debug = 15;
+   * @generated from field: bool debug = 14;
    */
   debug: boolean;
 
   /**
    * List of features that are not licensed.
    *
-   * @generated from field: repeated string unlicensed_features = 19;
+   * @generated from field: repeated string unlicensed_features = 15;
    */
   unlicensedFeatures: string[];
 
   /**
    * Whether password-based signin is disabled (except for workspace admins).
    *
-   * @generated from field: bool disallow_password_signin = 20;
+   * @generated from field: bool disallow_password_signin = 16;
    */
   disallowPasswordSignin: boolean;
 
   /**
    * Password complexity and restriction requirements.
    *
-   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 21;
+   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 17;
    */
   passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
 
   /**
    * Whether the Bytebase instance is running in Docker.
    *
-   * @generated from field: bool docker = 22;
+   * @generated from field: bool docker = 18;
    */
   docker: boolean;
 
   /**
    * Statistics about users in the system.
    *
-   * @generated from field: repeated bytebase.v1.ActuatorInfo.StatUser user_stats = 23;
+   * @generated from field: repeated bytebase.v1.ActuatorInfo.StatUser user_stats = 19;
    */
   userStats: ActuatorInfo_StatUser[];
 
   /**
    * The number of activated database instances.
    *
-   * @generated from field: int32 activated_instance_count = 24;
+   * @generated from field: int32 activated_instance_count = 20;
    */
   activatedInstanceCount: number;
 
   /**
    * The total number of database instances.
    *
-   * @generated from field: int32 total_instance_count = 25;
+   * @generated from field: int32 total_instance_count = 21;
    */
   totalInstanceCount: number;
 
   /**
    * Whether sample data setup is enabled.
    *
-   * @generated from field: bool enable_sample = 26;
+   * @generated from field: bool enable_sample = 22;
    */
   enableSample: boolean;
 
   /**
    * Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
    *
-   * @generated from field: bool external_url_from_flag = 27;
+   * @generated from field: bool external_url_from_flag = 23;
    */
   externalUrlFromFlag: boolean;
 };

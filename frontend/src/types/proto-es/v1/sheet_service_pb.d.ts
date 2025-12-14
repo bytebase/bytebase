@@ -161,7 +161,7 @@ export declare type Sheet = Message<"bytebase.v1.Sheet"> & {
   /**
    * The title of the sheet.
    *
-   * @generated from field: string title = 3;
+   * @generated from field: string title = 2;
    */
   title: string;
 
@@ -169,14 +169,14 @@ export declare type Sheet = Message<"bytebase.v1.Sheet"> & {
    * The creator of the Sheet.
    * Format: users/{email}
    *
-   * @generated from field: string creator = 4;
+   * @generated from field: string creator = 3;
    */
   creator: string;
 
   /**
    * The create time of the sheet.
    *
-   * @generated from field: google.protobuf.Timestamp create_time = 5;
+   * @generated from field: google.protobuf.Timestamp create_time = 4;
    */
   createTime?: Timestamp;
 
@@ -185,28 +185,28 @@ export declare type Sheet = Message<"bytebase.v1.Sheet"> & {
    * By default, it will be cut off, if it doesn't match the `content_size`, you can
    * set the `raw` to true in GetSheet request to retrieve the full content.
    *
-   * @generated from field: bytes content = 7;
+   * @generated from field: bytes content = 5;
    */
   content: Uint8Array;
 
   /**
    * content_size is the full size of the content, may not match the size of the `content` field.
    *
-   * @generated from field: int64 content_size = 8;
+   * @generated from field: int64 content_size = 6;
    */
   contentSize: bigint;
 
   /**
    * Parsed metadata about SQL commands in the sheet.
    *
-   * @generated from field: bytebase.v1.SheetPayload payload = 13;
+   * @generated from field: bytebase.v1.SheetPayload payload = 7;
    */
   payload?: SheetPayload;
 
   /**
    * The SQL dialect.
    *
-   * @generated from field: bytebase.v1.Engine engine = 14;
+   * @generated from field: bytebase.v1.Engine engine = 8;
    */
   engine: Engine;
 };
@@ -224,7 +224,7 @@ export declare type SheetPayload = Message<"bytebase.v1.SheetPayload"> & {
   /**
    * The start and end position of each command in the sheet statement.
    *
-   * @generated from field: repeated bytebase.v1.Range commands = 4;
+   * @generated from field: repeated bytebase.v1.Range commands = 1;
    */
   commands: Range[];
 };

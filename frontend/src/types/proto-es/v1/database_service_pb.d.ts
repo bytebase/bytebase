@@ -548,14 +548,14 @@ export declare type Database = Message<"bytebase.v1.Database"> & {
   /**
    * The existence of a database.
    *
-   * @generated from field: bytebase.v1.State state = 3;
+   * @generated from field: bytebase.v1.State state = 2;
    */
   state: State;
 
   /**
    * The latest synchronization time.
    *
-   * @generated from field: google.protobuf.Timestamp successful_sync_time = 4;
+   * @generated from field: google.protobuf.Timestamp successful_sync_time = 3;
    */
   successfulSyncTime?: Timestamp;
 
@@ -563,14 +563,14 @@ export declare type Database = Message<"bytebase.v1.Database"> & {
    * The project for a database.
    * Format: projects/{project}
    *
-   * @generated from field: string project = 5;
+   * @generated from field: string project = 4;
    */
   project: string;
 
   /**
    * The version of database schema.
    *
-   * @generated from field: string schema_version = 6;
+   * @generated from field: string schema_version = 5;
    */
   schemaVersion: string;
 
@@ -578,7 +578,7 @@ export declare type Database = Message<"bytebase.v1.Database"> & {
    * The environment resource.
    * Format: environments/prod where prod is the environment resource ID.
    *
-   * @generated from field: optional string environment = 7;
+   * @generated from field: optional string environment = 6;
    */
   environment?: string;
 
@@ -587,35 +587,35 @@ export declare type Database = Message<"bytebase.v1.Database"> & {
    * tag on the instance. Inheritance follows
    * https://cloud.google.com/resource-manager/docs/tags/tags-overview.
    *
-   * @generated from field: optional string effective_environment = 8;
+   * @generated from field: optional string effective_environment = 7;
    */
   effectiveEnvironment?: string;
 
   /**
    * Labels will be used for deployment and policy control.
    *
-   * @generated from field: map<string, string> labels = 9;
+   * @generated from field: map<string, string> labels = 8;
    */
   labels: { [key: string]: string };
 
   /**
    * The instance resource.
    *
-   * @generated from field: bytebase.v1.InstanceResource instance_resource = 10;
+   * @generated from field: bytebase.v1.InstanceResource instance_resource = 9;
    */
   instanceResource?: InstanceResource;
 
   /**
    * The database is available for DML prior backup.
    *
-   * @generated from field: bool backup_available = 11;
+   * @generated from field: bool backup_available = 10;
    */
   backupAvailable: boolean;
 
   /**
    * The schema is drifted from the source of truth.
    *
-   * @generated from field: bool drifted = 12;
+   * @generated from field: bool drifted = 11;
    */
   drifted: boolean;
 };
@@ -672,14 +672,14 @@ export declare type DatabaseMetadata = Message<"bytebase.v1.DatabaseMetadata"> &
   /**
    * The owner of the database.
    *
-   * @generated from field: string owner = 7;
+   * @generated from field: string owner = 6;
    */
   owner: string;
 
   /**
    * The search_path is the search path of a PostgreSQL database.
    *
-   * @generated from field: string search_path = 8;
+   * @generated from field: string search_path = 7;
    */
   searchPath: string;
 };
@@ -780,35 +780,35 @@ export declare type SchemaMetadata = Message<"bytebase.v1.SchemaMetadata"> & {
   /**
    * The sequences is the list of sequences in a schema, sorted by name.
    *
-   * @generated from field: repeated bytebase.v1.SequenceMetadata sequences = 13;
+   * @generated from field: repeated bytebase.v1.SequenceMetadata sequences = 12;
    */
   sequences: SequenceMetadata[];
 
   /**
    * The events is the list of scheduled events in a schema.
    *
-   * @generated from field: repeated bytebase.v1.EventMetadata events = 14;
+   * @generated from field: repeated bytebase.v1.EventMetadata events = 13;
    */
   events: EventMetadata[];
 
   /**
    * The enum_types is the list of user-defined enum types in a schema.
    *
-   * @generated from field: repeated bytebase.v1.EnumTypeMetadata enum_types = 15;
+   * @generated from field: repeated bytebase.v1.EnumTypeMetadata enum_types = 14;
    */
   enumTypes: EnumTypeMetadata[];
 
   /**
    * Whether to skip this schema during schema dump operations.
    *
-   * @generated from field: bool skip_dump = 16;
+   * @generated from field: bool skip_dump = 15;
    */
   skipDump: boolean;
 
   /**
    * The comment is the comment of a schema.
    *
-   * @generated from field: string comment = 17;
+   * @generated from field: string comment = 16;
    */
   comment: string;
 };
@@ -1035,56 +1035,56 @@ export declare type TriggerMetadata = Message<"bytebase.v1.TriggerMetadata"> & {
    * The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
    * TRUNCATE.
    *
-   * @generated from field: string event = 3;
+   * @generated from field: string event = 2;
    */
   event: string;
 
   /**
    * The timing is the timing of the trigger, such as BEFORE, AFTER.
    *
-   * @generated from field: string timing = 4;
+   * @generated from field: string timing = 3;
    */
   timing: string;
 
   /**
    * The body is the body of the trigger.
    *
-   * @generated from field: string body = 5;
+   * @generated from field: string body = 4;
    */
   body: string;
 
   /**
    * The SQL mode setting for the trigger.
    *
-   * @generated from field: string sql_mode = 6;
+   * @generated from field: string sql_mode = 5;
    */
   sqlMode: string;
 
   /**
    * The character set used by the client creating the trigger.
    *
-   * @generated from field: string character_set_client = 7;
+   * @generated from field: string character_set_client = 6;
    */
   characterSetClient: string;
 
   /**
    * The collation used for the connection when creating the trigger.
    *
-   * @generated from field: string collation_connection = 8;
+   * @generated from field: string collation_connection = 7;
    */
   collationConnection: string;
 
   /**
    * The comment describing the trigger.
    *
-   * @generated from field: string comment = 9;
+   * @generated from field: string comment = 8;
    */
   comment: string;
 
   /**
    * Whether to skip this trigger during schema dump operations.
    *
-   * @generated from field: bool skip_dump = 10;
+   * @generated from field: bool skip_dump = 9;
    */
   skipDump: boolean;
 };
@@ -1178,77 +1178,77 @@ export declare type TableMetadata = Message<"bytebase.v1.TableMetadata"> & {
   /**
    * The character set of table.
    *
-   * @generated from field: string charset = 17;
+   * @generated from field: string charset = 6;
    */
   charset: string;
 
   /**
    * The row_count is the estimated number of rows of a table.
    *
-   * @generated from field: int64 row_count = 6;
+   * @generated from field: int64 row_count = 7;
    */
   rowCount: bigint;
 
   /**
    * The data_size is the estimated data size of a table.
    *
-   * @generated from field: int64 data_size = 7;
+   * @generated from field: int64 data_size = 8;
    */
   dataSize: bigint;
 
   /**
    * The index_size is the estimated index size of a table.
    *
-   * @generated from field: int64 index_size = 8;
+   * @generated from field: int64 index_size = 9;
    */
   indexSize: bigint;
 
   /**
    * The data_free is the estimated free data size of a table.
    *
-   * @generated from field: int64 data_free = 9;
+   * @generated from field: int64 data_free = 10;
    */
   dataFree: bigint;
 
   /**
    * The create_options is the create option of a table.
    *
-   * @generated from field: string create_options = 10;
+   * @generated from field: string create_options = 11;
    */
   createOptions: string;
 
   /**
    * The comment is the comment of a table.
    *
-   * @generated from field: string comment = 11;
+   * @generated from field: string comment = 12;
    */
   comment: string;
 
   /**
    * The foreign_keys is the list of foreign keys in a table.
    *
-   * @generated from field: repeated bytebase.v1.ForeignKeyMetadata foreign_keys = 12;
+   * @generated from field: repeated bytebase.v1.ForeignKeyMetadata foreign_keys = 13;
    */
   foreignKeys: ForeignKeyMetadata[];
 
   /**
    * The partitions is the list of partitions in a table.
    *
-   * @generated from field: repeated bytebase.v1.TablePartitionMetadata partitions = 15;
+   * @generated from field: repeated bytebase.v1.TablePartitionMetadata partitions = 14;
    */
   partitions: TablePartitionMetadata[];
 
   /**
    * The check_constraints is the list of check constraints in a table.
    *
-   * @generated from field: repeated bytebase.v1.CheckConstraintMetadata check_constraints = 16;
+   * @generated from field: repeated bytebase.v1.CheckConstraintMetadata check_constraints = 15;
    */
   checkConstraints: CheckConstraintMetadata[];
 
   /**
    * The owner of the table.
    *
-   * @generated from field: string owner = 18;
+   * @generated from field: string owner = 16;
    */
   owner: string;
 
@@ -1256,28 +1256,28 @@ export declare type TableMetadata = Message<"bytebase.v1.TableMetadata"> & {
    * The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
    * Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
    *
-   * @generated from field: repeated string sorting_keys = 19;
+   * @generated from field: repeated string sorting_keys = 17;
    */
   sortingKeys: string[];
 
   /**
    * The triggers is the list of triggers associated with the table.
    *
-   * @generated from field: repeated bytebase.v1.TriggerMetadata triggers = 20;
+   * @generated from field: repeated bytebase.v1.TriggerMetadata triggers = 18;
    */
   triggers: TriggerMetadata[];
 
   /**
    * Whether to skip this table during schema dump operations.
    *
-   * @generated from field: bool skip_dump = 21;
+   * @generated from field: bool skip_dump = 19;
    */
   skipDump: boolean;
 
   /**
    * https://docs.pingcap.com/tidb/stable/information-schema-tables/
    *
-   * @generated from field: string sharding_info = 22;
+   * @generated from field: string sharding_info = 20;
    */
   shardingInfo: string;
 
@@ -1285,7 +1285,7 @@ export declare type TableMetadata = Message<"bytebase.v1.TableMetadata"> & {
    * https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
    * CLUSTERED or NONCLUSTERED.
    *
-   * @generated from field: string primary_key_type = 23;
+   * @generated from field: string primary_key_type = 21;
    */
   primaryKeyType: string;
 };
@@ -1498,7 +1498,7 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
   /**
    * The default value of column.
    *
-   * @generated from field: string default = 23;
+   * @generated from field: string default = 4;
    */
   default: string;
 
@@ -1506,7 +1506,7 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
    * Oracle specific metadata.
    * The default_on_null is the default on null of a column.
    *
-   * @generated from field: bool default_on_null = 18;
+   * @generated from field: bool default_on_null = 5;
    */
   defaultOnNull: boolean;
 
@@ -1515,7 +1515,7 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
    * For MySQL like databases, it's only supported for TIMESTAMP columns with
    * CURRENT_TIMESTAMP as on update value.
    *
-   * @generated from field: string on_update = 15;
+   * @generated from field: string on_update = 6;
    */
   onUpdate: string;
 
@@ -1557,33 +1557,33 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
   /**
    * The generation is the generation of a column.
    *
-   * @generated from field: bytebase.v1.GenerationMetadata generation = 16;
+   * @generated from field: bytebase.v1.GenerationMetadata generation = 12;
    */
   generation?: GenerationMetadata;
 
   /**
-   * @generated from field: bool is_identity = 19;
+   * @generated from field: bool is_identity = 13;
    */
   isIdentity: boolean;
 
   /**
    * The identity_generation is for identity columns, PG only.
    *
-   * @generated from field: bytebase.v1.ColumnMetadata.IdentityGeneration identity_generation = 17;
+   * @generated from field: bytebase.v1.ColumnMetadata.IdentityGeneration identity_generation = 14;
    */
   identityGeneration: ColumnMetadata_IdentityGeneration;
 
   /**
    * The identity_seed is for identity columns, MSSQL only.
    *
-   * @generated from field: int64 identity_seed = 20;
+   * @generated from field: int64 identity_seed = 15;
    */
   identitySeed: bigint;
 
   /**
    * The identity_increment is for identity columns, MSSQL only.
    *
-   * @generated from field: int64 identity_increment = 21;
+   * @generated from field: int64 identity_increment = 16;
    */
   identityIncrement: bigint;
 
@@ -1609,7 +1609,7 @@ export declare type ColumnMetadata = Message<"bytebase.v1.ColumnMetadata"> & {
    * This field is populated when syncing from the database. When empty (e.g., when parsing
    * from SQL files), the system cannot automatically drop the constraint.
    *
-   * @generated from field: string default_constraint_name = 22;
+   * @generated from field: string default_constraint_name = 17;
    */
   defaultConstraintName: string;
 };
@@ -2618,56 +2618,56 @@ export declare type IndexMetadata = Message<"bytebase.v1.IndexMetadata"> & {
    * The key_lengths are the ordered key lengths of an index.
    * If the key length is not specified, it's -1.
    *
-   * @generated from field: repeated int64 key_length = 9;
+   * @generated from field: repeated int64 key_length = 3;
    */
   keyLength: bigint[];
 
   /**
    * The descending is the ordered descending of an index.
    *
-   * @generated from field: repeated bool descending = 10;
+   * @generated from field: repeated bool descending = 4;
    */
   descending: boolean[];
 
   /**
    * The type is the type of an index.
    *
-   * @generated from field: string type = 3;
+   * @generated from field: string type = 5;
    */
   type: string;
 
   /**
    * The unique is whether the index is unique.
    *
-   * @generated from field: bool unique = 4;
+   * @generated from field: bool unique = 6;
    */
   unique: boolean;
 
   /**
    * The primary is whether the index is a primary key index.
    *
-   * @generated from field: bool primary = 5;
+   * @generated from field: bool primary = 7;
    */
   primary: boolean;
 
   /**
    * The visible is whether the index is visible.
    *
-   * @generated from field: bool visible = 6;
+   * @generated from field: bool visible = 8;
    */
   visible: boolean;
 
   /**
    * The comment is the comment of an index.
    *
-   * @generated from field: string comment = 7;
+   * @generated from field: string comment = 9;
    */
   comment: string;
 
   /**
    * The definition of an index.
    *
-   * @generated from field: string definition = 8;
+   * @generated from field: string definition = 10;
    */
   definition: string;
 
@@ -2981,7 +2981,7 @@ export declare type ChangedResourceTable = Message<"bytebase.v1.ChangedResourceT
   /**
    * The ranges of sub-strings correspond to the statements on the sheet.
    *
-   * @generated from field: repeated bytebase.v1.Range ranges = 3;
+   * @generated from field: repeated bytebase.v1.Range ranges = 2;
    */
   ranges: Range[];
 };
@@ -3167,24 +3167,24 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
   name: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp create_time = 3;
+   * @generated from field: google.protobuf.Timestamp create_time = 2;
    */
   createTime?: Timestamp;
 
   /**
-   * @generated from field: bytebase.v1.Changelog.Status status = 4;
+   * @generated from field: bytebase.v1.Changelog.Status status = 3;
    */
   status: Changelog_Status;
 
   /**
    * The statement is used for preview purpose.
    *
-   * @generated from field: string statement = 5;
+   * @generated from field: string statement = 4;
    */
   statement: string;
 
   /**
-   * @generated from field: int64 statement_size = 6;
+   * @generated from field: int64 statement_size = 5;
    */
   statementSize: bigint;
 
@@ -3192,48 +3192,48 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
    * The name of the sheet resource.
    * Format: projects/{project}/sheets/{sheet}
    *
-   * @generated from field: string statement_sheet = 7;
+   * @generated from field: string statement_sheet = 6;
    */
   statementSheet: string;
 
   /**
-   * @generated from field: string schema = 8;
+   * @generated from field: string schema = 7;
    */
   schema: string;
 
   /**
-   * @generated from field: int64 schema_size = 9;
+   * @generated from field: int64 schema_size = 8;
    */
   schemaSize: bigint;
 
   /**
-   * @generated from field: string prev_schema = 10;
+   * @generated from field: string prev_schema = 9;
    */
   prevSchema: string;
 
   /**
-   * @generated from field: int64 prev_schema_size = 11;
+   * @generated from field: int64 prev_schema_size = 10;
    */
   prevSchemaSize: bigint;
 
   /**
    * Format: projects/{project}/issues/{issue}
    *
-   * @generated from field: string issue = 12;
+   * @generated from field: string issue = 11;
    */
   issue: string;
 
   /**
    * Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
-   * @generated from field: string task_run = 13;
+   * @generated from field: string task_run = 12;
    */
   taskRun: string;
 
   /**
    * Could be empty
    *
-   * @generated from field: string version = 14;
+   * @generated from field: string version = 13;
    */
   version: string;
 
@@ -3241,17 +3241,17 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
    * Could be empty
    * Or present but not found if deleted
    *
-   * @generated from field: string revision = 15;
+   * @generated from field: string revision = 14;
    */
   revision: string;
 
   /**
-   * @generated from field: bytebase.v1.ChangedResources changed_resources = 16;
+   * @generated from field: bytebase.v1.ChangedResources changed_resources = 15;
    */
   changedResources?: ChangedResources;
 
   /**
-   * @generated from field: bytebase.v1.Changelog.Type type = 17;
+   * @generated from field: bytebase.v1.Changelog.Type type = 16;
    */
   type: Changelog_Type;
 };

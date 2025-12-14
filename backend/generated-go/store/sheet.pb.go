@@ -23,10 +23,10 @@ const (
 
 type SheetPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The SQL dialect.
-	Engine Engine `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.store.Engine" json:"engine,omitempty"`
+	// The SQL dialect of the sheet.
+	Engine Engine `protobuf:"varint,1,opt,name=engine,proto3,enum=bytebase.store.Engine" json:"engine,omitempty"`
 	// The start and end position of each command in the sheet statement.
-	Commands      []*Range `protobuf:"bytes,4,rep,name=commands,proto3" json:"commands,omitempty"`
+	Commands      []*Range `protobuf:"bytes,2,rep,name=commands,proto3" json:"commands,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -81,8 +81,8 @@ const file_store_sheet_proto_rawDesc = "" +
 	"\n" +
 	"\x11store/sheet.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"q\n" +
 	"\fSheetPayload\x12.\n" +
-	"\x06engine\x18\x03 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x121\n" +
-	"\bcommands\x18\x04 \x03(\v2\x15.bytebase.store.RangeR\bcommandsB\x8d\x01\n" +
+	"\x06engine\x18\x01 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x121\n" +
+	"\bcommands\x18\x02 \x03(\v2\x15.bytebase.store.RangeR\bcommandsB\x8d\x01\n" +
 	"\x12com.bytebase.storeB\n" +
 	"SheetProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 

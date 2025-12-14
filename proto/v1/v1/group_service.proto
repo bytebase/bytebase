@@ -224,11 +224,11 @@ message Group {
   string description = 3 [(buf.validate.field).string.max_len = 1000];
 
   // The members of the group.
-  repeated GroupMember members = 5;
+  repeated GroupMember members = 4;
 
   // The source system where the group originated (e.g., Entra ID for SCIM sync).
-  string source = 7;
+  string source = 5;
 
   // The unique email for the group.
-  string email = 8;
+  string email = 6;
 }
