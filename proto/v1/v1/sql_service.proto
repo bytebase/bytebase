@@ -10,7 +10,6 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/database_catalog_service.proto";
 import "v1/database_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
@@ -458,10 +457,6 @@ message DiffMetadataRequest {
 
   // The database engine of the schema.
   Engine engine = 3;
-
-  DatabaseCatalog source_catalog = 4;
-
-  DatabaseCatalog target_catalog = 5;
 }
 
 message DiffMetadataResponse {

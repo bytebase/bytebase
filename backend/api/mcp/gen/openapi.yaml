@@ -9469,12 +9469,6 @@ components:
           title: engine
           description: The database engine of the schema.
           $ref: '#/components/schemas/bytebase.v1.Engine'
-        sourceCatalog:
-          title: source_catalog
-          $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
-        targetCatalog:
-          title: target_catalog
-          $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
       title: DiffMetadataRequest
       additionalProperties: false
     bytebase.v1.DiffMetadataResponse:

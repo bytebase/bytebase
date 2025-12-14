@@ -1609,9 +1609,7 @@ type DiffMetadataRequest struct {
 	// The metadata of the target schema.
 	TargetMetadata *DatabaseMetadata `protobuf:"bytes,2,opt,name=target_metadata,json=targetMetadata,proto3" json:"target_metadata,omitempty"`
 	// The database engine of the schema.
-	Engine        Engine           `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
-	SourceCatalog *DatabaseCatalog `protobuf:"bytes,4,opt,name=source_catalog,json=sourceCatalog,proto3" json:"source_catalog,omitempty"`
-	TargetCatalog *DatabaseCatalog `protobuf:"bytes,5,opt,name=target_catalog,json=targetCatalog,proto3" json:"target_catalog,omitempty"`
+	Engine        Engine `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1665,20 +1663,6 @@ func (x *DiffMetadataRequest) GetEngine() Engine {
 		return x.Engine
 	}
 	return Engine_ENGINE_UNSPECIFIED
-}
-
-func (x *DiffMetadataRequest) GetSourceCatalog() *DatabaseCatalog {
-	if x != nil {
-		return x.SourceCatalog
-	}
-	return nil
-}
-
-func (x *DiffMetadataRequest) GetTargetCatalog() *DatabaseCatalog {
-	if x != nil {
-		return x.TargetCatalog
-	}
-	return nil
 }
 
 type DiffMetadataResponse struct {
@@ -2710,7 +2694,7 @@ var File_v1_sql_service_proto protoreflect.FileDescriptor
 
 const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
-	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a!v1/database_catalog_service.proto\x1a\x19v1/database_service.proto\"\xd5\x01\n" +
+	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/database_service.proto\"\xd5\x01\n" +
 	"\x13AdminExecuteRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
@@ -2880,13 +2864,11 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01B\t\n" +
 	"\a_schema\"*\n" +
 	"\x0eExportResponse\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\fR\acontent\"\xe6\x02\n" +
+	"\acontent\x18\x01 \x01(\fR\acontent\"\xdc\x01\n" +
 	"\x13DiffMetadataRequest\x12K\n" +
 	"\x0fsource_metadata\x18\x01 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0esourceMetadata\x12K\n" +
 	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0etargetMetadata\x12+\n" +
-	"\x06engine\x18\x03 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12C\n" +
-	"\x0esource_catalog\x18\x04 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogR\rsourceCatalog\x12C\n" +
-	"\x0etarget_catalog\x18\x05 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogR\rtargetCatalog\"*\n" +
+	"\x06engine\x18\x03 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\"*\n" +
 	"\x14DiffMetadataResponse\x12\x12\n" +
 	"\x04diff\x18\x01 \x01(\tR\x04diff\"q\n" +
 	"\x1bSearchQueryHistoriesRequest\x12\x1b\n" +
@@ -2996,8 +2978,7 @@ var file_v1_sql_service_proto_goTypes = []any{
 	(ExportFormat)(0),                                   // 40: bytebase.v1.ExportFormat
 	(*DatabaseMetadata)(nil),                            // 41: bytebase.v1.DatabaseMetadata
 	(Engine)(0),                                         // 42: bytebase.v1.Engine
-	(*DatabaseCatalog)(nil),                             // 43: bytebase.v1.DatabaseCatalog
-	(*timestamppb.Timestamp)(nil),                       // 44: google.protobuf.Timestamp
+	(*timestamppb.Timestamp)(nil),                       // 43: google.protobuf.Timestamp
 }
 var file_v1_sql_service_proto_depIdxs = []int32{
 	12, // 0: bytebase.v1.AdminExecuteResponse.results:type_name -> bytebase.v1.QueryResult
@@ -3025,38 +3006,36 @@ var file_v1_sql_service_proto_depIdxs = []int32{
 	41, // 22: bytebase.v1.DiffMetadataRequest.source_metadata:type_name -> bytebase.v1.DatabaseMetadata
 	41, // 23: bytebase.v1.DiffMetadataRequest.target_metadata:type_name -> bytebase.v1.DatabaseMetadata
 	42, // 24: bytebase.v1.DiffMetadataRequest.engine:type_name -> bytebase.v1.Engine
-	43, // 25: bytebase.v1.DiffMetadataRequest.source_catalog:type_name -> bytebase.v1.DatabaseCatalog
-	43, // 26: bytebase.v1.DiffMetadataRequest.target_catalog:type_name -> bytebase.v1.DatabaseCatalog
-	23, // 27: bytebase.v1.SearchQueryHistoriesResponse.query_histories:type_name -> bytebase.v1.QueryHistory
-	44, // 28: bytebase.v1.QueryHistory.create_time:type_name -> google.protobuf.Timestamp
-	36, // 29: bytebase.v1.QueryHistory.duration:type_name -> google.protobuf.Duration
-	6,  // 30: bytebase.v1.QueryHistory.type:type_name -> bytebase.v1.QueryHistory.Type
-	32, // 31: bytebase.v1.AICompletionRequest.messages:type_name -> bytebase.v1.AICompletionRequest.Message
-	33, // 32: bytebase.v1.AICompletionResponse.candidates:type_name -> bytebase.v1.AICompletionResponse.Candidate
-	39, // 33: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
-	2,  // 34: bytebase.v1.QueryResult.PermissionDenied.command_type:type_name -> bytebase.v1.QueryResult.PermissionDenied.CommandType
-	3,  // 35: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
-	44, // 36: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
-	44, // 37: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
-	34, // 38: bytebase.v1.AICompletionResponse.Candidate.content:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content
-	35, // 39: bytebase.v1.AICompletionResponse.Candidate.Content.parts:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content.Part
-	9,  // 40: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
-	7,  // 41: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
-	21, // 42: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
-	17, // 43: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
-	19, // 44: bytebase.v1.SQLService.DiffMetadata:input_type -> bytebase.v1.DiffMetadataRequest
-	24, // 45: bytebase.v1.SQLService.AICompletion:input_type -> bytebase.v1.AICompletionRequest
-	10, // 46: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
-	8,  // 47: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
-	22, // 48: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
-	18, // 49: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
-	20, // 50: bytebase.v1.SQLService.DiffMetadata:output_type -> bytebase.v1.DiffMetadataResponse
-	25, // 51: bytebase.v1.SQLService.AICompletion:output_type -> bytebase.v1.AICompletionResponse
-	46, // [46:52] is the sub-list for method output_type
-	40, // [40:46] is the sub-list for method input_type
-	40, // [40:40] is the sub-list for extension type_name
-	40, // [40:40] is the sub-list for extension extendee
-	0,  // [0:40] is the sub-list for field type_name
+	23, // 25: bytebase.v1.SearchQueryHistoriesResponse.query_histories:type_name -> bytebase.v1.QueryHistory
+	43, // 26: bytebase.v1.QueryHistory.create_time:type_name -> google.protobuf.Timestamp
+	36, // 27: bytebase.v1.QueryHistory.duration:type_name -> google.protobuf.Duration
+	6,  // 28: bytebase.v1.QueryHistory.type:type_name -> bytebase.v1.QueryHistory.Type
+	32, // 29: bytebase.v1.AICompletionRequest.messages:type_name -> bytebase.v1.AICompletionRequest.Message
+	33, // 30: bytebase.v1.AICompletionResponse.candidates:type_name -> bytebase.v1.AICompletionResponse.Candidate
+	39, // 31: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
+	2,  // 32: bytebase.v1.QueryResult.PermissionDenied.command_type:type_name -> bytebase.v1.QueryResult.PermissionDenied.CommandType
+	3,  // 33: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
+	43, // 34: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
+	43, // 35: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
+	34, // 36: bytebase.v1.AICompletionResponse.Candidate.content:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content
+	35, // 37: bytebase.v1.AICompletionResponse.Candidate.Content.parts:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content.Part
+	9,  // 38: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
+	7,  // 39: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
+	21, // 40: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
+	17, // 41: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
+	19, // 42: bytebase.v1.SQLService.DiffMetadata:input_type -> bytebase.v1.DiffMetadataRequest
+	24, // 43: bytebase.v1.SQLService.AICompletion:input_type -> bytebase.v1.AICompletionRequest
+	10, // 44: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
+	8,  // 45: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
+	22, // 46: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
+	18, // 47: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
+	20, // 48: bytebase.v1.SQLService.DiffMetadata:output_type -> bytebase.v1.DiffMetadataResponse
+	25, // 49: bytebase.v1.SQLService.AICompletion:output_type -> bytebase.v1.AICompletionResponse
+	44, // [44:50] is the sub-list for method output_type
+	38, // [38:44] is the sub-list for method input_type
+	38, // [38:38] is the sub-list for extension type_name
+	38, // [38:38] is the sub-list for extension extendee
+	0,  // [0:38] is the sub-list for field type_name
 }
 
 func init() { file_v1_sql_service_proto_init() }
@@ -3066,7 +3045,6 @@ func file_v1_sql_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
-	file_v1_database_catalog_service_proto_init()
 	file_v1_database_service_proto_init()
 	file_v1_sql_service_proto_msgTypes[0].OneofWrappers = []any{}
 	file_v1_sql_service_proto_msgTypes[2].OneofWrappers = []any{}

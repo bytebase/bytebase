@@ -7,7 +7,6 @@ import type { Message } from "@bufbuild/protobuf";
 import type { Duration, NullValue, Timestamp, Value } from "@bufbuild/protobuf/wkt";
 import type { Engine, ExportFormat, Position } from "./common_pb";
 import type { DatabaseMetadata } from "./database_service_pb";
-import type { DatabaseCatalog } from "./database_catalog_service_pb";
 
 /**
  * Describes the file v1/sql_service.proto.
@@ -1109,16 +1108,6 @@ export declare type DiffMetadataRequest = Message<"bytebase.v1.DiffMetadataReque
    * @generated from field: bytebase.v1.Engine engine = 3;
    */
   engine: Engine;
-
-  /**
-   * @generated from field: bytebase.v1.DatabaseCatalog source_catalog = 4;
-   */
-  sourceCatalog?: DatabaseCatalog;
-
-  /**
-   * @generated from field: bytebase.v1.DatabaseCatalog target_catalog = 5;
-   */
-  targetCatalog?: DatabaseCatalog;
 };
 
 /**

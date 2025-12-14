@@ -177,9 +177,6 @@ const handleInsertSQL = async () => {
     database,
     sourceMetadata: baselineMetadata,
     targetMetadata: metadata,
-    sourceCatalog: baselineCatalog,
-    targetCatalog: catalog,
-    allowEmptyDiffDDLWithConfigChange: false,
   });
 
   if (result.statement) {
