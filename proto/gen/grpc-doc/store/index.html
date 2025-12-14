@@ -299,34 +299,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.store.ChangedResourceDatabase"><span class="badge">M</span>ChangedResourceDatabase</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ChangedResourceFunction"><span class="badge">M</span>ChangedResourceFunction</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ChangedResourceProcedure"><span class="badge">M</span>ChangedResourceProcedure</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ChangedResourceSchema"><span class="badge">M</span>ChangedResourceSchema</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ChangedResourceTable"><span class="badge">M</span>ChangedResourceTable</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ChangedResourceView"><span class="badge">M</span>ChangedResourceView</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ChangedResources"><span class="badge">M</span>ChangedResources</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.ChangelogPayload"><span class="badge">M</span>ChangelogPayload</a>
                 </li>
               
@@ -741,21 +713,6 @@
         
           
           <li>
-            <a href="#store%2finstance_change_history.proto">store/instance_change_history.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.InstanceChangeHistoryPayload"><span class="badge">M</span>InstanceChangeHistoryPayload</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2fissue.proto">store/issue.proto</a>
             <ul>
               
@@ -933,6 +890,22 @@
           <li>
             <a href="#store%2fplan_check_run.proto">store/plan_check_run.proto</a>
             <ul>
+              
+                <li>
+                  <a href="#bytebase.store.ChangedResourceDatabase"><span class="badge">M</span>ChangedResourceDatabase</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ChangedResourceSchema"><span class="badge">M</span>ChangedResourceSchema</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ChangedResourceTable"><span class="badge">M</span>ChangedResourceTable</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ChangedResources"><span class="badge">M</span>ChangedResources</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.store.PlanCheckRunConfig"><span class="badge">M</span>PlanCheckRunConfig</a>
@@ -2547,244 +2520,6 @@ This information is not authenticated and should be treated accordingly. </p></t
       <p></p>
 
       
-        <h3 id="bytebase.store.ChangedResourceDatabase">ChangedResourceDatabase</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schemas</td>
-                  <td><a href="#bytebase.store.ChangedResourceSchema">ChangedResourceSchema</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ChangedResourceFunction">ChangedResourceFunction</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ranges</td>
-                  <td><a href="#bytebase.store.Range">Range</a></td>
-                  <td>repeated</td>
-                  <td><p>The ranges of substrings correspond to the statements on the sheet. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ChangedResourceProcedure">ChangedResourceProcedure</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ranges</td>
-                  <td><a href="#bytebase.store.Range">Range</a></td>
-                  <td>repeated</td>
-                  <td><p>The ranges of substrings correspond to the statements on the sheet. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ChangedResourceSchema">ChangedResourceSchema</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>tables</td>
-                  <td><a href="#bytebase.store.ChangedResourceTable">ChangedResourceTable</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>views</td>
-                  <td><a href="#bytebase.store.ChangedResourceView">ChangedResourceView</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>functions</td>
-                  <td><a href="#bytebase.store.ChangedResourceFunction">ChangedResourceFunction</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>procedures</td>
-                  <td><a href="#bytebase.store.ChangedResourceProcedure">ChangedResourceProcedure</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ChangedResourceTable">ChangedResourceTable</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table_rows</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The estimated row count of the table. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ranges</td>
-                  <td><a href="#bytebase.store.Range">Range</a></td>
-                  <td>repeated</td>
-                  <td><p>The ranges of substrings correspond to the statements on the sheet. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ChangedResourceView">ChangedResourceView</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ranges</td>
-                  <td><a href="#bytebase.store.Range">Range</a></td>
-                  <td>repeated</td>
-                  <td><p>The ranges of substrings correspond to the statements on the sheet. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.ChangedResources">ChangedResources</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>databases</td>
-                  <td><a href="#bytebase.store.ChangedResourceDatabase">ChangedResourceDatabase</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.ChangelogPayload">ChangelogPayload</h3>
         <p></p>
 
@@ -2815,13 +2550,6 @@ This information is not authenticated and should be treated accordingly. </p></t
                   <td></td>
                   <td><p>The revision uid.
 optional </p></td>
-                </tr>
-              
-                <tr>
-                  <td>changed_resources</td>
-                  <td><a href="#bytebase.store.ChangedResources">ChangedResources</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -7976,44 +7704,6 @@ For MySQL, it is the global privileges as GRANT statements, which means it only 
     
       
       <div class="file-heading">
-        <h2 id="store/instance_change_history.proto">store/instance_change_history.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.InstanceChangeHistoryPayload">InstanceChangeHistoryPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>changed_resources</td>
-                  <td><a href="#bytebase.store.ChangedResources">ChangedResources</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="store/issue.proto">store/issue.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -9344,6 +9034,123 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
       </div>
       <p></p>
 
+      
+        <h3 id="bytebase.store.ChangedResourceDatabase">ChangedResourceDatabase</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schemas</td>
+                  <td><a href="#bytebase.store.ChangedResourceSchema">ChangedResourceSchema</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ChangedResourceSchema">ChangedResourceSchema</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tables</td>
+                  <td><a href="#bytebase.store.ChangedResourceTable">ChangedResourceTable</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ChangedResourceTable">ChangedResourceTable</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table_rows</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The estimated row count of the table. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ChangedResources">ChangedResources</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>databases</td>
+                  <td><a href="#bytebase.store.ChangedResourceDatabase">ChangedResourceDatabase</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
       
         <h3 id="bytebase.store.PlanCheckRunConfig">PlanCheckRunConfig</h3>
         <p></p>

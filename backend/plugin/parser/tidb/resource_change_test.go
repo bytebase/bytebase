@@ -24,7 +24,6 @@ func TestExtractChangedResources(t *testing.T) {
 		"",
 		&storepb.ChangedResourceTable{
 			Name: "t1",
-			Ranges: []*storepb.Range{
 				{Start: 0, End: 25},
 				{Start: 27, End: 41},
 				{Start: 43, End: 76},
@@ -40,7 +39,6 @@ func TestExtractChangedResources(t *testing.T) {
 		"",
 		&storepb.ChangedResourceTable{
 			Name:   "t2",
-			Ranges: []*storepb.Range{{Start: 78, End: 100}},
 		},
 		false,
 	)

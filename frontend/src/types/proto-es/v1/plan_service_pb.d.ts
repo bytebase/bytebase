@@ -7,7 +7,6 @@ import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { DatabaseChangeType, ExportFormat, Position, State } from "./common_pb";
 import type { Advice_Level } from "./sql_service_pb";
-import type { ChangedResources } from "./database_service_pb";
 
 /**
  * Describes the file v1/plan_service.proto.
@@ -884,11 +883,6 @@ export declare type PlanCheckRun_Result_SqlSummaryReport = Message<"bytebase.v1.
    * @generated from field: int64 affected_rows = 3;
    */
   affectedRows: bigint;
-
-  /**
-   * @generated from field: bytebase.v1.ChangedResources changed_resources = 4;
-   */
-  changedResources?: ChangedResources;
 };
 
 /**

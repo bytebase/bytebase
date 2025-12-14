@@ -1341,56 +1341,6 @@ message DatabaseSDLSchema {
   string content_type = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-message ChangedResources {
-  repeated ChangedResourceDatabase databases = 1;
-}
-
-message ChangedResourceDatabase {
-  string name = 1;
-
-  repeated ChangedResourceSchema schemas = 2;
-}
-
-message ChangedResourceSchema {
-  string name = 1;
-
-  repeated ChangedResourceTable tables = 2;
-
-  repeated ChangedResourceView views = 3;
-
-  repeated ChangedResourceFunction functions = 4;
-
-  repeated ChangedResourceProcedure procedures = 5;
-}
-
-message ChangedResourceTable {
-  string name = 1;
-
-  // The ranges of sub-strings correspond to the statements on the sheet.
-  repeated Range ranges = 2;
-}
-
-message ChangedResourceView {
-  string name = 1;
-
-  // The ranges of sub-strings correspond to the statements on the sheet.
-  repeated Range ranges = 2;
-}
-
-message ChangedResourceFunction {
-  string name = 1;
-
-  // The ranges of sub-strings correspond to the statements on the sheet.
-  repeated Range ranges = 2;
-}
-
-message ChangedResourceProcedure {
-  string name = 1;
-
-  // The ranges of sub-strings correspond to the statements on the sheet.
-  repeated Range ranges = 2;
-}
-
 enum ChangelogView {
   // The default / unset value.
   // The API will default to the BASIC view.
@@ -1482,8 +1432,6 @@ message Changelog {
   // Could be empty
   // Or present but not found if deleted
   string revision = 14;
-
-  ChangedResources changed_resources = 15;
 
   enum Type {
     TYPE_UNSPECIFIED = 0;

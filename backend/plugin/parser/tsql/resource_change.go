@@ -76,8 +76,7 @@ func (l *tsqlChangedResourceExtractListener) EnterCreate_table(ctx *parser.Creat
 		d,
 		s,
 		&storepb.ChangedResourceTable{
-			Name:   t,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
+			Name: t,
 		},
 		false)
 }
@@ -94,8 +93,7 @@ func (l *tsqlChangedResourceExtractListener) EnterDrop_table(ctx *parser.Drop_ta
 			d,
 			s,
 			&storepb.ChangedResourceTable{
-				Name:   t,
-				Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
+				Name: t,
 			},
 			true)
 	}
@@ -113,8 +111,7 @@ func (l *tsqlChangedResourceExtractListener) EnterAlter_table(ctx *parser.Alter_
 			d,
 			s,
 			&storepb.ChangedResourceTable{
-				Name:   t,
-				Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
+				Name: t,
 			},
 			true)
 	}
@@ -131,8 +128,7 @@ func (l *tsqlChangedResourceExtractListener) EnterCreate_index(ctx *parser.Creat
 		d,
 		s,
 		&storepb.ChangedResourceTable{
-			Name:   t,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
+			Name: t,
 		},
 		false)
 }
@@ -157,99 +153,9 @@ func (l *tsqlChangedResourceExtractListener) EnterDrop_index(ctx *parser.Drop_in
 			d,
 			s,
 			&storepb.ChangedResourceTable{
-				Name:   fullTable.Table,
-				Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
+				Name: fullTable.Table,
 			},
 			false)
-	}
-}
-
-// EnterCreate_view is called when production create_view is entered.
-func (l *tsqlChangedResourceExtractListener) EnterCreate_view(ctx *parser.Create_viewContext) {
-	d, _ := NormalizeTSQLIdentifierText(l.currentDatabase)
-	schema, name := normalizeSimpleNameSeparated(ctx.Simple_name(), l.currentSchema, false)
-	l.changedResources.AddView(
-		d,
-		schema,
-		&storepb.ChangedResourceView{
-			Name:   name,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
-		},
-	)
-}
-
-func (l *tsqlChangedResourceExtractListener) EnterDrop_view(ctx *parser.Drop_viewContext) {
-	d, _ := NormalizeTSQLIdentifierText(l.currentDatabase)
-	for _, simpleName := range ctx.AllSimple_name() {
-		schema, name := normalizeSimpleNameSeparated(simpleName, l.currentSchema, false)
-		l.changedResources.AddView(
-			d,
-			schema,
-			&storepb.ChangedResourceView{
-				Name:   name,
-				Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
-			},
-		)
-	}
-}
-
-func (l *tsqlChangedResourceExtractListener) EnterCreate_or_alter_procedure(ctx *parser.Create_or_alter_procedureContext) {
-	d, _ := NormalizeTSQLIdentifierText(l.currentDatabase)
-	schema, procedure := normalizeProcedureSeparated(ctx.GetProcName(), l.currentSchema, false)
-
-	l.changedResources.AddProcedure(
-		d,
-		schema,
-		&storepb.ChangedResourceProcedure{
-			Name:   procedure,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
-		},
-	)
-}
-
-func (l *tsqlChangedResourceExtractListener) EnterDrop_procedure(ctx *parser.Drop_procedureContext) {
-	d, _ := NormalizeTSQLIdentifierText(l.currentDatabase)
-	for _, functionName := range ctx.AllFunc_proc_name_schema() {
-		schema, function := normalizeProcedureSeparated(functionName, l.currentSchema, false)
-
-		l.changedResources.AddFunction(
-			d,
-			schema,
-			&storepb.ChangedResourceFunction{
-				Name:   function,
-				Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
-			},
-		)
-	}
-}
-
-func (l *tsqlChangedResourceExtractListener) EnterCreate_or_alter_function(ctx *parser.Create_or_alter_functionContext) {
-	d, _ := NormalizeTSQLIdentifierText(l.currentDatabase)
-	schema, function := normalizeProcedureSeparated(ctx.GetFuncName(), l.currentSchema, false)
-
-	l.changedResources.AddFunction(
-		d,
-		schema,
-		&storepb.ChangedResourceFunction{
-			Name:   function,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
-		},
-	)
-}
-
-func (l *tsqlChangedResourceExtractListener) EnterDrop_function(ctx *parser.Drop_functionContext) {
-	d, _ := NormalizeTSQLIdentifierText(l.currentDatabase)
-	for _, functionName := range ctx.AllFunc_proc_name_schema() {
-		schema, function := normalizeProcedureSeparated(functionName, l.currentSchema, false)
-
-		l.changedResources.AddFunction(
-			d,
-			schema,
-			&storepb.ChangedResourceFunction{
-				Name:   function,
-				Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
-			},
-		)
 	}
 }
 
@@ -269,8 +175,7 @@ func (l *tsqlChangedResourceExtractListener) EnterInsert_statement(ctx *parser.I
 				d,
 				s,
 				&storepb.ChangedResourceTable{
-					Name:   table.Table,
-					Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
+					Name: table.Table,
 				},
 				false,
 			)
@@ -306,8 +211,7 @@ func (l *tsqlChangedResourceExtractListener) EnterUpdate_statement(ctx *parser.U
 				d,
 				s,
 				&storepb.ChangedResourceTable{
-					Name:   table.Table,
-					Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
+					Name: table.Table,
 				},
 				false,
 			)
@@ -338,8 +242,7 @@ func (l *tsqlChangedResourceExtractListener) EnterDelete_statement(ctx *parser.D
 				d,
 				s,
 				&storepb.ChangedResourceTable{
-					Name:   table.Table,
-					Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
+					Name: table.Table,
 				},
 				false,
 			)

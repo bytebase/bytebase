@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { Range, State } from "./common_pb";
+import type { State } from "./common_pb";
 import type { InstanceResource } from "./instance_service_pb";
 
 /**
@@ -2897,171 +2897,6 @@ export declare type DatabaseSDLSchema = Message<"bytebase.v1.DatabaseSDLSchema">
 export declare const DatabaseSDLSchemaSchema: GenMessage<DatabaseSDLSchema>;
 
 /**
- * @generated from message bytebase.v1.ChangedResources
- */
-export declare type ChangedResources = Message<"bytebase.v1.ChangedResources"> & {
-  /**
-   * @generated from field: repeated bytebase.v1.ChangedResourceDatabase databases = 1;
-   */
-  databases: ChangedResourceDatabase[];
-};
-
-/**
- * Describes the message bytebase.v1.ChangedResources.
- * Use `create(ChangedResourcesSchema)` to create a new message.
- */
-export declare const ChangedResourcesSchema: GenMessage<ChangedResources>;
-
-/**
- * @generated from message bytebase.v1.ChangedResourceDatabase
- */
-export declare type ChangedResourceDatabase = Message<"bytebase.v1.ChangedResourceDatabase"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * @generated from field: repeated bytebase.v1.ChangedResourceSchema schemas = 2;
-   */
-  schemas: ChangedResourceSchema[];
-};
-
-/**
- * Describes the message bytebase.v1.ChangedResourceDatabase.
- * Use `create(ChangedResourceDatabaseSchema)` to create a new message.
- */
-export declare const ChangedResourceDatabaseSchema: GenMessage<ChangedResourceDatabase>;
-
-/**
- * @generated from message bytebase.v1.ChangedResourceSchema
- */
-export declare type ChangedResourceSchema = Message<"bytebase.v1.ChangedResourceSchema"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * @generated from field: repeated bytebase.v1.ChangedResourceTable tables = 2;
-   */
-  tables: ChangedResourceTable[];
-
-  /**
-   * @generated from field: repeated bytebase.v1.ChangedResourceView views = 3;
-   */
-  views: ChangedResourceView[];
-
-  /**
-   * @generated from field: repeated bytebase.v1.ChangedResourceFunction functions = 4;
-   */
-  functions: ChangedResourceFunction[];
-
-  /**
-   * @generated from field: repeated bytebase.v1.ChangedResourceProcedure procedures = 5;
-   */
-  procedures: ChangedResourceProcedure[];
-};
-
-/**
- * Describes the message bytebase.v1.ChangedResourceSchema.
- * Use `create(ChangedResourceSchemaSchema)` to create a new message.
- */
-export declare const ChangedResourceSchemaSchema: GenMessage<ChangedResourceSchema>;
-
-/**
- * @generated from message bytebase.v1.ChangedResourceTable
- */
-export declare type ChangedResourceTable = Message<"bytebase.v1.ChangedResourceTable"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * The ranges of sub-strings correspond to the statements on the sheet.
-   *
-   * @generated from field: repeated bytebase.v1.Range ranges = 2;
-   */
-  ranges: Range[];
-};
-
-/**
- * Describes the message bytebase.v1.ChangedResourceTable.
- * Use `create(ChangedResourceTableSchema)` to create a new message.
- */
-export declare const ChangedResourceTableSchema: GenMessage<ChangedResourceTable>;
-
-/**
- * @generated from message bytebase.v1.ChangedResourceView
- */
-export declare type ChangedResourceView = Message<"bytebase.v1.ChangedResourceView"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * The ranges of sub-strings correspond to the statements on the sheet.
-   *
-   * @generated from field: repeated bytebase.v1.Range ranges = 2;
-   */
-  ranges: Range[];
-};
-
-/**
- * Describes the message bytebase.v1.ChangedResourceView.
- * Use `create(ChangedResourceViewSchema)` to create a new message.
- */
-export declare const ChangedResourceViewSchema: GenMessage<ChangedResourceView>;
-
-/**
- * @generated from message bytebase.v1.ChangedResourceFunction
- */
-export declare type ChangedResourceFunction = Message<"bytebase.v1.ChangedResourceFunction"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * The ranges of sub-strings correspond to the statements on the sheet.
-   *
-   * @generated from field: repeated bytebase.v1.Range ranges = 2;
-   */
-  ranges: Range[];
-};
-
-/**
- * Describes the message bytebase.v1.ChangedResourceFunction.
- * Use `create(ChangedResourceFunctionSchema)` to create a new message.
- */
-export declare const ChangedResourceFunctionSchema: GenMessage<ChangedResourceFunction>;
-
-/**
- * @generated from message bytebase.v1.ChangedResourceProcedure
- */
-export declare type ChangedResourceProcedure = Message<"bytebase.v1.ChangedResourceProcedure"> & {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * The ranges of sub-strings correspond to the statements on the sheet.
-   *
-   * @generated from field: repeated bytebase.v1.Range ranges = 2;
-   */
-  ranges: Range[];
-};
-
-/**
- * Describes the message bytebase.v1.ChangedResourceProcedure.
- * Use `create(ChangedResourceProcedureSchema)` to create a new message.
- */
-export declare const ChangedResourceProcedureSchema: GenMessage<ChangedResourceProcedure>;
-
-/**
  * @generated from message bytebase.v1.ListChangelogsRequest
  */
 export declare type ListChangelogsRequest = Message<"bytebase.v1.ListChangelogsRequest"> & {
@@ -3244,11 +3079,6 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
    * @generated from field: string revision = 14;
    */
   revision: string;
-
-  /**
-   * @generated from field: bytebase.v1.ChangedResources changed_resources = 15;
-   */
-  changedResources?: ChangedResources;
 
   /**
    * @generated from field: bytebase.v1.Changelog.Type type = 16;

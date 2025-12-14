@@ -3,7 +3,6 @@ syntax = "proto3";
 package bytebase.store;
 
 import "store/advice.proto";
-import "store/changelog.proto";
 import "store/common.proto";
 
 option go_package = "generated-go/store";
@@ -51,4 +50,27 @@ message PlanCheckRunResult {
       Position end_position = 2;
     }
   }
+}
+
+message ChangedResources {
+  repeated ChangedResourceDatabase databases = 1;
+}
+
+message ChangedResourceDatabase {
+  string name = 1;
+
+  repeated ChangedResourceSchema schemas = 2;
+}
+
+message ChangedResourceSchema {
+  string name = 1;
+
+  repeated ChangedResourceTable tables = 2;
+}
+
+message ChangedResourceTable {
+  string name = 1;
+
+  // The estimated row count of the table.
+  int64 table_rows = 2;
 }

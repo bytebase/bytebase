@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -89,8 +88,6 @@ type migrateContext struct {
 	// mutable
 	// changelog uid
 	changelog int64
-
-	changeHistoryPayload *storepb.InstanceChangeHistoryPayload
 
 	// needDump indicates whether schema dump is needed before/after migration.
 	// False for pure DML (INSERT, UPDATE, DELETE) since they don't change schema.
@@ -221,67 +218,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 			}
 			mc.release.release = common.FormatReleaseName(project, release)
 			mc.release.file = f
-		}
-	}
-
-	plans, err := stores.ListPlans(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list plans")
-	}
-	if len(plans) == 1 {
-		planTypes := []store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport}
-		status := []store.PlanCheckRunStatus{store.PlanCheckRunStatusDone}
-		runs, err := stores.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-			PlanUID: &plans[0].UID,
-			Type:    &planTypes,
-			Status:  &status,
-		})
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to list plan check runs")
-		}
-		slices.SortFunc(runs, func(a, b *store.PlanCheckRunMessage) int {
-			if a.UID > b.UID {
-				return -1
-			} else if a.UID < b.UID {
-				return 1
-			}
-			return 0
-		})
-		foundChangedResources := false
-		for _, run := range runs {
-			if foundChangedResources {
-				break
-			}
-			taskInstance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
-			if err != nil {
-				return nil, err
-			}
-			if taskInstance == nil {
-				return nil, errors.Errorf("task %d instance not found", task.ID)
-			}
-
-			if run.Config.InstanceId != taskInstance.ResourceID {
-				continue
-			}
-			if run.Config.DatabaseName != database.DatabaseName {
-				continue
-			}
-			if sheetID != nil && run.Config.SheetUid != int32(*sheetID) {
-				continue
-			}
-			if run.Result == nil {
-				continue
-			}
-			for _, result := range run.Result.Results {
-				if result.Status != storepb.Advice_SUCCESS {
-					continue
-				}
-				if report := result.GetSqlSummaryReport(); report != nil {
-					mc.changeHistoryPayload = &storepb.InstanceChangeHistoryPayload{ChangedResources: report.ChangedResources}
-					foundChangedResources = true
-					break
-				}
-			}
 		}
 	}
 
@@ -514,15 +450,14 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 		PrevSyncHistoryUID: syncHistoryPrevUID,
 		SyncHistoryUID:     nil,
 		Payload: &storepb.ChangelogPayload{
-			TaskRun:          mc.taskRunName,
-			Issue:            mc.issueName,
-			Revision:         0,
-			ChangedResources: mc.changeHistoryPayload.GetChangedResources(),
-			Sheet:            mc.sheetName,
-			Version:          mc.version,
-			Type:             changelogType,
-			GitCommit:        mc.profile.GitCommit,
-			DumpVersion:      schema.GetDumpFormatVersion(mc.instance.Metadata.GetEngine()),
+			TaskRun:     mc.taskRunName,
+			Issue:       mc.issueName,
+			Revision:    0,
+			Sheet:       mc.sheetName,
+			Version:     mc.version,
+			Type:        changelogType,
+			GitCommit:   mc.profile.GitCommit,
+			DumpVersion: schema.GetDumpFormatVersion(mc.instance.Metadata.GetEngine()),
 		}})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to create changelog")

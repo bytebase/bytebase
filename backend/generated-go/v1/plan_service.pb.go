@@ -1776,11 +1776,10 @@ func (*PlanCheckRun_Result_SqlReviewReport_) isPlanCheckRun_Result_Report() {}
 type PlanCheckRun_Result_SqlSummaryReport struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// statement_types are the types of statements that are found in the sql.
-	StatementTypes   []string          `protobuf:"bytes,2,rep,name=statement_types,json=statementTypes,proto3" json:"statement_types,omitempty"`
-	AffectedRows     int64             `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
-	ChangedResources *ChangedResources `protobuf:"bytes,4,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	StatementTypes []string `protobuf:"bytes,2,rep,name=statement_types,json=statementTypes,proto3" json:"statement_types,omitempty"`
+	AffectedRows   int64    `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *PlanCheckRun_Result_SqlSummaryReport) Reset() {
@@ -1825,13 +1824,6 @@ func (x *PlanCheckRun_Result_SqlSummaryReport) GetAffectedRows() int64 {
 		return x.AffectedRows
 	}
 	return 0
-}
-
-func (x *PlanCheckRun_Result_SqlSummaryReport) GetChangedResources() *ChangedResources {
-	if x != nil {
-		return x.ChangedResources
-	}
-	return nil
 }
 
 type PlanCheckRun_Result_SqlReviewReport struct {
@@ -1891,7 +1883,7 @@ var File_v1_plan_service_proto protoreflect.FileDescriptor
 
 const file_v1_plan_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/plan_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/database_service.proto\x1a\x14v1/sql_service.proto\"?\n" +
+	"\x15v1/plan_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x14v1/sql_service.proto\"?\n" +
 	"\x0eGetPlanRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x04name\"\x84\x01\n" +
@@ -2004,7 +1996,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x06parent\x12&\n" +
 	"\x0fplan_check_runs\x18\x02 \x03(\tR\rplanCheckRuns\"\"\n" +
-	" BatchCancelPlanCheckRunsResponse\"\xe7\t\n" +
+	" BatchCancelPlanCheckRunsResponse\"\x9a\t\n" +
 	"\fPlanCheckRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x122\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1e.bytebase.v1.PlanCheckRun.TypeR\x04type\x128\n" +
@@ -2014,18 +2006,17 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\aresults\x18\x06 \x03(\v2 .bytebase.v1.PlanCheckRun.ResultR\aresults\x12\x14\n" +
 	"\x05error\x18\a \x01(\tR\x05error\x12@\n" +
 	"\vcreate_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x1a\x87\x05\n" +
+	"createTime\x1a\xba\x04\n" +
 	"\x06Result\x121\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x19.bytebase.v1.Advice.LevelR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x12\n" +
 	"\x04code\x18\x04 \x01(\x05R\x04code\x12a\n" +
 	"\x12sql_summary_report\x18\x05 \x01(\v21.bytebase.v1.PlanCheckRun.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12^\n" +
-	"\x11sql_review_report\x18\x06 \x01(\v20.bytebase.v1.PlanCheckRun.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xac\x01\n" +
+	"\x11sql_review_report\x18\x06 \x01(\v20.bytebase.v1.PlanCheckRun.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a`\n" +
 	"\x10SqlSummaryReport\x12'\n" +
 	"\x0fstatement_types\x18\x02 \x03(\tR\x0estatementTypes\x12#\n" +
-	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x12J\n" +
-	"\x11changed_resources\x18\x04 \x01(\v2\x1d.bytebase.v1.ChangedResourcesR\x10changedResources\x1a\x89\x01\n" +
+	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x1a\x89\x01\n" +
 	"\x0fSqlReviewReport\x12<\n" +
 	"\x0estart_position\x18\x05 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
 	"\fend_position\x18\x06 \x01(\v2\x15.bytebase.v1.PositionR\vendPositionB\b\n" +
@@ -2107,8 +2098,7 @@ var file_v1_plan_service_proto_goTypes = []any{
 	(DatabaseChangeType)(0),                      // 31: bytebase.v1.DatabaseChangeType
 	(ExportFormat)(0),                            // 32: bytebase.v1.ExportFormat
 	(Advice_Level)(0),                            // 33: bytebase.v1.Advice.Level
-	(*ChangedResources)(nil),                     // 34: bytebase.v1.ChangedResources
-	(*Position)(nil),                             // 35: bytebase.v1.Position
+	(*Position)(nil),                             // 34: bytebase.v1.Position
 }
 var file_v1_plan_service_proto_depIdxs = []int32{
 	9,  // 0: bytebase.v1.ListPlansResponse.plans:type_name -> bytebase.v1.Plan
@@ -2137,30 +2127,29 @@ var file_v1_plan_service_proto_depIdxs = []int32{
 	33, // 23: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.Advice.Level
 	26, // 24: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
 	27, // 25: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
-	34, // 26: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.v1.ChangedResources
-	35, // 27: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.start_position:type_name -> bytebase.v1.Position
-	35, // 28: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.end_position:type_name -> bytebase.v1.Position
-	2,  // 29: bytebase.v1.PlanService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
-	3,  // 30: bytebase.v1.PlanService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
-	5,  // 31: bytebase.v1.PlanService.SearchPlans:input_type -> bytebase.v1.SearchPlansRequest
-	7,  // 32: bytebase.v1.PlanService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
-	8,  // 33: bytebase.v1.PlanService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
-	10, // 34: bytebase.v1.PlanService.ListPlanCheckRuns:input_type -> bytebase.v1.ListPlanCheckRunsRequest
-	12, // 35: bytebase.v1.PlanService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
-	14, // 36: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:input_type -> bytebase.v1.BatchCancelPlanCheckRunsRequest
-	9,  // 37: bytebase.v1.PlanService.GetPlan:output_type -> bytebase.v1.Plan
-	4,  // 38: bytebase.v1.PlanService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
-	6,  // 39: bytebase.v1.PlanService.SearchPlans:output_type -> bytebase.v1.SearchPlansResponse
-	9,  // 40: bytebase.v1.PlanService.CreatePlan:output_type -> bytebase.v1.Plan
-	9,  // 41: bytebase.v1.PlanService.UpdatePlan:output_type -> bytebase.v1.Plan
-	11, // 42: bytebase.v1.PlanService.ListPlanCheckRuns:output_type -> bytebase.v1.ListPlanCheckRunsResponse
-	13, // 43: bytebase.v1.PlanService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
-	15, // 44: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:output_type -> bytebase.v1.BatchCancelPlanCheckRunsResponse
-	37, // [37:45] is the sub-list for method output_type
-	29, // [29:37] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	34, // 26: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.start_position:type_name -> bytebase.v1.Position
+	34, // 27: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.end_position:type_name -> bytebase.v1.Position
+	2,  // 28: bytebase.v1.PlanService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
+	3,  // 29: bytebase.v1.PlanService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
+	5,  // 30: bytebase.v1.PlanService.SearchPlans:input_type -> bytebase.v1.SearchPlansRequest
+	7,  // 31: bytebase.v1.PlanService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
+	8,  // 32: bytebase.v1.PlanService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
+	10, // 33: bytebase.v1.PlanService.ListPlanCheckRuns:input_type -> bytebase.v1.ListPlanCheckRunsRequest
+	12, // 34: bytebase.v1.PlanService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
+	14, // 35: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:input_type -> bytebase.v1.BatchCancelPlanCheckRunsRequest
+	9,  // 36: bytebase.v1.PlanService.GetPlan:output_type -> bytebase.v1.Plan
+	4,  // 37: bytebase.v1.PlanService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
+	6,  // 38: bytebase.v1.PlanService.SearchPlans:output_type -> bytebase.v1.SearchPlansResponse
+	9,  // 39: bytebase.v1.PlanService.CreatePlan:output_type -> bytebase.v1.Plan
+	9,  // 40: bytebase.v1.PlanService.UpdatePlan:output_type -> bytebase.v1.Plan
+	11, // 41: bytebase.v1.PlanService.ListPlanCheckRuns:output_type -> bytebase.v1.ListPlanCheckRunsResponse
+	13, // 42: bytebase.v1.PlanService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
+	15, // 43: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:output_type -> bytebase.v1.BatchCancelPlanCheckRunsResponse
+	36, // [36:44] is the sub-list for method output_type
+	28, // [28:36] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_v1_plan_service_proto_init() }
@@ -2170,7 +2159,6 @@ func file_v1_plan_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
-	file_v1_database_service_proto_init()
 	file_v1_sql_service_proto_init()
 	file_v1_plan_service_proto_msgTypes[10].OneofWrappers = []any{}
 	file_v1_plan_service_proto_msgTypes[15].OneofWrappers = []any{

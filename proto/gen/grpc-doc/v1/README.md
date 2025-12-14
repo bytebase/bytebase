@@ -276,13 +276,6 @@
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
     - [BoundingBox](#bytebase-v1-BoundingBox)
-    - [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase)
-    - [ChangedResourceFunction](#bytebase-v1-ChangedResourceFunction)
-    - [ChangedResourceProcedure](#bytebase-v1-ChangedResourceProcedure)
-    - [ChangedResourceSchema](#bytebase-v1-ChangedResourceSchema)
-    - [ChangedResourceTable](#bytebase-v1-ChangedResourceTable)
-    - [ChangedResourceView](#bytebase-v1-ChangedResourceView)
-    - [ChangedResources](#bytebase-v1-ChangedResources)
     - [Changelog](#bytebase-v1-Changelog)
     - [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
@@ -4650,120 +4643,6 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 
 
 
-<a name="bytebase-v1-ChangedResourceDatabase"></a>
-
-### ChangedResourceDatabase
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| schemas | [ChangedResourceSchema](#bytebase-v1-ChangedResourceSchema) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResourceFunction"></a>
-
-### ChangedResourceFunction
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResourceProcedure"></a>
-
-### ChangedResourceProcedure
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResourceSchema"></a>
-
-### ChangedResourceSchema
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| tables | [ChangedResourceTable](#bytebase-v1-ChangedResourceTable) | repeated |  |
-| views | [ChangedResourceView](#bytebase-v1-ChangedResourceView) | repeated |  |
-| functions | [ChangedResourceFunction](#bytebase-v1-ChangedResourceFunction) | repeated |  |
-| procedures | [ChangedResourceProcedure](#bytebase-v1-ChangedResourceProcedure) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResourceTable"></a>
-
-### ChangedResourceTable
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResourceView"></a>
-
-### ChangedResourceView
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResources"></a>
-
-### ChangedResources
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| databases | [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase) | repeated |  |
-
-
-
-
-
-
 <a name="bytebase-v1-Changelog"></a>
 
 ### Changelog
@@ -4786,7 +4665,6 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | task_run | [string](#string) |  | Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | version | [string](#string) |  | Could be empty |
 | revision | [string](#string) |  | Could be empty Or present but not found if deleted |
-| changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 | type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
 
 
@@ -7977,7 +7855,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | ----- | ---- | ----- | ----------- |
 | statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
 | affected_rows | [int64](#int64) |  |  |
-| changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 
 
 
