@@ -115,10 +115,6 @@
         "title": "Phát hiện độ lệch schema",
         "desc": "Phát hiện các thay đổi schema ngoài luồng và báo cáo sự khác biệt."
       },
-      "FEATURE_SCHEMA_TEMPLATE": {
-        "title": "Mẫu schema",
-        "desc": "Tạo mẫu trường có thể tái sử dụng cho thiết kế schema nhất quán."
-      },
       "FEATURE_ROLLOUT_POLICY": {
         "title": "Chính sách triển khai",
         "desc": "Kiểm soát việc tác vụ thay đổi schema có yêu cầu triển khai thủ công hay không."

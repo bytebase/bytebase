@@ -115,10 +115,6 @@
         "title": "Schema drift detection",
         "desc": "Detect out-of-band schema changes and report discrepancies."
       },
-      "FEATURE_SCHEMA_TEMPLATE": {
-        "title": "Schema template",
-        "desc": "Create reusable field templates for consistent schema design."
-      },
       "FEATURE_ROLLOUT_POLICY": {
         "title": "Rollout policy",
         "desc": "Control whether the schema change task requires manual rolling out."
