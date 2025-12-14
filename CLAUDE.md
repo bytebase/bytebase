@@ -140,11 +140,6 @@ psql -U bbdev bbdev
 - Use American English
 - Avoid plurals like "xxxList" for simplicity and to prevent singular/plural ambiguity stemming from poor design
 
-### Git
-
-- Follow conventional commit format
-- **Worktrees** — Place git worktrees in `../bytebase-worktrees/` (sibling directory to the main repo) to keep them organized and separate from the main working directory
-
 ### Imports
 
 - Use organized imports (sorted by the import path)

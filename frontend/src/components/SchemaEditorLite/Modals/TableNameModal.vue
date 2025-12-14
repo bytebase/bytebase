@@ -69,14 +69,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const {
-  events,
-  addTab,
-  markEditStatus,
-  queuePendingScrollToTable,
-  upsertTableCatalog,
-  removeTableCatalog,
-} = useSchemaEditorContext();
+const { events, addTab, markEditStatus, queuePendingScrollToTable } =
+  useSchemaEditorContext();
 const inputRef = ref<InputInst>();
 const notificationStore = useNotificationStore();
 const mode = computed(() => {
@@ -163,21 +157,6 @@ const handleConfirmButtonClick = async () => {
     });
   } else {
     const { table } = props;
-    upsertTableCatalog(
-      {
-        database: props.database.name,
-        schema: props.schema.name,
-        table: table.name,
-      },
-      (catalog) => {
-        catalog.name = state.tableName;
-      }
-    );
-    removeTableCatalog({
-      database: props.database.name,
-      schema: props.schema.name,
-      table: table.name,
-    });
 
     table.name = state.tableName;
     events.emit("rebuild-edit-status", {

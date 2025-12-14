@@ -57,7 +57,6 @@ import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { databaseServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
-import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
@@ -72,7 +71,7 @@ const props = defineProps<{
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   title: string;
-  mocked: { metadata: DatabaseMetadata; catalog: DatabaseCatalog } | undefined;
+  mocked: { metadata: DatabaseMetadata } | undefined;
 }>();
 
 const { hidePreview, events } = useSchemaEditorContext();
