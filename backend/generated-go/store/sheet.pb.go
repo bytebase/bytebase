@@ -23,8 +23,10 @@ const (
 
 type SheetPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// The SQL dialect of the sheet.
+	Engine Engine `protobuf:"varint,1,opt,name=engine,proto3,enum=bytebase.store.Engine" json:"engine,omitempty"`
 	// The start and end position of each command in the sheet statement.
-	Commands      []*Range `protobuf:"bytes,1,rep,name=commands,proto3" json:"commands,omitempty"`
+	Commands      []*Range `protobuf:"bytes,2,rep,name=commands,proto3" json:"commands,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -59,6 +61,13 @@ func (*SheetPayload) Descriptor() ([]byte, []int) {
 	return file_store_sheet_proto_rawDescGZIP(), []int{0}
 }
 
+func (x *SheetPayload) GetEngine() Engine {
+	if x != nil {
+		return x.Engine
+	}
+	return Engine_ENGINE_UNSPECIFIED
+}
+
 func (x *SheetPayload) GetCommands() []*Range {
 	if x != nil {
 		return x.Commands
@@ -70,9 +79,10 @@ var File_store_sheet_proto protoreflect.FileDescriptor
 
 const file_store_sheet_proto_rawDesc = "" +
 	"\n" +
-	"\x11store/sheet.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"A\n" +
-	"\fSheetPayload\x121\n" +
-	"\bcommands\x18\x01 \x03(\v2\x15.bytebase.store.RangeR\bcommandsB\x8d\x01\n" +
+	"\x11store/sheet.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"q\n" +
+	"\fSheetPayload\x12.\n" +
+	"\x06engine\x18\x01 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x121\n" +
+	"\bcommands\x18\x02 \x03(\v2\x15.bytebase.store.RangeR\bcommandsB\x8d\x01\n" +
 	"\x12com.bytebase.storeB\n" +
 	"SheetProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
@@ -91,15 +101,17 @@ func file_store_sheet_proto_rawDescGZIP() []byte {
 var file_store_sheet_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_sheet_proto_goTypes = []any{
 	(*SheetPayload)(nil), // 0: bytebase.store.SheetPayload
-	(*Range)(nil),        // 1: bytebase.store.Range
+	(Engine)(0),          // 1: bytebase.store.Engine
+	(*Range)(nil),        // 2: bytebase.store.Range
 }
 var file_store_sheet_proto_depIdxs = []int32{
-	1, // 0: bytebase.store.SheetPayload.commands:type_name -> bytebase.store.Range
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	1, // 0: bytebase.store.SheetPayload.engine:type_name -> bytebase.store.Engine
+	2, // 1: bytebase.store.SheetPayload.commands:type_name -> bytebase.store.Range
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_store_sheet_proto_init() }

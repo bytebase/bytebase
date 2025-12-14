@@ -10,6 +10,9 @@ func (x *SheetPayload) Equal(y *SheetPayload) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
+	if x.Engine != y.Engine {
+		return false
+	}
 	if len(x.Commands) != len(y.Commands) {
 		return false
 	}

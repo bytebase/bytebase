@@ -4973,6 +4973,7 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| engine | [Engine](#bytebase-store-Engine) |  | The SQL dialect of the sheet. |
 | commands | [Range](#bytebase-store-Range) | repeated | The start and end position of each command in the sheet statement. |
 
 
