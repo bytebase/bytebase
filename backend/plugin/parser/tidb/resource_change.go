@@ -61,7 +61,7 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 	}, nil
 }
 
-func getResourceChanges(database string, node tidbast.StmtNode, statement string, changedResources *model.ChangedResources) error {
+func getResourceChanges(database string, node tidbast.StmtNode, _ string, changedResources *model.ChangedResources) error {
 	switch node := node.(type) {
 	case *tidbast.CreateTableStmt:
 		d, table := node.Table.Schema.O, node.Table.Name.O
@@ -243,13 +243,6 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 	default:
 	}
 	return nil
-}
-
-func getRange(statement string, node tidbast.StmtNode) *storepb.Range {
-	r := base.NewRange(statement, trimStatement(node.OriginalText()))
-	// TiDB node text does not including the trailing semicolon.
-	r.End++
-	return r
 }
 
 func trimStatement(statement string) string {
