@@ -11,7 +11,7 @@ message Policy {
   enum Type {
     TYPE_UNSPECIFIED = 0;
     ROLLOUT = 1;
-    MASKING_EXCEPTION = 2;
+    MASKING_EXEMPTION = 2;
     QUERY_DATA = 5;
     MASKING_RULE = 6;
     IAM = 8;
@@ -32,19 +32,34 @@ message RolloutPolicy {
   repeated string roles = 2;
 }
 
-// MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-message MaskingExceptionPolicy {
-  message MaskingException {
-    // Member is the principal who binds to this exception policy instance.
+// MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
+message MaskingExemptionPolicy {
+  message Exemption {
+    // Members who bind to this exemption.
     //
     // Format: users/{email} or groups/{group email}
-    string member = 4;
+    repeated string members = 1;
 
     // The condition that is associated with this exception policy instance.
-    google.type.Expr condition = 5;
+    // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+    // If the condition is empty, means the user can access all databases without expiration.
+    //
+    // Support variables:
+    // resource.instance_id: the instance resource id. Only support "==" operation.
+    // resource.database_name: the database name. Only support "==" operation.
+    // resource.schema_name: the schema name. Only support "==" operation.
+    // resource.table_name: the table name. Only support "==" operation.
+    // resource.column_name: the column name. Only support "==" operation.
+    // request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`
+    // All variables should join with "&&" condition.
+    //
+    // For example:
+    // resource.instance_id == "local" && resource.database_name == "employee" && request.time < timestamp("2025-04-30T11:10:39.000Z")
+    // resource.instance_id == "local" && resource.database_name == "employee"
+    google.type.Expr condition = 2;
   }
 
-  repeated MaskingException masking_exceptions = 1;
+  repeated Exemption exemptions = 1;
 }
 
 message MaskingRulePolicy {

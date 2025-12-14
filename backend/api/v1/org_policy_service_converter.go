@@ -248,50 +248,62 @@ func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) *v1pb.Mas
 	}
 }
 
-func (s *OrgPolicyService) convertToStorePBMaskingExceptionPolicyPayload(ctx context.Context, policy *v1pb.MaskingExceptionPolicy) (*storepb.MaskingExceptionPolicy, error) {
-	var exceptions []*storepb.MaskingExceptionPolicy_MaskingException
-	for _, exception := range policy.MaskingExceptions {
-		member, err := convertToStoreIamPolicyMember(ctx, s.store, exception.Member)
-		if err != nil {
-			return nil, err
+func (s *OrgPolicyService) convertToStorePBMaskingExemptionPolicyPayload(ctx context.Context, policy *v1pb.MaskingExemptionPolicy) (*storepb.MaskingExemptionPolicy, error) {
+	var exemptions []*storepb.MaskingExemptionPolicy_Exemption
+	for _, exemption := range policy.Exemptions {
+		var members []string
+		for _, v1Member := range exemption.Members {
+			member, err := convertToStoreIamPolicyMember(ctx, s.store, v1Member)
+			if err != nil {
+				return nil, err
+			}
+			members = append(members, member)
 		}
-		exceptions = append(exceptions, &storepb.MaskingExceptionPolicy_MaskingException{
-			Member: member,
+		exemptions = append(exemptions, &storepb.MaskingExemptionPolicy_Exemption{
+			Members: members,
 			Condition: &expr.Expr{
-				Title:       exception.Condition.Title,
-				Expression:  exception.Condition.Expression,
-				Description: exception.Condition.Description,
-				Location:    exception.Condition.Location,
+				Title:       exemption.Condition.Title,
+				Expression:  exemption.Condition.Expression,
+				Description: exemption.Condition.Description,
+				Location:    exemption.Condition.Location,
 			},
 		})
 	}
 
-	return &storepb.MaskingExceptionPolicy{
-		MaskingExceptions: exceptions,
+	return &storepb.MaskingExemptionPolicy{
+		Exemptions: exemptions,
 	}, nil
 }
 
-func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx context.Context, policy *storepb.MaskingExceptionPolicy) *v1pb.MaskingExceptionPolicy {
-	var exceptions []*v1pb.MaskingExceptionPolicy_MaskingException
-	for _, exception := range policy.MaskingExceptions {
-		memberInBinding := convertToV1MemberInBinding(ctx, s.store, exception.Member)
-		if memberInBinding == "" {
+func (s *OrgPolicyService) convertToV1PBMaskingExemptionPolicyPayload(ctx context.Context, policy *storepb.MaskingExemptionPolicy) *v1pb.MaskingExemptionPolicy {
+	var exemptions []*v1pb.MaskingExemptionPolicy_Exemption
+	for _, exemption := range policy.Exemptions {
+		var members []string
+		for _, storeMember := range exemption.Members {
+			memberInBinding := convertToV1MemberInBinding(ctx, s.store, storeMember)
+			if memberInBinding == "" {
+				continue
+			}
+			members = append(members, memberInBinding)
+		}
+
+		if len(members) == 0 {
 			continue
 		}
 
-		exceptions = append(exceptions, &v1pb.MaskingExceptionPolicy_MaskingException{
-			Member: memberInBinding,
+		exemptions = append(exemptions, &v1pb.MaskingExemptionPolicy_Exemption{
+			Members: members,
 			Condition: &expr.Expr{
-				Title:       exception.Condition.Title,
-				Expression:  exception.Condition.Expression,
-				Description: exception.Condition.Description,
-				Location:    exception.Condition.Location,
+				Title:       exemption.Condition.Title,
+				Expression:  exemption.Condition.Expression,
+				Description: exemption.Condition.Description,
+				Location:    exemption.Condition.Location,
 			},
 		})
 	}
 
-	return &v1pb.MaskingExceptionPolicy{
-		MaskingExceptions: exceptions,
+	return &v1pb.MaskingExemptionPolicy{
+		Exemptions: exemptions,
 	}
 }
 
@@ -326,8 +338,8 @@ func convertV1PBToStorePBPolicyType(pType v1pb.PolicyType) (storepb.Policy_Type,
 		return storepb.Policy_TAG, nil
 	case v1pb.PolicyType_MASKING_RULE:
 		return storepb.Policy_MASKING_RULE, nil
-	case v1pb.PolicyType_MASKING_EXCEPTION:
-		return storepb.Policy_MASKING_EXCEPTION, nil
+	case v1pb.PolicyType_MASKING_EXEMPTION:
+		return storepb.Policy_MASKING_EXEMPTION, nil
 	case v1pb.PolicyType_DATA_QUERY:
 		return storepb.Policy_QUERY_DATA, nil
 	case v1pb.PolicyType_DATA_SOURCE_QUERY:
@@ -345,8 +357,8 @@ func convertStorePBToV1PBPolicyType(pType storepb.Policy_Type) v1pb.PolicyType {
 		return v1pb.PolicyType_TAG
 	case storepb.Policy_MASKING_RULE:
 		return v1pb.PolicyType_MASKING_RULE
-	case storepb.Policy_MASKING_EXCEPTION:
-		return v1pb.PolicyType_MASKING_EXCEPTION
+	case storepb.Policy_MASKING_EXEMPTION:
+		return v1pb.PolicyType_MASKING_EXEMPTION
 	case storepb.Policy_QUERY_DATA:
 		return v1pb.PolicyType_DATA_QUERY
 	case storepb.Policy_DATA_SOURCE_QUERY:

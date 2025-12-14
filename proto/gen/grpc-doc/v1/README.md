@@ -398,8 +398,8 @@
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
-    - [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy)
-    - [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException)
+    - [MaskingExemptionPolicy](#bytebase-v1-MaskingExemptionPolicy)
+    - [MaskingExemptionPolicy.Exemption](#bytebase-v1-MaskingExemptionPolicy-Exemption)
     - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
@@ -6702,32 +6702,32 @@ Policy for controlling which data sources can be queried in the SQL editor.
 
 
 
-<a name="bytebase-v1-MaskingExceptionPolicy"></a>
+<a name="bytebase-v1-MaskingExemptionPolicy"></a>
 
-### MaskingExceptionPolicy
-MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| masking_exceptions | [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException) | repeated | The list of masking exceptions. |
-
-
-
-
-
-
-<a name="bytebase-v1-MaskingExceptionPolicy-MaskingException"></a>
-
-### MaskingExceptionPolicy.MaskingException
-An exception allowing specific users to access masked data.
+### MaskingExemptionPolicy
+MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
+| exemptions | [MaskingExemptionPolicy.Exemption](#bytebase-v1-MaskingExemptionPolicy-Exemption) | repeated |  |
 
-- `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. - `group:{email}`: An email address for group. |
+
+
+
+
+
+<a name="bytebase-v1-MaskingExemptionPolicy-Exemption"></a>
+
+### MaskingExemptionPolicy.Exemption
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| members | [string](#string) | repeated | Members who bind to this exemption.
+
+Format: users/{email} or groups/{group email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec If the condition is empty, means the user can access all databases without expiration.
 
 Support variables: resource.instance_id: the instance resource id. Only support &#34;==&#34; operation. resource.database_name: the database name. Only support &#34;==&#34; operation. resource.schema_name: the schema name. Only support &#34;==&#34; operation. resource.table_name: the table name. Only support &#34;==&#34; operation. resource.column_name: the column name. Only support &#34;==&#34; operation. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)` All variables should join with &#34;&amp;&amp;&#34; condition.
@@ -6790,7 +6790,7 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 | type | [PolicyType](#bytebase-v1-PolicyType) |  | The type of policy. |
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
 | masking_rule_policy | [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy) |  |  |
-| masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
+| masking_exemption_policy | [MaskingExemptionPolicy](#bytebase-v1-MaskingExemptionPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
 | query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
@@ -6958,7 +6958,7 @@ The type of organizational policy.
 | POLICY_TYPE_UNSPECIFIED | 0 | Unspecified policy type. |
 | ROLLOUT_POLICY | 11 | Rollout deployment policy. |
 | MASKING_RULE | 9 | Data masking rule policy. |
-| MASKING_EXCEPTION | 10 | Data masking exception policy. |
+| MASKING_EXEMPTION | 10 | Data masking exemption policy. |
 | TAG | 13 | Resource tag policy. |
 | DATA_SOURCE_QUERY | 14 | Data source query restrictions policy. |
 | DATA_QUERY | 16 | Query data access policy. |

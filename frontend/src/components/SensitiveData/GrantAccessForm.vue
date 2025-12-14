@@ -86,12 +86,12 @@ import { pushNotification, usePolicyV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
-  MaskingExceptionPolicy_MaskingException,
+  MaskingExemptionPolicy_Exemption,
   Policy,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  MaskingExceptionPolicy_MaskingExceptionSchema,
-  MaskingExceptionPolicySchema,
+  MaskingExemptionPolicy_ExemptionSchema,
+  MaskingExemptionPolicySchema,
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -178,7 +178,7 @@ const onSubmit = async () => {
 const getPendingUpdatePolicy = async (
   parentPath: string
 ): Promise<Partial<Policy>> => {
-  const maskingExceptions: MaskingExceptionPolicy_MaskingException[] = [];
+  const exemptions: MaskingExemptionPolicy_Exemption[] = [];
 
   const expressions = [];
   if (state.expirationTimestamp) {
@@ -189,45 +189,43 @@ const getPendingUpdatePolicy = async (
     );
   }
 
-  for (const member of state.memberList) {
-    const resourceExpressions = state.databaseResources?.map(
-      getExpressionsForDatabaseResource
-    ) ?? [[""]];
-    for (const expressionList of resourceExpressions) {
-      const resourceExpression = [...expressionList, ...expressions].filter(
-        (e) => e
-      );
-      maskingExceptions.push(
-        create(MaskingExceptionPolicy_MaskingExceptionSchema, {
-          member,
-          condition: create(ExprSchema, {
-            description: state.description,
-            expression:
-              resourceExpression.length > 0
-                ? resourceExpression.join(" && ")
-                : "",
-          }),
-        })
-      );
-    }
+  const resourceExpressions = state.databaseResources?.map(
+    getExpressionsForDatabaseResource
+  ) ?? [[""]];
+  for (const expressionList of resourceExpressions) {
+    const resourceExpression = [...expressionList, ...expressions].filter(
+      (e) => e
+    );
+    exemptions.push(
+      create(MaskingExemptionPolicy_ExemptionSchema, {
+        members: state.memberList,
+        condition: create(ExprSchema, {
+          description: state.description,
+          expression:
+            resourceExpression.length > 0
+              ? resourceExpression.join(" && ")
+              : "",
+        }),
+      })
+    );
   }
 
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
     parentPath,
-    policyType: PolicyType.MASKING_EXCEPTION,
+    policyType: PolicyType.MASKING_EXEMPTION,
   });
   const existed =
-    policy?.policy?.case === "maskingExceptionPolicy"
-      ? policy.policy.value.maskingExceptions
+    policy?.policy?.case === "maskingExemptionPolicy"
+      ? policy.policy.value.exemptions
       : [];
   return {
     name: policy?.name,
-    type: PolicyType.MASKING_EXCEPTION,
+    type: PolicyType.MASKING_EXEMPTION,
     resourceType: PolicyResourceType.PROJECT,
     policy: {
-      case: "maskingExceptionPolicy",
-      value: create(MaskingExceptionPolicySchema, {
-        maskingExceptions: [...existed, ...maskingExceptions],
+      case: "maskingExemptionPolicy",
+      value: create(MaskingExemptionPolicySchema, {
+        exemptions: [...existed, ...exemptions],
       }),
     },
   };

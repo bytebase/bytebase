@@ -91,8 +91,8 @@ var MaskingRulePolicyCELAttributes = []cel.EnvOption{
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
-// MaskingExceptionPolicyCELAttributes are the variables when evaluating masking exception.
-var MaskingExceptionPolicyCELAttributes = []cel.EnvOption{
+// MaskingExemptionPolicyCELAttributes are the variables when evaluating masking exemption.
+var MaskingExemptionPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable(CELAttributeResourceInstanceID, cel.StringType),
 	cel.Variable(CELAttributeResourceDatabaseName, cel.StringType),
 	cel.Variable(CELAttributeResourceTableName, cel.StringType),
@@ -168,9 +168,9 @@ func ValidateMaskingRuleCELExpr(expr string) (cel.Program, error) {
 	return prog, nil
 }
 
-// ValidateMaskingExceptionCELExpr validates masking exception expr.
-func ValidateMaskingExceptionCELExpr(expression *expr.Expr) (cel.Program, error) {
-	return validateCELExpr(expression, MaskingExceptionPolicyCELAttributes)
+// ValidateMaskingExemptionCELExpr validates masking exemption expr.
+func ValidateMaskingExemptionCELExpr(expression *expr.Expr) (cel.Program, error) {
+	return validateCELExpr(expression, MaskingExemptionPolicyCELAttributes)
 }
 
 func ValidateProjectMemberCELExpr(expression *expr.Expr) (cel.Program, error) {

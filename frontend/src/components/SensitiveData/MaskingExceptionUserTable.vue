@@ -45,9 +45,9 @@ import {
   isValidDatabaseName,
 } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
-import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { MaskingExemptionPolicy_Exemption } from "@/types/proto-es/v1/org_policy_service_pb";
 import {
-  MaskingExceptionPolicySchema,
+  MaskingExemptionPolicySchema,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -93,7 +93,7 @@ const hasPermission = computed(() => {
 const { policy, ready } = usePolicyByParentAndType(
   computed(() => ({
     parentPath: props.project.name,
-    policyType: PolicyType.MASKING_EXCEPTION,
+    policyType: PolicyType.MASKING_EXEMPTION,
   }))
 );
 
@@ -191,9 +191,9 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
 const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;
 
 const getAccessUsers = async (
-  exception: MaskingExceptionPolicy_MaskingException,
+  exception: MaskingExemptionPolicy_Exemption,
   condition: ConditionExpression
-): Promise<AccessUser | undefined> => {
+): Promise<AccessUser[]> => {
   let expirationTimestamp: number | undefined;
   const expression = exception.condition?.expression ?? "";
   const description = exception.condition?.description ?? "";
@@ -202,32 +202,33 @@ const getAccessUsers = async (
     expirationTimestamp = new Date(matches[1]).getTime();
   }
 
-  const access: AccessUser = {
-    type: "user",
-    key: `${exception.member}:${expression}.${description}`,
-    expirationTimestamp,
-    rawExpression: expression,
-    description,
-    databaseResource: condition.databaseResources
-      ? condition.databaseResources[0]
-      : undefined,
-  };
+  const result: AccessUser[] = [];
+  for (const member of exception.members) {
+    const access: AccessUser = {
+      type: "user",
+      key: `${member}:${expression}.${description}`,
+      expirationTimestamp,
+      rawExpression: expression,
+      description,
+      databaseResource: condition.databaseResources
+        ? condition.databaseResources[0]
+        : undefined,
+    };
 
-  if (exception.member.startsWith(groupBindingPrefix)) {
-    access.type = "group";
-    access.group = await groupStore.getOrFetchGroupByIdentifier(
-      exception.member
-    );
-  } else {
-    access.type = "user";
-    access.user = await userStore.getOrFetchUserByIdentifier(exception.member);
+    if (member.startsWith(groupBindingPrefix)) {
+      access.type = "group";
+      access.group = await groupStore.getOrFetchGroupByIdentifier(member);
+    } else {
+      access.type = "user";
+      access.user = await userStore.getOrFetchUserByIdentifier(member);
+    }
+
+    if (access.group || access.user) {
+      result.push(access);
+    }
   }
 
-  if (!access.group && !access.user) {
-    return;
-  }
-
-  return access;
+  return result;
 };
 
 const getMemberBinding = (access: AccessUser): string => {
@@ -243,29 +244,27 @@ const updateAccessUserList = async () => {
     return;
   }
 
-  if (!policy.value || policy.value.policy?.case !== "maskingExceptionPolicy") {
+  if (!policy.value || policy.value.policy?.case !== "maskingExemptionPolicy") {
     state.rawAccessList = [];
     state.loading = false;
     return;
   }
 
   const memberMap = new Map<string, AccessUser>();
-  const { maskingExceptions } = policy.value.policy.value;
-  const expressionList = maskingExceptions.map((e) =>
+  const { exemptions } = policy.value.policy.value;
+  const expressionList = exemptions.map((e) =>
     e.condition?.expression ? e.condition?.expression : "true"
   );
   const conditionList = await batchConvertFromCELString(expressionList);
 
-  for (let i = 0; i < maskingExceptions.length; i++) {
-    const exception = maskingExceptions[i];
+  for (let i = 0; i < exemptions.length; i++) {
+    const exception = exemptions[i];
     const condition = conditionList[i];
 
-    const item = await getAccessUsers(exception, condition);
-    if (!item) {
-      continue;
+    const items = await getAccessUsers(exception, condition);
+    for (const item of items) {
+      memberMap.set(item.key, item);
     }
-
-    memberMap.set(item.key, item);
   }
 
   state.rawAccessList = orderBy(
@@ -455,13 +454,20 @@ const onSubmit = async () => {
 const updateExceptionPolicy = async () => {
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
     parentPath: props.project.name,
-    policyType: PolicyType.MASKING_EXCEPTION,
+    policyType: PolicyType.MASKING_EXEMPTION,
   });
   if (!policy) {
     return;
   }
 
-  const exceptions = [];
+  const expressionsMap = new Map<
+    string,
+    {
+      description: string;
+      members: string[];
+    }
+  >();
+
   for (const accessUser of state.rawAccessList) {
     const expressions = accessUser.rawExpression
       .split(" && ")
@@ -484,20 +490,33 @@ const updateExceptionPolicy = async () => {
         ).toISOString()}")`
       );
     }
-    const member = getMemberBinding(accessUser);
-    exceptions.push({
-      member,
-      condition: create(ExprSchema, {
+    const finalExpression = expressions.join(" && ");
+    if (!expressionsMap.has(finalExpression)) {
+      expressionsMap.set(finalExpression, {
         description: accessUser.description,
-        expression: expressions.join(" && "),
+        members: [],
+      });
+    }
+    expressionsMap
+      .get(finalExpression)!
+      .members.push(getMemberBinding(accessUser));
+  }
+
+  const exceptions = [];
+  for (const [expression, { description, members }] of expressionsMap) {
+    exceptions.push({
+      members,
+      condition: create(ExprSchema, {
+        description: description,
+        expression: expression,
       }),
     });
   }
 
   policy.policy = {
-    case: "maskingExceptionPolicy",
-    value: create(MaskingExceptionPolicySchema, {
-      maskingExceptions: exceptions,
+    case: "maskingExemptionPolicy",
+    value: create(MaskingExemptionPolicySchema, {
+      exemptions: exceptions,
     }),
   };
   await policyStore.upsertPolicy({

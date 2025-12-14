@@ -597,7 +597,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 
 	// 3. Update Policies
 	// Update IAM policies: bindings->members array contains user references
-	// Update MASKING_EXCEPTION policies: maskingExceptions->member field contains user references
+	// Update MASKING_EXEMPTION policies: exemptions->members field contains user references
 	var invalidatedPolicies []struct {
 		ResourceType storepb.Policy_Resource
 		Resource     string
@@ -676,38 +676,51 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	}
 	rows.Close()
 
-	// 3b. Update MASKING_EXCEPTION policy maskingExceptions
+	// 3b. Update MASKING_EXEMPTION policy exemptions
 	maskingPolicySQL := `
 		UPDATE policy
 		SET payload = (
 			SELECT jsonb_set(
 				policy.payload,
-				'{maskingExceptions}',
+				'{exemptions}',
 				COALESCE(
 					(
 						SELECT jsonb_agg(
 							CASE
-								WHEN exception->>'member' = $1 THEN
-									jsonb_set(exception, '{member}', to_jsonb($2::text))
-								ELSE exception
+								WHEN $1 = ANY(SELECT jsonb_array_elements_text(exemption->'members')) THEN
+									jsonb_set(
+										exemption, 
+										'{members}', 
+										COALESCE(
+											(
+												SELECT jsonb_agg(
+													CASE WHEN member = $1 THEN $2::text ELSE member END
+												)
+												FROM jsonb_array_elements_text(exemption->'members') AS member
+											),
+											'[]'::jsonb
+										)
+									)
+								ELSE exemption
 							END
 						)
-						FROM jsonb_array_elements(policy.payload->'maskingExceptions') AS exception
+						FROM jsonb_array_elements(policy.payload->'exemptions') AS exemption
 					),
 					'[]'::jsonb
 				)
 			)
 		)
 		WHERE type = $3
-		  AND payload ? 'maskingExceptions'
+		  AND payload ? 'exemptions'
 		  AND EXISTS (
 			  SELECT 1
-			  FROM jsonb_array_elements(payload->'maskingExceptions') AS exception
-			  WHERE exception->>'member' = $1
+			  FROM jsonb_array_elements(payload->'exemptions') AS exemption,
+			       jsonb_array_elements_text(exemption->'members') AS member
+			  WHERE member = $1
 		  )
 		RETURNING resource_type, resource, type`
 
-	rows, err = tx.QueryContext(ctx, maskingPolicySQL, oldUserRef, newUserRef, storepb.Policy_MASKING_EXCEPTION.String())
+	rows, err = tx.QueryContext(ctx, maskingPolicySQL, oldUserRef, newUserRef, storepb.Policy_MASKING_EXEMPTION.String())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update MASKING_EXCEPTION policies")
 	}
@@ -716,7 +729,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	for rows.Next() {
 		var resourceTypeStr, resource, typeStr string
 		if err := rows.Scan(&resourceTypeStr, &resource, &typeStr); err != nil {
-			return nil, errors.Wrapf(err, "failed to scan updated MASKING_EXCEPTION policy")
+			return nil, errors.Wrapf(err, "failed to scan updated MASKING_EXEMPTION policy")
 		}
 
 		var invalidation struct {

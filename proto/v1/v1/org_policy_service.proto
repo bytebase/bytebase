@@ -235,7 +235,7 @@ message Policy {
   oneof policy {
     RolloutPolicy rollout_policy = 19;
     MaskingRulePolicy masking_rule_policy = 17;
-    MaskingExceptionPolicy masking_exception_policy = 18;
+    MaskingExemptionPolicy masking_exemption_policy = 18;
     TagPolicy tag_policy = 21;
     DataSourceQueryPolicy data_source_query_policy = 22;
     QueryDataPolicy query_data_policy = 24;
@@ -250,7 +250,7 @@ message Policy {
 
 // The type of organizational policy.
 enum PolicyType {
-  reserved 2, 4, 6, 5, 7, 12, 15;
+  reserved 6, 7, 12, 15;
 
   // Unspecified policy type.
   POLICY_TYPE_UNSPECIFIED = 0;
@@ -258,8 +258,8 @@ enum PolicyType {
   ROLLOUT_POLICY = 11;
   // Data masking rule policy.
   MASKING_RULE = 9;
-  // Data masking exception policy.
-  MASKING_EXCEPTION = 10;
+  // Data masking exemption policy.
+  MASKING_EXEMPTION = 10;
   // Resource tag policy.
   TAG = 13;
   // Data source query restrictions policy.
@@ -335,15 +335,13 @@ message QueryDataPolicy {
   bool disable_copy_data = 5;
 }
 
-// MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-message MaskingExceptionPolicy {
-  // An exception allowing specific users to access masked data.
-  message MaskingException {
-    // Member is the principal who bind to this exception policy instance.
+// MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
+message MaskingExemptionPolicy {
+  message Exemption {
+    // Members who bind to this exemption.
     //
-    // - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
-    // - `group:{email}`: An email address for group.
-    string member = 3;
+    // Format: users/{email} or groups/{group email}
+    repeated string members = 1;
 
     // The condition that is associated with this exception policy instance.
     // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
@@ -361,11 +359,10 @@ message MaskingExceptionPolicy {
     // For example:
     // resource.instance_id == "local" && resource.database_name == "employee" && request.time < timestamp("2025-04-30T11:10:39.000Z")
     // resource.instance_id == "local" && resource.database_name == "employee"
-    google.type.Expr condition = 4;
+    google.type.Expr condition = 2;
   }
 
-  // The list of masking exceptions.
-  repeated MaskingException masking_exceptions = 1;
+  repeated Exemption exemptions = 1;
 }
 
 // Policy for configuring data masking rules.

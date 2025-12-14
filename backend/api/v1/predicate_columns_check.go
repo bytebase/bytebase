@@ -34,7 +34,7 @@ func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context
 		withDataClassificationSetting(classificationSetting).
 		withSemanticTypeSetting(semanticTypesSetting)
 
-	maskingExceptionPolicyMap := make(map[string]*storepb.MaskingExceptionPolicy)
+	maskingExemptionPolicyMap := make(map[string]*storepb.MaskingExemptionPolicy)
 
 	for _, span := range spans {
 		sensitiveColumns, err := s.getSensitiveColumnsForPredicate(
@@ -42,7 +42,7 @@ func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context
 			m,
 			instance,
 			span.PredicateColumns,
-			maskingExceptionPolicyMap,
+			maskingExemptionPolicyMap,
 			user,
 		)
 		if err != nil {
@@ -59,7 +59,7 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 	m *maskingLevelEvaluator,
 	instance *store.InstanceMessage,
 	predicateColumns base.SourceColumnSet,
-	maskingExceptionPolicyMap map[string]*storepb.MaskingExceptionPolicy,
+	maskingExemptionPolicyMap map[string]*storepb.MaskingExemptionPolicy,
 	currentPrincipal *store.UserMessage,
 ) ([]base.ColumnResource, error) {
 	if instance != nil && !isPredicateColumnsCheckEnabled(instance.Metadata.GetEngine()) {
@@ -99,25 +99,28 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 			return nil, nil
 		}
 
-		if _, ok := maskingExceptionPolicyMap[database.ProjectID]; !ok {
-			policy, err := s.store.GetMaskingExceptionPolicyByProject(ctx, project.ResourceID)
+		if _, ok := maskingExemptionPolicyMap[database.ProjectID]; !ok {
+			policy, err := s.store.GetMaskingExemptionPolicyByProject(ctx, project.ResourceID)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find masking exception policy for project %q", project.ResourceID)
+				return nil, errors.Wrapf(err, "failed to find masking exemption policy for project %q", project.ResourceID)
 			}
-			maskingExceptionPolicyMap[database.ProjectID] = policy
+			maskingExemptionPolicyMap[database.ProjectID] = policy
 		}
-		maskingExceptionPolicy := maskingExceptionPolicyMap[database.ProjectID]
+		maskingExemptionPolicy := maskingExemptionPolicyMap[database.ProjectID]
 
-		var maskingExceptionContainsCurrentPrincipal []*storepb.MaskingExceptionPolicy_MaskingException
-		if maskingExceptionPolicy != nil {
-			for _, maskingException := range maskingExceptionPolicy.MaskingExceptions {
-				if utils.MemberContainsUser(ctx, s.store, maskingException.Member, currentPrincipal) {
-					maskingExceptionContainsCurrentPrincipal = append(maskingExceptionContainsCurrentPrincipal, maskingException)
+		var maskingExemptionContainsCurrentPrincipal []*storepb.MaskingExemptionPolicy_Exemption
+		if maskingExemptionPolicy != nil {
+			for _, maskingExemption := range maskingExemptionPolicy.Exemptions {
+				for _, member := range maskingExemption.Members {
+					if utils.MemberContainsUser(ctx, s.store, member, currentPrincipal) {
+						maskingExemptionContainsCurrentPrincipal = append(maskingExemptionContainsCurrentPrincipal, maskingExemption)
+						break
+					}
 				}
 			}
 		}
 
-		isSensitive, err := m.isSensitiveColumn(database, column, project.DataClassificationConfigID, config, maskingExceptionContainsCurrentPrincipal)
+		isSensitive, err := m.isSensitiveColumn(database, column, project.DataClassificationConfigID, config, maskingExemptionContainsCurrentPrincipal)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to check if column is sensitive")
 		}
@@ -129,7 +132,7 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 	return result, nil
 }
 
-func (m *maskingLevelEvaluator) isSensitiveColumn(database *store.DatabaseMessage, column base.ColumnResource, classificationConfigID string, columnConfig *storepb.ColumnCatalog, exception []*storepb.MaskingExceptionPolicy_MaskingException) (bool, error) {
+func (m *maskingLevelEvaluator) isSensitiveColumn(database *store.DatabaseMessage, column base.ColumnResource, classificationConfigID string, columnConfig *storepb.ColumnCatalog, exception []*storepb.MaskingExemptionPolicy_Exemption) (bool, error) {
 	evaluation, err := m.evaluateSemanticTypeOfColumn(database, column.Schema, column.Table, column.Column, classificationConfigID, columnConfig, exception)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to evaluate semantic type of column")
