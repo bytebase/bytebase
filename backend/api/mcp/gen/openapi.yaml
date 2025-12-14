@@ -7757,113 +7757,6 @@ components:
       title: BoundingBox
       additionalProperties: false
       description: BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
-    bytebase.v1.ChangedResourceDatabase:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-        schemas:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.ChangedResourceSchema'
-          title: schemas
-      title: ChangedResourceDatabase
-      additionalProperties: false
-    bytebase.v1.ChangedResourceFunction:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-        ranges:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.Range'
-          title: ranges
-          description: The ranges of sub-strings correspond to the statements on the sheet.
-      title: ChangedResourceFunction
-      additionalProperties: false
-    bytebase.v1.ChangedResourceProcedure:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-        ranges:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.Range'
-          title: ranges
-          description: The ranges of sub-strings correspond to the statements on the sheet.
-      title: ChangedResourceProcedure
-      additionalProperties: false
-    bytebase.v1.ChangedResourceSchema:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-        tables:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.ChangedResourceTable'
-          title: tables
-        views:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.ChangedResourceView'
-          title: views
-        functions:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.ChangedResourceFunction'
-          title: functions
-        procedures:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.ChangedResourceProcedure'
-          title: procedures
-      title: ChangedResourceSchema
-      additionalProperties: false
-    bytebase.v1.ChangedResourceTable:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-        ranges:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.Range'
-          title: ranges
-          description: The ranges of sub-strings correspond to the statements on the sheet.
-      title: ChangedResourceTable
-      additionalProperties: false
-    bytebase.v1.ChangedResourceView:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-        ranges:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.Range'
-          title: ranges
-          description: The ranges of sub-strings correspond to the statements on the sheet.
-      title: ChangedResourceView
-      additionalProperties: false
-    bytebase.v1.ChangedResources:
-      type: object
-      properties:
-        databases:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.ChangedResourceDatabase'
-          title: databases
-      title: ChangedResources
-      additionalProperties: false
     bytebase.v1.Changelog:
       type: object
       properties:
@@ -7929,9 +7822,6 @@ components:
           description: |-
             Could be empty
              Or present but not found if deleted
-        changedResources:
-          title: changed_resources
-          $ref: '#/components/schemas/bytebase.v1.ChangedResources'
         type:
           title: type
           $ref: '#/components/schemas/bytebase.v1.Changelog.Type'
@@ -13318,9 +13208,6 @@ components:
             - string
           title: affected_rows
           format: int64
-        changedResources:
-          title: changed_resources
-          $ref: '#/components/schemas/bytebase.v1.ChangedResources'
       title: SqlSummaryReport
       additionalProperties: false
     bytebase.v1.PlanCheckRun.Status:

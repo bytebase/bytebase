@@ -131,3 +131,79 @@ func (x *PlanCheckRunResult) Equal(y *PlanCheckRunResult) bool {
 	}
 	return true
 }
+
+func (x *ChangedResources) Equal(y *ChangedResources) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Databases) != len(y.Databases) {
+		return false
+	}
+	for i := 0; i < len(x.Databases); i++ {
+		if !x.Databases[i].Equal(y.Databases[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *ChangedResourceDatabase) Equal(y *ChangedResourceDatabase) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if len(x.Schemas) != len(y.Schemas) {
+		return false
+	}
+	for i := 0; i < len(x.Schemas); i++ {
+		if !x.Schemas[i].Equal(y.Schemas[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *ChangedResourceSchema) Equal(y *ChangedResourceSchema) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if len(x.Tables) != len(y.Tables) {
+		return false
+	}
+	for i := 0; i < len(x.Tables); i++ {
+		if !x.Tables[i].Equal(y.Tables[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *ChangedResourceTable) Equal(y *ChangedResourceTable) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.TableRows != y.TableRows {
+		return false
+	}
+	return true
+}

@@ -35,13 +35,6 @@
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
   
 - [store/changelog.proto](#store_changelog-proto)
-    - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
-    - [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction)
-    - [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure)
-    - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
-    - [ChangedResourceTable](#bytebase-store-ChangedResourceTable)
-    - [ChangedResourceView](#bytebase-store-ChangedResourceView)
-    - [ChangedResources](#bytebase-store-ChangedResources)
     - [ChangelogPayload](#bytebase-store-ChangelogPayload)
   
     - [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type)
@@ -146,9 +139,6 @@
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
     - [DataSourceType](#bytebase-store-DataSourceType)
   
-- [store/instance_change_history.proto](#store_instance_change_history-proto)
-    - [InstanceChangeHistoryPayload](#bytebase-store-InstanceChangeHistoryPayload)
-  
 - [store/issue.proto](#store_issue-proto)
     - [GrantRequest](#bytebase-store-GrantRequest)
     - [Issue](#bytebase-store-Issue)
@@ -193,6 +183,10 @@
     - [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type)
   
 - [store/plan_check_run.proto](#store_plan_check_run-proto)
+    - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
+    - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
+    - [ChangedResourceTable](#bytebase-store-ChangedResourceTable)
+    - [ChangedResources](#bytebase-store-ChangedResources)
     - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
     - [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
@@ -762,121 +756,6 @@ Metadata about the request.
 
 
 
-<a name="bytebase-store-ChangedResourceDatabase"></a>
-
-### ChangedResourceDatabase
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| schemas | [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceFunction"></a>
-
-### ChangedResourceFunction
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of substrings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceProcedure"></a>
-
-### ChangedResourceProcedure
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of substrings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceSchema"></a>
-
-### ChangedResourceSchema
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| tables | [ChangedResourceTable](#bytebase-store-ChangedResourceTable) | repeated |  |
-| views | [ChangedResourceView](#bytebase-store-ChangedResourceView) | repeated |  |
-| functions | [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction) | repeated |  |
-| procedures | [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceTable"></a>
-
-### ChangedResourceTable
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| table_rows | [int64](#int64) |  | The estimated row count of the table. |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of substrings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceView"></a>
-
-### ChangedResourceView
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of substrings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResources"></a>
-
-### ChangedResources
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| databases | [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase) | repeated |  |
-
-
-
-
-
-
 <a name="bytebase-store-ChangelogPayload"></a>
 
 ### ChangelogPayload
@@ -888,7 +767,6 @@ Metadata about the request.
 | task_run | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun} |
 | issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
 | revision | [int64](#int64) |  | The revision uid. optional |
-| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | version | [string](#string) |  |  |
 | type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
@@ -2675,37 +2553,6 @@ InstanceRole is the API message for instance role.
 
 
 
-<a name="store_instance_change_history-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/instance_change_history.proto
-
-
-
-<a name="bytebase-store-InstanceChangeHistoryPayload"></a>
-
-### InstanceChangeHistoryPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
 <a name="store_issue-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -3302,6 +3149,69 @@ Type is the database change type.
 <p align="right"><a href="#top">Top</a></p>
 
 ## store/plan_check_run.proto
+
+
+
+<a name="bytebase-store-ChangedResourceDatabase"></a>
+
+### ChangedResourceDatabase
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schemas | [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceSchema"></a>
+
+### ChangedResourceSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| tables | [ChangedResourceTable](#bytebase-store-ChangedResourceTable) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceTable"></a>
+
+### ChangedResourceTable
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| table_rows | [int64](#int64) |  | The estimated row count of the table. |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResources"></a>
+
+### ChangedResources
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase) | repeated |  |
+
+
+
 
 
 

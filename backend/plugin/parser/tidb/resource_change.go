@@ -61,7 +61,7 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 	}, nil
 }
 
-func getResourceChanges(database string, node tidbast.StmtNode, statement string, changedResources *model.ChangedResources) error {
+func getResourceChanges(database string, node tidbast.StmtNode, _ string, changedResources *model.ChangedResources) error {
 	switch node := node.(type) {
 	case *tidbast.CreateTableStmt:
 		d, table := node.Table.Schema.O, node.Table.Name.O
@@ -72,27 +72,13 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 			d,
 			"",
 			&storepb.ChangedResourceTable{
-				Name:   table,
-				Ranges: []*storepb.Range{getRange(statement, node)},
+				Name: table,
 			},
 			false,
 		)
 	case *tidbast.DropTableStmt:
 		if node.IsView {
-			for _, name := range node.Tables {
-				d, view := name.Schema.O, name.Name.O
-				if d == "" {
-					d = database
-				}
-				changedResources.AddView(
-					d,
-					"",
-					&storepb.ChangedResourceView{
-						Name:   view,
-						Ranges: []*storepb.Range{getRange(statement, node)},
-					},
-				)
-			}
+			// View tracking removed - not used in risk/approval calculations
 			return nil
 		}
 		for _, name := range node.Tables {
@@ -104,8 +90,7 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 				d,
 				"",
 				&storepb.ChangedResourceTable{
-					Name:   table,
-					Ranges: []*storepb.Range{getRange(statement, node)},
+					Name: table,
 				},
 				true,
 			)
@@ -119,8 +104,7 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 			d,
 			"",
 			&storepb.ChangedResourceTable{
-				Name:   table,
-				Ranges: []*storepb.Range{getRange(statement, node)},
+				Name: table,
 			},
 			true,
 		)
@@ -135,8 +119,7 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 					d,
 					"",
 					&storepb.ChangedResourceTable{
-						Name:   table,
-						Ranges: []*storepb.Range{getRange(statement, node)},
+						Name: table,
 					},
 					false,
 				)
@@ -150,8 +133,7 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 					d,
 					"",
 					&storepb.ChangedResourceTable{
-						Name:   table,
-						Ranges: []*storepb.Range{getRange(statement, node)},
+						Name: table,
 					},
 					false,
 				)
@@ -166,8 +148,7 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 			d,
 			"",
 			&storepb.ChangedResourceTable{
-				Name:   table,
-				Ranges: []*storepb.Range{getRange(statement, node)},
+				Name: table,
 			},
 			false,
 		)
@@ -180,24 +161,12 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 			d,
 			"",
 			&storepb.ChangedResourceTable{
-				Name:   table,
-				Ranges: []*storepb.Range{getRange(statement, node)},
+				Name: table,
 			},
 			false,
 		)
 	case *tidbast.CreateViewStmt:
-		d, view := node.ViewName.Schema.O, node.ViewName.Name.O
-		if d == "" {
-			d = database
-		}
-		changedResources.AddView(
-			d,
-			"",
-			&storepb.ChangedResourceView{
-				Name:   view,
-				Ranges: []*storepb.Range{getRange(statement, node)},
-			},
-		)
+		// View tracking removed - not used in risk/approval calculations
 	case *tidbast.InsertStmt:
 		tables, err := extractTableRefs(node.Table)
 		if err != nil {
@@ -212,8 +181,7 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 				d,
 				"",
 				&storepb.ChangedResourceTable{
-					Name:   table.table,
-					Ranges: []*storepb.Range{getRange(statement, node)},
+					Name: table.table,
 				},
 				false,
 			)
@@ -232,8 +200,7 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 				d,
 				"",
 				&storepb.ChangedResourceTable{
-					Name:   table.table,
-					Ranges: []*storepb.Range{getRange(statement, node)},
+					Name: table.table,
 				},
 				false,
 			)
@@ -252,8 +219,7 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 				d,
 				"",
 				&storepb.ChangedResourceTable{
-					Name:   table.table,
-					Ranges: []*storepb.Range{getRange(statement, node)},
+					Name: table.table,
 				},
 				false,
 			)
@@ -268,8 +234,7 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 					d,
 					"",
 					&storepb.ChangedResourceTable{
-						Name:   table.Name.O,
-						Ranges: []*storepb.Range{getRange(statement, node)},
+						Name: table.Name.O,
 					},
 					false,
 				)
@@ -278,13 +243,6 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 	default:
 	}
 	return nil
-}
-
-func getRange(statement string, node tidbast.StmtNode) *storepb.Range {
-	r := base.NewRange(statement, trimStatement(node.OriginalText()))
-	// TiDB node text does not including the trailing semicolon.
-	r.End++
-	return r
 }
 
 func trimStatement(statement string) string {

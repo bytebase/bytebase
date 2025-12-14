@@ -8803,83 +8803,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Content_Part'
                     description: parts is used for a result content with multiple parts.
-        ChangedResourceDatabase:
-            type: object
-            properties:
-                name:
-                    type: string
-                schemas:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceSchema'
-        ChangedResourceFunction:
-            type: object
-            properties:
-                name:
-                    type: string
-                ranges:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
-        ChangedResourceProcedure:
-            type: object
-            properties:
-                name:
-                    type: string
-                ranges:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
-        ChangedResourceSchema:
-            type: object
-            properties:
-                name:
-                    type: string
-                tables:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceTable'
-                views:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceView'
-                functions:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceFunction'
-                procedures:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceProcedure'
-        ChangedResourceTable:
-            type: object
-            properties:
-                name:
-                    type: string
-                ranges:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
-        ChangedResourceView:
-            type: object
-            properties:
-                name:
-                    type: string
-                ranges:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
-        ChangedResources:
-            type: object
-            properties:
-                databases:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceDatabase'
         Changelog:
             type: object
             properties:
@@ -8929,8 +8852,6 @@ components:
                     description: |-
                         Could be empty
                          Or present but not found if deleted
-                changedResources:
-                    $ref: '#/components/schemas/ChangedResources'
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
@@ -13074,8 +12995,6 @@ components:
                     description: statement_types are the types of statements that are found in the sql.
                 affectedRows:
                     type: string
-                changedResources:
-                    $ref: '#/components/schemas/ChangedResources'
         ReviewConfig:
             type: object
             properties:

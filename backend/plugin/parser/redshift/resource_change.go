@@ -134,44 +134,6 @@ func (*resourceChangeListener) EnterIndexstmt(ctx *parser.IndexstmtContext) {
 	// For now, we skip index tracking
 }
 
-// EnterCreatematviewstmt is called when entering a creatematviewstmt rule.
-func (l *resourceChangeListener) EnterCreatematviewstmt(ctx *parser.CreatematviewstmtContext) {
-	if ctx.CREATE() == nil || ctx.Qualified_name() == nil {
-		return
-	}
-
-	viewName := extractQualifiedName(ctx.Qualified_name())
-	schemaName := extractSchemaName(ctx.Qualified_name(), l.searchPath[0])
-
-	// For materialized views, we use AddView method
-	l.changedResources.AddView(
-		l.currentDatabase,
-		schemaName,
-		&storepb.ChangedResourceView{
-			Name: viewName,
-		},
-	)
-}
-
-// EnterCreateexternalviewstmt is called when entering a createexternalviewstmt rule.
-func (l *resourceChangeListener) EnterCreateexternalviewstmt(ctx *parser.CreateexternalviewstmtContext) {
-	if ctx.CREATE() == nil || ctx.Qualified_name() == nil {
-		return
-	}
-
-	viewName := extractQualifiedName(ctx.Qualified_name())
-	schemaName := extractSchemaName(ctx.Qualified_name(), l.searchPath[0])
-
-	// For external views, we use AddView method
-	l.changedResources.AddView(
-		l.currentDatabase,
-		schemaName,
-		&storepb.ChangedResourceView{
-			Name: viewName,
-		},
-	)
-}
-
 // EnterVariablesetstmt is called when entering a variablesetstmt rule.
 func (l *resourceChangeListener) EnterVariablesetstmt(ctx *parser.VariablesetstmtContext) {
 	if ctx.SET() == nil {
