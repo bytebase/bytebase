@@ -223,7 +223,6 @@ func TestUpdateUserEmail(t *testing.T) {
 				MaskingExceptionPolicy: &v1pb.MaskingExceptionPolicy{
 					MaskingExceptions: []*v1pb.MaskingExceptionPolicy_MaskingException{
 						{
-							Action:    v1pb.MaskingExceptionPolicy_MaskingException_QUERY,
 							Member:    fmt.Sprintf("user:%s", originalEmail),
 							Condition: &expr.Expr{}, // Empty condition means access all databases without expiration
 						},

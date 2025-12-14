@@ -35,14 +35,6 @@ message RolloutPolicy {
 // MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 message MaskingExceptionPolicy {
   message MaskingException {
-    enum Action {
-      ACTION_UNSPECIFIED = 0;
-      QUERY = 1;
-      EXPORT = 2;
-    }
-    // action is the action by which the user can access sensitive data.
-    Action action = 1;
-
     // Member is the principal who binds to this exception policy instance.
     //
     // Format: users/{email} or groups/{group email}

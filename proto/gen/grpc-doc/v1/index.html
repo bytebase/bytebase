@@ -1751,10 +1751,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.MaskingExceptionPolicy.MaskingException.Action"><span class="badge">E</span>MaskingExceptionPolicy.MaskingException.Action</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PolicyResourceType"><span class="badge">E</span>PolicyResourceType</a>
                 </li>
               
@@ -18925,13 +18921,6 @@ Format: {resource type}/{resource id} </p></td>
             <tbody>
               
                 <tr>
-                  <td>action</td>
-                  <td><a href="#bytebase.v1.MaskingExceptionPolicy.MaskingException.Action">MaskingExceptionPolicy.MaskingException.Action</a></td>
-                  <td></td>
-                  <td><p>The action that the user can perform on sensitive data. </p></td>
-                </tr>
-              
-                <tr>
                   <td>member</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -19429,35 +19418,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DISALLOW</td>
                 <td>2</td>
                 <td><p>Disallow querying admin data sources.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.MaskingExceptionPolicy.MaskingException.Action">MaskingExceptionPolicy.MaskingException.Action</h3>
-        <p>The action that the exception permits.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>ACTION_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Unspecified action.</p></td>
-              </tr>
-            
-              <tr>
-                <td>QUERY</td>
-                <td>1</td>
-                <td><p>Allow querying sensitive data.</p></td>
-              </tr>
-            
-              <tr>
-                <td>EXPORT</td>
-                <td>2</td>
-                <td><p>Allow exporting sensitive data.</p></td>
               </tr>
             
           </tbody>

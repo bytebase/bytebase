@@ -249,7 +249,6 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		s.licenseService,
 		s.accessCheck,
 		s.schemaSyncer,
-		storepb.MaskingExceptionPolicy_MaskingException_QUERY,
 	)
 	slog.Debug("query finished",
 		log.BBError(queryErr),
@@ -472,7 +471,6 @@ func queryRetry(
 	licenseService *enterprise.LicenseService,
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
-	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 ) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
 	var spans []*parserbase.QuerySpan
 	var sensitivePredicateColumns [][]parserbase.ColumnResource
@@ -509,7 +507,7 @@ func queryRetry(
 		}
 		if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 			masker := NewQueryResultMasker(stores)
-			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
+			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
 			if err != nil {
 				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
@@ -585,7 +583,7 @@ func queryRetry(
 		}
 		if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 			masker := NewQueryResultMasker(stores)
-			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user, action)
+			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
 			if err != nil {
 				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
@@ -665,7 +663,7 @@ func queryRetry(
 			}
 		} else {
 			masker := NewQueryResultMasker(stores)
-			if err := masker.MaskResults(ctx, spans, results, instance, user, action); err != nil {
+			if err := masker.MaskResults(ctx, spans, results, instance, user); err != nil {
 				return nil, nil, duration, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 			}
 
@@ -741,13 +739,12 @@ func queryRetryStopOnError(
 	licenseService *enterprise.LicenseService,
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
-	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 ) ([]*v1pb.QueryResult, []*parserbase.QuerySpan, time.Duration, error) {
 	// Split the statement into individual SQLs
 	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), statement)
 	if err != nil {
 		// Fall back to executing as a single statement if splitting fails
-		return queryRetry(ctx, stores, user, instance, database, driver, conn, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer, action)
+		return queryRetry(ctx, stores, user, instance, database, driver, conn, statement, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
 	}
 
 	var allResults []*v1pb.QueryResult
@@ -760,7 +757,7 @@ func queryRetryStopOnError(
 			continue
 		}
 
-		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer, action)
+		results, spans, duration, err := queryRetry(ctx, stores, user, instance, database, driver, conn, stmt.Text, queryContext, licenseService, optionalAccessCheck, schemaSyncer)
 		totalDuration += duration
 
 		if err != nil {
@@ -866,7 +863,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	if err != nil {
 		return nil, err
 	}
-	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, dataSource)
+	bytes, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer, dataSource)
 
 	s.createQueryHistory(database, store.QueryHistoryTypeExport, statement, user.Email, duration, exportErr)
 
@@ -975,8 +972,10 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 	}, nil
 }
 
-// DoExport does the export.
-func DoExport(
+// doExport performs SQL Editor exports with masking applied.
+// This is used for ad-hoc exports where users have the EXPORTER role.
+// For approved DATABASE_EXPORT tasks, see data_export_executor.go which exports without masking.
+func doExport(
 	ctx context.Context,
 	stores *store.Store,
 	dbFactory *dbfactory.DBFactory,
@@ -1042,7 +1041,6 @@ func DoExport(
 		licenseService,
 		optionalAccessCheck,
 		schemaSyncer,
-		storepb.MaskingExceptionPolicy_MaskingException_EXPORT,
 	)
 	if queryErr != nil {
 		return nil, duration, queryErr
@@ -1050,7 +1048,7 @@ func DoExport(
 
 	if licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
 		masker := NewQueryResultMasker(stores)
-		if err := masker.MaskResults(ctx, spans, results, instance, user, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
+		if err := masker.MaskResults(ctx, spans, results, instance, user); err != nil {
 			return nil, duration, err
 		}
 	}
