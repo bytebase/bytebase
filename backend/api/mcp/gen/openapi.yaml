@@ -14632,44 +14632,9 @@ components:
             type: string
           title: roles
           description: The roles that can approve rollout execution.
-        checkers:
-          title: checkers
-          description: |-
-            Checkers that must pass before rollout execution.
-             These checks are performed in UI workflows only.
-          $ref: '#/components/schemas/bytebase.v1.RolloutPolicy.Checkers'
       title: RolloutPolicy
       additionalProperties: false
       description: Rollout policy configuration.
-    bytebase.v1.RolloutPolicy.Checkers:
-      type: object
-      properties:
-        requiredIssueApproval:
-          type: boolean
-          title: required_issue_approval
-          description: Whether issue approval is required before proceeding with rollout.
-        requiredStatusChecks:
-          title: required_status_checks
-          description: Status checks that must pass before rollout can be executed.
-          $ref: '#/components/schemas/bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks'
-      title: Checkers
-      additionalProperties: false
-    bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement:
-      type: string
-      title: PlanCheckEnforcement
-      enum:
-        - PLAN_CHECK_ENFORCEMENT_UNSPECIFIED
-        - ERROR_ONLY
-        - STRICT
-    bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks:
-      type: object
-      properties:
-        planCheckEnforcement:
-          title: plan_check_enforcement
-          description: Enforcement level for plan check results during rollout validation.
-          $ref: '#/components/schemas/bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement'
-      title: RequiredStatusChecks
-      additionalProperties: false
     bytebase.v1.RowValue:
       type: object
       oneOf:

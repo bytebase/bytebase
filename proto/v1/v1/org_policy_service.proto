@@ -282,33 +282,6 @@ message RolloutPolicy {
   bool automatic = 1;
   // The roles that can approve rollout execution.
   repeated string roles = 2;
-  // Checkers that must pass before rollout execution.
-  // These checks are performed in UI workflows only.
-  Checkers checkers = 3;
-
-  message Checkers {
-    // Whether issue approval is required before proceeding with rollout.
-    bool required_issue_approval = 1;
-
-    // Status checks that must pass before rollout can be executed.
-    RequiredStatusChecks required_status_checks = 2;
-
-    message RequiredStatusChecks {
-      // Enforcement level for plan check results during rollout validation.
-      PlanCheckEnforcement plan_check_enforcement = 1;
-    }
-
-    enum PlanCheckEnforcement {
-      // Allow rollout regardless of plan check results (no enforcement).
-      PLAN_CHECK_ENFORCEMENT_UNSPECIFIED = 0;
-
-      // Block rollout only when plan check finds errors.
-      ERROR_ONLY = 1;
-
-      // Block rollout when plan check finds errors or warnings.
-      STRICT = 2;
-    }
-  }
 }
 
 // QueryDataPolicy is the policy configuration for querying data.

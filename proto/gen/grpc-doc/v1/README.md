@@ -405,8 +405,6 @@
     - [Policy](#bytebase-v1-Policy)
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
-    - [RolloutPolicy.Checkers](#bytebase-v1-RolloutPolicy-Checkers)
-    - [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks)
     - [TagPolicy](#bytebase-v1-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
@@ -414,7 +412,6 @@
     - [DataSourceQueryPolicy.Restriction](#bytebase-v1-DataSourceQueryPolicy-Restriction)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
-    - [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement)
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
@@ -6828,38 +6825,6 @@ Rollout policy configuration.
 | ----- | ---- | ----- | ----------- |
 | automatic | [bool](#bool) |  | Whether rollout is automatic without manual approval. |
 | roles | [string](#string) | repeated | The roles that can approve rollout execution. |
-| checkers | [RolloutPolicy.Checkers](#bytebase-v1-RolloutPolicy-Checkers) |  | Checkers that must pass before rollout execution. These checks are performed in UI workflows only. |
-
-
-
-
-
-
-<a name="bytebase-v1-RolloutPolicy-Checkers"></a>
-
-### RolloutPolicy.Checkers
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| required_issue_approval | [bool](#bool) |  | Whether issue approval is required before proceeding with rollout. |
-| required_status_checks | [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks) |  | Status checks that must pass before rollout can be executed. |
-
-
-
-
-
-
-<a name="bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks"></a>
-
-### RolloutPolicy.Checkers.RequiredStatusChecks
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plan_check_enforcement | [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement) |  | Enforcement level for plan check results during rollout validation. |
 
 
 
@@ -6959,19 +6924,6 @@ The type of organizational policy.
 | TAG | 4 | Resource tag policy. |
 | DATA_SOURCE_QUERY | 5 | Data source query restrictions policy. |
 | DATA_QUERY | 6 | Query data access policy. |
-
-
-
-<a name="bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement"></a>
-
-### RolloutPolicy.Checkers.PlanCheckEnforcement
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PLAN_CHECK_ENFORCEMENT_UNSPECIFIED | 0 | Allow rollout regardless of plan check results (no enforcement). |
-| ERROR_ONLY | 1 | Block rollout only when plan check finds errors. |
-| STRICT | 2 | Block rollout when plan check finds errors or warnings. |
 
 
  

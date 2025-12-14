@@ -9028,17 +9028,6 @@ components:
                     description: The risk level of the statement on the target.
                     format: enum
             description: Check result for a single release file on a target database.
-        Checkers_RequiredStatusChecks:
-            type: object
-            properties:
-                planCheckEnforcement:
-                    enum:
-                        - PLAN_CHECK_ENFORCEMENT_UNSPECIFIED
-                        - ERROR_ONLY
-                        - STRICT
-                    type: string
-                    description: Enforcement level for plan check results during rollout validation.
-                    format: enum
         ColumnCatalog:
             type: object
             properties:
@@ -13271,23 +13260,7 @@ components:
                     items:
                         type: string
                     description: The roles that can approve rollout execution.
-                checkers:
-                    allOf:
-                        - $ref: '#/components/schemas/RolloutPolicy_Checkers'
-                    description: |-
-                        Checkers that must pass before rollout execution.
-                         These checks are performed in UI workflows only.
             description: Rollout policy configuration.
-        RolloutPolicy_Checkers:
-            type: object
-            properties:
-                requiredIssueApproval:
-                    type: boolean
-                    description: Whether issue approval is required before proceeding with rollout.
-                requiredStatusChecks:
-                    allOf:
-                        - $ref: '#/components/schemas/Checkers_RequiredStatusChecks'
-                    description: Status checks that must pass before rollout can be executed.
         RowValue:
             type: object
             properties:

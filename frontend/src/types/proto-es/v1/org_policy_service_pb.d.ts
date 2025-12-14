@@ -294,14 +294,6 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
    * @generated from field: repeated string roles = 2;
    */
   roles: string[];
-
-  /**
-   * Checkers that must pass before rollout execution.
-   * These checks are performed in UI workflows only.
-   *
-   * @generated from field: bytebase.v1.RolloutPolicy.Checkers checkers = 3;
-   */
-  checkers?: RolloutPolicy_Checkers;
 };
 
 /**
@@ -309,80 +301,6 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
  * Use `create(RolloutPolicySchema)` to create a new message.
  */
 export declare const RolloutPolicySchema: GenMessage<RolloutPolicy>;
-
-/**
- * @generated from message bytebase.v1.RolloutPolicy.Checkers
- */
-export declare type RolloutPolicy_Checkers = Message<"bytebase.v1.RolloutPolicy.Checkers"> & {
-  /**
-   * Whether issue approval is required before proceeding with rollout.
-   *
-   * @generated from field: bool required_issue_approval = 1;
-   */
-  requiredIssueApproval: boolean;
-
-  /**
-   * Status checks that must pass before rollout can be executed.
-   *
-   * @generated from field: bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks required_status_checks = 2;
-   */
-  requiredStatusChecks?: RolloutPolicy_Checkers_RequiredStatusChecks;
-};
-
-/**
- * Describes the message bytebase.v1.RolloutPolicy.Checkers.
- * Use `create(RolloutPolicy_CheckersSchema)` to create a new message.
- */
-export declare const RolloutPolicy_CheckersSchema: GenMessage<RolloutPolicy_Checkers>;
-
-/**
- * @generated from message bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks
- */
-export declare type RolloutPolicy_Checkers_RequiredStatusChecks = Message<"bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks"> & {
-  /**
-   * Enforcement level for plan check results during rollout validation.
-   *
-   * @generated from field: bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement plan_check_enforcement = 1;
-   */
-  planCheckEnforcement: RolloutPolicy_Checkers_PlanCheckEnforcement;
-};
-
-/**
- * Describes the message bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks.
- * Use `create(RolloutPolicy_Checkers_RequiredStatusChecksSchema)` to create a new message.
- */
-export declare const RolloutPolicy_Checkers_RequiredStatusChecksSchema: GenMessage<RolloutPolicy_Checkers_RequiredStatusChecks>;
-
-/**
- * @generated from enum bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement
- */
-export enum RolloutPolicy_Checkers_PlanCheckEnforcement {
-  /**
-   * Allow rollout regardless of plan check results (no enforcement).
-   *
-   * @generated from enum value: PLAN_CHECK_ENFORCEMENT_UNSPECIFIED = 0;
-   */
-  PLAN_CHECK_ENFORCEMENT_UNSPECIFIED = 0,
-
-  /**
-   * Block rollout only when plan check finds errors.
-   *
-   * @generated from enum value: ERROR_ONLY = 1;
-   */
-  ERROR_ONLY = 1,
-
-  /**
-   * Block rollout when plan check finds errors or warnings.
-   *
-   * @generated from enum value: STRICT = 2;
-   */
-  STRICT = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement.
- */
-export declare const RolloutPolicy_Checkers_PlanCheckEnforcementSchema: GenEnum<RolloutPolicy_Checkers_PlanCheckEnforcement>;
 
 /**
  * QueryDataPolicy is the policy configuration for querying data.
