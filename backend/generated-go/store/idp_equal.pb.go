@@ -80,6 +80,14 @@ func (x *OIDCIdentityProviderConfig) Equal(y *OIDCIdentityProviderConfig) bool {
 	if x.ClientSecret != y.ClientSecret {
 		return false
 	}
+	if len(x.Scopes) != len(y.Scopes) {
+		return false
+	}
+	for i := 0; i < len(x.Scopes); i++ {
+		if x.Scopes[i] != y.Scopes[i] {
+			return false
+		}
+	}
 	if !x.FieldMapping.Equal(y.FieldMapping) {
 		return false
 	}
@@ -88,14 +96,6 @@ func (x *OIDCIdentityProviderConfig) Equal(y *OIDCIdentityProviderConfig) bool {
 	}
 	if x.AuthStyle != y.AuthStyle {
 		return false
-	}
-	if len(x.Scopes) != len(y.Scopes) {
-		return false
-	}
-	for i := 0; i < len(x.Scopes); i++ {
-		if x.Scopes[i] != y.Scopes[i] {
-			return false
-		}
 	}
 	return true
 }

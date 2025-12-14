@@ -10,20 +10,19 @@ option go_package = "generated-go/store";
 
 message PlanCheckRunConfig {
   int32 sheet_uid = 1;
-  reserved 2; // Was change_database_type enum
-  string instance_id = 3;
-  string database_name = 4;
+  string instance_id = 2;
+  string database_name = 3;
 
-  map<string, string> ghost_flags = 6;
+  map<string, string> ghost_flags = 4;
 
   // If set, a backup of the modified data will be created automatically before any changes are applied.
-  bool enable_prior_backup = 7;
+  bool enable_prior_backup = 5;
 
   // Whether to use gh-ost for online schema migration.
-  bool enable_ghost = 8;
+  bool enable_ghost = 6;
 
   // Whether this is a Schema Definition Language (SDL) change.
-  bool enable_sdl = 9;
+  bool enable_sdl = 7;
 }
 
 message PlanCheckRunResult {
@@ -41,19 +40,15 @@ message PlanCheckRunResult {
       SqlReviewReport sql_review_report = 6;
     }
     message SqlSummaryReport {
-      reserved 1;
-
       // statement_types are the types of statements found in the SQL.
-      repeated string statement_types = 2;
-      int64 affected_rows = 3;
-      ChangedResources changed_resources = 4;
+      repeated string statement_types = 1;
+      int64 affected_rows = 2;
+      ChangedResources changed_resources = 3;
     }
     message SqlReviewReport {
-      reserved 1, 2, 3, 4;
-
       // Position of the SQL statement.
-      Position start_position = 8;
-      Position end_position = 9;
+      Position start_position = 1;
+      Position end_position = 2;
     }
   }
 }

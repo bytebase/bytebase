@@ -86,8 +86,8 @@ type Advice struct {
 	Content string `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
 	// The start_position is inclusive and the end_position is exclusive.
 	// TODO: use range instead.
-	StartPosition *Position `protobuf:"bytes,6,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
-	EndPosition   *Position `protobuf:"bytes,7,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
+	StartPosition *Position `protobuf:"bytes,5,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
+	EndPosition   *Position `protobuf:"bytes,6,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -168,19 +168,19 @@ var File_store_advice_proto protoreflect.FileDescriptor
 
 const file_store_advice_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/advice.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xce\x02\n" +
+	"\x12store/advice.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xc8\x02\n" +
 	"\x06Advice\x125\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1d.bytebase.store.Advice.StatusR\x06status\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\x05R\x04code\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x04 \x01(\tR\acontent\x12?\n" +
-	"\x0estart_position\x18\x06 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
-	"\fend_position\x18\a \x01(\v2\x18.bytebase.store.PositionR\vendPosition\"E\n" +
+	"\x0estart_position\x18\x05 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
+	"\fend_position\x18\x06 \x01(\v2\x18.bytebase.store.PositionR\vendPosition\"E\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSUCCESS\x10\x01\x12\v\n" +
 	"\aWARNING\x10\x02\x12\t\n" +
-	"\x05ERROR\x10\x03J\x04\b\x05\x10\x06B\x8e\x01\n" +
+	"\x05ERROR\x10\x03B\x8e\x01\n" +
 	"\x12com.bytebase.storeB\vAdviceProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

@@ -108,27 +108,27 @@ const (
 	// OceanBase distributed database.
 	Engine_OCEANBASE Engine = 14
 	// StarRocks analytics database.
-	Engine_STARROCKS Engine = 18
+	Engine_STARROCKS Engine = 15
 	// Apache Doris analytics database.
-	Engine_DORIS Engine = 19
+	Engine_DORIS Engine = 16
 	// Apache Hive data warehouse.
-	Engine_HIVE Engine = 20
+	Engine_HIVE Engine = 17
 	// Elasticsearch search engine.
-	Engine_ELASTICSEARCH Engine = 21
+	Engine_ELASTICSEARCH Engine = 18
 	// Google BigQuery data warehouse.
-	Engine_BIGQUERY Engine = 22
+	Engine_BIGQUERY Engine = 19
 	// Amazon DynamoDB NoSQL database.
-	Engine_DYNAMODB Engine = 23
+	Engine_DYNAMODB Engine = 20
 	// Databricks lakehouse platform.
-	Engine_DATABRICKS Engine = 24
+	Engine_DATABRICKS Engine = 21
 	// CockroachDB distributed SQL database.
-	Engine_COCKROACHDB Engine = 25
+	Engine_COCKROACHDB Engine = 22
 	// Azure Cosmos DB multi-model database.
-	Engine_COSMOSDB Engine = 26
+	Engine_COSMOSDB Engine = 23
 	// Trino distributed SQL query engine.
-	Engine_TRINO Engine = 27
+	Engine_TRINO Engine = 24
 	// Apache Cassandra NoSQL database.
-	Engine_CASSANDRA Engine = 28
+	Engine_CASSANDRA Engine = 25
 )
 
 // Enum value maps for Engine.
@@ -149,17 +149,17 @@ var (
 		12: "REDSHIFT",
 		13: "MARIADB",
 		14: "OCEANBASE",
-		18: "STARROCKS",
-		19: "DORIS",
-		20: "HIVE",
-		21: "ELASTICSEARCH",
-		22: "BIGQUERY",
-		23: "DYNAMODB",
-		24: "DATABRICKS",
-		25: "COCKROACHDB",
-		26: "COSMOSDB",
-		27: "TRINO",
-		28: "CASSANDRA",
+		15: "STARROCKS",
+		16: "DORIS",
+		17: "HIVE",
+		18: "ELASTICSEARCH",
+		19: "BIGQUERY",
+		20: "DYNAMODB",
+		21: "DATABRICKS",
+		22: "COCKROACHDB",
+		23: "COSMOSDB",
+		24: "TRINO",
+		25: "CASSANDRA",
 	}
 	Engine_value = map[string]int32{
 		"ENGINE_UNSPECIFIED": 0,
@@ -177,17 +177,17 @@ var (
 		"REDSHIFT":           12,
 		"MARIADB":            13,
 		"OCEANBASE":          14,
-		"STARROCKS":          18,
-		"DORIS":              19,
-		"HIVE":               20,
-		"ELASTICSEARCH":      21,
-		"BIGQUERY":           22,
-		"DYNAMODB":           23,
-		"DATABRICKS":         24,
-		"COCKROACHDB":        25,
-		"COSMOSDB":           26,
-		"TRINO":              27,
-		"CASSANDRA":          28,
+		"STARROCKS":          15,
+		"DORIS":              16,
+		"HIVE":               17,
+		"ELASTICSEARCH":      18,
+		"BIGQUERY":           19,
+		"DYNAMODB":           20,
+		"DATABRICKS":         21,
+		"COCKROACHDB":        22,
+		"COSMOSDB":           23,
+		"TRINO":              24,
+		"CASSANDRA":          25,
 	}
 )
 
@@ -346,22 +346,22 @@ type DatabaseChangeType int32
 const (
 	DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED DatabaseChangeType = 0
 	// Used for imperative schema migration including CREATE DATABASE.
-	DatabaseChangeType_MIGRATE DatabaseChangeType = 2
+	DatabaseChangeType_MIGRATE DatabaseChangeType = 1
 	// Used for state-based declarative schema migration including CREATE DATABASE.
-	DatabaseChangeType_SDL DatabaseChangeType = 3
+	DatabaseChangeType_SDL DatabaseChangeType = 2
 )
 
 // Enum value maps for DatabaseChangeType.
 var (
 	DatabaseChangeType_name = map[int32]string{
 		0: "DATABASE_CHANGE_TYPE_UNSPECIFIED",
-		2: "MIGRATE",
-		3: "SDL",
+		1: "MIGRATE",
+		2: "SDL",
 	}
 	DatabaseChangeType_value = map[string]int32{
 		"DATABASE_CHANGE_TYPE_UNSPECIFIED": 0,
-		"MIGRATE":                          2,
-		"SDL":                              3,
+		"MIGRATE":                          1,
+		"SDL":                              2,
 	}
 )
 
@@ -468,7 +468,7 @@ const (
 	// WeCom (WeChat Work) integration.
 	WebhookType_WECOM WebhookType = 6
 	// Lark integration.
-	WebhookType_LARK WebhookType = 8
+	WebhookType_LARK WebhookType = 7
 )
 
 // Enum value maps for WebhookType.
@@ -481,7 +481,7 @@ var (
 		4: "DINGTALK",
 		5: "FEISHU",
 		6: "WECOM",
-		8: "LARK",
+		7: "LARK",
 	}
 	WebhookType_value = map[string]int32{
 		"WEBHOOK_TYPE_UNSPECIFIED": 0,
@@ -491,7 +491,7 @@ var (
 		"DINGTALK":                 4,
 		"FEISHU":                   5,
 		"WECOM":                    6,
-		"LARK":                     8,
+		"LARK":                     7,
 	}
 )
 
@@ -690,18 +690,18 @@ const file_v1_common_proto_rawDesc = "" +
 	"\bREDSHIFT\x10\f\x12\v\n" +
 	"\aMARIADB\x10\r\x12\r\n" +
 	"\tOCEANBASE\x10\x0e\x12\r\n" +
-	"\tSTARROCKS\x10\x12\x12\t\n" +
-	"\x05DORIS\x10\x13\x12\b\n" +
-	"\x04HIVE\x10\x14\x12\x11\n" +
-	"\rELASTICSEARCH\x10\x15\x12\f\n" +
-	"\bBIGQUERY\x10\x16\x12\f\n" +
-	"\bDYNAMODB\x10\x17\x12\x0e\n" +
+	"\tSTARROCKS\x10\x0f\x12\t\n" +
+	"\x05DORIS\x10\x10\x12\b\n" +
+	"\x04HIVE\x10\x11\x12\x11\n" +
+	"\rELASTICSEARCH\x10\x12\x12\f\n" +
+	"\bBIGQUERY\x10\x13\x12\f\n" +
+	"\bDYNAMODB\x10\x14\x12\x0e\n" +
 	"\n" +
-	"DATABRICKS\x10\x18\x12\x0f\n" +
-	"\vCOCKROACHDB\x10\x19\x12\f\n" +
-	"\bCOSMOSDB\x10\x1a\x12\t\n" +
-	"\x05TRINO\x10\x1b\x12\r\n" +
-	"\tCASSANDRA\x10\x1c*\\\n" +
+	"DATABRICKS\x10\x15\x12\x0f\n" +
+	"\vCOCKROACHDB\x10\x16\x12\f\n" +
+	"\bCOSMOSDB\x10\x17\x12\t\n" +
+	"\x05TRINO\x10\x18\x12\r\n" +
+	"\tCASSANDRA\x10\x19*\\\n" +
 	"\aVCSType\x12\x18\n" +
 	"\x14VCS_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -718,8 +718,8 @@ const file_v1_common_proto_rawDesc = "" +
 	"\x04XLSX\x10\x04*P\n" +
 	"\x12DatabaseChangeType\x12$\n" +
 	" DATABASE_CHANGE_TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
-	"\aMIGRATE\x10\x02\x12\a\n" +
-	"\x03SDL\x10\x03*H\n" +
+	"\aMIGRATE\x10\x01\x12\a\n" +
+	"\x03SDL\x10\x02*H\n" +
 	"\tRiskLevel\x12\x1a\n" +
 	"\x16RISK_LEVEL_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03LOW\x10\x01\x12\f\n" +
@@ -734,7 +734,7 @@ const file_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"\x06FEISHU\x10\x05\x12\t\n" +
 	"\x05WECOM\x10\x06\x12\b\n" +
-	"\x04LARK\x10\bB\xa1\x01\n" +
+	"\x04LARK\x10\aB\xa1\x01\n" +
 	"\x0fcom.bytebase.v1B\vCommonProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

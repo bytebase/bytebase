@@ -366,9 +366,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
                         - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -412,9 +412,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
                         - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -1716,9 +1716,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
                         - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -1768,9 +1768,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
                         - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -2591,9 +2591,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
                         - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -2637,9 +2637,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
                         - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -3167,9 +3167,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
                         - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -3217,9 +3217,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
                         - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -4855,9 +4855,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
                         - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -4901,9 +4901,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
                         - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -9874,10 +9874,6 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/DatabaseMetadata'
                     description: The metadata of the target schema.
-                sourceCatalog:
-                    $ref: '#/components/schemas/DatabaseCatalog'
-                targetCatalog:
-                    $ref: '#/components/schemas/DatabaseCatalog'
                 engine:
                     enum:
                         - ENGINE_UNSPECIFIED
@@ -9909,6 +9905,10 @@ components:
                     type: string
                     description: The database engine of the schema.
                     format: enum
+                sourceCatalog:
+                    $ref: '#/components/schemas/DatabaseCatalog'
+                targetCatalog:
+                    $ref: '#/components/schemas/DatabaseCatalog'
         DiffMetadataResponse:
             type: object
             properties:
@@ -12300,9 +12300,9 @@ components:
                 type:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
                         - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -14681,8 +14681,8 @@ components:
                         - GENERAL
                         - DATABASE_CREATE
                         - DATABASE_MIGRATE
-                        - DATABASE_SDL
                         - DATABASE_EXPORT
+                        - DATABASE_SDL
                     type: string
                     format: enum
                 target:
@@ -15423,10 +15423,6 @@ components:
                     items:
                         type: string
                     description: Temporary recovery codes used during MFA setup and regeneration.
-                tempOtpSecretCreatedTime:
-                    type: string
-                    description: Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-                    format: date-time
                 phone:
                     type: string
                     description: |-
@@ -15444,6 +15440,10 @@ components:
                     description: |-
                         The groups for the user.
                          Format: groups/{email}
+                tempOtpSecretCreatedTime:
+                    type: string
+                    description: Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+                    format: date-time
                 workloadIdentityConfig:
                     allOf:
                         - $ref: '#/components/schemas/WorkloadIdentityConfig'
@@ -15546,15 +15546,15 @@ components:
                     items:
                         enum:
                             - TYPE_UNSPECIFIED
-                            - NOTIFY_ISSUE_APPROVED
-                            - NOTIFY_PIPELINE_ROLLOUT
                             - ISSUE_CREATE
                             - ISSUE_COMMENT_CREATE
                             - ISSUE_FIELD_UPDATE
                             - ISSUE_STATUS_UPDATE
-                            - ISSUE_APPROVAL_NOTIFY
                             - ISSUE_PIPELINE_STAGE_STATUS_UPDATE
+                            - ISSUE_APPROVAL_NOTIFY
                             - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
+                            - NOTIFY_ISSUE_APPROVED
+                            - NOTIFY_PIPELINE_ROLLOUT
                         type: string
                         format: enum
                     description: |-

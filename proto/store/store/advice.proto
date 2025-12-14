@@ -7,8 +7,6 @@ import "store/common.proto";
 option go_package = "generated-go/store";
 
 message Advice {
-  reserved 5;
-
   // Status represents the result status of the advice.
   enum Status {
     STATUS_UNSPECIFIED = 0;
@@ -31,6 +29,6 @@ message Advice {
 
   // The start_position is inclusive and the end_position is exclusive.
   // TODO: use range instead.
-  Position start_position = 6;
-  Position end_position = 7;
+  Position start_position = 5;
+  Position end_position = 6;
 }

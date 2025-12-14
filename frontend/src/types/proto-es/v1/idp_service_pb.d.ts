@@ -264,28 +264,28 @@ export declare type IdentityProvider = Message<"bytebase.v1.IdentityProvider"> &
   /**
    * The display title of the identity provider.
    *
-   * @generated from field: string title = 4;
+   * @generated from field: string title = 2;
    */
   title: string;
 
   /**
    * The domain for email matching when using this identity provider.
    *
-   * @generated from field: string domain = 5;
+   * @generated from field: string domain = 3;
    */
   domain: string;
 
   /**
    * The type of identity provider protocol.
    *
-   * @generated from field: bytebase.v1.IdentityProviderType type = 6;
+   * @generated from field: bytebase.v1.IdentityProviderType type = 4;
    */
   type: IdentityProviderType;
 
   /**
    * The configuration details for the identity provider.
    *
-   * @generated from field: bytebase.v1.IdentityProviderConfig config = 7;
+   * @generated from field: bytebase.v1.IdentityProviderConfig config = 5;
    */
   config?: IdentityProviderConfig;
 };
@@ -619,7 +619,7 @@ export declare type FieldMapping = Message<"bytebase.v1.FieldMapping"> & {
   /**
    * Phone is the field name of primary phone in 3rd-party idp user info. Optional.
    *
-   * @generated from field: string phone = 4;
+   * @generated from field: string phone = 3;
    */
   phone: string;
 
@@ -627,7 +627,7 @@ export declare type FieldMapping = Message<"bytebase.v1.FieldMapping"> & {
    * Groups is the field name of groups in 3rd-party idp user info. Optional.
    * Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/
    *
-   * @generated from field: string groups = 5;
+   * @generated from field: string groups = 4;
    */
   groups: string;
 };

@@ -437,25 +437,25 @@ message Instance {
   bool activation = 10;
 
   // Database roles available in this instance.
-  repeated InstanceRole roles = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated InstanceRole roles = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // How often the instance is synced.
-  google.protobuf.Duration sync_interval = 13;
+  google.protobuf.Duration sync_interval = 12;
 
   // The maximum number of connections.
   // The default is 10 if the value is unset or zero.
-  int32 maximum_connections = 14;
+  int32 maximum_connections = 13;
 
   // Enable sync for following databases.
   // Default empty, means sync all schemas & databases.
-  repeated string sync_databases = 15;
+  repeated string sync_databases = 14;
 
   // The last time the instance was synced.
-  google.protobuf.Timestamp last_sync_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_sync_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Labels are key-value pairs that can be attached to the instance.
   // For example, { "org_group": "infrastructure", "environment": "production" }
-  map<string, string> labels = 17;
+  map<string, string> labels = 16;
 }
 
 message DataSourceExternalSecret {

@@ -24,15 +24,15 @@ const (
 type PlanCheckRunConfig struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	SheetUid     int32                  `protobuf:"varint,1,opt,name=sheet_uid,json=sheetUid,proto3" json:"sheet_uid,omitempty"`
-	InstanceId   string                 `protobuf:"bytes,3,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	DatabaseName string                 `protobuf:"bytes,4,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
-	GhostFlags   map[string]string      `protobuf:"bytes,6,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	InstanceId   string                 `protobuf:"bytes,2,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	DatabaseName string                 `protobuf:"bytes,3,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	GhostFlags   map[string]string      `protobuf:"bytes,4,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
-	EnablePriorBackup bool `protobuf:"varint,7,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
+	EnablePriorBackup bool `protobuf:"varint,5,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	// Whether to use gh-ost for online schema migration.
-	EnableGhost bool `protobuf:"varint,8,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
+	EnableGhost bool `protobuf:"varint,6,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
 	// Whether this is a Schema Definition Language (SDL) change.
-	EnableSdl     bool `protobuf:"varint,9,opt,name=enable_sdl,json=enableSdl,proto3" json:"enable_sdl,omitempty"`
+	EnableSdl     bool `protobuf:"varint,7,opt,name=enable_sdl,json=enableSdl,proto3" json:"enable_sdl,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -285,9 +285,9 @@ func (*PlanCheckRunResult_Result_SqlReviewReport_) isPlanCheckRunResult_Result_R
 type PlanCheckRunResult_Result_SqlSummaryReport struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// statement_types are the types of statements found in the SQL.
-	StatementTypes   []string          `protobuf:"bytes,2,rep,name=statement_types,json=statementTypes,proto3" json:"statement_types,omitempty"`
-	AffectedRows     int64             `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
-	ChangedResources *ChangedResources `protobuf:"bytes,4,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
+	StatementTypes   []string          `protobuf:"bytes,1,rep,name=statement_types,json=statementTypes,proto3" json:"statement_types,omitempty"`
+	AffectedRows     int64             `protobuf:"varint,2,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	ChangedResources *ChangedResources `protobuf:"bytes,3,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -346,8 +346,8 @@ func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetChangedResources() *Chan
 type PlanCheckRunResult_Result_SqlReviewReport struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Position of the SQL statement.
-	StartPosition *Position `protobuf:"bytes,8,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
-	EndPosition   *Position `protobuf:"bytes,9,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
+	StartPosition *Position `protobuf:"bytes,1,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
+	EndPosition   *Position `protobuf:"bytes,2,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -400,38 +400,38 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\x83\x03\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\xfd\x02\n" +
 	"\x12PlanCheckRunConfig\x12\x1b\n" +
 	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12\x1f\n" +
-	"\vinstance_id\x18\x03 \x01(\tR\n" +
+	"\vinstance_id\x18\x02 \x01(\tR\n" +
 	"instanceId\x12#\n" +
-	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x12S\n" +
-	"\vghost_flags\x18\x06 \x03(\v22.bytebase.store.PlanCheckRunConfig.GhostFlagsEntryR\n" +
+	"\rdatabase_name\x18\x03 \x01(\tR\fdatabaseName\x12S\n" +
+	"\vghost_flags\x18\x04 \x03(\v22.bytebase.store.PlanCheckRunConfig.GhostFlagsEntryR\n" +
 	"ghostFlags\x12.\n" +
-	"\x13enable_prior_backup\x18\a \x01(\bR\x11enablePriorBackup\x12!\n" +
-	"\fenable_ghost\x18\b \x01(\bR\venableGhost\x12\x1d\n" +
+	"\x13enable_prior_backup\x18\x05 \x01(\bR\x11enablePriorBackup\x12!\n" +
+	"\fenable_ghost\x18\x06 \x01(\bR\venableGhost\x12\x1d\n" +
 	"\n" +
-	"enable_sdl\x18\t \x01(\bR\tenableSdl\x1a=\n" +
+	"enable_sdl\x18\a \x01(\bR\tenableSdl\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x02\x10\x03\"\xb6\x06\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x98\x06\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xc4\x05\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xa6\x05\n" +
 	"\x06Result\x125\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1d.bytebase.store.Advice.StatusR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x12\n" +
 	"\x04code\x18\x04 \x01(\x05R\x04code\x12j\n" +
 	"\x12sql_summary_report\x18\x05 \x01(\v2:.bytebase.store.PlanCheckRunResult.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12g\n" +
-	"\x11sql_review_report\x18\x06 \x01(\v29.bytebase.store.PlanCheckRunResult.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xb5\x01\n" +
+	"\x11sql_review_report\x18\x06 \x01(\v29.bytebase.store.PlanCheckRunResult.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xaf\x01\n" +
 	"\x10SqlSummaryReport\x12'\n" +
-	"\x0fstatement_types\x18\x02 \x03(\tR\x0estatementTypes\x12#\n" +
-	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x12M\n" +
-	"\x11changed_resources\x18\x04 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResourcesJ\x04\b\x01\x10\x02\x1a\xa7\x01\n" +
+	"\x0fstatement_types\x18\x01 \x03(\tR\x0estatementTypes\x12#\n" +
+	"\raffected_rows\x18\x02 \x01(\x03R\faffectedRows\x12M\n" +
+	"\x11changed_resources\x18\x03 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResources\x1a\x8f\x01\n" +
 	"\x0fSqlReviewReport\x12?\n" +
-	"\x0estart_position\x18\b \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
-	"\fend_position\x18\t \x01(\v2\x18.bytebase.store.PositionR\vendPositionJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05B\b\n" +
+	"\x0estart_position\x18\x01 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
+	"\fend_position\x18\x02 \x01(\v2\x18.bytebase.store.PositionR\vendPositionB\b\n" +
 	"\x06reportB\x94\x01\n" +
 	"\x12com.bytebase.storeB\x11PlanCheckRunProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 

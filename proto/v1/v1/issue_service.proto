@@ -353,17 +353,15 @@ message Issue {
     pattern: "projects/{project}/issues/{issue}"
   };
 
-  reserved 2, 7, 8;
-
   // The name of the issue.
   // Format: projects/{project}/issues/{issue}
   string name = 1;
 
   // The title of the issue.
-  string title = 3 [(buf.validate.field).string.max_len = 200];
+  string title = 2 [(buf.validate.field).string.max_len = 200];
 
   // The description of the issue.
-  string description = 4 [(buf.validate.field).string.max_len = 10000];
+  string description = 3 [(buf.validate.field).string.max_len = 10000];
 
   // The type of issue.
   enum Type {
@@ -376,10 +374,10 @@ message Issue {
     // Database data export request.
     DATABASE_EXPORT = 3;
   }
-  Type type = 5;
+  Type type = 4;
 
   // The status of the issue.
-  IssueStatus status = 6;
+  IssueStatus status = 5;
 
   // Approvers and their approval status for the issue.
   message Approver {
@@ -400,32 +398,30 @@ message Issue {
     // Format: users/hello@world.com
     string principal = 2;
   }
-  repeated Approver approvers = 9;
+  repeated Approver approvers = 6;
 
   // The approval template for the issue.
-  ApprovalTemplate approval_template = 10;
-
-  reserved 11, 12;
+  ApprovalTemplate approval_template = 7;
 
   // Format: users/hello@world.com
-  string creator = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp create_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp update_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The plan associated with the issue.
   // Can be empty.
   // Format: projects/{project}/plans/{plan}
-  string plan = 17;
+  string plan = 11;
 
   // The rollout associated with the issue.
   // Can be empty.
   // Format: projects/{project}/rollouts/{rollout}
-  string rollout = 18;
+  string rollout = 12;
 
   // Used if the issue type is GRANT_REQUEST.
-  GrantRequest grant_request = 19;
+  GrantRequest grant_request = 13;
 
   // The releasers of the pending stage of the issue rollout, judging
   // from the rollout policy.
@@ -434,10 +430,10 @@ message Issue {
   // - roles/workspaceDBA
   // - roles/projectOwner
   // - roles/projectReleaser
-  repeated string releasers = 20;
+  repeated string releasers = 14;
 
   // The risk level of the issue.
-  RiskLevel risk_level = 21;
+  RiskLevel risk_level = 15;
 
   // The status count of the issue.
   // Keys are the following:
@@ -448,10 +444,10 @@ message Issue {
   // - DONE
   // - FAILED
   // - CANCELED
-  map<string, int32> task_status_count = 22;
+  map<string, int32> task_status_count = 16;
 
   // Labels attached to the issue for categorization and filtering.
-  repeated string labels = 23;
+  repeated string labels = 17;
 
   // The overall approval status for the issue.
   enum ApprovalStatus {
@@ -470,9 +466,9 @@ message Issue {
     // Error occurred during approval evaluation.
     ERROR = 6;
   }
-  ApprovalStatus approval_status = 24 [(google.api.field_behavior) = OUTPUT_ONLY];
+  ApprovalStatus approval_status = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Only populated when approval_status == ERROR
-  string approval_status_error = 25 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string approval_status_error = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message GrantRequest {
@@ -577,8 +573,6 @@ message UpdateIssueCommentRequest {
 
 // A comment on an issue.
 message IssueComment {
-  reserved 6;
-
   // Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}
   string name = 1;
 
@@ -593,20 +587,20 @@ message IssueComment {
   google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Format: users/{email}
-  string creator = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The event associated with this comment.
   oneof event {
     // Approval event.
-    Approval approval = 8;
+    Approval approval = 7;
     // Issue update event.
-    IssueUpdate issue_update = 9;
+    IssueUpdate issue_update = 8;
     // Stage end event.
-    StageEnd stage_end = 10;
+    StageEnd stage_end = 9;
     // Task update event.
-    TaskUpdate task_update = 11;
+    TaskUpdate task_update = 10;
     // Task prior backup event.
-    TaskPriorBackup task_prior_backup = 12;
+    TaskPriorBackup task_prior_backup = 11;
   }
 
   // Approval event information.
@@ -629,8 +623,6 @@ message IssueComment {
 
   // Issue update event information.
   message IssueUpdate {
-    reserved 7, 8;
-
     optional string from_title = 1;
     optional string to_title = 2;
     optional string from_description = 3;
@@ -638,8 +630,8 @@ message IssueComment {
     optional IssueStatus from_status = 5;
     optional IssueStatus to_status = 6;
 
-    repeated string from_labels = 9;
-    repeated string to_labels = 10;
+    repeated string from_labels = 7;
+    repeated string to_labels = 8;
   }
 
   // Stage end event information.

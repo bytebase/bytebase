@@ -321,7 +321,7 @@ var File_store_approval_proto protoreflect.FileDescriptor
 
 const file_store_approval_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/approval.proto\x12\x0ebytebase.store\"\xf2\x03\n" +
+	"\x14store/approval.proto\x12\x0ebytebase.store\"\xe0\x03\n" +
 	"\x14IssuePayloadApproval\x12M\n" +
 	"\x11approval_template\x18\x01 \x01(\v2 .bytebase.store.ApprovalTemplateR\x10approvalTemplate\x12K\n" +
 	"\tapprovers\x18\x02 \x03(\v2-.bytebase.store.IssuePayloadApproval.ApproverR\tapprovers\x122\n" +
@@ -334,8 +334,7 @@ const file_store_approval_proto_rawDesc = "" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\f\n" +
 	"\bAPPROVED\x10\x02\x12\f\n" +
-	"\bREJECTED\x10\x03J\x04\b\x05\x10\x06R\n" +
-	"risk_level\"|\n" +
+	"\bREJECTED\x10\x03\"|\n" +
 	"\x10ApprovalTemplate\x120\n" +
 	"\x04flow\x18\x01 \x01(\v2\x1c.bytebase.store.ApprovalFlowR\x04flow\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +

@@ -742,10 +742,10 @@ type ReviewConfig struct {
 	// Whether the review configuration is enabled.
 	Enabled bool `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	// The SQL review rules to enforce.
-	Rules []*SQLReviewRule `protobuf:"bytes,7,rep,name=rules,proto3" json:"rules,omitempty"`
+	Rules []*SQLReviewRule `protobuf:"bytes,4,rep,name=rules,proto3" json:"rules,omitempty"`
 	// Resources using the config.
 	// Format: {resource}/{resource id}, e.g., environments/test.
-	Resources     []string `protobuf:"bytes,8,rep,name=resources,proto3" json:"resources,omitempty"`
+	Resources     []string `protobuf:"bytes,5,rep,name=resources,proto3" json:"resources,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1357,8 +1357,8 @@ const file_v1_review_config_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x18\n" +
 	"\aenabled\x18\x03 \x01(\bR\aenabled\x120\n" +
-	"\x05rules\x18\a \x03(\v2\x1a.bytebase.v1.SQLReviewRuleR\x05rules\x12\x1c\n" +
-	"\tresources\x18\b \x03(\tR\tresources:<\xeaA9\n" +
+	"\x05rules\x18\x04 \x03(\v2\x1a.bytebase.v1.SQLReviewRuleR\x05rules\x12\x1c\n" +
+	"\tresources\x18\x05 \x03(\tR\tresources:<\xeaA9\n" +
 	"\x19bytebase.com/ReviewConfig\x12\x1creviewConfigs/{reviewConfig}\"\xf2&\n" +
 	"\rSQLReviewRule\x123\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1f.bytebase.v1.SQLReviewRule.TypeR\x04type\x126\n" +

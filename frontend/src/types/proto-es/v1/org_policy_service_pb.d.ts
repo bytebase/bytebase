@@ -200,14 +200,14 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
   /**
    * Whether this policy inherits from its parent resource.
    *
-   * @generated from field: bool inherit_from_parent = 4;
+   * @generated from field: bool inherit_from_parent = 2;
    */
   inheritFromParent: boolean;
 
   /**
    * The type of policy.
    *
-   * @generated from field: bytebase.v1.PolicyType type = 5;
+   * @generated from field: bytebase.v1.PolicyType type = 3;
    */
   type: PolicyType;
 
@@ -218,37 +218,37 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
    */
   policy: {
     /**
-     * @generated from field: bytebase.v1.RolloutPolicy rollout_policy = 19;
+     * @generated from field: bytebase.v1.RolloutPolicy rollout_policy = 4;
      */
     value: RolloutPolicy;
     case: "rolloutPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.MaskingRulePolicy masking_rule_policy = 17;
+     * @generated from field: bytebase.v1.MaskingRulePolicy masking_rule_policy = 5;
      */
     value: MaskingRulePolicy;
     case: "maskingRulePolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.MaskingExemptionPolicy masking_exemption_policy = 18;
+     * @generated from field: bytebase.v1.MaskingExemptionPolicy masking_exemption_policy = 6;
      */
     value: MaskingExemptionPolicy;
     case: "maskingExemptionPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.TagPolicy tag_policy = 21;
+     * @generated from field: bytebase.v1.TagPolicy tag_policy = 7;
      */
     value: TagPolicy;
     case: "tagPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.DataSourceQueryPolicy data_source_query_policy = 22;
+     * @generated from field: bytebase.v1.DataSourceQueryPolicy data_source_query_policy = 8;
      */
     value: DataSourceQueryPolicy;
     case: "dataSourceQueryPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.QueryDataPolicy query_data_policy = 24;
+     * @generated from field: bytebase.v1.QueryDataPolicy query_data_policy = 9;
      */
     value: QueryDataPolicy;
     case: "queryDataPolicy";
@@ -257,14 +257,14 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
   /**
    * Whether the policy is enforced.
    *
-   * @generated from field: bool enforce = 13;
+   * @generated from field: bool enforce = 10;
    */
   enforce: boolean;
 
   /**
    * The resource type for the policy.
    *
-   * @generated from field: bytebase.v1.PolicyResourceType resource_type = 14;
+   * @generated from field: bytebase.v1.PolicyResourceType resource_type = 11;
    */
   resourceType: PolicyResourceType;
 };
@@ -299,7 +299,7 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
    * Checkers that must pass before rollout execution.
    * These checks are performed in UI workflows only.
    *
-   * @generated from field: bytebase.v1.RolloutPolicy.Checkers checkers = 4;
+   * @generated from field: bytebase.v1.RolloutPolicy.Checkers checkers = 3;
    */
   checkers?: RolloutPolicy_Checkers;
 };
@@ -672,46 +672,46 @@ export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0,
 
   /**
-   * Rollout deployment policy.
-   *
-   * @generated from enum value: ROLLOUT_POLICY = 11;
-   */
-  ROLLOUT_POLICY = 11,
-
-  /**
    * Data masking rule policy.
    *
-   * @generated from enum value: MASKING_RULE = 9;
+   * @generated from enum value: MASKING_RULE = 1;
    */
-  MASKING_RULE = 9,
+  MASKING_RULE = 1,
 
   /**
    * Data masking exemption policy.
    *
-   * @generated from enum value: MASKING_EXEMPTION = 10;
+   * @generated from enum value: MASKING_EXEMPTION = 2;
    */
-  MASKING_EXEMPTION = 10,
+  MASKING_EXEMPTION = 2,
+
+  /**
+   * Rollout deployment policy.
+   *
+   * @generated from enum value: ROLLOUT_POLICY = 3;
+   */
+  ROLLOUT_POLICY = 3,
 
   /**
    * Resource tag policy.
    *
-   * @generated from enum value: TAG = 13;
+   * @generated from enum value: TAG = 4;
    */
-  TAG = 13,
+  TAG = 4,
 
   /**
    * Data source query restrictions policy.
    *
-   * @generated from enum value: DATA_SOURCE_QUERY = 14;
+   * @generated from enum value: DATA_SOURCE_QUERY = 5;
    */
-  DATA_SOURCE_QUERY = 14,
+  DATA_SOURCE_QUERY = 5,
 
   /**
    * Query data access policy.
    *
-   * @generated from enum value: DATA_QUERY = 16;
+   * @generated from enum value: DATA_QUERY = 6;
    */
-  DATA_QUERY = 16,
+  DATA_QUERY = 6,
 }
 
 /**

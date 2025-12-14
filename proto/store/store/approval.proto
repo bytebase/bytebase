@@ -37,10 +37,6 @@ message IssuePayloadApproval {
 
   // Error message if approval template finding failed.
   string approval_finding_error = 4;
-
-  // Reserved: risk_level was moved to Issue message
-  reserved 5;
-  reserved "risk_level";
 }
 
 // ApprovalTemplate defines the approval workflow and requirements for an issue.

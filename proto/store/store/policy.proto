@@ -12,11 +12,11 @@ message Policy {
     TYPE_UNSPECIFIED = 0;
     ROLLOUT = 1;
     MASKING_EXEMPTION = 2;
-    QUERY_DATA = 5;
-    MASKING_RULE = 6;
-    IAM = 8;
-    TAG = 9;
-    DATA_SOURCE_QUERY = 10;
+    QUERY_DATA = 3;
+    MASKING_RULE = 4;
+    IAM = 5;
+    TAG = 6;
+    DATA_SOURCE_QUERY = 7;
   }
 
   enum Resource {

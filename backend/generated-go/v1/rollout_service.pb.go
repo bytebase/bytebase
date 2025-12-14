@@ -109,12 +109,12 @@ const (
 	// Database migration task that applies versioned schema changes.
 	// Use payload DatabaseUpdate.
 	Task_DATABASE_MIGRATE Task_Type = 3
-	// Database SDL (Schema Definition Language) task that synchronizes declarative schema.
-	// Use payload DatabaseUpdate.
-	Task_DATABASE_SDL Task_Type = 6
 	// Database export task that exports query results or table data.
 	// Use payload DatabaseDataExport.
-	Task_DATABASE_EXPORT Task_Type = 5
+	Task_DATABASE_EXPORT Task_Type = 4
+	// Database SDL (Schema Definition Language) task that synchronizes declarative schema.
+	// Use payload DatabaseUpdate.
+	Task_DATABASE_SDL Task_Type = 5
 )
 
 // Enum value maps for Task_Type.
@@ -124,16 +124,16 @@ var (
 		1: "GENERAL",
 		2: "DATABASE_CREATE",
 		3: "DATABASE_MIGRATE",
-		6: "DATABASE_SDL",
-		5: "DATABASE_EXPORT",
+		4: "DATABASE_EXPORT",
+		5: "DATABASE_SDL",
 	}
 	Task_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
 		"GENERAL":          1,
 		"DATABASE_CREATE":  2,
 		"DATABASE_MIGRATE": 3,
-		"DATABASE_SDL":     6,
-		"DATABASE_EXPORT":  5,
+		"DATABASE_EXPORT":  4,
+		"DATABASE_SDL":     5,
 	}
 )
 
@@ -476,7 +476,7 @@ type BatchRunTasksRequest struct {
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
 	Tasks []string `protobuf:"bytes,2,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	// The task run should run after run_time.
-	RunTime       *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=run_time,json=runTime,proto3,oneof" json:"run_time,omitempty"`
+	RunTime       *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=run_time,json=runTime,proto3,oneof" json:"run_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1277,19 +1277,19 @@ type Rollout struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The plan that this rollout is based on.
 	// Format: projects/{project}/plans/{plan}
-	Plan string `protobuf:"bytes,3,opt,name=plan,proto3" json:"plan,omitempty"`
+	Plan string `protobuf:"bytes,2,opt,name=plan,proto3" json:"plan,omitempty"`
 	// The title of the rollout, inherited from the associated plan.
 	// This field is output only and cannot be directly set.
-	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	// Stages and thus tasks of the rollout.
-	Stages []*Stage `protobuf:"bytes,5,rep,name=stages,proto3" json:"stages,omitempty"`
+	Stages []*Stage `protobuf:"bytes,4,rep,name=stages,proto3" json:"stages,omitempty"`
 	// Format: users/hello@world.com
-	Creator    string                 `protobuf:"bytes,6,opt,name=creator,proto3" json:"creator,omitempty"`
-	CreateTime *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
+	Creator    string                 `protobuf:"bytes,5,opt,name=creator,proto3" json:"creator,omitempty"`
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
 	// The issue associated with the rollout. Could be empty.
 	// Format: projects/{project}/issues/{issue}
-	Issue         string `protobuf:"bytes,9,opt,name=issue,proto3" json:"issue,omitempty"`
+	Issue         string `protobuf:"bytes,8,opt,name=issue,proto3" json:"issue,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1388,12 +1388,12 @@ type Stage struct {
 	// id is the environment id of the stage.
 	// e.g., "prod".
 	// Use "-" when the stage has no environment or deleted environment.
-	Id string `protobuf:"bytes,3,opt,name=id,proto3" json:"id,omitempty"`
+	Id string `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
 	// environment is the environment of the stage.
 	// Format: environments/{environment} for valid environments, or "environments/-" for stages without environment or with deleted environments.
-	Environment string `protobuf:"bytes,4,opt,name=environment,proto3" json:"environment,omitempty"`
+	Environment string `protobuf:"bytes,3,opt,name=environment,proto3" json:"environment,omitempty"`
 	// The tasks within this stage.
-	Tasks         []*Task `protobuf:"bytes,5,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	Tasks         []*Task `protobuf:"bytes,4,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1462,15 +1462,15 @@ type Task struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// A UUID4 string that uniquely identifies the Spec.
 	// Could be empty if the rollout of the task does not have an associating plan.
-	SpecId string `protobuf:"bytes,4,opt,name=spec_id,json=specId,proto3" json:"spec_id,omitempty"`
+	SpecId string `protobuf:"bytes,2,opt,name=spec_id,json=specId,proto3" json:"spec_id,omitempty"`
 	// Status is the status of the task.
-	Status Task_Status `protobuf:"varint,5,opt,name=status,proto3,enum=bytebase.v1.Task_Status" json:"status,omitempty"`
+	Status Task_Status `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.Task_Status" json:"status,omitempty"`
 	// The reason why the task was skipped.
-	SkippedReason string    `protobuf:"bytes,15,opt,name=skipped_reason,json=skippedReason,proto3" json:"skipped_reason,omitempty"`
-	Type          Task_Type `protobuf:"varint,6,opt,name=type,proto3,enum=bytebase.v1.Task_Type" json:"type,omitempty"`
+	SkippedReason string    `protobuf:"bytes,4,opt,name=skipped_reason,json=skippedReason,proto3" json:"skipped_reason,omitempty"`
+	Type          Task_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.Task_Type" json:"type,omitempty"`
 	// Format: instances/{instance} if the task is DatabaseCreate.
 	// Format: instances/{instance}/databases/{database}
-	Target string `protobuf:"bytes,8,opt,name=target,proto3" json:"target,omitempty"`
+	Target string `protobuf:"bytes,6,opt,name=target,proto3" json:"target,omitempty"`
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*Task_DatabaseCreate_
@@ -1479,10 +1479,10 @@ type Task struct {
 	Payload isTask_Payload `protobuf_oneof:"payload"`
 	// The update_time is the update time of latest task run.
 	// If there are no task runs, it will be empty.
-	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=update_time,json=updateTime,proto3,oneof" json:"update_time,omitempty"`
+	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3,oneof" json:"update_time,omitempty"`
 	// The run_time is the scheduled run time of latest task run.
 	// If there are no task runs or the task run is not scheduled, it will be empty.
-	RunTime       *timestamppb.Timestamp `protobuf:"bytes,21,opt,name=run_time,json=runTime,proto3,oneof" json:"run_time,omitempty"`
+	RunTime       *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=run_time,json=runTime,proto3,oneof" json:"run_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1612,15 +1612,15 @@ type isTask_Payload interface {
 }
 
 type Task_DatabaseCreate_ struct {
-	DatabaseCreate *Task_DatabaseCreate `protobuf:"bytes,9,opt,name=database_create,json=databaseCreate,proto3,oneof"`
+	DatabaseCreate *Task_DatabaseCreate `protobuf:"bytes,7,opt,name=database_create,json=databaseCreate,proto3,oneof"`
 }
 
 type Task_DatabaseUpdate_ struct {
-	DatabaseUpdate *Task_DatabaseUpdate `protobuf:"bytes,11,opt,name=database_update,json=databaseUpdate,proto3,oneof"`
+	DatabaseUpdate *Task_DatabaseUpdate `protobuf:"bytes,8,opt,name=database_update,json=databaseUpdate,proto3,oneof"`
 }
 
 type Task_DatabaseDataExport_ struct {
-	DatabaseDataExport *Task_DatabaseDataExport `protobuf:"bytes,16,opt,name=database_data_export,json=databaseDataExport,proto3,oneof"`
+	DatabaseDataExport *Task_DatabaseDataExport `protobuf:"bytes,9,opt,name=database_data_export,json=databaseDataExport,proto3,oneof"`
 }
 
 func (*Task_DatabaseCreate_) isTask_Payload() {}
@@ -1634,32 +1634,32 @@ type TaskRun struct {
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Format: users/hello@world.com
-	Creator    string                 `protobuf:"bytes,3,opt,name=creator,proto3" json:"creator,omitempty"`
-	CreateTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
+	Creator    string                 `protobuf:"bytes,2,opt,name=creator,proto3" json:"creator,omitempty"`
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
 	// The current execution status of the task run.
-	Status TaskRun_Status `protobuf:"varint,8,opt,name=status,proto3,enum=bytebase.v1.TaskRun_Status" json:"status,omitempty"`
+	Status TaskRun_Status `protobuf:"varint,5,opt,name=status,proto3,enum=bytebase.v1.TaskRun_Status" json:"status,omitempty"`
 	// Below are the results of a task run.
 	// Detailed information about the task run result.
-	Detail string `protobuf:"bytes,9,opt,name=detail,proto3" json:"detail,omitempty"`
+	Detail string `protobuf:"bytes,6,opt,name=detail,proto3" json:"detail,omitempty"`
 	// The resource name of the changelog.
 	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-	Changelog string `protobuf:"bytes,20,opt,name=changelog,proto3" json:"changelog,omitempty"`
+	Changelog string `protobuf:"bytes,7,opt,name=changelog,proto3" json:"changelog,omitempty"`
 	// The schema version after this task run completes.
-	SchemaVersion string `protobuf:"bytes,11,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	SchemaVersion string `protobuf:"bytes,8,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
 	// The time when the task run started execution.
-	StartTime *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	StartTime *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	// The export archive status for data export tasks.
-	ExportArchiveStatus TaskRun_ExportArchiveStatus `protobuf:"varint,16,opt,name=export_archive_status,json=exportArchiveStatus,proto3,enum=bytebase.v1.TaskRun_ExportArchiveStatus" json:"export_archive_status,omitempty"`
+	ExportArchiveStatus TaskRun_ExportArchiveStatus `protobuf:"varint,10,opt,name=export_archive_status,json=exportArchiveStatus,proto3,enum=bytebase.v1.TaskRun_ExportArchiveStatus" json:"export_archive_status,omitempty"`
 	// The prior backup detail that will be used to rollback the task run.
-	PriorBackupDetail *TaskRun_PriorBackupDetail `protobuf:"bytes,17,opt,name=prior_backup_detail,json=priorBackupDetail,proto3" json:"prior_backup_detail,omitempty"`
+	PriorBackupDetail *TaskRun_PriorBackupDetail `protobuf:"bytes,11,opt,name=prior_backup_detail,json=priorBackupDetail,proto3" json:"prior_backup_detail,omitempty"`
 	// Scheduling information about the task run.
-	SchedulerInfo *TaskRun_SchedulerInfo `protobuf:"bytes,18,opt,name=scheduler_info,json=schedulerInfo,proto3" json:"scheduler_info,omitempty"`
+	SchedulerInfo *TaskRun_SchedulerInfo `protobuf:"bytes,12,opt,name=scheduler_info,json=schedulerInfo,proto3" json:"scheduler_info,omitempty"`
 	// Format: projects/{project}/sheets/{sheet}
-	Sheet string `protobuf:"bytes,19,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	Sheet string `protobuf:"bytes,13,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The task run should run after run_time.
 	// This can only be set when creating the task run calling BatchRunTasks.
-	RunTime       *timestamppb.Timestamp `protobuf:"bytes,21,opt,name=run_time,json=runTime,proto3,oneof" json:"run_time,omitempty"`
+	RunTime       *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=run_time,json=runTime,proto3,oneof" json:"run_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1851,25 +1851,25 @@ type TaskRunLogEntry struct {
 	// The type of this log entry.
 	Type TaskRunLogEntry_Type `protobuf:"varint,1,opt,name=type,proto3,enum=bytebase.v1.TaskRunLogEntry_Type" json:"type,omitempty"`
 	// The time when the log was recorded.
-	LogTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=log_time,json=logTime,proto3" json:"log_time,omitempty"`
+	LogTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=log_time,json=logTime,proto3" json:"log_time,omitempty"`
 	// The deployment ID for this log entry.
-	DeployId string `protobuf:"bytes,12,opt,name=deploy_id,json=deployId,proto3" json:"deploy_id,omitempty"`
+	DeployId string `protobuf:"bytes,3,opt,name=deploy_id,json=deployId,proto3" json:"deploy_id,omitempty"`
 	// Schema dump details (if type is SCHEMA_DUMP).
-	SchemaDump *TaskRunLogEntry_SchemaDump `protobuf:"bytes,2,opt,name=schema_dump,json=schemaDump,proto3" json:"schema_dump,omitempty"`
+	SchemaDump *TaskRunLogEntry_SchemaDump `protobuf:"bytes,4,opt,name=schema_dump,json=schemaDump,proto3" json:"schema_dump,omitempty"`
 	// Command execution details (if type is COMMAND_EXECUTE).
-	CommandExecute *TaskRunLogEntry_CommandExecute `protobuf:"bytes,3,opt,name=command_execute,json=commandExecute,proto3" json:"command_execute,omitempty"`
+	CommandExecute *TaskRunLogEntry_CommandExecute `protobuf:"bytes,5,opt,name=command_execute,json=commandExecute,proto3" json:"command_execute,omitempty"`
 	// Database sync details (if type is DATABASE_SYNC).
-	DatabaseSync *TaskRunLogEntry_DatabaseSync `protobuf:"bytes,4,opt,name=database_sync,json=databaseSync,proto3" json:"database_sync,omitempty"`
+	DatabaseSync *TaskRunLogEntry_DatabaseSync `protobuf:"bytes,6,opt,name=database_sync,json=databaseSync,proto3" json:"database_sync,omitempty"`
 	// Task run status update details (if type is TASK_RUN_STATUS_UPDATE).
-	TaskRunStatusUpdate *TaskRunLogEntry_TaskRunStatusUpdate `protobuf:"bytes,5,opt,name=task_run_status_update,json=taskRunStatusUpdate,proto3" json:"task_run_status_update,omitempty"`
+	TaskRunStatusUpdate *TaskRunLogEntry_TaskRunStatusUpdate `protobuf:"bytes,7,opt,name=task_run_status_update,json=taskRunStatusUpdate,proto3" json:"task_run_status_update,omitempty"`
 	// Transaction control details (if type is TRANSACTION_CONTROL).
-	TransactionControl *TaskRunLogEntry_TransactionControl `protobuf:"bytes,7,opt,name=transaction_control,json=transactionControl,proto3" json:"transaction_control,omitempty"`
+	TransactionControl *TaskRunLogEntry_TransactionControl `protobuf:"bytes,8,opt,name=transaction_control,json=transactionControl,proto3" json:"transaction_control,omitempty"`
 	// Prior backup details (if type is PRIOR_BACKUP).
-	PriorBackup *TaskRunLogEntry_PriorBackup `protobuf:"bytes,8,opt,name=prior_backup,json=priorBackup,proto3" json:"prior_backup,omitempty"`
+	PriorBackup *TaskRunLogEntry_PriorBackup `protobuf:"bytes,9,opt,name=prior_backup,json=priorBackup,proto3" json:"prior_backup,omitempty"`
 	// Retry information details (if type is RETRY_INFO).
-	RetryInfo *TaskRunLogEntry_RetryInfo `protobuf:"bytes,9,opt,name=retry_info,json=retryInfo,proto3" json:"retry_info,omitempty"`
+	RetryInfo *TaskRunLogEntry_RetryInfo `protobuf:"bytes,10,opt,name=retry_info,json=retryInfo,proto3" json:"retry_info,omitempty"`
 	// Compute diff details (if type is COMPUTE_DIFF).
-	ComputeDiff   *TaskRunLogEntry_ComputeDiff `protobuf:"bytes,10,opt,name=compute_diff,json=computeDiff,proto3" json:"compute_diff,omitempty"`
+	ComputeDiff   *TaskRunLogEntry_ComputeDiff `protobuf:"bytes,11,opt,name=compute_diff,json=computeDiff,proto3" json:"compute_diff,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3648,7 +3648,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x14BatchRunTasksRequest\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x14\n" +
 	"\x05tasks\x18\x02 \x03(\tR\x05tasks\x12:\n" +
-	"\brun_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\arunTime\x88\x01\x01B\v\n" +
+	"\brun_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\arunTime\x88\x01\x01B\v\n" +
 	"\t_run_time\"\x17\n" +
 	"\x15BatchRunTasksResponse\"g\n" +
 	"\x15BatchSkipTasksRequest\x12\x16\n" +
@@ -3694,38 +3694,39 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x14bytebase.com/TaskRunR\x04name\"L\n" +
 	"\x14GetTaskRunLogRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/TaskRunR\x06parent\"\x83\x03\n" +
+	"\x14bytebase.com/TaskRunR\x06parent\"\xfd\x02\n" +
 	"\aRollout\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
-	"\x04plan\x18\x03 \x01(\tB\x03\xe0A\x02R\x04plan\x12\x19\n" +
-	"\x05title\x18\x04 \x01(\tB\x03\xe0A\x03R\x05title\x12*\n" +
-	"\x06stages\x18\x05 \x03(\v2\x12.bytebase.v1.StageR\x06stages\x12\x1d\n" +
-	"\acreator\x18\x06 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
-	"\vcreate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\x04plan\x18\x02 \x01(\tB\x03\xe0A\x02R\x04plan\x12\x19\n" +
+	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x03R\x05title\x12*\n" +
+	"\x06stages\x18\x04 \x03(\v2\x12.bytebase.v1.StageR\x06stages\x12\x1d\n" +
+	"\acreator\x18\x05 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
+	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12@\n" +
-	"\vupdate_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"updateTime\x12\x19\n" +
-	"\x05issue\x18\t \x01(\tB\x03\xe0A\x03R\x05issue:@\xeaA=\n" +
-	"\x14bytebase.com/Rollout\x12%projects/{project}/rollouts/{rollout}J\x04\b\x02\x10\x03\"\xd0\x01\n" +
+	"\x05issue\x18\b \x01(\tB\x03\xe0A\x03R\x05issue:@\xeaA=\n" +
+	"\x14bytebase.com/Rollout\x12%projects/{project}/rollouts/{rollout}\"\xca\x01\n" +
 	"\x05Stage\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x13\n" +
-	"\x02id\x18\x03 \x01(\tB\x03\xe0A\x03R\x02id\x12 \n" +
-	"\venvironment\x18\x04 \x01(\tR\venvironment\x12'\n" +
-	"\x05tasks\x18\x05 \x03(\v2\x11.bytebase.v1.TaskR\x05tasks:M\xeaAJ\n" +
-	"\x12bytebase.com/Stage\x124projects/{project}/rollouts/{rollout}/stages/{stage}J\x04\b\x02\x10\x03\"\xf3\v\n" +
+	"\x02id\x18\x02 \x01(\tB\x03\xe0A\x03R\x02id\x12 \n" +
+	"\venvironment\x18\x03 \x01(\tR\venvironment\x12'\n" +
+	"\x05tasks\x18\x04 \x03(\v2\x11.bytebase.v1.TaskR\x05tasks:M\xeaAJ\n" +
+	"\x12bytebase.com/Stage\x124projects/{project}/rollouts/{rollout}/stages/{stage}\"\xed\v\n" +
 	"\x04Task\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
-	"\aspec_id\x18\x04 \x01(\tR\x06specId\x120\n" +
-	"\x06status\x18\x05 \x01(\x0e2\x18.bytebase.v1.Task.StatusR\x06status\x12%\n" +
-	"\x0eskipped_reason\x18\x0f \x01(\tR\rskippedReason\x12*\n" +
-	"\x04type\x18\x06 \x01(\x0e2\x16.bytebase.v1.Task.TypeR\x04type\x12\x16\n" +
-	"\x06target\x18\b \x01(\tR\x06target\x12K\n" +
-	"\x0fdatabase_create\x18\t \x01(\v2 .bytebase.v1.Task.DatabaseCreateH\x00R\x0edatabaseCreate\x12K\n" +
-	"\x0fdatabase_update\x18\v \x01(\v2 .bytebase.v1.Task.DatabaseUpdateH\x00R\x0edatabaseUpdate\x12X\n" +
-	"\x14database_data_export\x18\x10 \x01(\v2$.bytebase.v1.Task.DatabaseDataExportH\x00R\x12databaseDataExport\x12E\n" +
-	"\vupdate_time\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03H\x01R\n" +
+	"\aspec_id\x18\x02 \x01(\tR\x06specId\x120\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x18.bytebase.v1.Task.StatusR\x06status\x12%\n" +
+	"\x0eskipped_reason\x18\x04 \x01(\tR\rskippedReason\x12*\n" +
+	"\x04type\x18\x05 \x01(\x0e2\x16.bytebase.v1.Task.TypeR\x04type\x12\x16\n" +
+	"\x06target\x18\x06 \x01(\tR\x06target\x12K\n" +
+	"\x0fdatabase_create\x18\a \x01(\v2 .bytebase.v1.Task.DatabaseCreateH\x00R\x0edatabaseCreate\x12K\n" +
+	"\x0fdatabase_update\x18\b \x01(\v2 .bytebase.v1.Task.DatabaseUpdateH\x00R\x0edatabaseUpdate\x12X\n" +
+	"\x14database_data_export\x18\t \x01(\v2$.bytebase.v1.Task.DatabaseDataExportH\x00R\x12databaseDataExport\x12E\n" +
+	"\vupdate_time\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03H\x01R\n" +
 	"updateTime\x88\x01\x01\x12?\n" +
-	"\brun_time\x18\x15 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03H\x02R\arunTime\x88\x01\x01\x1a\xd7\x01\n" +
+	"\brun_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03H\x02R\arunTime\x88\x01\x01\x1a\xd7\x01\n" +
 	"\x0eDatabaseCreate\x12\x18\n" +
 	"\aproject\x18\x01 \x01(\tR\aproject\x12\x1a\n" +
 	"\bdatabase\x18\x02 \x01(\tR\bdatabase\x12\x14\n" +
@@ -3758,31 +3759,32 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aGENERAL\x10\x01\x12\x13\n" +
 	"\x0fDATABASE_CREATE\x10\x02\x12\x14\n" +
-	"\x10DATABASE_MIGRATE\x10\x03\x12\x10\n" +
-	"\fDATABASE_SDL\x10\x06\x12\x13\n" +
-	"\x0fDATABASE_EXPORT\x10\x05:Y\xeaAV\n" +
+	"\x10DATABASE_MIGRATE\x10\x03\x12\x13\n" +
+	"\x0fDATABASE_EXPORT\x10\x04\x12\x10\n" +
+	"\fDATABASE_SDL\x10\x05:Y\xeaAV\n" +
 	"\x11bytebase.com/Task\x12Aprojects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}B\t\n" +
 	"\apayloadB\x0e\n" +
 	"\f_update_timeB\v\n" +
-	"\t_run_timeJ\x04\b\x02\x10\x03\"\xb2\x0f\n" +
+	"\t_run_time\"\xa0\x0f\n" +
 	"\aTaskRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\acreator\x18\x03 \x01(\tR\acreator\x12@\n" +
-	"\vcreate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\acreator\x18\x02 \x01(\tR\acreator\x12@\n" +
+	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12@\n" +
-	"\vupdate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\vupdate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"updateTime\x123\n" +
-	"\x06status\x18\b \x01(\x0e2\x1b.bytebase.v1.TaskRun.StatusR\x06status\x12\x16\n" +
-	"\x06detail\x18\t \x01(\tR\x06detail\x12!\n" +
-	"\tchangelog\x18\x14 \x01(\tB\x03\xe0A\x03R\tchangelog\x12%\n" +
-	"\x0eschema_version\x18\v \x01(\tR\rschemaVersion\x12>\n" +
+	"\x06status\x18\x05 \x01(\x0e2\x1b.bytebase.v1.TaskRun.StatusR\x06status\x12\x16\n" +
+	"\x06detail\x18\x06 \x01(\tR\x06detail\x12!\n" +
+	"\tchangelog\x18\a \x01(\tB\x03\xe0A\x03R\tchangelog\x12%\n" +
+	"\x0eschema_version\x18\b \x01(\tR\rschemaVersion\x12>\n" +
 	"\n" +
-	"start_time\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\tstartTime\x12\\\n" +
-	"\x15export_archive_status\x18\x10 \x01(\x0e2(.bytebase.v1.TaskRun.ExportArchiveStatusR\x13exportArchiveStatus\x12V\n" +
-	"\x13prior_backup_detail\x18\x11 \x01(\v2&.bytebase.v1.TaskRun.PriorBackupDetailR\x11priorBackupDetail\x12N\n" +
-	"\x0escheduler_info\x18\x12 \x01(\v2\".bytebase.v1.TaskRun.SchedulerInfoB\x03\xe0A\x03R\rschedulerInfo\x12\x19\n" +
-	"\x05sheet\x18\x13 \x01(\tB\x03\xe0A\x03R\x05sheet\x12?\n" +
-	"\brun_time\x18\x15 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03H\x00R\arunTime\x88\x01\x01\x1a\xd6\x03\n" +
+	"start_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\tstartTime\x12\\\n" +
+	"\x15export_archive_status\x18\n" +
+	" \x01(\x0e2(.bytebase.v1.TaskRun.ExportArchiveStatusR\x13exportArchiveStatus\x12V\n" +
+	"\x13prior_backup_detail\x18\v \x01(\v2&.bytebase.v1.TaskRun.PriorBackupDetailR\x11priorBackupDetail\x12N\n" +
+	"\x0escheduler_info\x18\f \x01(\v2\".bytebase.v1.TaskRun.SchedulerInfoB\x03\xe0A\x03R\rschedulerInfo\x12\x19\n" +
+	"\x05sheet\x18\r \x01(\tB\x03\xe0A\x03R\x05sheet\x12?\n" +
+	"\brun_time\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03H\x00R\arunTime\x88\x01\x01\x1a\xd6\x03\n" +
 	"\x11PriorBackupDetail\x12A\n" +
 	"\x05items\x18\x01 \x03(\v2+.bytebase.v1.TaskRun.PriorBackupDetail.ItemR\x05items\x1a\xfd\x02\n" +
 	"\x04Item\x12T\n" +
@@ -3819,7 +3821,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x05READY\x10\x01\x12\f\n" +
 	"\bEXPORTED\x10\x02:o\xeaAl\n" +
 	"\x14bytebase.com/TaskRun\x12Tprojects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}B\v\n" +
-	"\t_run_timeJ\x04\b\x02\x10\x03J\x04\b\f\x10\rJ\x04\b\x0f\x10\x10\"\xd0\x01\n" +
+	"\t_run_time\"\xd0\x01\n" +
 	"\n" +
 	"TaskRunLog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x126\n" +
@@ -3827,19 +3829,19 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x17bytebase.com/TaskRunLog\x12Xprojects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log\"\xa7\x14\n" +
 	"\x0fTaskRunLogEntry\x125\n" +
 	"\x04type\x18\x01 \x01(\x0e2!.bytebase.v1.TaskRunLogEntry.TypeR\x04type\x125\n" +
-	"\blog_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\alogTime\x12\x1b\n" +
-	"\tdeploy_id\x18\f \x01(\tR\bdeployId\x12H\n" +
-	"\vschema_dump\x18\x02 \x01(\v2'.bytebase.v1.TaskRunLogEntry.SchemaDumpR\n" +
+	"\blog_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\alogTime\x12\x1b\n" +
+	"\tdeploy_id\x18\x03 \x01(\tR\bdeployId\x12H\n" +
+	"\vschema_dump\x18\x04 \x01(\v2'.bytebase.v1.TaskRunLogEntry.SchemaDumpR\n" +
 	"schemaDump\x12T\n" +
-	"\x0fcommand_execute\x18\x03 \x01(\v2+.bytebase.v1.TaskRunLogEntry.CommandExecuteR\x0ecommandExecute\x12N\n" +
-	"\rdatabase_sync\x18\x04 \x01(\v2).bytebase.v1.TaskRunLogEntry.DatabaseSyncR\fdatabaseSync\x12e\n" +
-	"\x16task_run_status_update\x18\x05 \x01(\v20.bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdateR\x13taskRunStatusUpdate\x12`\n" +
-	"\x13transaction_control\x18\a \x01(\v2/.bytebase.v1.TaskRunLogEntry.TransactionControlR\x12transactionControl\x12K\n" +
-	"\fprior_backup\x18\b \x01(\v2(.bytebase.v1.TaskRunLogEntry.PriorBackupR\vpriorBackup\x12E\n" +
+	"\x0fcommand_execute\x18\x05 \x01(\v2+.bytebase.v1.TaskRunLogEntry.CommandExecuteR\x0ecommandExecute\x12N\n" +
+	"\rdatabase_sync\x18\x06 \x01(\v2).bytebase.v1.TaskRunLogEntry.DatabaseSyncR\fdatabaseSync\x12e\n" +
+	"\x16task_run_status_update\x18\a \x01(\v20.bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdateR\x13taskRunStatusUpdate\x12`\n" +
+	"\x13transaction_control\x18\b \x01(\v2/.bytebase.v1.TaskRunLogEntry.TransactionControlR\x12transactionControl\x12K\n" +
+	"\fprior_backup\x18\t \x01(\v2(.bytebase.v1.TaskRunLogEntry.PriorBackupR\vpriorBackup\x12E\n" +
 	"\n" +
-	"retry_info\x18\t \x01(\v2&.bytebase.v1.TaskRunLogEntry.RetryInfoR\tretryInfo\x12K\n" +
-	"\fcompute_diff\x18\n" +
-	" \x01(\v2(.bytebase.v1.TaskRunLogEntry.ComputeDiffR\vcomputeDiff\x1a\x94\x01\n" +
+	"retry_info\x18\n" +
+	" \x01(\v2&.bytebase.v1.TaskRunLogEntry.RetryInfoR\tretryInfo\x12K\n" +
+	"\fcompute_diff\x18\v \x01(\v2(.bytebase.v1.TaskRunLogEntry.ComputeDiffR\vcomputeDiff\x1a\x94\x01\n" +
 	"\n" +
 	"SchemaDump\x129\n" +
 	"\n" +

@@ -58,11 +58,10 @@
     - [DatabaseSchemaMetadata](#bytebase-store-DatabaseSchemaMetadata)
     - [DependencyColumn](#bytebase-store-DependencyColumn)
     - [DependencyTable](#bytebase-store-DependencyTable)
+    - [DimensionConstraint](#bytebase-store-DimensionConstraint)
     - [DimensionalConfig](#bytebase-store-DimensionalConfig)
     - [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata)
     - [EventMetadata](#bytebase-store-EventMetadata)
-    - [EventTriggerMetadata](#bytebase-store-EventTriggerMetadata)
-    - [ExcludeConstraintMetadata](#bytebase-store-ExcludeConstraintMetadata)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
     - [ExternalTableMetadata](#bytebase-store-ExternalTableMetadata)
     - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
@@ -71,7 +70,6 @@
     - [GridLevel](#bytebase-store-GridLevel)
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
-    - [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata)
     - [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata)
     - [ObjectSchema](#bytebase-store-ObjectSchema)
     - [ObjectSchema.ArrayKind](#bytebase-store-ObjectSchema-ArrayKind)
@@ -79,12 +77,10 @@
     - [ObjectSchema.StructKind.PropertiesEntry](#bytebase-store-ObjectSchema-StructKind-PropertiesEntry)
     - [PackageMetadata](#bytebase-store-PackageMetadata)
     - [ProcedureMetadata](#bytebase-store-ProcedureMetadata)
-    - [RuleMetadata](#bytebase-store-RuleMetadata)
     - [SchemaCatalog](#bytebase-store-SchemaCatalog)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SequenceMetadata](#bytebase-store-SequenceMetadata)
     - [SpatialIndexConfig](#bytebase-store-SpatialIndexConfig)
-    - [SpatialIndexConfig.EngineSpecificEntry](#bytebase-store-SpatialIndexConfig-EngineSpecificEntry)
     - [StorageConfig](#bytebase-store-StorageConfig)
     - [StreamMetadata](#bytebase-store-StreamMetadata)
     - [TableCatalog](#bytebase-store-TableCatalog)
@@ -438,17 +434,17 @@ Engine represents the type of database system.
 | REDSHIFT | 12 |  |
 | MARIADB | 13 |  |
 | OCEANBASE | 14 |  |
-| STARROCKS | 18 |  |
-| DORIS | 19 |  |
-| HIVE | 20 |  |
-| ELASTICSEARCH | 21 |  |
-| BIGQUERY | 22 |  |
-| DYNAMODB | 23 |  |
-| DATABRICKS | 24 |  |
-| COCKROACHDB | 25 |  |
-| COSMOSDB | 26 |  |
-| TRINO | 27 |  |
-| CASSANDRA | 28 |  |
+| STARROCKS | 15 |  |
+| DORIS | 16 |  |
+| HIVE | 17 |  |
+| ELASTICSEARCH | 18 |  |
+| BIGQUERY | 19 |  |
+| DYNAMODB | 20 |  |
+| DATABRICKS | 21 |  |
+| COCKROACHDB | 22 |  |
+| COSMOSDB | 23 |  |
+| TRINO | 24 |  |
+| CASSANDRA | 25 |  |
 
 
 
@@ -523,7 +519,7 @@ VCSType represents the type of version control system.
 | DINGTALK | 4 | DingTalk integration. |
 | FEISHU | 5 | Feishu integration. |
 | WECOM | 6 | WeCom (WeChat Work) integration. |
-| LARK | 8 | Lark integration. |
+| LARK | 7 | Lark integration. |
 
 
  
@@ -1010,6 +1006,7 @@ ColumnMetadata is the metadata for columns.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the column. |
 | position | [int32](#int32) |  | The position is the position in columns. |
+| has_default | [bool](#bool) |  |  |
 | default | [string](#string) |  | The default value of the column. |
 | default_on_null | [bool](#bool) |  | Oracle specific metadata. The default_on_null is the default on null of a column. |
 | on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
@@ -1103,12 +1100,8 @@ DatabaseSchemaMetadata is the schema metadata for databases.
 | character_set | [string](#string) |  | The character set of the database. |
 | collation | [string](#string) |  | The collation of the database. |
 | extensions | [ExtensionMetadata](#bytebase-store-ExtensionMetadata) | repeated | The list of extensions in a database. |
-| datashare | [bool](#bool) |  | The database belongs to a datashare. |
-| service_name | [string](#string) |  | The service name of the database. It&#39;s an Oracle-specific concept. |
-| linked_databases | [LinkedDatabaseMetadata](#bytebase-store-LinkedDatabaseMetadata) | repeated |  |
 | owner | [string](#string) |  |  |
 | search_path | [string](#string) |  | The search_path is the search path of a PostgreSQL database. |
-| event_triggers | [EventTriggerMetadata](#bytebase-store-EventTriggerMetadata) | repeated | The list of event triggers in a database (PostgreSQL specific). Event triggers are database-level objects, not schema-scoped. |
 
 
 
@@ -1148,6 +1141,24 @@ DependencyColumn is the metadata for dependency columns.
 
 
 
+<a name="bytebase-store-DimensionConstraint"></a>
+
+### DimensionConstraint
+DimensionConstraint defines constraints for a spatial dimension.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| dimension | [string](#string) |  | Dimension name/type (X, Y, Z, M, etc.) |
+| min_value | [double](#double) |  | Minimum value for this dimension |
+| max_value | [double](#double) |  | Maximum value for this dimension |
+| tolerance | [double](#double) |  | Tolerance for this dimension |
+
+
+
+
+
+
 <a name="bytebase-store-DimensionalConfig"></a>
 
 ### DimensionalConfig
@@ -1158,9 +1169,8 @@ DimensionalConfig defines dimensional and constraint parameters for spatial inde
 | ----- | ---- | ----- | ----------- |
 | dimensions | [int32](#int32) |  | Number of dimensions (2-4, default 2) |
 | data_type | [string](#string) |  | Spatial data type Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc. |
-| operator_class | [string](#string) |  | PostgreSQL operator class Examples: gist_geometry_ops_2d, gist_geometry_ops_nd, etc. |
-| layer_gtype | [string](#string) |  | Oracle geometry type constraint Examples: POINT, LINE, POLYGON, COLLECTION |
-| parallel_build | [bool](#bool) |  | Parallel index creation |
+| srid | [int32](#int32) |  | Spatial reference system identifier (SRID) |
+| constraints | [DimensionConstraint](#bytebase-store-DimensionConstraint) | repeated | Coordinate system constraints |
 
 
 
@@ -1200,46 +1210,6 @@ DimensionalConfig defines dimensional and constraint parameters for spatial inde
 | character_set_client | [string](#string) |  |  |
 | collation_connection | [string](#string) |  |  |
 | comment | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-EventTriggerMetadata"></a>
-
-### EventTriggerMetadata
-EventTriggerMetadata is the metadata for PostgreSQL event triggers.
-Event triggers are database-level objects that fire on DDL events.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the event trigger. |
-| event | [string](#string) |  | The event type: DDL_COMMAND_START, DDL_COMMAND_END, SQL_DROP, TABLE_REWRITE. |
-| tags | [string](#string) | repeated | The tags filter (e.g., [&#39;CREATE TABLE&#39;, &#39;DROP TABLE&#39;]). |
-| function_schema | [string](#string) |  | The schema of the function to execute. |
-| function_name | [string](#string) |  | The name of the function to execute. |
-| enabled | [bool](#bool) |  | Whether the trigger is enabled. |
-| definition | [string](#string) |  | The full CREATE EVENT TRIGGER definition from pg_get_event_trigger_def(). SDL output should prefer using this field. |
-| comment | [string](#string) |  | The comment on the event trigger. |
-| skip_dump | [bool](#bool) |  | Skip dump flag (for extension-owned triggers). |
-
-
-
-
-
-
-<a name="bytebase-store-ExcludeConstraintMetadata"></a>
-
-### ExcludeConstraintMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the EXCLUDE constraint. |
-| expression | [string](#string) |  | The expression is the full EXCLUDE constraint definition including &#34;EXCLUDE&#34; keyword. Example: &#34;EXCLUDE USING gist (room_id WITH =, during WITH &amp;&amp;)&#34; |
 
 
 
@@ -1407,23 +1377,6 @@ InstanceRoleMetadata is the message for instance role.
 
 
 
-<a name="bytebase-store-LinkedDatabaseMetadata"></a>
-
-### LinkedDatabaseMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| username | [string](#string) |  |  |
-| host | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-store-MaterializedViewMetadata"></a>
 
 ### MaterializedViewMetadata
@@ -1540,29 +1493,8 @@ ProcedureMetadata is the metadata for procedures.
 | collation_connection | [string](#string) |  |  |
 | database_collation | [string](#string) |  |  |
 | sql_mode | [string](#string) |  |  |
-| comment | [string](#string) |  |  |
 | skip_dump | [bool](#bool) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-RuleMetadata"></a>
-
-### RuleMetadata
-RuleMetadata is the metadata for PostgreSQL rules.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the rule. |
-| event | [string](#string) |  | The event type of the rule: SELECT, INSERT, UPDATE, or DELETE. |
-| condition | [string](#string) |  | The WHERE condition of the rule (optional). |
-| action | [string](#string) |  | The command(s) to execute when the rule fires. |
-| is_instead | [bool](#bool) |  | The is_instead indicates whether this is an INSTEAD rule. |
-| is_enabled | [bool](#bool) |  | The is_enabled indicates whether the rule is enabled. |
-| definition | [string](#string) |  | The full CREATE RULE statement. |
+| comment | [string](#string) |  |  |
 
 
 
@@ -1603,13 +1535,13 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The list of streams in a schema, currently only used for Snowflake. |
 | tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The list of tasks in a schema, currently only used for Snowflake. |
 | materialized_views | [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata) | repeated | The list of materialized views in a schema. |
-| sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The list of sequences in a schema. |
 | packages | [PackageMetadata](#bytebase-store-PackageMetadata) | repeated | The list of packages in a schema. |
 | owner | [string](#string) |  |  |
-| comment | [string](#string) |  |  |
+| sequences | [SequenceMetadata](#bytebase-store-SequenceMetadata) | repeated | The list of sequences in a schema. |
 | events | [EventMetadata](#bytebase-store-EventMetadata) | repeated |  |
 | enum_types | [EnumTypeMetadata](#bytebase-store-EnumTypeMetadata) | repeated |  |
 | skip_dump | [bool](#bool) |  |  |
+| comment | [string](#string) |  |  |
 
 
 
@@ -1655,23 +1587,6 @@ SpatialIndexConfig is the configuration for spatial indexes across different dat
 | tessellation | [TessellationConfig](#bytebase-store-TessellationConfig) |  | Tessellation configuration (primarily SQL Server) |
 | storage | [StorageConfig](#bytebase-store-StorageConfig) |  | Storage and performance parameters |
 | dimensional | [DimensionalConfig](#bytebase-store-DimensionalConfig) |  | Dimensional and constraint parameters |
-| engine_specific | [SpatialIndexConfig.EngineSpecificEntry](#bytebase-store-SpatialIndexConfig-EngineSpecificEntry) | repeated | Database-specific parameters (stored as key-value pairs for extensibility) |
-
-
-
-
-
-
-<a name="bytebase-store-SpatialIndexConfig-EngineSpecificEntry"></a>
-
-### SpatialIndexConfig.EngineSpecificEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
 
 
 
@@ -1775,10 +1690,8 @@ TableMetadata is the metadata for tables.
 | sorting_keys | [string](#string) | repeated | The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field. Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by |
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated |  |
 | skip_dump | [bool](#bool) |  |  |
-| rules | [RuleMetadata](#bytebase-store-RuleMetadata) | repeated | The rules is the list of rules in a table (PostgreSQL specific). |
 | sharding_info | [string](#string) |  | https://docs.pingcap.com/tidb/stable/information-schema-tables/ |
 | primary_key_type | [string](#string) |  | https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes CLUSTERED or NONCLUSTERED. |
-| exclude_constraints | [ExcludeConstraintMetadata](#bytebase-store-ExcludeConstraintMetadata) | repeated | The exclude_constraints is the list of EXCLUDE constraints in a table (PostgreSQL specific). |
 
 
 
@@ -1801,7 +1714,6 @@ TablePartitionMetadata is the metadata for table partitions.
 | subpartitions | [TablePartitionMetadata](#bytebase-store-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
 | indexes | [IndexMetadata](#bytebase-store-IndexMetadata) | repeated |  |
 | check_constraints | [CheckConstraintMetadata](#bytebase-store-CheckConstraintMetadata) | repeated |  |
-| exclude_constraints | [ExcludeConstraintMetadata](#bytebase-store-ExcludeConstraintMetadata) | repeated |  |
 
 
 
@@ -1841,9 +1753,9 @@ TessellationConfig defines tessellation parameters for spatial indexes.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | scheme | [string](#string) |  | Tessellation scheme Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID |
-| bounding_box | [BoundingBox](#bytebase-store-BoundingBox) |  | Bounding box for GEOMETRY indexes (SQL Server) |
 | grid_levels | [GridLevel](#bytebase-store-GridLevel) | repeated | Grid level configuration (SQL Server) |
 | cells_per_object | [int32](#int32) |  | Cells per object (SQL Server) |
+| bounding_box | [BoundingBox](#bytebase-store-BoundingBox) |  | Bounding box for GEOMETRY indexes (SQL Server) |
 
 
 
@@ -1888,7 +1800,6 @@ ViewMetadata is the metadata for views.
 | columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The ordered list of columns in the view. |
 | triggers | [TriggerMetadata](#bytebase-store-TriggerMetadata) | repeated | The list of triggers in the view. |
 | skip_dump | [bool](#bool) |  |  |
-| rules | [RuleMetadata](#bytebase-store-RuleMetadata) | repeated | The rules is the list of rules in a view (PostgreSQL specific). |
 
 
 
@@ -1918,8 +1829,8 @@ ViewMetadata is the metadata for views.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| TYPE_VIRTUAL | 1 |  |
-| TYPE_STORED | 2 |  |
+| VIRTUAL | 1 |  |
+| STORED | 2 |  |
 
 
 
@@ -1947,9 +1858,9 @@ ViewMetadata is the metadata for views.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | MODE_UNSPECIFIED | 0 |  |
-| MODE_DEFAULT | 1 |  |
-| MODE_APPEND_ONLY | 2 |  |
-| MODE_INSERT_ONLY | 3 |  |
+| DEFAULT | 1 |  |
+| APPEND_ONLY | 2 |  |
+| INSERT_ONLY | 3 |  |
 
 
 
@@ -1961,7 +1872,7 @@ ViewMetadata is the metadata for views.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| TYPE_DELTA | 1 |  |
+| DELTA | 1 |  |
 
 
 
@@ -1998,8 +1909,8 @@ LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | STATE_UNSPECIFIED | 0 |  |
-| STATE_STARTED | 1 |  |
-| STATE_SUSPENDED | 2 |  |
+| STARTED | 1 |  |
+| SUSPENDED | 2 |  |
 
 
  
@@ -2224,10 +2135,10 @@ OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
 | issuer | [string](#string) |  |  |
 | client_id | [string](#string) |  |  |
 | client_secret | [string](#string) |  |  |
+| scopes | [string](#string) | repeated |  |
 | field_mapping | [FieldMapping](#bytebase-store-FieldMapping) |  |  |
 | skip_tls_verify | [bool](#bool) |  |  |
 | auth_style | [OAuth2AuthStyle](#bytebase-store-OAuth2AuthStyle) |  |  |
-| scopes | [string](#string) | repeated |  |
 
 
 
@@ -2896,12 +2807,12 @@ TaskRunResult contains the outcome and metadata from a task run execution.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | detail | [string](#string) |  | Detailed execution information or error message. |
-| changelog | [string](#string) |  | Resource name of the changelog entry created by this run. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 | version | [string](#string) |  | Schema version after the migration was applied. |
 | start_position | [Position](#bytebase-store-Position) |  | Starting position in the SQL statement where an error occurred. |
 | end_position | [Position](#bytebase-store-Position) |  | Ending position in the SQL statement where an error occurred. |
 | export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
 | prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | Backup details that can be used to rollback changes. |
+| changelog | [string](#string) |  | Resource name of the changelog entry created by this run. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
 
 
 
@@ -3287,8 +3198,8 @@ Type is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
-| MIGRATE | 2 | Used for imperative schema migration including CREATE DATABASE. |
-| SDL | 3 | Used for state-based declarative schema migration including CREATE DATABASE. |
+| MIGRATE | 1 | Used for imperative schema migration including CREATE DATABASE. |
+| SDL | 2 | Used for state-based declarative schema migration including CREATE DATABASE. |
 
 
  
@@ -3690,11 +3601,11 @@ QueryDataPolicy is the policy configuration for querying data.
 | TYPE_UNSPECIFIED | 0 |  |
 | ROLLOUT | 1 |  |
 | MASKING_EXEMPTION | 2 |  |
-| QUERY_DATA | 5 |  |
-| MASKING_RULE | 6 |  |
-| IAM | 8 |  |
-| TAG | 9 |  |
-| DATA_SOURCE_QUERY | 10 |  |
+| QUERY_DATA | 3 |  |
+| MASKING_RULE | 4 |  |
+| IAM | 5 |  |
+| TAG | 6 |  |
+| DATA_SOURCE_QUERY | 7 |  |
 
 
  
@@ -3845,19 +3756,19 @@ Activity type enumeration.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| NOTIFY_ISSUE_APPROVED | 23 | Notifications via webhooks.
-
-NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
-| NOTIFY_PIPELINE_ROLLOUT | 24 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
 | ISSUE_CREATE | 1 | Issue related activity types.
 
 ISSUE_CREATE represents creating an issue. |
 | ISSUE_COMMENT_CREATE | 2 | ISSUE_COMMENT_CREATE represents commenting on an issue. |
 | ISSUE_FIELD_UPDATE | 3 | ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc. |
 | ISSUE_STATUS_UPDATE | 4 | ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL for now. |
-| ISSUE_APPROVAL_NOTIFY | 21 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
-| ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 22 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
+| ISSUE_APPROVAL_NOTIFY | 6 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
+| ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 7 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
+| NOTIFY_ISSUE_APPROVED | 8 | Notifications via webhooks.
+
+NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
+| NOTIFY_PIPELINE_ROLLOUT | 9 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
 
 
  
@@ -4402,8 +4313,8 @@ The severity level for SQL review rules.
 | ----- | ---- | ----- | ----------- |
 | prefix_len | [int32](#int32) |  |  |
 | suffix_len | [int32](#int32) |  |  |
-| substitution | [string](#string) |  |  |
 | type | [Algorithm.InnerOuterMask.MaskType](#bytebase-store-Algorithm-InnerOuterMask-MaskType) |  |  |
+| substitution | [string](#string) |  |  |
 
 
 
@@ -4698,6 +4609,7 @@ The severity level for SQL review rules.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
 | id | [string](#string) |  | The resource id of the environment. This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | title | [string](#string) |  | The display name of the environment. |
 | tags | [EnvironmentSetting.Environment.TagsEntry](#bytebase-store-EnvironmentSetting-Environment-TagsEntry) | repeated |  |
@@ -4915,13 +4827,13 @@ The severity level for SQL review rules.
 | ---- | ------ | ----------- |
 | SETTING_NAME_UNSPECIFIED | 0 |  |
 | SYSTEM | 1 |  |
-| WORKSPACE_PROFILE | 4 |  |
-| WORKSPACE_APPROVAL | 5 |  |
-| APP_IM | 8 | 7 was ENTERPRISE_LICENSE, migrated to SYSTEM setting |
-| AI | 10 |  |
-| DATA_CLASSIFICATION | 14 |  |
-| SEMANTIC_TYPES | 15 |  |
-| ENVIRONMENT | 19 |  |
+| WORKSPACE_PROFILE | 2 |  |
+| WORKSPACE_APPROVAL | 3 |  |
+| APP_IM | 4 |  |
+| AI | 5 |  |
+| DATA_CLASSIFICATION | 6 |  |
+| SEMANTIC_TYPES | 7 |  |
+| ENVIRONMENT | 8 |  |
 
 
 
@@ -4948,9 +4860,9 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | ALERT_LEVEL_UNSPECIFIED | 0 |  |
-| ALERT_LEVEL_INFO | 1 |  |
-| ALERT_LEVEL_WARNING | 2 |  |
-| ALERT_LEVEL_CRITICAL | 3 |  |
+| INFO | 1 |  |
+| WARNING | 2 |  |
+| CRITICAL | 3 |  |
 
 
 
@@ -4989,7 +4901,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-store-Engine) |  | The SQL dialect. |
 | commands | [Range](#bytebase-store-Range) | repeated | The start and end position of each command in the sheet statement. |
 
 
@@ -5033,10 +4944,10 @@ Task is the metadata for database operation tasks.
 | schema_version | [string](#string) |  | Schema version after migration is applied. |
 | enable_prior_backup | [bool](#bool) |  | Whether to create an automatic backup before applying changes. |
 | flags | [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry) | repeated | Configuration flags for gh-ost migration tool. |
-| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 | task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  | Source information if task is created from a release. |
 | password | [string](#string) |  | Password to encrypt the exported data archive. |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  | Format of the exported data (SQL, CSV, JSON, etc). |
+| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
 
 
 
@@ -5086,8 +4997,8 @@ Type represents the type of database operation to perform.
 | TASK_TYPE_UNSPECIFIED | 0 |  |
 | DATABASE_CREATE | 1 | Create a new database. |
 | DATABASE_MIGRATE | 2 | Apply schema/data migrations to an existing database. |
-| DATABASE_EXPORT | 5 | Export data from a database. |
-| DATABASE_SDL | 6 | Apply declarative schema changes (state-based migration). |
+| DATABASE_EXPORT | 3 | Export data from a database. |
+| DATABASE_SDL | 4 | Apply declarative schema changes (state-based migration). |
 
 
  

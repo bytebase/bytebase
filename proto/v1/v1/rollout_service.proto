@@ -150,7 +150,7 @@ message BatchRunTasksRequest {
   repeated string tasks = 2;
 
   // The task run should run after run_time.
-  optional google.protobuf.Timestamp run_time = 4;
+  optional google.protobuf.Timestamp run_time = 3;
 }
 
 message BatchRunTasksResponse {}
@@ -308,33 +308,31 @@ message Rollout {
     pattern: "projects/{project}/rollouts/{rollout}"
   };
 
-  reserved 2;
-
   // The resource name of the rollout.
   // Format: projects/{project}/rollouts/{rollout}
   string name = 1;
 
   // The plan that this rollout is based on.
   // Format: projects/{project}/plans/{plan}
-  string plan = 3 [(google.api.field_behavior) = REQUIRED];
+  string plan = 2 [(google.api.field_behavior) = REQUIRED];
 
   // The title of the rollout, inherited from the associated plan.
   // This field is output only and cannot be directly set.
-  string title = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string title = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Stages and thus tasks of the rollout.
-  repeated Stage stages = 5;
+  repeated Stage stages = 4;
 
   // Format: users/hello@world.com
-  string creator = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp create_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  google.protobuf.Timestamp update_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The issue associated with the rollout. Could be empty.
   // Format: projects/{project}/issues/{issue}
-  string issue = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string issue = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message Stage {
@@ -343,8 +341,6 @@ message Stage {
     pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}"
   };
 
-  reserved 2;
-
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
   // Use "-" for {stage} when the stage has no environment or deleted environment.
   string name = 1;
@@ -352,14 +348,14 @@ message Stage {
   // id is the environment id of the stage.
   // e.g., "prod".
   // Use "-" when the stage has no environment or deleted environment.
-  string id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string id = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // environment is the environment of the stage.
   // Format: environments/{environment} for valid environments, or "environments/-" for stages without environment or with deleted environments.
-  string environment = 4;
+  string environment = 3;
 
   // The tasks within this stage.
-  repeated Task tasks = 5;
+  repeated Task tasks = 4;
 }
 
 message Task {
@@ -368,14 +364,12 @@ message Task {
     pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}"
   };
 
-  reserved 2;
-
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   string name = 1;
 
   // A UUID4 string that uniquely identifies the Spec.
   // Could be empty if the rollout of the task does not have an associating plan.
-  string spec_id = 4;
+  string spec_id = 2;
 
   enum Status {
     // Unspecified status.
@@ -396,9 +390,9 @@ message Task {
     SKIPPED = 7;
   }
   // Status is the status of the task.
-  Status status = 5;
+  Status status = 3;
   // The reason why the task was skipped.
-  string skipped_reason = 15;
+  string skipped_reason = 4;
 
   enum Type {
     // Unspecified task type.
@@ -411,32 +405,32 @@ message Task {
     // Database migration task that applies versioned schema changes.
     // Use payload DatabaseUpdate.
     DATABASE_MIGRATE = 3;
-    // Database SDL (Schema Definition Language) task that synchronizes declarative schema.
-    // Use payload DatabaseUpdate.
-    DATABASE_SDL = 6;
     // Database export task that exports query results or table data.
     // Use payload DatabaseDataExport.
-    DATABASE_EXPORT = 5;
+    DATABASE_EXPORT = 4;
+    // Database SDL (Schema Definition Language) task that synchronizes declarative schema.
+    // Use payload DatabaseUpdate.
+    DATABASE_SDL = 5;
   }
-  Type type = 6;
+  Type type = 5;
 
   // Format: instances/{instance} if the task is DatabaseCreate.
   // Format: instances/{instance}/databases/{database}
-  string target = 8;
+  string target = 6;
 
   oneof payload {
-    DatabaseCreate database_create = 9;
-    DatabaseUpdate database_update = 11;
-    DatabaseDataExport database_data_export = 16;
+    DatabaseCreate database_create = 7;
+    DatabaseUpdate database_update = 8;
+    DatabaseDataExport database_data_export = 9;
   }
 
   // The update_time is the update time of latest task run.
   // If there are no task runs, it will be empty.
-  optional google.protobuf.Timestamp update_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+  optional google.protobuf.Timestamp update_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The run_time is the scheduled run time of latest task run.
   // If there are no task runs or the task run is not scheduled, it will be empty.
-  optional google.protobuf.Timestamp run_time = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
+  optional google.protobuf.Timestamp run_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Payload for creating a new database.
   message DatabaseCreate {
@@ -489,15 +483,13 @@ message TaskRun {
     pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}"
   };
 
-  reserved 2, 12, 15;
-
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string name = 1;
 
   // Format: users/hello@world.com
-  string creator = 3;
-  google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-  google.protobuf.Timestamp update_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string creator = 2;
+  google.protobuf.Timestamp create_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum Status {
     // Unspecified status.
@@ -514,19 +506,19 @@ message TaskRun {
     CANCELED = 5;
   }
   // The current execution status of the task run.
-  Status status = 8;
+  Status status = 5;
 
   // Below are the results of a task run.
   // Detailed information about the task run result.
-  string detail = 9;
+  string detail = 6;
   // The resource name of the changelog.
   // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
-  string changelog = 20 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string changelog = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The schema version after this task run completes.
-  string schema_version = 11;
+  string schema_version = 8;
 
   // The time when the task run started execution.
-  google.protobuf.Timestamp start_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp start_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum ExportArchiveStatus {
     // Unspecified export archive status.
@@ -537,7 +529,7 @@ message TaskRun {
     EXPORTED = 2;
   }
   // The export archive status for data export tasks.
-  ExportArchiveStatus export_archive_status = 16;
+  ExportArchiveStatus export_archive_status = 10;
 
   // Prior backup detail for rollback purposes.
   message PriorBackupDetail {
@@ -568,7 +560,7 @@ message TaskRun {
     repeated Item items = 1;
   }
   // The prior backup detail that will be used to rollback the task run.
-  PriorBackupDetail prior_backup_detail = 17;
+  PriorBackupDetail prior_backup_detail = 11;
 
   // Information about task run scheduling.
   message SchedulerInfo {
@@ -598,14 +590,14 @@ message TaskRun {
     WaitingCause waiting_cause = 2;
   }
   // Scheduling information about the task run.
-  SchedulerInfo scheduler_info = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
+  SchedulerInfo scheduler_info = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Format: projects/{project}/sheets/{sheet}
-  string sheet = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string sheet = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The task run should run after run_time.
   // This can only be set when creating the task run calling BatchRunTasks.
-  optional google.protobuf.Timestamp run_time = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
+  optional google.protobuf.Timestamp run_time = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message TaskRunLog {
@@ -646,25 +638,25 @@ message TaskRunLogEntry {
   // The type of this log entry.
   Type type = 1;
   // The time when the log was recorded.
-  google.protobuf.Timestamp log_time = 6;
+  google.protobuf.Timestamp log_time = 2;
   // The deployment ID for this log entry.
-  string deploy_id = 12;
+  string deploy_id = 3;
   // Schema dump details (if type is SCHEMA_DUMP).
-  SchemaDump schema_dump = 2;
+  SchemaDump schema_dump = 4;
   // Command execution details (if type is COMMAND_EXECUTE).
-  CommandExecute command_execute = 3;
+  CommandExecute command_execute = 5;
   // Database sync details (if type is DATABASE_SYNC).
-  DatabaseSync database_sync = 4;
+  DatabaseSync database_sync = 6;
   // Task run status update details (if type is TASK_RUN_STATUS_UPDATE).
-  TaskRunStatusUpdate task_run_status_update = 5;
+  TaskRunStatusUpdate task_run_status_update = 7;
   // Transaction control details (if type is TRANSACTION_CONTROL).
-  TransactionControl transaction_control = 7;
+  TransactionControl transaction_control = 8;
   // Prior backup details (if type is PRIOR_BACKUP).
-  PriorBackup prior_backup = 8;
+  PriorBackup prior_backup = 9;
   // Retry information details (if type is RETRY_INFO).
-  RetryInfo retry_info = 9;
+  RetryInfo retry_info = 10;
   // Compute diff details (if type is COMPUTE_DIFF).
-  ComputeDiff compute_diff = 10;
+  ComputeDiff compute_diff = 11;
 
   // Schema dump operation details.
   message SchemaDump {

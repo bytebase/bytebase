@@ -162,7 +162,7 @@ export declare type ReviewConfig = Message<"bytebase.v1.ReviewConfig"> & {
   /**
    * The SQL review rules to enforce.
    *
-   * @generated from field: repeated bytebase.v1.SQLReviewRule rules = 7;
+   * @generated from field: repeated bytebase.v1.SQLReviewRule rules = 4;
    */
   rules: SQLReviewRule[];
 
@@ -170,7 +170,7 @@ export declare type ReviewConfig = Message<"bytebase.v1.ReviewConfig"> & {
    * Resources using the config.
    * Format: {resource}/{resource id}, e.g., environments/test.
    *
-   * @generated from field: repeated string resources = 8;
+   * @generated from field: repeated string resources = 5;
    */
   resources: string[];
 };

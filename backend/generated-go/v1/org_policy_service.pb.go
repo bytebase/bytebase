@@ -32,39 +32,39 @@ type PolicyType int32
 const (
 	// Unspecified policy type.
 	PolicyType_POLICY_TYPE_UNSPECIFIED PolicyType = 0
-	// Rollout deployment policy.
-	PolicyType_ROLLOUT_POLICY PolicyType = 11
 	// Data masking rule policy.
-	PolicyType_MASKING_RULE PolicyType = 9
+	PolicyType_MASKING_RULE PolicyType = 1
 	// Data masking exemption policy.
-	PolicyType_MASKING_EXEMPTION PolicyType = 10
+	PolicyType_MASKING_EXEMPTION PolicyType = 2
+	// Rollout deployment policy.
+	PolicyType_ROLLOUT_POLICY PolicyType = 3
 	// Resource tag policy.
-	PolicyType_TAG PolicyType = 13
+	PolicyType_TAG PolicyType = 4
 	// Data source query restrictions policy.
-	PolicyType_DATA_SOURCE_QUERY PolicyType = 14
+	PolicyType_DATA_SOURCE_QUERY PolicyType = 5
 	// Query data access policy.
-	PolicyType_DATA_QUERY PolicyType = 16
+	PolicyType_DATA_QUERY PolicyType = 6
 )
 
 // Enum value maps for PolicyType.
 var (
 	PolicyType_name = map[int32]string{
-		0:  "POLICY_TYPE_UNSPECIFIED",
-		11: "ROLLOUT_POLICY",
-		9:  "MASKING_RULE",
-		10: "MASKING_EXEMPTION",
-		13: "TAG",
-		14: "DATA_SOURCE_QUERY",
-		16: "DATA_QUERY",
+		0: "POLICY_TYPE_UNSPECIFIED",
+		1: "MASKING_RULE",
+		2: "MASKING_EXEMPTION",
+		3: "ROLLOUT_POLICY",
+		4: "TAG",
+		5: "DATA_SOURCE_QUERY",
+		6: "DATA_QUERY",
 	}
 	PolicyType_value = map[string]int32{
 		"POLICY_TYPE_UNSPECIFIED": 0,
-		"ROLLOUT_POLICY":          11,
-		"MASKING_RULE":            9,
-		"MASKING_EXEMPTION":       10,
-		"TAG":                     13,
-		"DATA_SOURCE_QUERY":       14,
-		"DATA_QUERY":              16,
+		"MASKING_RULE":            1,
+		"MASKING_EXEMPTION":       2,
+		"ROLLOUT_POLICY":          3,
+		"TAG":                     4,
+		"DATA_SOURCE_QUERY":       5,
+		"DATA_QUERY":              6,
 	}
 )
 
@@ -610,9 +610,9 @@ type Policy struct {
 	// Database resource name: instances/instance-id/databases/database-name.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Whether this policy inherits from its parent resource.
-	InheritFromParent bool `protobuf:"varint,4,opt,name=inherit_from_parent,json=inheritFromParent,proto3" json:"inherit_from_parent,omitempty"`
+	InheritFromParent bool `protobuf:"varint,2,opt,name=inherit_from_parent,json=inheritFromParent,proto3" json:"inherit_from_parent,omitempty"`
 	// The type of policy.
-	Type PolicyType `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.PolicyType" json:"type,omitempty"`
+	Type PolicyType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.v1.PolicyType" json:"type,omitempty"`
 	// The policy configuration.
 	//
 	// Types that are valid to be assigned to Policy:
@@ -625,9 +625,9 @@ type Policy struct {
 	//	*Policy_QueryDataPolicy
 	Policy isPolicy_Policy `protobuf_oneof:"policy"`
 	// Whether the policy is enforced.
-	Enforce bool `protobuf:"varint,13,opt,name=enforce,proto3" json:"enforce,omitempty"`
+	Enforce bool `protobuf:"varint,10,opt,name=enforce,proto3" json:"enforce,omitempty"`
 	// The resource type for the policy.
-	ResourceType  PolicyResourceType `protobuf:"varint,14,opt,name=resource_type,json=resourceType,proto3,enum=bytebase.v1.PolicyResourceType" json:"resource_type,omitempty"`
+	ResourceType  PolicyResourceType `protobuf:"varint,11,opt,name=resource_type,json=resourceType,proto3,enum=bytebase.v1.PolicyResourceType" json:"resource_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -763,27 +763,27 @@ type isPolicy_Policy interface {
 }
 
 type Policy_RolloutPolicy struct {
-	RolloutPolicy *RolloutPolicy `protobuf:"bytes,19,opt,name=rollout_policy,json=rolloutPolicy,proto3,oneof"`
+	RolloutPolicy *RolloutPolicy `protobuf:"bytes,4,opt,name=rollout_policy,json=rolloutPolicy,proto3,oneof"`
 }
 
 type Policy_MaskingRulePolicy struct {
-	MaskingRulePolicy *MaskingRulePolicy `protobuf:"bytes,17,opt,name=masking_rule_policy,json=maskingRulePolicy,proto3,oneof"`
+	MaskingRulePolicy *MaskingRulePolicy `protobuf:"bytes,5,opt,name=masking_rule_policy,json=maskingRulePolicy,proto3,oneof"`
 }
 
 type Policy_MaskingExemptionPolicy struct {
-	MaskingExemptionPolicy *MaskingExemptionPolicy `protobuf:"bytes,18,opt,name=masking_exemption_policy,json=maskingExemptionPolicy,proto3,oneof"`
+	MaskingExemptionPolicy *MaskingExemptionPolicy `protobuf:"bytes,6,opt,name=masking_exemption_policy,json=maskingExemptionPolicy,proto3,oneof"`
 }
 
 type Policy_TagPolicy struct {
-	TagPolicy *TagPolicy `protobuf:"bytes,21,opt,name=tag_policy,json=tagPolicy,proto3,oneof"`
+	TagPolicy *TagPolicy `protobuf:"bytes,7,opt,name=tag_policy,json=tagPolicy,proto3,oneof"`
 }
 
 type Policy_DataSourceQueryPolicy struct {
-	DataSourceQueryPolicy *DataSourceQueryPolicy `protobuf:"bytes,22,opt,name=data_source_query_policy,json=dataSourceQueryPolicy,proto3,oneof"`
+	DataSourceQueryPolicy *DataSourceQueryPolicy `protobuf:"bytes,8,opt,name=data_source_query_policy,json=dataSourceQueryPolicy,proto3,oneof"`
 }
 
 type Policy_QueryDataPolicy struct {
-	QueryDataPolicy *QueryDataPolicy `protobuf:"bytes,24,opt,name=query_data_policy,json=queryDataPolicy,proto3,oneof"`
+	QueryDataPolicy *QueryDataPolicy `protobuf:"bytes,9,opt,name=query_data_policy,json=queryDataPolicy,proto3,oneof"`
 }
 
 func (*Policy_RolloutPolicy) isPolicy_Policy() {}
@@ -807,7 +807,7 @@ type RolloutPolicy struct {
 	Roles []string `protobuf:"bytes,2,rep,name=roles,proto3" json:"roles,omitempty"`
 	// Checkers that must pass before rollout execution.
 	// These checks are performed in UI workflows only.
-	Checkers      *RolloutPolicy_Checkers `protobuf:"bytes,4,opt,name=checkers,proto3" json:"checkers,omitempty"`
+	Checkers      *RolloutPolicy_Checkers `protobuf:"bytes,3,opt,name=checkers,proto3" json:"checkers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1432,26 +1432,27 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\fshow_deleted\x18\x03 \x01(\bR\vshowDeletedB\x0e\n" +
 	"\f_policy_type\"G\n" +
 	"\x14ListPoliciesResponse\x12/\n" +
-	"\bpolicies\x18\x01 \x03(\v2\x13.bytebase.v1.PolicyR\bpolicies\"\xb8\a\n" +
+	"\bpolicies\x18\x01 \x03(\v2\x13.bytebase.v1.PolicyR\bpolicies\"\xac\a\n" +
 	"\x06Policy\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12.\n" +
-	"\x13inherit_from_parent\x18\x04 \x01(\bR\x11inheritFromParent\x12+\n" +
-	"\x04type\x18\x05 \x01(\x0e2\x17.bytebase.v1.PolicyTypeR\x04type\x12C\n" +
-	"\x0erollout_policy\x18\x13 \x01(\v2\x1a.bytebase.v1.RolloutPolicyH\x00R\rrolloutPolicy\x12P\n" +
-	"\x13masking_rule_policy\x18\x11 \x01(\v2\x1e.bytebase.v1.MaskingRulePolicyH\x00R\x11maskingRulePolicy\x12_\n" +
-	"\x18masking_exemption_policy\x18\x12 \x01(\v2#.bytebase.v1.MaskingExemptionPolicyH\x00R\x16maskingExemptionPolicy\x127\n" +
+	"\x13inherit_from_parent\x18\x02 \x01(\bR\x11inheritFromParent\x12+\n" +
+	"\x04type\x18\x03 \x01(\x0e2\x17.bytebase.v1.PolicyTypeR\x04type\x12C\n" +
+	"\x0erollout_policy\x18\x04 \x01(\v2\x1a.bytebase.v1.RolloutPolicyH\x00R\rrolloutPolicy\x12P\n" +
+	"\x13masking_rule_policy\x18\x05 \x01(\v2\x1e.bytebase.v1.MaskingRulePolicyH\x00R\x11maskingRulePolicy\x12_\n" +
+	"\x18masking_exemption_policy\x18\x06 \x01(\v2#.bytebase.v1.MaskingExemptionPolicyH\x00R\x16maskingExemptionPolicy\x127\n" +
 	"\n" +
-	"tag_policy\x18\x15 \x01(\v2\x16.bytebase.v1.TagPolicyH\x00R\ttagPolicy\x12]\n" +
-	"\x18data_source_query_policy\x18\x16 \x01(\v2\".bytebase.v1.DataSourceQueryPolicyH\x00R\x15dataSourceQueryPolicy\x12J\n" +
-	"\x11query_data_policy\x18\x18 \x01(\v2\x1c.bytebase.v1.QueryDataPolicyH\x00R\x0fqueryDataPolicy\x12\x18\n" +
-	"\aenforce\x18\r \x01(\bR\aenforce\x12I\n" +
-	"\rresource_type\x18\x0e \x01(\x0e2\x1f.bytebase.v1.PolicyResourceTypeB\x03\xe0A\x03R\fresourceType:\xe5\x01\xeaA\xe1\x01\n" +
+	"tag_policy\x18\a \x01(\v2\x16.bytebase.v1.TagPolicyH\x00R\ttagPolicy\x12]\n" +
+	"\x18data_source_query_policy\x18\b \x01(\v2\".bytebase.v1.DataSourceQueryPolicyH\x00R\x15dataSourceQueryPolicy\x12J\n" +
+	"\x11query_data_policy\x18\t \x01(\v2\x1c.bytebase.v1.QueryDataPolicyH\x00R\x0fqueryDataPolicy\x12\x18\n" +
+	"\aenforce\x18\n" +
+	" \x01(\bR\aenforce\x12I\n" +
+	"\rresource_type\x18\v \x01(\x0e2\x1f.bytebase.v1.PolicyResourceTypeB\x03\xe0A\x03R\fresourceType:\xe5\x01\xeaA\xe1\x01\n" +
 	"\x13bytebase.com/Policy\x12\x11policies/{policy}\x12$projects/{project}/policies/{policy}\x12,environments/{environment}/policies/{policy}\x12&instances/{instance}/policies/{policy}\x12;instances/{instance}/databases/{database}/policies/{policy}B\b\n" +
-	"\x06policyJ\x04\b\x02\x10\x03J\x04\b\x17\x10\x18\"\x9e\x04\n" +
+	"\x06policy\"\x9e\x04\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
 	"\x05roles\x18\x02 \x03(\tR\x05roles\x12?\n" +
-	"\bcheckers\x18\x04 \x01(\v2#.bytebase.v1.RolloutPolicy.CheckersR\bcheckers\x1a\x97\x03\n" +
+	"\bcheckers\x18\x03 \x01(\v2#.bytebase.v1.RolloutPolicy.CheckersR\bcheckers\x1a\x97\x03\n" +
 	"\bCheckers\x126\n" +
 	"\x17required_issue_approval\x18\x01 \x01(\bR\x15requiredIssueApproval\x12n\n" +
 	"\x16required_status_checks\x18\x02 \x01(\v28.bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecksR\x14requiredStatusChecks\x1a\x86\x01\n" +
@@ -1494,18 +1495,17 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	"\vRestriction\x12\x1b\n" +
 	"\x17RESTRICTION_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bFALLBACK\x10\x01\x12\f\n" +
-	"\bDISALLOW\x10\x02*\xae\x01\n" +
+	"\bDISALLOW\x10\x02*\x96\x01\n" +
 	"\n" +
 	"PolicyType\x12\x1b\n" +
-	"\x17POLICY_TYPE_UNSPECIFIED\x10\x00\x12\x12\n" +
-	"\x0eROLLOUT_POLICY\x10\v\x12\x10\n" +
-	"\fMASKING_RULE\x10\t\x12\x15\n" +
-	"\x11MASKING_EXEMPTION\x10\n" +
-	"\x12\a\n" +
-	"\x03TAG\x10\r\x12\x15\n" +
-	"\x11DATA_SOURCE_QUERY\x10\x0e\x12\x0e\n" +
+	"\x17POLICY_TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
+	"\fMASKING_RULE\x10\x01\x12\x15\n" +
+	"\x11MASKING_EXEMPTION\x10\x02\x12\x12\n" +
+	"\x0eROLLOUT_POLICY\x10\x03\x12\a\n" +
+	"\x03TAG\x10\x04\x12\x15\n" +
+	"\x11DATA_SOURCE_QUERY\x10\x05\x12\x0e\n" +
 	"\n" +
-	"DATA_QUERY\x10\x10\"\x04\b\x06\x10\x06\"\x04\b\a\x10\a\"\x04\b\f\x10\f\"\x04\b\x0f\x10\x0f*`\n" +
+	"DATA_QUERY\x10\x06*`\n" +
 	"\x12PolicyResourceType\x12\x1d\n" +
 	"\x19RESOURCE_TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +

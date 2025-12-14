@@ -7,9 +7,6 @@ import "store/common.proto";
 option go_package = "generated-go/store";
 
 message SheetPayload {
-  // The SQL dialect.
-  Engine engine = 3;
-
   // The start and end position of each command in the sheet statement.
-  repeated Range commands = 4;
+  repeated Range commands = 1;
 }

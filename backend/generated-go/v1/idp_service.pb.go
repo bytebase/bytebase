@@ -732,13 +732,13 @@ type IdentityProvider struct {
 	// Format: idps/{idp}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The display title of the identity provider.
-	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	// The domain for email matching when using this identity provider.
-	Domain string `protobuf:"bytes,5,opt,name=domain,proto3" json:"domain,omitempty"`
+	Domain string `protobuf:"bytes,3,opt,name=domain,proto3" json:"domain,omitempty"`
 	// The type of identity provider protocol.
-	Type IdentityProviderType `protobuf:"varint,6,opt,name=type,proto3,enum=bytebase.v1.IdentityProviderType" json:"type,omitempty"`
+	Type IdentityProviderType `protobuf:"varint,4,opt,name=type,proto3,enum=bytebase.v1.IdentityProviderType" json:"type,omitempty"`
 	// The configuration details for the identity provider.
-	Config        *IdentityProviderConfig `protobuf:"bytes,7,opt,name=config,proto3" json:"config,omitempty"`
+	Config        *IdentityProviderConfig `protobuf:"bytes,5,opt,name=config,proto3" json:"config,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1272,10 +1272,10 @@ type FieldMapping struct {
 	// DisplayName is the field name of display name in 3rd-party idp user info. Optional.
 	DisplayName string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	// Phone is the field name of primary phone in 3rd-party idp user info. Optional.
-	Phone string `protobuf:"bytes,4,opt,name=phone,proto3" json:"phone,omitempty"`
+	Phone string `protobuf:"bytes,3,opt,name=phone,proto3" json:"phone,omitempty"`
 	// Groups is the field name of groups in 3rd-party idp user info. Optional.
 	// Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/
-	Groups        string `protobuf:"bytes,5,opt,name=groups,proto3" json:"groups,omitempty"`
+	Groups        string `protobuf:"bytes,4,opt,name=groups,proto3" json:"groups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1378,15 +1378,15 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a;\n" +
 	"\rUserInfoEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfb\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf5\x01\n" +
 	"\x10IdentityProvider\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
-	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x16\n" +
-	"\x06domain\x18\x05 \x01(\tR\x06domain\x125\n" +
-	"\x04type\x18\x06 \x01(\x0e2!.bytebase.v1.IdentityProviderTypeR\x04type\x12;\n" +
-	"\x06config\x18\a \x01(\v2#.bytebase.v1.IdentityProviderConfigR\x06config:!\xeaA\x1e\n" +
+	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x16\n" +
+	"\x06domain\x18\x03 \x01(\tR\x06domain\x125\n" +
+	"\x04type\x18\x04 \x01(\x0e2!.bytebase.v1.IdentityProviderTypeR\x04type\x12;\n" +
+	"\x06config\x18\x05 \x01(\v2#.bytebase.v1.IdentityProviderConfigR\x06config:!\xeaA\x1e\n" +
 	"\x10bytebase.com/IdP\x12\n" +
-	"idps/{idp}J\x04\b\x02\x10\x03\"\x8c\x02\n" +
+	"idps/{idp}\"\x8c\x02\n" +
 	"\x16IdentityProviderConfig\x12P\n" +
 	"\roauth2_config\x18\x01 \x01(\v2).bytebase.v1.OAuth2IdentityProviderConfigH\x00R\foauth2Config\x12J\n" +
 	"\voidc_config\x18\x02 \x01(\v2'.bytebase.v1.OIDCIdentityProviderConfigH\x00R\n" +
@@ -1429,14 +1429,14 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x10SecurityProtocol\x12!\n" +
 	"\x1dSECURITY_PROTOCOL_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tSTART_TLS\x10\x01\x12\t\n" +
-	"\x05LDAPS\x10\x02\"\x85\x01\n" +
+	"\x05LDAPS\x10\x02\"\x7f\n" +
 	"\fFieldMapping\x12\x1e\n" +
 	"\n" +
 	"identifier\x18\x01 \x01(\tR\n" +
 	"identifier\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
-	"\x05phone\x18\x04 \x01(\tR\x05phone\x12\x16\n" +
-	"\x06groups\x18\x05 \x01(\tR\x06groupsJ\x04\b\x03\x10\x04*^\n" +
+	"\x05phone\x18\x03 \x01(\tR\x05phone\x12\x16\n" +
+	"\x06groups\x18\x04 \x01(\tR\x06groups*^\n" +
 	"\x14IdentityProviderType\x12&\n" +
 	"\"IDENTITY_PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +

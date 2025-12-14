@@ -346,57 +346,50 @@ export declare type User = Message<"bytebase.v1.User"> & {
   /**
    * The password for authentication. Only used during user creation or password updates.
    *
-   * @generated from field: string password = 7;
+   * @generated from field: string password = 6;
    */
   password: string;
 
   /**
    * The service key for service account authentication. Only used for service accounts.
    *
-   * @generated from field: string service_key = 8;
+   * @generated from field: string service_key = 7;
    */
   serviceKey: string;
 
   /**
    * The mfa_enabled flag means if the user has enabled MFA.
    *
-   * @generated from field: bool mfa_enabled = 9;
+   * @generated from field: bool mfa_enabled = 8;
    */
   mfaEnabled: boolean;
 
   /**
    * Temporary OTP secret used during MFA setup and regeneration.
    *
-   * @generated from field: string temp_otp_secret = 10;
+   * @generated from field: string temp_otp_secret = 9;
    */
   tempOtpSecret: string;
 
   /**
    * Temporary recovery codes used during MFA setup and regeneration.
    *
-   * @generated from field: repeated string temp_recovery_codes = 11;
+   * @generated from field: repeated string temp_recovery_codes = 10;
    */
   tempRecoveryCodes: string[];
-
-  /**
-   * Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-   *
-   * @generated from field: google.protobuf.Timestamp temp_otp_secret_created_time = 15;
-   */
-  tempOtpSecretCreatedTime?: Timestamp;
 
   /**
    * Should be a valid E.164 compliant phone number.
    * Could be empty.
    *
-   * @generated from field: string phone = 12;
+   * @generated from field: string phone = 11;
    */
   phone: string;
 
   /**
    * User profile metadata.
    *
-   * @generated from field: bytebase.v1.User.Profile profile = 13;
+   * @generated from field: bytebase.v1.User.Profile profile = 12;
    */
   profile?: User_Profile;
 
@@ -404,14 +397,21 @@ export declare type User = Message<"bytebase.v1.User"> & {
    * The groups for the user.
    * Format: groups/{email}
    *
-   * @generated from field: repeated string groups = 14;
+   * @generated from field: repeated string groups = 13;
    */
   groups: string[];
 
   /**
+   * Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+   *
+   * @generated from field: google.protobuf.Timestamp temp_otp_secret_created_time = 14;
+   */
+  tempOtpSecretCreatedTime?: Timestamp;
+
+  /**
    * Workload Identity configuration (only for WORKLOAD_IDENTITY type)
    *
-   * @generated from field: bytebase.v1.WorkloadIdentityConfig workload_identity_config = 16;
+   * @generated from field: bytebase.v1.WorkloadIdentityConfig workload_identity_config = 15;
    */
   workloadIdentityConfig?: WorkloadIdentityConfig;
 };

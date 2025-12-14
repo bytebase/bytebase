@@ -206,8 +206,6 @@ message ListPoliciesResponse {
 }
 
 message Policy {
-  reserved 2, 23;
-
   option (google.api.resource) = {
     type: "bytebase.com/Policy"
     pattern: "policies/{policy}"
@@ -226,46 +224,44 @@ message Policy {
   string name = 1;
 
   // Whether this policy inherits from its parent resource.
-  bool inherit_from_parent = 4;
+  bool inherit_from_parent = 2;
 
   // The type of policy.
-  PolicyType type = 5;
+  PolicyType type = 3;
 
   // The policy configuration.
   oneof policy {
-    RolloutPolicy rollout_policy = 19;
-    MaskingRulePolicy masking_rule_policy = 17;
-    MaskingExemptionPolicy masking_exemption_policy = 18;
-    TagPolicy tag_policy = 21;
-    DataSourceQueryPolicy data_source_query_policy = 22;
-    QueryDataPolicy query_data_policy = 24;
+    RolloutPolicy rollout_policy = 4;
+    MaskingRulePolicy masking_rule_policy = 5;
+    MaskingExemptionPolicy masking_exemption_policy = 6;
+    TagPolicy tag_policy = 7;
+    DataSourceQueryPolicy data_source_query_policy = 8;
+    QueryDataPolicy query_data_policy = 9;
   }
 
   // Whether the policy is enforced.
-  bool enforce = 13;
+  bool enforce = 10;
 
   // The resource type for the policy.
-  PolicyResourceType resource_type = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  PolicyResourceType resource_type = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // The type of organizational policy.
 enum PolicyType {
-  reserved 6, 7, 12, 15;
-
   // Unspecified policy type.
   POLICY_TYPE_UNSPECIFIED = 0;
-  // Rollout deployment policy.
-  ROLLOUT_POLICY = 11;
   // Data masking rule policy.
-  MASKING_RULE = 9;
+  MASKING_RULE = 1;
   // Data masking exemption policy.
-  MASKING_EXEMPTION = 10;
+  MASKING_EXEMPTION = 2;
+  // Rollout deployment policy.
+  ROLLOUT_POLICY = 3;
   // Resource tag policy.
-  TAG = 13;
+  TAG = 4;
   // Data source query restrictions policy.
-  DATA_SOURCE_QUERY = 14;
+  DATA_SOURCE_QUERY = 5;
   // Query data access policy.
-  DATA_QUERY = 16;
+  DATA_QUERY = 6;
 }
 
 // The resource type that a policy can be attached to.
@@ -288,7 +284,7 @@ message RolloutPolicy {
   repeated string roles = 2;
   // Checkers that must pass before rollout execution.
   // These checks are performed in UI workflows only.
-  Checkers checkers = 4;
+  Checkers checkers = 3;
 
   message Checkers {
     // Whether issue approval is required before proceeding with rollout.

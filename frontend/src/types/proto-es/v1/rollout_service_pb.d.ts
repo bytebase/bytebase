@@ -36,7 +36,7 @@ export declare type BatchRunTasksRequest = Message<"bytebase.v1.BatchRunTasksReq
   /**
    * The task run should run after run_time.
    *
-   * @generated from field: optional google.protobuf.Timestamp run_time = 4;
+   * @generated from field: optional google.protobuf.Timestamp run_time = 3;
    */
   runTime?: Timestamp;
 };
@@ -410,7 +410,7 @@ export declare type Rollout = Message<"bytebase.v1.Rollout"> & {
    * The plan that this rollout is based on.
    * Format: projects/{project}/plans/{plan}
    *
-   * @generated from field: string plan = 3;
+   * @generated from field: string plan = 2;
    */
   plan: string;
 
@@ -418,31 +418,31 @@ export declare type Rollout = Message<"bytebase.v1.Rollout"> & {
    * The title of the rollout, inherited from the associated plan.
    * This field is output only and cannot be directly set.
    *
-   * @generated from field: string title = 4;
+   * @generated from field: string title = 3;
    */
   title: string;
 
   /**
    * Stages and thus tasks of the rollout.
    *
-   * @generated from field: repeated bytebase.v1.Stage stages = 5;
+   * @generated from field: repeated bytebase.v1.Stage stages = 4;
    */
   stages: Stage[];
 
   /**
    * Format: users/hello@world.com
    *
-   * @generated from field: string creator = 6;
+   * @generated from field: string creator = 5;
    */
   creator: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp create_time = 7;
+   * @generated from field: google.protobuf.Timestamp create_time = 6;
    */
   createTime?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp update_time = 8;
+   * @generated from field: google.protobuf.Timestamp update_time = 7;
    */
   updateTime?: Timestamp;
 
@@ -450,7 +450,7 @@ export declare type Rollout = Message<"bytebase.v1.Rollout"> & {
    * The issue associated with the rollout. Could be empty.
    * Format: projects/{project}/issues/{issue}
    *
-   * @generated from field: string issue = 9;
+   * @generated from field: string issue = 8;
    */
   issue: string;
 };
@@ -478,7 +478,7 @@ export declare type Stage = Message<"bytebase.v1.Stage"> & {
    * e.g., "prod".
    * Use "-" when the stage has no environment or deleted environment.
    *
-   * @generated from field: string id = 3;
+   * @generated from field: string id = 2;
    */
   id: string;
 
@@ -486,14 +486,14 @@ export declare type Stage = Message<"bytebase.v1.Stage"> & {
    * environment is the environment of the stage.
    * Format: environments/{environment} for valid environments, or "environments/-" for stages without environment or with deleted environments.
    *
-   * @generated from field: string environment = 4;
+   * @generated from field: string environment = 3;
    */
   environment: string;
 
   /**
    * The tasks within this stage.
    *
-   * @generated from field: repeated bytebase.v1.Task tasks = 5;
+   * @generated from field: repeated bytebase.v1.Task tasks = 4;
    */
   tasks: Task[];
 };
@@ -519,26 +519,26 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
    * A UUID4 string that uniquely identifies the Spec.
    * Could be empty if the rollout of the task does not have an associating plan.
    *
-   * @generated from field: string spec_id = 4;
+   * @generated from field: string spec_id = 2;
    */
   specId: string;
 
   /**
    * Status is the status of the task.
    *
-   * @generated from field: bytebase.v1.Task.Status status = 5;
+   * @generated from field: bytebase.v1.Task.Status status = 3;
    */
   status: Task_Status;
 
   /**
    * The reason why the task was skipped.
    *
-   * @generated from field: string skipped_reason = 15;
+   * @generated from field: string skipped_reason = 4;
    */
   skippedReason: string;
 
   /**
-   * @generated from field: bytebase.v1.Task.Type type = 6;
+   * @generated from field: bytebase.v1.Task.Type type = 5;
    */
   type: Task_Type;
 
@@ -546,7 +546,7 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
    * Format: instances/{instance} if the task is DatabaseCreate.
    * Format: instances/{instance}/databases/{database}
    *
-   * @generated from field: string target = 8;
+   * @generated from field: string target = 6;
    */
   target: string;
 
@@ -555,19 +555,19 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
    */
   payload: {
     /**
-     * @generated from field: bytebase.v1.Task.DatabaseCreate database_create = 9;
+     * @generated from field: bytebase.v1.Task.DatabaseCreate database_create = 7;
      */
     value: Task_DatabaseCreate;
     case: "databaseCreate";
   } | {
     /**
-     * @generated from field: bytebase.v1.Task.DatabaseUpdate database_update = 11;
+     * @generated from field: bytebase.v1.Task.DatabaseUpdate database_update = 8;
      */
     value: Task_DatabaseUpdate;
     case: "databaseUpdate";
   } | {
     /**
-     * @generated from field: bytebase.v1.Task.DatabaseDataExport database_data_export = 16;
+     * @generated from field: bytebase.v1.Task.DatabaseDataExport database_data_export = 9;
      */
     value: Task_DatabaseDataExport;
     case: "databaseDataExport";
@@ -577,7 +577,7 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
    * The update_time is the update time of latest task run.
    * If there are no task runs, it will be empty.
    *
-   * @generated from field: optional google.protobuf.Timestamp update_time = 13;
+   * @generated from field: optional google.protobuf.Timestamp update_time = 10;
    */
   updateTime?: Timestamp;
 
@@ -585,7 +585,7 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
    * The run_time is the scheduled run time of latest task run.
    * If there are no task runs or the task run is not scheduled, it will be empty.
    *
-   * @generated from field: optional google.protobuf.Timestamp run_time = 21;
+   * @generated from field: optional google.protobuf.Timestamp run_time = 11;
    */
   runTime?: Timestamp;
 };
@@ -838,20 +838,20 @@ export enum Task_Type {
   DATABASE_MIGRATE = 3,
 
   /**
-   * Database SDL (Schema Definition Language) task that synchronizes declarative schema.
-   * Use payload DatabaseUpdate.
-   *
-   * @generated from enum value: DATABASE_SDL = 6;
-   */
-  DATABASE_SDL = 6,
-
-  /**
    * Database export task that exports query results or table data.
    * Use payload DatabaseDataExport.
    *
-   * @generated from enum value: DATABASE_EXPORT = 5;
+   * @generated from enum value: DATABASE_EXPORT = 4;
    */
-  DATABASE_EXPORT = 5,
+  DATABASE_EXPORT = 4,
+
+  /**
+   * Database SDL (Schema Definition Language) task that synchronizes declarative schema.
+   * Use payload DatabaseUpdate.
+   *
+   * @generated from enum value: DATABASE_SDL = 5;
+   */
+  DATABASE_SDL = 5,
 }
 
 /**
@@ -873,24 +873,24 @@ export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
   /**
    * Format: users/hello@world.com
    *
-   * @generated from field: string creator = 3;
+   * @generated from field: string creator = 2;
    */
   creator: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp create_time = 5;
+   * @generated from field: google.protobuf.Timestamp create_time = 3;
    */
   createTime?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp update_time = 6;
+   * @generated from field: google.protobuf.Timestamp update_time = 4;
    */
   updateTime?: Timestamp;
 
   /**
    * The current execution status of the task run.
    *
-   * @generated from field: bytebase.v1.TaskRun.Status status = 8;
+   * @generated from field: bytebase.v1.TaskRun.Status status = 5;
    */
   status: TaskRun_Status;
 
@@ -898,7 +898,7 @@ export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
    * Below are the results of a task run.
    * Detailed information about the task run result.
    *
-   * @generated from field: string detail = 9;
+   * @generated from field: string detail = 6;
    */
   detail: string;
 
@@ -906,49 +906,49 @@ export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
    * The resource name of the changelog.
    * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
    *
-   * @generated from field: string changelog = 20;
+   * @generated from field: string changelog = 7;
    */
   changelog: string;
 
   /**
    * The schema version after this task run completes.
    *
-   * @generated from field: string schema_version = 11;
+   * @generated from field: string schema_version = 8;
    */
   schemaVersion: string;
 
   /**
    * The time when the task run started execution.
    *
-   * @generated from field: google.protobuf.Timestamp start_time = 14;
+   * @generated from field: google.protobuf.Timestamp start_time = 9;
    */
   startTime?: Timestamp;
 
   /**
    * The export archive status for data export tasks.
    *
-   * @generated from field: bytebase.v1.TaskRun.ExportArchiveStatus export_archive_status = 16;
+   * @generated from field: bytebase.v1.TaskRun.ExportArchiveStatus export_archive_status = 10;
    */
   exportArchiveStatus: TaskRun_ExportArchiveStatus;
 
   /**
    * The prior backup detail that will be used to rollback the task run.
    *
-   * @generated from field: bytebase.v1.TaskRun.PriorBackupDetail prior_backup_detail = 17;
+   * @generated from field: bytebase.v1.TaskRun.PriorBackupDetail prior_backup_detail = 11;
    */
   priorBackupDetail?: TaskRun_PriorBackupDetail;
 
   /**
    * Scheduling information about the task run.
    *
-   * @generated from field: bytebase.v1.TaskRun.SchedulerInfo scheduler_info = 18;
+   * @generated from field: bytebase.v1.TaskRun.SchedulerInfo scheduler_info = 12;
    */
   schedulerInfo?: TaskRun_SchedulerInfo;
 
   /**
    * Format: projects/{project}/sheets/{sheet}
    *
-   * @generated from field: string sheet = 19;
+   * @generated from field: string sheet = 13;
    */
   sheet: string;
 
@@ -956,7 +956,7 @@ export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
    * The task run should run after run_time.
    * This can only be set when creating the task run calling BatchRunTasks.
    *
-   * @generated from field: optional google.protobuf.Timestamp run_time = 21;
+   * @generated from field: optional google.protobuf.Timestamp run_time = 14;
    */
   runTime?: Timestamp;
 };
@@ -1283,70 +1283,70 @@ export declare type TaskRunLogEntry = Message<"bytebase.v1.TaskRunLogEntry"> & {
   /**
    * The time when the log was recorded.
    *
-   * @generated from field: google.protobuf.Timestamp log_time = 6;
+   * @generated from field: google.protobuf.Timestamp log_time = 2;
    */
   logTime?: Timestamp;
 
   /**
    * The deployment ID for this log entry.
    *
-   * @generated from field: string deploy_id = 12;
+   * @generated from field: string deploy_id = 3;
    */
   deployId: string;
 
   /**
    * Schema dump details (if type is SCHEMA_DUMP).
    *
-   * @generated from field: bytebase.v1.TaskRunLogEntry.SchemaDump schema_dump = 2;
+   * @generated from field: bytebase.v1.TaskRunLogEntry.SchemaDump schema_dump = 4;
    */
   schemaDump?: TaskRunLogEntry_SchemaDump;
 
   /**
    * Command execution details (if type is COMMAND_EXECUTE).
    *
-   * @generated from field: bytebase.v1.TaskRunLogEntry.CommandExecute command_execute = 3;
+   * @generated from field: bytebase.v1.TaskRunLogEntry.CommandExecute command_execute = 5;
    */
   commandExecute?: TaskRunLogEntry_CommandExecute;
 
   /**
    * Database sync details (if type is DATABASE_SYNC).
    *
-   * @generated from field: bytebase.v1.TaskRunLogEntry.DatabaseSync database_sync = 4;
+   * @generated from field: bytebase.v1.TaskRunLogEntry.DatabaseSync database_sync = 6;
    */
   databaseSync?: TaskRunLogEntry_DatabaseSync;
 
   /**
    * Task run status update details (if type is TASK_RUN_STATUS_UPDATE).
    *
-   * @generated from field: bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate task_run_status_update = 5;
+   * @generated from field: bytebase.v1.TaskRunLogEntry.TaskRunStatusUpdate task_run_status_update = 7;
    */
   taskRunStatusUpdate?: TaskRunLogEntry_TaskRunStatusUpdate;
 
   /**
    * Transaction control details (if type is TRANSACTION_CONTROL).
    *
-   * @generated from field: bytebase.v1.TaskRunLogEntry.TransactionControl transaction_control = 7;
+   * @generated from field: bytebase.v1.TaskRunLogEntry.TransactionControl transaction_control = 8;
    */
   transactionControl?: TaskRunLogEntry_TransactionControl;
 
   /**
    * Prior backup details (if type is PRIOR_BACKUP).
    *
-   * @generated from field: bytebase.v1.TaskRunLogEntry.PriorBackup prior_backup = 8;
+   * @generated from field: bytebase.v1.TaskRunLogEntry.PriorBackup prior_backup = 9;
    */
   priorBackup?: TaskRunLogEntry_PriorBackup;
 
   /**
    * Retry information details (if type is RETRY_INFO).
    *
-   * @generated from field: bytebase.v1.TaskRunLogEntry.RetryInfo retry_info = 9;
+   * @generated from field: bytebase.v1.TaskRunLogEntry.RetryInfo retry_info = 10;
    */
   retryInfo?: TaskRunLogEntry_RetryInfo;
 
   /**
    * Compute diff details (if type is COMPUTE_DIFF).
    *
-   * @generated from field: bytebase.v1.TaskRunLogEntry.ComputeDiff compute_diff = 10;
+   * @generated from field: bytebase.v1.TaskRunLogEntry.ComputeDiff compute_diff = 11;
    */
   computeDiff?: TaskRunLogEntry_ComputeDiff;
 };

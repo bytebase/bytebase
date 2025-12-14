@@ -273,26 +273,23 @@ message User {
   UserType user_type = 5;
 
   // The password for authentication. Only used during user creation or password updates.
-  string password = 7 [(google.api.field_behavior) = INPUT_ONLY];
+  string password = 6 [(google.api.field_behavior) = INPUT_ONLY];
 
   // The service key for service account authentication. Only used for service accounts.
-  string service_key = 8 [(google.api.field_behavior) = INPUT_ONLY];
+  string service_key = 7 [(google.api.field_behavior) = INPUT_ONLY];
 
   // The mfa_enabled flag means if the user has enabled MFA.
-  bool mfa_enabled = 9;
+  bool mfa_enabled = 8;
 
   // Temporary OTP secret used during MFA setup and regeneration.
-  string temp_otp_secret = 10;
+  string temp_otp_secret = 9;
 
   // Temporary recovery codes used during MFA setup and regeneration.
-  repeated string temp_recovery_codes = 11;
-
-  // Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-  google.protobuf.Timestamp temp_otp_secret_created_time = 15;
+  repeated string temp_recovery_codes = 10;
 
   // Should be a valid E.164 compliant phone number.
   // Could be empty.
-  string phone = 12;
+  string phone = 11;
 
   message Profile {
     // The last time the user successfully logged in.
@@ -304,14 +301,17 @@ message User {
   }
 
   // User profile metadata.
-  Profile profile = 13;
+  Profile profile = 12;
 
   // The groups for the user.
   // Format: groups/{email}
-  repeated string groups = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated string groups = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+  google.protobuf.Timestamp temp_otp_secret_created_time = 14;
 
   // Workload Identity configuration (only for WORKLOAD_IDENTITY type)
-  WorkloadIdentityConfig workload_identity_config = 16;
+  WorkloadIdentityConfig workload_identity_config = 15;
 }
 
 // WorkloadIdentityConfig for API layer

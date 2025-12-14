@@ -388,10 +388,10 @@ type OIDCIdentityProviderConfig struct {
 	Issuer        string                 `protobuf:"bytes,1,opt,name=issuer,proto3" json:"issuer,omitempty"`
 	ClientId      string                 `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	ClientSecret  string                 `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
-	FieldMapping  *FieldMapping          `protobuf:"bytes,4,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
-	SkipTlsVerify bool                   `protobuf:"varint,5,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
-	AuthStyle     OAuth2AuthStyle        `protobuf:"varint,6,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.store.OAuth2AuthStyle" json:"auth_style,omitempty"`
-	Scopes        []string               `protobuf:"bytes,7,rep,name=scopes,proto3" json:"scopes,omitempty"`
+	Scopes        []string               `protobuf:"bytes,4,rep,name=scopes,proto3" json:"scopes,omitempty"`
+	FieldMapping  *FieldMapping          `protobuf:"bytes,5,opt,name=field_mapping,json=fieldMapping,proto3" json:"field_mapping,omitempty"`
+	SkipTlsVerify bool                   `protobuf:"varint,6,opt,name=skip_tls_verify,json=skipTlsVerify,proto3" json:"skip_tls_verify,omitempty"`
+	AuthStyle     OAuth2AuthStyle        `protobuf:"varint,7,opt,name=auth_style,json=authStyle,proto3,enum=bytebase.store.OAuth2AuthStyle" json:"auth_style,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -447,6 +447,13 @@ func (x *OIDCIdentityProviderConfig) GetClientSecret() string {
 	return ""
 }
 
+func (x *OIDCIdentityProviderConfig) GetScopes() []string {
+	if x != nil {
+		return x.Scopes
+	}
+	return nil
+}
+
 func (x *OIDCIdentityProviderConfig) GetFieldMapping() *FieldMapping {
 	if x != nil {
 		return x.FieldMapping
@@ -466,13 +473,6 @@ func (x *OIDCIdentityProviderConfig) GetAuthStyle() OAuth2AuthStyle {
 		return x.AuthStyle
 	}
 	return OAuth2AuthStyle_OAUTH2_AUTH_STYLE_UNSPECIFIED
-}
-
-func (x *OIDCIdentityProviderConfig) GetScopes() []string {
-	if x != nil {
-		return x.Scopes
-	}
-	return nil
 }
 
 // LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
@@ -609,10 +609,10 @@ type FieldMapping struct {
 	// DisplayName is the field name of display name in 3rd-party idp user info. Optional.
 	DisplayName string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	// Phone is the field name of primary phone in 3rd-party idp user info. Optional.
-	Phone string `protobuf:"bytes,4,opt,name=phone,proto3" json:"phone,omitempty"`
+	Phone string `protobuf:"bytes,3,opt,name=phone,proto3" json:"phone,omitempty"`
 	// Groups is the field name of groups in 3rd-party idp user info. Optional.
 	// Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/
-	Groups        string `protobuf:"bytes,5,opt,name=groups,proto3" json:"groups,omitempty"`
+	Groups        string `protobuf:"bytes,4,opt,name=groups,proto3" json:"groups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -682,11 +682,11 @@ type IdentityProviderUserInfo struct {
 	// DisplayName is the value of display name in 3rd-party idp user info.
 	DisplayName string `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	// Phone is the value of primary phone in 3rd-party idp user info.
-	Phone string `protobuf:"bytes,4,opt,name=phone,proto3" json:"phone,omitempty"`
+	Phone string `protobuf:"bytes,3,opt,name=phone,proto3" json:"phone,omitempty"`
 	// Groups is the value of groups in 3rd-party idp user info.
 	// Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/
-	Groups        []string `protobuf:"bytes,5,rep,name=groups,proto3" json:"groups,omitempty"`
-	HasGroups     bool     `protobuf:"varint,6,opt,name=has_groups,json=hasGroups,proto3" json:"has_groups,omitempty"`
+	Groups        []string `protobuf:"bytes,4,rep,name=groups,proto3" json:"groups,omitempty"`
+	HasGroups     bool     `protobuf:"varint,5,opt,name=has_groups,json=hasGroups,proto3" json:"has_groups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -782,12 +782,12 @@ const file_store_idp_proto_rawDesc = "" +
 	"\x1aOIDCIdentityProviderConfig\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
-	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12A\n" +
-	"\rfield_mapping\x18\x04 \x01(\v2\x1c.bytebase.store.FieldMappingR\ffieldMapping\x12&\n" +
-	"\x0fskip_tls_verify\x18\x05 \x01(\bR\rskipTlsVerify\x12>\n" +
+	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12\x16\n" +
+	"\x06scopes\x18\x04 \x03(\tR\x06scopes\x12A\n" +
+	"\rfield_mapping\x18\x05 \x01(\v2\x1c.bytebase.store.FieldMappingR\ffieldMapping\x12&\n" +
+	"\x0fskip_tls_verify\x18\x06 \x01(\bR\rskipTlsVerify\x12>\n" +
 	"\n" +
-	"auth_style\x18\x06 \x01(\x0e2\x1f.bytebase.store.OAuth2AuthStyleR\tauthStyle\x12\x16\n" +
-	"\x06scopes\x18\a \x03(\tR\x06scopes\"\xe2\x03\n" +
+	"auth_style\x18\a \x01(\x0e2\x1f.bytebase.store.OAuth2AuthStyleR\tauthStyle\"\xe2\x03\n" +
 	"\x1aLDAPIdentityProviderConfig\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12&\n" +
@@ -802,23 +802,23 @@ const file_store_idp_proto_rawDesc = "" +
 	"\x10SecurityProtocol\x12!\n" +
 	"\x1dSECURITY_PROTOCOL_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tSTART_TLS\x10\x01\x12\t\n" +
-	"\x05LDAPS\x10\x02\"\x85\x01\n" +
+	"\x05LDAPS\x10\x02\"\x7f\n" +
 	"\fFieldMapping\x12\x1e\n" +
 	"\n" +
 	"identifier\x18\x01 \x01(\tR\n" +
 	"identifier\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
-	"\x05phone\x18\x04 \x01(\tR\x05phone\x12\x16\n" +
-	"\x06groups\x18\x05 \x01(\tR\x06groupsJ\x04\b\x03\x10\x04\"\xb0\x01\n" +
+	"\x05phone\x18\x03 \x01(\tR\x05phone\x12\x16\n" +
+	"\x06groups\x18\x04 \x01(\tR\x06groups\"\xaa\x01\n" +
 	"\x18IdentityProviderUserInfo\x12\x1e\n" +
 	"\n" +
 	"identifier\x18\x01 \x01(\tR\n" +
 	"identifier\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
-	"\x05phone\x18\x04 \x01(\tR\x05phone\x12\x16\n" +
-	"\x06groups\x18\x05 \x03(\tR\x06groups\x12\x1d\n" +
+	"\x05phone\x18\x03 \x01(\tR\x05phone\x12\x16\n" +
+	"\x06groups\x18\x04 \x03(\tR\x06groups\x12\x1d\n" +
 	"\n" +
-	"has_groups\x18\x06 \x01(\bR\thasGroupsJ\x04\b\x03\x10\x04*^\n" +
+	"has_groups\x18\x05 \x01(\bR\thasGroups*^\n" +
 	"\x14IdentityProviderType\x12&\n" +
 	"\"IDENTITY_PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +

@@ -92,13 +92,13 @@ message Setting {
 
   enum SettingName {
     SETTING_NAME_UNSPECIFIED = 0;
-    WORKSPACE_PROFILE = 4;
-    WORKSPACE_APPROVAL = 5;
-    APP_IM = 8;
-    AI = 10;
-    DATA_CLASSIFICATION = 14;
-    SEMANTIC_TYPES = 15;
-    ENVIRONMENT = 19;
+    WORKSPACE_PROFILE = 1;
+    WORKSPACE_APPROVAL = 2;
+    APP_IM = 3;
+    AI = 4;
+    DATA_CLASSIFICATION = 5;
+    SEMANTIC_TYPES = 6;
+    ENVIRONMENT = 7;
   }
 
   // The resource name of the setting.
@@ -113,13 +113,13 @@ message Setting {
 // The data in setting value.
 message SettingValue {
   oneof value {
-    AppIMSetting app_im = 3;
-    WorkspaceProfileSetting workspace_profile = 5;
-    WorkspaceApprovalSetting workspace_approval = 6;
-    DataClassificationSetting data_classification = 10;
-    SemanticTypeSetting semantic_type = 11;
-    AISetting ai = 16;
-    EnvironmentSetting environment = 17;
+    AppIMSetting app_im = 1;
+    WorkspaceProfileSetting workspace_profile = 2;
+    WorkspaceApprovalSetting workspace_approval = 3;
+    DataClassificationSetting data_classification = 4;
+    SemanticTypeSetting semantic_type = 5;
+    AISetting ai = 6;
+    EnvironmentSetting environment = 7;
   }
 }
 
@@ -180,45 +180,45 @@ message WorkspaceProfileSetting {
   bool require_2fa = 3;
 
   // The duration for token.
-  google.protobuf.Duration token_duration = 6;
+  google.protobuf.Duration token_duration = 4;
 
   // The setting of custom announcement
-  Announcement announcement = 7;
+  Announcement announcement = 5;
 
   // The max duration for role expired.
-  google.protobuf.Duration maximum_role_expiration = 8;
+  google.protobuf.Duration maximum_role_expiration = 6;
 
   // The workspace domain, e.g., bytebase.com.
-  repeated string domains = 9;
+  repeated string domains = 7;
 
   // Only user and group from the domains can be created and login.
-  bool enforce_identity_domain = 10;
+  bool enforce_identity_domain = 8;
 
   // The workspace database change mode.
-  DatabaseChangeMode database_change_mode = 11;
+  DatabaseChangeMode database_change_mode = 9;
 
   // Whether to disallow password signin. (Except workspace admins)
-  bool disallow_password_signin = 12;
+  bool disallow_password_signin = 10;
 
   // Whether to enable metric collection for the workspace.
-  bool enable_metric_collection = 13;
+  bool enable_metric_collection = 11;
 
   // The session expiration time if not activity detected for the user. Value <= 0 means no limit.
-  google.protobuf.Duration inactive_session_timeout = 14;
+  google.protobuf.Duration inactive_session_timeout = 12;
 
   // Whether to enable audit logging to stdout in structured JSON format.
   // Requires TEAM or ENTERPRISE license.
-  bool enable_audit_log_stdout = 15;
+  bool enable_audit_log_stdout = 13;
 
   // Whether to display watermark on pages.
   // Requires ENTERPRISE license.
-  bool watermark = 16;
+  bool watermark = 14;
 
   // The token for directory sync authentication.
-  string directory_sync_token = 17;
+  string directory_sync_token = 15;
 
   // The branding logo as a data URI (e.g. data:image/png;base64,...).
-  string branding_logo = 18;
+  string branding_logo = 16;
 
   message PasswordRestriction {
     // min_length is the minimum length for password, should no less than 8.
@@ -238,7 +238,7 @@ message WorkspaceProfileSetting {
   }
 
   // Password restriction settings.
-  PasswordRestriction password_restriction = 19;
+  PasswordRestriction password_restriction = 17;
 }
 
 message Announcement {
@@ -395,10 +395,10 @@ message Algorithm {
   }
 
   oneof mask {
-    FullMask full_mask = 5;
-    RangeMask range_mask = 6;
-    MD5Mask md5_mask = 7;
-    InnerOuterMask inner_outer_mask = 8;
+    FullMask full_mask = 1;
+    RangeMask range_mask = 2;
+    MD5Mask md5_mask = 3;
+    InnerOuterMask inner_outer_mask = 4;
   }
 }
 

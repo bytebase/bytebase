@@ -6481,15 +6481,15 @@ components:
       title: Type
       enum:
         - TYPE_UNSPECIFIED
-        - NOTIFY_ISSUE_APPROVED
-        - NOTIFY_PIPELINE_ROLLOUT
         - ISSUE_CREATE
         - ISSUE_COMMENT_CREATE
         - ISSUE_FIELD_UPDATE
         - ISSUE_STATUS_UPDATE
-        - ISSUE_APPROVAL_NOTIFY
         - ISSUE_PIPELINE_STAGE_STATUS_UPDATE
+        - ISSUE_APPROVAL_NOTIFY
         - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
+        - NOTIFY_ISSUE_APPROVED
+        - NOTIFY_PIPELINE_ROLLOUT
       description: Activity type enumeration.
     bytebase.v1.ActuatorInfo:
       type: object
@@ -9465,16 +9465,16 @@ components:
           title: target_metadata
           description: The metadata of the target schema.
           $ref: '#/components/schemas/bytebase.v1.DatabaseMetadata'
+        engine:
+          title: engine
+          description: The database engine of the schema.
+          $ref: '#/components/schemas/bytebase.v1.Engine'
         sourceCatalog:
           title: source_catalog
           $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
         targetCatalog:
           title: target_catalog
           $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
-        engine:
-          title: engine
-          description: The database engine of the schema.
-          $ref: '#/components/schemas/bytebase.v1.Engine'
       title: DiffMetadataRequest
       additionalProperties: false
     bytebase.v1.DiffMetadataResponse:
@@ -13382,7 +13382,6 @@ components:
         - FEATURE_SCHEDULED_ROLLOUT_TIME
         - FEATURE_DATABASE_CHANGELOG
         - FEATURE_SCHEMA_DRIFT_DETECTION
-        - FEATURE_SCHEMA_TEMPLATE
         - FEATURE_ROLLOUT_POLICY
         - FEATURE_WEB_BASED_SQL_EDITOR
         - FEATURE_SQL_EDITOR_ADMIN_MODE
@@ -13572,9 +13571,9 @@ components:
       title: PolicyType
       enum:
         - POLICY_TYPE_UNSPECIFIED
-        - ROLLOUT_POLICY
         - MASKING_RULE
         - MASKING_EXEMPTION
+        - ROLLOUT_POLICY
         - TAG
         - DATA_SOURCE_QUERY
         - DATA_QUERY
@@ -16603,8 +16602,8 @@ components:
         - GENERAL
         - DATABASE_CREATE
         - DATABASE_MIGRATE
-        - DATABASE_SDL
         - DATABASE_EXPORT
+        - DATABASE_SDL
     bytebase.v1.TaskMetadata:
       type: object
       properties:
@@ -18052,10 +18051,6 @@ components:
             type: string
           title: temp_recovery_codes
           description: Temporary recovery codes used during MFA setup and regeneration.
-        tempOtpSecretCreatedTime:
-          title: temp_otp_secret_created_time
-          description: Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
         phone:
           type: string
           title: phone
@@ -18074,6 +18069,10 @@ components:
           description: |-
             The groups for the user.
              Format: groups/{email}
+        tempOtpSecretCreatedTime:
+          title: temp_otp_secret_created_time
+          description: Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
         workloadIdentityConfig:
           title: workload_identity_config
           description: Workload Identity configuration (only for WORKLOAD_IDENTITY type)

@@ -337,21 +337,21 @@ export declare type Group = Message<"bytebase.v1.Group"> & {
   /**
    * The members of the group.
    *
-   * @generated from field: repeated bytebase.v1.GroupMember members = 5;
+   * @generated from field: repeated bytebase.v1.GroupMember members = 4;
    */
   members: GroupMember[];
 
   /**
    * The source system where the group originated (e.g., Entra ID for SCIM sync).
    *
-   * @generated from field: string source = 7;
+   * @generated from field: string source = 5;
    */
   source: string;
 
   /**
    * The unique email for the group.
    *
-   * @generated from field: string email = 8;
+   * @generated from field: string email = 6;
    */
   email: string;
 };

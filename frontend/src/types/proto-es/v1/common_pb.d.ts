@@ -231,79 +231,79 @@ export enum Engine {
   /**
    * StarRocks analytics database.
    *
-   * @generated from enum value: STARROCKS = 18;
+   * @generated from enum value: STARROCKS = 15;
    */
-  STARROCKS = 18,
+  STARROCKS = 15,
 
   /**
    * Apache Doris analytics database.
    *
-   * @generated from enum value: DORIS = 19;
+   * @generated from enum value: DORIS = 16;
    */
-  DORIS = 19,
+  DORIS = 16,
 
   /**
    * Apache Hive data warehouse.
    *
-   * @generated from enum value: HIVE = 20;
+   * @generated from enum value: HIVE = 17;
    */
-  HIVE = 20,
+  HIVE = 17,
 
   /**
    * Elasticsearch search engine.
    *
-   * @generated from enum value: ELASTICSEARCH = 21;
+   * @generated from enum value: ELASTICSEARCH = 18;
    */
-  ELASTICSEARCH = 21,
+  ELASTICSEARCH = 18,
 
   /**
    * Google BigQuery data warehouse.
    *
-   * @generated from enum value: BIGQUERY = 22;
+   * @generated from enum value: BIGQUERY = 19;
    */
-  BIGQUERY = 22,
+  BIGQUERY = 19,
 
   /**
    * Amazon DynamoDB NoSQL database.
    *
-   * @generated from enum value: DYNAMODB = 23;
+   * @generated from enum value: DYNAMODB = 20;
    */
-  DYNAMODB = 23,
+  DYNAMODB = 20,
 
   /**
    * Databricks lakehouse platform.
    *
-   * @generated from enum value: DATABRICKS = 24;
+   * @generated from enum value: DATABRICKS = 21;
    */
-  DATABRICKS = 24,
+  DATABRICKS = 21,
 
   /**
    * CockroachDB distributed SQL database.
    *
-   * @generated from enum value: COCKROACHDB = 25;
+   * @generated from enum value: COCKROACHDB = 22;
    */
-  COCKROACHDB = 25,
+  COCKROACHDB = 22,
 
   /**
    * Azure Cosmos DB multi-model database.
    *
-   * @generated from enum value: COSMOSDB = 26;
+   * @generated from enum value: COSMOSDB = 23;
    */
-  COSMOSDB = 26,
+  COSMOSDB = 23,
 
   /**
    * Trino distributed SQL query engine.
    *
-   * @generated from enum value: TRINO = 27;
+   * @generated from enum value: TRINO = 24;
    */
-  TRINO = 27,
+  TRINO = 24,
 
   /**
    * Apache Cassandra NoSQL database.
    *
-   * @generated from enum value: CASSANDRA = 28;
+   * @generated from enum value: CASSANDRA = 25;
    */
-  CASSANDRA = 28,
+  CASSANDRA = 25,
 }
 
 /**
@@ -419,16 +419,16 @@ export enum DatabaseChangeType {
   /**
    * Used for imperative schema migration including CREATE DATABASE.
    *
-   * @generated from enum value: MIGRATE = 2;
+   * @generated from enum value: MIGRATE = 1;
    */
-  MIGRATE = 2,
+  MIGRATE = 1,
 
   /**
    * Used for state-based declarative schema migration including CREATE DATABASE.
    *
-   * @generated from enum value: SDL = 3;
+   * @generated from enum value: SDL = 2;
    */
-  SDL = 3,
+  SDL = 2,
 }
 
 /**
@@ -534,9 +534,9 @@ export enum WebhookType {
   /**
    * Lark integration.
    *
-   * @generated from enum value: LARK = 8;
+   * @generated from enum value: LARK = 7;
    */
-  LARK = 8,
+  LARK = 7,
 }
 
 /**

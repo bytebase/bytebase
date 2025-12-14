@@ -130,11 +130,11 @@ message ReviewConfig {
   bool enabled = 3;
 
   // The SQL review rules to enforce.
-  repeated SQLReviewRule rules = 7;
+  repeated SQLReviewRule rules = 4;
 
   // Resources using the config.
   // Format: {resource}/{resource id}, e.g., environments/test.
-  repeated string resources = 8;
+  repeated string resources = 5;
 }
 
 // SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
