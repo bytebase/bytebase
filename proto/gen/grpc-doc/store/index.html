@@ -390,10 +390,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.DimensionConstraint"><span class="badge">M</span>DimensionConstraint</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.store.DimensionalConfig"><span class="badge">M</span>DimensionalConfig</a>
                 </li>
               
@@ -403,6 +399,14 @@
               
                 <li>
                   <a href="#bytebase.store.EventMetadata"><span class="badge">M</span>EventMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.EventTriggerMetadata"><span class="badge">M</span>EventTriggerMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ExcludeConstraintMetadata"><span class="badge">M</span>ExcludeConstraintMetadata</a>
                 </li>
               
                 <li>
@@ -438,6 +442,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.LinkedDatabaseMetadata"><span class="badge">M</span>LinkedDatabaseMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MaterializedViewMetadata"><span class="badge">M</span>MaterializedViewMetadata</a>
                 </li>
               
@@ -466,6 +474,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.RuleMetadata"><span class="badge">M</span>RuleMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.SchemaCatalog"><span class="badge">M</span>SchemaCatalog</a>
                 </li>
               
@@ -479,6 +491,10 @@
               
                 <li>
                   <a href="#bytebase.store.SpatialIndexConfig"><span class="badge">M</span>SpatialIndexConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SpatialIndexConfig.EngineSpecificEntry"><span class="badge">M</span>SpatialIndexConfig.EngineSpecificEntry</a>
                 </li>
               
                 <li>
@@ -3090,13 +3106,6 @@ Engine-specific version stored when baseline/migration is created.
                 </tr>
               
                 <tr>
-                  <td>has_default</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>default</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -3390,6 +3399,27 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
                 </tr>
               
                 <tr>
+                  <td>datashare</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The database belongs to a datashare. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>service_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The service name of the database. It&#39;s an Oracle-specific concept. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>linked_databases</td>
+                  <td><a href="#bytebase.store.LinkedDatabaseMetadata">LinkedDatabaseMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>owner</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -3401,6 +3431,14 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The search_path is the search path of a PostgreSQL database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>event_triggers</td>
+                  <td><a href="#bytebase.store.EventTriggerMetadata">EventTriggerMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of event triggers in a database (PostgreSQL specific).
+Event triggers are database-level objects, not schema-scoped. </p></td>
                 </tr>
               
             </tbody>
@@ -3479,51 +3517,6 @@ from SQL files), the system cannot automatically drop the constraint. </p></td>
 
         
       
-        <h3 id="bytebase.store.DimensionConstraint">DimensionConstraint</h3>
-        <p>DimensionConstraint defines constraints for a spatial dimension.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>dimension</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Dimension name/type (X, Y, Z, M, etc.) </p></td>
-                </tr>
-              
-                <tr>
-                  <td>min_value</td>
-                  <td><a href="#double">double</a></td>
-                  <td></td>
-                  <td><p>Minimum value for this dimension </p></td>
-                </tr>
-              
-                <tr>
-                  <td>max_value</td>
-                  <td><a href="#double">double</a></td>
-                  <td></td>
-                  <td><p>Maximum value for this dimension </p></td>
-                </tr>
-              
-                <tr>
-                  <td>tolerance</td>
-                  <td><a href="#double">double</a></td>
-                  <td></td>
-                  <td><p>Tolerance for this dimension </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.store.DimensionalConfig">DimensionalConfig</h3>
         <p>DimensionalConfig defines dimensional and constraint parameters for spatial indexes.</p>
 
@@ -3550,17 +3543,26 @@ Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc. </p></td>
                 </tr>
               
                 <tr>
-                  <td>srid</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td>operator_class</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Spatial reference system identifier (SRID) </p></td>
+                  <td><p>PostgreSQL operator class
+Examples: gist_geometry_ops_2d, gist_geometry_ops_nd, etc. </p></td>
                 </tr>
               
                 <tr>
-                  <td>constraints</td>
-                  <td><a href="#bytebase.store.DimensionConstraint">DimensionConstraint</a></td>
-                  <td>repeated</td>
-                  <td><p>Coordinate system constraints </p></td>
+                  <td>layer_gtype</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Oracle geometry type constraint
+Examples: POINT, LINE, POLYGON, COLLECTION </p></td>
+                </tr>
+              
+                <tr>
+                  <td>parallel_build</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Parallel index creation </p></td>
                 </tr>
               
             </tbody>
@@ -3672,6 +3674,119 @@ Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.EventTriggerMetadata">EventTriggerMetadata</h3>
+        <p>EventTriggerMetadata is the metadata for PostgreSQL event triggers.</p><p>Event triggers are database-level objects that fire on DDL events.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the event trigger. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>event</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The event type: DDL_COMMAND_START, DDL_COMMAND_END, SQL_DROP, TABLE_REWRITE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>tags</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The tags filter (e.g., [&#39;CREATE TABLE&#39;, &#39;DROP TABLE&#39;]). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>function_schema</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The schema of the function to execute. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>function_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the function to execute. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the trigger is enabled. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The full CREATE EVENT TRIGGER definition from pg_get_event_trigger_def().
+SDL output should prefer using this field. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The comment on the event trigger. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skip_dump</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Skip dump flag (for extension-owned triggers). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ExcludeConstraintMetadata">ExcludeConstraintMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the EXCLUDE constraint. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expression</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The expression is the full EXCLUDE constraint definition including &#34;EXCLUDE&#34; keyword.
+Example: &#34;EXCLUDE USING gist (room_id WITH =, during WITH &amp;&amp;)&#34; </p></td>
                 </tr>
               
             </tbody>
@@ -4171,6 +4286,44 @@ engine. </p></td>
 
         
       
+        <h3 id="bytebase.store.LinkedDatabaseMetadata">LinkedDatabaseMetadata</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>host</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.MaterializedViewMetadata">MaterializedViewMetadata</h3>
         <p>MaterializedViewMetadata is the metadata for materialized views.</p>
 
@@ -4453,17 +4606,83 @@ function takes. </p></td>
                 </tr>
               
                 <tr>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>skip_dump</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
               
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.RuleMetadata">RuleMetadata</h3>
+        <p>RuleMetadata is the metadata for PostgreSQL rules.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
                 <tr>
-                  <td>comment</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The name of the rule. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>event</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The event type of the rule: SELECT, INSERT, UPDATE, or DELETE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>condition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The WHERE condition of the rule (optional). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>action</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The command(s) to execute when the rule fires. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>is_instead</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The is_instead indicates whether this is an INSTEAD rule. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>is_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>The is_enabled indicates whether the rule is enabled. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The full CREATE RULE statement. </p></td>
                 </tr>
               
             </tbody>
@@ -4580,6 +4799,13 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                 </tr>
               
                 <tr>
+                  <td>sequences</td>
+                  <td><a href="#bytebase.store.SequenceMetadata">SequenceMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The list of sequences in a schema. </p></td>
+                </tr>
+              
+                <tr>
                   <td>packages</td>
                   <td><a href="#bytebase.store.PackageMetadata">PackageMetadata</a></td>
                   <td>repeated</td>
@@ -4594,10 +4820,10 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                 </tr>
               
                 <tr>
-                  <td>sequences</td>
-                  <td><a href="#bytebase.store.SequenceMetadata">SequenceMetadata</a></td>
-                  <td>repeated</td>
-                  <td><p>The list of sequences in a schema. </p></td>
+                  <td>comment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
@@ -4617,13 +4843,6 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                 <tr>
                   <td>skip_dump</td>
                   <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>comment</td>
-                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -4780,6 +4999,44 @@ Examples: &#34;SPATIAL&#34; (MySQL/SQL Server), &#34;GIST&#34;/&#34;SPGIST&#34; 
                   <td><a href="#bytebase.store.DimensionalConfig">DimensionalConfig</a></td>
                   <td></td>
                   <td><p>Dimensional and constraint parameters </p></td>
+                </tr>
+              
+                <tr>
+                  <td>engine_specific</td>
+                  <td><a href="#bytebase.store.SpatialIndexConfig.EngineSpecificEntry">SpatialIndexConfig.EngineSpecificEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>Database-specific parameters (stored as key-value pairs for extensibility) </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SpatialIndexConfig.EngineSpecificEntry">SpatialIndexConfig.EngineSpecificEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -5169,6 +5426,13 @@ Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family
                 </tr>
               
                 <tr>
+                  <td>rules</td>
+                  <td><a href="#bytebase.store.RuleMetadata">RuleMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The rules is the list of rules in a table (PostgreSQL specific). </p></td>
+                </tr>
+              
+                <tr>
                   <td>sharding_info</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -5181,6 +5445,13 @@ Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family
                   <td></td>
                   <td><p>https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
 CLUSTERED or NONCLUSTERED. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>exclude_constraints</td>
+                  <td><a href="#bytebase.store.ExcludeConstraintMetadata">ExcludeConstraintMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The exclude_constraints is the list of EXCLUDE constraints in a table (PostgreSQL specific). </p></td>
                 </tr>
               
             </tbody>
@@ -5271,6 +5542,13 @@ in syntax [SUB]PARTITION {number}. </p></td>
                 <tr>
                   <td>check_constraints</td>
                   <td><a href="#bytebase.store.CheckConstraintMetadata">CheckConstraintMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>exclude_constraints</td>
+                  <td><a href="#bytebase.store.ExcludeConstraintMetadata">ExcludeConstraintMetadata</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -5389,6 +5667,13 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
                 </tr>
               
                 <tr>
+                  <td>bounding_box</td>
+                  <td><a href="#bytebase.store.BoundingBox">BoundingBox</a></td>
+                  <td></td>
+                  <td><p>Bounding box for GEOMETRY indexes (SQL Server) </p></td>
+                </tr>
+              
+                <tr>
                   <td>grid_levels</td>
                   <td><a href="#bytebase.store.GridLevel">GridLevel</a></td>
                   <td>repeated</td>
@@ -5400,13 +5685,6 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>Cells per object (SQL Server) </p></td>
-                </tr>
-              
-                <tr>
-                  <td>bounding_box</td>
-                  <td><a href="#bytebase.store.BoundingBox">BoundingBox</a></td>
-                  <td></td>
-                  <td><p>Bounding box for GEOMETRY indexes (SQL Server) </p></td>
                 </tr>
               
             </tbody>
@@ -5555,6 +5833,13 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>rules</td>
+                  <td><a href="#bytebase.store.RuleMetadata">RuleMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The rules is the list of rules in a view (PostgreSQL specific). </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5608,13 +5893,13 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
               </tr>
             
               <tr>
-                <td>VIRTUAL</td>
+                <td>TYPE_VIRTUAL</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>STORED</td>
+                <td>TYPE_STORED</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
@@ -5684,19 +5969,19 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
               </tr>
             
               <tr>
-                <td>DEFAULT</td>
+                <td>MODE_DEFAULT</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>APPEND_ONLY</td>
+                <td>MODE_APPEND_ONLY</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>INSERT_ONLY</td>
+                <td>MODE_INSERT_ONLY</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
@@ -5719,7 +6004,7 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
               </tr>
             
               <tr>
-                <td>DELTA</td>
+                <td>TYPE_DELTA</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
@@ -5807,13 +6092,13 @@ Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
               </tr>
             
               <tr>
-                <td>STARTED</td>
+                <td>STATE_STARTED</td>
                 <td>1</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>SUSPENDED</td>
+                <td>STATE_SUSPENDED</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>

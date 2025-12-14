@@ -13,9 +13,9 @@ message DatabaseMetadata {
   bool backup_available = 3;
   bool datashare = 4;
   // The schema has drifted from the source of truth.
-  bool drifted = 5;
+  bool drifted = 6;
   // The version of database schema.
-  string version = 6;
+  string version = 7;
 }
 
 // DatabaseSchemaMetadata is the schema metadata for databases.
@@ -34,10 +34,30 @@ message DatabaseSchemaMetadata {
   // The list of extensions in a database.
   repeated ExtensionMetadata extensions = 5;
 
-  string owner = 6;
+  // The database belongs to a datashare.
+  bool datashare = 6;
+
+  // The service name of the database. It's an Oracle-specific concept.
+  string service_name = 7;
+
+  repeated LinkedDatabaseMetadata linked_databases = 8;
+
+  string owner = 9;
 
   // The search_path is the search path of a PostgreSQL database.
-  string search_path = 7;
+  string search_path = 10;
+
+  // The list of event triggers in a database (PostgreSQL specific).
+  // Event triggers are database-level objects, not schema-scoped.
+  repeated EventTriggerMetadata event_triggers = 11;
+}
+
+message LinkedDatabaseMetadata {
+  string name = 1;
+
+  string username = 2;
+
+  string host = 3;
 }
 
 // SchemaMetadata is the metadata for schemas.
@@ -71,21 +91,21 @@ message SchemaMetadata {
   // The list of materialized views in a schema.
   repeated MaterializedViewMetadata materialized_views = 9;
 
-  // The list of packages in a schema.
-  repeated PackageMetadata packages = 10;
-
-  string owner = 11;
-
   // The list of sequences in a schema.
-  repeated SequenceMetadata sequences = 12;
+  repeated SequenceMetadata sequences = 10;
 
-  repeated EventMetadata events = 13;
+  // The list of packages in a schema.
+  repeated PackageMetadata packages = 11;
 
-  repeated EnumTypeMetadata enum_types = 14;
+  string owner = 12;
 
-  bool skip_dump = 15;
+  string comment = 13;
 
-  string comment = 16;
+  repeated EventMetadata events = 14;
+
+  repeated EnumTypeMetadata enum_types = 15;
+
+  bool skip_dump = 16;
 }
 
 message EnumTypeMetadata {
@@ -163,23 +183,47 @@ message TriggerMetadata {
   string name = 1;
 
   // The event that triggers this action, such as INSERT, UPDATE, DELETE, or TRUNCATE.
-  string event = 2;
+  string event = 3;
 
   // The timing of when the trigger fires, such as BEFORE or AFTER.
-  string timing = 3;
+  string timing = 4;
 
   // The body of the trigger.
-  string body = 4;
+  string body = 5;
 
-  string sql_mode = 5;
+  string sql_mode = 6;
 
-  string character_set_client = 6;
+  string character_set_client = 7;
 
-  string collation_connection = 7;
+  string collation_connection = 8;
 
-  string comment = 8;
+  string comment = 9;
 
-  bool skip_dump = 9;
+  bool skip_dump = 10;
+}
+
+// RuleMetadata is the metadata for PostgreSQL rules.
+message RuleMetadata {
+  // The name of the rule.
+  string name = 1;
+
+  // The event type of the rule: SELECT, INSERT, UPDATE, or DELETE.
+  string event = 2;
+
+  // The WHERE condition of the rule (optional).
+  string condition = 3;
+
+  // The command(s) to execute when the rule fires.
+  string action = 4;
+
+  // The is_instead indicates whether this is an INSTEAD rule.
+  bool is_instead = 5;
+
+  // The is_enabled indicates whether the rule is enabled.
+  bool is_enabled = 6;
+
+  // The full CREATE RULE statement.
+  string definition = 7;
 }
 
 message TaskMetadata {
@@ -207,8 +251,8 @@ message TaskMetadata {
 
   enum State {
     STATE_UNSPECIFIED = 0;
-    STARTED = 1;
-    SUSPENDED = 2;
+    STATE_STARTED = 1;
+    STATE_SUSPENDED = 2;
   }
   // The state of the task.
   State state = 8;
@@ -235,7 +279,7 @@ message StreamMetadata {
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    DELTA = 1;
+    TYPE_DELTA = 1;
   }
   // The type of the stream.
   Type type = 5;
@@ -245,9 +289,9 @@ message StreamMetadata {
 
   enum Mode {
     MODE_UNSPECIFIED = 0;
-    DEFAULT = 1;
-    APPEND_ONLY = 2;
-    INSERT_ONLY = 3;
+    MODE_DEFAULT = 1;
+    MODE_APPEND_ONLY = 2;
+    MODE_INSERT_ONLY = 3;
   }
   // The mode of the stream.
   Mode mode = 7;
@@ -277,51 +321,57 @@ message TableMetadata {
   string collation = 5;
 
   // The character set of the table.
-  string charset = 6;
+  string charset = 17;
 
   // The row_count is the estimated number of rows of a table.
-  int64 row_count = 7;
+  int64 row_count = 6;
 
   // The data_size is the estimated data size of a table.
-  int64 data_size = 8;
+  int64 data_size = 7;
 
   // The index_size is the estimated index size of a table.
-  int64 index_size = 9;
+  int64 index_size = 8;
 
   // The data_free is the estimated free data size of a table.
-  int64 data_free = 10;
+  int64 data_free = 9;
 
   // The create_options is the create option of a table.
-  string create_options = 11;
+  string create_options = 10;
 
   // The comment is the comment of a table.
-  string comment = 12;
+  string comment = 11;
 
   // The foreign_keys is the list of foreign keys in a table.
-  repeated ForeignKeyMetadata foreign_keys = 13;
+  repeated ForeignKeyMetadata foreign_keys = 12;
 
   // The partitions is the list of partitions in a table.
-  repeated TablePartitionMetadata partitions = 14;
+  repeated TablePartitionMetadata partitions = 15;
 
   // The check_constraints is the list of check constraints in a table.
-  repeated CheckConstraintMetadata check_constraints = 15;
+  repeated CheckConstraintMetadata check_constraints = 16;
 
-  string owner = 16;
+  string owner = 18;
 
   // The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
   // Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
-  repeated string sorting_keys = 17;
+  repeated string sorting_keys = 19;
 
-  repeated TriggerMetadata triggers = 18;
+  repeated TriggerMetadata triggers = 20;
 
-  bool skip_dump = 19;
+  bool skip_dump = 21;
+
+  // The rules is the list of rules in a table (PostgreSQL specific).
+  repeated RuleMetadata rules = 24;
 
   // https://docs.pingcap.com/tidb/stable/information-schema-tables/
-  string sharding_info = 20;
+  string sharding_info = 22;
 
   // https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
   // CLUSTERED or NONCLUSTERED.
-  string primary_key_type = 21;
+  string primary_key_type = 23;
+
+  // The exclude_constraints is the list of EXCLUDE constraints in a table (PostgreSQL specific).
+  repeated ExcludeConstraintMetadata exclude_constraints = 25;
 }
 
 message CheckConstraintMetadata {
@@ -329,6 +379,15 @@ message CheckConstraintMetadata {
   string name = 1;
 
   // The expression is the expression of a check constraint.
+  string expression = 2;
+}
+
+message ExcludeConstraintMetadata {
+  // The name of the EXCLUDE constraint.
+  string name = 1;
+
+  // The expression is the full EXCLUDE constraint definition including "EXCLUDE" keyword.
+  // Example: "EXCLUDE USING gist (room_id WITH =, during WITH &&)"
   string expression = 2;
 }
 
@@ -407,6 +466,8 @@ message TablePartitionMetadata {
   repeated IndexMetadata indexes = 7;
 
   repeated CheckConstraintMetadata check_constraints = 8;
+
+  repeated ExcludeConstraintMetadata exclude_constraints = 9;
 }
 
 // ColumnMetadata is the metadata for columns.
@@ -417,39 +478,37 @@ message ColumnMetadata {
   // The position is the position in columns.
   int32 position = 2;
 
-  bool has_default = 3;
-
   // The default value of the column.
-  string default = 4;
+  string default = 3;
 
   // Oracle specific metadata.
   // The default_on_null is the default on null of a column.
-  bool default_on_null = 5;
+  bool default_on_null = 16;
 
   // The on_update is the on update action of a column.
   // For MySQL like databases, it's only supported for TIMESTAMP columns with
   // CURRENT_TIMESTAMP as on update value.
-  string on_update = 6;
+  string on_update = 13;
 
   // The nullable is the nullable of a column.
-  bool nullable = 7;
+  bool nullable = 6;
 
   // The type is the type of a column.
-  string type = 8;
+  string type = 7;
 
   // The character_set is the character_set of a column.
-  string character_set = 9;
+  string character_set = 8;
 
   // The collation is the collation of a column.
-  string collation = 10;
+  string collation = 9;
 
   // The comment is the comment of a column.
-  string comment = 11;
+  string comment = 10;
 
   // The generation is for generated columns.
-  GenerationMetadata generation = 12;
+  GenerationMetadata generation = 14;
 
-  bool is_identity = 13;
+  bool is_identity = 17;
 
   enum IdentityGeneration {
     IDENTITY_GENERATION_UNSPECIFIED = 0;
@@ -458,13 +517,13 @@ message ColumnMetadata {
   }
 
   // The identity_generation is for identity columns, PG only.
-  IdentityGeneration identity_generation = 14;
+  IdentityGeneration identity_generation = 15;
 
   // The identity_seed is for identity columns, MSSQL only.
-  int64 identity_seed = 15;
+  int64 identity_seed = 18;
 
   // The identity_increment is for identity columns, MSSQL only.
-  int64 identity_increment = 16;
+  int64 identity_increment = 19;
 
   // The default_constraint_name is the name of the default constraint, MSSQL only.
   // In MSSQL, default values are implemented as named constraints. When modifying or
@@ -486,14 +545,14 @@ message ColumnMetadata {
   //
   // This field is populated when syncing from the database. When empty (e.g., when parsing
   // from SQL files), the system cannot automatically drop the constraint.
-  string default_constraint_name = 17;
+  string default_constraint_name = 20;
 }
 
 message GenerationMetadata {
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    VIRTUAL = 1;
-    STORED = 2;
+    TYPE_VIRTUAL = 1;
+    TYPE_STORED = 2;
   }
 
   Type type = 1;
@@ -521,6 +580,9 @@ message ViewMetadata {
   repeated TriggerMetadata triggers = 6;
 
   bool skip_dump = 7;
+
+  // The rules is the list of rules in a view (PostgreSQL specific).
+  repeated RuleMetadata rules = 8;
 }
 
 // DependencyColumn is the metadata for dependency columns.
@@ -617,9 +679,9 @@ message ProcedureMetadata {
 
   string sql_mode = 7;
 
-  bool skip_dump = 8;
-
   string comment = 9;
+
+  bool skip_dump = 8;
 }
 
 // PackageMetadata is the metadata for packages.
@@ -642,28 +704,28 @@ message IndexMetadata {
 
   // The ordered list of key lengths for the index.
   // If the key length is not specified, it is -1.
-  repeated int64 key_length = 3;
+  repeated int64 key_length = 9;
 
   // The ordered list of descending flags for the index columns.
-  repeated bool descending = 4;
+  repeated bool descending = 10;
 
   // The type is the type of an index.
-  string type = 5;
+  string type = 3;
 
   // The unique is whether the index is unique.
-  bool unique = 6;
+  bool unique = 4;
 
   // The primary is whether the index is a primary key index.
-  bool primary = 7;
+  bool primary = 5;
 
   // The visible is whether the index is visible.
-  bool visible = 8;
+  bool visible = 6;
 
   // The comment is the comment of an index.
-  string comment = 9;
+  string comment = 7;
 
   // The definition of an index.
-  string definition = 10;
+  string definition = 8;
 
   // The schema name of the parent index.
   string parent_index_schema = 11;
@@ -702,6 +764,9 @@ message SpatialIndexConfig {
 
   // Dimensional and constraint parameters
   DimensionalConfig dimensional = 4;
+
+  // Database-specific parameters (stored as key-value pairs for extensibility)
+  map<string, string> engine_specific = 5;
 }
 
 // TessellationConfig defines tessellation parameters for spatial indexes.
@@ -710,14 +775,14 @@ message TessellationConfig {
   // Examples: GEOMETRY_GRID, GEOGRAPHY_GRID, GEOMETRY_AUTO_GRID, GEOGRAPHY_AUTO_GRID
   string scheme = 1;
 
+  // Bounding box for GEOMETRY indexes (SQL Server)
+  BoundingBox bounding_box = 2;
+
   // Grid level configuration (SQL Server)
-  repeated GridLevel grid_levels = 2;
+  repeated GridLevel grid_levels = 3;
 
   // Cells per object (SQL Server)
-  int32 cells_per_object = 3;
-
-  // Bounding box for GEOMETRY indexes (SQL Server)
-  BoundingBox bounding_box = 4;
+  int32 cells_per_object = 4;
 }
 
 // BoundingBox defines the bounding box for spatial indexes.
@@ -766,26 +831,16 @@ message DimensionalConfig {
   // Examples: GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.
   string data_type = 2;
 
-  // Spatial reference system identifier (SRID)
-  int32 srid = 3;
+  // PostgreSQL operator class
+  // Examples: gist_geometry_ops_2d, gist_geometry_ops_nd, etc.
+  string operator_class = 3;
 
-  // Coordinate system constraints
-  repeated DimensionConstraint constraints = 4;
-}
+  // Oracle geometry type constraint
+  // Examples: POINT, LINE, POLYGON, COLLECTION
+  string layer_gtype = 4;
 
-// DimensionConstraint defines constraints for a spatial dimension.
-message DimensionConstraint {
-  // Dimension name/type (X, Y, Z, M, etc.)
-  string dimension = 1;
-
-  // Minimum value for this dimension
-  double min_value = 2;
-
-  // Maximum value for this dimension
-  double max_value = 3;
-
-  // Tolerance for this dimension
-  double tolerance = 4;
+  // Parallel index creation
+  bool parallel_build = 5;
 }
 
 // ExtensionMetadata is the metadata for extensions.
@@ -802,6 +857,38 @@ message ExtensionMetadata {
 
   // The description is the description of an extension.
   string description = 4;
+}
+
+// EventTriggerMetadata is the metadata for PostgreSQL event triggers.
+// Event triggers are database-level objects that fire on DDL events.
+message EventTriggerMetadata {
+  // The name of the event trigger.
+  string name = 1;
+
+  // The event type: DDL_COMMAND_START, DDL_COMMAND_END, SQL_DROP, TABLE_REWRITE.
+  string event = 2;
+
+  // The tags filter (e.g., ['CREATE TABLE', 'DROP TABLE']).
+  repeated string tags = 3;
+
+  // The schema of the function to execute.
+  string function_schema = 4;
+
+  // The name of the function to execute.
+  string function_name = 5;
+
+  // Whether the trigger is enabled.
+  bool enabled = 6;
+
+  // The full CREATE EVENT TRIGGER definition from pg_get_event_trigger_def().
+  // SDL output should prefer using this field.
+  string definition = 7;
+
+  // The comment on the event trigger.
+  string comment = 8;
+
+  // Skip dump flag (for extension-owned triggers).
+  bool skip_dump = 9;
 }
 
 // ForeignKeyMetadata is the metadata for foreign keys.
@@ -837,14 +924,16 @@ message ForeignKeyMetadata {
 // InstanceRoleMetadata is the message for instance role.
 message InstanceRoleMetadata {
   // The role name. It's unique within the instance.
-  string name = 1;
+  string name = 2;
 
   // The grant display string on the instance. It's generated by database
   // engine.
-  string grant = 2;
+  string grant = 7;
 }
 
 message DatabaseConfig {
+  reserved 3;
+
   string name = 1;
 
   // The schema_configs is the list of configs for schemas in a database.
@@ -867,9 +956,9 @@ message TableCatalog {
   // The column_configs is the ordered list of configs for columns in a table.
   repeated ColumnCatalog columns = 2;
 
-  optional ObjectSchema object_schema = 3;
+  optional ObjectSchema object_schema = 7;
 
-  string classification = 4;
+  string classification = 3;
 }
 
 message ColumnCatalog {

@@ -76,10 +76,51 @@ func (x *DatabaseSchemaMetadata) Equal(y *DatabaseSchemaMetadata) bool {
 			return false
 		}
 	}
+	if x.Datashare != y.Datashare {
+		return false
+	}
+	if x.ServiceName != y.ServiceName {
+		return false
+	}
+	if len(x.LinkedDatabases) != len(y.LinkedDatabases) {
+		return false
+	}
+	for i := 0; i < len(x.LinkedDatabases); i++ {
+		if !x.LinkedDatabases[i].Equal(y.LinkedDatabases[i]) {
+			return false
+		}
+	}
 	if x.Owner != y.Owner {
 		return false
 	}
 	if x.SearchPath != y.SearchPath {
+		return false
+	}
+	if len(x.EventTriggers) != len(y.EventTriggers) {
+		return false
+	}
+	for i := 0; i < len(x.EventTriggers); i++ {
+		if !x.EventTriggers[i].Equal(y.EventTriggers[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *LinkedDatabaseMetadata) Equal(y *LinkedDatabaseMetadata) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Username != y.Username {
+		return false
+	}
+	if x.Host != y.Host {
 		return false
 	}
 	return true
@@ -159,6 +200,14 @@ func (x *SchemaMetadata) Equal(y *SchemaMetadata) bool {
 			return false
 		}
 	}
+	if len(x.Sequences) != len(y.Sequences) {
+		return false
+	}
+	for i := 0; i < len(x.Sequences); i++ {
+		if !x.Sequences[i].Equal(y.Sequences[i]) {
+			return false
+		}
+	}
 	if len(x.Packages) != len(y.Packages) {
 		return false
 	}
@@ -170,13 +219,8 @@ func (x *SchemaMetadata) Equal(y *SchemaMetadata) bool {
 	if x.Owner != y.Owner {
 		return false
 	}
-	if len(x.Sequences) != len(y.Sequences) {
+	if x.Comment != y.Comment {
 		return false
-	}
-	for i := 0; i < len(x.Sequences); i++ {
-		if !x.Sequences[i].Equal(y.Sequences[i]) {
-			return false
-		}
 	}
 	if len(x.Events) != len(y.Events) {
 		return false
@@ -195,9 +239,6 @@ func (x *SchemaMetadata) Equal(y *SchemaMetadata) bool {
 		}
 	}
 	if x.SkipDump != y.SkipDump {
-		return false
-	}
-	if x.Comment != y.Comment {
 		return false
 	}
 	return true
@@ -342,6 +383,37 @@ func (x *TriggerMetadata) Equal(y *TriggerMetadata) bool {
 		return false
 	}
 	if x.SkipDump != y.SkipDump {
+		return false
+	}
+	return true
+}
+
+func (x *RuleMetadata) Equal(y *RuleMetadata) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Event != y.Event {
+		return false
+	}
+	if x.Condition != y.Condition {
+		return false
+	}
+	if x.Action != y.Action {
+		return false
+	}
+	if x.IsInstead != y.IsInstead {
+		return false
+	}
+	if x.IsEnabled != y.IsEnabled {
+		return false
+	}
+	if x.Definition != y.Definition {
 		return false
 	}
 	return true
@@ -525,16 +597,48 @@ func (x *TableMetadata) Equal(y *TableMetadata) bool {
 	if x.SkipDump != y.SkipDump {
 		return false
 	}
+	if len(x.Rules) != len(y.Rules) {
+		return false
+	}
+	for i := 0; i < len(x.Rules); i++ {
+		if !x.Rules[i].Equal(y.Rules[i]) {
+			return false
+		}
+	}
 	if x.ShardingInfo != y.ShardingInfo {
 		return false
 	}
 	if x.PrimaryKeyType != y.PrimaryKeyType {
 		return false
 	}
+	if len(x.ExcludeConstraints) != len(y.ExcludeConstraints) {
+		return false
+	}
+	for i := 0; i < len(x.ExcludeConstraints); i++ {
+		if !x.ExcludeConstraints[i].Equal(y.ExcludeConstraints[i]) {
+			return false
+		}
+	}
 	return true
 }
 
 func (x *CheckConstraintMetadata) Equal(y *CheckConstraintMetadata) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Expression != y.Expression {
+		return false
+	}
+	return true
+}
+
+func (x *ExcludeConstraintMetadata) Equal(y *ExcludeConstraintMetadata) bool {
 	if x == y {
 		return true
 	}
@@ -623,6 +727,14 @@ func (x *TablePartitionMetadata) Equal(y *TablePartitionMetadata) bool {
 			return false
 		}
 	}
+	if len(x.ExcludeConstraints) != len(y.ExcludeConstraints) {
+		return false
+	}
+	for i := 0; i < len(x.ExcludeConstraints); i++ {
+		if !x.ExcludeConstraints[i].Equal(y.ExcludeConstraints[i]) {
+			return false
+		}
+	}
 	return true
 }
 
@@ -637,9 +749,6 @@ func (x *ColumnMetadata) Equal(y *ColumnMetadata) bool {
 		return false
 	}
 	if x.Position != y.Position {
-		return false
-	}
-	if x.HasDefault != y.HasDefault {
 		return false
 	}
 	if x.Default != y.Default {
@@ -745,6 +854,14 @@ func (x *ViewMetadata) Equal(y *ViewMetadata) bool {
 	}
 	if x.SkipDump != y.SkipDump {
 		return false
+	}
+	if len(x.Rules) != len(y.Rules) {
+		return false
+	}
+	for i := 0; i < len(x.Rules); i++ {
+		if !x.Rules[i].Equal(y.Rules[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -903,10 +1020,10 @@ func (x *ProcedureMetadata) Equal(y *ProcedureMetadata) bool {
 	if x.SqlMode != y.SqlMode {
 		return false
 	}
-	if x.SkipDump != y.SkipDump {
+	if x.Comment != y.Comment {
 		return false
 	}
-	if x.Comment != y.Comment {
+	if x.SkipDump != y.SkipDump {
 		return false
 	}
 	return true
@@ -1033,6 +1150,18 @@ func (x *SpatialIndexConfig) Equal(y *SpatialIndexConfig) bool {
 	if !x.Dimensional.Equal(y.Dimensional) {
 		return false
 	}
+	if len(x.EngineSpecific) != len(y.EngineSpecific) {
+		return false
+	}
+	for k := range x.EngineSpecific {
+		_, ok := y.EngineSpecific[k]
+		if !ok {
+			return false
+		}
+		if x.EngineSpecific[k] != y.EngineSpecific[k] {
+			return false
+		}
+	}
 	return true
 }
 
@@ -1046,6 +1175,9 @@ func (x *TessellationConfig) Equal(y *TessellationConfig) bool {
 	if x.Scheme != y.Scheme {
 		return false
 	}
+	if !x.BoundingBox.Equal(y.BoundingBox) {
+		return false
+	}
 	if len(x.GridLevels) != len(y.GridLevels) {
 		return false
 	}
@@ -1055,9 +1187,6 @@ func (x *TessellationConfig) Equal(y *TessellationConfig) bool {
 		}
 	}
 	if x.CellsPerObject != y.CellsPerObject {
-		return false
-	}
-	if !x.BoundingBox.Equal(y.BoundingBox) {
 		return false
 	}
 	return true
@@ -1166,37 +1295,13 @@ func (x *DimensionalConfig) Equal(y *DimensionalConfig) bool {
 	if x.DataType != y.DataType {
 		return false
 	}
-	if x.Srid != y.Srid {
+	if x.OperatorClass != y.OperatorClass {
 		return false
 	}
-	if len(x.Constraints) != len(y.Constraints) {
+	if x.LayerGtype != y.LayerGtype {
 		return false
 	}
-	for i := 0; i < len(x.Constraints); i++ {
-		if !x.Constraints[i].Equal(y.Constraints[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *DimensionConstraint) Equal(y *DimensionConstraint) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Dimension != y.Dimension {
-		return false
-	}
-	if (math.IsNaN(float64(x.MinValue)) && !math.IsNaN(float64(y.MinValue)) || !math.IsNaN(float64(x.MinValue)) && math.IsNaN(float64(y.MinValue))) || (!math.IsNaN(float64(x.MinValue)) && !math.IsNaN(float64(y.MinValue)) && x.MinValue != y.MinValue) {
-		return false
-	}
-	if (math.IsNaN(float64(x.MaxValue)) && !math.IsNaN(float64(y.MaxValue)) || !math.IsNaN(float64(x.MaxValue)) && math.IsNaN(float64(y.MaxValue))) || (!math.IsNaN(float64(x.MaxValue)) && !math.IsNaN(float64(y.MaxValue)) && x.MaxValue != y.MaxValue) {
-		return false
-	}
-	if (math.IsNaN(float64(x.Tolerance)) && !math.IsNaN(float64(y.Tolerance)) || !math.IsNaN(float64(x.Tolerance)) && math.IsNaN(float64(y.Tolerance))) || (!math.IsNaN(float64(x.Tolerance)) && !math.IsNaN(float64(y.Tolerance)) && x.Tolerance != y.Tolerance) {
+	if x.ParallelBuild != y.ParallelBuild {
 		return false
 	}
 	return true
@@ -1219,6 +1324,48 @@ func (x *ExtensionMetadata) Equal(y *ExtensionMetadata) bool {
 		return false
 	}
 	if x.Description != y.Description {
+		return false
+	}
+	return true
+}
+
+func (x *EventTriggerMetadata) Equal(y *EventTriggerMetadata) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Event != y.Event {
+		return false
+	}
+	if len(x.Tags) != len(y.Tags) {
+		return false
+	}
+	for i := 0; i < len(x.Tags); i++ {
+		if x.Tags[i] != y.Tags[i] {
+			return false
+		}
+	}
+	if x.FunctionSchema != y.FunctionSchema {
+		return false
+	}
+	if x.FunctionName != y.FunctionName {
+		return false
+	}
+	if x.Enabled != y.Enabled {
+		return false
+	}
+	if x.Definition != y.Definition {
+		return false
+	}
+	if x.Comment != y.Comment {
+		return false
+	}
+	if x.SkipDump != y.SkipDump {
 		return false
 	}
 	return true
