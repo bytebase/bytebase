@@ -2254,7 +2254,6 @@
       "duplicated-table-name": "Nombre de tabla duplicado",
       "invalid-schema": "Esquema no válido",
       "cannot-drop-the-last-column": "No se puede eliminar la última columna",
-      "cannot-change-config": "La configuración de la base de datos debe cambiarse con el esquema",
       "duplicated-procedure-name": "Nombre del procedimiento duplicado",
       "invalid-procedure-name": "Nombre de procedimiento no válido",
       "duplicated-function-name": "Nombre de función duplicado",

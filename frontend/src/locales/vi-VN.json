@@ -2254,7 +2254,6 @@
       "duplicated-table-name": "Tên bảng trùng lặp",
       "invalid-schema": "Lược đồ không hợp lệ",
       "cannot-drop-the-last-column": "Không thể xóa cột cuối cùng",
-      "cannot-change-config": "Cấu hình cơ sở dữ liệu phải được thay đổi cùng với lược đồ",
       "duplicated-procedure-name": "Tên thủ tục trùng lặp",
       "invalid-procedure-name": "Tên thủ tục không hợp lệ",
       "duplicated-function-name": "Tên hàm trùng lặp",

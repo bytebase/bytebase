@@ -2254,7 +2254,6 @@
       "duplicated-table-name": "テーブル名が重複しています",
       "invalid-schema": "無効なスキーマ",
       "cannot-drop-the-last-column": "最後の列は削除できません",
-      "cannot-change-config": "データベースの設定はスキーマとともに変更する必要があります",
       "duplicated-procedure-name": "重複したプロシージャ名",
       "invalid-procedure-name": "無効なプロシージャ名です",
       "duplicated-function-name": "関数名が重複しています",
