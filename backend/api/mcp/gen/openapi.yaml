@@ -14872,13 +14872,6 @@ components:
               required:
                 - numberPayload
             - properties:
-                requiredColumnPayload:
-                  title: required_column_payload
-                  $ref: '#/components/schemas/bytebase.v1.SQLReviewRule.RequiredColumnRulePayload'
-              title: required_column_payload
-              required:
-                - requiredColumnPayload
-            - properties:
                 stringArrayPayload:
                   title: string_array_payload
                   $ref: '#/components/schemas/bytebase.v1.SQLReviewRule.StringArrayRulePayload'
@@ -14944,16 +14937,6 @@ components:
           title: number
           format: int32
       title: NumberRulePayload
-      additionalProperties: false
-    bytebase.v1.SQLReviewRule.RequiredColumnRulePayload:
-      type: object
-      properties:
-        columnList:
-          type: array
-          items:
-            type: string
-          title: column_list
-      title: RequiredColumnRulePayload
       additionalProperties: false
     bytebase.v1.SQLReviewRule.StringArrayRulePayload:
       type: object

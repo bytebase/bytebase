@@ -247,7 +247,6 @@
     - [SQLReviewRule.NamingCaseRulePayload](#bytebase-store-SQLReviewRule-NamingCaseRulePayload)
     - [SQLReviewRule.NamingRulePayload](#bytebase-store-SQLReviewRule-NamingRulePayload)
     - [SQLReviewRule.NumberRulePayload](#bytebase-store-SQLReviewRule-NumberRulePayload)
-    - [SQLReviewRule.RequiredColumnRulePayload](#bytebase-store-SQLReviewRule-RequiredColumnRulePayload)
     - [SQLReviewRule.StringArrayRulePayload](#bytebase-store-SQLReviewRule-StringArrayRulePayload)
     - [SQLReviewRule.StringRulePayload](#bytebase-store-SQLReviewRule-StringRulePayload)
   
@@ -4006,7 +4005,6 @@ NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
 | number_payload | [SQLReviewRule.NumberRulePayload](#bytebase-store-SQLReviewRule-NumberRulePayload) |  |  |
 | string_array_payload | [SQLReviewRule.StringArrayRulePayload](#bytebase-store-SQLReviewRule-StringArrayRulePayload) |  |  |
 | comment_convention_payload | [SQLReviewRule.CommentConventionRulePayload](#bytebase-store-SQLReviewRule-CommentConventionRulePayload) |  |  |
-| required_column_payload | [SQLReviewRule.RequiredColumnRulePayload](#bytebase-store-SQLReviewRule-RequiredColumnRulePayload) |  |  |
 | string_payload | [SQLReviewRule.StringRulePayload](#bytebase-store-SQLReviewRule-StringRulePayload) |  |  |
 | naming_case_payload | [SQLReviewRule.NamingCaseRulePayload](#bytebase-store-SQLReviewRule-NamingCaseRulePayload) |  |  |
 | engine | [Engine](#bytebase-store-Engine) |  |  |
@@ -4072,21 +4070,6 @@ Payload message types for SQL review rules
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | number | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-SQLReviewRule-RequiredColumnRulePayload"></a>
-
-### SQLReviewRule.RequiredColumnRulePayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| column_list | [string](#string) | repeated |  |
 
 
 

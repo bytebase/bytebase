@@ -232,19 +232,13 @@ export declare type SQLReviewRule = Message<"bytebase.v1.SQLReviewRule"> & {
     case: "commentConventionPayload";
   } | {
     /**
-     * @generated from field: bytebase.v1.SQLReviewRule.RequiredColumnRulePayload required_column_payload = 7;
-     */
-    value: SQLReviewRule_RequiredColumnRulePayload;
-    case: "requiredColumnPayload";
-  } | {
-    /**
-     * @generated from field: bytebase.v1.SQLReviewRule.StringRulePayload string_payload = 8;
+     * @generated from field: bytebase.v1.SQLReviewRule.StringRulePayload string_payload = 7;
      */
     value: SQLReviewRule_StringRulePayload;
     case: "stringPayload";
   } | {
     /**
-     * @generated from field: bytebase.v1.SQLReviewRule.NamingCaseRulePayload naming_case_payload = 9;
+     * @generated from field: bytebase.v1.SQLReviewRule.NamingCaseRulePayload naming_case_payload = 8;
      */
     value: SQLReviewRule_NamingCaseRulePayload;
     case: "namingCasePayload";
@@ -253,7 +247,7 @@ export declare type SQLReviewRule = Message<"bytebase.v1.SQLReviewRule"> & {
   /**
    * The database engine this rule applies to.
    *
-   * @generated from field: bytebase.v1.Engine engine = 10;
+   * @generated from field: bytebase.v1.Engine engine = 9;
    */
   engine: Engine;
 };
@@ -339,22 +333,6 @@ export declare type SQLReviewRule_CommentConventionRulePayload = Message<"byteba
  * Use `create(SQLReviewRule_CommentConventionRulePayloadSchema)` to create a new message.
  */
 export declare const SQLReviewRule_CommentConventionRulePayloadSchema: GenMessage<SQLReviewRule_CommentConventionRulePayload>;
-
-/**
- * @generated from message bytebase.v1.SQLReviewRule.RequiredColumnRulePayload
- */
-export declare type SQLReviewRule_RequiredColumnRulePayload = Message<"bytebase.v1.SQLReviewRule.RequiredColumnRulePayload"> & {
-  /**
-   * @generated from field: repeated string column_list = 1;
-   */
-  columnList: string[];
-};
-
-/**
- * Describes the message bytebase.v1.SQLReviewRule.RequiredColumnRulePayload.
- * Use `create(SQLReviewRule_RequiredColumnRulePayloadSchema)` to create a new message.
- */
-export declare const SQLReviewRule_RequiredColumnRulePayloadSchema: GenMessage<SQLReviewRule_RequiredColumnRulePayload>;
 
 /**
  * @generated from message bytebase.v1.SQLReviewRule.StringRulePayload

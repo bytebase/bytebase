@@ -84,24 +84,6 @@ func (x *SQLReviewRule_CommentConventionRulePayload) Equal(y *SQLReviewRule_Comm
 	return true
 }
 
-func (x *SQLReviewRule_RequiredColumnRulePayload) Equal(y *SQLReviewRule_RequiredColumnRulePayload) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.ColumnList) != len(y.ColumnList) {
-		return false
-	}
-	for i := 0; i < len(x.ColumnList); i++ {
-		if x.ColumnList[i] != y.ColumnList[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func (x *SQLReviewRule_StringRulePayload) Equal(y *SQLReviewRule_StringRulePayload) bool {
 	if x == y {
 		return true
@@ -151,9 +133,6 @@ func (x *SQLReviewRule) Equal(y *SQLReviewRule) bool {
 		return false
 	}
 	if !x.GetCommentConventionPayload().Equal(y.GetCommentConventionPayload()) {
-		return false
-	}
-	if !x.GetRequiredColumnPayload().Equal(y.GetRequiredColumnPayload()) {
 		return false
 	}
 	if !x.GetStringPayload().Equal(y.GetStringPayload()) {

@@ -13502,8 +13502,6 @@ components:
                     $ref: '#/components/schemas/SQLReviewRule_StringArrayRulePayload'
                 commentConventionPayload:
                     $ref: '#/components/schemas/SQLReviewRule_CommentConventionRulePayload'
-                requiredColumnPayload:
-                    $ref: '#/components/schemas/SQLReviewRule_RequiredColumnRulePayload'
                 stringPayload:
                     $ref: '#/components/schemas/SQLReviewRule_StringRulePayload'
                 namingCasePayload:
@@ -13568,13 +13566,6 @@ components:
                 number:
                     type: integer
                     format: int32
-        SQLReviewRule_RequiredColumnRulePayload:
-            type: object
-            properties:
-                columnList:
-                    type: array
-                    items:
-                        type: string
         SQLReviewRule_StringArrayRulePayload:
             type: object
             properties:

@@ -70,12 +70,6 @@ func ConvertToV1PBSQLReviewRules(ruleList []*storepb.SQLReviewRule) []*v1pb.SQLR
 					Value: payload.StringPayload.Value,
 				},
 			}
-		case *storepb.SQLReviewRule_RequiredColumnPayload:
-			v1Rule.Payload = &v1pb.SQLReviewRule_RequiredColumnPayload{
-				RequiredColumnPayload: &v1pb.SQLReviewRule_RequiredColumnRulePayload{
-					ColumnList: payload.RequiredColumnPayload.ColumnList,
-				},
-			}
 		}
 
 		rules = append(rules, v1Rule)
@@ -142,12 +136,6 @@ func ConvertToSQLReviewRules(rules []*v1pb.SQLReviewRule) ([]*storepb.SQLReviewR
 			storeRule.Payload = &storepb.SQLReviewRule_StringPayload{
 				StringPayload: &storepb.SQLReviewRule_StringRulePayload{
 					Value: payload.StringPayload.Value,
-				},
-			}
-		case *v1pb.SQLReviewRule_RequiredColumnPayload:
-			storeRule.Payload = &storepb.SQLReviewRule_RequiredColumnPayload{
-				RequiredColumnPayload: &storepb.SQLReviewRule_RequiredColumnRulePayload{
-					ColumnList: payload.RequiredColumnPayload.ColumnList,
 				},
 			}
 		}
