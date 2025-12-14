@@ -20,7 +20,6 @@ import {
   PolicySchema,
   PolicyType,
   QueryDataPolicySchema,
-  RolloutPolicy_Checkers_PlanCheckEnforcement,
   RolloutPolicySchema,
   UpdatePolicyRequestSchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -405,13 +404,6 @@ export const getEmptyRolloutPolicy = (
       value: create(RolloutPolicySchema, {
         automatic: false,
         roles: [],
-        checkers: {
-          requiredIssueApproval: true,
-          requiredStatusChecks: {
-            planCheckEnforcement:
-              RolloutPolicy_Checkers_PlanCheckEnforcement.ERROR_ONLY,
-          },
-        },
       }),
     },
   });
