@@ -166,8 +166,12 @@ const handleInsertSQL = async () => {
   const target = state.targets[0];
   if (!target) return;
 
-  const { database, baselineMetadata, baselineCatalog } = target;
-  const { metadata, catalog } = applyMetadataEdit(
+  const {
+    database,
+    baselineMetadata,
+    baselineCatalog: _baselineCatalog,
+  } = target;
+  const { metadata, catalog: _catalog } = applyMetadataEdit(
     database,
     target.metadata,
     target.catalog
@@ -177,9 +181,6 @@ const handleInsertSQL = async () => {
     database,
     sourceMetadata: baselineMetadata,
     targetMetadata: metadata,
-    sourceCatalog: baselineCatalog,
-    targetCatalog: catalog,
-    allowEmptyDiffDDLWithConfigChange: false,
   });
 
   if (result.statement) {

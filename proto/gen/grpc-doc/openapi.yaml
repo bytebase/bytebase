@@ -9894,10 +9894,6 @@ components:
                     type: string
                     description: The database engine of the schema.
                     format: enum
-                sourceCatalog:
-                    $ref: '#/components/schemas/DatabaseCatalog'
-                targetCatalog:
-                    $ref: '#/components/schemas/DatabaseCatalog'
         DiffMetadataResponse:
             type: object
             properties:
