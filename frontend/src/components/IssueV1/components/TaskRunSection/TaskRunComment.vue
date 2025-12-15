@@ -30,7 +30,6 @@ import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useCurrentProjectV1 } from "@/store";
-import { getProjectIdRolloutUidStageUidTaskUid } from "@/store/modules/v1/common";
 import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
 import {
   getDateForPbTimestampProtoEs,
@@ -141,9 +140,7 @@ const commentLink = computed((): CommentLink => {
     const waitingCause = taskRun.schedulerInfo?.waitingCause;
     if (waitingCause?.cause?.case === "task") {
       const task = waitingCause.cause.value;
-      const [, , stageUid, taskUid] = getProjectIdRolloutUidStageUidTaskUid(
-        task.task
-      );
+
       const link = `/${task.task}`;
       return {
         title: t("common.blocking-task"),
