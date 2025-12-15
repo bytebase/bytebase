@@ -264,7 +264,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, err
 	}
 
-	var commands []base.SingleSQL
+	var commands []base.Statement
 	var originalIndex []int32
 	var nonTransactionAndSetRoleStmts []string
 	var nonTransactionAndSetRoleStmtsIndex []int32
@@ -275,7 +275,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, err
 	}
 	for i, singleSQL := range singleSQLs {
-		commands = append(commands, base.SingleSQL{Text: singleSQL})
+		commands = append(commands, base.Statement{Text: singleSQL})
 		originalIndex = append(originalIndex, int32(i))
 	}
 
@@ -287,7 +287,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		isPlsql = true
 	}
 
-	var tmpCommands []base.SingleSQL
+	var tmpCommands []base.Statement
 	var tmpOriginalIndex []int32
 	for i, command := range commands {
 		switch {
@@ -325,7 +325,7 @@ func (d *Driver) executeInTransactionMode(
 	ctx context.Context,
 	owner string,
 	statement string,
-	commands []base.SingleSQL,
+	commands []base.Statement,
 	originalIndex []int32,
 	nonTransactionAndSetRoleStmts []string,
 	nonTransactionAndSetRoleStmtsIndex []int32,
@@ -472,7 +472,7 @@ func (d *Driver) executeInAutoCommitMode(
 	ctx context.Context,
 	owner string,
 	statement string,
-	commands []base.SingleSQL,
+	commands []base.Statement,
 	originalIndex []int32,
 	nonTransactionAndSetRoleStmts []string,
 	nonTransactionAndSetRoleStmtsIndex []int32,

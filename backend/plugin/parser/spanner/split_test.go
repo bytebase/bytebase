@@ -13,7 +13,7 @@ func TestSplitSQL(t *testing.T) {
 	statement := `SELECT * FROM users;
 	SELECT * FROM orders;
 	SELECT * FROM products;`
-	want := []base.SingleSQL{
+	want := []base.Statement{
 		{
 			Text:     "SELECT * FROM users;",
 			BaseLine: 0,

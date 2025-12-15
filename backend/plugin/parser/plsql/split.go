@@ -18,7 +18,7 @@ func init() {
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 // TODO(zp): Consolidate with split logic in ParsePLSQL?
-func SplitSQL(statement string) ([]base.SingleSQL, error) {
+func SplitSQL(statement string) ([]base.Statement, error) {
 	tree, stream, err := ParsePLSQLForStringsManipulation(statement)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 
 	byteOffsetStart := 0
 	prevStopTokenIndex := -1
-	var result []base.SingleSQL
+	var result []base.Statement
 	for _, item := range tree.GetChildren() {
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
 			text := ""
@@ -67,7 +67,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 				text = strings.TrimRightFunc(text, utils.IsSpaceOrSemicolon)
 			}
 
-			result = append(result, base.SingleSQL{
+			result = append(result, base.Statement{
 				Text: text,
 				Start: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
@@ -94,7 +94,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	return result, nil
 }
 
-func SplitSQLForCompletion(statement string) ([]base.SingleSQL, error) {
+func SplitSQLForCompletion(statement string) ([]base.Statement, error) {
 	tree, stream, err := ParsePLSQLForStringsManipulation(statement)
 	if err != nil {
 		return nil, err
@@ -107,14 +107,14 @@ func SplitSQLForCompletion(statement string) ([]base.SingleSQL, error) {
 		return nil, nil
 	}
 
-	var result []base.SingleSQL
+	var result []base.Statement
 	for _, item := range tree.GetChildren() {
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
 			if isCallStatement(item) && len(result) > 0 {
 				lastResult := result[len(result)-1]
 				stopIndex := stmt.GetStop().GetTokenIndex()
 				lastToken := tokens.Get(stopIndex)
-				result[len(result)-1] = base.SingleSQL{
+				result[len(result)-1] = base.Statement{
 					Text: lastResult.Text + tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
 					End: common.ConvertANTLRPositionToPosition(
 						&common.ANTLRPosition{
@@ -135,7 +135,7 @@ func SplitSQLForCompletion(statement string) ([]base.SingleSQL, error) {
 			lastLine = lastToken.GetLine()
 			lastColumn = lastToken.GetColumn()
 
-			result = append(result, base.SingleSQL{
+			result = append(result, base.Statement{
 				Text: tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
 				End: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{

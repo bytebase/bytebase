@@ -338,7 +338,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 				if queryContext.Limit > 0 {
 					limitedStatement = getStatementWithResultLimit(statement, queryContext.Limit)
 				}
-				return d.querySingleSQL(ctx, limitedStatement, queryContext)
+				return d.queryStatement(ctx, limitedStatement, queryContext)
 			}
 			if util.IsDDL(statement) {
 				op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
@@ -385,7 +385,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	return results, nil
 }
 
-func (d *Driver) querySingleSQL(ctx context.Context, statement string, queryContext db.QueryContext) (*v1pb.QueryResult, error) {
+func (d *Driver) queryStatement(ctx context.Context, statement string, queryContext db.QueryContext) (*v1pb.QueryResult, error) {
 	iter := d.client.Single().Query(ctx, spanner.NewStatement(statement))
 	defer iter.Stop()
 

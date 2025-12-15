@@ -79,10 +79,10 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 }
 
 // parseTiDBStatements is the ParseStatementsFunc for TiDB.
-// Returns []Statement with both text and AST populated.
-func parseTiDBStatements(statement string) ([]base.Statement, error) {
-	// First split to get SingleSQL with text and positions
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
+// Returns []ParsedStatement with both text and AST populated.
+func parseTiDBStatements(statement string) ([]base.ParsedStatement, error) {
+	// First split to get Statement with text and positions
+	stmts, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -93,26 +93,21 @@ func parseTiDBStatements(statement string) ([]base.Statement, error) {
 		return nil, err
 	}
 
-	// Combine: SingleSQL provides text/positions, AST provides parsed tree
-	var statements []base.Statement
+	// Combine: Statement provides text/positions, AST provides parsed tree
+	var result []base.ParsedStatement
 	astIndex := 0
-	for _, sql := range singleSQLs {
-		stmt := base.Statement{
-			Text:            sql.Text,
-			Empty:           sql.Empty,
-			StartPosition:   sql.Start,
-			EndPosition:     sql.End,
-			ByteOffsetStart: sql.ByteOffsetStart,
-			ByteOffsetEnd:   sql.ByteOffsetEnd,
+	for _, stmt := range stmts {
+		ps := base.ParsedStatement{
+			Statement: stmt,
 		}
-		if !sql.Empty && astIndex < len(asts) {
-			stmt.AST = asts[astIndex]
+		if !stmt.Empty && astIndex < len(asts) {
+			ps.AST = asts[astIndex]
 			astIndex++
 		}
-		statements = append(statements, stmt)
+		result = append(result, ps)
 	}
 
-	return statements, nil
+	return result, nil
 }
 
 func newTiDBParser() *tidbparser.Parser {
@@ -292,7 +287,7 @@ func ExtractDelimiter(stmt string) (string, error) {
 	return "", errors.Errorf("cannot extract delimiter from %q", stmt)
 }
 
-func hasDelimiter(statement string) (bool, []base.SingleSQL, error) {
+func hasDelimiter(statement string) (bool, []base.Statement, error) {
 	// use splitTiDBMultiSQL to check if the statement has delimiter
 	t := tokenizer.NewTokenizer(statement)
 	list, err := t.SplitTiDBMultiSQL()

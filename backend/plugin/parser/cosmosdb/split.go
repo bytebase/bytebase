@@ -17,7 +17,7 @@ func init() {
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 // Note: CosmosDB only supports single SELECT statements, so this returns the entire input as one statement.
-func SplitSQL(statement string) ([]base.SingleSQL, error) {
+func SplitSQL(statement string) ([]base.Statement, error) {
 	// CosmosDB doesn't support multiple statements or semicolon delimiters.
 	// The grammar only accepts: root: select EOF
 	if strings.TrimSpace(statement) == "" {
@@ -67,7 +67,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 		lastToken = tokens[len(tokens)-1]
 	}
 
-	return []base.SingleSQL{
+	return []base.Statement{
 		{
 			Text:     statement,
 			BaseLine: 0,

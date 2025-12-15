@@ -43,10 +43,10 @@ func toAST(results []*base.ParseResult) []base.AST {
 }
 
 // parseTSQLStatements is the ParseStatementsFunc for T-SQL (MSSQL).
-// Returns []Statement with both text and AST populated.
-func parseTSQLStatements(statement string) ([]base.Statement, error) {
-	// First split to get SingleSQL with text and positions
-	singleSQLs, err := SplitSQL(statement)
+// Returns []ParsedStatement with both text and AST populated.
+func parseTSQLStatements(statement string) ([]base.ParsedStatement, error) {
+	// First split to get Statement with text and positions
+	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -57,30 +57,25 @@ func parseTSQLStatements(statement string) ([]base.Statement, error) {
 		return nil, err
 	}
 
-	// Combine: SingleSQL provides text/positions, ParseResult provides AST
-	var statements []base.Statement
+	// Combine: Statement provides text/positions, ParseResult provides AST
+	var result []base.ParsedStatement
 	astIndex := 0
-	for _, sql := range singleSQLs {
-		stmt := base.Statement{
-			Text:            sql.Text,
-			Empty:           sql.Empty,
-			StartPosition:   sql.Start,
-			EndPosition:     sql.End,
-			ByteOffsetStart: sql.ByteOffsetStart,
-			ByteOffsetEnd:   sql.ByteOffsetEnd,
+	for _, stmt := range stmts {
+		ps := base.ParsedStatement{
+			Statement: stmt,
 		}
-		if !sql.Empty && astIndex < len(parseResults) {
-			stmt.AST = &base.ANTLRAST{
+		if !stmt.Empty && astIndex < len(parseResults) {
+			ps.AST = &base.ANTLRAST{
 				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
 				Tree:          parseResults[astIndex].Tree,
 				Tokens:        parseResults[astIndex].Tokens,
 			}
 			astIndex++
 		}
-		statements = append(statements, stmt)
+		result = append(result, ps)
 	}
 
-	return statements, nil
+	return result, nil
 }
 
 // ParseTSQL parses the given SQL and returns a list of ParseResult (one per statement).

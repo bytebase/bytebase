@@ -21,10 +21,10 @@ func init() {
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
-func SplitSQL(statement string) ([]base.SingleSQL, error) {
-	var list []base.SingleSQL
+func SplitSQL(statement string) ([]base.Statement, error) {
+	var list []base.Statement
 	err := applyMultiStatements(strings.NewReader(statement), func(sql string) error {
-		list = append(list, base.SingleSQL{
+		list = append(list, base.Statement{
 			Text:  sql,
 			End:   &storepb.Position{Line: 0, Column: 0},
 			Empty: false,

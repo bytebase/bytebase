@@ -21,7 +21,7 @@ type splitTestData struct {
 }
 
 type resData struct {
-	res []base.SingleSQL
+	res []base.Statement
 	err string
 }
 
@@ -54,7 +54,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			SELECT x;
 			`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text: `			CREATE PROCEDURE dorepeat(p1 INT)
 			BEGIN
@@ -198,7 +198,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			)
 			FROM t; SELECT * FROM t;`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text: `
 			SELECT
@@ -318,7 +318,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		{
 			statement: `select * from t;select "\"" where true;`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:  `select * from t;`,
 						Start: &storepb.Position{Line: 1, Column: 1},
@@ -337,7 +337,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			-- klsjdflkjaskldfj
 `,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:  "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n",
 						Start: &storepb.Position{Line: 3, Column: 1},
@@ -351,7 +351,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			statement: `select * from t;
 			/* sdfasdf */`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:  `select * from t;`,
 						End:   &storepb.Position{Line: 1, Column: 16},
@@ -372,7 +372,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			/* sdfasdf */;
 			select * from t;`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:  `select * from t;`,
 						Start: &storepb.Position{Line: 1, Column: 1},
@@ -409,7 +409,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 
 		END ;`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text: "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\n" +
 							`BEGIN
@@ -434,7 +434,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		{
 			statement: bigSQL,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:  bigSQL,
 						Start: &storepb.Position{Line: 1, Column: 1},
@@ -446,7 +446,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 		{
 			statement: "    CREATE TABLE t(a int); CREATE TABLE t1(a int)",
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:  "    CREATE TABLE t(a int);",
 						Start: &storepb.Position{Line: 1, Column: 5},
@@ -464,7 +464,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			statement: "CREATE TABLE `tech_Book`(id int, name varchar(255));\n" +
 				"INSERT INTO `tech_Book` VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');",
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:  "CREATE TABLE `tech_Book`(id int, name varchar(255));",
 						Start: &storepb.Position{Line: 1, Column: 1},
@@ -487,7 +487,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 						# this is the comment.
 						INSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:  "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));",
 						Start: &storepb.Position{Line: 3, Column: 7},
@@ -520,7 +520,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 						SELECT @x;
 						`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:  "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;",
 						Start: &storepb.Position{Line: 2, Column: 7},
@@ -562,7 +562,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 						SELECT @x;
 						`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:  "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\t/* This is a comment */\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;",
 						End:   &storepb.Position{Line: 8, Column: 7},
@@ -594,7 +594,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 			// test for Windows
 			statement: `CREATE TABLE t` + "\r\n" + `(a int);` + "\r\n" + `CREATE TABLE t1(b int);`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:     "CREATE TABLE t\r\n(a int);",
 						BaseLine: 0,
