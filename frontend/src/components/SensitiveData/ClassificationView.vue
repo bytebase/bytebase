@@ -19,7 +19,17 @@
         </span>
       </div>
 
-      <div class="flex items-center justify-end gap-2">
+      <div class="flex items-center justify-end gap-x-2">
+        <BBButtonConfirm
+          :tertiary="true"
+          :text="false"
+          :type="'DELETE'"
+          :ok-text="$t('common.delete')"
+          :require-confirm="true"
+          :hide-icon="true"
+          :button-text="$t('common.clear')"
+          @confirm="clearSetting"
+        />
         <NButton
           type="primary"
           :disabled="!allowEdit || !hasClassificationFeature"
@@ -50,6 +60,7 @@
         :support-file-extensions="['.json']"
         :max-file-size-in-mi-b="maxFileSizeInMiB"
         :disabled="!allowEdit || !hasClassificationFeature"
+        :show-no-data-placeholder="true"
         @on-select="onFileSelect"
       >
       </SingleFileSelector>
@@ -74,6 +85,7 @@ import { NButton, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBButtonConfirm } from "@/bbkit";
 import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import type {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
@@ -170,22 +182,28 @@ const saveChanges = async () => {
         "settings.sensitive-data.classification.override-confirm"
       ),
       onPositiveClick: async () => {
-        await upsertSetting();
+        await upsertSetting([state.classification]);
       },
     });
     return;
   }
-  await upsertSetting();
+  await upsertSetting([state.classification]);
 };
 
-const upsertSetting = async () => {
+const clearSetting = async () => {
+  await upsertSetting([]);
+};
+
+const upsertSetting = async (
+  configs: DataClassificationSetting_DataClassificationConfig[]
+) => {
   await settingStore.upsertSetting({
     name: Setting_SettingName.DATA_CLASSIFICATION,
     value: create(SettingSettingValueSchema, {
       value: {
         case: "dataClassification",
         value: create(DataClassificationSettingSchema, {
-          configs: [state.classification],
+          configs,
         }),
       },
     }),

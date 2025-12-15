@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col justify-start items-start gap-y-4">
+  <div class="w-full flex flex-col justify-start items-start gap-y-6">
     <div class="flex flex-col gap-y-2">
       <div class="font-medium">
         {{ $t("project.settings.issue-related.labels.self") }}
@@ -20,307 +20,305 @@
         @update:value="onLabelsUpdate"
       />
     </div>
-    <div class="w-full flex flex-col justify-start items-start gap-2">
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.allowModifyStatement"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
-            {{
-              $t("project.settings.issue-related.allow-modify-statement.self")
-            }}
-          </span>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
+    <div>
+      <div class="flex items-center gap-x-2">
+        <Switch
+          v-model:value="state.allowModifyStatement"
+          :text="true"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+        />
+        <span class="textlabel">
+          {{
+            $t("project.settings.issue-related.allow-modify-statement.self")
+          }}
+        </span>
+      </div>
+      <div class="mt-1 text-sm text-gray-400">
+        {{
+          $t(
+            "project.settings.issue-related.allow-modify-statement.description"
+          )
+        }}
+      </div>
+    </div>
+    <div>
+      <div class="flex items-center gap-x-2">
+        <Switch
+          v-model:value="state.autoResolveIssue"
+          :text="true"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+        />
+        <span class="textlabel">
+          {{ $t("project.settings.issue-related.auto-resolve-issue.self") }}
+        </span>
+      </div>
+      <div class="mt-1 text-sm text-gray-400">
+        {{
+          $t("project.settings.issue-related.auto-resolve-issue.description")
+        }}
+      </div>
+    </div>
+    <div>
+      <div class="flex items-center gap-x-2">
+        <Switch
+          v-model:value="state.forceIssueLabels"
+          :text="true"
+          :disabled="
+            !allowUpdateIssueProjectSetting ||
+            state.issueLabels.length === 0 ||
+            loading
+          "
+        />
+        <div class="textlabel flex items-center gap-x-2">
           {{
             $t(
-              "project.settings.issue-related.allow-modify-statement.description"
+              "project.settings.issue-related.labels.force-issue-labels.self"
             )
           }}
-        </div>
-      </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.autoResolveIssue"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
-            {{ $t("project.settings.issue-related.auto-resolve-issue.self") }}
-          </span>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{
-            $t("project.settings.issue-related.auto-resolve-issue.description")
-          }}
-        </div>
-      </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.forceIssueLabels"
-            :text="true"
-            :disabled="
-              !allowUpdateIssueProjectSetting ||
-              state.issueLabels.length === 0 ||
-              loading
-            "
-          />
-          <div class="textlabel flex items-center gap-x-2">
-            {{
-              $t(
-                "project.settings.issue-related.labels.force-issue-labels.self"
-              )
-            }}
-            <NTooltip v-if="allowEdit && state.issueLabels.length === 0">
-              <template #trigger>
-                <TriangleAlertIcon class="w-4 text-warning" />
-              </template>
-              {{
-                $t(
-                  "project.settings.issue-related.labels.force-issue-labels.warning"
-                )
-              }}
-            </NTooltip>
-          </div>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{
-            $t(
-              "project.settings.issue-related.labels.force-issue-labels.description"
-            )
-          }}
-        </div>
-      </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.enforceIssueTitle"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
-            {{ $t("project.settings.issue-related.enforce-issue-title.self") }}
-          </span>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{
-            $t("project.settings.issue-related.enforce-issue-title.description")
-          }}
-        </div>
-      </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.enforceSqlReview"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
-            {{ $t("project.settings.issue-related.enforce-sql-review.self") }}
-          </span>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{
-            $t("project.settings.issue-related.enforce-sql-review.description")
-          }}
-        </div>
-      </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.allowSelfApproval"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
-            {{ $t("project.settings.issue-related.allow-self-approval.self") }}
-          </span>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{
-            $t("project.settings.issue-related.allow-self-approval.description")
-          }}
-        </div>
-      </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.requireIssueApproval"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
-            {{
-              $t("project.settings.issue-related.require-issue-approval.self")
-            }}
-          </span>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{
-            $t(
-              "project.settings.issue-related.require-issue-approval.description"
-            )
-          }}
-        </div>
-      </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.requirePlanCheckNoError"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
+          <NTooltip v-if="allowEdit && state.issueLabels.length === 0">
+            <template #trigger>
+              <TriangleAlertIcon class="w-4 text-warning" />
+            </template>
             {{
               $t(
-                "project.settings.issue-related.require-plan-check-no-error.self"
+                "project.settings.issue-related.labels.force-issue-labels.warning"
               )
             }}
-          </span>
+          </NTooltip>
         </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
+      </div>
+      <div class="mt-1 text-sm text-gray-400">
+        {{
+          $t(
+            "project.settings.issue-related.labels.force-issue-labels.description"
+          )
+        }}
+      </div>
+    </div>
+    <div>
+      <div class="flex items-center gap-x-2">
+        <Switch
+          v-model:value="state.enforceIssueTitle"
+          :text="true"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+        />
+        <span class="textlabel">
+          {{ $t("project.settings.issue-related.enforce-issue-title.self") }}
+        </span>
+      </div>
+      <div class="mt-1 text-sm text-gray-400">
+        {{
+          $t("project.settings.issue-related.enforce-issue-title.description")
+        }}
+      </div>
+    </div>
+    <div>
+      <div class="flex items-center gap-x-2">
+        <Switch
+          v-model:value="state.enforceSqlReview"
+          :text="true"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+        />
+        <span class="textlabel">
+          {{ $t("project.settings.issue-related.enforce-sql-review.self") }}
+        </span>
+      </div>
+      <div class="mt-1 text-sm text-gray-400">
+        {{
+          $t("project.settings.issue-related.enforce-sql-review.description")
+        }}
+      </div>
+    </div>
+    <div>
+      <div class="flex items-center gap-x-2">
+        <Switch
+          v-model:value="state.allowSelfApproval"
+          :text="true"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+        />
+        <span class="textlabel">
+          {{ $t("project.settings.issue-related.allow-self-approval.self") }}
+        </span>
+      </div>
+      <div class="mt-1 text-sm text-gray-400">
+        {{
+          $t("project.settings.issue-related.allow-self-approval.description")
+        }}
+      </div>
+    </div>
+    <div>
+      <div class="flex items-center gap-x-2">
+        <Switch
+          v-model:value="state.requireIssueApproval"
+          :text="true"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+        />
+        <span class="textlabel">
+          {{
+            $t("project.settings.issue-related.require-issue-approval.self")
+          }}
+        </span>
+      </div>
+      <div class="mt-1 text-sm text-gray-400">
+        {{
+          $t(
+            "project.settings.issue-related.require-issue-approval.description"
+          )
+        }}
+      </div>
+    </div>
+    <div>
+      <div class="flex items-center gap-x-2">
+        <Switch
+          v-model:value="state.requirePlanCheckNoError"
+          :text="true"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+        />
+        <span class="textlabel">
           {{
             $t(
-              "project.settings.issue-related.require-plan-check-no-error.description"
+              "project.settings.issue-related.require-plan-check-no-error.self"
             )
           }}
-        </div>
+        </span>
       </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.autoEnableBackup"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
-            {{ $t("project.settings.issue-related.auto-enable-backup.self") }}
-          </span>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{
-            $t("project.settings.issue-related.auto-enable-backup.description")
-          }}
-        </div>
+      <div class="mt-1 text-sm text-gray-400">
+        {{
+          $t(
+            "project.settings.issue-related.require-plan-check-no-error.description"
+          )
+        }}
       </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.skipBackupErrors"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
-            {{ $t("project.settings.issue-related.skip-backup-errors.self") }}
-          </span>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{
-            $t("project.settings.issue-related.skip-backup-errors.description")
-          }}
-        </div>
+    </div>
+    <div>
+      <div class="flex items-center gap-x-2">
+        <Switch
+          v-model:value="state.autoEnableBackup"
+          :text="true"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+        />
+        <span class="textlabel">
+          {{ $t("project.settings.issue-related.auto-enable-backup.self") }}
+        </span>
       </div>
-      <div>
-        <div class="flex items-center gap-x-2">
-          <Switch
-            v-model:value="state.postgresDatabaseTenantMode"
-            :text="true"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-          />
-          <span class="textlabel">
-            {{
-              $t(
-                "project.settings.issue-related.postgres-database-tenant-mode.self"
-              )
-            }}
-          </span>
-        </div>
-        <div class="mt-1 mb-3 text-sm text-gray-400">
+      <div class="mt-1 text-sm text-gray-400">
+        {{
+          $t("project.settings.issue-related.auto-enable-backup.description")
+        }}
+      </div>
+    </div>
+    <div>
+      <div class="flex items-center gap-x-2">
+        <Switch
+          v-model:value="state.skipBackupErrors"
+          :text="true"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+        />
+        <span class="textlabel">
+          {{ $t("project.settings.issue-related.skip-backup-errors.self") }}
+        </span>
+      </div>
+      <div class="mt-1 text-sm text-gray-400">
+        {{
+          $t("project.settings.issue-related.skip-backup-errors.description")
+        }}
+      </div>
+    </div>
+    <div>
+      <div class="flex items-center gap-x-2">
+        <Switch
+          v-model:value="state.postgresDatabaseTenantMode"
+          :text="true"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+        />
+        <span class="textlabel">
           {{
             $t(
-              "project.settings.issue-related.postgres-database-tenant-mode.description"
+              "project.settings.issue-related.postgres-database-tenant-mode.self"
             )
           }}
-        </div>
+        </span>
       </div>
-      <div>
-        <p class="">
-          <span class="textlabel">
-            {{ $t("project.settings.issue-related.max-retries.self") }}
-          </span>
-        </p>
-        <p class="mb-3 text-sm text-gray-400">
-          {{ $t("project.settings.issue-related.max-retries.description") }}
-        </p>
-        <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
-          <NInputNumber
-            :value="state.executionRetryPolicy?.maximumRetries ?? 0"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-            class="w-60"
-            :min="0"
-            :precision="0"
-            @update:value="handleInput"
-          >
-            <template #suffix> Times </template>
-          </NInputNumber>
-        </div>
+      <div class="mt-1 text-sm text-gray-400">
+        {{
+          $t(
+            "project.settings.issue-related.postgres-database-tenant-mode.description"
+          )
+        }}
       </div>
-      <div>
-        <p class="">
-          <span class="textlabel">
-            {{ $t("project.settings.issue-related.ci-sampling-size.self") }}
-          </span>
-        </p>
-        <p class="mb-3 text-sm text-gray-400">
-          {{
-            $t("project.settings.issue-related.ci-sampling-size.description")
-          }}
-        </p>
-        <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
-          <NInputNumber
-            :value="state.ciSamplingSize"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-            class="w-60"
-            :min="0"
-            :precision="0"
-            @update:value="handleCiSamplingSizeInput"
-          >
-          </NInputNumber>
-        </div>
+    </div>
+    <div>
+      <p class="">
+        <span class="textlabel">
+          {{ $t("project.settings.issue-related.max-retries.self") }}
+        </span>
+      </p>
+      <p class="mb-3 text-sm text-gray-400">
+        {{ $t("project.settings.issue-related.max-retries.description") }}
+      </p>
+      <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
+        <NInputNumber
+          :value="state.executionRetryPolicy?.maximumRetries ?? 0"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+          class="w-60"
+          :min="0"
+          :precision="0"
+          @update:value="handleInput"
+        >
+          <template #suffix> Times </template>
+        </NInputNumber>
       </div>
-      <div>
-        <p class="">
-          <span class="textlabel">
-            {{
-              $t(
-                "project.settings.issue-related.parallel_tasks_per_rollout.self"
-              )
-            }}
-          </span>
-        </p>
-        <p class="mb-3 text-sm text-gray-400">
+    </div>
+    <div>
+      <p class="">
+        <span class="textlabel">
+          {{ $t("project.settings.issue-related.ci-sampling-size.self") }}
+        </span>
+      </p>
+      <p class="mb-3 text-sm text-gray-400">
+        {{
+          $t("project.settings.issue-related.ci-sampling-size.description")
+        }}
+      </p>
+      <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
+        <NInputNumber
+          :value="state.ciSamplingSize"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+          class="w-60"
+          :min="0"
+          :precision="0"
+          @update:value="handleCiSamplingSizeInput"
+        >
+        </NInputNumber>
+      </div>
+    </div>
+    <div>
+      <p class="">
+        <span class="textlabel">
           {{
             $t(
-              "project.settings.issue-related.parallel_tasks_per_rollout.description"
+              "project.settings.issue-related.parallel_tasks_per_rollout.self"
             )
           }}
-        </p>
-        <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
-          <NInputNumber
-            :value="state.parallelTasksPerRollout"
-            :disabled="!allowUpdateIssueProjectSetting || loading"
-            class="w-60"
-            :min="0"
-            :precision="0"
-            @update:value="handleParallelTasksPerRolloutInput"
-          >
-          </NInputNumber>
-        </div>
+        </span>
+      </p>
+      <p class="mb-3 text-sm text-gray-400">
+        {{
+          $t(
+            "project.settings.issue-related.parallel_tasks_per_rollout.description"
+          )
+        }}
+      </p>
+      <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
+        <NInputNumber
+          :value="state.parallelTasksPerRollout"
+          :disabled="!allowUpdateIssueProjectSetting || loading"
+          class="w-60"
+          :min="0"
+          :precision="0"
+          @update:value="handleParallelTasksPerRolloutInput"
+        >
+        </NInputNumber>
       </div>
     </div>
   </div>
