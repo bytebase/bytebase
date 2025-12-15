@@ -1062,27 +1062,51 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 func getRules(txn *sql.Tx) (map[db.TableKey][]*storepb.RuleMetadata, error) {
 	ruleMap := make(map[db.TableKey][]*storepb.RuleMetadata)
 
+	// Use CTE to avoid calling pg_get_ruledef multiple times per row.
+	// Extract condition from definition using string functions instead of pg_get_expr,
+	// because pg_get_expr fails with "expression contains variables of more than one relation"
+	// when the rule condition references both the table and NEW/OLD pseudo-relations.
 	query := `
-		SELECT 
-			n.nspname AS schema_name,
-			c.relname AS table_name,
-			r.rulename AS rule_name,
-			CASE r.ev_type
+		WITH rule_data AS (
+			SELECT
+				n.nspname AS schema_name,
+				c.relname AS table_name,
+				r.rulename AS rule_name,
+				r.ev_type,
+				r.is_instead,
+				r.ev_enabled,
+				pg_get_ruledef(r.oid, true) AS definition
+			FROM pg_rewrite r
+			JOIN pg_class c ON c.oid = r.ev_class
+			JOIN pg_namespace n ON n.oid = c.relnamespace
+			WHERE r.rulename NOT IN ('_RETURN', '_NOTHING')
+				AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+		)
+		SELECT
+			schema_name,
+			table_name,
+			rule_name,
+			CASE ev_type
 				WHEN '1' THEN 'SELECT'
 				WHEN '2' THEN 'UPDATE'
 				WHEN '3' THEN 'INSERT'
 				WHEN '4' THEN 'DELETE'
 			END AS event,
-			r.is_instead,
-			r.ev_enabled != 'D' AS is_enabled,
-			pg_get_expr(r.ev_qual, r.ev_class, true) AS condition,
-			pg_get_ruledef(r.oid, true) AS definition
-		FROM pg_rewrite r
-		JOIN pg_class c ON c.oid = r.ev_class
-		JOIN pg_namespace n ON n.oid = c.relnamespace
-		WHERE r.rulename NOT IN ('_RETURN', '_NOTHING')
-			AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
-		ORDER BY n.nspname, c.relname, r.rulename;`
+			is_instead,
+			ev_enabled != 'D' AS is_enabled,
+			CASE
+				WHEN position(' WHERE ' IN definition) > 0
+					AND position(' WHERE ' IN definition) < position(' DO ' IN definition) THEN
+					trim(substring(
+						definition
+						FROM position(' WHERE ' IN definition) + 7
+						FOR position(' DO ' IN definition) - position(' WHERE ' IN definition) - 7
+					))
+				ELSE NULL
+			END AS condition,
+			definition
+		FROM rule_data
+		ORDER BY schema_name, table_name, rule_name;`
 
 	rows, err := txn.Query(query)
 	if err != nil {
