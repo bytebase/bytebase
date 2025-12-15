@@ -85,19 +85,11 @@ export const useSQLEditorTreeByEnvironment = (
     { deep: true }
   );
 
-  // fetchMultiPageDatabases will fetch databases with multi-pages (maximum 5).
-  // The filteredDatabaseList will filter databases by the permission,
-  // so we may need to fetch database for multi-pages to avoid empty databases in the UI.
-  const fetchMultiPageDatabases = async (filter?: DatabaseFilter) => {
-    let pageToken = fetchDataState.value.nextPageToken;
-    const response: ComposedDatabase[] = [];
+  const fetchDatabases = useDebounceFn(async (filter?: DatabaseFilter) => {
+    fetchDataState.value.loading = true;
+    const pageToken = fetchDataState.value.nextPageToken;
 
-    // Try to fetch 5 pages.
-    // TODO: support list databases with specific permissions via the API.
-    let i = 5;
-    while (i > 0) {
-      i--;
-
+    try {
       const { databases, nextPageToken } = await databaseStore.fetchDatabases({
         parent: project.value,
         pageToken,
@@ -107,38 +99,6 @@ export const useSQLEditorTreeByEnvironment = (
           environment,
         },
       });
-      response.push(
-        ...databases.filter((db) => {
-          const dbEnv = db.effectiveEnvironment || unknownEnv.name;
-          return dbEnv === environment;
-        })
-      );
-      pageToken = nextPageToken;
-
-      if (!pageToken) {
-        break;
-      }
-      if (showMissingQueryDatabases.value) {
-        break;
-      }
-      if (databases.some((db) => isDatabaseV1Queryable(db))) {
-        break;
-      }
-    }
-
-    return {
-      nextPageToken: pageToken,
-      databases: response,
-    };
-  };
-
-  const fetchDatabases = useDebounceFn(async (filter?: DatabaseFilter) => {
-    fetchDataState.value.loading = true;
-    const pageToken = fetchDataState.value.nextPageToken;
-
-    try {
-      const { databases, nextPageToken } =
-        await fetchMultiPageDatabases(filter);
       if (pageToken) {
         databaseList.value.push(...databases);
       } else {
