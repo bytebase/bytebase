@@ -6,7 +6,7 @@ const STORAGE_KEY = "bb.issue.layout";
 
 // When releasing a new version as default, increment this number.
 // This helps to reset user preferences to the new default layout.
-const CURRENT_DEFAULT_VERSION = 2;
+const CURRENT_DEFAULT_VERSION = 1;
 
 // Send event to hub.bytebase.com when switching to legacy layout.
 async function trackLayoutSwitch() {
