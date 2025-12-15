@@ -41,18 +41,10 @@ func (s *SheetMessage) GetSha256Hex() string {
 
 // FindSheetMessage is the API message for finding sheets.
 type FindSheetMessage struct {
-	UID *int
-
-	// Used to find the creator's sheet list.
-	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
-	// It does not make sense to set both `CreatorID` and `ExcludedCreatorID`.
-	Creator *string
-
+	ProjectID *string
+	UID       *int
 	// LoadFull is used if we want to load the full sheet.
 	LoadFull bool
-
-	// Related fields
-	ProjectID *string
 }
 
 // PatchSheetMessage is the message to patch a sheet.
@@ -133,9 +125,6 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 
 	if v := find.UID; v != nil {
 		q.And("sheet.id = ?", *v)
-	}
-	if v := find.Creator; v != nil {
-		q.And("sheet.creator = ?", *v)
 	}
 	if v := find.ProjectID; v != nil {
 		q.And("sheet.project = ?", *v)

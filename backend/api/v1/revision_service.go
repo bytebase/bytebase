@@ -159,13 +159,6 @@ func (s *RevisionService) CreateRevision(
 		}
 	}
 
-	if request.Revision.Issue != "" {
-		_, _, err := common.GetProjectIDIssueUID(request.Revision.Issue)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get issue from %q", request.Revision.Issue))
-		}
-	}
-
 	if request.Revision.Type == v1pb.Revision_TYPE_UNSPECIFIED {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("revision.type cannot be TYPE_UNSPECIFIED"))
 	}
@@ -293,21 +286,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, sheetProjectID)
 	}
 
-	taskRunName, issueName := revision.Payload.TaskRun, ""
-	if taskRunName != "" {
-		_, rolloutUID, _, _, _, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRunName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get rollout UID from %q", taskRunName)
-		}
-		issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PipelineID: &rolloutUID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get issue by rollout %q", rolloutUID)
-		}
-		if issue != nil {
-			issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
-		}
-	}
-
+	taskRunName := revision.Payload.TaskRun
 	r := &v1pb.Revision{
 		Name:          fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
 		Release:       revision.Payload.Release,
@@ -318,7 +297,6 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		StatementSize: sheet.Size,
 		Version:       revision.Version,
 		File:          revision.Payload.File,
-		Issue:         issueName,
 		TaskRun:       taskRunName,
 		Type:          convertToRevisionType(revision.Payload.Type),
 	}

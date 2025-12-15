@@ -144,10 +144,7 @@ const commentLink = computed((): CommentLink => {
       const [, , stageUid, taskUid] = getProjectIdRolloutUidStageUidTaskUid(
         task.task
       );
-      const link =
-        task.issue !== ""
-          ? `/${task.issue}?stage=${stageUid}&task=${taskUid}`
-          : `/${task.task}`;
+      const link = `/${task.task}`;
       return {
         title: t("common.blocking-task"),
         link: link,

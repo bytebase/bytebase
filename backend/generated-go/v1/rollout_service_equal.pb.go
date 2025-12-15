@@ -503,9 +503,6 @@ func (x *TaskRun_SchedulerInfo_WaitingCause_Task) Equal(y *TaskRun_SchedulerInfo
 	if x.Task != y.Task {
 		return false
 	}
-	if x.Issue != y.Issue {
-		return false
-	}
 	return true
 }
 

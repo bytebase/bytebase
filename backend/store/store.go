@@ -19,7 +19,6 @@ type Store struct {
 
 	// Cache.
 	Secret               string
-	userIDCache          *lru.Cache[int, *UserMessage]
 	userEmailCache       *lru.Cache[string, *UserMessage]
 	instanceCache        *lru.Cache[string, *InstanceMessage]
 	databaseCache        *lru.Cache[string, *DatabaseMessage]
@@ -29,7 +28,6 @@ type Store struct {
 	issueByPipelineCache *lru.Cache[int, *IssueMessage]
 	pipelineCache        *lru.Cache[int, *PipelineMessage]
 	settingCache         *lru.Cache[storepb.SettingName, *SettingMessage]
-	idpCache             *lru.Cache[string, *IdentityProviderMessage]
 	databaseGroupCache   *lru.Cache[string, *DatabaseGroupMessage]
 	rolesCache           *lru.Cache[string, *RoleMessage]
 	groupCache           *lru.Cache[string, *GroupMessage]
@@ -43,10 +41,6 @@ type Store struct {
 // New creates a new instance of Store.
 // pgURL can be either a direct PostgreSQL URL or a file path containing the URL.
 func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
-	userIDCache, err := lru.New[int, *UserMessage](32768)
-	if err != nil {
-		return nil, err
-	}
 	userEmailCache, err := lru.New[string, *UserMessage](32768)
 	if err != nil {
 		return nil, err
@@ -83,23 +77,11 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	idpCache, err := lru.New[string, *IdentityProviderMessage](4)
-	if err != nil {
-		return nil, err
-	}
-	databaseGroupCache, err := lru.New[string, *DatabaseGroupMessage](1024)
-	if err != nil {
-		return nil, err
-	}
 	rolesCache, err := lru.New[string, *RoleMessage](64)
 	if err != nil {
 		return nil, err
 	}
 	sheetCache, err := lru.New[int, *SheetMessage](64)
-	if err != nil {
-		return nil, err
-	}
-	sheetStatementCache, err := lru.New[int, string](10)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +105,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		enableCache:   enableCache,
 
 		// Cache.
-		userIDCache:          userIDCache,
 		userEmailCache:       userEmailCache,
 		instanceCache:        instanceCache,
 		databaseCache:        databaseCache,
@@ -133,11 +114,8 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		issueByPipelineCache: issueByPipelineCache,
 		pipelineCache:        pipelineCache,
 		settingCache:         settingCache,
-		idpCache:             idpCache,
-		databaseGroupCache:   databaseGroupCache,
 		rolesCache:           rolesCache,
 		sheetCache:           sheetCache,
-		sheetStatementCache:  sheetStatementCache,
 		dbMetadataCache:      dbMetadataCache,
 		groupCache:           groupCache,
 	}
@@ -159,7 +137,6 @@ func (s *Store) DeleteCache() {
 	s.settingCache.Purge()
 	s.policyCache.Purge()
 	s.userEmailCache.Purge()
-	s.userIDCache.Purge()
 }
 
 func getInstanceCacheKey(instanceID string) string {

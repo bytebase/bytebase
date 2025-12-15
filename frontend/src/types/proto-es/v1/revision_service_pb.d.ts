@@ -275,15 +275,6 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
   statementSize: bigint;
 
   /**
-   * The issue associated with the revision.
-   * Can be empty.
-   * Format: projects/{project}/issues/{issue}
-   *
-   * @generated from field: string issue = 12;
-   */
-  issue: string;
-
-  /**
    * The task run associated with the revision.
    * Can be empty.
    * Format:

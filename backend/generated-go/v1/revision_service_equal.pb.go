@@ -167,9 +167,6 @@ func (x *Revision) Equal(y *Revision) bool {
 	if x.StatementSize != y.StatementSize {
 		return false
 	}
-	if x.Issue != y.Issue {
-		return false
-	}
 	if x.TaskRun != y.TaskRun {
 		return false
 	}

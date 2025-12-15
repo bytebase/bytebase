@@ -14381,13 +14381,6 @@ components:
           title: statement_size
           format: int64
           description: The size of the statement in bytes.
-        issue:
-          type: string
-          title: issue
-          description: |-
-            The issue associated with the revision.
-             Can be empty.
-             Format: projects/{project}/issues/{issue}
         taskRun:
           type: string
           title: task_run
@@ -16668,10 +16661,6 @@ components:
           type: string
           title: task
           description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}'
-        issue:
-          type: string
-          title: issue
-          description: 'Format: projects/{project}/issues/{issue}'
       title: Task
       additionalProperties: false
       description: Information about a blocking task.
