@@ -27,5 +27,5 @@ SET payload = jsonb_set(
     '[]'::jsonb
   )
 )
-WHERE payload->'sqlReviewRules' IS NOT NULL
+WHERE payload->>'sqlReviewRules' IS NOT NULL
   AND jsonb_array_length(payload->'sqlReviewRules') > 0;
