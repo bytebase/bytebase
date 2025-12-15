@@ -186,17 +186,17 @@ func getSheetCommandsForMSSQL(statement string) []*storepb.Range {
 	return sheetCommands
 }
 
-// StatementResult holds the cached parsing results with the unified Statement type.
+// StatementResult holds the cached parsing results with the unified ParsedStatement type.
 type StatementResult struct {
 	sync.Mutex
-	statements []base.Statement
+	statements []base.ParsedStatement
 	advices    []*storepb.Advice
 }
 
 // GetStatementsForChecks gets the unified Statements (with both text and AST) with caching.
-// This is the new unified API that returns complete Statement objects.
+// This is the new unified API that returns complete ParsedStatement objects.
 // Use this for new code that needs both text and AST information.
-func (sm *Manager) GetStatementsForChecks(dbType storepb.Engine, statement string) ([]base.Statement, []*storepb.Advice) {
+func (sm *Manager) GetStatementsForChecks(dbType storepb.Engine, statement string) ([]base.ParsedStatement, []*storepb.Advice) {
 	var result *StatementResult
 	h := xxh3.HashString(statement)
 	key := astHashKey{hash: h, engine: dbType}

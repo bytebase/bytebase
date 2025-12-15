@@ -34,7 +34,7 @@ var (
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
 type ExtractChangedResourcesFunc func(string, string, *model.DatabaseMetadata, []AST, string) (*ChangeSummary, error)
-type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
+type SplitMultiSQLFunc func(string) ([]Statement, error)
 type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error)
 type DiagnoseFunc func(ctx context.Context, dCtx DiagnoseContext, statement string) ([]Diagnostic, error)
 type StatementRangeFunc func(ctx context.Context, sCtx StatementRangeContext, statement string) ([]Range, error)
@@ -52,9 +52,9 @@ type GenerateRestoreSQLFunc func(ctx context.Context, rCtx RestoreContext, state
 // Parser packages can return *ANTLRAST for ANTLR-based parsers or their own concrete types.
 type ParseFunc func(statement string) ([]AST, error)
 
-// ParseStatementsFunc is the interface for parsing SQL statements and returning []Statement.
-// This is the new unified parsing function that returns complete Statement objects.
-type ParseStatementsFunc func(statement string) ([]Statement, error)
+// ParseStatementsFunc is the interface for parsing SQL statements and returning []ParsedStatement.
+// This is the new unified parsing function that returns complete ParsedStatement objects with AST.
+type ParseStatementsFunc func(statement string) ([]ParsedStatement, error)
 
 // GetStatementTypesFunc returns the types of statements in the ASTs.
 // Statement types include: INSERT, UPDATE, DELETE (DML), CREATE_TABLE, ALTER_TABLE, DROP_TABLE, etc. (DDL).
@@ -111,7 +111,7 @@ func RegisterSplitterFunc(engine storepb.Engine, f SplitMultiSQLFunc) {
 }
 
 // SplitMultiSQL splits statement into a slice of the single SQL.
-func SplitMultiSQL(engine storepb.Engine, statement string) ([]SingleSQL, error) {
+func SplitMultiSQL(engine storepb.Engine, statement string) ([]Statement, error) {
 	f, ok := splitters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
@@ -291,9 +291,9 @@ func RegisterParseStatementsFunc(engine storepb.Engine, f ParseStatementsFunc) {
 	statementParsers[engine] = f
 }
 
-// ParseStatements parses the SQL statement and returns Statement objects with both text and AST.
+// ParseStatements parses the SQL statement and returns ParsedStatement objects with both text and AST.
 // This is the new unified parsing function.
-func ParseStatements(engine storepb.Engine, statement string) ([]Statement, error) {
+func ParseStatements(engine storepb.Engine, statement string) ([]ParsedStatement, error) {
 	f, ok := statementParsers[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported for ParseStatements", engine)

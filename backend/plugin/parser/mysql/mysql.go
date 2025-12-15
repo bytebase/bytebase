@@ -52,10 +52,10 @@ func toAST(results []*base.ParseResult) []base.AST {
 }
 
 // parseMySQLStatements is the ParseStatementsFunc for MySQL, MariaDB, and OceanBase.
-// Returns []Statement with both text and AST populated.
-func parseMySQLStatements(statement string) ([]base.Statement, error) {
-	// First split to get SingleSQL with text and positions
-	singleSQLs, err := SplitSQL(statement)
+// Returns []ParsedStatement with both text and AST populated.
+func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
+	// First split to get Statement with text and positions
+	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -66,31 +66,26 @@ func parseMySQLStatements(statement string) ([]base.Statement, error) {
 		return nil, err
 	}
 
-	// Combine: SingleSQL provides text/positions, ParseResult provides AST
+	// Combine: Statement provides text/positions, ParseResult provides AST
 	// Note: parseResults may have fewer items if some statements are empty
-	var statements []base.Statement
+	var result []base.ParsedStatement
 	astIndex := 0
-	for _, sql := range singleSQLs {
-		stmt := base.Statement{
-			Text:            sql.Text,
-			Empty:           sql.Empty,
-			StartPosition:   sql.Start,
-			EndPosition:     sql.End,
-			ByteOffsetStart: sql.ByteOffsetStart,
-			ByteOffsetEnd:   sql.ByteOffsetEnd,
+	for _, stmt := range stmts {
+		ps := base.ParsedStatement{
+			Statement: stmt,
 		}
-		if !sql.Empty && astIndex < len(parseResults) {
-			stmt.AST = &base.ANTLRAST{
+		if !stmt.Empty && astIndex < len(parseResults) {
+			ps.AST = &base.ANTLRAST{
 				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
 				Tree:          parseResults[astIndex].Tree,
 				Tokens:        parseResults[astIndex].Tokens,
 			}
 			astIndex++
 		}
-		statements = append(statements, stmt)
+		result = append(result, ps)
 	}
 
-	return statements, nil
+	return result, nil
 }
 
 // ParseMySQL parses the given SQL statement and returns the AST.
@@ -348,7 +343,7 @@ func ExtractDelimiter(stmt string) (string, error) {
 	return "", errors.Errorf("cannot extract delimiter from %q", stmt)
 }
 
-func hasDelimiter(statement string) (bool, []base.SingleSQL, error) {
+func hasDelimiter(statement string) (bool, []base.Statement, error) {
 	// use splitTiDBMultiSQL to check if the statement has delimiter
 	t := tokenizer.NewTokenizer(statement)
 	list, err := t.SplitTiDBMultiSQL()

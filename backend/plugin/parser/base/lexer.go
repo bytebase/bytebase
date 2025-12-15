@@ -65,7 +65,7 @@ func IsEmpty(tokens []antlr.Token, semi int) bool {
 //   - statement: The original SQL statement string (used for position conversion)
 //
 // Returns:
-//   - A slice of SingleSQL, each representing one statement with its text, position, and metadata
+//   - A slice of Statement, each representing one statement with its text, position, and metadata
 //
 // Example usage:
 //
@@ -73,10 +73,10 @@ func IsEmpty(tokens []antlr.Token, semi int) bool {
 //	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 //	stream.Fill()
 //	return SplitSQLByLexer(stream, parser.SnowflakeLexerSEMI, statement)
-func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int, statement string) ([]SingleSQL, error) {
+func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int, statement string) ([]Statement, error) {
 	tokens := stream.GetAllTokens()
 	var buf []antlr.Token
-	var sqls []SingleSQL
+	var sqls []Statement
 
 	for i, token := range tokens {
 		// Collect all tokens except the last one (EOF)
@@ -103,7 +103,7 @@ func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int, stateme
 			// Get the position of the first default channel token for Start position
 			antlrPosition := FirstDefaultChannelTokenPosition(buf)
 
-			sqls = append(sqls, SingleSQL{
+			sqls = append(sqls, Statement{
 				Text:     bufStr.String(),
 				BaseLine: buf[0].GetLine() - 1, // BaseLine is the offset of the first token
 				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{

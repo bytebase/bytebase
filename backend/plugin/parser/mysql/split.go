@@ -19,7 +19,7 @@ func init() {
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
-func SplitSQL(statement string) ([]base.SingleSQL, error) {
+func SplitSQL(statement string) ([]base.Statement, error) {
 	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
@@ -32,8 +32,8 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	return list, nil
 }
 
-func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([]base.SingleSQL, error) {
-	var result []base.SingleSQL
+func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([]base.Statement, error) {
+	var result []base.Statement
 	delimiter := ";"
 	tokens := stream.GetAllTokens()
 	start := 0
@@ -59,7 +59,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : i+1])
 			// From antlr4, the line is ONE based, and the column is ZERO based.
 			// So we should minus 1 for the line.
-			result = append(result, base.SingleSQL{
+			result = append(result, base.Statement{
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[i]),
 				BaseLine: tokens[start].GetLine() - 1,
 				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
@@ -83,7 +83,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:newStart])
 			// From antlr4, the line is ONE based, and the column is ZERO based.
 			// So we should minus 1 for the line.
-			result = append(result, base.SingleSQL{
+			result = append(result, base.Statement{
 				// Use a single semicolon instead of the user defined delimiter.
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[i-1]) + ";",
 				BaseLine: tokens[start].GetLine() - 1,
@@ -107,7 +107,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[endPos-1]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
@@ -164,7 +164,7 @@ func hasDelimiterStatement(stream *antlr.CommonTokenStream) bool {
 	return false
 }
 
-func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
+func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.CommonTokenStream) ([]base.Statement, error) {
 	p := parser.NewMySQLParser(stream)
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: statement,
@@ -190,7 +190,7 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 		return nil, parserErrorListener.Err
 	}
 
-	var result []base.SingleSQL
+	var result []base.Statement
 	tokens := stream.GetAllTokens()
 
 	start := 0
@@ -199,7 +199,7 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
@@ -217,7 +217,7 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
@@ -236,13 +236,13 @@ type openParenthesis struct {
 	pos       int
 }
 
-func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]base.SingleSQL, error) {
+func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]base.Statement, error) {
 	stream.Fill()
 	if hasDelimiterStatement(stream) {
 		return splitDelimiterModeSQL(stream, statement)
 	}
 
-	var result []base.SingleSQL
+	var result []base.Statement
 	tokens := stream.GetAllTokens()
 
 	var beginCaseStack, ifStack, loopStack, whileStack, repeatStack []*openParenthesis
@@ -377,7 +377,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
@@ -395,7 +395,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{

@@ -379,7 +379,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, err
 	}
 
-	var commands []base.SingleSQL
+	var commands []base.Statement
 	var originalIndex []int32
 	var nonTransactionAndSetRoleStmts []string
 	var nonTransactionAndSetRoleStmtsIndex []int32
@@ -391,7 +391,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		if err != nil {
 			return 0, err
 		}
-		commands, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
+		commands, originalIndex = base.FilterEmptyStatementsWithIndexes(singleSQLs)
 
 		// If the statement is a single statement and is a PL/pgSQL block,
 		// we should execute it as a single statement without transaction.
@@ -401,7 +401,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			isPlsql = true
 		}
 
-		var tmpCommands []base.SingleSQL
+		var tmpCommands []base.Statement
 		var tmpOriginalIndex []int32
 		for i, command := range commands {
 			switch {
@@ -484,7 +484,7 @@ func (d *Driver) executeInTransactionMode(
 	ctx context.Context,
 	owner string,
 	statement string,
-	commands []base.SingleSQL,
+	commands []base.Statement,
 	originalIndex []int32,
 	nonTransactionAndSetRoleStmts []string,
 	nonTransactionAndSetRoleStmtsIndex []int32,
@@ -630,7 +630,7 @@ func (d *Driver) executeInAutoCommitMode(
 	ctx context.Context,
 	owner string,
 	statement string,
-	commands []base.SingleSQL,
+	commands []base.Statement,
 	originalIndex []int32,
 	nonTransactionAndSetRoleStmts []string,
 	nonTransactionAndSetRoleStmtsIndex []int32,
@@ -810,7 +810,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	if err != nil {
 		return nil, err
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	singleSQLs = base.FilterEmptyStatements(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}

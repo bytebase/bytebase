@@ -129,7 +129,7 @@ func (d *Driver) Dump(ctx context.Context, writer io.Writer, _ *storepb.Database
 }
 
 func (d *Driver) showCreateTable(ctx context.Context, qualifiedTblName string) (string, error) {
-	rows, colInfo, err := d.execSingleSQLSync(ctx, fmt.Sprintf("SHOW CREATE TABLE %s", qualifiedTblName))
+	rows, colInfo, err := d.execStatementSync(ctx, fmt.Sprintf("SHOW CREATE TABLE %s", qualifiedTblName))
 	if err != nil {
 		return "", err
 	}
@@ -170,7 +170,7 @@ func (d *Driver) descTbl(ctx context.Context, tblName string) (*tableAdditionalI
 	tblAddInfo := &tableAdditionalInfo{
 		tblProps: make(map[string]string),
 	}
-	rows, _, err := d.execSingleSQLSync(ctx, fmt.Sprintf("DESC FORMATTED %s", tblName))
+	rows, _, err := d.execStatementSync(ctx, fmt.Sprintf("DESC FORMATTED %s", tblName))
 	if err != nil {
 		return nil, err
 	}

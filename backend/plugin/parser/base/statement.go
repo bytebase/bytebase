@@ -4,23 +4,37 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// Statement represents a single SQL statement with both text and parsed AST.
-// This is the unified type that combines SingleSQL (text-based) and AST (tree-based).
+// Statement is the result of splitting SQL (text + positions, no AST).
 type Statement struct {
-	// Text content
-	Text  string
+	// Text is the SQL text content.
+	Text string
+	// Empty indicates if the sql is empty, such as `/* comments */;` or just `;`.
 	Empty bool
 
-	// Position tracking (1-based)
-	StartPosition *storepb.Position
-	EndPosition   *storepb.Position
+	// BaseLine is the line number of the first line of the SQL in the original SQL.
+	// HINT: ZERO based. This is kept for backward compatibility with advisor code.
+	BaseLine int
 
-	// Byte offsets for execution tracking
+	// Start is the inclusive start position of the SQL in the original SQL (1-based).
+	Start *storepb.Position
+	// End is the inclusive end position of the SQL in the original SQL (1-based).
+	End *storepb.Position
+
+	// ByteOffsetStart is the start byte position of the sql.
+	// This field may not be present for every engine.
+	// ByteOffsetStart is intended for sql execution log display. It may not represent the actual sql that is sent to the database.
 	ByteOffsetStart int
-	ByteOffsetEnd   int
+	// ByteOffsetEnd is the end byte position of the sql.
+	// This field may not be present for every engine.
+	// ByteOffsetEnd is intended for sql execution log display. It may not represent the actual sql that is sent to the database.
+	ByteOffsetEnd int
+}
 
-	// Parsed tree (always present after Parse)
-	AST AST
+// ParsedStatement is the result of parsing SQL (Statement + AST).
+// AST is guaranteed to be non-nil after successful parsing.
+type ParsedStatement struct {
+	Statement     // embedded - access fields directly like ps.Text, ps.Start
+	AST       AST // always non-nil after parsing
 }
 
 // FilterEmptyStatements removes empty statements from the list.
@@ -47,46 +61,35 @@ func FilterEmptyStatementsWithIndexes(list []Statement) ([]Statement, []int32) {
 	return result, originalIndex
 }
 
-// SingleSQLToStatement converts a SingleSQL to a Statement without AST.
-// The AST field will be nil. Use this for incremental migration.
-func SingleSQLToStatement(sql SingleSQL) Statement {
-	return Statement{
-		Text:            sql.Text,
-		Empty:           sql.Empty,
-		StartPosition:   sql.Start,
-		EndPosition:     sql.End,
-		ByteOffsetStart: sql.ByteOffsetStart,
-		ByteOffsetEnd:   sql.ByteOffsetEnd,
-		AST:             nil,
-	}
-}
-
-// SingleSQLsToStatements converts a slice of SingleSQL to Statements without AST.
-func SingleSQLsToStatements(sqls []SingleSQL) []Statement {
-	result := make([]Statement, len(sqls))
-	for i, sql := range sqls {
-		result[i] = SingleSQLToStatement(sql)
+// FilterEmptyParsedStatements removes empty parsed statements from the list.
+func FilterEmptyParsedStatements(list []ParsedStatement) []ParsedStatement {
+	var result []ParsedStatement
+	for _, stmt := range list {
+		if !stmt.Empty {
+			result = append(result, stmt)
+		}
 	}
 	return result
 }
 
-// StatementToSingleSQL converts a Statement back to SingleSQL.
-// The AST is discarded. Use this for backward compatibility.
-func StatementToSingleSQL(stmt Statement) SingleSQL {
-	return SingleSQL{
-		Text:            stmt.Text,
-		Empty:           stmt.Empty,
-		Start:           stmt.StartPosition,
-		End:             stmt.EndPosition,
-		ByteOffsetStart: stmt.ByteOffsetStart,
-		ByteOffsetEnd:   stmt.ByteOffsetEnd,
-		// Note: BaseLine is not preserved as Statement uses 1-based StartPosition
+// FilterEmptyParsedStatementsWithIndexes removes empty parsed statements and returns original indexes.
+func FilterEmptyParsedStatementsWithIndexes(list []ParsedStatement) ([]ParsedStatement, []int32) {
+	var result []ParsedStatement
+	var originalIndex []int32
+	for i, stmt := range list {
+		if !stmt.Empty {
+			result = append(result, stmt)
+			originalIndex = append(originalIndex, int32(i))
+		}
 	}
+	return result, originalIndex
 }
 
-// ExtractASTs extracts ASTs from a slice of Statements.
-// This is useful for backward compatibility when migrating from []AST to []Statement.
-func ExtractASTs(stmts []Statement) []AST {
+// ExtractASTs extracts non-nil ASTs from a slice of ParsedStatements.
+// Empty statements (with nil AST) are skipped.
+// Returns nil if no ASTs are found (preserves nil-check compatibility).
+// This is useful for backward compatibility when migrating from []AST to []ParsedStatement.
+func ExtractASTs(stmts []ParsedStatement) []AST {
 	var asts []AST
 	for _, stmt := range stmts {
 		if stmt.AST != nil {
@@ -94,4 +97,14 @@ func ExtractASTs(stmts []Statement) []AST {
 		}
 	}
 	return asts
+}
+
+// ExtractStatements extracts Statements from a slice of ParsedStatements.
+// This is useful when you only need the text/position information without AST.
+func ExtractStatements(stmts []ParsedStatement) []Statement {
+	result := make([]Statement, len(stmts))
+	for i, stmt := range stmts {
+		result[i] = stmt.Statement
+	}
+	return result
 }
