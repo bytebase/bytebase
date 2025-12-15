@@ -18,7 +18,7 @@ import type {
   StatefulSQLEditorTreeFactor as StatefulFactor,
   SQLEditorTreeNode as TreeNode,
 } from "@/types";
-import { DEBOUNCE_SEARCH_DELAY, unknownEnvironment } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import {
   getDefaultPagination,
   isDatabaseV1Queryable,
@@ -53,7 +53,6 @@ export const useSQLEditorTreeByEnvironment = (
   const { project } = storeToRefs(useSQLEditorStore());
   const currentUser = useCurrentUserV1();
   const environmentStore = useEnvironmentV1Store();
-  const unknownEnv = unknownEnvironment();
 
   const tree = ref<TreeNode[]>([]);
   const showMissingQueryDatabases = ref<boolean>(false);
