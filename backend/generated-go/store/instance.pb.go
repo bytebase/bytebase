@@ -189,6 +189,8 @@ const (
 	DataSourceExternalSecret_AWS_SECRETS_MANAGER DataSourceExternalSecret_SecretType = 2
 	// ref: https://cloud.google.com/secret-manager/docs
 	DataSourceExternalSecret_GCP_SECRET_MANAGER DataSourceExternalSecret_SecretType = 3
+	// ref: https://learn.microsoft.com/en-us/azure/key-vault/secrets/about-secrets
+	DataSourceExternalSecret_AZURE_KEY_VAULT DataSourceExternalSecret_SecretType = 4
 )
 
 // Enum value maps for DataSourceExternalSecret_SecretType.
@@ -198,12 +200,14 @@ var (
 		1: "VAULT_KV_V2",
 		2: "AWS_SECRETS_MANAGER",
 		3: "GCP_SECRET_MANAGER",
+		4: "AZURE_KEY_VAULT",
 	}
 	DataSourceExternalSecret_SecretType_value = map[string]int32{
 		"SECRET_TYPE_UNSPECIFIED": 0,
 		"VAULT_KV_V2":             1,
 		"AWS_SECRETS_MANAGER":     2,
 		"GCP_SECRET_MANAGER":      3,
+		"AZURE_KEY_VAULT":         4,
 	}
 )
 
@@ -1895,7 +1899,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\x06keytab\x18\x04 \x01(\fR\x06keytab\x12\x19\n" +
 	"\bkdc_host\x18\x05 \x01(\tR\akdcHost\x12\x19\n" +
 	"\bkdc_port\x18\x06 \x01(\tR\akdcPort\x124\n" +
-	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol\"\xd6\t\n" +
+	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol\"\xec\t\n" +
 	"\x18DataSourceExternalSecret\x12T\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e23.bytebase.store.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
@@ -1927,13 +1931,14 @@ const file_store_instance_proto_rawDesc = "" +
 	"SecretType\x12\x1b\n" +
 	"\x17SECRET_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05PLAIN\x10\x01\x12\x0f\n" +
-	"\vENVIRONMENT\x10\x02\"k\n" +
+	"\vENVIRONMENT\x10\x02\"\x80\x01\n" +
 	"\n" +
 	"SecretType\x12\x1b\n" +
 	"\x17SECRET_TYPE_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vVAULT_KV_V2\x10\x01\x12\x17\n" +
 	"\x13AWS_SECRETS_MANAGER\x10\x02\x12\x16\n" +
-	"\x12GCP_SECRET_MANAGER\x10\x03\"D\n" +
+	"\x12GCP_SECRET_MANAGER\x10\x03\x12\x13\n" +
+	"\x0fAZURE_KEY_VAULT\x10\x04\"D\n" +
 	"\bAuthType\x12\x19\n" +
 	"\x15AUTH_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05TOKEN\x10\x01\x12\x12\n" +

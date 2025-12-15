@@ -1428,7 +1428,8 @@
       "azure-iam": "Azure IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
-      "external-secret-gcp": "GCP Secret Manager"
+      "external-secret-gcp": "GCP Secret Manager",
+      "external-secret-azure": "Azure Key Vault"
     },
     "iam-extension": {
       "credential-source": "凭证来源",
@@ -1441,7 +1442,13 @@
     "database-region": "数据库区域",
     "external-secret-gcp": {
       "secret-name": "密钥完整路径",
-      "secret-name-tips": "密钥完整路径应类似于 “projects/project-id/secrets/secret-id”。"
+      "secret-name-tips": "密钥完整路径应类似于 \"projects/project-id/secrets/secret-id\""
+    },
+    "external-secret-azure": {
+      "vault-url": "Key Vault URL",
+      "vault-url-tips": "Key Vault URL 应类似于 \"https://myvault.vault.azure.net/\"",
+      "secret-name": "密钥名称",
+      "secret-name-tips": "存储在 Azure Key Vault 中的密钥名称。"
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",

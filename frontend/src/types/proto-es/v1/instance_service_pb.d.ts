@@ -856,6 +856,13 @@ export enum DataSourceExternalSecret_SecretType {
    * @generated from enum value: GCP_SECRET_MANAGER = 3;
    */
   GCP_SECRET_MANAGER = 3,
+
+  /**
+   * ref: https://learn.microsoft.com/en-us/azure/key-vault/secrets/about-secrets
+   *
+   * @generated from enum value: AZURE_KEY_VAULT = 4;
+   */
+  AZURE_KEY_VAULT = 4,
 }
 
 /**

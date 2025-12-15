@@ -311,6 +311,13 @@ func convertV1DataSourceExternalSecret(externalSecret *v1pb.DataSourceExternalSe
 		if secret.SecretName == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing GCP secret name"))
 		}
+	case storepb.DataSourceExternalSecret_AZURE_KEY_VAULT:
+		if secret.Url == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing Azure Key Vault URL"))
+		}
+		if secret.SecretName == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("missing Azure Key Vault secret name"))
+		}
 	default:
 	}
 

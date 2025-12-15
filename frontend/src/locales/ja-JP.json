@@ -1428,7 +1428,8 @@
       "azure-iam": "Azure IAM",
       "external-secret-vault": "ボールト (KV v2)",
       "external-secret-aws": "AWS シークレットマネージャー",
-      "external-secret-gcp": "GCP シークレット マネージャー"
+      "external-secret-gcp": "GCP シークレット マネージャー",
+      "external-secret-azure": "Azure Key Vault"
     },
     "iam-extension": {
       "credential-source": "Credential Source",
@@ -1442,6 +1443,12 @@
     "external-secret-gcp": {
       "secret-name": "キーのフルパス",
       "secret-name-tips": "キーへのフルパスは、「projects/project-id/secrets/secret-id」のようなものである必要があります。"
+    },
+    "external-secret-azure": {
+      "vault-url": "Key Vault URL",
+      "vault-url-tips": "Key Vault URL は「https://myvault.vault.azure.net/」のような形式である必要があります。",
+      "secret-name": "シークレット名",
+      "secret-name-tips": "Azure Key Vault に保存されているシークレットの名前。"
     },
     "external-secret-vault": {
       "vault-url": "ボールトの URL",

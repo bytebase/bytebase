@@ -8867,6 +8867,7 @@ components:
         - VAULT_KV_V2
         - AWS_SECRETS_MANAGER
         - GCP_SECRET_MANAGER
+        - AZURE_KEY_VAULT
     bytebase.v1.DataSourceQueryPolicy:
       type: object
       properties:

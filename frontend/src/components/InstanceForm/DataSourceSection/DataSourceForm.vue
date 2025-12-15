@@ -295,6 +295,16 @@
                   />
                 </div>
               </NRadio>
+              <NRadio
+                :value="DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT"
+              >
+                <div class="flex items-center gap-x-1">
+                  {{ $t("instance.password-type.external-secret-azure") }}
+                  <FeatureBadge
+                    :feature="PlanFeature.FEATURE_EXTERNAL_SECRET_MANAGER"
+                  />
+                </div>
+              </NRadio>
             </NRadioGroup>
             <LearnMoreLink
               url="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration"
@@ -618,6 +628,30 @@
                 />
               </div>
             </div>
+            <div
+              v-if="
+                state.passwordType ===
+                DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT
+              "
+              class="flex flex-col gap-y-4"
+            >
+              <div class="sm:col-span-2 sm:col-start-1">
+                <label class="textlabel block">
+                  {{ $t("instance.external-secret-azure.vault-url") }}
+                  <RequiredStar />
+                </label>
+                <div class="flex gap-x-2 text-sm textinfolabel">
+                  {{ $t("instance.external-secret-azure.vault-url-tips") }}
+                </div>
+                <BBTextField
+                  v-model:value="dataSource.externalSecret.url"
+                  :required="true"
+                  class="mt-2 w-full"
+                  :disabled="!allowEdit"
+                  :placeholder="$t('instance.external-secret-azure.vault-url')"
+                />
+              </div>
+            </div>
             <div class="sm:col-span-2 sm:col-start-1">
               <label class="textlabel block">
                 {{ secretNameLabel }}
@@ -632,6 +666,15 @@
               >
                 {{ $t("instance.external-secret-gcp.secret-name-tips") }}
               </div>
+              <div
+                v-else-if="
+                  state.passwordType ===
+                  DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT
+                "
+                class="flex gap-x-2 text-sm textinfolabel"
+              >
+                {{ $t("instance.external-secret-azure.secret-name-tips") }}
+              </div>
               <BBTextField
                 v-model:value="dataSource.externalSecret.secretName"
                 :required="true"
@@ -643,7 +686,9 @@
             <div
               v-if="
                 state.passwordType !==
-                DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER
+                  DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER &&
+                state.passwordType !==
+                  DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT
               "
               class="sm:col-span-2 sm:col-start-1"
             >
@@ -1274,6 +1319,8 @@ const secretNameLabel = computed(() => {
       return t("instance.external-secret-vault.vault-secret-path");
     case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
       return t("instance.external-secret-gcp.secret-name");
+    case DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT:
+      return t("instance.external-secret-azure.secret-name");
     default:
       return t("instance.external-secret.secret-name");
   }
@@ -1327,6 +1374,16 @@ const changeSecretType = (secretType: DataSourceExternalSecret_SecretType) => {
         authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
         secretType: secretType,
         authOption: { case: "token", value: "" },
+        secretName: ds.externalSecret?.secretName ?? "",
+        passwordKeyName: "",
+      });
+      break;
+    case DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT:
+      ds.externalSecret = create(DataSourceExternalSecretSchema, {
+        authType: DataSourceExternalSecret_AuthType.AUTH_TYPE_UNSPECIFIED,
+        secretType: secretType,
+        authOption: { case: "token", value: "" },
+        url: ds.externalSecret?.url ?? "",
         secretName: ds.externalSecret?.secretName ?? "",
         passwordKeyName: "",
       });
