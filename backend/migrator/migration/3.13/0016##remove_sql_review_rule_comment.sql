@@ -12,4 +12,4 @@ SET
         )
     )
 WHERE
-    payload -> 'sqlReviewRules' IS NOT NULL;
+    payload ->> 'sqlReviewRules' IS NOT NULL;
