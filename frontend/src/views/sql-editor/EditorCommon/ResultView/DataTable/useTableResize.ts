@@ -8,9 +8,9 @@ export type TableResizeOptions = {
   containerRef: Ref<HTMLElement | null | undefined>;
   minWidth: number;
   maxWidth: number;
-  // Optional: provide first row cell content for minimum width calculation
+  // Optional: provide row cell content for minimum width calculation
   // Returns the display text for a given column index (0-based, excluding the index column)
-  getFirstRowCellContent?: (columnIndex: number) => string | undefined;
+  getRowCellContent?: (columnIndex: number) => string | undefined;
 };
 
 type ColumnProps = {
@@ -112,8 +112,8 @@ const useTableResize = (options: TableResizeOptions) => {
 
         // Also consider first row content width if available
         // index-1 because the first column (index 0) is the row index column
-        if (options.getFirstRowCellContent && index > 0) {
-          const cellContent = options.getFirstRowCellContent(index - 1);
+        if (options.getRowCellContent && index > 0) {
+          const cellContent = options.getRowCellContent(index - 1);
           // Only use cell content if it's non-empty
           if (
             cellContent !== undefined &&

@@ -277,7 +277,7 @@ const tableRef = ref<HTMLTableElement>();
 const virtualListRef = ref<InstanceType<typeof NVirtualList>>();
 
 // Get row cell content for column width calculation
-const getFirstRowCellContent = (columnIndex: number): string | undefined => {
+const getRowCellContent = (columnIndex: number): string | undefined => {
   // check at most 3 rows
   for (let i = 0; i < Math.min(3, props.rows.length); i++) {
     const firstRow = props.rows[i];
@@ -302,7 +302,7 @@ const tableResize = useTableColumnWidthLogic({
   containerRef,
   minWidth: 64, // 4rem
   maxWidth: 640, // 40rem
-  getFirstRowCellContent,
+  getRowCellContent,
 });
 
 const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
