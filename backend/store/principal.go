@@ -74,16 +74,14 @@ type UserStat struct {
 
 // GetUserByID gets the user by ID.
 func (s *Store) GetUserByID(ctx context.Context, id int) (*UserMessage, error) {
-	if v, ok := s.userIDCache.Get(id); ok && s.enableCache {
-		return v, nil
-	}
-
-	if err := s.listAndCacheAllUsers(ctx); err != nil {
+	users, err := s.ListUsers(ctx, &FindUserMessage{ID: &id})
+	if err != nil {
 		return nil, err
 	}
-
-	user, _ := s.userIDCache.Get(id)
-	return user, nil
+	if len(users) == 0 {
+		return nil, nil
+	}
+	return users[0], nil
 }
 
 // GetUserByEmail gets the user by email.
@@ -164,7 +162,6 @@ func (s *Store) ListUsers(ctx context.Context, find *FindUserMessage) ([]*UserMe
 	}
 
 	for _, user := range users {
-		s.userIDCache.Add(user.ID, user)
 		s.userEmailCache.Add(user.Email, user)
 	}
 	return users, nil
@@ -188,7 +185,6 @@ func (s *Store) listAndCacheAllUsers(ctx context.Context) error {
 	}
 
 	for _, user := range users {
-		s.userIDCache.Add(user.ID, user)
 		s.userEmailCache.Add(user.Email, user)
 	}
 	return nil
@@ -335,6 +331,72 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 	return userMessages, nil
 }
 
+// scanPrincipalRow scans a principal row into a UserMessage (without groups).
+func scanPrincipalRow(ctx context.Context, tx *sql.Tx, sqlStr string, args []any) (*UserMessage, error) {
+	var user UserMessage
+	var mfaConfigBytes []byte
+	var profileBytes []byte
+	var typeString string
+	if err := tx.QueryRowContext(ctx, sqlStr, args...).Scan(
+		&user.ID,
+		&user.MemberDeleted,
+		&user.Email,
+		&user.Name,
+		&typeString,
+		&user.PasswordHash,
+		&mfaConfigBytes,
+		&user.Phone,
+		&profileBytes,
+		&user.CreatedAt,
+	); err != nil {
+		return nil, err
+	}
+
+	if typeValue, ok := storepb.PrincipalType_value[typeString]; ok {
+		user.Type = storepb.PrincipalType(typeValue)
+	} else {
+		return nil, errors.Errorf("invalid principal type string: %s", typeString)
+	}
+
+	mfaConfig := storepb.MFAConfig{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
+		return nil, err
+	}
+	user.MFAConfig = &mfaConfig
+
+	profile := storepb.UserProfile{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(profileBytes, &profile); err != nil {
+		return nil, err
+	}
+	user.Profile = &profile
+
+	return &user, nil
+}
+
+// fetchUserGroups fetches the groups for a user by email.
+func fetchUserGroups(ctx context.Context, tx *sql.Tx, email string) ([]string, error) {
+	groupsQuery := qb.Q().Space(`
+		SELECT COALESCE(ARRAY_AGG(user_group.email ORDER BY user_group.email) FILTER (WHERE user_group.email IS NOT NULL), '{}')
+		FROM principal
+		LEFT JOIN user_group ON EXISTS (
+			SELECT 1 FROM jsonb_array_elements(user_group.payload->'members') AS m
+			WHERE m->>'member' = CONCAT('users/', principal.email)
+		)
+		WHERE principal.email = ?
+		GROUP BY principal.email
+	`, email)
+	groupsSQL, groupsArgs, err := groupsQuery.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build groups sql")
+	}
+
+	var groups pq.StringArray
+	if err := tx.QueryRowContext(ctx, groupsSQL, groupsArgs...).Scan(&groups); err != nil {
+		return nil, err
+	}
+	return []string(groups), nil
+}
+
 // CreateUser creates an user.
 func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessage, error) {
 	// Double check the passing-in emails.
@@ -395,7 +457,6 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage) (*UserMessa
 		Profile:      create.Profile,
 		MFAConfig:    &storepb.MFAConfig{},
 	}
-	s.userIDCache.Add(user.ID, user)
 	s.userEmailCache.Add(user.Email, user)
 	return user, nil
 }
@@ -409,9 +470,6 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 	set := qb.Q()
 	if v := patch.Delete; v != nil {
 		set.Comma("deleted = ?", *v)
-	}
-	if v := patch.Email; v != nil {
-		set.Comma("email = ?", strings.ToLower(*v))
 	}
 	if v := patch.Name; v != nil {
 		set.Comma("name = ?", *v)
@@ -445,7 +503,9 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 		return currentUser, nil
 	}
 
-	sql, args, err := qb.Q().Space("UPDATE principal SET ? WHERE id = ?", set, currentUser.ID).ToSQL()
+	sql, args, err := qb.Q().Space(`UPDATE principal SET ? WHERE id = ?
+		RETURNING id, deleted, email, name, type, password_hash, mfa_config, phone, profile, created_at`,
+		set, currentUser.ID).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
@@ -456,24 +516,21 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+	updatedUser, err := scanPrincipalRow(ctx, tx, sql, args)
+	if err != nil {
 		return nil, err
 	}
+
+	// Preserve groups from currentUser since UpdateUser doesn't modify group memberships
+	updatedUser.Groups = currentUser.Groups
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	s.userEmailCache.Remove(currentUser.Email)
-	s.userIDCache.Remove(currentUser.ID)
-	user, err := s.GetUserByID(ctx, currentUser.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	s.userIDCache.Add(currentUser.ID, user)
-	s.userEmailCache.Add(user.Email, user)
-	return user, nil
+	s.userEmailCache.Add(updatedUser.Email, updatedUser)
+	return updatedUser, nil
 }
 
 // UpdateUserEmail updates a user's email and all related references.
@@ -531,12 +588,16 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	// - issue
 	// - issue_comment
 	// - simple table references (plan, pipeline, task_run, etc.)
-	query := qb.Q().Space("UPDATE principal SET email = ? WHERE id = ?", newEmail, user.ID)
+	query := qb.Q().Space(`UPDATE principal SET email = ? WHERE id = ?
+		RETURNING id, deleted, email, name, type, password_hash, mfa_config, phone, profile, created_at`,
+		newEmail, user.ID)
 	sqlStr, args, err := query.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build update principal sql")
 	}
-	if _, err := tx.ExecContext(ctx, sqlStr, args...); err != nil {
+
+	updatedUser, err := scanPrincipalRow(ctx, tx, sqlStr, args)
+	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update principal email")
 	}
 
@@ -823,12 +884,18 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 		return nil, errors.Wrapf(err, "failed to update audit_log user references")
 	}
 
+	// Fetch groups for the updated user (must be done before commit while tx is still open)
+	groups, err := fetchUserGroups(ctx, tx, updatedUser.Email)
+	if err != nil {
+		return nil, err
+	}
+	updatedUser.Groups = groups
+
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	// 6. Update caches
-	s.userIDCache.Remove(user.ID)
 	s.userEmailCache.Remove(user.Email)
 
 	// Invalidate issue caches
@@ -849,13 +916,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 		s.groupCache.Remove(email)
 	}
 
-	// Fetch updated user
-	updatedUser, err := s.GetUserByID(ctx, user.ID)
-	if err != nil {
-		return nil, err
-	}
 	// Re-populate user cache
-	s.userIDCache.Add(updatedUser.ID, updatedUser)
 	s.userEmailCache.Add(updatedUser.Email, updatedUser)
 
 	return updatedUser, nil
