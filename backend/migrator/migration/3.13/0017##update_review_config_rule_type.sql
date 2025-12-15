@@ -65,7 +65,6 @@ BEGIN
                 WHEN 'statement.maximum-join-table-count' THEN jsonb_set(rule, '{type}', to_jsonb('STATEMENT_MAXIMUM_JOIN_TABLE_COUNT'::text))
                 WHEN 'statement.maximum-statements-in-transaction' THEN jsonb_set(rule, '{type}', to_jsonb('STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION'::text))
                 WHEN 'statement.join-strict-column-attrs' THEN jsonb_set(rule, '{type}', to_jsonb('STATEMENT_JOIN_STRICT_COLUMN_ATTRS'::text))
-                WHEN 'statement.prior-backup-check' THEN jsonb_set(rule, '{type}', to_jsonb('BUILTIN_PRIOR_BACKUP_CHECK'::text))
                 WHEN 'statement.non-transactional' THEN jsonb_set(rule, '{type}', to_jsonb('STATEMENT_NON_TRANSACTIONAL'::text))
                 WHEN 'statement.add-column-without-position' THEN jsonb_set(rule, '{type}', to_jsonb('STATEMENT_ADD_COLUMN_WITHOUT_POSITION'::text))
                 WHEN 'statement.disallow-offline-ddl' THEN jsonb_set(rule, '{type}', to_jsonb('STATEMENT_DISALLOW_OFFLINE_DDL'::text))
@@ -140,7 +139,6 @@ BEGIN
                 WHEN 'system.function-disallowed-list' THEN jsonb_set(rule, '{type}', to_jsonb('SYSTEM_FUNCTION_DISALLOWED_LIST'::text))
                 WHEN 'system.function.disallowed-list' THEN jsonb_set(rule, '{type}', to_jsonb('SYSTEM_FUNCTION_DISALLOWED_LIST'::text))
                 WHEN 'advice.online-migration' THEN jsonb_set(rule, '{type}', to_jsonb('ADVICE_ONLINE_MIGRATION'::text))
-                WHEN 'builtin.prior-backup-check' THEN jsonb_set(rule, '{type}', to_jsonb('BUILTIN_PRIOR_BACKUP_CHECK'::text))
                 WHEN 'engine.mysql.use-innodb' THEN jsonb_set(rule, '{type}', to_jsonb('ENGINE_MYSQL_USE_INNODB'::text))
                         ELSE rule
                     END
