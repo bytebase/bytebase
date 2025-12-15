@@ -276,15 +276,25 @@ const containerRef = ref<HTMLDivElement>();
 const tableRef = ref<HTMLTableElement>();
 const virtualListRef = ref<InstanceType<typeof NVirtualList>>();
 
-// Get first row cell content for column width calculation
+// Get row cell content for column width calculation
 const getFirstRowCellContent = (columnIndex: number): string | undefined => {
-  const firstRow = props.rows[0];
-  if (!firstRow) return undefined;
-  const cell = firstRow.item.values[columnIndex];
-  if (!cell) return undefined;
-  const columnType = props.columns[columnIndex]?.columnType ?? "";
-  // Use DEFAULT format for width calculation (no per-cell format override)
-  return getPlainValue(cell, columnType, "DEFAULT") ?? undefined;
+  // check at most 3 rows
+  for (let i = 0; i < Math.min(3, props.rows.length); i++) {
+    const firstRow = props.rows[i];
+    if (!firstRow) {
+      continue;
+    }
+    const cell = firstRow.item.values[columnIndex];
+    if (!cell) {
+      continue;
+    }
+    const columnType = props.columns[columnIndex]?.columnType ?? "";
+    const plainValue = getPlainValue(cell, columnType, "DEFAULT");
+    if (plainValue) {
+      return plainValue;
+    }
+  }
+  return undefined;
 };
 
 const tableResize = useTableColumnWidthLogic({
