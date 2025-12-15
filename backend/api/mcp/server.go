@@ -59,6 +59,7 @@ func NewServer(store *store.Store, profile *config.Profile, secret string) (*Ser
 func (s *Server) registerTools() {
 	s.registerSearchTool()
 	s.registerCallTool()
+	s.registerSkillTool()
 }
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
