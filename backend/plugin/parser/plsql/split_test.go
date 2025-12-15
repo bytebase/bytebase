@@ -11,7 +11,7 @@ import (
 
 func TestOracleSplitMultiSQL(t *testing.T) {
 	type resData struct {
-		res []base.SingleSQL
+		res []base.Statement
 		err string
 	}
 	type testData struct {
@@ -30,7 +30,7 @@ func TestOracleSplitMultiSQL(t *testing.T) {
 				create table table$1 (id int)
 			`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:            `select * from t`,
 						ByteOffsetStart: 5,
@@ -59,7 +59,7 @@ INTERVAL (NUMTODSINTERVAL(1, 'DAY'))
 )
 ONLINE;`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:          "ALTER TABLE DATA.TEST\nMODIFY PARTITION BY RANGE (TXN_DATE)\nINTERVAL (NUMTODSINTERVAL(1, 'DAY'))\n(\n\tPARTITION TEST_PO VALUES LESS THAN (\n\t\tTO_DATE('2000-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')\n\t)\n)\nONLINE",
 						Start:         &storepb.Position{Line: 1, Column: 1},
@@ -86,7 +86,7 @@ ONLINE;`,
 		{
 			statement: "DROP TABLESPACE xxx INCLUDING CONTENTS CASCADE CONSTRAINTS",
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:          "DROP TABLESPACE xxx INCLUDING CONTENTS CASCADE CONSTRAINTS",
 						Start:         &storepb.Position{Line: 1, Column: 1},
@@ -99,7 +99,7 @@ ONLINE;`,
 		{
 			statement: "CALL my_procedure()",
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:          "CALL my_procedure()",
 						Start:         &storepb.Position{Line: 1, Column: 1},
@@ -112,7 +112,7 @@ ONLINE;`,
 		{
 			statement: "SELECT * FROM t1; SELECT * FROM t2",
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:            "SELECT * FROM t1",
 						Start:           &storepb.Position{Line: 1, Column: 1},
@@ -138,7 +138,7 @@ BEGIN
 END;
 /`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:          "CREATE OR REPLACE PROCEDURE test_proc IS\nBEGIN\n    CALL DBMS_OUTPUT.PUT_LINE('Hello');\nEND;",
 						Start:         &storepb.Position{Line: 1, Column: 1},
@@ -160,7 +160,7 @@ BEGIN
 END;
 /`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:            "CREATE OR REPLACE PROCEDURE proc1 IS\nBEGIN\n    NULL;\nEND;",
 						Start:           &storepb.Position{Line: 1, Column: 1},
@@ -183,7 +183,7 @@ END;
 /
 SELECT * FROM t2;`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:            "SELECT * FROM t1",
 						Start:           &storepb.Position{Line: 1, Column: 1},
@@ -207,7 +207,7 @@ SELECT * FROM t2;`,
 END;
 /`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:          "BEGIN\n    CALL DBMS_OUTPUT.PUT_LINE('Test');\nEND;",
 						Start:         &storepb.Position{Line: 1, Column: 1},

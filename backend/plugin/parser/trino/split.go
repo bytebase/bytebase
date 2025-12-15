@@ -17,7 +17,7 @@ func init() {
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 // Following TSQL's pattern, we try parser-based splitting first, then fall back to tokenizer.
-func SplitSQL(statement string) ([]base.SingleSQL, error) {
+func SplitSQL(statement string) ([]base.Statement, error) {
 	result, err := splitByParser(statement)
 	if err != nil {
 		// Fall back to tokenizer-based split
@@ -26,7 +26,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	return result, nil
 }
 
-func splitByTokenizer(statement string) ([]base.SingleSQL, error) {
+func splitByTokenizer(statement string) ([]base.Statement, error) {
 	t := tokenizer.NewTokenizer(statement)
 	list, err := t.SplitStandardMultiSQL()
 	if err != nil {
@@ -100,7 +100,7 @@ func splitByTokenizer(statement string) ([]base.SingleSQL, error) {
 	return list, nil
 }
 
-func splitByParser(statement string) ([]base.SingleSQL, error) {
+func splitByParser(statement string) ([]base.Statement, error) {
 	input := antlr.NewInputStream(statement)
 	lexer := trinoparser.NewTrinoLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -130,7 +130,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 		return nil, parserErrorListener.Err
 	}
 
-	var result []base.SingleSQL
+	var result []base.Statement
 	tokens := stream.GetAllTokens()
 
 	// Walk through all statements
@@ -188,7 +188,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 		endLine := endToken.GetLine() - 1
 		endColumn := endToken.GetColumn() + len(endToken.GetText())
 
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     text,
 			BaseLine: firstToken.GetLine() - 1,
 			Start: &storepb.Position{

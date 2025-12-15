@@ -1286,7 +1286,7 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 	return buf.String(), newCaretLine, newCaretOffset
 }
 
-func notEmptySQLCount(list []base.SingleSQL) int {
+func notEmptySQLCount(list []base.Statement) int {
 	count := 0
 	for _, sql := range list {
 		if !sql.Empty {

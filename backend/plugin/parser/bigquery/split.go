@@ -15,14 +15,14 @@ func init() {
 	base.RegisterSplitterFunc(storepb.Engine_BIGQUERY, SplitSQL)
 }
 
-func SplitSQL(statement string) ([]base.SingleSQL, error) {
+func SplitSQL(statement string) ([]base.Statement, error) {
 	lexer := parser.NewGoogleSQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	stream.Fill()
 
 	tokens := stream.GetAllTokens()
 	var buf []antlr.Token
-	var sqls []base.SingleSQL
+	var sqls []base.Statement
 	for i, token := range tokens {
 		if i < len(tokens)-1 {
 			buf = append(buf, token)
@@ -40,7 +40,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 				}
 			}
 			antlrPosition := base.FirstDefaultChannelTokenPosition(buf)
-			sqls = append(sqls, base.SingleSQL{
+			sqls = append(sqls, base.Statement{
 				Text:     bufStr.String(),
 				BaseLine: buf[0].GetLine() - 1,
 				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{

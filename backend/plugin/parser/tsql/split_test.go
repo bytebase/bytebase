@@ -15,7 +15,7 @@ type splitTestData struct {
 }
 
 type resData struct {
-	res []base.SingleSQL
+	res []base.Statement
 	err string
 }
 
@@ -36,7 +36,7 @@ go
 go
 			`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:     "-- first statement\ndeclare @temp table(a int)",
 						BaseLine: 0,
@@ -96,7 +96,7 @@ UPDATE SalesLT.ProductModelProductDescription SET Culture = "zh-cn";
 
 `,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:     "\n\n\n\n\n\n\n\n\nUPDATE SalesLT.Address SET City = \"Shanghai\";",
 						BaseLine: 0,

@@ -16,7 +16,7 @@ func init() {
 
 // SplitSQL splits the given SQL statement into multiple SQL statements using ANTLR parser.
 // This handles BEGIN/END blocks, CASE, IF, LOOP, etc. correctly.
-func SplitSQL(statement string) ([]base.SingleSQL, error) {
+func SplitSQL(statement string) ([]base.Statement, error) {
 	lexer := parser.NewGoogleSQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
@@ -48,7 +48,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 		return nil, errors.New("failed to split multiple statements")
 	}
 
-	var result []base.SingleSQL
+	var result []base.Statement
 	tokens := stream.GetAllTokens()
 
 	// Get all statement-terminating semicolons from the parse tree
@@ -89,7 +89,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 		}
 
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : endPos+1])
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[endPos]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{

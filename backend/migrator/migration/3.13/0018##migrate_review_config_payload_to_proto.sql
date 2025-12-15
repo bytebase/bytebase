@@ -149,6 +149,6 @@ BEGIN
                 FROM jsonb_array_elements(r.payload->'sqlReviewRules') AS rules(rule)
             )
         )
-        WHERE id = r.id;
+        WHERE id = r.id AND r.payload ->> 'sqlReviewRules' IS NOT NULL;
     END LOOP;
 END $$;

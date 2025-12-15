@@ -88,7 +88,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 	for _, stmt := range stmts {
 		result := &v1pb.QueryResult{}
 		startTime := time.Now()
-		dataArr, colInfo, err := d.execSingleSQLSync(ctx, stmt.Text)
+		dataArr, colInfo, err := d.execStatementSync(ctx, stmt.Text)
 		if err != nil {
 			return nil, err
 		}
@@ -158,7 +158,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 }
 
 // Execute SQL statement synchronously and return row data or error.
-func (d *Driver) execSingleSQLSync(ctx context.Context, statement string) ([][]string, []dbsql.ColumnInfo, error) {
+func (d *Driver) execStatementSync(ctx context.Context, statement string) ([][]string, []dbsql.ColumnInfo, error) {
 	resp, err := d.Client.StatementExecution.ExecuteAndWait(ctx, dbsql.ExecuteStatementRequest{
 		Statement:   statement,
 		WarehouseId: d.WarehouseID,

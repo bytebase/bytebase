@@ -13,7 +13,7 @@ func init() {
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements using ANTLR lexer.
-func SplitSQL(statement string) ([]base.SingleSQL, error) {
+func SplitSQL(statement string) ([]base.Statement, error) {
 	lexer := parser.NewSnowflakeLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	stream.Fill()

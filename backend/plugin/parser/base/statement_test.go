@@ -36,43 +36,79 @@ func TestFilterEmptyStatementsWithIndexes(t *testing.T) {
 	require.Equal(t, []int32{0, 2}, indexes)
 }
 
-func TestSingleSQLToStatement(t *testing.T) {
-	sql := SingleSQL{
-		Text:            "SELECT 1",
-		Empty:           false,
-		Start:           &storepb.Position{Line: 1, Column: 1},
-		End:             &storepb.Position{Line: 1, Column: 9},
-		ByteOffsetStart: 0,
-		ByteOffsetEnd:   8,
+func TestFilterEmptyParsedStatements(t *testing.T) {
+	statements := []ParsedStatement{
+		{Statement: Statement{Text: "SELECT 1", Empty: false}, AST: &ANTLRAST{}},
+		{Statement: Statement{Text: "", Empty: true}, AST: &ANTLRAST{}},
+		{Statement: Statement{Text: "SELECT 2", Empty: false}, AST: &ANTLRAST{}},
 	}
 
-	stmt := SingleSQLToStatement(sql)
+	result := FilterEmptyParsedStatements(statements)
 
-	require.Equal(t, sql.Text, stmt.Text)
-	require.Equal(t, sql.Empty, stmt.Empty)
-	require.Equal(t, sql.Start, stmt.StartPosition)
-	require.Equal(t, sql.End, stmt.EndPosition)
-	require.Equal(t, sql.ByteOffsetStart, stmt.ByteOffsetStart)
-	require.Equal(t, sql.ByteOffsetEnd, stmt.ByteOffsetEnd)
-	require.Nil(t, stmt.AST)
+	require.Len(t, result, 2)
+	require.Equal(t, "SELECT 1", result[0].Text)
+	require.Equal(t, "SELECT 2", result[1].Text)
 }
 
-func TestStatementToSingleSQL(t *testing.T) {
-	stmt := Statement{
-		Text:            "SELECT 1",
-		Empty:           false,
-		StartPosition:   &storepb.Position{Line: 1, Column: 1},
-		EndPosition:     &storepb.Position{Line: 1, Column: 9},
-		ByteOffsetStart: 0,
-		ByteOffsetEnd:   8,
+func TestFilterEmptyParsedStatementsWithIndexes(t *testing.T) {
+	statements := []ParsedStatement{
+		{Statement: Statement{Text: "SELECT 1", Empty: false}, AST: &ANTLRAST{}},
+		{Statement: Statement{Text: "", Empty: true}, AST: &ANTLRAST{}},
+		{Statement: Statement{Text: "SELECT 2", Empty: false}, AST: &ANTLRAST{}},
 	}
 
-	sql := StatementToSingleSQL(stmt)
+	result, indexes := FilterEmptyParsedStatementsWithIndexes(statements)
 
-	require.Equal(t, stmt.Text, sql.Text)
-	require.Equal(t, stmt.Empty, sql.Empty)
-	require.Equal(t, stmt.StartPosition, sql.Start)
-	require.Equal(t, stmt.EndPosition, sql.End)
-	require.Equal(t, stmt.ByteOffsetStart, sql.ByteOffsetStart)
-	require.Equal(t, stmt.ByteOffsetEnd, sql.ByteOffsetEnd)
+	require.Len(t, result, 2)
+	require.Equal(t, []int32{0, 2}, indexes)
+}
+
+func TestExtractASTs(t *testing.T) {
+	ast1 := &ANTLRAST{StartPosition: &storepb.Position{Line: 1}}
+	ast2 := &ANTLRAST{StartPosition: &storepb.Position{Line: 2}}
+
+	statements := []ParsedStatement{
+		{Statement: Statement{Text: "SELECT 1"}, AST: ast1},
+		{Statement: Statement{Text: "SELECT 2"}, AST: ast2},
+	}
+
+	asts := ExtractASTs(statements)
+
+	require.Len(t, asts, 2)
+	require.Equal(t, ast1, asts[0])
+	require.Equal(t, ast2, asts[1])
+}
+
+func TestExtractStatements(t *testing.T) {
+	statements := []ParsedStatement{
+		{Statement: Statement{Text: "SELECT 1", BaseLine: 0}, AST: &ANTLRAST{}},
+		{Statement: Statement{Text: "SELECT 2", BaseLine: 1}, AST: &ANTLRAST{}},
+	}
+
+	result := ExtractStatements(statements)
+
+	require.Len(t, result, 2)
+	require.Equal(t, "SELECT 1", result[0].Text)
+	require.Equal(t, "SELECT 2", result[1].Text)
+	require.Equal(t, 0, result[0].BaseLine)
+	require.Equal(t, 1, result[1].BaseLine)
+}
+
+func TestParsedStatementEmbedding(t *testing.T) {
+	// Test that ParsedStatement embeds Statement correctly
+	// Fields should be accessible directly
+	ps := ParsedStatement{
+		Statement: Statement{
+			Text:     "SELECT 1",
+			BaseLine: 5,
+			Start:    &storepb.Position{Line: 6, Column: 1},
+		},
+		AST: &ANTLRAST{StartPosition: &storepb.Position{Line: 6}},
+	}
+
+	// Direct access to embedded fields
+	require.Equal(t, "SELECT 1", ps.Text)
+	require.Equal(t, 5, ps.BaseLine)
+	require.Equal(t, int32(6), ps.Start.Line)
+	require.NotNil(t, ps.AST)
 }

@@ -25,7 +25,7 @@ func init() {
 }
 
 func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
-	originalSQL, err := extractSingleSQL(statement, backupItem)
+	originalSQL, err := extractStatement(statement, backupItem)
 	if err != nil {
 		return "", errors.Errorf("failed to extract single SQL: %v", err)
 	}
@@ -367,7 +367,7 @@ func (l *updateElemListener) EnterUpdate_elem(ctx *parser.Update_elemContext) {
 	}
 }
 
-func extractSingleSQL(statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	if backupItem == nil {
 		return "", errors.Errorf("backup item is nil")
 	}

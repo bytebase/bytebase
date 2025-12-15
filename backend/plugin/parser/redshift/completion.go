@@ -1264,7 +1264,7 @@ func prepareParserAndScanner(statement string, caretLine int, caretOffset int) (
 func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, int, int) {
 	newCaretLine, newCaretOffset := caretLine, caretOffset
 	list, err := SplitSQL(statement)
-	if err != nil || len(base.FilterEmptySQL(list)) <= 1 {
+	if err != nil || len(base.FilterEmptyStatements(list)) <= 1 {
 		return statement, caretLine, caretOffset
 	}
 

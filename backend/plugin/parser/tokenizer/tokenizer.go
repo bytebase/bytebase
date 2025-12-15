@@ -216,8 +216,8 @@ func (t *Tokenizer) aboveNonBlankLineDistance() int {
 }
 
 // SplitTiDBMultiSQL splits the statement to a string slice.
-func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
-	var res []base.SingleSQL
+func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
+	var res []base.Statement
 	delimiter := []rune{';'}
 
 	t.skipBlank()
@@ -230,7 +230,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			s := t.getString(startPos, t.pos()-startPos)
 			if !emptyString(s) {
 				if t.f == nil {
-					res = append(res, base.SingleSQL{
+					res = append(res, base.Statement{
 						Text: s,
 						// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
 						BaseLine: startLine - 1,
@@ -262,7 +262,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			t.skip(uint(len(delimiter)))
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
-				res = append(res, base.SingleSQL{
+				res = append(res, base.Statement{
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
 					BaseLine:        startLine - 1,
@@ -288,7 +288,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 			delimiter = t.runeList(delimiterStart, t.pos()-delimiterStart)
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
-				res = append(res, base.SingleSQL{
+				res = append(res, base.Statement{
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
 					BaseLine:        startLine - 1,
@@ -353,8 +353,8 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 //
 // The difference between PostgreSQL and Oracle is that PostgreSQL supports
 // dollar-quoted string, but Oracle does not.
-func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
-	var res []base.SingleSQL
+func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
+	var res []base.Statement
 
 	t.skipBlank()
 	t.emptyStatement = true
@@ -387,7 +387,7 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 			t.skip(1)
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
-				res = append(res, base.SingleSQL{
+				res = append(res, base.Statement{
 					Text: text,
 					End: &store.Position{
 						Line: int32(t.line - 1), // Convert to 0-based.
@@ -412,7 +412,7 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
 				if t.f == nil {
-					res = append(res, base.SingleSQL{
+					res = append(res, base.Statement{
 						Text: s,
 						// Consider this text:
 						// CREATE TABLE t(
@@ -466,8 +466,8 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 //   - We support PostgreSQL CREATE PROCEDURE statement with $$ $$ style,
 //     but do not support BEGIN ATOMIC ... END; style.
 //     See https://www.postgresql.org/docs/14/sql-createprocedure.html.
-func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
-	var res []base.SingleSQL
+func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.Statement, error) {
+	var res []base.Statement
 
 	t.skipBlank()
 	t.emptyStatement = true
@@ -504,7 +504,7 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 			t.skip(1)
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
-				res = append(res, base.SingleSQL{
+				res = append(res, base.Statement{
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
 					BaseLine: startLine - 1,
@@ -523,7 +523,7 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.SingleSQL, error) {
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
 				if t.f == nil {
-					res = append(res, base.SingleSQL{
+					res = append(res, base.Statement{
 						Text: s,
 						// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
 						BaseLine: startLine - 1,

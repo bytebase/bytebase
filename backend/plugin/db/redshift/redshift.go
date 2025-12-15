@@ -176,20 +176,20 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		transactionMode = common.GetDefaultTransactionMode()
 	}
 
-	var commands []base.SingleSQL
+	var commands []base.Statement
 	oneshot := true
 	if len(statement) <= common.MaxSheetCheckSize {
 		singleSQLs, err := pgparser.SplitSQL(statement)
 		if err != nil {
 			return 0, err
 		}
-		commands = base.FilterEmptySQL(singleSQLs)
+		commands = base.FilterEmptyStatements(singleSQLs)
 		if len(commands) <= common.MaximumCommands {
 			oneshot = false
 		}
 	}
 	if oneshot {
-		commands = []base.SingleSQL{
+		commands = []base.Statement{
 			{
 				Text: statement,
 			},
@@ -228,7 +228,7 @@ func (d *Driver) createDatabaseExecute(ctx context.Context, statement string) er
 }
 
 // executeInTransactionMode executes statements within a single transaction
-func (d *Driver) executeInTransactionMode(ctx context.Context, commands []base.SingleSQL, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) executeInTransactionMode(ctx context.Context, commands []base.Statement, opts db.ExecuteOptions) (int64, error) {
 	totalRowsAffected := int64(0)
 	if len(commands) == 0 {
 		return 0, nil
@@ -292,7 +292,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, commands []base.S
 }
 
 // executeInAutoCommitMode executes statements sequentially in auto-commit mode
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, commands []base.SingleSQL, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) executeInAutoCommitMode(ctx context.Context, commands []base.Statement, opts db.ExecuteOptions) (int64, error) {
 	totalRowsAffected := int64(0)
 
 	for i, command := range commands {
@@ -373,7 +373,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	if err != nil {
 		return nil, err
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	singleSQLs = base.FilterEmptyStatements(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}

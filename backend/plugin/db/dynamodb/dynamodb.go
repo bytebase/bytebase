@@ -101,7 +101,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split multi statement")
 	}
-	nonEmptyStatements, idxMap := base.FilterEmptySQLWithIndexes(statements)
+	nonEmptyStatements, idxMap := base.FilterEmptyStatementsWithIndexes(statements)
 
 	for currentIndex, statement := range nonEmptyStatements {
 		opts.LogCommandExecute([]int32{int32(idxMap[currentIndex])}, statement.Text)
@@ -137,7 +137,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split multi statement")
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	singleSQLs = base.FilterEmptyStatements(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}

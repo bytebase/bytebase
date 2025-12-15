@@ -456,7 +456,7 @@ func TestParseMySQLStatements(t *testing.T) {
 	require.NoError(t, err)
 
 	// Filter empty statements for assertion
-	statements = base.FilterEmptyStatements(statements)
+	statements = base.FilterEmptyParsedStatements(statements)
 
 	require.Len(t, statements, 2)
 
@@ -464,7 +464,7 @@ func TestParseMySQLStatements(t *testing.T) {
 	require.Equal(t, "SELECT 1;", statements[0].Text)
 	require.False(t, statements[0].Empty)
 	require.NotNil(t, statements[0].AST)
-	require.NotNil(t, statements[0].StartPosition)
+	require.NotNil(t, statements[0].Start)
 
 	// Check second statement
 	require.Contains(t, statements[1].Text, "SELECT 2")
