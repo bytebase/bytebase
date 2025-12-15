@@ -8,6 +8,9 @@ export type TableResizeOptions = {
   containerRef: Ref<HTMLElement | null | undefined>;
   minWidth: number;
   maxWidth: number;
+  // Optional: provide first row cell content for minimum width calculation
+  // Returns the display text for a given column index (0-based, excluding the index column)
+  getFirstRowCellContent?: (columnIndex: number) => string | undefined;
 };
 
 type ColumnProps = {
@@ -62,21 +65,28 @@ const useTableResize = (options: TableResizeOptions) => {
     nextTick(() => {
       if (!table.value) return;
 
-      const scale = containerWidth.value / table.value.scrollWidth;
       const thList = Array.from(table.value.querySelectorAll("th"));
-      const lastIndex = thList.length - 1;
 
-      // First pass: calculate base widths for all columns except the last
+      // Font settings for measuring cell text width
+      // Cell font: text-sm (14px) monospace as defined in TableCell.vue
+      const cellFont = "14px ui-monospace, monospace";
+      // Cell padding: px-1 = 0.25rem * 2 = 8px
+      const cellPadding = 8;
+
       const baseWidths = thList.map((th, index) => {
+        // Get header content width from the first child element (the content div)
+        // This includes text + icons and avoids inflation from auto-layout
+        const content = th.firstElementChild as HTMLElement | null;
+        const thStyle = getComputedStyle(th);
+        const paddingLeft = parseFloat(thStyle.paddingLeft) || 0;
+        const paddingRight = parseFloat(thStyle.paddingRight) || 0;
+        const borderLeft = parseFloat(thStyle.borderLeftWidth) || 0;
+        const borderRight = parseFloat(thStyle.borderRightWidth) || 0;
+
         // For the first column (index column), use scrollWidth to get exact content width
         if (index === 0) {
-          const content = th.firstElementChild as HTMLElement | null;
           if (content) {
-            // scrollWidth gives the content width (includes padding but not margin)
-            const thStyle = getComputedStyle(th);
             const contentStyle = getComputedStyle(content);
-            const borderLeft = parseFloat(thStyle.borderLeftWidth) || 0;
-            const borderRight = parseFloat(thStyle.borderRightWidth) || 0;
             const marginLeft = parseFloat(contentStyle.marginLeft) || 0;
             const marginRight = parseFloat(contentStyle.marginRight) || 0;
             return (
@@ -88,25 +98,41 @@ const useTableResize = (options: TableResizeOptions) => {
             );
           }
         }
-        const width = th.getBoundingClientRect().width;
-        return Math.max(width, width * scale);
-      });
 
-      // For the last column, subtract any extra width that was added to fill container
-      const containerW = options.containerRef?.value?.clientWidth || 0;
-      const sumWithoutLast = baseWidths
-        .slice(0, lastIndex)
-        .reduce((a, b) => a + b, 0);
-      const lastColWidth = baseWidths[lastIndex];
-      const expectedTotal = sumWithoutLast + lastColWidth;
-      // If table was expanded to fill container, remove that extra from last column
-      if (expectedTotal > containerW && lastColWidth > options.minWidth) {
-        const extraWidth = expectedTotal - containerW;
-        baseWidths[lastIndex] = Math.max(
-          options.minWidth,
-          lastColWidth - extraWidth
+        // For data columns, measure header content scrollWidth (includes text + icons)
+        let headerWidth = options.minWidth;
+        if (content) {
+          headerWidth =
+            content.scrollWidth +
+            paddingLeft +
+            paddingRight +
+            borderLeft +
+            borderRight;
+        }
+
+        // Also consider first row content width if available
+        // index-1 because the first column (index 0) is the row index column
+        if (options.getFirstRowCellContent && index > 0) {
+          const cellContent = options.getFirstRowCellContent(index - 1);
+          // Only use cell content if it's non-empty
+          if (
+            cellContent !== undefined &&
+            cellContent !== null &&
+            cellContent.length > 0
+          ) {
+            const textWidth = measureTextWidth(String(cellContent), cellFont);
+            const cellWidth = textWidth + cellPadding;
+            // Use the larger of header width and cell content width
+            headerWidth = Math.max(headerWidth, cellWidth);
+          }
+        }
+
+        // Apply min/max constraints
+        return Math.min(
+          options.maxWidth,
+          Math.max(options.minWidth, headerWidth)
         );
-      }
+      });
 
       state.columns = baseWidths.map((width) => ({ width }));
       // After calculating the width, use fixed layout to keep the width stable.
@@ -248,6 +274,7 @@ const useTableResize = (options: TableResizeOptions) => {
     getColumnWidth,
     getTableProps,
     totalWidth,
+    effectiveWidth,
     startResizing,
   };
 };
@@ -273,4 +300,14 @@ const toggleDragStyle = (
     table.value?.classList.remove("select-none");
     document.body.classList.remove("cursor-col-resize");
   }
+};
+
+// Measure text width using canvas for accurate calculation
+// let measureCanvas: HTMLCanvasElement | null = null;
+const measureTextWidth = (text: string, font: string): number => {
+  const measureCanvas = document.createElement("canvas");
+  const context = measureCanvas.getContext("2d");
+  if (!context) return 0;
+  context.font = font;
+  return context.measureText(text).width;
 };

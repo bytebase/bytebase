@@ -111,6 +111,9 @@
       ref="virtualListRef"
       :items="rows"
       :item-size="ROW_HEIGHT"
+      :style="{
+        minWidth: `${tableResize.effectiveWidth.value}px`,
+      }"
     >
       <template #default="{ item: row, index: rowIndex }: { item: { item: QueryRow; }; index: number; }">
         <div
@@ -119,6 +122,7 @@
           :data-row-index="rowIndex"
           :style="{
             height: `${ROW_HEIGHT}px`,
+            minWidth: `${tableResize.effectiveWidth.value}px`,
           }"
         >
           <!-- the index cell  -->
@@ -228,6 +232,7 @@ import type {
   SortDirection,
   SortState,
 } from "./common/types";
+import { getPlainValue } from "./common/utils";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
 
@@ -271,11 +276,23 @@ const containerRef = ref<HTMLDivElement>();
 const tableRef = ref<HTMLTableElement>();
 const virtualListRef = ref<InstanceType<typeof NVirtualList>>();
 
+// Get first row cell content for column width calculation
+const getFirstRowCellContent = (columnIndex: number): string | undefined => {
+  const firstRow = props.rows[0];
+  if (!firstRow) return undefined;
+  const cell = firstRow.item.values[columnIndex];
+  if (!cell) return undefined;
+  const columnType = props.columns[columnIndex]?.columnType ?? "";
+  // Use DEFAULT format for width calculation (no per-cell format override)
+  return getPlainValue(cell, columnType, "DEFAULT") ?? undefined;
+};
+
 const tableResize = useTableColumnWidthLogic({
   tableRef,
   containerRef,
   minWidth: 64, // 4rem
   maxWidth: 640, // 40rem
+  getFirstRowCellContent,
 });
 
 const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
