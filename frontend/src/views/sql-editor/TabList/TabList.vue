@@ -22,8 +22,6 @@
           'more-right': scrollState.moreRight,
         }"
         ghost-class="ghost"
-        @start="state.dragging = true"
-        @end="state.dragging = false"
       >
         <template
           #item="{ element: tab, index }: { element: SQLEditorTab; index: number }"
@@ -84,7 +82,6 @@ import { useTabListContext } from "./context";
 import TabItem from "./TabItem/TabItem.vue";
 
 type LocalState = {
-  dragging: boolean;
   hoverTabId: string;
   loading: boolean;
 };
@@ -97,7 +94,6 @@ const { t } = useI18n();
 const dialog = useDialog();
 
 const state = reactive<LocalState>({
-  dragging: false,
   hoverTabId: "",
   loading: false,
 });

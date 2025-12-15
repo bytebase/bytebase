@@ -127,10 +127,15 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     return tabsById.get(tabId);
   };
 
-  const openTabList = computed(() => {
-    return openTmpTabList.value.map((item) => {
-      return getTabById(item.id) ?? defaultSQLEditorTab();
-    });
+  const openTabList = computed({
+    get() {
+      return openTmpTabList.value.map((item) => {
+        return getTabById(item.id) ?? defaultSQLEditorTab();
+      });
+    },
+    set(list) {
+      openTmpTabList.value = list;
+    },
   });
 
   const getTabByWorksheet = (worksheet: string) => {
