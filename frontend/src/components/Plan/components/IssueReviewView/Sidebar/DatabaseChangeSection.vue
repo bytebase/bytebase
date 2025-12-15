@@ -1,5 +1,6 @@
 <template>
   <template v-if="shouldShowSection">
+    <NDivider class="!my-0" />
     <!-- SQL Checks -->
     <div class="flex flex-col gap-y-1">
       <h3 class="textlabel">
@@ -66,6 +67,7 @@
 </template>
 
 <script setup lang="ts">
+import { NDivider } from "naive-ui";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
