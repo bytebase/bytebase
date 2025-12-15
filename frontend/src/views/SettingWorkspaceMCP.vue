@@ -90,7 +90,7 @@ const hasExternalUrl = computed(() => {
 const mcpEndpointUrl = computed(() => {
   const url = actuatorStore.serverInfo?.externalUrl ?? "";
   if (!hasExternalUrl.value || !url) {
-    return "https://your-bytebase-url.com/mcp";
+    return "{https://your-bytebase-url.com}/mcp";
   }
   const base = url.replace(/\/$/, "");
   return `${base}/mcp`;

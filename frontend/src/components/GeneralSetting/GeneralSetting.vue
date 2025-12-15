@@ -7,7 +7,7 @@
         </h1>
       </div>
     </div>
-    <div class="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-7">
+    <div class="flex-1 mt-4 lg:px-4 lg:mt-0 flex flex-col gap-y-6">
       <WorkspaceMode
         v-model:mode="state.databaseChangeMode"
         :disabled="!allowEdit"
