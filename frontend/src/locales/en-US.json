@@ -1428,7 +1428,8 @@
       "azure-iam": "Azure IAM",
       "external-secret-vault": "Vault (KV v2)",
       "external-secret-aws": "AWS Secrets Manager",
-      "external-secret-gcp": "GCP Secret Manager"
+      "external-secret-gcp": "GCP Secret Manager",
+      "external-secret-azure": "Azure Key Vault"
     },
     "iam-extension": {
       "credential-source": "Credential Source",
@@ -1442,6 +1443,12 @@
     "external-secret-gcp": {
       "secret-name": "Secret full name",
       "secret-name-tips": "The secret name should be like \"projects/project-id/secrets/secret-id\"."
+    },
+    "external-secret-azure": {
+      "vault-url": "Key Vault URL",
+      "vault-url-tips": "The Key Vault URL should be like \"https://myvault.vault.azure.net/\".",
+      "secret-name": "Secret name",
+      "secret-name-tips": "The name of the secret stored in Azure Key Vault."
     },
     "external-secret-vault": {
       "vault-url": "Vault URL",

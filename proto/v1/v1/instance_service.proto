@@ -468,6 +468,8 @@ message DataSourceExternalSecret {
     AWS_SECRETS_MANAGER = 2;
     // ref: https://cloud.google.com/secret-manager/docs
     GCP_SECRET_MANAGER = 3;
+    // ref: https://learn.microsoft.com/en-us/azure/key-vault/secrets/about-secrets
+    AZURE_KEY_VAULT = 4;
   }
   // The type of external secret store.
   SecretType secret_type = 1;
