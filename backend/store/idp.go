@@ -277,10 +277,7 @@ func (s *Store) DeleteIdentityProvider(ctx context.Context, resourceID string) e
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
 		return err
 	}
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	return nil
+	return tx.Commit()
 }
 
 func convertIdentityProviderType(identityProviderType string) storepb.IdentityProviderType {

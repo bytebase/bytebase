@@ -126,6 +126,4 @@ const sheet = computed(() =>
 const statement = computed(() =>
   sheet.value ? getSheetStatement(sheet.value) : ""
 );
-
-
 </script>
