@@ -31,12 +31,16 @@
         @click.stop
       />
 
-      <!-- Expand button for long content -->
+       <!-- Expand button for long content -->
       <NButton
         v-if="clickable"
         size="tiny"
         circle
-        class="dark:bg-dark-bg!"
+        class="shadow bg-white! dark:bg-dark-bg!"
+        :class="{
+          'opacity-90': clickable,
+          'hover:opacity-100': clickable,
+        }"
         @click.stop="showDetail"
       >
         <template #icon>

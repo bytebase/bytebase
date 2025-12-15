@@ -111,6 +111,9 @@
       ref="virtualListRef"
       :items="rows"
       :item-size="ROW_HEIGHT"
+      :style="{
+        minWidth: `${tableResize.effectiveWidth.value}px`,
+      }"
     >
       <template #default="{ item: row, index: rowIndex }: { item: { item: QueryRow; }; index: number; }">
         <div
@@ -119,6 +122,7 @@
           :data-row-index="rowIndex"
           :style="{
             height: `${ROW_HEIGHT}px`,
+            minWidth: `${tableResize.effectiveWidth.value}px`,
           }"
         >
           <!-- the index cell  -->
@@ -228,6 +232,7 @@ import type {
   SortDirection,
   SortState,
 } from "./common/types";
+import { getPlainValue } from "./common/utils";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
 
@@ -271,11 +276,33 @@ const containerRef = ref<HTMLDivElement>();
 const tableRef = ref<HTMLTableElement>();
 const virtualListRef = ref<InstanceType<typeof NVirtualList>>();
 
+// Get row cell content for column width calculation
+const getRowCellContent = (columnIndex: number): string | undefined => {
+  // check at most 3 rows
+  for (let i = 0; i < Math.min(3, props.rows.length); i++) {
+    const firstRow = props.rows[i];
+    if (!firstRow) {
+      continue;
+    }
+    const cell = firstRow.item.values[columnIndex];
+    if (!cell) {
+      continue;
+    }
+    const columnType = props.columns[columnIndex]?.columnType ?? "";
+    const plainValue = getPlainValue(cell, columnType, "DEFAULT");
+    if (plainValue) {
+      return plainValue;
+    }
+  }
+  return undefined;
+};
+
 const tableResize = useTableColumnWidthLogic({
   tableRef,
   containerRef,
   minWidth: 64, // 4rem
   maxWidth: 640, // 40rem
+  getRowCellContent,
 });
 
 const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
