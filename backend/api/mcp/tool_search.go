@@ -13,6 +13,9 @@ type SearchInput struct {
 	// OperationID gets detailed schema for a specific endpoint.
 	// Use this after finding the endpoint you need.
 	OperationID string `json:"operationId,omitempty"`
+	// Schema gets the definition of a message type.
+	// Examples: "bytebase.v1.Instance", "Instance", "Engine"
+	Schema string `json:"schema,omitempty"`
 	// Query is a free-text search query to find relevant API endpoints.
 	// Examples: "create database", "execute sql", "list projects"
 	Query string `json:"query,omitempty"`
@@ -33,6 +36,7 @@ const searchAPIDescription = `Discover Bytebase API endpoints. **Always call bef
 | Search | query="database" | Matching endpoints |
 | Filter | service+query | Search within service |
 | Details | operationId="SQLService/Query" | Request/response schema |
+| Schema | schema="Instance" | Message type definition |
 
 **Workflow:** search_api() → search_api(operationId="...") → call_api(...)`
 
@@ -50,6 +54,10 @@ func (s *Server) handleSearchAPI(_ context.Context, _ *mcp.CallToolRequest, inpu
 	case input.OperationID != "":
 		// Detail mode: get full schema for a specific endpoint
 		text = s.formatEndpointDetail(input.OperationID)
+
+	case input.Schema != "":
+		// Schema lookup mode: get properties of a message type
+		text = s.formatSchemaDetail(input.Schema)
 
 	case input.Query == "" && input.Service == "":
 		// List all services
@@ -181,18 +189,58 @@ func (s *Server) formatEndpointDetail(operationID string) string {
 	return sb.String()
 }
 
+func (s *Server) formatSchemaDetail(schemaName string) string {
+	props, ok := s.openAPIIndex.GetSchema(schemaName)
+	if !ok {
+		return fmt.Sprintf("Unknown schema: %s\n\nUse search_api(operationId=\"...\") to see schemas in request/response bodies.", schemaName)
+	}
+
+	var sb strings.Builder
+
+	// Normalize name for display
+	displayName := schemaName
+	if !strings.HasPrefix(schemaName, "bytebase.v1.") {
+		displayName = "bytebase.v1." + schemaName
+	}
+
+	sb.WriteString(fmt.Sprintf("## %s\n\n", displayName))
+
+	// Check if it's an enum
+	if len(props) == 1 && props[0].Name == "enum" {
+		sb.WriteString("**Enum values:** ")
+		sb.WriteString(props[0].Description)
+		sb.WriteString("\n")
+		return sb.String()
+	}
+
+	for _, prop := range props {
+		s.formatProperty(&sb, prop)
+	}
+
+	return sb.String()
+}
+
 func (*Server) formatProperty(sb *strings.Builder, prop PropertyInfo) {
 	required := ""
 	if prop.Required {
 		required = " (required)"
 	}
+
 	desc := ""
-	if prop.Description != "" {
-		// Remove newlines for inline comment
+	// Check if type has a known short description
+	if shortDesc, ok := GetTypeDescription(prop.Type); ok {
+		desc = fmt.Sprintf(" // %s", shortDesc)
+	} else if prop.Description != "" {
+		// Remove newlines and truncate long descriptions
 		cleanDesc := strings.ReplaceAll(prop.Description, "\n", " ")
 		cleanDesc = strings.ReplaceAll(cleanDesc, "\r", "")
+		// Truncate at 100 chars
+		if len(cleanDesc) > 100 {
+			cleanDesc = cleanDesc[:97] + "..."
+		}
 		desc = fmt.Sprintf(" // %s", cleanDesc)
 	}
+
 	sb.WriteString("  \"")
 	sb.WriteString(prop.Name)
 	sb.WriteString("\": ")
