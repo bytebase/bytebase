@@ -34,6 +34,7 @@
                 :max-file-size-in-mi-b="maxFileSizeInMiB"
                 :support-file-extensions="supportImageExtensions"
                 :disabled="!allowEdit || !hasBrandingFeature"
+                :show-no-data-placeholder="!state.logoUrl"
                 @on-select="onLogoSelect"
               />
             </div>

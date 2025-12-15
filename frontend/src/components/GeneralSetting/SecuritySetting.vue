@@ -11,7 +11,7 @@
       </span>
     </div>
 
-    <div class="flex-1 lg:px-4 flex flex-col gap-y-7">
+    <div class="flex-1 lg:px-4 flex flex-col gap-y-6">
       <div>
         <div class="flex items-center gap-x-2">
           <Switch

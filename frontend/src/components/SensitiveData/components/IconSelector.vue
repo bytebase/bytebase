@@ -1,9 +1,9 @@
 <template>
   <div class="w-full">
     <div v-if="!isEditing" class="flex items-center justify-center gap-1">
-      <template v-if="modelValue">
+      <template v-if="value">
         <!-- Display uploaded image -->
-        <img :src="modelValue" class="w-6 h-6 object-contain" alt="" />
+        <img :src="value" class="w-6 h-6 object-contain" alt="" />
         <MiniActionButton v-if="!readonly" @click="startEditing">
           <PencilIcon class="w-4 h-4" />
         </MiniActionButton>
@@ -25,29 +25,21 @@
       <template #trigger>
         <div class="w-full" />
       </template>
-      <div class="p-2 flex flex-col gap-y-2">
-        <SingleFileSelector
-          class="w-48 h-32"
-          :max-file-size-in-mi-b="2"
-          :support-file-extensions="supportImageExtensions"
-          @on-select="onFileSelect"
-        >
-          <template #default>
-            <div
-              class="w-full h-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md hover:border-gray-400 transition-colors"
-            >
-              <heroicons-outline:upload class="w-8 h-8 text-gray-400" />
-              <span class="text-xs text-gray-500 mt-1">
-                {{ $t("settings.general.workspace.drag-logo") }}
-              </span>
-              <span class="text-xs text-gray-400">
-                {{ supportedFormatsText }}
-              </span>
-            </div>
-          </template>
-        </SingleFileSelector>
-        <div v-if="tempValue" class="mt-2">
-          <img :src="tempValue" class="w-8 h-8 object-contain mx-auto" alt="" />
+      <div class="p-2 flex flex-col gap-y-4">
+        <div class="w-48 h-48 flex justify-center items-center border border-gray-300 border-dashed rounded-md relative">
+          <div
+            class="w-1/3 h-1/3 bg-no-repeat bg-contain bg-center rounded-md pointer-events-none"
+            :style="`background-image: url(${tempValue});`"
+          ></div>
+
+          <SingleFileSelector
+            class="flex flex-col gap-y-1 text-center justify-center items-center absolute top-0 bottom-0 left-0 right-0"
+            :class="[tempValue ? 'opacity-0 hover:opacity-90' : '']"
+            :max-file-size-in-mi-b="2"
+            :support-file-extensions="supportImageExtensions"
+            :show-no-data-placeholder="!tempValue"
+            @on-select="onFileSelect"
+          />
         </div>
         <div class="flex justify-end gap-2">
           <NButton size="tiny" @click="clearIcon">
@@ -68,41 +60,44 @@
 <script setup lang="ts">
 import { PencilIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
-import { computed, ref } from "vue";
+import { ref, watch } from "vue";
 import SingleFileSelector from "@/components/SingleFileSelector.vue";
 import { MiniActionButton } from "@/components/v2";
 
 const props = defineProps<{
-  modelValue?: string;
+  value?: string;
   readonly?: boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "update:modelValue", value: string): void;
+  (event: "update:value", value: string): void;
 }>();
 
 const isEditing = ref(false);
 const tempValue = ref("");
 
-const supportImageExtensions = [".jpg", ".jpeg", ".png", ".webp", ".svg"];
+watch(
+  () => isEditing.value,
+  (editing) => {
+    if (editing) {
+      tempValue.value = props.value ?? "";
+    }
+  }
+);
 
-const supportedFormatsText = computed(() => {
-  return supportImageExtensions.join(", ") + " (max 2MB)";
-});
+const supportImageExtensions = [".jpg", ".jpeg", ".png", ".webp", ".svg"];
 
 const startEditing = () => {
   if (props.readonly) return;
   isEditing.value = true;
-  tempValue.value = props.modelValue || "";
 };
 
 const confirmEdit = () => {
-  emit("update:modelValue", tempValue.value);
+  emit("update:value", tempValue.value);
   isEditing.value = false;
 };
 
 const cancelEdit = () => {
-  tempValue.value = "";
   isEditing.value = false;
 };
 

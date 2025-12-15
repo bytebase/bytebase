@@ -21,9 +21,7 @@
       @input="onFileChange"
     />
     <slot>
-      <slot name="no-data">
-        <NEmpty class="py-6"></NEmpty>
-      </slot>
+      <NEmpty v-if="showNoDataPlaceholder" class="py-4"></NEmpty>
       <div class="text-sm text-gray-600 inline-flex pointer-events-none">
         <span
           class="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-hidden focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
@@ -48,7 +46,6 @@
 
 <script lang="ts" setup>
 import { NEmpty } from "naive-ui";
-import type { PropType } from "vue";
 import { reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
@@ -57,21 +54,12 @@ interface LocalState {
   dropAreaActive: boolean;
 }
 
-const props = defineProps({
-  maxFileSizeInMiB: {
-    required: true,
-    type: Number,
-  },
-  disabled: {
-    required: false,
-    type: Boolean,
-    default: false,
-  },
-  supportFileExtensions: {
-    required: true,
-    type: Object as PropType<string[]>,
-  },
-});
+const props = defineProps<{
+  maxFileSizeInMiB: number;
+  disabled?: boolean;
+  supportFileExtensions: string[];
+  showNoDataPlaceholder: boolean;
+}>();
 
 const emit = defineEmits(["on-select"]);
 
@@ -81,7 +69,7 @@ const state = reactive<LocalState>({
   dropAreaActive: false,
 });
 
-const uploader = ref<HTMLInputElement | null>(null);
+const uploader = ref<HTMLInputElement>();
 
 const onUploaderClick = () => {
   uploader.value?.click();
@@ -114,6 +102,9 @@ const selectFile = (files: File[]) => {
     return;
   }
   emit("on-select", file);
+  if (uploader.value) {
+    uploader.value.value = "";
+  }
 };
 
 const validFile = (file: File): boolean => {
