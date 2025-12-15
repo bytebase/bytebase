@@ -168,12 +168,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, errors.Wrapf(err, "failed to split sql")
 	}
 
-	singleSQLs := make([]base.SingleSQL, len(rawStmts))
+	singleSQLs := make([]base.Statement, len(rawStmts))
 	for i, stmt := range rawStmts {
-		singleSQLs[i] = base.SingleSQL{Text: stmt}
+		singleSQLs[i] = base.Statement{Text: stmt}
 	}
 
-	commands, originalIndex := base.FilterEmptySQLWithIndexes(singleSQLs)
+	commands, originalIndex := base.FilterEmptyStatementsWithIndexes(singleSQLs)
 	if len(commands) == 0 {
 		return 0, nil
 	}

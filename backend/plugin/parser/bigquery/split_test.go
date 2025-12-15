@@ -15,7 +15,7 @@ type splitTestData struct {
 }
 
 type resData struct {
-	res []base.SingleSQL
+	res []base.Statement
 }
 
 func TestBigQuerySplitMultiSQL(t *testing.T) {
@@ -23,7 +23,7 @@ func TestBigQuerySplitMultiSQL(t *testing.T) {
 		{
 			statement: "SELECT 1",
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:     "SELECT 1",
 						BaseLine: 0,
@@ -37,7 +37,7 @@ func TestBigQuerySplitMultiSQL(t *testing.T) {
 		{
 			statement: "SELECT 1;\n SELECT\n 33;",
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:     "SELECT 1;",
 						BaseLine: 0,

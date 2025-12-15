@@ -1215,7 +1215,7 @@ func prepareTrickyParserAndScanner(statement string, caretLine int, caretOffset 
 	return parser, lexer, scanner
 }
 
-func notEmptySQLCount(list []base.SingleSQL) int {
+func notEmptySQLCount(list []base.Statement) int {
 	count := 0
 	for _, sql := range list {
 		if !sql.Empty {

@@ -15,14 +15,14 @@ type splitTestData struct {
 }
 
 type resData struct {
-	res []base.SingleSQL
+	res []base.Statement
 	err string
 }
 
 // MockSplitSQL is a simplified implementation for testing
-func MockSplitSQL(_ string) ([]base.SingleSQL, error) {
+func MockSplitSQL(_ string) ([]base.Statement, error) {
 	// This is just for testing and isn't used since the real implementation exists in split.go
-	return []base.SingleSQL{}, nil
+	return []base.Statement{}, nil
 }
 
 func TestTrinoSplitMultiSQL(t *testing.T) {
@@ -31,7 +31,7 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 		{
 			statement: "SELECT * FROM users; SELECT * FROM orders;",
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text:  "SELECT * FROM users;",
 						Start: &storepb.Position{Line: 0, Column: 0},
@@ -59,7 +59,7 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 				   comment */
 				SELECT * FROM orders;`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text: `SELECT 
 					id, 
@@ -89,7 +89,7 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 				
 				SELECT * FROM products;`,
 			want: resData{
-				res: []base.SingleSQL{
+				res: []base.Statement{
 					{
 						Text: `WITH orders_cte AS (
 					SELECT * FROM orders

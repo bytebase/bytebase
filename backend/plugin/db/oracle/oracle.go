@@ -117,7 +117,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		transactionMode = common.GetDefaultTransactionMode()
 	}
 
-	var commands []base.SingleSQL
+	var commands []base.Statement
 	var originalIndex []int32
 	if len(statement) <= common.MaxSheetCheckSize {
 		// Use Oracle sql parser.
@@ -125,13 +125,13 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")
 		}
-		singleSQLs, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
+		singleSQLs, originalIndex = base.FilterEmptyStatementsWithIndexes(singleSQLs)
 		if len(singleSQLs) == 0 {
 			return 0, nil
 		}
 		commands = singleSQLs
 	} else {
-		commands = []base.SingleSQL{
+		commands = []base.Statement{
 			{
 				Text: statement,
 			},
@@ -153,7 +153,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 }
 
 // executeInTransactionMode executes statements within a single transaction
-func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.SingleSQL, originalIndex []int32, opts db.ExecuteOptions) (int64, error) {
+func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, originalIndex []int32, opts db.ExecuteOptions) (int64, error) {
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
@@ -208,7 +208,7 @@ func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, com
 }
 
 // executeInAutoCommitMode executes statements sequentially in auto-commit mode
-func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.SingleSQL, originalIndex []int32, opts db.ExecuteOptions) (int64, error) {
+func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, originalIndex []int32, opts db.ExecuteOptions) (int64, error) {
 	totalRowsAffected := int64(0)
 	for i, command := range commands {
 		indexes := []int32{originalIndex[i]}
@@ -243,7 +243,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	if err != nil {
 		return nil, err
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	singleSQLs = base.FilterEmptyStatements(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}

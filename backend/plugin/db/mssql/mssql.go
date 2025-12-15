@@ -419,7 +419,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 	if err != nil {
 		return nil, err
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	singleSQLs = base.FilterEmptyStatements(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}

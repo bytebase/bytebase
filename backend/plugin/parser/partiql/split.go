@@ -13,7 +13,7 @@ func init() {
 }
 
 // SplitSQL splits the input into multiple SQL statements using semicolon as delimiter.
-func SplitSQL(statement string) ([]base.SingleSQL, error) {
+func SplitSQL(statement string) ([]base.Statement, error) {
 	lexer := parser.NewPartiQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	stream.Fill()

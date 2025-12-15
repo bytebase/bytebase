@@ -137,7 +137,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	if err != nil {
 		return 0, err
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	singleSQLs = base.FilterEmptyStatements(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return 0, nil
 	}
@@ -149,7 +149,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	return d.executeInTransactionMode(ctx, singleSQLs, opts)
 }
 
-func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base.SingleSQL, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base.Statement, opts db.ExecuteOptions) (int64, error) {
 	tx, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
@@ -202,7 +202,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base
 	return totalRowsAffected, nil
 }
 
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, singleSQLs []base.SingleSQL, opts db.ExecuteOptions) (int64, error) {
+func (d *Driver) executeInAutoCommitMode(ctx context.Context, singleSQLs []base.Statement, opts db.ExecuteOptions) (int64, error) {
 	totalRowsAffected := int64(0)
 	for i, singleSQL := range singleSQLs {
 		opts.LogCommandExecute([]int32{int32(i)}, singleSQL.Text)

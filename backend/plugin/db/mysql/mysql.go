@@ -336,7 +336,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
 	var totalCommands int
-	var commands []base.SingleSQL
+	var commands []base.Statement
 	var originalIndex []int32
 	oneshot := true
 	if len(statement) <= common.MaxSheetCheckSize {
@@ -344,7 +344,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")
 		}
-		singleSQLs, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
+		singleSQLs, originalIndex = base.FilterEmptyStatementsWithIndexes(singleSQLs)
 		if len(singleSQLs) == 0 {
 			return 0, nil
 		}
@@ -355,7 +355,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		}
 	}
 	if oneshot {
-		commands = []base.SingleSQL{
+		commands = []base.Statement{
 			{
 				Text: statement,
 			},
@@ -384,7 +384,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 }
 
 // executeInTransactionMode executes statements within a single transaction
-func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.SingleSQL, originalIndex []int32, opts db.ExecuteOptions, connectionID string, isolationLevel common.IsolationLevel) (int64, error) {
+func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, originalIndex []int32, opts db.ExecuteOptions, connectionID string, isolationLevel common.IsolationLevel) (int64, error) {
 	var totalRowsAffected int64
 
 	if err := conn.Raw(func(driverConn any) error {
@@ -471,7 +471,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 }
 
 // executeInAutoCommitMode executes statements sequentially in auto-commit mode
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.SingleSQL, originalIndex []int32, opts db.ExecuteOptions, connectionID string) (int64, error) {
+func (d *Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, originalIndex []int32, opts db.ExecuteOptions, connectionID string) (int64, error) {
 	var totalRowsAffected int64
 
 	if err := conn.Raw(func(driverConn any) error {
@@ -528,7 +528,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	if err != nil {
 		return nil, err
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	singleSQLs = base.FilterEmptyStatements(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}

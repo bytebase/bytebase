@@ -19,7 +19,7 @@ func init() {
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
-func SplitSQL(statement string) ([]base.SingleSQL, error) {
+func SplitSQL(statement string) ([]base.Statement, error) {
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	list, err := splitSQLImpl(stream, statement)
@@ -31,7 +31,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	return list, nil
 }
 
-func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
+func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antlr.CommonTokenStream) ([]base.Statement, error) {
 	p := parser.NewPostgreSQLParser(stream)
 	lexerErrorListener := &base.ParseErrorListener{
 		Statement: statement,
@@ -60,7 +60,7 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 		return nil, errors.New("failed to split multiple statements")
 	}
 
-	var result []base.SingleSQL
+	var result []base.Statement
 	tokens := stream.GetAllTokens()
 
 	start := 0
@@ -69,7 +69,7 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
@@ -87,7 +87,7 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
@@ -106,8 +106,8 @@ type openParenthesis struct {
 	pos       int
 }
 
-func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.SingleSQL, error) {
-	var result []base.SingleSQL
+func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Statement, error) {
+	var result []base.Statement
 	stream.Fill()
 	tokens := stream.GetAllTokens()
 
@@ -188,7 +188,7 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sin
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
@@ -206,7 +206,7 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sin
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{

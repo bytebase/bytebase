@@ -15,7 +15,7 @@ func init() {
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
-func SplitSQL(statement string) ([]base.SingleSQL, error) {
+func SplitSQL(statement string) ([]base.Statement, error) {
 	r, err := splitByParser(statement)
 	if err != nil {
 		// Fall back to semi split.
@@ -24,7 +24,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	return r, err
 }
 
-func splitBySemi(statement string) ([]base.SingleSQL, error) {
+func splitBySemi(statement string) ([]base.Statement, error) {
 	t := tokenizer.NewTokenizer(statement)
 	list, err := t.SplitStandardMultiSQL()
 	if err != nil {
@@ -33,7 +33,7 @@ func splitBySemi(statement string) ([]base.SingleSQL, error) {
 	return list, nil
 }
 
-func splitByParser(statement string) ([]base.SingleSQL, error) {
+func splitByParser(statement string) ([]base.Statement, error) {
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewTSqlLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -64,7 +64,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 		return nil, parserErrorListener.Err
 	}
 
-	var result []base.SingleSQL
+	var result []base.Statement
 	tokens := stream.GetAllTokens()
 	start := 0
 
@@ -73,7 +73,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 		for _, goStmt := range tree.AllGo_statement() {
 			pos := goStmt.GetStop().GetTokenIndex()
 			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
-			result = append(result, base.SingleSQL{
+			result = append(result, base.Statement{
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 				BaseLine: tokens[start].GetLine() - 1,
 				End: common.ConvertANTLRPositionToPosition(
@@ -93,7 +93,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 
 	// First batch_without_go.
 	b := tree.AllBatch_without_go()[0]
-	var r []base.SingleSQL
+	var r []base.Statement
 	r, start = splitBatchWithoutGo(b, tokens, stream, start, statement)
 	result = append(result, r...)
 
@@ -115,7 +115,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 			for _, goStmt := range goStmts {
 				pos := goStmt.GetStop().GetTokenIndex()
 				antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
-				result = append(result, base.SingleSQL{
+				result = append(result, base.Statement{
 					Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 					BaseLine: tokens[start].GetLine() - 1,
 					End: common.ConvertANTLRPositionToPosition(
@@ -141,7 +141,7 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 		for _, goStmt := range tree.AllGo_statement()[goIdx:] {
 			pos := goStmt.GetStop().GetTokenIndex()
 			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
-			result = append(result, base.SingleSQL{
+			result = append(result, base.Statement{
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 				BaseLine: tokens[start].GetLine() - 1,
 				End: common.ConvertANTLRPositionToPosition(
@@ -161,15 +161,15 @@ func splitByParser(statement string) ([]base.SingleSQL, error) {
 	return result, nil
 }
 
-func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token, stream *antlr.CommonTokenStream, start int, statement string) ([]base.SingleSQL, int) {
-	var result []base.SingleSQL
+func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token, stream *antlr.CommonTokenStream, start int, statement string) ([]base.Statement, int) {
+	var result []base.Statement
 	switch {
 	case b.Batch_level_statement() == nil && b.Execute_body_batch() == nil:
 		// All sql_clauses.
 		for _, sqlClause := range b.AllSql_clauses() {
 			pos := sqlClause.GetStop().GetTokenIndex()
 			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
-			result = append(result, base.SingleSQL{
+			result = append(result, base.Statement{
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 				BaseLine: tokens[start].GetLine() - 1,
 				End: common.ConvertANTLRPositionToPosition(
@@ -187,7 +187,7 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 	case b.Batch_level_statement() != nil:
 		pos := b.Batch_level_statement().GetStop().GetTokenIndex()
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(
@@ -204,7 +204,7 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 	case b.Execute_body_batch() != nil:
 		pos := b.Execute_body_batch().GetStop().GetTokenIndex()
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
-		result = append(result, base.SingleSQL{
+		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
 			End: common.ConvertANTLRPositionToPosition(
@@ -221,7 +221,7 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 		for _, sqlClause := range b.AllSql_clauses() {
 			pos := sqlClause.GetStop().GetTokenIndex()
 			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
-			result = append(result, base.SingleSQL{
+			result = append(result, base.Statement{
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 				BaseLine: tokens[start].GetLine() - 1,
 				End: common.ConvertANTLRPositionToPosition(
