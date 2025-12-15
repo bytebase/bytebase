@@ -178,6 +178,8 @@ func (r *ColumnCommentConventionRule) checkAlterTable(ctx *mysql.AlterTableConte
 
 func (r *ColumnCommentConventionRule) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
 	comment := ""
+
+	// Check columnAttribute for regular columns.
 	for _, attribute := range ctx.AllColumnAttribute() {
 		if attribute == nil || attribute.GetValue() == nil {
 			continue
@@ -189,20 +191,37 @@ func (r *ColumnCommentConventionRule) checkFieldDefinition(tableName, columnName
 			continue
 		}
 		comment = mysqlparser.NormalizeMySQLTextLiteral(attribute.TextLiteral())
-		if r.payload.MaxLength >= 0 && int32(len(comment)) > r.payload.MaxLength {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.level,
-				Code:          code.CommentTooLong.Int32(),
-				Title:         r.title,
-				Content:       fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", tableName, columnName, r.payload.MaxLength),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
-			})
-		}
-
 		break
 	}
 
-	if len(comment) == 0 && r.payload.Required {
+	// Check gcolAttribute for generated/virtual columns.
+	// Generated columns use gcolAttribute which has a different structure.
+	if comment == "" {
+		for _, gcolAttr := range ctx.AllGcolAttribute() {
+			if gcolAttr == nil || gcolAttr.COMMENT_SYMBOL() == nil {
+				continue
+			}
+			if gcolAttr.TextString() == nil || gcolAttr.TextString().TextStringLiteral() == nil {
+				continue
+			}
+			comment = mysqlparser.NormalizeMySQLTextStringLiteral(gcolAttr.TextString().TextStringLiteral())
+			break
+		}
+	}
+
+	// Validate comment length.
+	if comment != "" && r.payload.MaxLength >= 0 && int32(len(comment)) > r.payload.MaxLength {
+		r.AddAdvice(&storepb.Advice{
+			Status:        r.level,
+			Code:          code.CommentTooLong.Int32(),
+			Title:         r.title,
+			Content:       fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", tableName, columnName, r.payload.MaxLength),
+			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine()),
+		})
+	}
+
+	// Check if comment is required but missing.
+	if comment == "" && r.payload.Required {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.level,
 			Code:          code.CommentEmpty.Int32(),

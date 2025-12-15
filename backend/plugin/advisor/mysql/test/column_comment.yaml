@@ -181,3 +181,66 @@
         line: 2
         column: 0
       endposition: null
+# Test cases for virtual/generated columns (BYT-8503)
+- statement: |-
+    CREATE TABLE users (
+      id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'ID',
+      first_name VARCHAR(60) NOT NULL COMMENT 'First',
+      last_name VARCHAR(60) NOT NULL COMMENT 'Last',
+      full_name VARCHAR(120) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) VIRTUAL COMMENT 'Full'
+    );
+  changeType: 1
+# Virtual column with comment - should pass
+- statement: |-
+    CREATE TABLE t(
+      a int COMMENT 'comment',
+      b int GENERATED ALWAYS AS (a * 2) VIRTUAL COMMENT 'comment'
+    );
+  changeType: 1
+# Stored generated column with comment - should pass
+- statement: |-
+    CREATE TABLE t(
+      a int COMMENT 'comment',
+      b int GENERATED ALWAYS AS (a * 2) STORED COMMENT 'comment'
+    );
+  changeType: 1
+# Virtual column without comment - should fail
+- statement: |-
+    CREATE TABLE t(
+      a int COMMENT 'comment',
+      b int GENERATED ALWAYS AS (a * 2) VIRTUAL
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+# Mixed regular and generated columns
+- statement: |-
+    CREATE TABLE t(
+      a int,
+      b int GENERATED ALWAYS AS (a * 2) VIRTUAL
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`a` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
