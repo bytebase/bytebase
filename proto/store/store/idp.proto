@@ -48,13 +48,13 @@ message OIDCIdentityProviderConfig {
 
   string client_secret = 3;
 
-  FieldMapping field_mapping = 4;
+  repeated string scopes = 4;
 
-  bool skip_tls_verify = 5;
+  FieldMapping field_mapping = 5;
 
-  OAuth2AuthStyle auth_style = 6;
+  bool skip_tls_verify = 6;
 
-  repeated string scopes = 7;
+  OAuth2AuthStyle auth_style = 7;
 }
 
 // LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
@@ -95,8 +95,6 @@ message LDAPIdentityProviderConfig {
 // As we save all raw json string of user info response data into `principal.idp_user_info`,
 // we can extract the relevant data based with `FieldMapping`.
 message FieldMapping {
-  reserved 3;
-
   // Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.
   string identifier = 1;
 
@@ -104,16 +102,14 @@ message FieldMapping {
   string display_name = 2;
 
   // Phone is the field name of primary phone in 3rd-party idp user info. Optional.
-  string phone = 4;
+  string phone = 3;
 
   // Groups is the field name of groups in 3rd-party idp user info. Optional.
   // Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/
-  string groups = 5;
+  string groups = 4;
 }
 
 message IdentityProviderUserInfo {
-  reserved 3;
-
   // Identifier is the value of the unique identifier in 3rd-party idp user info.
   string identifier = 1;
 
@@ -121,13 +117,13 @@ message IdentityProviderUserInfo {
   string display_name = 2;
 
   // Phone is the value of primary phone in 3rd-party idp user info.
-  string phone = 4;
+  string phone = 3;
 
   // Groups is the value of groups in 3rd-party idp user info.
   // Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/
-  repeated string groups = 5;
+  repeated string groups = 4;
 
-  bool has_groups = 6;
+  bool has_groups = 5;
 }
 
 enum OAuth2AuthStyle {

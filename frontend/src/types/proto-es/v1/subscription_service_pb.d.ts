@@ -266,300 +266,295 @@ export enum PlanFeature {
   FEATURE_SCHEMA_DRIFT_DETECTION = 13,
 
   /**
-   * @generated from enum value: FEATURE_SCHEMA_TEMPLATE = 15;
+   * @generated from enum value: FEATURE_ROLLOUT_POLICY = 14;
    */
-  FEATURE_SCHEMA_TEMPLATE = 15,
-
-  /**
-   * @generated from enum value: FEATURE_ROLLOUT_POLICY = 16;
-   */
-  FEATURE_ROLLOUT_POLICY = 16,
+  FEATURE_ROLLOUT_POLICY = 14,
 
   /**
    * SQL Editor & Development
    *
-   * @generated from enum value: FEATURE_WEB_BASED_SQL_EDITOR = 17;
+   * @generated from enum value: FEATURE_WEB_BASED_SQL_EDITOR = 15;
    */
-  FEATURE_WEB_BASED_SQL_EDITOR = 17,
+  FEATURE_WEB_BASED_SQL_EDITOR = 15,
 
   /**
-   * @generated from enum value: FEATURE_SQL_EDITOR_ADMIN_MODE = 18;
+   * @generated from enum value: FEATURE_SQL_EDITOR_ADMIN_MODE = 16;
    */
-  FEATURE_SQL_EDITOR_ADMIN_MODE = 18,
+  FEATURE_SQL_EDITOR_ADMIN_MODE = 16,
 
   /**
-   * @generated from enum value: FEATURE_NATURAL_LANGUAGE_TO_SQL = 19;
+   * @generated from enum value: FEATURE_NATURAL_LANGUAGE_TO_SQL = 17;
    */
-  FEATURE_NATURAL_LANGUAGE_TO_SQL = 19,
+  FEATURE_NATURAL_LANGUAGE_TO_SQL = 17,
 
   /**
-   * @generated from enum value: FEATURE_AI_QUERY_EXPLANATION = 20;
+   * @generated from enum value: FEATURE_AI_QUERY_EXPLANATION = 18;
    */
-  FEATURE_AI_QUERY_EXPLANATION = 20,
+  FEATURE_AI_QUERY_EXPLANATION = 18,
 
   /**
-   * @generated from enum value: FEATURE_AI_QUERY_SUGGESTIONS = 21;
+   * @generated from enum value: FEATURE_AI_QUERY_SUGGESTIONS = 19;
    */
-  FEATURE_AI_QUERY_SUGGESTIONS = 21,
+  FEATURE_AI_QUERY_SUGGESTIONS = 19,
 
   /**
-   * @generated from enum value: FEATURE_AUTO_COMPLETE = 22;
+   * @generated from enum value: FEATURE_AUTO_COMPLETE = 20;
    */
-  FEATURE_AUTO_COMPLETE = 22,
+  FEATURE_AUTO_COMPLETE = 20,
 
   /**
-   * @generated from enum value: FEATURE_SCHEMA_DIAGRAM = 23;
+   * @generated from enum value: FEATURE_SCHEMA_DIAGRAM = 21;
    */
-  FEATURE_SCHEMA_DIAGRAM = 23,
+  FEATURE_SCHEMA_DIAGRAM = 21,
 
   /**
-   * @generated from enum value: FEATURE_SCHEMA_EDITOR = 24;
+   * @generated from enum value: FEATURE_SCHEMA_EDITOR = 22;
    */
-  FEATURE_SCHEMA_EDITOR = 24,
+  FEATURE_SCHEMA_EDITOR = 22,
 
   /**
-   * @generated from enum value: FEATURE_DATA_EXPORT = 25;
+   * @generated from enum value: FEATURE_DATA_EXPORT = 23;
    */
-  FEATURE_DATA_EXPORT = 25,
+  FEATURE_DATA_EXPORT = 23,
 
   /**
-   * @generated from enum value: FEATURE_DATA_OFFLINE_EXPORT = 26;
+   * @generated from enum value: FEATURE_DATA_OFFLINE_EXPORT = 24;
    */
-  FEATURE_DATA_OFFLINE_EXPORT = 26,
+  FEATURE_DATA_OFFLINE_EXPORT = 24,
 
   /**
-   * @generated from enum value: FEATURE_QUERY_HISTORY = 27;
+   * @generated from enum value: FEATURE_QUERY_HISTORY = 25;
    */
-  FEATURE_QUERY_HISTORY = 27,
+  FEATURE_QUERY_HISTORY = 25,
 
   /**
-   * @generated from enum value: FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS = 28;
+   * @generated from enum value: FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS = 26;
    */
-  FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS = 28,
+  FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS = 26,
 
   /**
-   * @generated from enum value: FEATURE_BATCH_QUERY = 29;
+   * @generated from enum value: FEATURE_BATCH_QUERY = 27;
    */
-  FEATURE_BATCH_QUERY = 29,
+  FEATURE_BATCH_QUERY = 27,
 
   /**
-   * @generated from enum value: FEATURE_INSTANCE_READ_ONLY_CONNECTION = 30;
+   * @generated from enum value: FEATURE_INSTANCE_READ_ONLY_CONNECTION = 28;
    */
-  FEATURE_INSTANCE_READ_ONLY_CONNECTION = 30,
+  FEATURE_INSTANCE_READ_ONLY_CONNECTION = 28,
 
   /**
-   * @generated from enum value: FEATURE_QUERY_POLICY = 31;
+   * @generated from enum value: FEATURE_QUERY_POLICY = 29;
    */
-  FEATURE_QUERY_POLICY = 31,
+  FEATURE_QUERY_POLICY = 29,
 
   /**
-   * @generated from enum value: FEATURE_RESTRICT_COPYING_DATA = 32;
+   * @generated from enum value: FEATURE_RESTRICT_COPYING_DATA = 30;
    */
-  FEATURE_RESTRICT_COPYING_DATA = 32,
+  FEATURE_RESTRICT_COPYING_DATA = 30,
 
   /**
    * Security & Compliance
    *
-   * @generated from enum value: FEATURE_IAM = 33;
+   * @generated from enum value: FEATURE_IAM = 31;
    */
-  FEATURE_IAM = 33,
+  FEATURE_IAM = 31,
 
   /**
-   * @generated from enum value: FEATURE_INSTANCE_SSL_CONNECTION = 34;
+   * @generated from enum value: FEATURE_INSTANCE_SSL_CONNECTION = 32;
    */
-  FEATURE_INSTANCE_SSL_CONNECTION = 34,
+  FEATURE_INSTANCE_SSL_CONNECTION = 32,
 
   /**
-   * @generated from enum value: FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL = 35;
+   * @generated from enum value: FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL = 33;
    */
-  FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL = 35,
+  FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL = 33,
 
   /**
-   * @generated from enum value: FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION = 36;
+   * @generated from enum value: FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION = 34;
    */
-  FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION = 36,
+  FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION = 34,
 
   /**
-   * @generated from enum value: FEATURE_GOOGLE_AND_GITHUB_SSO = 37;
+   * @generated from enum value: FEATURE_GOOGLE_AND_GITHUB_SSO = 35;
    */
-  FEATURE_GOOGLE_AND_GITHUB_SSO = 37,
+  FEATURE_GOOGLE_AND_GITHUB_SSO = 35,
 
   /**
-   * @generated from enum value: FEATURE_USER_GROUPS = 38;
+   * @generated from enum value: FEATURE_USER_GROUPS = 36;
    */
-  FEATURE_USER_GROUPS = 38,
+  FEATURE_USER_GROUPS = 36,
 
   /**
-   * @generated from enum value: FEATURE_DISALLOW_SELF_SERVICE_SIGNUP = 39;
+   * @generated from enum value: FEATURE_DISALLOW_SELF_SERVICE_SIGNUP = 37;
    */
-  FEATURE_DISALLOW_SELF_SERVICE_SIGNUP = 39,
+  FEATURE_DISALLOW_SELF_SERVICE_SIGNUP = 37,
 
   /**
-   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 41;
+   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 38;
    */
-  FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 41,
+  FEATURE_CUSTOM_INSTANCE_SYNC_TIME = 38,
 
   /**
-   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 42;
+   * @generated from enum value: FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 39;
    */
-  FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 42,
+  FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT = 39,
 
   /**
-   * @generated from enum value: FEATURE_RISK_ASSESSMENT = 43;
+   * @generated from enum value: FEATURE_RISK_ASSESSMENT = 40;
    */
-  FEATURE_RISK_ASSESSMENT = 43,
+  FEATURE_RISK_ASSESSMENT = 40,
 
   /**
-   * @generated from enum value: FEATURE_APPROVAL_WORKFLOW = 44;
+   * @generated from enum value: FEATURE_APPROVAL_WORKFLOW = 41;
    */
-  FEATURE_APPROVAL_WORKFLOW = 44,
+  FEATURE_APPROVAL_WORKFLOW = 41,
 
   /**
-   * @generated from enum value: FEATURE_AUDIT_LOG = 45;
+   * @generated from enum value: FEATURE_AUDIT_LOG = 42;
    */
-  FEATURE_AUDIT_LOG = 45,
+  FEATURE_AUDIT_LOG = 42,
 
   /**
-   * @generated from enum value: FEATURE_ENTERPRISE_SSO = 46;
+   * @generated from enum value: FEATURE_ENTERPRISE_SSO = 43;
    */
-  FEATURE_ENTERPRISE_SSO = 46,
+  FEATURE_ENTERPRISE_SSO = 43,
 
   /**
-   * @generated from enum value: FEATURE_TWO_FA = 47;
+   * @generated from enum value: FEATURE_TWO_FA = 44;
    */
-  FEATURE_TWO_FA = 47,
+  FEATURE_TWO_FA = 44,
 
   /**
-   * @generated from enum value: FEATURE_PASSWORD_RESTRICTIONS = 48;
+   * @generated from enum value: FEATURE_PASSWORD_RESTRICTIONS = 45;
    */
-  FEATURE_PASSWORD_RESTRICTIONS = 48,
+  FEATURE_PASSWORD_RESTRICTIONS = 45,
 
   /**
-   * @generated from enum value: FEATURE_DISALLOW_PASSWORD_SIGNIN = 49;
+   * @generated from enum value: FEATURE_DISALLOW_PASSWORD_SIGNIN = 46;
    */
-  FEATURE_DISALLOW_PASSWORD_SIGNIN = 49,
+  FEATURE_DISALLOW_PASSWORD_SIGNIN = 46,
 
   /**
-   * @generated from enum value: FEATURE_CUSTOM_ROLES = 50;
+   * @generated from enum value: FEATURE_CUSTOM_ROLES = 47;
    */
-  FEATURE_CUSTOM_ROLES = 50,
+  FEATURE_CUSTOM_ROLES = 47,
 
   /**
-   * @generated from enum value: FEATURE_REQUEST_ROLE_WORKFLOW = 51;
+   * @generated from enum value: FEATURE_REQUEST_ROLE_WORKFLOW = 48;
    */
-  FEATURE_REQUEST_ROLE_WORKFLOW = 51,
+  FEATURE_REQUEST_ROLE_WORKFLOW = 48,
 
   /**
-   * @generated from enum value: FEATURE_DATA_MASKING = 52;
+   * @generated from enum value: FEATURE_DATA_MASKING = 49;
    */
-  FEATURE_DATA_MASKING = 52,
+  FEATURE_DATA_MASKING = 49,
 
   /**
-   * @generated from enum value: FEATURE_DATA_CLASSIFICATION = 53;
+   * @generated from enum value: FEATURE_DATA_CLASSIFICATION = 50;
    */
-  FEATURE_DATA_CLASSIFICATION = 53,
+  FEATURE_DATA_CLASSIFICATION = 50,
 
   /**
-   * @generated from enum value: FEATURE_SCIM = 54;
+   * @generated from enum value: FEATURE_SCIM = 51;
    */
-  FEATURE_SCIM = 54,
+  FEATURE_SCIM = 51,
 
   /**
-   * @generated from enum value: FEATURE_DIRECTORY_SYNC = 55;
+   * @generated from enum value: FEATURE_DIRECTORY_SYNC = 52;
    */
-  FEATURE_DIRECTORY_SYNC = 55,
+  FEATURE_DIRECTORY_SYNC = 52,
 
   /**
-   * @generated from enum value: FEATURE_SIGN_IN_FREQUENCY_CONTROL = 56;
+   * @generated from enum value: FEATURE_SIGN_IN_FREQUENCY_CONTROL = 53;
    */
-  FEATURE_SIGN_IN_FREQUENCY_CONTROL = 56,
+  FEATURE_SIGN_IN_FREQUENCY_CONTROL = 53,
 
   /**
-   * @generated from enum value: FEATURE_EXTERNAL_SECRET_MANAGER = 57;
+   * @generated from enum value: FEATURE_EXTERNAL_SECRET_MANAGER = 54;
    */
-  FEATURE_EXTERNAL_SECRET_MANAGER = 57,
+  FEATURE_EXTERNAL_SECRET_MANAGER = 54,
 
   /**
-   * @generated from enum value: FEATURE_USER_EMAIL_DOMAIN_RESTRICTION = 58;
+   * @generated from enum value: FEATURE_USER_EMAIL_DOMAIN_RESTRICTION = 55;
    */
-  FEATURE_USER_EMAIL_DOMAIN_RESTRICTION = 58,
+  FEATURE_USER_EMAIL_DOMAIN_RESTRICTION = 55,
 
   /**
    * Administration & Support
    *
-   * @generated from enum value: FEATURE_PROJECT_MANAGEMENT = 59;
+   * @generated from enum value: FEATURE_PROJECT_MANAGEMENT = 56;
    */
-  FEATURE_PROJECT_MANAGEMENT = 59,
+  FEATURE_PROJECT_MANAGEMENT = 56,
 
   /**
-   * @generated from enum value: FEATURE_ENVIRONMENT_MANAGEMENT = 60;
+   * @generated from enum value: FEATURE_ENVIRONMENT_MANAGEMENT = 57;
    */
-  FEATURE_ENVIRONMENT_MANAGEMENT = 60,
+  FEATURE_ENVIRONMENT_MANAGEMENT = 57,
 
   /**
-   * @generated from enum value: FEATURE_IM_NOTIFICATIONS = 61;
+   * @generated from enum value: FEATURE_IM_NOTIFICATIONS = 58;
    */
-  FEATURE_IM_NOTIFICATIONS = 61,
+  FEATURE_IM_NOTIFICATIONS = 58,
 
   /**
-   * @generated from enum value: FEATURE_TERRAFORM_PROVIDER = 62;
+   * @generated from enum value: FEATURE_TERRAFORM_PROVIDER = 59;
    */
-  FEATURE_TERRAFORM_PROVIDER = 62,
+  FEATURE_TERRAFORM_PROVIDER = 59,
 
   /**
-   * @generated from enum value: FEATURE_DATABASE_GROUPS = 63;
+   * @generated from enum value: FEATURE_DATABASE_GROUPS = 60;
    */
-  FEATURE_DATABASE_GROUPS = 63,
+  FEATURE_DATABASE_GROUPS = 60,
 
   /**
-   * @generated from enum value: FEATURE_ENVIRONMENT_TIERS = 64;
+   * @generated from enum value: FEATURE_ENVIRONMENT_TIERS = 61;
    */
-  FEATURE_ENVIRONMENT_TIERS = 64,
+  FEATURE_ENVIRONMENT_TIERS = 61,
 
   /**
-   * @generated from enum value: FEATURE_DASHBOARD_ANNOUNCEMENT = 65;
+   * @generated from enum value: FEATURE_DASHBOARD_ANNOUNCEMENT = 62;
    */
-  FEATURE_DASHBOARD_ANNOUNCEMENT = 65,
+  FEATURE_DASHBOARD_ANNOUNCEMENT = 62,
 
   /**
-   * @generated from enum value: FEATURE_API_INTEGRATION_GUIDANCE = 66;
+   * @generated from enum value: FEATURE_API_INTEGRATION_GUIDANCE = 63;
    */
-  FEATURE_API_INTEGRATION_GUIDANCE = 66,
+  FEATURE_API_INTEGRATION_GUIDANCE = 63,
 
   /**
-   * @generated from enum value: FEATURE_CUSTOM_LOGO = 67;
+   * @generated from enum value: FEATURE_CUSTOM_LOGO = 64;
    */
-  FEATURE_CUSTOM_LOGO = 67,
+  FEATURE_CUSTOM_LOGO = 64,
 
   /**
-   * @generated from enum value: FEATURE_WATERMARK = 68;
+   * @generated from enum value: FEATURE_WATERMARK = 65;
    */
-  FEATURE_WATERMARK = 68,
+  FEATURE_WATERMARK = 65,
 
   /**
-   * @generated from enum value: FEATURE_ROADMAP_PRIORITIZATION = 69;
+   * @generated from enum value: FEATURE_ROADMAP_PRIORITIZATION = 66;
    */
-  FEATURE_ROADMAP_PRIORITIZATION = 69,
+  FEATURE_ROADMAP_PRIORITIZATION = 66,
 
   /**
-   * @generated from enum value: FEATURE_CUSTOM_MSA = 70;
+   * @generated from enum value: FEATURE_CUSTOM_MSA = 67;
    */
-  FEATURE_CUSTOM_MSA = 70,
+  FEATURE_CUSTOM_MSA = 67,
 
   /**
-   * @generated from enum value: FEATURE_COMMUNITY_SUPPORT = 71;
+   * @generated from enum value: FEATURE_COMMUNITY_SUPPORT = 68;
    */
-  FEATURE_COMMUNITY_SUPPORT = 71,
+  FEATURE_COMMUNITY_SUPPORT = 68,
 
   /**
-   * @generated from enum value: FEATURE_EMAIL_SUPPORT = 72;
+   * @generated from enum value: FEATURE_EMAIL_SUPPORT = 69;
    */
-  FEATURE_EMAIL_SUPPORT = 72,
+  FEATURE_EMAIL_SUPPORT = 69,
 
   /**
-   * @generated from enum value: FEATURE_DEDICATED_SUPPORT_WITH_SLA = 73;
+   * @generated from enum value: FEATURE_DEDICATED_SUPPORT_WITH_SLA = 70;
    */
-  FEATURE_DEDICATED_SUPPORT_WITH_SLA = 73,
+  FEATURE_DEDICATED_SUPPORT_WITH_SLA = 70,
 }
 
 /**

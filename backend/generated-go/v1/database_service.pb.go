@@ -497,7 +497,7 @@ func (x Changelog_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Changelog_Status.Descriptor instead.
 func (Changelog_Status) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{61, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{54, 0}
 }
 
 type Changelog_Type int32
@@ -549,7 +549,7 @@ func (x Changelog_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Changelog_Type.Descriptor instead.
 func (Changelog_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{61, 1}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{54, 1}
 }
 
 type GetSchemaStringRequest_ObjectType int32
@@ -616,7 +616,7 @@ func (x GetSchemaStringRequest_ObjectType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GetSchemaStringRequest_ObjectType.Descriptor instead.
 func (GetSchemaStringRequest_ObjectType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{62, 0}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{55, 0}
 }
 
 type GetDatabaseRequest struct {
@@ -1618,29 +1618,29 @@ type Database struct {
 	// {database} is the database name in the instance.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The existence of a database.
-	State State `protobuf:"varint,3,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
+	State State `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.State" json:"state,omitempty"`
 	// The latest synchronization time.
-	SuccessfulSyncTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=successful_sync_time,json=successfulSyncTime,proto3" json:"successful_sync_time,omitempty"`
+	SuccessfulSyncTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=successful_sync_time,json=successfulSyncTime,proto3" json:"successful_sync_time,omitempty"`
 	// The project for a database.
 	// Format: projects/{project}
-	Project string `protobuf:"bytes,5,opt,name=project,proto3" json:"project,omitempty"`
+	Project string `protobuf:"bytes,4,opt,name=project,proto3" json:"project,omitempty"`
 	// The version of database schema.
-	SchemaVersion string `protobuf:"bytes,6,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	SchemaVersion string `protobuf:"bytes,5,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
 	// The environment resource.
 	// Format: environments/prod where prod is the environment resource ID.
-	Environment *string `protobuf:"bytes,7,opt,name=environment,proto3,oneof" json:"environment,omitempty"`
+	Environment *string `protobuf:"bytes,6,opt,name=environment,proto3,oneof" json:"environment,omitempty"`
 	// The effective environment based on environment tag above and environment
 	// tag on the instance. Inheritance follows
 	// https://cloud.google.com/resource-manager/docs/tags/tags-overview.
-	EffectiveEnvironment *string `protobuf:"bytes,8,opt,name=effective_environment,json=effectiveEnvironment,proto3,oneof" json:"effective_environment,omitempty"`
+	EffectiveEnvironment *string `protobuf:"bytes,7,opt,name=effective_environment,json=effectiveEnvironment,proto3,oneof" json:"effective_environment,omitempty"`
 	// Labels will be used for deployment and policy control.
-	Labels map[string]string `protobuf:"bytes,9,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Labels map[string]string `protobuf:"bytes,8,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// The instance resource.
-	InstanceResource *InstanceResource `protobuf:"bytes,10,opt,name=instance_resource,json=instanceResource,proto3" json:"instance_resource,omitempty"`
+	InstanceResource *InstanceResource `protobuf:"bytes,9,opt,name=instance_resource,json=instanceResource,proto3" json:"instance_resource,omitempty"`
 	// The database is available for DML prior backup.
-	BackupAvailable bool `protobuf:"varint,11,opt,name=backup_available,json=backupAvailable,proto3" json:"backup_available,omitempty"`
+	BackupAvailable bool `protobuf:"varint,10,opt,name=backup_available,json=backupAvailable,proto3" json:"backup_available,omitempty"`
 	// The schema is drifted from the source of truth.
-	Drifted       bool `protobuf:"varint,12,opt,name=drifted,proto3" json:"drifted,omitempty"`
+	Drifted       bool `protobuf:"varint,11,opt,name=drifted,proto3" json:"drifted,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1768,9 +1768,9 @@ type DatabaseMetadata struct {
 	// The extensions is the list of extensions in a database.
 	Extensions []*ExtensionMetadata `protobuf:"bytes,5,rep,name=extensions,proto3" json:"extensions,omitempty"`
 	// The owner of the database.
-	Owner string `protobuf:"bytes,7,opt,name=owner,proto3" json:"owner,omitempty"`
+	Owner string `protobuf:"bytes,6,opt,name=owner,proto3" json:"owner,omitempty"`
 	// The search_path is the search path of a PostgreSQL database.
-	SearchPath    string `protobuf:"bytes,8,opt,name=search_path,json=searchPath,proto3" json:"search_path,omitempty"`
+	SearchPath    string `protobuf:"bytes,7,opt,name=search_path,json=searchPath,proto3" json:"search_path,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1884,15 +1884,15 @@ type SchemaMetadata struct {
 	// The owner of the schema.
 	Owner string `protobuf:"bytes,11,opt,name=owner,proto3" json:"owner,omitempty"`
 	// The sequences is the list of sequences in a schema, sorted by name.
-	Sequences []*SequenceMetadata `protobuf:"bytes,13,rep,name=sequences,proto3" json:"sequences,omitempty"`
+	Sequences []*SequenceMetadata `protobuf:"bytes,12,rep,name=sequences,proto3" json:"sequences,omitempty"`
 	// The events is the list of scheduled events in a schema.
-	Events []*EventMetadata `protobuf:"bytes,14,rep,name=events,proto3" json:"events,omitempty"`
+	Events []*EventMetadata `protobuf:"bytes,13,rep,name=events,proto3" json:"events,omitempty"`
 	// The enum_types is the list of user-defined enum types in a schema.
-	EnumTypes []*EnumTypeMetadata `protobuf:"bytes,15,rep,name=enum_types,json=enumTypes,proto3" json:"enum_types,omitempty"`
+	EnumTypes []*EnumTypeMetadata `protobuf:"bytes,14,rep,name=enum_types,json=enumTypes,proto3" json:"enum_types,omitempty"`
 	// Whether to skip this schema during schema dump operations.
-	SkipDump bool `protobuf:"varint,16,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
+	SkipDump bool `protobuf:"varint,15,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
 	// The comment is the comment of a schema.
-	Comment       string `protobuf:"bytes,17,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment       string `protobuf:"bytes,16,opt,name=comment,proto3" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2369,21 +2369,21 @@ type TriggerMetadata struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
 	// TRUNCATE.
-	Event string `protobuf:"bytes,3,opt,name=event,proto3" json:"event,omitempty"`
+	Event string `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
 	// The timing is the timing of the trigger, such as BEFORE, AFTER.
-	Timing string `protobuf:"bytes,4,opt,name=timing,proto3" json:"timing,omitempty"`
+	Timing string `protobuf:"bytes,3,opt,name=timing,proto3" json:"timing,omitempty"`
 	// The body is the body of the trigger.
-	Body string `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
+	Body string `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`
 	// The SQL mode setting for the trigger.
-	SqlMode string `protobuf:"bytes,6,opt,name=sql_mode,json=sqlMode,proto3" json:"sql_mode,omitempty"`
+	SqlMode string `protobuf:"bytes,5,opt,name=sql_mode,json=sqlMode,proto3" json:"sql_mode,omitempty"`
 	// The character set used by the client creating the trigger.
-	CharacterSetClient string `protobuf:"bytes,7,opt,name=character_set_client,json=characterSetClient,proto3" json:"character_set_client,omitempty"`
+	CharacterSetClient string `protobuf:"bytes,6,opt,name=character_set_client,json=characterSetClient,proto3" json:"character_set_client,omitempty"`
 	// The collation used for the connection when creating the trigger.
-	CollationConnection string `protobuf:"bytes,8,opt,name=collation_connection,json=collationConnection,proto3" json:"collation_connection,omitempty"`
+	CollationConnection string `protobuf:"bytes,7,opt,name=collation_connection,json=collationConnection,proto3" json:"collation_connection,omitempty"`
 	// The comment describing the trigger.
-	Comment string `protobuf:"bytes,9,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment string `protobuf:"bytes,8,opt,name=comment,proto3" json:"comment,omitempty"`
 	// Whether to skip this trigger during schema dump operations.
-	SkipDump      bool `protobuf:"varint,10,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
+	SkipDump      bool `protobuf:"varint,9,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2567,39 +2567,39 @@ type TableMetadata struct {
 	// The collation is the collation of a table.
 	Collation string `protobuf:"bytes,5,opt,name=collation,proto3" json:"collation,omitempty"`
 	// The character set of table.
-	Charset string `protobuf:"bytes,17,opt,name=charset,proto3" json:"charset,omitempty"`
+	Charset string `protobuf:"bytes,6,opt,name=charset,proto3" json:"charset,omitempty"`
 	// The row_count is the estimated number of rows of a table.
-	RowCount int64 `protobuf:"varint,6,opt,name=row_count,json=rowCount,proto3" json:"row_count,omitempty"`
+	RowCount int64 `protobuf:"varint,7,opt,name=row_count,json=rowCount,proto3" json:"row_count,omitempty"`
 	// The data_size is the estimated data size of a table.
-	DataSize int64 `protobuf:"varint,7,opt,name=data_size,json=dataSize,proto3" json:"data_size,omitempty"`
+	DataSize int64 `protobuf:"varint,8,opt,name=data_size,json=dataSize,proto3" json:"data_size,omitempty"`
 	// The index_size is the estimated index size of a table.
-	IndexSize int64 `protobuf:"varint,8,opt,name=index_size,json=indexSize,proto3" json:"index_size,omitempty"`
+	IndexSize int64 `protobuf:"varint,9,opt,name=index_size,json=indexSize,proto3" json:"index_size,omitempty"`
 	// The data_free is the estimated free data size of a table.
-	DataFree int64 `protobuf:"varint,9,opt,name=data_free,json=dataFree,proto3" json:"data_free,omitempty"`
+	DataFree int64 `protobuf:"varint,10,opt,name=data_free,json=dataFree,proto3" json:"data_free,omitempty"`
 	// The create_options is the create option of a table.
-	CreateOptions string `protobuf:"bytes,10,opt,name=create_options,json=createOptions,proto3" json:"create_options,omitempty"`
+	CreateOptions string `protobuf:"bytes,11,opt,name=create_options,json=createOptions,proto3" json:"create_options,omitempty"`
 	// The comment is the comment of a table.
-	Comment string `protobuf:"bytes,11,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment string `protobuf:"bytes,12,opt,name=comment,proto3" json:"comment,omitempty"`
 	// The foreign_keys is the list of foreign keys in a table.
-	ForeignKeys []*ForeignKeyMetadata `protobuf:"bytes,12,rep,name=foreign_keys,json=foreignKeys,proto3" json:"foreign_keys,omitempty"`
+	ForeignKeys []*ForeignKeyMetadata `protobuf:"bytes,13,rep,name=foreign_keys,json=foreignKeys,proto3" json:"foreign_keys,omitempty"`
 	// The partitions is the list of partitions in a table.
-	Partitions []*TablePartitionMetadata `protobuf:"bytes,15,rep,name=partitions,proto3" json:"partitions,omitempty"`
+	Partitions []*TablePartitionMetadata `protobuf:"bytes,14,rep,name=partitions,proto3" json:"partitions,omitempty"`
 	// The check_constraints is the list of check constraints in a table.
-	CheckConstraints []*CheckConstraintMetadata `protobuf:"bytes,16,rep,name=check_constraints,json=checkConstraints,proto3" json:"check_constraints,omitempty"`
+	CheckConstraints []*CheckConstraintMetadata `protobuf:"bytes,15,rep,name=check_constraints,json=checkConstraints,proto3" json:"check_constraints,omitempty"`
 	// The owner of the table.
-	Owner string `protobuf:"bytes,18,opt,name=owner,proto3" json:"owner,omitempty"`
+	Owner string `protobuf:"bytes,16,opt,name=owner,proto3" json:"owner,omitempty"`
 	// The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
 	// Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
-	SortingKeys []string `protobuf:"bytes,19,rep,name=sorting_keys,json=sortingKeys,proto3" json:"sorting_keys,omitempty"`
+	SortingKeys []string `protobuf:"bytes,17,rep,name=sorting_keys,json=sortingKeys,proto3" json:"sorting_keys,omitempty"`
 	// The triggers is the list of triggers associated with the table.
-	Triggers []*TriggerMetadata `protobuf:"bytes,20,rep,name=triggers,proto3" json:"triggers,omitempty"`
+	Triggers []*TriggerMetadata `protobuf:"bytes,18,rep,name=triggers,proto3" json:"triggers,omitempty"`
 	// Whether to skip this table during schema dump operations.
-	SkipDump bool `protobuf:"varint,21,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
+	SkipDump bool `protobuf:"varint,19,opt,name=skip_dump,json=skipDump,proto3" json:"skip_dump,omitempty"`
 	// https://docs.pingcap.com/tidb/stable/information-schema-tables/
-	ShardingInfo string `protobuf:"bytes,22,opt,name=sharding_info,json=shardingInfo,proto3" json:"sharding_info,omitempty"`
+	ShardingInfo string `protobuf:"bytes,20,opt,name=sharding_info,json=shardingInfo,proto3" json:"sharding_info,omitempty"`
 	// https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
 	// CLUSTERED or NONCLUSTERED.
-	PrimaryKeyType string `protobuf:"bytes,23,opt,name=primary_key_type,json=primaryKeyType,proto3" json:"primary_key_type,omitempty"`
+	PrimaryKeyType string `protobuf:"bytes,21,opt,name=primary_key_type,json=primaryKeyType,proto3" json:"primary_key_type,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -2972,14 +2972,14 @@ type ColumnMetadata struct {
 	Position   int32 `protobuf:"varint,2,opt,name=position,proto3" json:"position,omitempty"`
 	HasDefault bool  `protobuf:"varint,3,opt,name=has_default,json=hasDefault,proto3" json:"has_default,omitempty"`
 	// The default value of column.
-	Default string `protobuf:"bytes,23,opt,name=default,proto3" json:"default,omitempty"`
+	Default string `protobuf:"bytes,4,opt,name=default,proto3" json:"default,omitempty"`
 	// Oracle specific metadata.
 	// The default_on_null is the default on null of a column.
-	DefaultOnNull bool `protobuf:"varint,18,opt,name=default_on_null,json=defaultOnNull,proto3" json:"default_on_null,omitempty"`
+	DefaultOnNull bool `protobuf:"varint,5,opt,name=default_on_null,json=defaultOnNull,proto3" json:"default_on_null,omitempty"`
 	// The on_update is the on update action of a column.
 	// For MySQL like databases, it's only supported for TIMESTAMP columns with
 	// CURRENT_TIMESTAMP as on update value.
-	OnUpdate string `protobuf:"bytes,15,opt,name=on_update,json=onUpdate,proto3" json:"on_update,omitempty"`
+	OnUpdate string `protobuf:"bytes,6,opt,name=on_update,json=onUpdate,proto3" json:"on_update,omitempty"`
 	// The nullable is the nullable of a column.
 	Nullable bool `protobuf:"varint,7,opt,name=nullable,proto3" json:"nullable,omitempty"`
 	// The type is the type of a column.
@@ -2991,14 +2991,14 @@ type ColumnMetadata struct {
 	// The comment is the comment of a column.
 	Comment string `protobuf:"bytes,11,opt,name=comment,proto3" json:"comment,omitempty"`
 	// The generation is the generation of a column.
-	Generation *GenerationMetadata `protobuf:"bytes,16,opt,name=generation,proto3" json:"generation,omitempty"`
-	IsIdentity bool                `protobuf:"varint,19,opt,name=is_identity,json=isIdentity,proto3" json:"is_identity,omitempty"`
+	Generation *GenerationMetadata `protobuf:"bytes,12,opt,name=generation,proto3" json:"generation,omitempty"`
+	IsIdentity bool                `protobuf:"varint,13,opt,name=is_identity,json=isIdentity,proto3" json:"is_identity,omitempty"`
 	// The identity_generation is for identity columns, PG only.
-	IdentityGeneration ColumnMetadata_IdentityGeneration `protobuf:"varint,17,opt,name=identity_generation,json=identityGeneration,proto3,enum=bytebase.v1.ColumnMetadata_IdentityGeneration" json:"identity_generation,omitempty"`
+	IdentityGeneration ColumnMetadata_IdentityGeneration `protobuf:"varint,14,opt,name=identity_generation,json=identityGeneration,proto3,enum=bytebase.v1.ColumnMetadata_IdentityGeneration" json:"identity_generation,omitempty"`
 	// The identity_seed is for identity columns, MSSQL only.
-	IdentitySeed int64 `protobuf:"varint,20,opt,name=identity_seed,json=identitySeed,proto3" json:"identity_seed,omitempty"`
+	IdentitySeed int64 `protobuf:"varint,15,opt,name=identity_seed,json=identitySeed,proto3" json:"identity_seed,omitempty"`
 	// The identity_increment is for identity columns, MSSQL only.
-	IdentityIncrement int64 `protobuf:"varint,21,opt,name=identity_increment,json=identityIncrement,proto3" json:"identity_increment,omitempty"`
+	IdentityIncrement int64 `protobuf:"varint,16,opt,name=identity_increment,json=identityIncrement,proto3" json:"identity_increment,omitempty"`
 	// The default_constraint_name is the name of the default constraint, MSSQL only.
 	// In MSSQL, default values are implemented as named constraints. When modifying or
 	// dropping a column's default value, you must reference the constraint by name.
@@ -3022,7 +3022,7 @@ type ColumnMetadata struct {
 	//
 	// This field is populated when syncing from the database. When empty (e.g., when parsing
 	// from SQL files), the system cannot automatically drop the constraint.
-	DefaultConstraintName string `protobuf:"bytes,22,opt,name=default_constraint_name,json=defaultConstraintName,proto3" json:"default_constraint_name,omitempty"`
+	DefaultConstraintName string `protobuf:"bytes,17,opt,name=default_constraint_name,json=defaultConstraintName,proto3" json:"default_constraint_name,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -4657,21 +4657,21 @@ type IndexMetadata struct {
 	Expressions []string `protobuf:"bytes,2,rep,name=expressions,proto3" json:"expressions,omitempty"`
 	// The key_lengths are the ordered key lengths of an index.
 	// If the key length is not specified, it's -1.
-	KeyLength []int64 `protobuf:"varint,9,rep,packed,name=key_length,json=keyLength,proto3" json:"key_length,omitempty"`
+	KeyLength []int64 `protobuf:"varint,3,rep,packed,name=key_length,json=keyLength,proto3" json:"key_length,omitempty"`
 	// The descending is the ordered descending of an index.
-	Descending []bool `protobuf:"varint,10,rep,packed,name=descending,proto3" json:"descending,omitempty"`
+	Descending []bool `protobuf:"varint,4,rep,packed,name=descending,proto3" json:"descending,omitempty"`
 	// The type is the type of an index.
-	Type string `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+	Type string `protobuf:"bytes,5,opt,name=type,proto3" json:"type,omitempty"`
 	// The unique is whether the index is unique.
-	Unique bool `protobuf:"varint,4,opt,name=unique,proto3" json:"unique,omitempty"`
+	Unique bool `protobuf:"varint,6,opt,name=unique,proto3" json:"unique,omitempty"`
 	// The primary is whether the index is a primary key index.
-	Primary bool `protobuf:"varint,5,opt,name=primary,proto3" json:"primary,omitempty"`
+	Primary bool `protobuf:"varint,7,opt,name=primary,proto3" json:"primary,omitempty"`
 	// The visible is whether the index is visible.
-	Visible bool `protobuf:"varint,6,opt,name=visible,proto3" json:"visible,omitempty"`
+	Visible bool `protobuf:"varint,8,opt,name=visible,proto3" json:"visible,omitempty"`
 	// The comment is the comment of an index.
-	Comment string `protobuf:"bytes,7,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment string `protobuf:"bytes,9,opt,name=comment,proto3" json:"comment,omitempty"`
 	// The definition of an index.
-	Definition string `protobuf:"bytes,8,opt,name=definition,proto3" json:"definition,omitempty"`
+	Definition string `protobuf:"bytes,10,opt,name=definition,proto3" json:"definition,omitempty"`
 	// The schema name of the parent index.
 	ParentIndexSchema string `protobuf:"bytes,11,opt,name=parent_index_schema,json=parentIndexSchema,proto3" json:"parent_index_schema,omitempty"`
 	// The index name of the parent index.
@@ -5134,390 +5134,6 @@ func (x *DatabaseSDLSchema) GetContentType() string {
 	return ""
 }
 
-type ChangedResources struct {
-	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Databases     []*ChangedResourceDatabase `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChangedResources) Reset() {
-	*x = ChangedResources{}
-	mi := &file_v1_database_service_proto_msgTypes[51]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChangedResources) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChangedResources) ProtoMessage() {}
-
-func (x *ChangedResources) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[51]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChangedResources.ProtoReflect.Descriptor instead.
-func (*ChangedResources) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{51}
-}
-
-func (x *ChangedResources) GetDatabases() []*ChangedResourceDatabase {
-	if x != nil {
-		return x.Databases
-	}
-	return nil
-}
-
-type ChangedResourceDatabase struct {
-	state         protoimpl.MessageState   `protogen:"open.v1"`
-	Name          string                   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Schemas       []*ChangedResourceSchema `protobuf:"bytes,2,rep,name=schemas,proto3" json:"schemas,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChangedResourceDatabase) Reset() {
-	*x = ChangedResourceDatabase{}
-	mi := &file_v1_database_service_proto_msgTypes[52]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChangedResourceDatabase) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChangedResourceDatabase) ProtoMessage() {}
-
-func (x *ChangedResourceDatabase) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[52]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChangedResourceDatabase.ProtoReflect.Descriptor instead.
-func (*ChangedResourceDatabase) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{52}
-}
-
-func (x *ChangedResourceDatabase) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ChangedResourceDatabase) GetSchemas() []*ChangedResourceSchema {
-	if x != nil {
-		return x.Schemas
-	}
-	return nil
-}
-
-type ChangedResourceSchema struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	Name          string                      `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Tables        []*ChangedResourceTable     `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
-	Views         []*ChangedResourceView      `protobuf:"bytes,3,rep,name=views,proto3" json:"views,omitempty"`
-	Functions     []*ChangedResourceFunction  `protobuf:"bytes,4,rep,name=functions,proto3" json:"functions,omitempty"`
-	Procedures    []*ChangedResourceProcedure `protobuf:"bytes,5,rep,name=procedures,proto3" json:"procedures,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChangedResourceSchema) Reset() {
-	*x = ChangedResourceSchema{}
-	mi := &file_v1_database_service_proto_msgTypes[53]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChangedResourceSchema) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChangedResourceSchema) ProtoMessage() {}
-
-func (x *ChangedResourceSchema) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[53]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChangedResourceSchema.ProtoReflect.Descriptor instead.
-func (*ChangedResourceSchema) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{53}
-}
-
-func (x *ChangedResourceSchema) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ChangedResourceSchema) GetTables() []*ChangedResourceTable {
-	if x != nil {
-		return x.Tables
-	}
-	return nil
-}
-
-func (x *ChangedResourceSchema) GetViews() []*ChangedResourceView {
-	if x != nil {
-		return x.Views
-	}
-	return nil
-}
-
-func (x *ChangedResourceSchema) GetFunctions() []*ChangedResourceFunction {
-	if x != nil {
-		return x.Functions
-	}
-	return nil
-}
-
-func (x *ChangedResourceSchema) GetProcedures() []*ChangedResourceProcedure {
-	if x != nil {
-		return x.Procedures
-	}
-	return nil
-}
-
-type ChangedResourceTable struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The ranges of sub-strings correspond to the statements on the sheet.
-	Ranges        []*Range `protobuf:"bytes,3,rep,name=ranges,proto3" json:"ranges,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChangedResourceTable) Reset() {
-	*x = ChangedResourceTable{}
-	mi := &file_v1_database_service_proto_msgTypes[54]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChangedResourceTable) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChangedResourceTable) ProtoMessage() {}
-
-func (x *ChangedResourceTable) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[54]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChangedResourceTable.ProtoReflect.Descriptor instead.
-func (*ChangedResourceTable) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{54}
-}
-
-func (x *ChangedResourceTable) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ChangedResourceTable) GetRanges() []*Range {
-	if x != nil {
-		return x.Ranges
-	}
-	return nil
-}
-
-type ChangedResourceView struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The ranges of sub-strings correspond to the statements on the sheet.
-	Ranges        []*Range `protobuf:"bytes,2,rep,name=ranges,proto3" json:"ranges,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChangedResourceView) Reset() {
-	*x = ChangedResourceView{}
-	mi := &file_v1_database_service_proto_msgTypes[55]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChangedResourceView) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChangedResourceView) ProtoMessage() {}
-
-func (x *ChangedResourceView) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[55]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChangedResourceView.ProtoReflect.Descriptor instead.
-func (*ChangedResourceView) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{55}
-}
-
-func (x *ChangedResourceView) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ChangedResourceView) GetRanges() []*Range {
-	if x != nil {
-		return x.Ranges
-	}
-	return nil
-}
-
-type ChangedResourceFunction struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The ranges of sub-strings correspond to the statements on the sheet.
-	Ranges        []*Range `protobuf:"bytes,2,rep,name=ranges,proto3" json:"ranges,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChangedResourceFunction) Reset() {
-	*x = ChangedResourceFunction{}
-	mi := &file_v1_database_service_proto_msgTypes[56]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChangedResourceFunction) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChangedResourceFunction) ProtoMessage() {}
-
-func (x *ChangedResourceFunction) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[56]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChangedResourceFunction.ProtoReflect.Descriptor instead.
-func (*ChangedResourceFunction) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{56}
-}
-
-func (x *ChangedResourceFunction) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ChangedResourceFunction) GetRanges() []*Range {
-	if x != nil {
-		return x.Ranges
-	}
-	return nil
-}
-
-type ChangedResourceProcedure struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The ranges of sub-strings correspond to the statements on the sheet.
-	Ranges        []*Range `protobuf:"bytes,2,rep,name=ranges,proto3" json:"ranges,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChangedResourceProcedure) Reset() {
-	*x = ChangedResourceProcedure{}
-	mi := &file_v1_database_service_proto_msgTypes[57]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChangedResourceProcedure) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChangedResourceProcedure) ProtoMessage() {}
-
-func (x *ChangedResourceProcedure) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[57]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChangedResourceProcedure.ProtoReflect.Descriptor instead.
-func (*ChangedResourceProcedure) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{57}
-}
-
-func (x *ChangedResourceProcedure) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ChangedResourceProcedure) GetRanges() []*Range {
-	if x != nil {
-		return x.Ranges
-	}
-	return nil
-}
-
 type ListChangelogsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The parent of the changelogs.
@@ -5540,7 +5156,7 @@ type ListChangelogsRequest struct {
 
 func (x *ListChangelogsRequest) Reset() {
 	*x = ListChangelogsRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[58]
+	mi := &file_v1_database_service_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5552,7 +5168,7 @@ func (x *ListChangelogsRequest) String() string {
 func (*ListChangelogsRequest) ProtoMessage() {}
 
 func (x *ListChangelogsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[58]
+	mi := &file_v1_database_service_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5565,7 +5181,7 @@ func (x *ListChangelogsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChangelogsRequest.ProtoReflect.Descriptor instead.
 func (*ListChangelogsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{58}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *ListChangelogsRequest) GetParent() string {
@@ -5609,7 +5225,7 @@ type ListChangelogsResponse struct {
 
 func (x *ListChangelogsResponse) Reset() {
 	*x = ListChangelogsResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[59]
+	mi := &file_v1_database_service_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5621,7 +5237,7 @@ func (x *ListChangelogsResponse) String() string {
 func (*ListChangelogsResponse) ProtoMessage() {}
 
 func (x *ListChangelogsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[59]
+	mi := &file_v1_database_service_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5634,7 +5250,7 @@ func (x *ListChangelogsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChangelogsResponse.ProtoReflect.Descriptor instead.
 func (*ListChangelogsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{59}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *ListChangelogsResponse) GetChangelogs() []*Changelog {
@@ -5663,7 +5279,7 @@ type GetChangelogRequest struct {
 
 func (x *GetChangelogRequest) Reset() {
 	*x = GetChangelogRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[60]
+	mi := &file_v1_database_service_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5675,7 +5291,7 @@ func (x *GetChangelogRequest) String() string {
 func (*GetChangelogRequest) ProtoMessage() {}
 
 func (x *GetChangelogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[60]
+	mi := &file_v1_database_service_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5688,7 +5304,7 @@ func (x *GetChangelogRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetChangelogRequest.ProtoReflect.Descriptor instead.
 func (*GetChangelogRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{60}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *GetChangelogRequest) GetName() string {
@@ -5709,36 +5325,35 @@ type Changelog struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: instances/{instance}/databases/{database}/changelogs/{changelog}
 	Name       string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	CreateTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	Status     Changelog_Status       `protobuf:"varint,4,opt,name=status,proto3,enum=bytebase.v1.Changelog_Status" json:"status,omitempty"`
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	Status     Changelog_Status       `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.Changelog_Status" json:"status,omitempty"`
 	// The statement is used for preview purpose.
-	Statement     string `protobuf:"bytes,5,opt,name=statement,proto3" json:"statement,omitempty"`
-	StatementSize int64  `protobuf:"varint,6,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
+	Statement     string `protobuf:"bytes,4,opt,name=statement,proto3" json:"statement,omitempty"`
+	StatementSize int64  `protobuf:"varint,5,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
 	// The name of the sheet resource.
 	// Format: projects/{project}/sheets/{sheet}
-	StatementSheet string `protobuf:"bytes,7,opt,name=statement_sheet,json=statementSheet,proto3" json:"statement_sheet,omitempty"`
-	Schema         string `protobuf:"bytes,8,opt,name=schema,proto3" json:"schema,omitempty"`
-	SchemaSize     int64  `protobuf:"varint,9,opt,name=schema_size,json=schemaSize,proto3" json:"schema_size,omitempty"`
-	PrevSchema     string `protobuf:"bytes,10,opt,name=prev_schema,json=prevSchema,proto3" json:"prev_schema,omitempty"`
-	PrevSchemaSize int64  `protobuf:"varint,11,opt,name=prev_schema_size,json=prevSchemaSize,proto3" json:"prev_schema_size,omitempty"`
+	StatementSheet string `protobuf:"bytes,6,opt,name=statement_sheet,json=statementSheet,proto3" json:"statement_sheet,omitempty"`
+	Schema         string `protobuf:"bytes,7,opt,name=schema,proto3" json:"schema,omitempty"`
+	SchemaSize     int64  `protobuf:"varint,8,opt,name=schema_size,json=schemaSize,proto3" json:"schema_size,omitempty"`
+	PrevSchema     string `protobuf:"bytes,9,opt,name=prev_schema,json=prevSchema,proto3" json:"prev_schema,omitempty"`
+	PrevSchemaSize int64  `protobuf:"varint,10,opt,name=prev_schema_size,json=prevSchemaSize,proto3" json:"prev_schema_size,omitempty"`
 	// Format: projects/{project}/issues/{issue}
-	Issue string `protobuf:"bytes,12,opt,name=issue,proto3" json:"issue,omitempty"`
+	Issue string `protobuf:"bytes,11,opt,name=issue,proto3" json:"issue,omitempty"`
 	// Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-	TaskRun string `protobuf:"bytes,13,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
+	TaskRun string `protobuf:"bytes,12,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
 	// Could be empty
-	Version string `protobuf:"bytes,14,opt,name=version,proto3" json:"version,omitempty"`
+	Version string `protobuf:"bytes,13,opt,name=version,proto3" json:"version,omitempty"`
 	// Could be empty
 	// Or present but not found if deleted
-	Revision         string            `protobuf:"bytes,15,opt,name=revision,proto3" json:"revision,omitempty"`
-	ChangedResources *ChangedResources `protobuf:"bytes,16,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
-	Type             Changelog_Type    `protobuf:"varint,17,opt,name=type,proto3,enum=bytebase.v1.Changelog_Type" json:"type,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	Revision      string         `protobuf:"bytes,14,opt,name=revision,proto3" json:"revision,omitempty"`
+	Type          Changelog_Type `protobuf:"varint,16,opt,name=type,proto3,enum=bytebase.v1.Changelog_Type" json:"type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Changelog) Reset() {
 	*x = Changelog{}
-	mi := &file_v1_database_service_proto_msgTypes[61]
+	mi := &file_v1_database_service_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5750,7 +5365,7 @@ func (x *Changelog) String() string {
 func (*Changelog) ProtoMessage() {}
 
 func (x *Changelog) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[61]
+	mi := &file_v1_database_service_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5763,7 +5378,7 @@ func (x *Changelog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Changelog.ProtoReflect.Descriptor instead.
 func (*Changelog) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{61}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *Changelog) GetName() string {
@@ -5864,13 +5479,6 @@ func (x *Changelog) GetRevision() string {
 	return ""
 }
 
-func (x *Changelog) GetChangedResources() *ChangedResources {
-	if x != nil {
-		return x.ChangedResources
-	}
-	return nil
-}
-
 func (x *Changelog) GetType() Changelog_Type {
 	if x != nil {
 		return x.Type
@@ -5897,7 +5505,7 @@ type GetSchemaStringRequest struct {
 
 func (x *GetSchemaStringRequest) Reset() {
 	*x = GetSchemaStringRequest{}
-	mi := &file_v1_database_service_proto_msgTypes[62]
+	mi := &file_v1_database_service_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5909,7 +5517,7 @@ func (x *GetSchemaStringRequest) String() string {
 func (*GetSchemaStringRequest) ProtoMessage() {}
 
 func (x *GetSchemaStringRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[62]
+	mi := &file_v1_database_service_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5922,7 +5530,7 @@ func (x *GetSchemaStringRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSchemaStringRequest.ProtoReflect.Descriptor instead.
 func (*GetSchemaStringRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{62}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *GetSchemaStringRequest) GetName() string {
@@ -5969,7 +5577,7 @@ type GetSchemaStringResponse struct {
 
 func (x *GetSchemaStringResponse) Reset() {
 	*x = GetSchemaStringResponse{}
-	mi := &file_v1_database_service_proto_msgTypes[63]
+	mi := &file_v1_database_service_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5981,7 +5589,7 @@ func (x *GetSchemaStringResponse) String() string {
 func (*GetSchemaStringResponse) ProtoMessage() {}
 
 func (x *GetSchemaStringResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_service_proto_msgTypes[63]
+	mi := &file_v1_database_service_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5994,7 +5602,7 @@ func (x *GetSchemaStringResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSchemaStringResponse.ProtoReflect.Descriptor instead.
 func (*GetSchemaStringResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_service_proto_rawDescGZIP(), []int{63}
+	return file_v1_database_service_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *GetSchemaStringResponse) GetSchemaString() string {
@@ -6071,26 +5679,26 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\tchangelog\x18\x03 \x01(\tH\x00R\tchangelogB\b\n" +
 	"\x06target\"(\n" +
 	"\x12DiffSchemaResponse\x12\x12\n" +
-	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xde\x05\n" +
+	"\x04diff\x18\x01 \x01(\tR\x04diff\"\xd8\x05\n" +
 	"\bDatabase\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12-\n" +
-	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12Q\n" +
-	"\x14successful_sync_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x12successfulSyncTime\x12\x18\n" +
-	"\aproject\x18\x05 \x01(\tR\aproject\x12*\n" +
-	"\x0eschema_version\x18\x06 \x01(\tB\x03\xe0A\x03R\rschemaVersion\x12*\n" +
-	"\venvironment\x18\a \x01(\tB\x03\xe0A\x01H\x00R\venvironment\x88\x01\x01\x12=\n" +
-	"\x15effective_environment\x18\b \x01(\tB\x03\xe0A\x03H\x01R\x14effectiveEnvironment\x88\x01\x01\x129\n" +
-	"\x06labels\x18\t \x03(\v2!.bytebase.v1.Database.LabelsEntryR\x06labels\x12O\n" +
-	"\x11instance_resource\x18\n" +
-	" \x01(\v2\x1d.bytebase.v1.InstanceResourceB\x03\xe0A\x03R\x10instanceResource\x12.\n" +
-	"\x10backup_available\x18\v \x01(\bB\x03\xe0A\x03R\x0fbackupAvailable\x12\x1d\n" +
-	"\adrifted\x18\f \x01(\bB\x03\xe0A\x03R\adrifted\x1a9\n" +
+	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12Q\n" +
+	"\x14successful_sync_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x12successfulSyncTime\x12\x18\n" +
+	"\aproject\x18\x04 \x01(\tR\aproject\x12*\n" +
+	"\x0eschema_version\x18\x05 \x01(\tB\x03\xe0A\x03R\rschemaVersion\x12*\n" +
+	"\venvironment\x18\x06 \x01(\tB\x03\xe0A\x01H\x00R\venvironment\x88\x01\x01\x12=\n" +
+	"\x15effective_environment\x18\a \x01(\tB\x03\xe0A\x03H\x01R\x14effectiveEnvironment\x88\x01\x01\x129\n" +
+	"\x06labels\x18\b \x03(\v2!.bytebase.v1.Database.LabelsEntryR\x06labels\x12O\n" +
+	"\x11instance_resource\x18\t \x01(\v2\x1d.bytebase.v1.InstanceResourceB\x03\xe0A\x03R\x10instanceResource\x12.\n" +
+	"\x10backup_available\x18\n" +
+	" \x01(\bB\x03\xe0A\x03R\x0fbackupAvailable\x12\x1d\n" +
+	"\adrifted\x18\v \x01(\bB\x03\xe0A\x03R\adrifted\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:E\xeaAB\n" +
 	"\x15bytebase.com/Database\x12)instances/{instance}/databases/{database}B\x0e\n" +
 	"\f_environmentB\x18\n" +
-	"\x16_effective_environmentJ\x04\b\x02\x10\x03\"\xef\x02\n" +
+	"\x16_effective_environment\"\xef\x02\n" +
 	"\x10DatabaseMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x125\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1b.bytebase.v1.SchemaMetadataR\aschemas\x12#\n" +
@@ -6099,8 +5707,8 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\n" +
 	"extensions\x18\x05 \x03(\v2\x1e.bytebase.v1.ExtensionMetadataR\n" +
 	"extensions\x12\x14\n" +
-	"\x05owner\x18\a \x01(\tR\x05owner\x12\x1f\n" +
-	"\vsearch_path\x18\b \x01(\tR\n" +
+	"\x05owner\x18\x06 \x01(\tR\x05owner\x12\x1f\n" +
+	"\vsearch_path\x18\a \x01(\tR\n" +
 	"searchPath:V\xeaAS\n" +
 	"\x1dbytebase.com/DatabaseMetadata\x122instances/{instance}/databases/{database}/metadata\"\xc7\x06\n" +
 	"\x0eSchemaMetadata\x12\x12\n" +
@@ -6118,12 +5726,12 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\bpackages\x18\n" +
 	" \x03(\v2\x1c.bytebase.v1.PackageMetadataR\bpackages\x12\x14\n" +
 	"\x05owner\x18\v \x01(\tR\x05owner\x12;\n" +
-	"\tsequences\x18\r \x03(\v2\x1d.bytebase.v1.SequenceMetadataR\tsequences\x122\n" +
-	"\x06events\x18\x0e \x03(\v2\x1a.bytebase.v1.EventMetadataR\x06events\x12<\n" +
+	"\tsequences\x18\f \x03(\v2\x1d.bytebase.v1.SequenceMetadataR\tsequences\x122\n" +
+	"\x06events\x18\r \x03(\v2\x1a.bytebase.v1.EventMetadataR\x06events\x12<\n" +
 	"\n" +
-	"enum_types\x18\x0f \x03(\v2\x1d.bytebase.v1.EnumTypeMetadataR\tenumTypes\x12\x1b\n" +
-	"\tskip_dump\x18\x10 \x01(\bR\bskipDump\x12\x18\n" +
-	"\acomment\x18\x11 \x01(\tR\acomment\"u\n" +
+	"enum_types\x18\x0e \x03(\v2\x1d.bytebase.v1.EnumTypeMetadataR\tenumTypes\x12\x1b\n" +
+	"\tskip_dump\x18\x0f \x01(\bR\bskipDump\x12\x18\n" +
+	"\acomment\x18\x10 \x01(\tR\acomment\"u\n" +
 	"\x10EnumTypeMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06values\x18\x02 \x03(\tR\x06values\x12\x18\n" +
@@ -6159,15 +5767,14 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\tskip_dump\x18\r \x01(\bR\bskipDump\"\x9e\x02\n" +
 	"\x0fTriggerMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05event\x18\x03 \x01(\tR\x05event\x12\x16\n" +
-	"\x06timing\x18\x04 \x01(\tR\x06timing\x12\x12\n" +
-	"\x04body\x18\x05 \x01(\tR\x04body\x12\x19\n" +
-	"\bsql_mode\x18\x06 \x01(\tR\asqlMode\x120\n" +
-	"\x14character_set_client\x18\a \x01(\tR\x12characterSetClient\x121\n" +
-	"\x14collation_connection\x18\b \x01(\tR\x13collationConnection\x12\x18\n" +
-	"\acomment\x18\t \x01(\tR\acomment\x12\x1b\n" +
-	"\tskip_dump\x18\n" +
-	" \x01(\bR\bskipDump\"\xca\x01\n" +
+	"\x05event\x18\x02 \x01(\tR\x05event\x12\x16\n" +
+	"\x06timing\x18\x03 \x01(\tR\x06timing\x12\x12\n" +
+	"\x04body\x18\x04 \x01(\tR\x04body\x12\x19\n" +
+	"\bsql_mode\x18\x05 \x01(\tR\asqlMode\x120\n" +
+	"\x14character_set_client\x18\x06 \x01(\tR\x12characterSetClient\x121\n" +
+	"\x14collation_connection\x18\a \x01(\tR\x13collationConnection\x12\x18\n" +
+	"\acomment\x18\b \x01(\tR\acomment\x12\x1b\n" +
+	"\tskip_dump\x18\t \x01(\bR\bskipDump\"\xca\x01\n" +
 	"\x15ExternalTableMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x120\n" +
 	"\x14external_server_name\x18\x02 \x01(\tR\x12externalServerName\x124\n" +
@@ -6179,26 +5786,26 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\aindexes\x18\x03 \x03(\v2\x1a.bytebase.v1.IndexMetadataR\aindexes\x12\x16\n" +
 	"\x06engine\x18\x04 \x01(\tR\x06engine\x12\x1c\n" +
 	"\tcollation\x18\x05 \x01(\tR\tcollation\x12\x18\n" +
-	"\acharset\x18\x11 \x01(\tR\acharset\x12\x1b\n" +
-	"\trow_count\x18\x06 \x01(\x03R\browCount\x12\x1b\n" +
-	"\tdata_size\x18\a \x01(\x03R\bdataSize\x12\x1d\n" +
+	"\acharset\x18\x06 \x01(\tR\acharset\x12\x1b\n" +
+	"\trow_count\x18\a \x01(\x03R\browCount\x12\x1b\n" +
+	"\tdata_size\x18\b \x01(\x03R\bdataSize\x12\x1d\n" +
 	"\n" +
-	"index_size\x18\b \x01(\x03R\tindexSize\x12\x1b\n" +
-	"\tdata_free\x18\t \x01(\x03R\bdataFree\x12%\n" +
-	"\x0ecreate_options\x18\n" +
-	" \x01(\tR\rcreateOptions\x12\x18\n" +
-	"\acomment\x18\v \x01(\tR\acomment\x12B\n" +
-	"\fforeign_keys\x18\f \x03(\v2\x1f.bytebase.v1.ForeignKeyMetadataR\vforeignKeys\x12C\n" +
+	"index_size\x18\t \x01(\x03R\tindexSize\x12\x1b\n" +
+	"\tdata_free\x18\n" +
+	" \x01(\x03R\bdataFree\x12%\n" +
+	"\x0ecreate_options\x18\v \x01(\tR\rcreateOptions\x12\x18\n" +
+	"\acomment\x18\f \x01(\tR\acomment\x12B\n" +
+	"\fforeign_keys\x18\r \x03(\v2\x1f.bytebase.v1.ForeignKeyMetadataR\vforeignKeys\x12C\n" +
 	"\n" +
-	"partitions\x18\x0f \x03(\v2#.bytebase.v1.TablePartitionMetadataR\n" +
+	"partitions\x18\x0e \x03(\v2#.bytebase.v1.TablePartitionMetadataR\n" +
 	"partitions\x12Q\n" +
-	"\x11check_constraints\x18\x10 \x03(\v2$.bytebase.v1.CheckConstraintMetadataR\x10checkConstraints\x12\x14\n" +
-	"\x05owner\x18\x12 \x01(\tR\x05owner\x12!\n" +
-	"\fsorting_keys\x18\x13 \x03(\tR\vsortingKeys\x128\n" +
-	"\btriggers\x18\x14 \x03(\v2\x1c.bytebase.v1.TriggerMetadataR\btriggers\x12\x1b\n" +
-	"\tskip_dump\x18\x15 \x01(\bR\bskipDump\x12#\n" +
-	"\rsharding_info\x18\x16 \x01(\tR\fshardingInfo\x12(\n" +
-	"\x10primary_key_type\x18\x17 \x01(\tR\x0eprimaryKeyType\"M\n" +
+	"\x11check_constraints\x18\x0f \x03(\v2$.bytebase.v1.CheckConstraintMetadataR\x10checkConstraints\x12\x14\n" +
+	"\x05owner\x18\x10 \x01(\tR\x05owner\x12!\n" +
+	"\fsorting_keys\x18\x11 \x03(\tR\vsortingKeys\x128\n" +
+	"\btriggers\x18\x12 \x03(\v2\x1c.bytebase.v1.TriggerMetadataR\btriggers\x12\x1b\n" +
+	"\tskip_dump\x18\x13 \x01(\bR\bskipDump\x12#\n" +
+	"\rsharding_info\x18\x14 \x01(\tR\fshardingInfo\x12(\n" +
+	"\x10primary_key_type\x18\x15 \x01(\tR\x0eprimaryKeyType\"M\n" +
 	"\x17CheckConstraintMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\n" +
@@ -6232,9 +5839,9 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\bposition\x18\x02 \x01(\x05R\bposition\x12\x1f\n" +
 	"\vhas_default\x18\x03 \x01(\bR\n" +
 	"hasDefault\x12\x18\n" +
-	"\adefault\x18\x17 \x01(\tR\adefault\x12&\n" +
-	"\x0fdefault_on_null\x18\x12 \x01(\bR\rdefaultOnNull\x12\x1b\n" +
-	"\ton_update\x18\x0f \x01(\tR\bonUpdate\x12\x1a\n" +
+	"\adefault\x18\x04 \x01(\tR\adefault\x12&\n" +
+	"\x0fdefault_on_null\x18\x05 \x01(\bR\rdefaultOnNull\x12\x1b\n" +
+	"\ton_update\x18\x06 \x01(\tR\bonUpdate\x12\x1a\n" +
 	"\bnullable\x18\a \x01(\bR\bnullable\x12\x12\n" +
 	"\x04type\x18\b \x01(\tR\x04type\x12#\n" +
 	"\rcharacter_set\x18\t \x01(\tR\fcharacterSet\x12\x1c\n" +
@@ -6242,14 +5849,14 @@ const file_v1_database_service_proto_rawDesc = "" +
 	" \x01(\tR\tcollation\x12\x18\n" +
 	"\acomment\x18\v \x01(\tR\acomment\x12?\n" +
 	"\n" +
-	"generation\x18\x10 \x01(\v2\x1f.bytebase.v1.GenerationMetadataR\n" +
+	"generation\x18\f \x01(\v2\x1f.bytebase.v1.GenerationMetadataR\n" +
 	"generation\x12\x1f\n" +
-	"\vis_identity\x18\x13 \x01(\bR\n" +
+	"\vis_identity\x18\r \x01(\bR\n" +
 	"isIdentity\x12_\n" +
-	"\x13identity_generation\x18\x11 \x01(\x0e2..bytebase.v1.ColumnMetadata.IdentityGenerationR\x12identityGeneration\x12#\n" +
-	"\ridentity_seed\x18\x14 \x01(\x03R\fidentitySeed\x12-\n" +
-	"\x12identity_increment\x18\x15 \x01(\x03R\x11identityIncrement\x126\n" +
-	"\x17default_constraint_name\x18\x16 \x01(\tR\x15defaultConstraintName\"U\n" +
+	"\x13identity_generation\x18\x0e \x01(\x0e2..bytebase.v1.ColumnMetadata.IdentityGenerationR\x12identityGeneration\x12#\n" +
+	"\ridentity_seed\x18\x0f \x01(\x03R\fidentitySeed\x12-\n" +
+	"\x12identity_increment\x18\x10 \x01(\x03R\x11identityIncrement\x126\n" +
+	"\x17default_constraint_name\x18\x11 \x01(\tR\x15defaultConstraintName\"U\n" +
 	"\x12IdentityGeneration\x12#\n" +
 	"\x1fIDENTITY_GENERATION_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -6417,18 +6024,18 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vexpressions\x18\x02 \x03(\tR\vexpressions\x12\x1d\n" +
 	"\n" +
-	"key_length\x18\t \x03(\x03R\tkeyLength\x12\x1e\n" +
+	"key_length\x18\x03 \x03(\x03R\tkeyLength\x12\x1e\n" +
 	"\n" +
-	"descending\x18\n" +
-	" \x03(\bR\n" +
+	"descending\x18\x04 \x03(\bR\n" +
 	"descending\x12\x12\n" +
-	"\x04type\x18\x03 \x01(\tR\x04type\x12\x16\n" +
-	"\x06unique\x18\x04 \x01(\bR\x06unique\x12\x18\n" +
-	"\aprimary\x18\x05 \x01(\bR\aprimary\x12\x18\n" +
-	"\avisible\x18\x06 \x01(\bR\avisible\x12\x18\n" +
-	"\acomment\x18\a \x01(\tR\acomment\x12\x1e\n" +
+	"\x04type\x18\x05 \x01(\tR\x04type\x12\x16\n" +
+	"\x06unique\x18\x06 \x01(\bR\x06unique\x12\x18\n" +
+	"\aprimary\x18\a \x01(\bR\aprimary\x12\x18\n" +
+	"\avisible\x18\b \x01(\bR\avisible\x12\x18\n" +
+	"\acomment\x18\t \x01(\tR\acomment\x12\x1e\n" +
 	"\n" +
-	"definition\x18\b \x01(\tR\n" +
+	"definition\x18\n" +
+	" \x01(\tR\n" +
 	"definition\x12.\n" +
 	"\x13parent_index_schema\x18\v \x01(\tR\x11parentIndexSchema\x12*\n" +
 	"\x11parent_index_name\x18\f \x01(\tR\x0fparentIndexName\x12 \n" +
@@ -6456,32 +6063,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x06schema\x18\x01 \x01(\tR\x06schema\"S\n" +
 	"\x11DatabaseSDLSchema\x12\x16\n" +
 	"\x06schema\x18\x01 \x01(\fR\x06schema\x12&\n" +
-	"\fcontent_type\x18\x02 \x01(\tB\x03\xe0A\x03R\vcontentType\"V\n" +
-	"\x10ChangedResources\x12B\n" +
-	"\tdatabases\x18\x01 \x03(\v2$.bytebase.v1.ChangedResourceDatabaseR\tdatabases\"k\n" +
-	"\x17ChangedResourceDatabase\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12<\n" +
-	"\aschemas\x18\x02 \x03(\v2\".bytebase.v1.ChangedResourceSchemaR\aschemas\"\xa9\x02\n" +
-	"\x15ChangedResourceSchema\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x129\n" +
-	"\x06tables\x18\x02 \x03(\v2!.bytebase.v1.ChangedResourceTableR\x06tables\x126\n" +
-	"\x05views\x18\x03 \x03(\v2 .bytebase.v1.ChangedResourceViewR\x05views\x12B\n" +
-	"\tfunctions\x18\x04 \x03(\v2$.bytebase.v1.ChangedResourceFunctionR\tfunctions\x12E\n" +
-	"\n" +
-	"procedures\x18\x05 \x03(\v2%.bytebase.v1.ChangedResourceProcedureR\n" +
-	"procedures\"V\n" +
-	"\x14ChangedResourceTable\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12*\n" +
-	"\x06ranges\x18\x03 \x03(\v2\x12.bytebase.v1.RangeR\x06ranges\"U\n" +
-	"\x13ChangedResourceView\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12*\n" +
-	"\x06ranges\x18\x02 \x03(\v2\x12.bytebase.v1.RangeR\x06ranges\"Y\n" +
-	"\x17ChangedResourceFunction\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12*\n" +
-	"\x06ranges\x18\x02 \x03(\v2\x12.bytebase.v1.RangeR\x06ranges\"Z\n" +
-	"\x18ChangedResourceProcedure\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12*\n" +
-	"\x06ranges\x18\x02 \x03(\v2\x12.bytebase.v1.RangeR\x06ranges\"\xba\x01\n" +
+	"\fcontent_type\x18\x02 \x01(\tB\x03\xe0A\x03R\vcontentType\"\xba\x01\n" +
 	"\x15ListChangelogsRequest\x125\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x06parent\x12\x1b\n" +
@@ -6497,28 +6079,27 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x13GetChangelogRequest\x12:\n" +
 	"\x04name\x18\x01 \x01(\tB&\xe0A\x02\xfaA \n" +
 	"\x1ebytebase.com/DatabaseChangelogR\x04name\x12.\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xd7\x06\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\x8b\x06\n" +
 	"\tChangelog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
-	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"createTime\x125\n" +
-	"\x06status\x18\x04 \x01(\x0e2\x1d.bytebase.v1.Changelog.StatusR\x06status\x12\x1c\n" +
-	"\tstatement\x18\x05 \x01(\tR\tstatement\x12%\n" +
-	"\x0estatement_size\x18\x06 \x01(\x03R\rstatementSize\x12'\n" +
-	"\x0fstatement_sheet\x18\a \x01(\tR\x0estatementSheet\x12\x16\n" +
-	"\x06schema\x18\b \x01(\tR\x06schema\x12\x1f\n" +
-	"\vschema_size\x18\t \x01(\x03R\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1d.bytebase.v1.Changelog.StatusR\x06status\x12\x1c\n" +
+	"\tstatement\x18\x04 \x01(\tR\tstatement\x12%\n" +
+	"\x0estatement_size\x18\x05 \x01(\x03R\rstatementSize\x12'\n" +
+	"\x0fstatement_sheet\x18\x06 \x01(\tR\x0estatementSheet\x12\x16\n" +
+	"\x06schema\x18\a \x01(\tR\x06schema\x12\x1f\n" +
+	"\vschema_size\x18\b \x01(\x03R\n" +
 	"schemaSize\x12\x1f\n" +
-	"\vprev_schema\x18\n" +
-	" \x01(\tR\n" +
+	"\vprev_schema\x18\t \x01(\tR\n" +
 	"prevSchema\x12(\n" +
-	"\x10prev_schema_size\x18\v \x01(\x03R\x0eprevSchemaSize\x12\x14\n" +
-	"\x05issue\x18\f \x01(\tR\x05issue\x12\x19\n" +
-	"\btask_run\x18\r \x01(\tR\ataskRun\x12\x18\n" +
-	"\aversion\x18\x0e \x01(\tR\aversion\x12\x1a\n" +
-	"\brevision\x18\x0f \x01(\tR\brevision\x12J\n" +
-	"\x11changed_resources\x18\x10 \x01(\v2\x1d.bytebase.v1.ChangedResourcesR\x10changedResources\x12/\n" +
-	"\x04type\x18\x11 \x01(\x0e2\x1b.bytebase.v1.Changelog.TypeR\x04type\"C\n" +
+	"\x10prev_schema_size\x18\n" +
+	" \x01(\x03R\x0eprevSchemaSize\x12\x14\n" +
+	"\x05issue\x18\v \x01(\tR\x05issue\x12\x19\n" +
+	"\btask_run\x18\f \x01(\tR\ataskRun\x12\x18\n" +
+	"\aversion\x18\r \x01(\tR\aversion\x12\x1a\n" +
+	"\brevision\x18\x0e \x01(\tR\brevision\x12/\n" +
+	"\x04type\x18\x10 \x01(\x0e2\x1b.bytebase.v1.Changelog.TypeR\x04type\"C\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\b\n" +
@@ -6587,7 +6168,7 @@ func file_v1_database_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_database_service_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
-var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 65)
+var file_v1_database_service_proto_msgTypes = make([]protoimpl.MessageInfo, 58)
 var file_v1_database_service_proto_goTypes = []any{
 	(ChangelogView)(0),                         // 0: bytebase.v1.ChangelogView
 	(GetDatabaseSDLSchemaRequest_SDLFormat)(0), // 1: bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat
@@ -6651,38 +6232,30 @@ var file_v1_database_service_proto_goTypes = []any{
 	(*ForeignKeyMetadata)(nil),                 // 59: bytebase.v1.ForeignKeyMetadata
 	(*DatabaseSchema)(nil),                     // 60: bytebase.v1.DatabaseSchema
 	(*DatabaseSDLSchema)(nil),                  // 61: bytebase.v1.DatabaseSDLSchema
-	(*ChangedResources)(nil),                   // 62: bytebase.v1.ChangedResources
-	(*ChangedResourceDatabase)(nil),            // 63: bytebase.v1.ChangedResourceDatabase
-	(*ChangedResourceSchema)(nil),              // 64: bytebase.v1.ChangedResourceSchema
-	(*ChangedResourceTable)(nil),               // 65: bytebase.v1.ChangedResourceTable
-	(*ChangedResourceView)(nil),                // 66: bytebase.v1.ChangedResourceView
-	(*ChangedResourceFunction)(nil),            // 67: bytebase.v1.ChangedResourceFunction
-	(*ChangedResourceProcedure)(nil),           // 68: bytebase.v1.ChangedResourceProcedure
-	(*ListChangelogsRequest)(nil),              // 69: bytebase.v1.ListChangelogsRequest
-	(*ListChangelogsResponse)(nil),             // 70: bytebase.v1.ListChangelogsResponse
-	(*GetChangelogRequest)(nil),                // 71: bytebase.v1.GetChangelogRequest
-	(*Changelog)(nil),                          // 72: bytebase.v1.Changelog
-	(*GetSchemaStringRequest)(nil),             // 73: bytebase.v1.GetSchemaStringRequest
-	(*GetSchemaStringResponse)(nil),            // 74: bytebase.v1.GetSchemaStringResponse
-	nil,                                        // 75: bytebase.v1.Database.LabelsEntry
-	(*fieldmaskpb.FieldMask)(nil),              // 76: google.protobuf.FieldMask
-	(State)(0),                                 // 77: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil),              // 78: google.protobuf.Timestamp
-	(*InstanceResource)(nil),                   // 79: bytebase.v1.InstanceResource
-	(*Range)(nil),                              // 80: bytebase.v1.Range
+	(*ListChangelogsRequest)(nil),              // 62: bytebase.v1.ListChangelogsRequest
+	(*ListChangelogsResponse)(nil),             // 63: bytebase.v1.ListChangelogsResponse
+	(*GetChangelogRequest)(nil),                // 64: bytebase.v1.GetChangelogRequest
+	(*Changelog)(nil),                          // 65: bytebase.v1.Changelog
+	(*GetSchemaStringRequest)(nil),             // 66: bytebase.v1.GetSchemaStringRequest
+	(*GetSchemaStringResponse)(nil),            // 67: bytebase.v1.GetSchemaStringResponse
+	nil,                                        // 68: bytebase.v1.Database.LabelsEntry
+	(*fieldmaskpb.FieldMask)(nil),              // 69: google.protobuf.FieldMask
+	(State)(0),                                 // 70: bytebase.v1.State
+	(*timestamppb.Timestamp)(nil),              // 71: google.protobuf.Timestamp
+	(*InstanceResource)(nil),                   // 72: bytebase.v1.InstanceResource
 }
 var file_v1_database_service_proto_depIdxs = []int32{
 	28, // 0: bytebase.v1.BatchGetDatabasesResponse.databases:type_name -> bytebase.v1.Database
 	28, // 1: bytebase.v1.ListDatabasesResponse.databases:type_name -> bytebase.v1.Database
 	28, // 2: bytebase.v1.UpdateDatabaseRequest.database:type_name -> bytebase.v1.Database
-	76, // 3: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
+	69, // 3: bytebase.v1.UpdateDatabaseRequest.update_mask:type_name -> google.protobuf.FieldMask
 	16, // 4: bytebase.v1.BatchUpdateDatabasesRequest.requests:type_name -> bytebase.v1.UpdateDatabaseRequest
 	28, // 5: bytebase.v1.BatchUpdateDatabasesResponse.databases:type_name -> bytebase.v1.Database
 	1,  // 6: bytebase.v1.GetDatabaseSDLSchemaRequest.format:type_name -> bytebase.v1.GetDatabaseSDLSchemaRequest.SDLFormat
-	77, // 7: bytebase.v1.Database.state:type_name -> bytebase.v1.State
-	78, // 8: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
-	75, // 9: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
-	79, // 10: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
+	70, // 7: bytebase.v1.Database.state:type_name -> bytebase.v1.State
+	71, // 8: bytebase.v1.Database.successful_sync_time:type_name -> google.protobuf.Timestamp
+	68, // 9: bytebase.v1.Database.labels:type_name -> bytebase.v1.Database.LabelsEntry
+	72, // 10: bytebase.v1.Database.instance_resource:type_name -> bytebase.v1.InstanceResource
 	30, // 11: bytebase.v1.DatabaseMetadata.schemas:type_name -> bytebase.v1.SchemaMetadata
 	58, // 12: bytebase.v1.DatabaseMetadata.extensions:type_name -> bytebase.v1.ExtensionMetadata
 	36, // 13: bytebase.v1.SchemaMetadata.tables:type_name -> bytebase.v1.TableMetadata
@@ -6728,58 +6301,47 @@ var file_v1_database_service_proto_depIdxs = []int32{
 	53, // 53: bytebase.v1.TessellationConfig.bounding_box:type_name -> bytebase.v1.BoundingBox
 	56, // 54: bytebase.v1.DimensionalConfig.constraints:type_name -> bytebase.v1.DimensionConstraint
 	50, // 55: bytebase.v1.IndexMetadata.spatial_config:type_name -> bytebase.v1.SpatialIndexConfig
-	63, // 56: bytebase.v1.ChangedResources.databases:type_name -> bytebase.v1.ChangedResourceDatabase
-	64, // 57: bytebase.v1.ChangedResourceDatabase.schemas:type_name -> bytebase.v1.ChangedResourceSchema
-	65, // 58: bytebase.v1.ChangedResourceSchema.tables:type_name -> bytebase.v1.ChangedResourceTable
-	66, // 59: bytebase.v1.ChangedResourceSchema.views:type_name -> bytebase.v1.ChangedResourceView
-	67, // 60: bytebase.v1.ChangedResourceSchema.functions:type_name -> bytebase.v1.ChangedResourceFunction
-	68, // 61: bytebase.v1.ChangedResourceSchema.procedures:type_name -> bytebase.v1.ChangedResourceProcedure
-	80, // 62: bytebase.v1.ChangedResourceTable.ranges:type_name -> bytebase.v1.Range
-	80, // 63: bytebase.v1.ChangedResourceView.ranges:type_name -> bytebase.v1.Range
-	80, // 64: bytebase.v1.ChangedResourceFunction.ranges:type_name -> bytebase.v1.Range
-	80, // 65: bytebase.v1.ChangedResourceProcedure.ranges:type_name -> bytebase.v1.Range
-	0,  // 66: bytebase.v1.ListChangelogsRequest.view:type_name -> bytebase.v1.ChangelogView
-	72, // 67: bytebase.v1.ListChangelogsResponse.changelogs:type_name -> bytebase.v1.Changelog
-	0,  // 68: bytebase.v1.GetChangelogRequest.view:type_name -> bytebase.v1.ChangelogView
-	78, // 69: bytebase.v1.Changelog.create_time:type_name -> google.protobuf.Timestamp
-	8,  // 70: bytebase.v1.Changelog.status:type_name -> bytebase.v1.Changelog.Status
-	62, // 71: bytebase.v1.Changelog.changed_resources:type_name -> bytebase.v1.ChangedResources
-	9,  // 72: bytebase.v1.Changelog.type:type_name -> bytebase.v1.Changelog.Type
-	10, // 73: bytebase.v1.GetSchemaStringRequest.type:type_name -> bytebase.v1.GetSchemaStringRequest.ObjectType
-	29, // 74: bytebase.v1.GetSchemaStringRequest.metadata:type_name -> bytebase.v1.DatabaseMetadata
-	11, // 75: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
-	12, // 76: bytebase.v1.DatabaseService.BatchGetDatabases:input_type -> bytebase.v1.BatchGetDatabasesRequest
-	14, // 77: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
-	16, // 78: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
-	17, // 79: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
-	21, // 80: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
-	19, // 81: bytebase.v1.DatabaseService.BatchSyncDatabases:input_type -> bytebase.v1.BatchSyncDatabasesRequest
-	23, // 82: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
-	24, // 83: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
-	25, // 84: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:input_type -> bytebase.v1.GetDatabaseSDLSchemaRequest
-	26, // 85: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
-	69, // 86: bytebase.v1.DatabaseService.ListChangelogs:input_type -> bytebase.v1.ListChangelogsRequest
-	71, // 87: bytebase.v1.DatabaseService.GetChangelog:input_type -> bytebase.v1.GetChangelogRequest
-	73, // 88: bytebase.v1.DatabaseService.GetSchemaString:input_type -> bytebase.v1.GetSchemaStringRequest
-	28, // 89: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
-	13, // 90: bytebase.v1.DatabaseService.BatchGetDatabases:output_type -> bytebase.v1.BatchGetDatabasesResponse
-	15, // 91: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
-	28, // 92: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
-	18, // 93: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
-	22, // 94: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
-	20, // 95: bytebase.v1.DatabaseService.BatchSyncDatabases:output_type -> bytebase.v1.BatchSyncDatabasesResponse
-	29, // 96: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
-	60, // 97: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
-	61, // 98: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:output_type -> bytebase.v1.DatabaseSDLSchema
-	27, // 99: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
-	70, // 100: bytebase.v1.DatabaseService.ListChangelogs:output_type -> bytebase.v1.ListChangelogsResponse
-	72, // 101: bytebase.v1.DatabaseService.GetChangelog:output_type -> bytebase.v1.Changelog
-	74, // 102: bytebase.v1.DatabaseService.GetSchemaString:output_type -> bytebase.v1.GetSchemaStringResponse
-	89, // [89:103] is the sub-list for method output_type
-	75, // [75:89] is the sub-list for method input_type
-	75, // [75:75] is the sub-list for extension type_name
-	75, // [75:75] is the sub-list for extension extendee
-	0,  // [0:75] is the sub-list for field type_name
+	0,  // 56: bytebase.v1.ListChangelogsRequest.view:type_name -> bytebase.v1.ChangelogView
+	65, // 57: bytebase.v1.ListChangelogsResponse.changelogs:type_name -> bytebase.v1.Changelog
+	0,  // 58: bytebase.v1.GetChangelogRequest.view:type_name -> bytebase.v1.ChangelogView
+	71, // 59: bytebase.v1.Changelog.create_time:type_name -> google.protobuf.Timestamp
+	8,  // 60: bytebase.v1.Changelog.status:type_name -> bytebase.v1.Changelog.Status
+	9,  // 61: bytebase.v1.Changelog.type:type_name -> bytebase.v1.Changelog.Type
+	10, // 62: bytebase.v1.GetSchemaStringRequest.type:type_name -> bytebase.v1.GetSchemaStringRequest.ObjectType
+	29, // 63: bytebase.v1.GetSchemaStringRequest.metadata:type_name -> bytebase.v1.DatabaseMetadata
+	11, // 64: bytebase.v1.DatabaseService.GetDatabase:input_type -> bytebase.v1.GetDatabaseRequest
+	12, // 65: bytebase.v1.DatabaseService.BatchGetDatabases:input_type -> bytebase.v1.BatchGetDatabasesRequest
+	14, // 66: bytebase.v1.DatabaseService.ListDatabases:input_type -> bytebase.v1.ListDatabasesRequest
+	16, // 67: bytebase.v1.DatabaseService.UpdateDatabase:input_type -> bytebase.v1.UpdateDatabaseRequest
+	17, // 68: bytebase.v1.DatabaseService.BatchUpdateDatabases:input_type -> bytebase.v1.BatchUpdateDatabasesRequest
+	21, // 69: bytebase.v1.DatabaseService.SyncDatabase:input_type -> bytebase.v1.SyncDatabaseRequest
+	19, // 70: bytebase.v1.DatabaseService.BatchSyncDatabases:input_type -> bytebase.v1.BatchSyncDatabasesRequest
+	23, // 71: bytebase.v1.DatabaseService.GetDatabaseMetadata:input_type -> bytebase.v1.GetDatabaseMetadataRequest
+	24, // 72: bytebase.v1.DatabaseService.GetDatabaseSchema:input_type -> bytebase.v1.GetDatabaseSchemaRequest
+	25, // 73: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:input_type -> bytebase.v1.GetDatabaseSDLSchemaRequest
+	26, // 74: bytebase.v1.DatabaseService.DiffSchema:input_type -> bytebase.v1.DiffSchemaRequest
+	62, // 75: bytebase.v1.DatabaseService.ListChangelogs:input_type -> bytebase.v1.ListChangelogsRequest
+	64, // 76: bytebase.v1.DatabaseService.GetChangelog:input_type -> bytebase.v1.GetChangelogRequest
+	66, // 77: bytebase.v1.DatabaseService.GetSchemaString:input_type -> bytebase.v1.GetSchemaStringRequest
+	28, // 78: bytebase.v1.DatabaseService.GetDatabase:output_type -> bytebase.v1.Database
+	13, // 79: bytebase.v1.DatabaseService.BatchGetDatabases:output_type -> bytebase.v1.BatchGetDatabasesResponse
+	15, // 80: bytebase.v1.DatabaseService.ListDatabases:output_type -> bytebase.v1.ListDatabasesResponse
+	28, // 81: bytebase.v1.DatabaseService.UpdateDatabase:output_type -> bytebase.v1.Database
+	18, // 82: bytebase.v1.DatabaseService.BatchUpdateDatabases:output_type -> bytebase.v1.BatchUpdateDatabasesResponse
+	22, // 83: bytebase.v1.DatabaseService.SyncDatabase:output_type -> bytebase.v1.SyncDatabaseResponse
+	20, // 84: bytebase.v1.DatabaseService.BatchSyncDatabases:output_type -> bytebase.v1.BatchSyncDatabasesResponse
+	29, // 85: bytebase.v1.DatabaseService.GetDatabaseMetadata:output_type -> bytebase.v1.DatabaseMetadata
+	60, // 86: bytebase.v1.DatabaseService.GetDatabaseSchema:output_type -> bytebase.v1.DatabaseSchema
+	61, // 87: bytebase.v1.DatabaseService.GetDatabaseSDLSchema:output_type -> bytebase.v1.DatabaseSDLSchema
+	27, // 88: bytebase.v1.DatabaseService.DiffSchema:output_type -> bytebase.v1.DiffSchemaResponse
+	63, // 89: bytebase.v1.DatabaseService.ListChangelogs:output_type -> bytebase.v1.ListChangelogsResponse
+	65, // 90: bytebase.v1.DatabaseService.GetChangelog:output_type -> bytebase.v1.Changelog
+	67, // 91: bytebase.v1.DatabaseService.GetSchemaString:output_type -> bytebase.v1.GetSchemaStringResponse
+	78, // [78:92] is the sub-list for method output_type
+	64, // [64:78] is the sub-list for method input_type
+	64, // [64:64] is the sub-list for extension type_name
+	64, // [64:64] is the sub-list for extension extendee
+	0,  // [0:64] is the sub-list for field type_name
 }
 
 func init() { file_v1_database_service_proto_init() }
@@ -6801,7 +6363,7 @@ func file_v1_database_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_database_service_proto_rawDesc), len(file_v1_database_service_proto_rawDesc)),
 			NumEnums:      11,
-			NumMessages:   65,
+			NumMessages:   58,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

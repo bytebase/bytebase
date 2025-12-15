@@ -432,55 +432,55 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   /**
    * The title of the issue.
    *
-   * @generated from field: string title = 3;
+   * @generated from field: string title = 2;
    */
   title: string;
 
   /**
    * The description of the issue.
    *
-   * @generated from field: string description = 4;
+   * @generated from field: string description = 3;
    */
   description: string;
 
   /**
-   * @generated from field: bytebase.v1.Issue.Type type = 5;
+   * @generated from field: bytebase.v1.Issue.Type type = 4;
    */
   type: Issue_Type;
 
   /**
    * The status of the issue.
    *
-   * @generated from field: bytebase.v1.IssueStatus status = 6;
+   * @generated from field: bytebase.v1.IssueStatus status = 5;
    */
   status: IssueStatus;
 
   /**
-   * @generated from field: repeated bytebase.v1.Issue.Approver approvers = 9;
+   * @generated from field: repeated bytebase.v1.Issue.Approver approvers = 6;
    */
   approvers: Issue_Approver[];
 
   /**
    * The approval template for the issue.
    *
-   * @generated from field: bytebase.v1.ApprovalTemplate approval_template = 10;
+   * @generated from field: bytebase.v1.ApprovalTemplate approval_template = 7;
    */
   approvalTemplate?: ApprovalTemplate;
 
   /**
    * Format: users/hello@world.com
    *
-   * @generated from field: string creator = 14;
+   * @generated from field: string creator = 8;
    */
   creator: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp create_time = 15;
+   * @generated from field: google.protobuf.Timestamp create_time = 9;
    */
   createTime?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp update_time = 16;
+   * @generated from field: google.protobuf.Timestamp update_time = 10;
    */
   updateTime?: Timestamp;
 
@@ -489,7 +489,7 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
    * Can be empty.
    * Format: projects/{project}/plans/{plan}
    *
-   * @generated from field: string plan = 17;
+   * @generated from field: string plan = 11;
    */
   plan: string;
 
@@ -498,14 +498,14 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
    * Can be empty.
    * Format: projects/{project}/rollouts/{rollout}
    *
-   * @generated from field: string rollout = 18;
+   * @generated from field: string rollout = 12;
    */
   rollout: string;
 
   /**
    * Used if the issue type is GRANT_REQUEST.
    *
-   * @generated from field: bytebase.v1.GrantRequest grant_request = 19;
+   * @generated from field: bytebase.v1.GrantRequest grant_request = 13;
    */
   grantRequest?: GrantRequest;
 
@@ -518,14 +518,14 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
    * - roles/projectOwner
    * - roles/projectReleaser
    *
-   * @generated from field: repeated string releasers = 20;
+   * @generated from field: repeated string releasers = 14;
    */
   releasers: string[];
 
   /**
    * The risk level of the issue.
    *
-   * @generated from field: bytebase.v1.RiskLevel risk_level = 21;
+   * @generated from field: bytebase.v1.RiskLevel risk_level = 15;
    */
   riskLevel: RiskLevel;
 
@@ -540,26 +540,26 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
    * - FAILED
    * - CANCELED
    *
-   * @generated from field: map<string, int32> task_status_count = 22;
+   * @generated from field: map<string, int32> task_status_count = 16;
    */
   taskStatusCount: { [key: string]: number };
 
   /**
    * Labels attached to the issue for categorization and filtering.
    *
-   * @generated from field: repeated string labels = 23;
+   * @generated from field: repeated string labels = 17;
    */
   labels: string[];
 
   /**
-   * @generated from field: bytebase.v1.Issue.ApprovalStatus approval_status = 24;
+   * @generated from field: bytebase.v1.Issue.ApprovalStatus approval_status = 18;
    */
   approvalStatus: Issue_ApprovalStatus;
 
   /**
    * Only populated when approval_status == ERROR
    *
-   * @generated from field: string approval_status_error = 25;
+   * @generated from field: string approval_status_error = 19;
    */
   approvalStatusError: string;
 };
@@ -1001,7 +1001,7 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
   /**
    * Format: users/{email}
    *
-   * @generated from field: string creator = 7;
+   * @generated from field: string creator = 6;
    */
   creator: string;
 
@@ -1014,7 +1014,7 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
     /**
      * Approval event.
      *
-     * @generated from field: bytebase.v1.IssueComment.Approval approval = 8;
+     * @generated from field: bytebase.v1.IssueComment.Approval approval = 7;
      */
     value: IssueComment_Approval;
     case: "approval";
@@ -1022,7 +1022,7 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
     /**
      * Issue update event.
      *
-     * @generated from field: bytebase.v1.IssueComment.IssueUpdate issue_update = 9;
+     * @generated from field: bytebase.v1.IssueComment.IssueUpdate issue_update = 8;
      */
     value: IssueComment_IssueUpdate;
     case: "issueUpdate";
@@ -1030,7 +1030,7 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
     /**
      * Stage end event.
      *
-     * @generated from field: bytebase.v1.IssueComment.StageEnd stage_end = 10;
+     * @generated from field: bytebase.v1.IssueComment.StageEnd stage_end = 9;
      */
     value: IssueComment_StageEnd;
     case: "stageEnd";
@@ -1038,7 +1038,7 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
     /**
      * Task update event.
      *
-     * @generated from field: bytebase.v1.IssueComment.TaskUpdate task_update = 11;
+     * @generated from field: bytebase.v1.IssueComment.TaskUpdate task_update = 10;
      */
     value: IssueComment_TaskUpdate;
     case: "taskUpdate";
@@ -1046,7 +1046,7 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
     /**
      * Task prior backup event.
      *
-     * @generated from field: bytebase.v1.IssueComment.TaskPriorBackup task_prior_backup = 12;
+     * @generated from field: bytebase.v1.IssueComment.TaskPriorBackup task_prior_backup = 11;
      */
     value: IssueComment_TaskPriorBackup;
     case: "taskPriorBackup";
@@ -1156,12 +1156,12 @@ export declare type IssueComment_IssueUpdate = Message<"bytebase.v1.IssueComment
   toStatus?: IssueStatus;
 
   /**
-   * @generated from field: repeated string from_labels = 9;
+   * @generated from field: repeated string from_labels = 7;
    */
   fromLabels: string[];
 
   /**
-   * @generated from field: repeated string to_labels = 10;
+   * @generated from field: repeated string to_labels = 8;
    */
   toLabels: string[];
 };

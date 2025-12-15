@@ -276,13 +276,6 @@
     - [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest)
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
     - [BoundingBox](#bytebase-v1-BoundingBox)
-    - [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase)
-    - [ChangedResourceFunction](#bytebase-v1-ChangedResourceFunction)
-    - [ChangedResourceProcedure](#bytebase-v1-ChangedResourceProcedure)
-    - [ChangedResourceSchema](#bytebase-v1-ChangedResourceSchema)
-    - [ChangedResourceTable](#bytebase-v1-ChangedResourceTable)
-    - [ChangedResourceView](#bytebase-v1-ChangedResourceView)
-    - [ChangedResources](#bytebase-v1-ChangedResources)
     - [Changelog](#bytebase-v1-Changelog)
     - [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
@@ -398,24 +391,20 @@
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
-    - [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy)
-    - [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException)
+    - [MaskingExemptionPolicy](#bytebase-v1-MaskingExemptionPolicy)
+    - [MaskingExemptionPolicy.Exemption](#bytebase-v1-MaskingExemptionPolicy-Exemption)
     - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
-    - [RolloutPolicy.Checkers](#bytebase-v1-RolloutPolicy-Checkers)
-    - [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks)
     - [TagPolicy](#bytebase-v1-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
     - [DataSourceQueryPolicy.Restriction](#bytebase-v1-DataSourceQueryPolicy-Restriction)
-    - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
     - [PolicyType](#bytebase-v1-PolicyType)
-    - [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement)
   
     - [OrgPolicyService](#bytebase-v1-OrgPolicyService)
   
@@ -556,7 +545,6 @@
     - [SQLReviewRule.NamingCaseRulePayload](#bytebase-v1-SQLReviewRule-NamingCaseRulePayload)
     - [SQLReviewRule.NamingRulePayload](#bytebase-v1-SQLReviewRule-NamingRulePayload)
     - [SQLReviewRule.NumberRulePayload](#bytebase-v1-SQLReviewRule-NumberRulePayload)
-    - [SQLReviewRule.RequiredColumnRulePayload](#bytebase-v1-SQLReviewRule-RequiredColumnRulePayload)
     - [SQLReviewRule.StringArrayRulePayload](#bytebase-v1-SQLReviewRule-StringArrayRulePayload)
     - [SQLReviewRule.StringRulePayload](#bytebase-v1-SQLReviewRule-StringRulePayload)
     - [UpdateReviewConfigRequest](#bytebase-v1-UpdateReviewConfigRequest)
@@ -656,11 +644,8 @@
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
-    - [SheetCommand](#bytebase-v1-SheetCommand)
     - [SheetPayload](#bytebase-v1-SheetPayload)
     - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
-  
-    - [SheetPayload.Type](#bytebase-v1-SheetPayload-Type)
   
     - [SheetService](#bytebase-v1-SheetService)
   
@@ -803,8 +788,8 @@ DatabaseChangeType is the database change type.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | DATABASE_CHANGE_TYPE_UNSPECIFIED | 0 |  |
-| MIGRATE | 2 | Used for imperative schema migration including CREATE DATABASE. |
-| SDL | 3 | Used for state-based declarative schema migration including CREATE DATABASE. |
+| MIGRATE | 1 | Used for imperative schema migration including CREATE DATABASE. |
+| SDL | 2 | Used for state-based declarative schema migration including CREATE DATABASE. |
 
 
 
@@ -830,17 +815,17 @@ Database engine type.
 | REDSHIFT | 12 | Amazon Redshift data warehouse. |
 | MARIADB | 13 | MariaDB relational database. |
 | OCEANBASE | 14 | OceanBase distributed database. |
-| STARROCKS | 18 | StarRocks analytics database. |
-| DORIS | 19 | Apache Doris analytics database. |
-| HIVE | 20 | Apache Hive data warehouse. |
-| ELASTICSEARCH | 21 | Elasticsearch search engine. |
-| BIGQUERY | 22 | Google BigQuery data warehouse. |
-| DYNAMODB | 23 | Amazon DynamoDB NoSQL database. |
-| DATABRICKS | 24 | Databricks lakehouse platform. |
-| COCKROACHDB | 25 | CockroachDB distributed SQL database. |
-| COSMOSDB | 26 | Azure Cosmos DB multi-model database. |
-| TRINO | 27 | Trino distributed SQL query engine. |
-| CASSANDRA | 28 | Apache Cassandra NoSQL database. |
+| STARROCKS | 15 | StarRocks analytics database. |
+| DORIS | 16 | Apache Doris analytics database. |
+| HIVE | 17 | Apache Hive data warehouse. |
+| ELASTICSEARCH | 18 | Elasticsearch search engine. |
+| BIGQUERY | 19 | Google BigQuery data warehouse. |
+| DYNAMODB | 20 | Amazon DynamoDB NoSQL database. |
+| DATABRICKS | 21 | Databricks lakehouse platform. |
+| COCKROACHDB | 22 | CockroachDB distributed SQL database. |
+| COSMOSDB | 23 | Azure Cosmos DB multi-model database. |
+| TRINO | 24 | Trino distributed SQL query engine. |
+| CASSANDRA | 25 | Apache Cassandra NoSQL database. |
 
 
 
@@ -915,7 +900,7 @@ Webhook integration type.
 | DINGTALK | 4 | DingTalk integration. |
 | FEISHU | 5 | Feishu integration. |
 | WECOM | 6 | WeCom (WeChat Work) integration. |
-| LARK | 8 | Lark integration. |
+| LARK | 7 | Lark integration. |
 
 
  
@@ -2283,13 +2268,13 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | SETTING_NAME_UNSPECIFIED | 0 |  |
-| WORKSPACE_PROFILE | 4 |  |
-| WORKSPACE_APPROVAL | 5 |  |
-| APP_IM | 8 |  |
-| AI | 10 |  |
-| DATA_CLASSIFICATION | 14 |  |
-| SEMANTIC_TYPES | 15 |  |
-| ENVIRONMENT | 19 |  |
+| WORKSPACE_PROFILE | 1 |  |
+| WORKSPACE_APPROVAL | 2 |  |
+| APP_IM | 3 |  |
+| AI | 4 |  |
+| DATA_CLASSIFICATION | 5 |  |
+| SEMANTIC_TYPES | 6 |  |
+| ENVIRONMENT | 7 |  |
 
 
 
@@ -4658,120 +4643,6 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 
 
 
-<a name="bytebase-v1-ChangedResourceDatabase"></a>
-
-### ChangedResourceDatabase
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| schemas | [ChangedResourceSchema](#bytebase-v1-ChangedResourceSchema) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResourceFunction"></a>
-
-### ChangedResourceFunction
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResourceProcedure"></a>
-
-### ChangedResourceProcedure
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResourceSchema"></a>
-
-### ChangedResourceSchema
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| tables | [ChangedResourceTable](#bytebase-v1-ChangedResourceTable) | repeated |  |
-| views | [ChangedResourceView](#bytebase-v1-ChangedResourceView) | repeated |  |
-| functions | [ChangedResourceFunction](#bytebase-v1-ChangedResourceFunction) | repeated |  |
-| procedures | [ChangedResourceProcedure](#bytebase-v1-ChangedResourceProcedure) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResourceTable"></a>
-
-### ChangedResourceTable
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResourceView"></a>
-
-### ChangedResourceView
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-v1-ChangedResources"></a>
-
-### ChangedResources
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| databases | [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase) | repeated |  |
-
-
-
-
-
-
 <a name="bytebase-v1-Changelog"></a>
 
 ### Changelog
@@ -4794,7 +4665,6 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | task_run | [string](#string) |  | Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | version | [string](#string) |  | Could be empty |
 | revision | [string](#string) |  | Could be empty Or present but not found if deleted |
-| changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 | type | [Changelog.Type](#bytebase-v1-Changelog-Type) |  |  |
 
 
@@ -6703,33 +6573,32 @@ Policy for controlling which data sources can be queried in the SQL editor.
 
 
 
-<a name="bytebase-v1-MaskingExceptionPolicy"></a>
+<a name="bytebase-v1-MaskingExemptionPolicy"></a>
 
-### MaskingExceptionPolicy
-MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| masking_exceptions | [MaskingExceptionPolicy.MaskingException](#bytebase-v1-MaskingExceptionPolicy-MaskingException) | repeated | The list of masking exceptions. |
-
-
-
-
-
-
-<a name="bytebase-v1-MaskingExceptionPolicy-MaskingException"></a>
-
-### MaskingExceptionPolicy.MaskingException
-An exception allowing specific users to access masked data.
+### MaskingExemptionPolicy
+MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| action | [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action) |  | The action that the user can perform on sensitive data. |
-| member | [string](#string) |  | Member is the principal who bind to this exception policy instance.
+| exemptions | [MaskingExemptionPolicy.Exemption](#bytebase-v1-MaskingExemptionPolicy-Exemption) | repeated |  |
 
-- `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`. - `group:{email}`: An email address for group. |
+
+
+
+
+
+<a name="bytebase-v1-MaskingExemptionPolicy-Exemption"></a>
+
+### MaskingExemptionPolicy.Exemption
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| members | [string](#string) | repeated | Members who bind to this exemption.
+
+Format: users/{email} or groups/{group email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this exception policy instance. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec If the condition is empty, means the user can access all databases without expiration.
 
 Support variables: resource.instance_id: the instance resource id. Only support &#34;==&#34; operation. resource.database_name: the database name. Only support &#34;==&#34; operation. resource.schema_name: the schema name. Only support &#34;==&#34; operation. resource.table_name: the table name. Only support &#34;==&#34; operation. resource.column_name: the column name. Only support &#34;==&#34; operation. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)` All variables should join with &#34;&amp;&amp;&#34; condition.
@@ -6792,7 +6661,7 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 | type | [PolicyType](#bytebase-v1-PolicyType) |  | The type of policy. |
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
 | masking_rule_policy | [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy) |  |  |
-| masking_exception_policy | [MaskingExceptionPolicy](#bytebase-v1-MaskingExceptionPolicy) |  |  |
+| masking_exemption_policy | [MaskingExemptionPolicy](#bytebase-v1-MaskingExemptionPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
 | query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
@@ -6833,38 +6702,6 @@ Rollout policy configuration.
 | ----- | ---- | ----- | ----------- |
 | automatic | [bool](#bool) |  | Whether rollout is automatic without manual approval. |
 | roles | [string](#string) | repeated | The roles that can approve rollout execution. |
-| checkers | [RolloutPolicy.Checkers](#bytebase-v1-RolloutPolicy-Checkers) |  | Checkers that must pass before rollout execution. These checks are performed in UI workflows only. |
-
-
-
-
-
-
-<a name="bytebase-v1-RolloutPolicy-Checkers"></a>
-
-### RolloutPolicy.Checkers
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| required_issue_approval | [bool](#bool) |  | Whether issue approval is required before proceeding with rollout. |
-| required_status_checks | [RolloutPolicy.Checkers.RequiredStatusChecks](#bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks) |  | Status checks that must pass before rollout can be executed. |
-
-
-
-
-
-
-<a name="bytebase-v1-RolloutPolicy-Checkers-RequiredStatusChecks"></a>
-
-### RolloutPolicy.Checkers.RequiredStatusChecks
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plan_check_enforcement | [RolloutPolicy.Checkers.PlanCheckEnforcement](#bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement) |  | Enforcement level for plan check results during rollout validation. |
 
 
 
@@ -6936,19 +6773,6 @@ Restriction level for admin data source access.
 
 
 
-<a name="bytebase-v1-MaskingExceptionPolicy-MaskingException-Action"></a>
-
-### MaskingExceptionPolicy.MaskingException.Action
-The action that the exception permits.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 | Unspecified action. |
-| QUERY | 1 | Allow querying sensitive data. |
-| EXPORT | 2 | Allow exporting sensitive data. |
-
-
-
 <a name="bytebase-v1-PolicyResourceType"></a>
 
 ### PolicyResourceType
@@ -6971,25 +6795,12 @@ The type of organizational policy.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | POLICY_TYPE_UNSPECIFIED | 0 | Unspecified policy type. |
-| ROLLOUT_POLICY | 11 | Rollout deployment policy. |
-| MASKING_RULE | 9 | Data masking rule policy. |
-| MASKING_EXCEPTION | 10 | Data masking exception policy. |
-| TAG | 13 | Resource tag policy. |
-| DATA_SOURCE_QUERY | 14 | Data source query restrictions policy. |
-| DATA_QUERY | 16 | Query data access policy. |
-
-
-
-<a name="bytebase-v1-RolloutPolicy-Checkers-PlanCheckEnforcement"></a>
-
-### RolloutPolicy.Checkers.PlanCheckEnforcement
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PLAN_CHECK_ENFORCEMENT_UNSPECIFIED | 0 | Allow rollout regardless of plan check results (no enforcement). |
-| ERROR_ONLY | 1 | Block rollout only when plan check finds errors. |
-| STRICT | 2 | Block rollout when plan check finds errors or warnings. |
+| MASKING_RULE | 1 | Data masking rule policy. |
+| MASKING_EXEMPTION | 2 | Data masking exemption policy. |
+| ROLLOUT_POLICY | 3 | Rollout deployment policy. |
+| TAG | 4 | Resource tag policy. |
+| DATA_SOURCE_QUERY | 5 | Data source query restrictions policy. |
+| DATA_QUERY | 6 | Query data access policy. |
 
 
  
@@ -7177,8 +6988,6 @@ OrgPolicyService manages organizational policies at various resource levels.
 | ----- | ---- | ----- | ----------- |
 | source_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the source schema. |
 | target_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The metadata of the target schema. |
-| source_catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |  |
-| target_catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine of the schema. |
 
 
@@ -8046,7 +7855,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | ----- | ---- | ----- | ----------- |
 | statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
 | affected_rows | [int64](#int64) |  |  |
-| changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
 
 
 
@@ -8164,10 +7972,10 @@ The plan&#39;s `name` field is used to identify the plan to update. Format: proj
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified check type. |
 | DATABASE_STATEMENT_FAKE_ADVISE | 1 | Fake advise check for testing purposes without executing against database. |
-| DATABASE_STATEMENT_ADVISE | 3 | SQL review check that analyzes statements against configured SQL review rules. |
-| DATABASE_STATEMENT_SUMMARY_REPORT | 5 | Summary report check that generates impact analysis for the statements. |
-| DATABASE_CONNECT | 6 | Connection check that verifies database connectivity. |
-| DATABASE_GHOST_SYNC | 7 | Ghost sync check that validates gh-ost online schema change compatibility. |
+| DATABASE_STATEMENT_ADVISE | 2 | SQL review check that analyzes statements against configured SQL review rules. |
+| DATABASE_STATEMENT_SUMMARY_REPORT | 3 | Summary report check that generates impact analysis for the statements. |
+| DATABASE_CONNECT | 4 | Connection check that verifies database connectivity. |
+| DATABASE_GHOST_SYNC | 5 | Ghost sync check that validates gh-ost online schema change compatibility. |
 
 
  
@@ -8627,19 +8435,19 @@ Activity type enumeration.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| NOTIFY_ISSUE_APPROVED | 23 | Notifications via webhooks.
-
-NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
-| NOTIFY_PIPELINE_ROLLOUT | 24 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
 | ISSUE_CREATE | 1 | Issue related activity types.
 
 ISSUE_CREATE represents creating an issue. |
 | ISSUE_COMMENT_CREATE | 2 | ISSUE_COMMENT_CREATE represents commenting on an issue. |
 | ISSUE_FIELD_UPDATE | 3 | ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc. |
 | ISSUE_STATUS_UPDATE | 4 | ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. |
-| ISSUE_APPROVAL_NOTIFY | 21 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
-| ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 22 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
+| ISSUE_APPROVAL_NOTIFY | 6 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
+| ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 7 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
+| NOTIFY_ISSUE_APPROVED | 8 | Notifications via webhooks.
+
+NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
+| NOTIFY_PIPELINE_ROLLOUT | 9 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
 
 
  
@@ -9097,7 +8905,6 @@ SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for d
 | number_payload | [SQLReviewRule.NumberRulePayload](#bytebase-v1-SQLReviewRule-NumberRulePayload) |  |  |
 | string_array_payload | [SQLReviewRule.StringArrayRulePayload](#bytebase-v1-SQLReviewRule-StringArrayRulePayload) |  |  |
 | comment_convention_payload | [SQLReviewRule.CommentConventionRulePayload](#bytebase-v1-SQLReviewRule-CommentConventionRulePayload) |  |  |
-| required_column_payload | [SQLReviewRule.RequiredColumnRulePayload](#bytebase-v1-SQLReviewRule-RequiredColumnRulePayload) |  |  |
 | string_payload | [SQLReviewRule.StringRulePayload](#bytebase-v1-SQLReviewRule-StringRulePayload) |  |  |
 | naming_case_payload | [SQLReviewRule.NamingCaseRulePayload](#bytebase-v1-SQLReviewRule-NamingCaseRulePayload) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  | The database engine this rule applies to. |
@@ -9163,21 +8970,6 @@ Payload message types for SQL review rules
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | number | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SQLReviewRule-RequiredColumnRulePayload"></a>
-
-### SQLReviewRule.RequiredColumnRulePayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| column_list | [string](#string) | repeated |  |
 
 
 
@@ -10540,8 +10332,8 @@ PostgreSQL session information read from `pg_stat_activity`.
 | GENERAL | 1 | General task for miscellaneous operations. |
 | DATABASE_CREATE | 2 | Database creation task that creates a new database. Use payload DatabaseCreate. |
 | DATABASE_MIGRATE | 3 | Database migration task that applies versioned schema changes. Use payload DatabaseUpdate. |
-| DATABASE_SDL | 6 | Database SDL (Schema Definition Language) task that synchronizes declarative schema. Use payload DatabaseUpdate. |
-| DATABASE_EXPORT | 5 | Database export task that exports query results or table data. Use payload DatabaseDataExport. |
+| DATABASE_EXPORT | 4 | Database export task that exports query results or table data. Use payload DatabaseDataExport. |
+| DATABASE_SDL | 5 | Database SDL (Schema Definition Language) task that synchronizes declarative schema. Use payload DatabaseUpdate. |
 
 
 
@@ -10732,24 +10524,8 @@ RolloutService manages the execution of deployment plans.
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the sheet. |
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
-| payload | [SheetPayload](#bytebase-v1-SheetPayload) |  | Additional metadata and configuration for the sheet. |
+| payload | [SheetPayload](#bytebase-v1-SheetPayload) |  | Parsed metadata about SQL commands in the sheet. |
 | engine | [Engine](#bytebase-v1-Engine) |  | The SQL dialect. |
-
-
-
-
-
-
-<a name="bytebase-v1-SheetCommand"></a>
-
-### SheetCommand
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| start | [int32](#int32) |  |  |
-| end | [int32](#int32) |  |  |
 
 
 
@@ -10764,8 +10540,7 @@ RolloutService manages the execution of deployment plans.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [SheetPayload.Type](#bytebase-v1-SheetPayload-Type) |  |  |
-| commands | [SheetCommand](#bytebase-v1-SheetCommand) | repeated | The start and end position of each command in the sheet statement. |
+| commands | [Range](#bytebase-v1-Range) | repeated | The start and end position of each command in the sheet statement. |
 
 
 
@@ -10791,18 +10566,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
  
-
-
-<a name="bytebase-v1-SheetPayload-Type"></a>
-
-### SheetPayload.Type
-Type of the SheetPayload.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| SCHEMA_DESIGN | 1 |  |
-
 
  
 
@@ -10936,64 +10699,63 @@ PlanFeature represents the available features in Bytebase
 | FEATURE_SCHEDULED_ROLLOUT_TIME | 11 |  |
 | FEATURE_DATABASE_CHANGELOG | 12 |  |
 | FEATURE_SCHEMA_DRIFT_DETECTION | 13 |  |
-| FEATURE_SCHEMA_TEMPLATE | 15 |  |
-| FEATURE_ROLLOUT_POLICY | 16 |  |
-| FEATURE_WEB_BASED_SQL_EDITOR | 17 | SQL Editor &amp; Development |
-| FEATURE_SQL_EDITOR_ADMIN_MODE | 18 |  |
-| FEATURE_NATURAL_LANGUAGE_TO_SQL | 19 |  |
-| FEATURE_AI_QUERY_EXPLANATION | 20 |  |
-| FEATURE_AI_QUERY_SUGGESTIONS | 21 |  |
-| FEATURE_AUTO_COMPLETE | 22 |  |
-| FEATURE_SCHEMA_DIAGRAM | 23 |  |
-| FEATURE_SCHEMA_EDITOR | 24 |  |
-| FEATURE_DATA_EXPORT | 25 |  |
-| FEATURE_DATA_OFFLINE_EXPORT | 26 |  |
-| FEATURE_QUERY_HISTORY | 27 |  |
-| FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS | 28 |  |
-| FEATURE_BATCH_QUERY | 29 |  |
-| FEATURE_INSTANCE_READ_ONLY_CONNECTION | 30 |  |
-| FEATURE_QUERY_POLICY | 31 |  |
-| FEATURE_RESTRICT_COPYING_DATA | 32 |  |
-| FEATURE_IAM | 33 | Security &amp; Compliance |
-| FEATURE_INSTANCE_SSL_CONNECTION | 34 |  |
-| FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL | 35 |  |
-| FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION | 36 |  |
-| FEATURE_GOOGLE_AND_GITHUB_SSO | 37 |  |
-| FEATURE_USER_GROUPS | 38 |  |
-| FEATURE_DISALLOW_SELF_SERVICE_SIGNUP | 39 |  |
-| FEATURE_CUSTOM_INSTANCE_SYNC_TIME | 41 |  |
-| FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT | 42 |  |
-| FEATURE_RISK_ASSESSMENT | 43 |  |
-| FEATURE_APPROVAL_WORKFLOW | 44 |  |
-| FEATURE_AUDIT_LOG | 45 |  |
-| FEATURE_ENTERPRISE_SSO | 46 |  |
-| FEATURE_TWO_FA | 47 |  |
-| FEATURE_PASSWORD_RESTRICTIONS | 48 |  |
-| FEATURE_DISALLOW_PASSWORD_SIGNIN | 49 |  |
-| FEATURE_CUSTOM_ROLES | 50 |  |
-| FEATURE_REQUEST_ROLE_WORKFLOW | 51 |  |
-| FEATURE_DATA_MASKING | 52 |  |
-| FEATURE_DATA_CLASSIFICATION | 53 |  |
-| FEATURE_SCIM | 54 |  |
-| FEATURE_DIRECTORY_SYNC | 55 |  |
-| FEATURE_SIGN_IN_FREQUENCY_CONTROL | 56 |  |
-| FEATURE_EXTERNAL_SECRET_MANAGER | 57 |  |
-| FEATURE_USER_EMAIL_DOMAIN_RESTRICTION | 58 |  |
-| FEATURE_PROJECT_MANAGEMENT | 59 | Administration &amp; Support |
-| FEATURE_ENVIRONMENT_MANAGEMENT | 60 |  |
-| FEATURE_IM_NOTIFICATIONS | 61 |  |
-| FEATURE_TERRAFORM_PROVIDER | 62 |  |
-| FEATURE_DATABASE_GROUPS | 63 |  |
-| FEATURE_ENVIRONMENT_TIERS | 64 |  |
-| FEATURE_DASHBOARD_ANNOUNCEMENT | 65 |  |
-| FEATURE_API_INTEGRATION_GUIDANCE | 66 |  |
-| FEATURE_CUSTOM_LOGO | 67 |  |
-| FEATURE_WATERMARK | 68 |  |
-| FEATURE_ROADMAP_PRIORITIZATION | 69 |  |
-| FEATURE_CUSTOM_MSA | 70 |  |
-| FEATURE_COMMUNITY_SUPPORT | 71 |  |
-| FEATURE_EMAIL_SUPPORT | 72 |  |
-| FEATURE_DEDICATED_SUPPORT_WITH_SLA | 73 |  |
+| FEATURE_ROLLOUT_POLICY | 14 |  |
+| FEATURE_WEB_BASED_SQL_EDITOR | 15 | SQL Editor &amp; Development |
+| FEATURE_SQL_EDITOR_ADMIN_MODE | 16 |  |
+| FEATURE_NATURAL_LANGUAGE_TO_SQL | 17 |  |
+| FEATURE_AI_QUERY_EXPLANATION | 18 |  |
+| FEATURE_AI_QUERY_SUGGESTIONS | 19 |  |
+| FEATURE_AUTO_COMPLETE | 20 |  |
+| FEATURE_SCHEMA_DIAGRAM | 21 |  |
+| FEATURE_SCHEMA_EDITOR | 22 |  |
+| FEATURE_DATA_EXPORT | 23 |  |
+| FEATURE_DATA_OFFLINE_EXPORT | 24 |  |
+| FEATURE_QUERY_HISTORY | 25 |  |
+| FEATURE_SAVED_AND_SHARED_SQL_SCRIPTS | 26 |  |
+| FEATURE_BATCH_QUERY | 27 |  |
+| FEATURE_INSTANCE_READ_ONLY_CONNECTION | 28 |  |
+| FEATURE_QUERY_POLICY | 29 |  |
+| FEATURE_RESTRICT_COPYING_DATA | 30 |  |
+| FEATURE_IAM | 31 | Security &amp; Compliance |
+| FEATURE_INSTANCE_SSL_CONNECTION | 32 |  |
+| FEATURE_INSTANCE_CONNECTION_OVER_SSH_TUNNEL | 33 |  |
+| FEATURE_INSTANCE_CONNECTION_IAM_AUTHENTICATION | 34 |  |
+| FEATURE_GOOGLE_AND_GITHUB_SSO | 35 |  |
+| FEATURE_USER_GROUPS | 36 |  |
+| FEATURE_DISALLOW_SELF_SERVICE_SIGNUP | 37 |  |
+| FEATURE_CUSTOM_INSTANCE_SYNC_TIME | 38 |  |
+| FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT | 39 |  |
+| FEATURE_RISK_ASSESSMENT | 40 |  |
+| FEATURE_APPROVAL_WORKFLOW | 41 |  |
+| FEATURE_AUDIT_LOG | 42 |  |
+| FEATURE_ENTERPRISE_SSO | 43 |  |
+| FEATURE_TWO_FA | 44 |  |
+| FEATURE_PASSWORD_RESTRICTIONS | 45 |  |
+| FEATURE_DISALLOW_PASSWORD_SIGNIN | 46 |  |
+| FEATURE_CUSTOM_ROLES | 47 |  |
+| FEATURE_REQUEST_ROLE_WORKFLOW | 48 |  |
+| FEATURE_DATA_MASKING | 49 |  |
+| FEATURE_DATA_CLASSIFICATION | 50 |  |
+| FEATURE_SCIM | 51 |  |
+| FEATURE_DIRECTORY_SYNC | 52 |  |
+| FEATURE_SIGN_IN_FREQUENCY_CONTROL | 53 |  |
+| FEATURE_EXTERNAL_SECRET_MANAGER | 54 |  |
+| FEATURE_USER_EMAIL_DOMAIN_RESTRICTION | 55 |  |
+| FEATURE_PROJECT_MANAGEMENT | 56 | Administration &amp; Support |
+| FEATURE_ENVIRONMENT_MANAGEMENT | 57 |  |
+| FEATURE_IM_NOTIFICATIONS | 58 |  |
+| FEATURE_TERRAFORM_PROVIDER | 59 |  |
+| FEATURE_DATABASE_GROUPS | 60 |  |
+| FEATURE_ENVIRONMENT_TIERS | 61 |  |
+| FEATURE_DASHBOARD_ANNOUNCEMENT | 62 |  |
+| FEATURE_API_INTEGRATION_GUIDANCE | 63 |  |
+| FEATURE_CUSTOM_LOGO | 64 |  |
+| FEATURE_WATERMARK | 65 |  |
+| FEATURE_ROADMAP_PRIORITIZATION | 66 |  |
+| FEATURE_CUSTOM_MSA | 67 |  |
+| FEATURE_COMMUNITY_SUPPORT | 68 |  |
+| FEATURE_EMAIL_SUPPORT | 69 |  |
+| FEATURE_DEDICATED_SUPPORT_WITH_SLA | 70 |  |
 
 
 

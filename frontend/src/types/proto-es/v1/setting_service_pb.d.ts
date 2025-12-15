@@ -159,39 +159,39 @@ export enum Setting_SettingName {
   SETTING_NAME_UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: WORKSPACE_PROFILE = 4;
+   * @generated from enum value: WORKSPACE_PROFILE = 1;
    */
-  WORKSPACE_PROFILE = 4,
+  WORKSPACE_PROFILE = 1,
 
   /**
-   * @generated from enum value: WORKSPACE_APPROVAL = 5;
+   * @generated from enum value: WORKSPACE_APPROVAL = 2;
    */
-  WORKSPACE_APPROVAL = 5,
+  WORKSPACE_APPROVAL = 2,
 
   /**
-   * @generated from enum value: APP_IM = 8;
+   * @generated from enum value: APP_IM = 3;
    */
-  APP_IM = 8,
+  APP_IM = 3,
 
   /**
-   * @generated from enum value: AI = 10;
+   * @generated from enum value: AI = 4;
    */
-  AI = 10,
+  AI = 4,
 
   /**
-   * @generated from enum value: DATA_CLASSIFICATION = 14;
+   * @generated from enum value: DATA_CLASSIFICATION = 5;
    */
-  DATA_CLASSIFICATION = 14,
+  DATA_CLASSIFICATION = 5,
 
   /**
-   * @generated from enum value: SEMANTIC_TYPES = 15;
+   * @generated from enum value: SEMANTIC_TYPES = 6;
    */
-  SEMANTIC_TYPES = 15,
+  SEMANTIC_TYPES = 6,
 
   /**
-   * @generated from enum value: ENVIRONMENT = 19;
+   * @generated from enum value: ENVIRONMENT = 7;
    */
-  ENVIRONMENT = 19,
+  ENVIRONMENT = 7,
 }
 
 /**
@@ -210,43 +210,43 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
    */
   value: {
     /**
-     * @generated from field: bytebase.v1.AppIMSetting app_im = 3;
+     * @generated from field: bytebase.v1.AppIMSetting app_im = 1;
      */
     value: AppIMSetting;
     case: "appIm";
   } | {
     /**
-     * @generated from field: bytebase.v1.WorkspaceProfileSetting workspace_profile = 5;
+     * @generated from field: bytebase.v1.WorkspaceProfileSetting workspace_profile = 2;
      */
     value: WorkspaceProfileSetting;
     case: "workspaceProfile";
   } | {
     /**
-     * @generated from field: bytebase.v1.WorkspaceApprovalSetting workspace_approval = 6;
+     * @generated from field: bytebase.v1.WorkspaceApprovalSetting workspace_approval = 3;
      */
     value: WorkspaceApprovalSetting;
     case: "workspaceApproval";
   } | {
     /**
-     * @generated from field: bytebase.v1.DataClassificationSetting data_classification = 10;
+     * @generated from field: bytebase.v1.DataClassificationSetting data_classification = 4;
      */
     value: DataClassificationSetting;
     case: "dataClassification";
   } | {
     /**
-     * @generated from field: bytebase.v1.SemanticTypeSetting semantic_type = 11;
+     * @generated from field: bytebase.v1.SemanticTypeSetting semantic_type = 5;
      */
     value: SemanticTypeSetting;
     case: "semanticType";
   } | {
     /**
-     * @generated from field: bytebase.v1.AISetting ai = 16;
+     * @generated from field: bytebase.v1.AISetting ai = 6;
      */
     value: AISetting;
     case: "ai";
   } | {
     /**
-     * @generated from field: bytebase.v1.EnvironmentSetting environment = 17;
+     * @generated from field: bytebase.v1.EnvironmentSetting environment = 7;
      */
     value: EnvironmentSetting;
     case: "environment";
@@ -502,63 +502,63 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   /**
    * The duration for token.
    *
-   * @generated from field: google.protobuf.Duration token_duration = 6;
+   * @generated from field: google.protobuf.Duration token_duration = 4;
    */
   tokenDuration?: Duration;
 
   /**
    * The setting of custom announcement
    *
-   * @generated from field: bytebase.v1.Announcement announcement = 7;
+   * @generated from field: bytebase.v1.Announcement announcement = 5;
    */
   announcement?: Announcement;
 
   /**
    * The max duration for role expired.
    *
-   * @generated from field: google.protobuf.Duration maximum_role_expiration = 8;
+   * @generated from field: google.protobuf.Duration maximum_role_expiration = 6;
    */
   maximumRoleExpiration?: Duration;
 
   /**
    * The workspace domain, e.g., bytebase.com.
    *
-   * @generated from field: repeated string domains = 9;
+   * @generated from field: repeated string domains = 7;
    */
   domains: string[];
 
   /**
    * Only user and group from the domains can be created and login.
    *
-   * @generated from field: bool enforce_identity_domain = 10;
+   * @generated from field: bool enforce_identity_domain = 8;
    */
   enforceIdentityDomain: boolean;
 
   /**
    * The workspace database change mode.
    *
-   * @generated from field: bytebase.v1.DatabaseChangeMode database_change_mode = 11;
+   * @generated from field: bytebase.v1.DatabaseChangeMode database_change_mode = 9;
    */
   databaseChangeMode: DatabaseChangeMode;
 
   /**
    * Whether to disallow password signin. (Except workspace admins)
    *
-   * @generated from field: bool disallow_password_signin = 12;
+   * @generated from field: bool disallow_password_signin = 10;
    */
   disallowPasswordSignin: boolean;
 
   /**
    * Whether to enable metric collection for the workspace.
    *
-   * @generated from field: bool enable_metric_collection = 13;
+   * @generated from field: bool enable_metric_collection = 11;
    */
   enableMetricCollection: boolean;
 
   /**
    * The session expiration time if not activity detected for the user. Value <= 0 means no limit.
    *
-   * @generated from field: google.protobuf.Duration inactive_session_timeout = 14;
+   * @generated from field: google.protobuf.Duration inactive_session_timeout = 12;
    */
   inactiveSessionTimeout?: Duration;
 
@@ -566,7 +566,7 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * Whether to enable audit logging to stdout in structured JSON format.
    * Requires TEAM or ENTERPRISE license.
    *
-   * @generated from field: bool enable_audit_log_stdout = 15;
+   * @generated from field: bool enable_audit_log_stdout = 13;
    */
   enableAuditLogStdout: boolean;
 
@@ -574,28 +574,28 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
    * Whether to display watermark on pages.
    * Requires ENTERPRISE license.
    *
-   * @generated from field: bool watermark = 16;
+   * @generated from field: bool watermark = 14;
    */
   watermark: boolean;
 
   /**
    * The token for directory sync authentication.
    *
-   * @generated from field: string directory_sync_token = 17;
+   * @generated from field: string directory_sync_token = 15;
    */
   directorySyncToken: string;
 
   /**
    * The branding logo as a data URI (e.g. data:image/png;base64,...).
    *
-   * @generated from field: string branding_logo = 18;
+   * @generated from field: string branding_logo = 16;
    */
   brandingLogo: string;
 
   /**
    * Password restriction settings.
    *
-   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 19;
+   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 17;
    */
   passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
 };
@@ -1018,25 +1018,25 @@ export declare type Algorithm = Message<"bytebase.v1.Algorithm"> & {
    */
   mask: {
     /**
-     * @generated from field: bytebase.v1.Algorithm.FullMask full_mask = 5;
+     * @generated from field: bytebase.v1.Algorithm.FullMask full_mask = 1;
      */
     value: Algorithm_FullMask;
     case: "fullMask";
   } | {
     /**
-     * @generated from field: bytebase.v1.Algorithm.RangeMask range_mask = 6;
+     * @generated from field: bytebase.v1.Algorithm.RangeMask range_mask = 2;
      */
     value: Algorithm_RangeMask;
     case: "rangeMask";
   } | {
     /**
-     * @generated from field: bytebase.v1.Algorithm.MD5Mask md5_mask = 7;
+     * @generated from field: bytebase.v1.Algorithm.MD5Mask md5_mask = 3;
      */
     value: Algorithm_MD5Mask;
     case: "md5Mask";
   } | {
     /**
-     * @generated from field: bytebase.v1.Algorithm.InnerOuterMask inner_outer_mask = 8;
+     * @generated from field: bytebase.v1.Algorithm.InnerOuterMask inner_outer_mask = 4;
      */
     value: Algorithm_InnerOuterMask;
     case: "innerOuterMask";

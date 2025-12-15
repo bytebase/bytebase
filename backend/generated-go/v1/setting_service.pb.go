@@ -81,36 +81,36 @@ type Setting_SettingName int32
 
 const (
 	Setting_SETTING_NAME_UNSPECIFIED Setting_SettingName = 0
-	Setting_WORKSPACE_PROFILE        Setting_SettingName = 4
-	Setting_WORKSPACE_APPROVAL       Setting_SettingName = 5
-	Setting_APP_IM                   Setting_SettingName = 8
-	Setting_AI                       Setting_SettingName = 10
-	Setting_DATA_CLASSIFICATION      Setting_SettingName = 14
-	Setting_SEMANTIC_TYPES           Setting_SettingName = 15
-	Setting_ENVIRONMENT              Setting_SettingName = 19
+	Setting_WORKSPACE_PROFILE        Setting_SettingName = 1
+	Setting_WORKSPACE_APPROVAL       Setting_SettingName = 2
+	Setting_APP_IM                   Setting_SettingName = 3
+	Setting_AI                       Setting_SettingName = 4
+	Setting_DATA_CLASSIFICATION      Setting_SettingName = 5
+	Setting_SEMANTIC_TYPES           Setting_SettingName = 6
+	Setting_ENVIRONMENT              Setting_SettingName = 7
 )
 
 // Enum value maps for Setting_SettingName.
 var (
 	Setting_SettingName_name = map[int32]string{
-		0:  "SETTING_NAME_UNSPECIFIED",
-		4:  "WORKSPACE_PROFILE",
-		5:  "WORKSPACE_APPROVAL",
-		8:  "APP_IM",
-		10: "AI",
-		14: "DATA_CLASSIFICATION",
-		15: "SEMANTIC_TYPES",
-		19: "ENVIRONMENT",
+		0: "SETTING_NAME_UNSPECIFIED",
+		1: "WORKSPACE_PROFILE",
+		2: "WORKSPACE_APPROVAL",
+		3: "APP_IM",
+		4: "AI",
+		5: "DATA_CLASSIFICATION",
+		6: "SEMANTIC_TYPES",
+		7: "ENVIRONMENT",
 	}
 	Setting_SettingName_value = map[string]int32{
 		"SETTING_NAME_UNSPECIFIED": 0,
-		"WORKSPACE_PROFILE":        4,
-		"WORKSPACE_APPROVAL":       5,
-		"APP_IM":                   8,
-		"AI":                       10,
-		"DATA_CLASSIFICATION":      14,
-		"SEMANTIC_TYPES":           15,
-		"ENVIRONMENT":              19,
+		"WORKSPACE_PROFILE":        1,
+		"WORKSPACE_APPROVAL":       2,
+		"APP_IM":                   3,
+		"AI":                       4,
+		"DATA_CLASSIFICATION":      5,
+		"SEMANTIC_TYPES":           6,
+		"ENVIRONMENT":              7,
 	}
 )
 
@@ -776,31 +776,31 @@ type isSettingValue_Value interface {
 }
 
 type SettingValue_AppIm struct {
-	AppIm *AppIMSetting `protobuf:"bytes,3,opt,name=app_im,json=appIm,proto3,oneof"`
+	AppIm *AppIMSetting `protobuf:"bytes,1,opt,name=app_im,json=appIm,proto3,oneof"`
 }
 
 type SettingValue_WorkspaceProfile struct {
-	WorkspaceProfile *WorkspaceProfileSetting `protobuf:"bytes,5,opt,name=workspace_profile,json=workspaceProfile,proto3,oneof"`
+	WorkspaceProfile *WorkspaceProfileSetting `protobuf:"bytes,2,opt,name=workspace_profile,json=workspaceProfile,proto3,oneof"`
 }
 
 type SettingValue_WorkspaceApproval struct {
-	WorkspaceApproval *WorkspaceApprovalSetting `protobuf:"bytes,6,opt,name=workspace_approval,json=workspaceApproval,proto3,oneof"`
+	WorkspaceApproval *WorkspaceApprovalSetting `protobuf:"bytes,3,opt,name=workspace_approval,json=workspaceApproval,proto3,oneof"`
 }
 
 type SettingValue_DataClassification struct {
-	DataClassification *DataClassificationSetting `protobuf:"bytes,10,opt,name=data_classification,json=dataClassification,proto3,oneof"`
+	DataClassification *DataClassificationSetting `protobuf:"bytes,4,opt,name=data_classification,json=dataClassification,proto3,oneof"`
 }
 
 type SettingValue_SemanticType struct {
-	SemanticType *SemanticTypeSetting `protobuf:"bytes,11,opt,name=semantic_type,json=semanticType,proto3,oneof"`
+	SemanticType *SemanticTypeSetting `protobuf:"bytes,5,opt,name=semantic_type,json=semanticType,proto3,oneof"`
 }
 
 type SettingValue_Ai struct {
-	Ai *AISetting `protobuf:"bytes,16,opt,name=ai,proto3,oneof"`
+	Ai *AISetting `protobuf:"bytes,6,opt,name=ai,proto3,oneof"`
 }
 
 type SettingValue_Environment struct {
-	Environment *EnvironmentSetting `protobuf:"bytes,17,opt,name=environment,proto3,oneof"`
+	Environment *EnvironmentSetting `protobuf:"bytes,7,opt,name=environment,proto3,oneof"`
 }
 
 func (*SettingValue_AppIm) isSettingValue_Value() {}
@@ -870,35 +870,35 @@ type WorkspaceProfileSetting struct {
 	// Require 2FA for all users.
 	Require_2Fa bool `protobuf:"varint,3,opt,name=require_2fa,json=require2fa,proto3" json:"require_2fa,omitempty"`
 	// The duration for token.
-	TokenDuration *durationpb.Duration `protobuf:"bytes,6,opt,name=token_duration,json=tokenDuration,proto3" json:"token_duration,omitempty"`
+	TokenDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=token_duration,json=tokenDuration,proto3" json:"token_duration,omitempty"`
 	// The setting of custom announcement
-	Announcement *Announcement `protobuf:"bytes,7,opt,name=announcement,proto3" json:"announcement,omitempty"`
+	Announcement *Announcement `protobuf:"bytes,5,opt,name=announcement,proto3" json:"announcement,omitempty"`
 	// The max duration for role expired.
-	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,8,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
+	MaximumRoleExpiration *durationpb.Duration `protobuf:"bytes,6,opt,name=maximum_role_expiration,json=maximumRoleExpiration,proto3" json:"maximum_role_expiration,omitempty"`
 	// The workspace domain, e.g., bytebase.com.
-	Domains []string `protobuf:"bytes,9,rep,name=domains,proto3" json:"domains,omitempty"`
+	Domains []string `protobuf:"bytes,7,rep,name=domains,proto3" json:"domains,omitempty"`
 	// Only user and group from the domains can be created and login.
-	EnforceIdentityDomain bool `protobuf:"varint,10,opt,name=enforce_identity_domain,json=enforceIdentityDomain,proto3" json:"enforce_identity_domain,omitempty"`
+	EnforceIdentityDomain bool `protobuf:"varint,8,opt,name=enforce_identity_domain,json=enforceIdentityDomain,proto3" json:"enforce_identity_domain,omitempty"`
 	// The workspace database change mode.
-	DatabaseChangeMode DatabaseChangeMode `protobuf:"varint,11,opt,name=database_change_mode,json=databaseChangeMode,proto3,enum=bytebase.v1.DatabaseChangeMode" json:"database_change_mode,omitempty"`
+	DatabaseChangeMode DatabaseChangeMode `protobuf:"varint,9,opt,name=database_change_mode,json=databaseChangeMode,proto3,enum=bytebase.v1.DatabaseChangeMode" json:"database_change_mode,omitempty"`
 	// Whether to disallow password signin. (Except workspace admins)
-	DisallowPasswordSignin bool `protobuf:"varint,12,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
+	DisallowPasswordSignin bool `protobuf:"varint,10,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
 	// Whether to enable metric collection for the workspace.
-	EnableMetricCollection bool `protobuf:"varint,13,opt,name=enable_metric_collection,json=enableMetricCollection,proto3" json:"enable_metric_collection,omitempty"`
+	EnableMetricCollection bool `protobuf:"varint,11,opt,name=enable_metric_collection,json=enableMetricCollection,proto3" json:"enable_metric_collection,omitempty"`
 	// The session expiration time if not activity detected for the user. Value <= 0 means no limit.
-	InactiveSessionTimeout *durationpb.Duration `protobuf:"bytes,14,opt,name=inactive_session_timeout,json=inactiveSessionTimeout,proto3" json:"inactive_session_timeout,omitempty"`
+	InactiveSessionTimeout *durationpb.Duration `protobuf:"bytes,12,opt,name=inactive_session_timeout,json=inactiveSessionTimeout,proto3" json:"inactive_session_timeout,omitempty"`
 	// Whether to enable audit logging to stdout in structured JSON format.
 	// Requires TEAM or ENTERPRISE license.
-	EnableAuditLogStdout bool `protobuf:"varint,15,opt,name=enable_audit_log_stdout,json=enableAuditLogStdout,proto3" json:"enable_audit_log_stdout,omitempty"`
+	EnableAuditLogStdout bool `protobuf:"varint,13,opt,name=enable_audit_log_stdout,json=enableAuditLogStdout,proto3" json:"enable_audit_log_stdout,omitempty"`
 	// Whether to display watermark on pages.
 	// Requires ENTERPRISE license.
-	Watermark bool `protobuf:"varint,16,opt,name=watermark,proto3" json:"watermark,omitempty"`
+	Watermark bool `protobuf:"varint,14,opt,name=watermark,proto3" json:"watermark,omitempty"`
 	// The token for directory sync authentication.
-	DirectorySyncToken string `protobuf:"bytes,17,opt,name=directory_sync_token,json=directorySyncToken,proto3" json:"directory_sync_token,omitempty"`
+	DirectorySyncToken string `protobuf:"bytes,15,opt,name=directory_sync_token,json=directorySyncToken,proto3" json:"directory_sync_token,omitempty"`
 	// The branding logo as a data URI (e.g. data:image/png;base64,...).
-	BrandingLogo string `protobuf:"bytes,18,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
+	BrandingLogo string `protobuf:"bytes,16,opt,name=branding_logo,json=brandingLogo,proto3" json:"branding_logo,omitempty"`
 	// Password restriction settings.
-	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,19,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
+	PasswordRestriction *WorkspaceProfileSetting_PasswordRestriction `protobuf:"bytes,17,opt,name=password_restriction,json=passwordRestriction,proto3" json:"password_restriction,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -1338,19 +1338,19 @@ type isAlgorithm_Mask interface {
 }
 
 type Algorithm_FullMask_ struct {
-	FullMask *Algorithm_FullMask `protobuf:"bytes,5,opt,name=full_mask,json=fullMask,proto3,oneof"`
+	FullMask *Algorithm_FullMask `protobuf:"bytes,1,opt,name=full_mask,json=fullMask,proto3,oneof"`
 }
 
 type Algorithm_RangeMask_ struct {
-	RangeMask *Algorithm_RangeMask `protobuf:"bytes,6,opt,name=range_mask,json=rangeMask,proto3,oneof"`
+	RangeMask *Algorithm_RangeMask `protobuf:"bytes,2,opt,name=range_mask,json=rangeMask,proto3,oneof"`
 }
 
 type Algorithm_Md5Mask struct {
-	Md5Mask *Algorithm_MD5Mask `protobuf:"bytes,7,opt,name=md5_mask,json=md5Mask,proto3,oneof"`
+	Md5Mask *Algorithm_MD5Mask `protobuf:"bytes,3,opt,name=md5_mask,json=md5Mask,proto3,oneof"`
 }
 
 type Algorithm_InnerOuterMask_ struct {
-	InnerOuterMask *Algorithm_InnerOuterMask `protobuf:"bytes,8,opt,name=inner_outer_mask,json=innerOuterMask,proto3,oneof"`
+	InnerOuterMask *Algorithm_InnerOuterMask `protobuf:"bytes,4,opt,name=inner_outer_mask,json=innerOuterMask,proto3,oneof"`
 }
 
 func (*Algorithm_FullMask_) isAlgorithm_Mask() {}
@@ -2817,25 +2817,23 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x19.bytebase.v1.SettingValueB\x03\xe0A\x02R\x05value\"\xac\x01\n" +
 	"\vSettingName\x12\x1c\n" +
 	"\x18SETTING_NAME_UNSPECIFIED\x10\x00\x12\x15\n" +
-	"\x11WORKSPACE_PROFILE\x10\x04\x12\x16\n" +
-	"\x12WORKSPACE_APPROVAL\x10\x05\x12\n" +
+	"\x11WORKSPACE_PROFILE\x10\x01\x12\x16\n" +
+	"\x12WORKSPACE_APPROVAL\x10\x02\x12\n" +
 	"\n" +
-	"\x06APP_IM\x10\b\x12\x06\n" +
-	"\x02AI\x10\n" +
-	"\x12\x17\n" +
-	"\x13DATA_CLASSIFICATION\x10\x0e\x12\x12\n" +
-	"\x0eSEMANTIC_TYPES\x10\x0f\x12\x0f\n" +
-	"\vENVIRONMENT\x10\x13:-\xeaA*\n" +
+	"\x06APP_IM\x10\x03\x12\x06\n" +
+	"\x02AI\x10\x04\x12\x17\n" +
+	"\x13DATA_CLASSIFICATION\x10\x05\x12\x12\n" +
+	"\x0eSEMANTIC_TYPES\x10\x06\x12\x0f\n" +
+	"\vENVIRONMENT\x10\a:-\xeaA*\n" +
 	"\x14bytebase.com/Setting\x12\x12settings/{setting}\"\x8b\x04\n" +
 	"\fSettingValue\x122\n" +
-	"\x06app_im\x18\x03 \x01(\v2\x19.bytebase.v1.AppIMSettingH\x00R\x05appIm\x12S\n" +
-	"\x11workspace_profile\x18\x05 \x01(\v2$.bytebase.v1.WorkspaceProfileSettingH\x00R\x10workspaceProfile\x12V\n" +
-	"\x12workspace_approval\x18\x06 \x01(\v2%.bytebase.v1.WorkspaceApprovalSettingH\x00R\x11workspaceApproval\x12Y\n" +
-	"\x13data_classification\x18\n" +
-	" \x01(\v2&.bytebase.v1.DataClassificationSettingH\x00R\x12dataClassification\x12G\n" +
-	"\rsemantic_type\x18\v \x01(\v2 .bytebase.v1.SemanticTypeSettingH\x00R\fsemanticType\x12(\n" +
-	"\x02ai\x18\x10 \x01(\v2\x16.bytebase.v1.AISettingH\x00R\x02ai\x12C\n" +
-	"\venvironment\x18\x11 \x01(\v2\x1f.bytebase.v1.EnvironmentSettingH\x00R\venvironmentB\a\n" +
+	"\x06app_im\x18\x01 \x01(\v2\x19.bytebase.v1.AppIMSettingH\x00R\x05appIm\x12S\n" +
+	"\x11workspace_profile\x18\x02 \x01(\v2$.bytebase.v1.WorkspaceProfileSettingH\x00R\x10workspaceProfile\x12V\n" +
+	"\x12workspace_approval\x18\x03 \x01(\v2%.bytebase.v1.WorkspaceApprovalSettingH\x00R\x11workspaceApproval\x12Y\n" +
+	"\x13data_classification\x18\x04 \x01(\v2&.bytebase.v1.DataClassificationSettingH\x00R\x12dataClassification\x12G\n" +
+	"\rsemantic_type\x18\x05 \x01(\v2 .bytebase.v1.SemanticTypeSettingH\x00R\fsemanticType\x12(\n" +
+	"\x02ai\x18\x06 \x01(\v2\x16.bytebase.v1.AISettingH\x00R\x02ai\x12C\n" +
+	"\venvironment\x18\a \x01(\v2\x1f.bytebase.v1.EnvironmentSettingH\x00R\venvironmentB\a\n" +
 	"\x05value\"\x82\b\n" +
 	"\fAppIMSetting\x12?\n" +
 	"\bsettings\x18\x01 \x03(\v2#.bytebase.v1.AppIMSetting.IMSettingR\bsettings\x1a\"\n" +
@@ -2877,21 +2875,21 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
 	"\vrequire_2fa\x18\x03 \x01(\bR\n" +
 	"require2fa\x12@\n" +
-	"\x0etoken_duration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\rtokenDuration\x12=\n" +
-	"\fannouncement\x18\a \x01(\v2\x19.bytebase.v1.AnnouncementR\fannouncement\x12Q\n" +
-	"\x17maximum_role_expiration\x18\b \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\x18\n" +
-	"\adomains\x18\t \x03(\tR\adomains\x126\n" +
-	"\x17enforce_identity_domain\x18\n" +
-	" \x01(\bR\x15enforceIdentityDomain\x12Q\n" +
-	"\x14database_change_mode\x18\v \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeModeR\x12databaseChangeMode\x128\n" +
-	"\x18disallow_password_signin\x18\f \x01(\bR\x16disallowPasswordSignin\x128\n" +
-	"\x18enable_metric_collection\x18\r \x01(\bR\x16enableMetricCollection\x12S\n" +
-	"\x18inactive_session_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
-	"\x17enable_audit_log_stdout\x18\x0f \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
-	"\twatermark\x18\x10 \x01(\bR\twatermark\x120\n" +
-	"\x14directory_sync_token\x18\x11 \x01(\tR\x12directorySyncToken\x12#\n" +
-	"\rbranding_logo\x18\x12 \x01(\tR\fbrandingLogo\x12k\n" +
-	"\x14password_restriction\x18\x13 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x1a\x93\x03\n" +
+	"\x0etoken_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\rtokenDuration\x12=\n" +
+	"\fannouncement\x18\x05 \x01(\v2\x19.bytebase.v1.AnnouncementR\fannouncement\x12Q\n" +
+	"\x17maximum_role_expiration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\x18\n" +
+	"\adomains\x18\a \x03(\tR\adomains\x126\n" +
+	"\x17enforce_identity_domain\x18\b \x01(\bR\x15enforceIdentityDomain\x12Q\n" +
+	"\x14database_change_mode\x18\t \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeModeR\x12databaseChangeMode\x128\n" +
+	"\x18disallow_password_signin\x18\n" +
+	" \x01(\bR\x16disallowPasswordSignin\x128\n" +
+	"\x18enable_metric_collection\x18\v \x01(\bR\x16enableMetricCollection\x12S\n" +
+	"\x18inactive_session_timeout\x18\f \x01(\v2\x19.google.protobuf.DurationR\x16inactiveSessionTimeout\x125\n" +
+	"\x17enable_audit_log_stdout\x18\r \x01(\bR\x14enableAuditLogStdout\x12\x1c\n" +
+	"\twatermark\x18\x0e \x01(\bR\twatermark\x120\n" +
+	"\x14directory_sync_token\x18\x0f \x01(\tR\x12directorySyncToken\x12#\n" +
+	"\rbranding_logo\x18\x10 \x01(\tR\fbrandingLogo\x12k\n" +
+	"\x14password_restriction\x18\x11 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionR\x13passwordRestriction\x1a\x93\x03\n" +
 	"\x13PasswordRestriction\x12\x1d\n" +
 	"\n" +
 	"min_length\x18\x01 \x01(\x05R\tminLength\x12%\n" +
@@ -2952,11 +2950,11 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\talgorithm\x18\x06 \x01(\v2\x16.bytebase.v1.AlgorithmR\talgorithm\x12\x12\n" +
 	"\x04icon\x18\a \x01(\tR\x04icon\"\x8e\x06\n" +
 	"\tAlgorithm\x12>\n" +
-	"\tfull_mask\x18\x05 \x01(\v2\x1f.bytebase.v1.Algorithm.FullMaskH\x00R\bfullMask\x12A\n" +
+	"\tfull_mask\x18\x01 \x01(\v2\x1f.bytebase.v1.Algorithm.FullMaskH\x00R\bfullMask\x12A\n" +
 	"\n" +
-	"range_mask\x18\x06 \x01(\v2 .bytebase.v1.Algorithm.RangeMaskH\x00R\trangeMask\x12;\n" +
-	"\bmd5_mask\x18\a \x01(\v2\x1e.bytebase.v1.Algorithm.MD5MaskH\x00R\amd5Mask\x12Q\n" +
-	"\x10inner_outer_mask\x18\b \x01(\v2%.bytebase.v1.Algorithm.InnerOuterMaskH\x00R\x0einnerOuterMask\x1a.\n" +
+	"range_mask\x18\x02 \x01(\v2 .bytebase.v1.Algorithm.RangeMaskH\x00R\trangeMask\x12;\n" +
+	"\bmd5_mask\x18\x03 \x01(\v2\x1e.bytebase.v1.Algorithm.MD5MaskH\x00R\amd5Mask\x12Q\n" +
+	"\x10inner_outer_mask\x18\x04 \x01(\v2%.bytebase.v1.Algorithm.InnerOuterMaskH\x00R\x0einnerOuterMask\x1a.\n" +
 	"\bFullMask\x12\"\n" +
 	"\fsubstitution\x18\x01 \x01(\tR\fsubstitution\x1a\xa0\x01\n" +
 	"\tRangeMask\x12>\n" +

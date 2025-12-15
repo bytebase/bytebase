@@ -77,7 +77,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		columnName                              string
 		columnCatalog                           *storepb.ColumnCatalog
 		maskingRulePolicy                       *storepb.MaskingRulePolicy
-		filteredMaskingExceptions               []*storepb.MaskingExceptionPolicy_MaskingException
+		filteredMaskingExemptions               []*storepb.MaskingExemptionPolicy_Exemption
 		dataClassification                      *storepb.DataClassificationSetting
 
 		want           string
@@ -103,7 +103,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					},
 				},
 			},
-			filteredMaskingExceptions:               []*storepb.MaskingExceptionPolicy_MaskingException{},
+			filteredMaskingExemptions:               []*storepb.MaskingExemptionPolicy_Exemption{},
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
@@ -129,13 +129,12 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 					},
 				},
 			},
-			filteredMaskingExceptions: []*storepb.MaskingExceptionPolicy_MaskingException{
+			filteredMaskingExemptions: []*storepb.MaskingExemptionPolicy_Exemption{
 				{
-					Action: storepb.MaskingExceptionPolicy_MaskingException_QUERY,
 					Condition: &expr.Expr{
 						Expression: `(resource.instance_id == "neon-host") && (resource.database_name == "bb") && (resource.schema_name == "hiring") && (resource.table_name == "employees") && (resource.column_name == "salary")`,
 					},
-					Member: "users/1234",
+					Members: []string{"users/1234"},
 				},
 			},
 			dataClassification:                      defaultClassification,
@@ -165,7 +164,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 
 	for _, tc := range testCases {
 		m := newEmptyMaskingLevelEvaluator().withMaskingRulePolicy(tc.maskingRulePolicy).withDataClassificationSetting(tc.dataClassification).withSemanticTypeSetting(defaultSemanticType)
-		result, err := m.evaluateSemanticTypeOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.columnName, tc.databaseProjectDatabaseClassificationID, tc.columnCatalog, tc.filteredMaskingExceptions)
+		result, err := m.evaluateSemanticTypeOfColumn(tc.databaseMessage, tc.schemaName, tc.tableName, tc.columnName, tc.databaseProjectDatabaseClassificationID, tc.columnCatalog, tc.filteredMaskingExemptions)
 		a.NoError(err, tc.description)
 		if tc.want == "" {
 			a.Nil(result, tc.description)

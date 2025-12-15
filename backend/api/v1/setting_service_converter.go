@@ -267,11 +267,11 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		case v1pb.Announcement_ALERT_LEVEL_UNSPECIFIED:
 			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_UNSPECIFIED
 		case v1pb.Announcement_INFO:
-			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_INFO
+			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_INFO
 		case v1pb.Announcement_WARNING:
-			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_WARNING
+			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_WARNING
 		case v1pb.Announcement_CRITICAL:
-			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_CRITICAL
+			storeSetting.Announcement.Level = storepb.WorkspaceProfileSetting_Announcement_CRITICAL
 		default:
 		}
 	}
@@ -311,11 +311,11 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		switch storeSetting.Announcement.Level {
 		case storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_UNSPECIFIED:
 			v1Setting.Announcement.Level = v1pb.Announcement_ALERT_LEVEL_UNSPECIFIED
-		case storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_INFO:
+		case storepb.WorkspaceProfileSetting_Announcement_INFO:
 			v1Setting.Announcement.Level = v1pb.Announcement_INFO
-		case storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_WARNING:
+		case storepb.WorkspaceProfileSetting_Announcement_WARNING:
 			v1Setting.Announcement.Level = v1pb.Announcement_WARNING
-		case storepb.WorkspaceProfileSetting_Announcement_ALERT_LEVEL_CRITICAL:
+		case storepb.WorkspaceProfileSetting_Announcement_CRITICAL:
 			v1Setting.Announcement.Level = v1pb.Announcement_CRITICAL
 		default:
 		}

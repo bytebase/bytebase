@@ -124,22 +124,21 @@ func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.Ch
 	changelogType := convertToChangelogType(c.Payload.GetType())
 
 	cl := &v1pb.Changelog{
-		Name:             common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
-		CreateTime:       timestamppb.New(c.CreatedAt),
-		Status:           convertToChangelogStatus(c.Status),
-		Statement:        "",
-		StatementSize:    0,
-		StatementSheet:   "",
-		Schema:           "",
-		SchemaSize:       0,
-		PrevSchema:       "",
-		PrevSchemaSize:   0,
-		Issue:            c.Payload.GetIssue(),
-		TaskRun:          c.Payload.GetTaskRun(),
-		Version:          c.Payload.GetVersion(),
-		Revision:         "",
-		ChangedResources: convertToChangedResources(c.Payload.GetChangedResources()),
-		Type:             changelogType,
+		Name:           common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
+		CreateTime:     timestamppb.New(c.CreatedAt),
+		Status:         convertToChangelogStatus(c.Status),
+		Statement:      "",
+		StatementSize:  0,
+		StatementSheet: "",
+		Schema:         "",
+		SchemaSize:     0,
+		PrevSchema:     "",
+		PrevSchemaSize: 0,
+		Issue:          c.Payload.GetIssue(),
+		TaskRun:        c.Payload.GetTaskRun(),
+		Version:        c.Payload.GetVersion(),
+		Revision:       "",
+		Type:           changelogType,
 	}
 
 	if sheet := c.Payload.GetSheet(); sheet != "" {

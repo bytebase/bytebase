@@ -171,23 +171,21 @@ message IdentityProvider {
     pattern: "idps/{idp}"
   };
 
-  reserved 2;
-
   // The name of the identity provider.
   // Format: idps/{idp}
   string name = 1;
 
   // The display title of the identity provider.
-  string title = 4 [(buf.validate.field).string.max_len = 200];
+  string title = 2 [(buf.validate.field).string.max_len = 200];
 
   // The domain for email matching when using this identity provider.
-  string domain = 5;
+  string domain = 3;
 
   // The type of identity provider protocol.
-  IdentityProviderType type = 6;
+  IdentityProviderType type = 4;
 
   // The configuration details for the identity provider.
-  IdentityProviderConfig config = 7;
+  IdentityProviderConfig config = 5;
 }
 
 enum IdentityProviderType {
@@ -309,8 +307,6 @@ message LDAPIdentityProviderConfig {
 // As we save all raw json string of user info response data into `principal.idp_user_info`,
 // we can extract the relevant data based with `FieldMapping`.
 message FieldMapping {
-  reserved 3;
-
   // Identifier is the field name of the unique identifier in 3rd-party idp user info. Required.
   string identifier = 1;
 
@@ -318,11 +314,11 @@ message FieldMapping {
   string display_name = 2;
 
   // Phone is the field name of primary phone in 3rd-party idp user info. Optional.
-  string phone = 4;
+  string phone = 3;
 
   // Groups is the field name of groups in 3rd-party idp user info. Optional.
   // Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/
-  string groups = 5;
+  string groups = 4;
 }
 
 enum OAuth2AuthStyle {

@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "store/common.proto";
-
 option go_package = "generated-go/store";
 
 message ChangelogPayload {
@@ -15,8 +13,6 @@ message ChangelogPayload {
   // The revision uid.
   // optional
   int64 revision = 3;
-
-  ChangedResources changed_resources = 4;
 
   // The sheet that holds the content.
   // Format: projects/{project}/sheets/{sheet}
@@ -38,57 +34,4 @@ message ChangelogPayload {
   // Engine-specific version stored when baseline/migration is created.
   // 0 = legacy changelog (pre-versioning).
   int32 dump_version = 9;
-}
-
-message ChangedResources {
-  repeated ChangedResourceDatabase databases = 1;
-}
-
-message ChangedResourceDatabase {
-  string name = 1;
-
-  repeated ChangedResourceSchema schemas = 2;
-}
-
-message ChangedResourceSchema {
-  string name = 1;
-
-  repeated ChangedResourceTable tables = 2;
-
-  repeated ChangedResourceView views = 3;
-
-  repeated ChangedResourceFunction functions = 4;
-
-  repeated ChangedResourceProcedure procedures = 5;
-}
-
-message ChangedResourceTable {
-  string name = 1;
-
-  // The estimated row count of the table.
-  int64 table_rows = 2;
-
-  // The ranges of substrings correspond to the statements on the sheet.
-  repeated Range ranges = 3;
-}
-
-message ChangedResourceView {
-  string name = 1;
-
-  // The ranges of substrings correspond to the statements on the sheet.
-  repeated Range ranges = 2;
-}
-
-message ChangedResourceFunction {
-  string name = 1;
-
-  // The ranges of substrings correspond to the statements on the sheet.
-  repeated Range ranges = 2;
-}
-
-message ChangedResourceProcedure {
-  string name = 1;
-
-  // The ranges of substrings correspond to the statements on the sheet.
-  repeated Range ranges = 2;
 }

@@ -91,7 +91,7 @@ import {
   ObjectSchema_Type,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
 import {
-  MaskingExceptionPolicySchema,
+  MaskingExemptionPolicySchema,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -273,15 +273,15 @@ const removeSensitiveColumn = async (sensitiveColumn: MaskData) => {
 const removeMaskingExceptions = async (sensitiveColumn: MaskData) => {
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
     parentPath: props.database.project,
-    policyType: PolicyType.MASKING_EXCEPTION,
+    policyType: PolicyType.MASKING_EXEMPTION,
   });
   if (!policy) {
     return;
   }
 
   const exceptions = (
-    policy.policy?.case === "maskingExceptionPolicy"
-      ? policy.policy.value.maskingExceptions
+    policy.policy?.case === "maskingExemptionPolicy"
+      ? policy.policy.value.exemptions
       : []
   ).filter(
     (exception) =>
@@ -292,9 +292,9 @@ const removeMaskingExceptions = async (sensitiveColumn: MaskData) => {
   );
 
   policy.policy = {
-    case: "maskingExceptionPolicy",
-    value: create(MaskingExceptionPolicySchema, {
-      maskingExceptions: exceptions,
+    case: "maskingExemptionPolicy",
+    value: create(MaskingExemptionPolicySchema, {
+      exemptions: exceptions,
     }),
   };
   await policyStore.upsertPolicy({

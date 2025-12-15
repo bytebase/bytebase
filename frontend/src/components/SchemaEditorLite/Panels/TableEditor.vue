@@ -163,10 +163,6 @@ import { computed, reactive, ref } from "vue";
 import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import {
-  DatabaseCatalogSchema,
-  SchemaCatalogSchema,
-} from "@/types/proto-es/v1/database_catalog_service_pb";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -225,7 +221,6 @@ const {
   getSchemaStatus,
   getTableStatus,
   getColumnStatus,
-  getDatabaseCatalog,
   queuePendingScrollToColumn,
   selectionEnabled,
 } = useSchemaEditorContext();
@@ -438,7 +433,6 @@ const handleEditColumnForeignKey = (
 
 const mocked = computed(() => {
   const { db, database, schema, table } = props;
-  const databaseCatalog = getDatabaseCatalog(db.name);
 
   const mockedTable = cloneDeep(table);
   mockedTable.columns = mockedTable.columns.filter((column) => {
@@ -459,24 +453,7 @@ const mocked = computed(() => {
       },
     ],
   });
-  const mockedCatalog = create(DatabaseCatalogSchema, {
-    name: database.name,
-  });
-  const schemaCatalog = databaseCatalog.schemas.find(
-    (sc) => sc.name === schema.name
-  );
-  const tableCatalog = schemaCatalog?.tables.find(
-    (tc) => tc.name === table.name
-  );
-  if (schemaCatalog && tableCatalog) {
-    mockedCatalog.schemas = [
-      create(SchemaCatalogSchema, {
-        ...schemaCatalog,
-        tables: [cloneDeep(tableCatalog)],
-      }),
-    ];
-  }
-  return { metadata: mockedDatabase, catalog: mockedCatalog };
+  return { metadata: mockedDatabase };
 });
 
 const markTableStatus = (status: EditStatus) => {

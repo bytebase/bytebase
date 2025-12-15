@@ -7,7 +7,6 @@ import type { Message } from "@bufbuild/protobuf";
 import type { Duration, NullValue, Timestamp, Value } from "@bufbuild/protobuf/wkt";
 import type { Engine, ExportFormat, Position } from "./common_pb";
 import type { DatabaseMetadata } from "./database_service_pb";
-import type { DatabaseCatalog } from "./database_catalog_service_pb";
 
 /**
  * Describes the file v1/sql_service.proto.
@@ -29,14 +28,14 @@ export declare type AdminExecuteRequest = Message<"bytebase.v1.AdminExecuteReque
   /**
    * The SQL statement to execute.
    *
-   * @generated from field: string statement = 3;
+   * @generated from field: string statement = 2;
    */
   statement: string;
 
   /**
    * The maximum number of rows to return.
    *
-   * @generated from field: int32 limit = 4;
+   * @generated from field: int32 limit = 3;
    */
   limit: number;
 
@@ -44,7 +43,7 @@ export declare type AdminExecuteRequest = Message<"bytebase.v1.AdminExecuteReque
    * The default schema to execute the statement. Equals to the current schema
    * in Oracle and search path in Postgres.
    *
-   * @generated from field: optional string schema = 6;
+   * @generated from field: optional string schema = 4;
    */
   schema?: string;
 
@@ -52,7 +51,7 @@ export declare type AdminExecuteRequest = Message<"bytebase.v1.AdminExecuteReque
    * Container is the container name to execute the query against, used for
    * CosmosDB only.
    *
-   * @generated from field: optional string container = 7;
+   * @generated from field: optional string container = 5;
    */
   container?: string;
 };
@@ -96,14 +95,14 @@ export declare type QueryRequest = Message<"bytebase.v1.QueryRequest"> & {
   /**
    * The SQL statement to execute.
    *
-   * @generated from field: string statement = 3;
+   * @generated from field: string statement = 2;
    */
   statement: string;
 
   /**
    * The maximum number of rows to return.
    *
-   * @generated from field: int32 limit = 4;
+   * @generated from field: int32 limit = 3;
    */
   limit: number;
 
@@ -113,14 +112,14 @@ export declare type QueryRequest = Message<"bytebase.v1.QueryRequest"> & {
    * read-only data sources. Or it can be used to query a specific read-only
    * data source.
    *
-   * @generated from field: string data_source_id = 6;
+   * @generated from field: string data_source_id = 4;
    */
   dataSourceId: string;
 
   /**
    * Explain the statement.
    *
-   * @generated from field: bool explain = 7;
+   * @generated from field: bool explain = 5;
    */
   explain: boolean;
 
@@ -128,12 +127,12 @@ export declare type QueryRequest = Message<"bytebase.v1.QueryRequest"> & {
    * The default schema to search objects. Equals to the current schema in
    * Oracle and search path in Postgres.
    *
-   * @generated from field: optional string schema = 8;
+   * @generated from field: optional string schema = 6;
    */
   schema?: string;
 
   /**
-   * @generated from field: bytebase.v1.QueryOption query_option = 9;
+   * @generated from field: bytebase.v1.QueryOption query_option = 7;
    */
   queryOption?: QueryOption;
 
@@ -141,7 +140,7 @@ export declare type QueryRequest = Message<"bytebase.v1.QueryRequest"> & {
    * Container is the container name to execute the query against, used for
    * CosmosDB only.
    *
-   * @generated from field: optional string container = 10;
+   * @generated from field: optional string container = 8;
    */
   container?: string;
 };
@@ -280,28 +279,28 @@ export declare type QueryResult = Message<"bytebase.v1.QueryResult"> & {
   rows: QueryRow[];
 
   /**
-   * @generated from field: int64 rows_count = 10;
+   * @generated from field: int64 rows_count = 4;
    */
   rowsCount: bigint;
 
   /**
    * The error message if the query failed.
    *
-   * @generated from field: string error = 6;
+   * @generated from field: string error = 5;
    */
   error: string;
 
   /**
    * The time it takes to execute the query.
    *
-   * @generated from field: google.protobuf.Duration latency = 7;
+   * @generated from field: google.protobuf.Duration latency = 6;
    */
   latency?: Duration;
 
   /**
    * The query statement for the result.
    *
-   * @generated from field: string statement = 8;
+   * @generated from field: string statement = 7;
    */
   statement: string;
 
@@ -310,19 +309,19 @@ export declare type QueryResult = Message<"bytebase.v1.QueryResult"> & {
    */
   detailedError: {
     /**
-     * @generated from field: bytebase.v1.QueryResult.PostgresError postgres_error = 9;
+     * @generated from field: bytebase.v1.QueryResult.PostgresError postgres_error = 8;
      */
     value: QueryResult_PostgresError;
     case: "postgresError";
   } | {
     /**
-     * @generated from field: bytebase.v1.QueryResult.SyntaxError syntax_error = 13;
+     * @generated from field: bytebase.v1.QueryResult.SyntaxError syntax_error = 9;
      */
     value: QueryResult_SyntaxError;
     case: "syntaxError";
   } | {
     /**
-     * @generated from field: bytebase.v1.QueryResult.PermissionDenied permission_denied = 14;
+     * @generated from field: bytebase.v1.QueryResult.PermissionDenied permission_denied = 10;
      */
     value: QueryResult_PermissionDenied;
     case: "permissionDenied";
@@ -332,14 +331,14 @@ export declare type QueryResult = Message<"bytebase.v1.QueryResult"> & {
    * Informational or debug messages returned by the database engine during query execution.
    * Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
    *
-   * @generated from field: repeated bytebase.v1.QueryResult.Message messages = 12;
+   * @generated from field: repeated bytebase.v1.QueryResult.Message messages = 11;
    */
   messages: QueryResult_Message[];
 
   /**
    * Masking reasons for each column (empty for non-masked columns).
    *
-   * @generated from field: repeated bytebase.v1.MaskingReason masked = 4;
+   * @generated from field: repeated bytebase.v1.MaskingReason masked = 12;
    */
   masked: MaskingReason[];
 };
@@ -893,19 +892,19 @@ export declare type Advice = Message<"bytebase.v1.Advice"> & {
    * The start_position is inclusive and the end_position is exclusive.
    * TODO: use range instead
    *
-   * @generated from field: bytebase.v1.Position start_position = 8;
+   * @generated from field: bytebase.v1.Position start_position = 5;
    */
   startPosition?: Position;
 
   /**
-   * @generated from field: bytebase.v1.Position end_position = 9;
+   * @generated from field: bytebase.v1.Position end_position = 6;
    */
   endPosition?: Position;
 
   /**
    * The type of linting rule that generated this advice.
    *
-   * @generated from field: bytebase.v1.Advice.RuleType rule_type = 10;
+   * @generated from field: bytebase.v1.Advice.RuleType rule_type = 7;
    */
   ruleType: Advice_RuleType;
 };
@@ -1009,21 +1008,21 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
   /**
    * The SQL statement to execute.
    *
-   * @generated from field: string statement = 3;
+   * @generated from field: string statement = 2;
    */
   statement: string;
 
   /**
    * The maximum number of rows to return.
    *
-   * @generated from field: int32 limit = 4;
+   * @generated from field: int32 limit = 3;
    */
   limit: number;
 
   /**
    * The export format.
    *
-   * @generated from field: bytebase.v1.ExportFormat format = 5;
+   * @generated from field: bytebase.v1.ExportFormat format = 4;
    */
   format: ExportFormat;
 
@@ -1031,14 +1030,14 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
    * The admin is used for workspace owner and DBA for exporting data from SQL
    * Editor Admin mode. The exported data is not masked.
    *
-   * @generated from field: bool admin = 6;
+   * @generated from field: bool admin = 5;
    */
   admin: boolean;
 
   /**
    * The zip password provide by users.
    *
-   * @generated from field: string password = 7;
+   * @generated from field: string password = 6;
    */
   password: string;
 
@@ -1048,7 +1047,7 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
    * read-only data sources. Or it can be used to query a specific read-only
    * data source.
    *
-   * @generated from field: string data_source_id = 8;
+   * @generated from field: string data_source_id = 7;
    */
   dataSourceId: string;
 
@@ -1056,7 +1055,7 @@ export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
    * The default schema to search objects. Equals to the current schema in
    * Oracle and search path in Postgres.
    *
-   * @generated from field: optional string schema = 9;
+   * @generated from field: optional string schema = 8;
    */
   schema?: string;
 };
@@ -1102,16 +1101,6 @@ export declare type DiffMetadataRequest = Message<"bytebase.v1.DiffMetadataReque
    * @generated from field: bytebase.v1.DatabaseMetadata target_metadata = 2;
    */
   targetMetadata?: DatabaseMetadata;
-
-  /**
-   * @generated from field: bytebase.v1.DatabaseCatalog source_catalog = 5;
-   */
-  sourceCatalog?: DatabaseCatalog;
-
-  /**
-   * @generated from field: bytebase.v1.DatabaseCatalog target_catalog = 6;
-   */
-  targetCatalog?: DatabaseCatalog;
 
   /**
    * The database engine of the schema.

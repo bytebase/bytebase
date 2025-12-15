@@ -28,35 +28,35 @@ type Policy_Type int32
 const (
 	Policy_TYPE_UNSPECIFIED  Policy_Type = 0
 	Policy_ROLLOUT           Policy_Type = 1
-	Policy_MASKING_EXCEPTION Policy_Type = 2
-	Policy_QUERY_DATA        Policy_Type = 5
-	Policy_MASKING_RULE      Policy_Type = 6
-	Policy_IAM               Policy_Type = 8
-	Policy_TAG               Policy_Type = 9
-	Policy_DATA_SOURCE_QUERY Policy_Type = 10
+	Policy_MASKING_EXEMPTION Policy_Type = 2
+	Policy_QUERY_DATA        Policy_Type = 3
+	Policy_MASKING_RULE      Policy_Type = 4
+	Policy_IAM               Policy_Type = 5
+	Policy_TAG               Policy_Type = 6
+	Policy_DATA_SOURCE_QUERY Policy_Type = 7
 )
 
 // Enum value maps for Policy_Type.
 var (
 	Policy_Type_name = map[int32]string{
-		0:  "TYPE_UNSPECIFIED",
-		1:  "ROLLOUT",
-		2:  "MASKING_EXCEPTION",
-		5:  "QUERY_DATA",
-		6:  "MASKING_RULE",
-		8:  "IAM",
-		9:  "TAG",
-		10: "DATA_SOURCE_QUERY",
+		0: "TYPE_UNSPECIFIED",
+		1: "ROLLOUT",
+		2: "MASKING_EXEMPTION",
+		3: "QUERY_DATA",
+		4: "MASKING_RULE",
+		5: "IAM",
+		6: "TAG",
+		7: "DATA_SOURCE_QUERY",
 	}
 	Policy_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED":  0,
 		"ROLLOUT":           1,
-		"MASKING_EXCEPTION": 2,
-		"QUERY_DATA":        5,
-		"MASKING_RULE":      6,
-		"IAM":               8,
-		"TAG":               9,
-		"DATA_SOURCE_QUERY": 10,
+		"MASKING_EXEMPTION": 2,
+		"QUERY_DATA":        3,
+		"MASKING_RULE":      4,
+		"IAM":               5,
+		"TAG":               6,
+		"DATA_SOURCE_QUERY": 7,
 	}
 )
 
@@ -139,55 +139,6 @@ func (Policy_Resource) EnumDescriptor() ([]byte, []int) {
 	return file_store_policy_proto_rawDescGZIP(), []int{0, 1}
 }
 
-type MaskingExceptionPolicy_MaskingException_Action int32
-
-const (
-	MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED MaskingExceptionPolicy_MaskingException_Action = 0
-	MaskingExceptionPolicy_MaskingException_QUERY              MaskingExceptionPolicy_MaskingException_Action = 1
-	MaskingExceptionPolicy_MaskingException_EXPORT             MaskingExceptionPolicy_MaskingException_Action = 2
-)
-
-// Enum value maps for MaskingExceptionPolicy_MaskingException_Action.
-var (
-	MaskingExceptionPolicy_MaskingException_Action_name = map[int32]string{
-		0: "ACTION_UNSPECIFIED",
-		1: "QUERY",
-		2: "EXPORT",
-	}
-	MaskingExceptionPolicy_MaskingException_Action_value = map[string]int32{
-		"ACTION_UNSPECIFIED": 0,
-		"QUERY":              1,
-		"EXPORT":             2,
-	}
-)
-
-func (x MaskingExceptionPolicy_MaskingException_Action) Enum() *MaskingExceptionPolicy_MaskingException_Action {
-	p := new(MaskingExceptionPolicy_MaskingException_Action)
-	*p = x
-	return p
-}
-
-func (x MaskingExceptionPolicy_MaskingException_Action) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (MaskingExceptionPolicy_MaskingException_Action) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[2].Descriptor()
-}
-
-func (MaskingExceptionPolicy_MaskingException_Action) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[2]
-}
-
-func (x MaskingExceptionPolicy_MaskingException_Action) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use MaskingExceptionPolicy_MaskingException_Action.Descriptor instead.
-func (MaskingExceptionPolicy_MaskingException_Action) EnumDescriptor() ([]byte, []int) {
-	return file_store_policy_proto_rawDescGZIP(), []int{2, 0, 0}
-}
-
 type EnvironmentTierPolicy_EnvironmentTier int32
 
 const (
@@ -221,11 +172,11 @@ func (x EnvironmentTierPolicy_EnvironmentTier) String() string {
 }
 
 func (EnvironmentTierPolicy_EnvironmentTier) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[3].Descriptor()
+	return file_store_policy_proto_enumTypes[2].Descriptor()
 }
 
 func (EnvironmentTierPolicy_EnvironmentTier) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[3]
+	return &file_store_policy_proto_enumTypes[2]
 }
 
 func (x EnvironmentTierPolicy_EnvironmentTier) Number() protoreflect.EnumNumber {
@@ -272,11 +223,11 @@ func (x DataSourceQueryPolicy_Restriction) String() string {
 }
 
 func (DataSourceQueryPolicy_Restriction) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_policy_proto_enumTypes[4].Descriptor()
+	return file_store_policy_proto_enumTypes[3].Descriptor()
 }
 
 func (DataSourceQueryPolicy_Restriction) Type() protoreflect.EnumType {
-	return &file_store_policy_proto_enumTypes[4]
+	return &file_store_policy_proto_enumTypes[3]
 }
 
 func (x DataSourceQueryPolicy_Restriction) Number() protoreflect.EnumNumber {
@@ -376,28 +327,28 @@ func (x *RolloutPolicy) GetRoles() []string {
 	return nil
 }
 
-// MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-type MaskingExceptionPolicy struct {
-	state             protoimpl.MessageState                     `protogen:"open.v1"`
-	MaskingExceptions []*MaskingExceptionPolicy_MaskingException `protobuf:"bytes,1,rep,name=masking_exceptions,json=maskingExceptions,proto3" json:"masking_exceptions,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+// MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
+type MaskingExemptionPolicy struct {
+	state         protoimpl.MessageState              `protogen:"open.v1"`
+	Exemptions    []*MaskingExemptionPolicy_Exemption `protobuf:"bytes,1,rep,name=exemptions,proto3" json:"exemptions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-func (x *MaskingExceptionPolicy) Reset() {
-	*x = MaskingExceptionPolicy{}
+func (x *MaskingExemptionPolicy) Reset() {
+	*x = MaskingExemptionPolicy{}
 	mi := &file_store_policy_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MaskingExceptionPolicy) String() string {
+func (x *MaskingExemptionPolicy) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MaskingExceptionPolicy) ProtoMessage() {}
+func (*MaskingExemptionPolicy) ProtoMessage() {}
 
-func (x *MaskingExceptionPolicy) ProtoReflect() protoreflect.Message {
+func (x *MaskingExemptionPolicy) ProtoReflect() protoreflect.Message {
 	mi := &file_store_policy_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -409,14 +360,14 @@ func (x *MaskingExceptionPolicy) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MaskingExceptionPolicy.ProtoReflect.Descriptor instead.
-func (*MaskingExceptionPolicy) Descriptor() ([]byte, []int) {
+// Deprecated: Use MaskingExemptionPolicy.ProtoReflect.Descriptor instead.
+func (*MaskingExemptionPolicy) Descriptor() ([]byte, []int) {
 	return file_store_policy_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *MaskingExceptionPolicy) GetMaskingExceptions() []*MaskingExceptionPolicy_MaskingException {
+func (x *MaskingExemptionPolicy) GetExemptions() []*MaskingExemptionPolicy_Exemption {
 	if x != nil {
-		return x.MaskingExceptions
+		return x.Exemptions
 	}
 	return nil
 }
@@ -825,34 +776,47 @@ func (x *DataSourceQueryPolicy) GetDisallowDml() bool {
 	return false
 }
 
-type MaskingExceptionPolicy_MaskingException struct {
+type MaskingExemptionPolicy_Exemption struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// action is the action by which the user can access sensitive data.
-	Action MaskingExceptionPolicy_MaskingException_Action `protobuf:"varint,1,opt,name=action,proto3,enum=bytebase.store.MaskingExceptionPolicy_MaskingException_Action" json:"action,omitempty"`
-	// Member is the principal who binds to this exception policy instance.
+	// Members who bind to this exemption.
 	//
 	// Format: users/{email} or groups/{group email}
-	Member string `protobuf:"bytes,4,opt,name=member,proto3" json:"member,omitempty"`
+	Members []string `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
 	// The condition that is associated with this exception policy instance.
-	Condition     *expr.Expr `protobuf:"bytes,5,opt,name=condition,proto3" json:"condition,omitempty"`
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	// If the condition is empty, means the user can access all databases without expiration.
+	//
+	// Support variables:
+	// resource.instance_id: the instance resource id. Only support "==" operation.
+	// resource.database_name: the database name. Only support "==" operation.
+	// resource.schema_name: the schema name. Only support "==" operation.
+	// resource.table_name: the table name. Only support "==" operation.
+	// resource.column_name: the column name. Only support "==" operation.
+	// request.time: the expiration. Only support "<" operation in `request.time < timestamp("{ISO datetime string format}")`
+	// All variables should join with "&&" condition.
+	//
+	// For example:
+	// resource.instance_id == "local" && resource.database_name == "employee" && request.time < timestamp("2025-04-30T11:10:39.000Z")
+	// resource.instance_id == "local" && resource.database_name == "employee"
+	Condition     *expr.Expr `protobuf:"bytes,2,opt,name=condition,proto3" json:"condition,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *MaskingExceptionPolicy_MaskingException) Reset() {
-	*x = MaskingExceptionPolicy_MaskingException{}
+func (x *MaskingExemptionPolicy_Exemption) Reset() {
+	*x = MaskingExemptionPolicy_Exemption{}
 	mi := &file_store_policy_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MaskingExceptionPolicy_MaskingException) String() string {
+func (x *MaskingExemptionPolicy_Exemption) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MaskingExceptionPolicy_MaskingException) ProtoMessage() {}
+func (*MaskingExemptionPolicy_Exemption) ProtoMessage() {}
 
-func (x *MaskingExceptionPolicy_MaskingException) ProtoReflect() protoreflect.Message {
+func (x *MaskingExemptionPolicy_Exemption) ProtoReflect() protoreflect.Message {
 	mi := &file_store_policy_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -864,26 +828,19 @@ func (x *MaskingExceptionPolicy_MaskingException) ProtoReflect() protoreflect.Me
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MaskingExceptionPolicy_MaskingException.ProtoReflect.Descriptor instead.
-func (*MaskingExceptionPolicy_MaskingException) Descriptor() ([]byte, []int) {
+// Deprecated: Use MaskingExemptionPolicy_Exemption.ProtoReflect.Descriptor instead.
+func (*MaskingExemptionPolicy_Exemption) Descriptor() ([]byte, []int) {
 	return file_store_policy_proto_rawDescGZIP(), []int{2, 0}
 }
 
-func (x *MaskingExceptionPolicy_MaskingException) GetAction() MaskingExceptionPolicy_MaskingException_Action {
+func (x *MaskingExemptionPolicy_Exemption) GetMembers() []string {
 	if x != nil {
-		return x.Action
+		return x.Members
 	}
-	return MaskingExceptionPolicy_MaskingException_ACTION_UNSPECIFIED
+	return nil
 }
 
-func (x *MaskingExceptionPolicy_MaskingException) GetMember() string {
-	if x != nil {
-		return x.Member
-	}
-	return ""
-}
-
-func (x *MaskingExceptionPolicy_MaskingException) GetCondition() *expr.Expr {
+func (x *MaskingExemptionPolicy_Exemption) GetCondition() *expr.Expr {
 	if x != nil {
 		return x.Condition
 	}
@@ -960,14 +917,13 @@ const file_store_policy_proto_rawDesc = "" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aROLLOUT\x10\x01\x12\x15\n" +
-	"\x11MASKING_EXCEPTION\x10\x02\x12\x0e\n" +
+	"\x11MASKING_EXEMPTION\x10\x02\x12\x0e\n" +
 	"\n" +
-	"QUERY_DATA\x10\x05\x12\x10\n" +
-	"\fMASKING_RULE\x10\x06\x12\a\n" +
-	"\x03IAM\x10\b\x12\a\n" +
-	"\x03TAG\x10\t\x12\x15\n" +
-	"\x11DATA_SOURCE_QUERY\x10\n" +
-	"\"Q\n" +
+	"QUERY_DATA\x10\x03\x12\x10\n" +
+	"\fMASKING_RULE\x10\x04\x12\a\n" +
+	"\x03IAM\x10\x05\x12\a\n" +
+	"\x03TAG\x10\x06\x12\x15\n" +
+	"\x11DATA_SOURCE_QUERY\x10\a\"Q\n" +
 	"\bResource\x12\x18\n" +
 	"\x14RESOURCE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +
@@ -975,18 +931,14 @@ const file_store_policy_proto_rawDesc = "" +
 	"\aPROJECT\x10\x03\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
-	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xef\x02\n" +
-	"\x16MaskingExceptionPolicy\x12f\n" +
-	"\x12masking_exceptions\x18\x01 \x03(\v27.bytebase.store.MaskingExceptionPolicy.MaskingExceptionR\x11maskingExceptions\x1a\xec\x01\n" +
-	"\x10MaskingException\x12V\n" +
-	"\x06action\x18\x01 \x01(\x0e2>.bytebase.store.MaskingExceptionPolicy.MaskingException.ActionR\x06action\x12\x16\n" +
-	"\x06member\x18\x04 \x01(\tR\x06member\x12/\n" +
-	"\tcondition\x18\x05 \x01(\v2\x11.google.type.ExprR\tcondition\"7\n" +
-	"\x06Action\x12\x16\n" +
-	"\x12ACTION_UNSPECIFIED\x10\x00\x12\t\n" +
-	"\x05QUERY\x10\x01\x12\n" +
+	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xc2\x01\n" +
+	"\x16MaskingExemptionPolicy\x12P\n" +
 	"\n" +
-	"\x06EXPORT\x10\x02\"\xcd\x01\n" +
+	"exemptions\x18\x01 \x03(\v20.bytebase.store.MaskingExemptionPolicy.ExemptionR\n" +
+	"exemptions\x1aV\n" +
+	"\tExemption\x12\x18\n" +
+	"\amembers\x18\x01 \x03(\tR\amembers\x12/\n" +
+	"\tcondition\x18\x02 \x01(\v2\x11.google.type.ExprR\tcondition\"\xcd\x01\n" +
 	"\x11MaskingRulePolicy\x12C\n" +
 	"\x05rules\x18\x01 \x03(\v2-.bytebase.store.MaskingRulePolicy.MaskingRuleR\x05rules\x1as\n" +
 	"\vMaskingRule\x12\x0e\n" +
@@ -1039,47 +991,45 @@ func file_store_policy_proto_rawDescGZIP() []byte {
 	return file_store_policy_proto_rawDescData
 }
 
-var file_store_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_store_policy_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_store_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_store_policy_proto_goTypes = []any{
-	(Policy_Type)(0),     // 0: bytebase.store.Policy.Type
-	(Policy_Resource)(0), // 1: bytebase.store.Policy.Resource
-	(MaskingExceptionPolicy_MaskingException_Action)(0), // 2: bytebase.store.MaskingExceptionPolicy.MaskingException.Action
-	(EnvironmentTierPolicy_EnvironmentTier)(0),          // 3: bytebase.store.EnvironmentTierPolicy.EnvironmentTier
-	(DataSourceQueryPolicy_Restriction)(0),              // 4: bytebase.store.DataSourceQueryPolicy.Restriction
-	(*Policy)(nil),                                      // 5: bytebase.store.Policy
-	(*RolloutPolicy)(nil),                               // 6: bytebase.store.RolloutPolicy
-	(*MaskingExceptionPolicy)(nil),                      // 7: bytebase.store.MaskingExceptionPolicy
-	(*MaskingRulePolicy)(nil),                           // 8: bytebase.store.MaskingRulePolicy
-	(*TagPolicy)(nil),                                   // 9: bytebase.store.TagPolicy
-	(*Binding)(nil),                                     // 10: bytebase.store.Binding
-	(*IamPolicy)(nil),                                   // 11: bytebase.store.IamPolicy
-	(*EnvironmentTierPolicy)(nil),                       // 12: bytebase.store.EnvironmentTierPolicy
-	(*QueryDataPolicy)(nil),                             // 13: bytebase.store.QueryDataPolicy
-	(*DataSourceQueryPolicy)(nil),                       // 14: bytebase.store.DataSourceQueryPolicy
-	(*MaskingExceptionPolicy_MaskingException)(nil),     // 15: bytebase.store.MaskingExceptionPolicy.MaskingException
-	(*MaskingRulePolicy_MaskingRule)(nil),               // 16: bytebase.store.MaskingRulePolicy.MaskingRule
-	nil,                                                 // 17: bytebase.store.TagPolicy.TagsEntry
-	(*expr.Expr)(nil),                                   // 18: google.type.Expr
-	(*durationpb.Duration)(nil),                         // 19: google.protobuf.Duration
+	(Policy_Type)(0),                           // 0: bytebase.store.Policy.Type
+	(Policy_Resource)(0),                       // 1: bytebase.store.Policy.Resource
+	(EnvironmentTierPolicy_EnvironmentTier)(0), // 2: bytebase.store.EnvironmentTierPolicy.EnvironmentTier
+	(DataSourceQueryPolicy_Restriction)(0),     // 3: bytebase.store.DataSourceQueryPolicy.Restriction
+	(*Policy)(nil),                             // 4: bytebase.store.Policy
+	(*RolloutPolicy)(nil),                      // 5: bytebase.store.RolloutPolicy
+	(*MaskingExemptionPolicy)(nil),             // 6: bytebase.store.MaskingExemptionPolicy
+	(*MaskingRulePolicy)(nil),                  // 7: bytebase.store.MaskingRulePolicy
+	(*TagPolicy)(nil),                          // 8: bytebase.store.TagPolicy
+	(*Binding)(nil),                            // 9: bytebase.store.Binding
+	(*IamPolicy)(nil),                          // 10: bytebase.store.IamPolicy
+	(*EnvironmentTierPolicy)(nil),              // 11: bytebase.store.EnvironmentTierPolicy
+	(*QueryDataPolicy)(nil),                    // 12: bytebase.store.QueryDataPolicy
+	(*DataSourceQueryPolicy)(nil),              // 13: bytebase.store.DataSourceQueryPolicy
+	(*MaskingExemptionPolicy_Exemption)(nil),   // 14: bytebase.store.MaskingExemptionPolicy.Exemption
+	(*MaskingRulePolicy_MaskingRule)(nil),      // 15: bytebase.store.MaskingRulePolicy.MaskingRule
+	nil,                                        // 16: bytebase.store.TagPolicy.TagsEntry
+	(*expr.Expr)(nil),                          // 17: google.type.Expr
+	(*durationpb.Duration)(nil),                // 18: google.protobuf.Duration
 }
 var file_store_policy_proto_depIdxs = []int32{
-	15, // 0: bytebase.store.MaskingExceptionPolicy.masking_exceptions:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException
-	16, // 1: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
-	17, // 2: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
-	18, // 3: bytebase.store.Binding.condition:type_name -> google.type.Expr
-	10, // 4: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
-	3,  // 5: bytebase.store.EnvironmentTierPolicy.environment_tier:type_name -> bytebase.store.EnvironmentTierPolicy.EnvironmentTier
-	19, // 6: bytebase.store.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
-	4,  // 7: bytebase.store.DataSourceQueryPolicy.admin_data_source_restriction:type_name -> bytebase.store.DataSourceQueryPolicy.Restriction
-	2,  // 8: bytebase.store.MaskingExceptionPolicy.MaskingException.action:type_name -> bytebase.store.MaskingExceptionPolicy.MaskingException.Action
-	18, // 9: bytebase.store.MaskingExceptionPolicy.MaskingException.condition:type_name -> google.type.Expr
-	18, // 10: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	14, // 0: bytebase.store.MaskingExemptionPolicy.exemptions:type_name -> bytebase.store.MaskingExemptionPolicy.Exemption
+	15, // 1: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
+	16, // 2: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry
+	17, // 3: bytebase.store.Binding.condition:type_name -> google.type.Expr
+	9,  // 4: bytebase.store.IamPolicy.bindings:type_name -> bytebase.store.Binding
+	2,  // 5: bytebase.store.EnvironmentTierPolicy.environment_tier:type_name -> bytebase.store.EnvironmentTierPolicy.EnvironmentTier
+	18, // 6: bytebase.store.QueryDataPolicy.timeout:type_name -> google.protobuf.Duration
+	3,  // 7: bytebase.store.DataSourceQueryPolicy.admin_data_source_restriction:type_name -> bytebase.store.DataSourceQueryPolicy.Restriction
+	17, // 8: bytebase.store.MaskingExemptionPolicy.Exemption.condition:type_name -> google.type.Expr
+	17, // 9: bytebase.store.MaskingRulePolicy.MaskingRule.condition:type_name -> google.type.Expr
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_store_policy_proto_init() }
@@ -1092,7 +1042,7 @@ func file_store_policy_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_policy_proto_rawDesc), len(file_store_policy_proto_rawDesc)),
-			NumEnums:      5,
+			NumEnums:      4,
 			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,

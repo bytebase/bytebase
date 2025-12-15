@@ -5,7 +5,6 @@ import { sqlServiceClientConnect } from "@/grpcweb";
 import { silentContextKey } from "@/grpcweb/context-key";
 import { t } from "@/plugins/i18n";
 import type { ComposedDatabase } from "@/types";
-import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { DiffMetadataRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
@@ -20,16 +19,10 @@ export const generateDiffDDL = async ({
   database,
   sourceMetadata,
   targetMetadata,
-  sourceCatalog,
-  targetCatalog,
-  allowEmptyDiffDDLWithConfigChange = true,
 }: {
   database: ComposedDatabase;
   sourceMetadata: DatabaseMetadata;
   targetMetadata: DatabaseMetadata;
-  sourceCatalog: DatabaseCatalog;
-  targetCatalog: DatabaseCatalog;
-  allowEmptyDiffDDLWithConfigChange?: boolean;
 }): Promise<GenerateDiffDDLResult> => {
   const finish = (statement: string, errors: string[]) => {
     return {
@@ -38,10 +31,7 @@ export const generateDiffDDL = async ({
     };
   };
 
-  if (
-    isEqual(sourceMetadata, targetMetadata) &&
-    isEqual(sourceCatalog, targetCatalog)
-  ) {
+  if (isEqual(sourceMetadata, targetMetadata)) {
     return finish("", []);
   }
 
@@ -56,8 +46,6 @@ export const generateDiffDDL = async ({
     const newRequest = create(DiffMetadataRequestSchema, {
       sourceMetadata: sourceMetadata,
       targetMetadata: targetMetadata,
-      sourceCatalog,
-      targetCatalog,
       engine: database.instanceResource.engine,
     });
     const diffResponse = await sqlServiceClientConnect.diffMetadata(
@@ -68,12 +56,6 @@ export const generateDiffDDL = async ({
     );
     const { diff } = diffResponse;
     if (diff.length === 0) {
-      if (
-        !allowEmptyDiffDDLWithConfigChange &&
-        !isEqual(sourceCatalog, targetCatalog)
-      ) {
-        return finish("", [t("schema-editor.message.cannot-change-config")]);
-      }
       return finish("", []);
     }
     return finish(diff, []);

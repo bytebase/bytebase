@@ -287,9 +287,9 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	}
 	v1SheetPayload := &v1pb.SheetPayload{}
 	if len(sheet.Payload.GetCommands()) > 0 {
-		v1SheetPayload.Commands = convertToSheetCommands(sheet.Payload.GetCommands())
+		v1SheetPayload.Commands = convertToRanges(sheet.Payload.GetCommands())
 	} else {
-		v1SheetPayload.Commands = []*v1pb.SheetCommand{
+		v1SheetPayload.Commands = []*v1pb.Range{
 			{Start: 0, End: int32(sheet.Size)},
 		}
 	}
@@ -319,10 +319,10 @@ func convertToStoreSheetMessage(projectID string, creator string, sheet *v1pb.Sh
 	return sheetMessage
 }
 
-func convertToSheetCommands(commands []*storepb.Range) []*v1pb.SheetCommand {
-	var cs []*v1pb.SheetCommand
+func convertToRanges(commands []*storepb.Range) []*v1pb.Range {
+	var cs []*v1pb.Range
 	for _, command := range commands {
-		c := &v1pb.SheetCommand{
+		c := &v1pb.Range{
 			Start: command.Start,
 			End:   command.End,
 		}

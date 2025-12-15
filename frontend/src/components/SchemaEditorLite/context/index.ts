@@ -1,11 +1,10 @@
 import Emittery from "emittery";
 import type { Ref } from "vue";
-import { inject, provide, computed } from "vue";
+import { inject, provide } from "vue";
 import type { DatabaseMetadata } from "@/types/proto-es/v1/database_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { RebuildMetadataEditReset } from "../algorithm/rebuild";
 import type { EditTarget, RolloutObject } from "../types";
-import { useEditCatalogs } from "./config";
 import { useEditStatus } from "./edit";
 import { useScrollStatus } from "./scroll";
 import { useSelection } from "./selection";
@@ -44,14 +43,6 @@ export const provideSchemaEditorContext = (params: {
     ...params,
     ...useTabs(events),
     ...useEditStatus(),
-    ...useEditCatalogs(
-      computed(() =>
-        params.targets.value.map((target) => ({
-          database: target.database.name,
-          catalog: target.catalog,
-        }))
-      )
-    ),
     ...useScrollStatus(),
     ...useSelection(params.selectedRolloutObjects, events),
   };

@@ -30,10 +30,6 @@ message SQLReviewRule {
     int32 max_length = 2;
   }
 
-  message RequiredColumnRulePayload {
-    repeated string column_list = 1;
-  }
-
   message StringRulePayload {
     string value = 1;
   }
@@ -173,10 +169,9 @@ message SQLReviewRule {
     NumberRulePayload number_payload = 4;
     StringArrayRulePayload string_array_payload = 5;
     CommentConventionRulePayload comment_convention_payload = 6;
-    RequiredColumnRulePayload required_column_payload = 7;
-    StringRulePayload string_payload = 8;
-    NamingCaseRulePayload naming_case_payload = 9;
+    StringRulePayload string_payload = 7;
+    NamingCaseRulePayload naming_case_payload = 8;
   }
 
-  Engine engine = 10;
+  Engine engine = 9;
 }

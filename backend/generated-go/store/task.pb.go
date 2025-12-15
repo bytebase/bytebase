@@ -31,9 +31,9 @@ const (
 	// Apply schema/data migrations to an existing database.
 	Task_DATABASE_MIGRATE Task_Type = 2
 	// Export data from a database.
-	Task_DATABASE_EXPORT Task_Type = 5
+	Task_DATABASE_EXPORT Task_Type = 3
 	// Apply declarative schema changes (state-based migration).
-	Task_DATABASE_SDL Task_Type = 6
+	Task_DATABASE_SDL Task_Type = 4
 )
 
 // Enum value maps for Task_Type.
@@ -42,15 +42,15 @@ var (
 		0: "TASK_TYPE_UNSPECIFIED",
 		1: "DATABASE_CREATE",
 		2: "DATABASE_MIGRATE",
-		5: "DATABASE_EXPORT",
-		6: "DATABASE_SDL",
+		3: "DATABASE_EXPORT",
+		4: "DATABASE_SDL",
 	}
 	Task_Type_value = map[string]int32{
 		"TASK_TYPE_UNSPECIFIED": 0,
 		"DATABASE_CREATE":       1,
 		"DATABASE_MIGRATE":      2,
-		"DATABASE_EXPORT":       5,
-		"DATABASE_SDL":          6,
+		"DATABASE_EXPORT":       3,
+		"DATABASE_SDL":          4,
 	}
 )
 
@@ -108,14 +108,14 @@ type Task struct {
 	EnablePriorBackup bool `protobuf:"varint,11,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	// Configuration flags for gh-ost migration tool.
 	Flags map[string]string `protobuf:"bytes,12,rep,name=flags,proto3" json:"flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// Whether to use gh-ost for online schema migration.
-	EnableGhost bool `protobuf:"varint,17,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
 	// Source information if task is created from a release.
 	TaskReleaseSource *TaskReleaseSource `protobuf:"bytes,13,opt,name=task_release_source,json=taskReleaseSource,proto3" json:"task_release_source,omitempty"`
 	// Password to encrypt the exported data archive.
 	Password string `protobuf:"bytes,14,opt,name=password,proto3" json:"password,omitempty"`
 	// Format of the exported data (SQL, CSV, JSON, etc).
-	Format        ExportFormat `protobuf:"varint,15,opt,name=format,proto3,enum=bytebase.store.ExportFormat" json:"format,omitempty"`
+	Format ExportFormat `protobuf:"varint,15,opt,name=format,proto3,enum=bytebase.store.ExportFormat" json:"format,omitempty"`
+	// Whether to use gh-ost for online schema migration.
+	EnableGhost   bool `protobuf:"varint,16,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -234,13 +234,6 @@ func (x *Task) GetFlags() map[string]string {
 	return nil
 }
 
-func (x *Task) GetEnableGhost() bool {
-	if x != nil {
-		return x.EnableGhost
-	}
-	return false
-}
-
 func (x *Task) GetTaskReleaseSource() *TaskReleaseSource {
 	if x != nil {
 		return x.TaskReleaseSource
@@ -260,6 +253,13 @@ func (x *Task) GetFormat() ExportFormat {
 		return x.Format
 	}
 	return ExportFormat_FORMAT_UNSPECIFIED
+}
+
+func (x *Task) GetEnableGhost() bool {
+	if x != nil {
+		return x.EnableGhost
+	}
+	return false
 }
 
 // TaskReleaseSource contains information about the release file this task originated from.
@@ -328,11 +328,11 @@ const file_store_task_proto_rawDesc = "" +
 	"\x0eschema_version\x18\n" +
 	" \x01(\tR\rschemaVersion\x12.\n" +
 	"\x13enable_prior_backup\x18\v \x01(\bR\x11enablePriorBackup\x125\n" +
-	"\x05flags\x18\f \x03(\v2\x1f.bytebase.store.Task.FlagsEntryR\x05flags\x12!\n" +
-	"\fenable_ghost\x18\x11 \x01(\bR\venableGhost\x12Q\n" +
+	"\x05flags\x18\f \x03(\v2\x1f.bytebase.store.Task.FlagsEntryR\x05flags\x12Q\n" +
 	"\x13task_release_source\x18\r \x01(\v2!.bytebase.store.TaskReleaseSourceR\x11taskReleaseSource\x12\x1a\n" +
 	"\bpassword\x18\x0e \x01(\tR\bpassword\x124\n" +
-	"\x06format\x18\x0f \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x1a8\n" +
+	"\x06format\x18\x0f \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x12!\n" +
+	"\fenable_ghost\x18\x10 \x01(\bR\venableGhost\x1a8\n" +
 	"\n" +
 	"FlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -341,8 +341,8 @@ const file_store_task_proto_rawDesc = "" +
 	"\x15TASK_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fDATABASE_CREATE\x10\x01\x12\x14\n" +
 	"\x10DATABASE_MIGRATE\x10\x02\x12\x13\n" +
-	"\x0fDATABASE_EXPORT\x10\x05\x12\x10\n" +
-	"\fDATABASE_SDL\x10\x06\"'\n" +
+	"\x0fDATABASE_EXPORT\x10\x03\x12\x10\n" +
+	"\fDATABASE_SDL\x10\x04\"'\n" +
 	"\x11TaskReleaseSource\x12\x12\n" +
 	"\x04file\x18\x01 \x01(\tR\x04fileB\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tTaskProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"

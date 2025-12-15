@@ -1,6 +1,6 @@
 import type { MaskData } from "@/components/SensitiveData/types";
 import type { DatabaseResource } from "@/types";
-import type { MaskingExceptionPolicy_MaskingException } from "@/types/proto-es/v1/org_policy_service_pb";
+import type { MaskingExemptionPolicy_Exemption } from "@/types/proto-es/v1/org_policy_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 import {
   CEL_ATTRIBUTE_REQUEST_TIME,
@@ -26,7 +26,7 @@ export const convertSensitiveColumnToDatabaseResource = (
 });
 
 export const isCurrentColumnException = (
-  exception: MaskingExceptionPolicy_MaskingException,
+  exception: MaskingExemptionPolicy_Exemption,
   sensitiveColumn: SensitiveColumn
 ): boolean => {
   const expression = exception.condition?.expression ?? "";

@@ -21,22 +21,8 @@ func TestExtractChangedResources(t *testing.T) {
 		"",
 		&storepb.ChangedResourceTable{
 			Name: "T1",
-			Ranges: []*storepb.Range{
-				{Start: 0, End: 25},
-				{Start: 70, End: 100},
-			},
 		},
 		false,
-	)
-	changedResources.AddView(
-		"DB",
-		"",
-		&storepb.ChangedResourceView{
-			Name: "HELLO",
-			Ranges: []*storepb.Range{
-				{Start: 27, End: 67},
-			},
-		},
 	)
 	want := &base.ChangeSummary{
 		ChangedResources: changedResources,

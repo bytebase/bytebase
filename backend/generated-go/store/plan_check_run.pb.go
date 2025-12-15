@@ -24,15 +24,15 @@ const (
 type PlanCheckRunConfig struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	SheetUid     int32                  `protobuf:"varint,1,opt,name=sheet_uid,json=sheetUid,proto3" json:"sheet_uid,omitempty"`
-	InstanceId   string                 `protobuf:"bytes,3,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	DatabaseName string                 `protobuf:"bytes,4,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
-	GhostFlags   map[string]string      `protobuf:"bytes,6,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	InstanceId   string                 `protobuf:"bytes,2,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	DatabaseName string                 `protobuf:"bytes,3,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	GhostFlags   map[string]string      `protobuf:"bytes,4,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
-	EnablePriorBackup bool `protobuf:"varint,7,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
+	EnablePriorBackup bool `protobuf:"varint,5,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	// Whether to use gh-ost for online schema migration.
-	EnableGhost bool `protobuf:"varint,8,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
+	EnableGhost bool `protobuf:"varint,6,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
 	// Whether this is a Schema Definition Language (SDL) change.
-	EnableSdl     bool `protobuf:"varint,9,opt,name=enable_sdl,json=enableSdl,proto3" json:"enable_sdl,omitempty"`
+	EnableSdl     bool `protobuf:"varint,7,opt,name=enable_sdl,json=enableSdl,proto3" json:"enable_sdl,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -168,6 +168,207 @@ func (x *PlanCheckRunResult) GetError() string {
 	return ""
 }
 
+type ChangedResources struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Databases     []*ChangedResourceDatabase `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChangedResources) Reset() {
+	*x = ChangedResources{}
+	mi := &file_store_plan_check_run_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangedResources) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangedResources) ProtoMessage() {}
+
+func (x *ChangedResources) ProtoReflect() protoreflect.Message {
+	mi := &file_store_plan_check_run_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangedResources.ProtoReflect.Descriptor instead.
+func (*ChangedResources) Descriptor() ([]byte, []int) {
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ChangedResources) GetDatabases() []*ChangedResourceDatabase {
+	if x != nil {
+		return x.Databases
+	}
+	return nil
+}
+
+type ChangedResourceDatabase struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Name          string                   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Schemas       []*ChangedResourceSchema `protobuf:"bytes,2,rep,name=schemas,proto3" json:"schemas,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChangedResourceDatabase) Reset() {
+	*x = ChangedResourceDatabase{}
+	mi := &file_store_plan_check_run_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangedResourceDatabase) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangedResourceDatabase) ProtoMessage() {}
+
+func (x *ChangedResourceDatabase) ProtoReflect() protoreflect.Message {
+	mi := &file_store_plan_check_run_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangedResourceDatabase.ProtoReflect.Descriptor instead.
+func (*ChangedResourceDatabase) Descriptor() ([]byte, []int) {
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ChangedResourceDatabase) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ChangedResourceDatabase) GetSchemas() []*ChangedResourceSchema {
+	if x != nil {
+		return x.Schemas
+	}
+	return nil
+}
+
+type ChangedResourceSchema struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Name          string                  `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Tables        []*ChangedResourceTable `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChangedResourceSchema) Reset() {
+	*x = ChangedResourceSchema{}
+	mi := &file_store_plan_check_run_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangedResourceSchema) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangedResourceSchema) ProtoMessage() {}
+
+func (x *ChangedResourceSchema) ProtoReflect() protoreflect.Message {
+	mi := &file_store_plan_check_run_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangedResourceSchema.ProtoReflect.Descriptor instead.
+func (*ChangedResourceSchema) Descriptor() ([]byte, []int) {
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ChangedResourceSchema) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ChangedResourceSchema) GetTables() []*ChangedResourceTable {
+	if x != nil {
+		return x.Tables
+	}
+	return nil
+}
+
+type ChangedResourceTable struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The estimated row count of the table.
+	TableRows     int64 `protobuf:"varint,2,opt,name=table_rows,json=tableRows,proto3" json:"table_rows,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChangedResourceTable) Reset() {
+	*x = ChangedResourceTable{}
+	mi := &file_store_plan_check_run_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangedResourceTable) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangedResourceTable) ProtoMessage() {}
+
+func (x *ChangedResourceTable) ProtoReflect() protoreflect.Message {
+	mi := &file_store_plan_check_run_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangedResourceTable.ProtoReflect.Descriptor instead.
+func (*ChangedResourceTable) Descriptor() ([]byte, []int) {
+	return file_store_plan_check_run_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ChangedResourceTable) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ChangedResourceTable) GetTableRows() int64 {
+	if x != nil {
+		return x.TableRows
+	}
+	return 0
+}
+
 type PlanCheckRunResult_Result struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	Status  Advice_Status          `protobuf:"varint,1,opt,name=status,proto3,enum=bytebase.store.Advice_Status" json:"status,omitempty"`
@@ -185,7 +386,7 @@ type PlanCheckRunResult_Result struct {
 
 func (x *PlanCheckRunResult_Result) Reset() {
 	*x = PlanCheckRunResult_Result{}
-	mi := &file_store_plan_check_run_proto_msgTypes[3]
+	mi := &file_store_plan_check_run_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -197,7 +398,7 @@ func (x *PlanCheckRunResult_Result) String() string {
 func (*PlanCheckRunResult_Result) ProtoMessage() {}
 
 func (x *PlanCheckRunResult_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[3]
+	mi := &file_store_plan_check_run_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -285,16 +486,16 @@ func (*PlanCheckRunResult_Result_SqlReviewReport_) isPlanCheckRunResult_Result_R
 type PlanCheckRunResult_Result_SqlSummaryReport struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// statement_types are the types of statements found in the SQL.
-	StatementTypes   []string          `protobuf:"bytes,2,rep,name=statement_types,json=statementTypes,proto3" json:"statement_types,omitempty"`
-	AffectedRows     int64             `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
-	ChangedResources *ChangedResources `protobuf:"bytes,4,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
+	StatementTypes   []string          `protobuf:"bytes,1,rep,name=statement_types,json=statementTypes,proto3" json:"statement_types,omitempty"`
+	AffectedRows     int64             `protobuf:"varint,2,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	ChangedResources *ChangedResources `protobuf:"bytes,3,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *PlanCheckRunResult_Result_SqlSummaryReport) Reset() {
 	*x = PlanCheckRunResult_Result_SqlSummaryReport{}
-	mi := &file_store_plan_check_run_proto_msgTypes[4]
+	mi := &file_store_plan_check_run_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -306,7 +507,7 @@ func (x *PlanCheckRunResult_Result_SqlSummaryReport) String() string {
 func (*PlanCheckRunResult_Result_SqlSummaryReport) ProtoMessage() {}
 
 func (x *PlanCheckRunResult_Result_SqlSummaryReport) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[4]
+	mi := &file_store_plan_check_run_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -346,15 +547,15 @@ func (x *PlanCheckRunResult_Result_SqlSummaryReport) GetChangedResources() *Chan
 type PlanCheckRunResult_Result_SqlReviewReport struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Position of the SQL statement.
-	StartPosition *Position `protobuf:"bytes,8,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
-	EndPosition   *Position `protobuf:"bytes,9,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
+	StartPosition *Position `protobuf:"bytes,1,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
+	EndPosition   *Position `protobuf:"bytes,2,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PlanCheckRunResult_Result_SqlReviewReport) Reset() {
 	*x = PlanCheckRunResult_Result_SqlReviewReport{}
-	mi := &file_store_plan_check_run_proto_msgTypes[5]
+	mi := &file_store_plan_check_run_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -366,7 +567,7 @@ func (x *PlanCheckRunResult_Result_SqlReviewReport) String() string {
 func (*PlanCheckRunResult_Result_SqlReviewReport) ProtoMessage() {}
 
 func (x *PlanCheckRunResult_Result_SqlReviewReport) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_check_run_proto_msgTypes[5]
+	mi := &file_store_plan_check_run_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -400,39 +601,51 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x15store/changelog.proto\x1a\x12store/common.proto\"\x83\x03\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xfd\x02\n" +
 	"\x12PlanCheckRunConfig\x12\x1b\n" +
 	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12\x1f\n" +
-	"\vinstance_id\x18\x03 \x01(\tR\n" +
+	"\vinstance_id\x18\x02 \x01(\tR\n" +
 	"instanceId\x12#\n" +
-	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x12S\n" +
-	"\vghost_flags\x18\x06 \x03(\v22.bytebase.store.PlanCheckRunConfig.GhostFlagsEntryR\n" +
+	"\rdatabase_name\x18\x03 \x01(\tR\fdatabaseName\x12S\n" +
+	"\vghost_flags\x18\x04 \x03(\v22.bytebase.store.PlanCheckRunConfig.GhostFlagsEntryR\n" +
 	"ghostFlags\x12.\n" +
-	"\x13enable_prior_backup\x18\a \x01(\bR\x11enablePriorBackup\x12!\n" +
-	"\fenable_ghost\x18\b \x01(\bR\venableGhost\x12\x1d\n" +
+	"\x13enable_prior_backup\x18\x05 \x01(\bR\x11enablePriorBackup\x12!\n" +
+	"\fenable_ghost\x18\x06 \x01(\bR\venableGhost\x12\x1d\n" +
 	"\n" +
-	"enable_sdl\x18\t \x01(\bR\tenableSdl\x1a=\n" +
+	"enable_sdl\x18\a \x01(\bR\tenableSdl\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x02\x10\x03\"\xb6\x06\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x98\x06\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xc4\x05\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xa6\x05\n" +
 	"\x06Result\x125\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1d.bytebase.store.Advice.StatusR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x12\n" +
 	"\x04code\x18\x04 \x01(\x05R\x04code\x12j\n" +
 	"\x12sql_summary_report\x18\x05 \x01(\v2:.bytebase.store.PlanCheckRunResult.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12g\n" +
-	"\x11sql_review_report\x18\x06 \x01(\v29.bytebase.store.PlanCheckRunResult.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xb5\x01\n" +
+	"\x11sql_review_report\x18\x06 \x01(\v29.bytebase.store.PlanCheckRunResult.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xaf\x01\n" +
 	"\x10SqlSummaryReport\x12'\n" +
-	"\x0fstatement_types\x18\x02 \x03(\tR\x0estatementTypes\x12#\n" +
-	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x12M\n" +
-	"\x11changed_resources\x18\x04 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResourcesJ\x04\b\x01\x10\x02\x1a\xa7\x01\n" +
+	"\x0fstatement_types\x18\x01 \x03(\tR\x0estatementTypes\x12#\n" +
+	"\raffected_rows\x18\x02 \x01(\x03R\faffectedRows\x12M\n" +
+	"\x11changed_resources\x18\x03 \x01(\v2 .bytebase.store.ChangedResourcesR\x10changedResources\x1a\x8f\x01\n" +
 	"\x0fSqlReviewReport\x12?\n" +
-	"\x0estart_position\x18\b \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
-	"\fend_position\x18\t \x01(\v2\x18.bytebase.store.PositionR\vendPositionJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05B\b\n" +
-	"\x06reportB\x94\x01\n" +
+	"\x0estart_position\x18\x01 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
+	"\fend_position\x18\x02 \x01(\v2\x18.bytebase.store.PositionR\vendPositionB\b\n" +
+	"\x06report\"Y\n" +
+	"\x10ChangedResources\x12E\n" +
+	"\tdatabases\x18\x01 \x03(\v2'.bytebase.store.ChangedResourceDatabaseR\tdatabases\"n\n" +
+	"\x17ChangedResourceDatabase\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12?\n" +
+	"\aschemas\x18\x02 \x03(\v2%.bytebase.store.ChangedResourceSchemaR\aschemas\"i\n" +
+	"\x15ChangedResourceSchema\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12<\n" +
+	"\x06tables\x18\x02 \x03(\v2$.bytebase.store.ChangedResourceTableR\x06tables\"I\n" +
+	"\x14ChangedResourceTable\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
+	"\n" +
+	"table_rows\x18\x02 \x01(\x03R\ttableRowsB\x94\x01\n" +
 	"\x12com.bytebase.storeB\x11PlanCheckRunProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -447,32 +660,38 @@ func file_store_plan_check_run_proto_rawDescGZIP() []byte {
 	return file_store_plan_check_run_proto_rawDescData
 }
 
-var file_store_plan_check_run_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_store_plan_check_run_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_store_plan_check_run_proto_goTypes = []any{
-	(*PlanCheckRunConfig)(nil),        // 0: bytebase.store.PlanCheckRunConfig
-	(*PlanCheckRunResult)(nil),        // 1: bytebase.store.PlanCheckRunResult
-	nil,                               // 2: bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
-	(*PlanCheckRunResult_Result)(nil), // 3: bytebase.store.PlanCheckRunResult.Result
-	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 4: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 5: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	(Advice_Status)(0),       // 6: bytebase.store.Advice.Status
-	(*ChangedResources)(nil), // 7: bytebase.store.ChangedResources
-	(*Position)(nil),         // 8: bytebase.store.Position
+	(*PlanCheckRunConfig)(nil),                         // 0: bytebase.store.PlanCheckRunConfig
+	(*PlanCheckRunResult)(nil),                         // 1: bytebase.store.PlanCheckRunResult
+	(*ChangedResources)(nil),                           // 2: bytebase.store.ChangedResources
+	(*ChangedResourceDatabase)(nil),                    // 3: bytebase.store.ChangedResourceDatabase
+	(*ChangedResourceSchema)(nil),                      // 4: bytebase.store.ChangedResourceSchema
+	(*ChangedResourceTable)(nil),                       // 5: bytebase.store.ChangedResourceTable
+	nil,                                                // 6: bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
+	(*PlanCheckRunResult_Result)(nil),                  // 7: bytebase.store.PlanCheckRunResult.Result
+	(*PlanCheckRunResult_Result_SqlSummaryReport)(nil), // 8: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	(*PlanCheckRunResult_Result_SqlReviewReport)(nil),  // 9: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
+	(Advice_Status)(0),                                 // 10: bytebase.store.Advice.Status
+	(*Position)(nil),                                   // 11: bytebase.store.Position
 }
 var file_store_plan_check_run_proto_depIdxs = []int32{
-	2, // 0: bytebase.store.PlanCheckRunConfig.ghost_flags:type_name -> bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
-	3, // 1: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
-	6, // 2: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.Advice.Status
-	4, // 3: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
-	5, // 4: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
-	7, // 5: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
-	8, // 6: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
-	8, // 7: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	6,  // 0: bytebase.store.PlanCheckRunConfig.ghost_flags:type_name -> bytebase.store.PlanCheckRunConfig.GhostFlagsEntry
+	7,  // 1: bytebase.store.PlanCheckRunResult.results:type_name -> bytebase.store.PlanCheckRunResult.Result
+	3,  // 2: bytebase.store.ChangedResources.databases:type_name -> bytebase.store.ChangedResourceDatabase
+	4,  // 3: bytebase.store.ChangedResourceDatabase.schemas:type_name -> bytebase.store.ChangedResourceSchema
+	5,  // 4: bytebase.store.ChangedResourceSchema.tables:type_name -> bytebase.store.ChangedResourceTable
+	10, // 5: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.Advice.Status
+	8,  // 6: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
+	9,  // 7: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
+	2,  // 8: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
+	11, // 9: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.start_position:type_name -> bytebase.store.Position
+	11, // 10: bytebase.store.PlanCheckRunResult.Result.SqlReviewReport.end_position:type_name -> bytebase.store.Position
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_check_run_proto_init() }
@@ -481,9 +700,8 @@ func file_store_plan_check_run_proto_init() {
 		return
 	}
 	file_store_advice_proto_init()
-	file_store_changelog_proto_init()
 	file_store_common_proto_init()
-	file_store_plan_check_run_proto_msgTypes[3].OneofWrappers = []any{
+	file_store_plan_check_run_proto_msgTypes[7].OneofWrappers = []any{
 		(*PlanCheckRunResult_Result_SqlSummaryReport_)(nil),
 		(*PlanCheckRunResult_Result_SqlReviewReport_)(nil),
 	}
@@ -493,7 +711,7 @@ func file_store_plan_check_run_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_check_run_proto_rawDesc), len(file_store_plan_check_run_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

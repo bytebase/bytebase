@@ -11,7 +11,6 @@ import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/database_service.proto";
 import "v1/sql_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
@@ -249,24 +248,24 @@ message Plan {
   // The rollout associated with the plan.
   // Can be empty.
   // Format: projects/{project}/rollouts/{rollout}
-  string rollout = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string rollout = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The title of the plan.
-  string title = 4 [(buf.validate.field).string.max_len = 200];
+  string title = 5 [(buf.validate.field).string.max_len = 200];
   // The description of the plan.
-  string description = 5 [(buf.validate.field).string.max_len = 10000];
+  string description = 6 [(buf.validate.field).string.max_len = 10000];
 
   // The deployment specs for the plan.
-  repeated Spec specs = 14;
+  repeated Spec specs = 7;
 
   message Spec {
     // A UUID4 string that uniquely identifies the Spec.
-    string id = 5;
+    string id = 1;
 
     oneof config {
-      CreateDatabaseConfig create_database_config = 1;
-      ChangeDatabaseConfig change_database_config = 2;
-      ExportDataConfig export_data_config = 7;
+      CreateDatabaseConfig create_database_config = 2;
+      ChangeDatabaseConfig change_database_config = 3;
+      ExportDataConfig export_data_config = 4;
     }
   }
 
@@ -285,7 +284,7 @@ message Plan {
   // - RUNNING
   map<string, int32> plan_check_run_status_count = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  Deployment deployment = 13;
+  Deployment deployment = 12;
 
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
@@ -310,37 +309,35 @@ message Plan {
   }
 
   message ChangeDatabaseConfig {
-    reserved 5, 6;
-
     // The list of targets.
     // Multi-database format: [instances/{instance-id}/databases/{database-name}].
     // Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
-    repeated string targets = 10;
+    repeated string targets = 1;
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2;
 
     // The resource name of the release.
     // Format: projects/{project}/releases/{release}
-    string release = 9 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
+    string release = 3 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
 
     // Type is the database change type.
-    DatabaseChangeType type = 3;
+    DatabaseChangeType type = 4;
 
-    map<string, string> ghost_flags = 7;
+    map<string, string> ghost_flags = 5;
 
     // If set, a backup of the modified data will be created automatically before any changes are applied.
-    bool enable_prior_backup = 8;
+    bool enable_prior_backup = 6;
 
     // Whether to use gh-ost for online schema migration.
-    bool enable_ghost = 12;
+    bool enable_ghost = 7;
   }
 
   message ExportDataConfig {
     // The list of targets.
     // Multi-database format: [instances/{instance-id}/databases/{database-name}].
     // Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
-    repeated string targets = 5;
+    repeated string targets = 1;
     // The resource name of the sheet.
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2;
@@ -429,8 +426,6 @@ message BatchCancelPlanCheckRunsRequest {
 message BatchCancelPlanCheckRunsResponse {}
 
 message PlanCheckRun {
-  reserved 2;
-
   // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
   string name = 1;
 
@@ -440,15 +435,15 @@ message PlanCheckRun {
     // Fake advise check for testing purposes without executing against database.
     DATABASE_STATEMENT_FAKE_ADVISE = 1;
     // SQL review check that analyzes statements against configured SQL review rules.
-    DATABASE_STATEMENT_ADVISE = 3;
+    DATABASE_STATEMENT_ADVISE = 2;
     // Summary report check that generates impact analysis for the statements.
-    DATABASE_STATEMENT_SUMMARY_REPORT = 5;
+    DATABASE_STATEMENT_SUMMARY_REPORT = 3;
     // Connection check that verifies database connectivity.
-    DATABASE_CONNECT = 6;
+    DATABASE_CONNECT = 4;
     // Ghost sync check that validates gh-ost online schema change compatibility.
-    DATABASE_GHOST_SYNC = 7;
+    DATABASE_GHOST_SYNC = 5;
   }
-  Type type = 3;
+  Type type = 2;
 
   enum Status {
     STATUS_UNSPECIFIED = 0;
@@ -457,19 +452,19 @@ message PlanCheckRun {
     FAILED = 3;
     CANCELED = 4;
   }
-  Status status = 4;
+  Status status = 3;
 
   // Format: instances/{instance}/databases/{database}
-  string target = 5;
+  string target = 4;
 
   // Format: project/{project}/sheets/{sheet}
-  string sheet = 6;
+  string sheet = 5;
 
-  repeated Result results = 7;
+  repeated Result results = 6;
   // error is set if the Status is FAILED.
-  string error = 8;
+  string error = 7;
 
-  google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message Result {
     Advice.Level status = 1;
@@ -482,15 +477,11 @@ message PlanCheckRun {
       SqlReviewReport sql_review_report = 6;
     }
     message SqlSummaryReport {
-      reserved 1;
       // statement_types are the types of statements that are found in the sql.
       repeated string statement_types = 2;
       int64 affected_rows = 3;
-      ChangedResources changed_resources = 4;
     }
     message SqlReviewReport {
-      reserved 1, 2, 3, 4;
-
       // Position of the SQL statement.
       Position start_position = 5;
       Position end_position = 6;

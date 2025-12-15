@@ -874,12 +874,6 @@
           "suffix-length": "Suffix Length"
         }
       },
-      "action": {
-        "self": "Action",
-        "select-action": "Select action",
-        "query": "Query",
-        "export": "Export"
-      },
       "classification": {
         "upload": "Upload classification",
         "upload-label": "You can upload classification file with JSON format.",
@@ -2260,7 +2254,6 @@
       "duplicated-table-name": "Duplicated table name",
       "invalid-schema": "Invalid schema",
       "cannot-drop-the-last-column": "Cannot drop the last column",
-      "cannot-change-config": "Database config must changed with the schema",
       "duplicated-procedure-name": "Duplicated procedure name",
       "invalid-procedure-name": "Invalid procedure name",
       "duplicated-function-name": "Duplicated function name",

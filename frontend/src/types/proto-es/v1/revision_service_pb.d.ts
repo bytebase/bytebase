@@ -211,7 +211,7 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
   release: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp create_time = 4;
+   * @generated from field: google.protobuf.Timestamp create_time = 3;
    */
   createTime?: Timestamp;
 
@@ -219,14 +219,14 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
    * Format: users/hello@world.com
    * Can be empty.
    *
-   * @generated from field: string deleter = 5;
+   * @generated from field: string deleter = 4;
    */
   deleter: string;
 
   /**
    * Can be empty.
    *
-   * @generated from field: google.protobuf.Timestamp delete_time = 6;
+   * @generated from field: google.protobuf.Timestamp delete_time = 5;
    */
   deleteTime?: Timestamp;
 
@@ -234,14 +234,14 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
    * Format: projects/{project}/releases/{release}/files/{id}
    * Can be empty.
    *
-   * @generated from field: string file = 7;
+   * @generated from field: string file = 6;
    */
   file: string;
 
   /**
    * The schema version string for this revision.
    *
-   * @generated from field: string version = 8;
+   * @generated from field: string version = 7;
    */
   version: string;
 
@@ -249,28 +249,28 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
    * The sheet that holds the content.
    * Format: projects/{project}/sheets/{sheet}
    *
-   * @generated from field: string sheet = 9;
+   * @generated from field: string sheet = 8;
    */
   sheet: string;
 
   /**
    * The SHA256 hash value of the sheet.
    *
-   * @generated from field: string sheet_sha256 = 10;
+   * @generated from field: string sheet_sha256 = 9;
    */
   sheetSha256: string;
 
   /**
    * The statement is used for preview purpose.
    *
-   * @generated from field: string statement = 11;
+   * @generated from field: string statement = 10;
    */
   statement: string;
 
   /**
    * The size of the statement in bytes.
    *
-   * @generated from field: int64 statement_size = 12;
+   * @generated from field: int64 statement_size = 11;
    */
   statementSize: bigint;
 
@@ -279,7 +279,7 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
    * Can be empty.
    * Format: projects/{project}/issues/{issue}
    *
-   * @generated from field: string issue = 13;
+   * @generated from field: string issue = 12;
    */
   issue: string;
 
@@ -289,14 +289,14 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
    * Format:
    * projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
-   * @generated from field: string task_run = 14;
+   * @generated from field: string task_run = 13;
    */
   taskRun: string;
 
   /**
    * The type of the revision.
    *
-   * @generated from field: bytebase.v1.Revision.Type type = 15;
+   * @generated from field: bytebase.v1.Revision.Type type = 14;
    */
   type: Revision_Type;
 };

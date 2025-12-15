@@ -130,11 +130,11 @@ message ReviewConfig {
   bool enabled = 3;
 
   // The SQL review rules to enforce.
-  repeated SQLReviewRule rules = 7;
+  repeated SQLReviewRule rules = 4;
 
   // Resources using the config.
   // Format: {resource}/{resource id}, e.g., environments/test.
-  repeated string resources = 8;
+  repeated string resources = 5;
 }
 
 // SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
@@ -156,10 +156,6 @@ message SQLReviewRule {
   message CommentConventionRulePayload {
     bool required = 1;
     int32 max_length = 2;
-  }
-
-  message RequiredColumnRulePayload {
-    repeated string column_list = 1;
   }
 
   message StringRulePayload {
@@ -304,11 +300,10 @@ message SQLReviewRule {
     NumberRulePayload number_payload = 4;
     StringArrayRulePayload string_array_payload = 5;
     CommentConventionRulePayload comment_convention_payload = 6;
-    RequiredColumnRulePayload required_column_payload = 7;
-    StringRulePayload string_payload = 8;
-    NamingCaseRulePayload naming_case_payload = 9;
+    StringRulePayload string_payload = 7;
+    NamingCaseRulePayload naming_case_payload = 8;
   }
 
   // The database engine this rule applies to.
-  Engine engine = 10;
+  Engine engine = 9;
 }

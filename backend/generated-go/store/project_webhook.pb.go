@@ -27,12 +27,6 @@ type Activity_Type int32
 const (
 	// Unspecified type.
 	Activity_TYPE_UNSPECIFIED Activity_Type = 0
-	// Notifications via webhooks.
-	//
-	// NOTIFY_ISSUE_APPROVED represents the issue approved notification.
-	Activity_NOTIFY_ISSUE_APPROVED Activity_Type = 23
-	// NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
-	Activity_NOTIFY_PIPELINE_ROLLOUT Activity_Type = 24
 	// Issue related activity types.
 	//
 	// ISSUE_CREATE represents creating an issue.
@@ -43,39 +37,45 @@ const (
 	Activity_ISSUE_FIELD_UPDATE Activity_Type = 3
 	// ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL for now.
 	Activity_ISSUE_STATUS_UPDATE Activity_Type = 4
-	// ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
-	Activity_ISSUE_APPROVAL_NOTIFY Activity_Type = 21
 	// ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
 	Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE Activity_Type = 5
+	// ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
+	Activity_ISSUE_APPROVAL_NOTIFY Activity_Type = 6
 	// ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
-	Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE Activity_Type = 22
+	Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE Activity_Type = 7
+	// Notifications via webhooks.
+	//
+	// NOTIFY_ISSUE_APPROVED represents the issue approved notification.
+	Activity_NOTIFY_ISSUE_APPROVED Activity_Type = 8
+	// NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
+	Activity_NOTIFY_PIPELINE_ROLLOUT Activity_Type = 9
 )
 
 // Enum value maps for Activity_Type.
 var (
 	Activity_Type_name = map[int32]string{
-		0:  "TYPE_UNSPECIFIED",
-		23: "NOTIFY_ISSUE_APPROVED",
-		24: "NOTIFY_PIPELINE_ROLLOUT",
-		1:  "ISSUE_CREATE",
-		2:  "ISSUE_COMMENT_CREATE",
-		3:  "ISSUE_FIELD_UPDATE",
-		4:  "ISSUE_STATUS_UPDATE",
-		21: "ISSUE_APPROVAL_NOTIFY",
-		5:  "ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
-		22: "ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE",
+		0: "TYPE_UNSPECIFIED",
+		1: "ISSUE_CREATE",
+		2: "ISSUE_COMMENT_CREATE",
+		3: "ISSUE_FIELD_UPDATE",
+		4: "ISSUE_STATUS_UPDATE",
+		5: "ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
+		6: "ISSUE_APPROVAL_NOTIFY",
+		7: "ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE",
+		8: "NOTIFY_ISSUE_APPROVED",
+		9: "NOTIFY_PIPELINE_ROLLOUT",
 	}
 	Activity_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED":                      0,
-		"NOTIFY_ISSUE_APPROVED":                 23,
-		"NOTIFY_PIPELINE_ROLLOUT":               24,
 		"ISSUE_CREATE":                          1,
 		"ISSUE_COMMENT_CREATE":                  2,
 		"ISSUE_FIELD_UPDATE":                    3,
 		"ISSUE_STATUS_UPDATE":                   4,
-		"ISSUE_APPROVAL_NOTIFY":                 21,
 		"ISSUE_PIPELINE_STAGE_STATUS_UPDATE":    5,
-		"ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE": 22,
+		"ISSUE_APPROVAL_NOTIFY":                 6,
+		"ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE": 7,
+		"NOTIFY_ISSUE_APPROVED":                 8,
+		"NOTIFY_PIPELINE_ROLLOUT":               9,
 	}
 )
 
@@ -233,16 +233,16 @@ const file_store_project_webhook_proto_rawDesc = "" +
 	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xac\x02\n" +
 	"\bActivity\"\x9f\x02\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
-	"\x15NOTIFY_ISSUE_APPROVED\x10\x17\x12\x1b\n" +
-	"\x17NOTIFY_PIPELINE_ROLLOUT\x10\x18\x12\x10\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fISSUE_CREATE\x10\x01\x12\x18\n" +
 	"\x14ISSUE_COMMENT_CREATE\x10\x02\x12\x16\n" +
 	"\x12ISSUE_FIELD_UPDATE\x10\x03\x12\x17\n" +
-	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12\x19\n" +
-	"\x15ISSUE_APPROVAL_NOTIFY\x10\x15\x12&\n" +
-	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12)\n" +
-	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\x16\"\xcf\x01\n" +
+	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12&\n" +
+	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12\x19\n" +
+	"\x15ISSUE_APPROVAL_NOTIFY\x10\x06\x12)\n" +
+	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\a\x12\x19\n" +
+	"\x15NOTIFY_ISSUE_APPROVED\x10\b\x12\x1b\n" +
+	"\x17NOTIFY_PIPELINE_ROLLOUT\x10\t\"\xcf\x01\n" +
 	"\x0eProjectWebhook\x12/\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1b.bytebase.store.WebhookTypeR\x04type\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +

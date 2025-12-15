@@ -999,63 +999,6 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	return common.ConvertToParserEngine(instance.Metadata.GetEngine())
 }
 
-func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResources {
-	if r == nil {
-		return nil
-	}
-	result := &v1pb.ChangedResources{}
-	for _, database := range r.Databases {
-		v1Database := &v1pb.ChangedResourceDatabase{
-			Name: database.Name,
-		}
-		for _, schema := range database.Schemas {
-			v1Schema := &v1pb.ChangedResourceSchema{
-				Name: schema.Name,
-			}
-			for _, table := range schema.Tables {
-				var ranges []*v1pb.Range
-				for _, r := range table.Ranges {
-					ranges = append(ranges, &v1pb.Range{
-						Start: r.Start,
-						End:   r.End,
-					})
-				}
-				v1Schema.Tables = append(v1Schema.Tables, &v1pb.ChangedResourceTable{
-					Name:   table.Name,
-					Ranges: ranges,
-				})
-			}
-			slices.SortFunc(v1Schema.Tables, func(a, b *v1pb.ChangedResourceTable) int {
-				if a.Name < b.Name {
-					return -1
-				} else if a.Name > b.Name {
-					return 1
-				}
-				return 0
-			})
-			v1Database.Schemas = append(v1Database.Schemas, v1Schema)
-		}
-		slices.SortFunc(v1Database.Schemas, func(a, b *v1pb.ChangedResourceSchema) int {
-			if a.Name < b.Name {
-				return -1
-			} else if a.Name > b.Name {
-				return 1
-			}
-			return 0
-		})
-		result.Databases = append(result.Databases, v1Database)
-	}
-	slices.SortFunc(result.Databases, func(a, b *v1pb.ChangedResourceDatabase) int {
-		if a.Name < b.Name {
-			return -1
-		} else if a.Name > b.Name {
-			return 1
-		}
-		return 0
-	})
-	return result
-}
-
 func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store.DatabaseMessage) (*v1pb.Database, error) {
 	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 		ResourceID: &database.InstanceID,

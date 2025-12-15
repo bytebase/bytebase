@@ -29,17 +29,17 @@ enum Engine {
   REDSHIFT = 12;
   MARIADB = 13;
   OCEANBASE = 14;
-  STARROCKS = 18;
-  DORIS = 19;
-  HIVE = 20;
-  ELASTICSEARCH = 21;
-  BIGQUERY = 22;
-  DYNAMODB = 23;
-  DATABRICKS = 24;
-  COCKROACHDB = 25;
-  COSMOSDB = 26;
-  TRINO = 27;
-  CASSANDRA = 28;
+  STARROCKS = 15;
+  DORIS = 16;
+  HIVE = 17;
+  ELASTICSEARCH = 18;
+  BIGQUERY = 19;
+  DYNAMODB = 20;
+  DATABRICKS = 21;
+  COCKROACHDB = 22;
+  COSMOSDB = 23;
+  TRINO = 24;
+  CASSANDRA = 25;
 }
 
 // VCSType represents the type of version control system.
@@ -131,5 +131,5 @@ enum WebhookType {
   // WeCom (WeChat Work) integration.
   WECOM = 6;
   // Lark integration.
-  LARK = 8;
+  LARK = 7;
 }

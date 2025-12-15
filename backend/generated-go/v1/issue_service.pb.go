@@ -1164,29 +1164,29 @@ type Issue struct {
 	// Format: projects/{project}/issues/{issue}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The title of the issue.
-	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Title string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	// The description of the issue.
-	Description string     `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	Type        Issue_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.Issue_Type" json:"type,omitempty"`
+	Description string     `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Type        Issue_Type `protobuf:"varint,4,opt,name=type,proto3,enum=bytebase.v1.Issue_Type" json:"type,omitempty"`
 	// The status of the issue.
-	Status    IssueStatus       `protobuf:"varint,6,opt,name=status,proto3,enum=bytebase.v1.IssueStatus" json:"status,omitempty"`
-	Approvers []*Issue_Approver `protobuf:"bytes,9,rep,name=approvers,proto3" json:"approvers,omitempty"`
+	Status    IssueStatus       `protobuf:"varint,5,opt,name=status,proto3,enum=bytebase.v1.IssueStatus" json:"status,omitempty"`
+	Approvers []*Issue_Approver `protobuf:"bytes,6,rep,name=approvers,proto3" json:"approvers,omitempty"`
 	// The approval template for the issue.
-	ApprovalTemplate *ApprovalTemplate `protobuf:"bytes,10,opt,name=approval_template,json=approvalTemplate,proto3" json:"approval_template,omitempty"`
+	ApprovalTemplate *ApprovalTemplate `protobuf:"bytes,7,opt,name=approval_template,json=approvalTemplate,proto3" json:"approval_template,omitempty"`
 	// Format: users/hello@world.com
-	Creator    string                 `protobuf:"bytes,14,opt,name=creator,proto3" json:"creator,omitempty"`
-	CreateTime *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
+	Creator    string                 `protobuf:"bytes,8,opt,name=creator,proto3" json:"creator,omitempty"`
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
 	// The plan associated with the issue.
 	// Can be empty.
 	// Format: projects/{project}/plans/{plan}
-	Plan string `protobuf:"bytes,17,opt,name=plan,proto3" json:"plan,omitempty"`
+	Plan string `protobuf:"bytes,11,opt,name=plan,proto3" json:"plan,omitempty"`
 	// The rollout associated with the issue.
 	// Can be empty.
 	// Format: projects/{project}/rollouts/{rollout}
-	Rollout string `protobuf:"bytes,18,opt,name=rollout,proto3" json:"rollout,omitempty"`
+	Rollout string `protobuf:"bytes,12,opt,name=rollout,proto3" json:"rollout,omitempty"`
 	// Used if the issue type is GRANT_REQUEST.
-	GrantRequest *GrantRequest `protobuf:"bytes,19,opt,name=grant_request,json=grantRequest,proto3" json:"grant_request,omitempty"`
+	GrantRequest *GrantRequest `protobuf:"bytes,13,opt,name=grant_request,json=grantRequest,proto3" json:"grant_request,omitempty"`
 	// The releasers of the pending stage of the issue rollout, judging
 	// from the rollout policy.
 	// Format:
@@ -1194,9 +1194,9 @@ type Issue struct {
 	// - roles/workspaceDBA
 	// - roles/projectOwner
 	// - roles/projectReleaser
-	Releasers []string `protobuf:"bytes,20,rep,name=releasers,proto3" json:"releasers,omitempty"`
+	Releasers []string `protobuf:"bytes,14,rep,name=releasers,proto3" json:"releasers,omitempty"`
 	// The risk level of the issue.
-	RiskLevel RiskLevel `protobuf:"varint,21,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.RiskLevel" json:"risk_level,omitempty"`
+	RiskLevel RiskLevel `protobuf:"varint,15,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.RiskLevel" json:"risk_level,omitempty"`
 	// The status count of the issue.
 	// Keys are the following:
 	// - NOT_STARTED
@@ -1206,12 +1206,12 @@ type Issue struct {
 	// - DONE
 	// - FAILED
 	// - CANCELED
-	TaskStatusCount map[string]int32 `protobuf:"bytes,22,rep,name=task_status_count,json=taskStatusCount,proto3" json:"task_status_count,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	TaskStatusCount map[string]int32 `protobuf:"bytes,16,rep,name=task_status_count,json=taskStatusCount,proto3" json:"task_status_count,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
 	// Labels attached to the issue for categorization and filtering.
-	Labels         []string             `protobuf:"bytes,23,rep,name=labels,proto3" json:"labels,omitempty"`
-	ApprovalStatus Issue_ApprovalStatus `protobuf:"varint,24,opt,name=approval_status,json=approvalStatus,proto3,enum=bytebase.v1.Issue_ApprovalStatus" json:"approval_status,omitempty"`
+	Labels         []string             `protobuf:"bytes,17,rep,name=labels,proto3" json:"labels,omitempty"`
+	ApprovalStatus Issue_ApprovalStatus `protobuf:"varint,18,opt,name=approval_status,json=approvalStatus,proto3,enum=bytebase.v1.Issue_ApprovalStatus" json:"approval_status,omitempty"`
 	// Only populated when approval_status == ERROR
-	ApprovalStatusError string `protobuf:"bytes,25,opt,name=approval_status_error,json=approvalStatusError,proto3" json:"approval_status_error,omitempty"`
+	ApprovalStatusError string `protobuf:"bytes,19,opt,name=approval_status_error,json=approvalStatusError,proto3" json:"approval_status_error,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -1827,7 +1827,7 @@ type IssueComment struct {
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
 	// Format: users/{email}
-	Creator string `protobuf:"bytes,7,opt,name=creator,proto3" json:"creator,omitempty"`
+	Creator string `protobuf:"bytes,6,opt,name=creator,proto3" json:"creator,omitempty"`
 	// The event associated with this comment.
 	//
 	// Types that are valid to be assigned to Event:
@@ -1972,27 +1972,27 @@ type isIssueComment_Event interface {
 
 type IssueComment_Approval_ struct {
 	// Approval event.
-	Approval *IssueComment_Approval `protobuf:"bytes,8,opt,name=approval,proto3,oneof"`
+	Approval *IssueComment_Approval `protobuf:"bytes,7,opt,name=approval,proto3,oneof"`
 }
 
 type IssueComment_IssueUpdate_ struct {
 	// Issue update event.
-	IssueUpdate *IssueComment_IssueUpdate `protobuf:"bytes,9,opt,name=issue_update,json=issueUpdate,proto3,oneof"`
+	IssueUpdate *IssueComment_IssueUpdate `protobuf:"bytes,8,opt,name=issue_update,json=issueUpdate,proto3,oneof"`
 }
 
 type IssueComment_StageEnd_ struct {
 	// Stage end event.
-	StageEnd *IssueComment_StageEnd `protobuf:"bytes,10,opt,name=stage_end,json=stageEnd,proto3,oneof"`
+	StageEnd *IssueComment_StageEnd `protobuf:"bytes,9,opt,name=stage_end,json=stageEnd,proto3,oneof"`
 }
 
 type IssueComment_TaskUpdate_ struct {
 	// Task update event.
-	TaskUpdate *IssueComment_TaskUpdate `protobuf:"bytes,11,opt,name=task_update,json=taskUpdate,proto3,oneof"`
+	TaskUpdate *IssueComment_TaskUpdate `protobuf:"bytes,10,opt,name=task_update,json=taskUpdate,proto3,oneof"`
 }
 
 type IssueComment_TaskPriorBackup_ struct {
 	// Task prior backup event.
-	TaskPriorBackup *IssueComment_TaskPriorBackup `protobuf:"bytes,12,opt,name=task_prior_backup,json=taskPriorBackup,proto3,oneof"`
+	TaskPriorBackup *IssueComment_TaskPriorBackup `protobuf:"bytes,11,opt,name=task_prior_backup,json=taskPriorBackup,proto3,oneof"`
 }
 
 func (*IssueComment_Approval_) isIssueComment_Event() {}
@@ -2115,8 +2115,8 @@ type IssueComment_IssueUpdate struct {
 	ToDescription   *string                `protobuf:"bytes,4,opt,name=to_description,json=toDescription,proto3,oneof" json:"to_description,omitempty"`
 	FromStatus      *IssueStatus           `protobuf:"varint,5,opt,name=from_status,json=fromStatus,proto3,enum=bytebase.v1.IssueStatus,oneof" json:"from_status,omitempty"`
 	ToStatus        *IssueStatus           `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.v1.IssueStatus,oneof" json:"to_status,omitempty"`
-	FromLabels      []string               `protobuf:"bytes,9,rep,name=from_labels,json=fromLabels,proto3" json:"from_labels,omitempty"`
-	ToLabels        []string               `protobuf:"bytes,10,rep,name=to_labels,json=toLabels,proto3" json:"to_labels,omitempty"`
+	FromLabels      []string               `protobuf:"bytes,7,rep,name=from_labels,json=fromLabels,proto3" json:"from_labels,omitempty"`
+	ToLabels        []string               `protobuf:"bytes,8,rep,name=to_labels,json=toLabels,proto3" json:"to_labels,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -2520,31 +2520,31 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x13RequestIssueRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x04name\x12\x18\n" +
-	"\acomment\x18\x02 \x01(\tR\acomment\"\xd8\v\n" +
+	"\acomment\x18\x02 \x01(\tR\acomment\"\xba\v\n" +
 	"\x05Issue\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
-	"\x05title\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
-	"\vdescription\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x90NR\vdescription\x12+\n" +
-	"\x04type\x18\x05 \x01(\x0e2\x17.bytebase.v1.Issue.TypeR\x04type\x120\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x18.bytebase.v1.IssueStatusR\x06status\x129\n" +
-	"\tapprovers\x18\t \x03(\v2\x1b.bytebase.v1.Issue.ApproverR\tapprovers\x12J\n" +
-	"\x11approval_template\x18\n" +
-	" \x01(\v2\x1d.bytebase.v1.ApprovalTemplateR\x10approvalTemplate\x12\x1d\n" +
-	"\acreator\x18\x0e \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
-	"\vcreate_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
+	"\vdescription\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x90NR\vdescription\x12+\n" +
+	"\x04type\x18\x04 \x01(\x0e2\x17.bytebase.v1.Issue.TypeR\x04type\x120\n" +
+	"\x06status\x18\x05 \x01(\x0e2\x18.bytebase.v1.IssueStatusR\x06status\x129\n" +
+	"\tapprovers\x18\x06 \x03(\v2\x1b.bytebase.v1.Issue.ApproverR\tapprovers\x12J\n" +
+	"\x11approval_template\x18\a \x01(\v2\x1d.bytebase.v1.ApprovalTemplateR\x10approvalTemplate\x12\x1d\n" +
+	"\acreator\x18\b \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
+	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12@\n" +
-	"\vupdate_time\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\vupdate_time\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"updateTime\x12\x12\n" +
-	"\x04plan\x18\x11 \x01(\tR\x04plan\x12\x18\n" +
-	"\arollout\x18\x12 \x01(\tR\arollout\x12>\n" +
-	"\rgrant_request\x18\x13 \x01(\v2\x19.bytebase.v1.GrantRequestR\fgrantRequest\x12\x1c\n" +
-	"\treleasers\x18\x14 \x03(\tR\treleasers\x125\n" +
+	"\x04plan\x18\v \x01(\tR\x04plan\x12\x18\n" +
+	"\arollout\x18\f \x01(\tR\arollout\x12>\n" +
+	"\rgrant_request\x18\r \x01(\v2\x19.bytebase.v1.GrantRequestR\fgrantRequest\x12\x1c\n" +
+	"\treleasers\x18\x0e \x03(\tR\treleasers\x125\n" +
 	"\n" +
-	"risk_level\x18\x15 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\x12S\n" +
-	"\x11task_status_count\x18\x16 \x03(\v2'.bytebase.v1.Issue.TaskStatusCountEntryR\x0ftaskStatusCount\x12\x16\n" +
-	"\x06labels\x18\x17 \x03(\tR\x06labels\x12O\n" +
-	"\x0fapproval_status\x18\x18 \x01(\x0e2!.bytebase.v1.Issue.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x127\n" +
-	"\x15approval_status_error\x18\x19 \x01(\tB\x03\xe0A\x03R\x13approvalStatusError\x1a\xaf\x01\n" +
+	"risk_level\x18\x0f \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\x12S\n" +
+	"\x11task_status_count\x18\x10 \x03(\v2'.bytebase.v1.Issue.TaskStatusCountEntryR\x0ftaskStatusCount\x12\x16\n" +
+	"\x06labels\x18\x11 \x03(\tR\x06labels\x12O\n" +
+	"\x0fapproval_status\x18\x12 \x01(\x0e2!.bytebase.v1.Issue.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x127\n" +
+	"\x15approval_status_error\x18\x13 \x01(\tB\x03\xe0A\x03R\x13approvalStatusError\x1a\xaf\x01\n" +
 	"\bApprover\x12:\n" +
 	"\x06status\x18\x01 \x01(\x0e2\".bytebase.v1.Issue.Approver.StatusR\x06status\x12\x1c\n" +
 	"\tprincipal\x18\x02 \x01(\tR\tprincipal\"I\n" +
@@ -2569,7 +2569,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\bREJECTED\x10\x04\x12\v\n" +
 	"\aSKIPPED\x10\x05\x12\t\n" +
 	"\x05ERROR\x10\x06::\xeaA7\n" +
-	"\x12bytebase.com/Issue\x12!projects/{project}/issues/{issue}J\x04\b\x02\x10\x03J\x04\b\a\x10\bJ\x04\b\b\x10\tJ\x04\b\v\x10\fJ\x04\b\f\x10\r\"\xa2\x01\n" +
+	"\x12bytebase.com/Issue\x12!projects/{project}/issues/{issue}\"\xa2\x01\n" +
 	"\fGrantRequest\x12\x12\n" +
 	"\x04role\x18\x01 \x01(\tR\x04role\x12\x12\n" +
 	"\x04user\x18\x02 \x01(\tR\x04user\x12/\n" +
@@ -2602,7 +2602,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\rissue_comment\x18\x02 \x01(\v2\x19.bytebase.v1.IssueCommentR\fissueComment\x12@\n" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\x80\x0f\n" +
+	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xee\x0e\n" +
 	"\fIssueComment\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
 	"\acomment\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x18\x80\x80\x04R\acomment\x12\x18\n" +
@@ -2611,21 +2611,21 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"createTime\x12@\n" +
 	"\vupdate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"updateTime\x12\x1d\n" +
-	"\acreator\x18\a \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
-	"\bapproval\x18\b \x01(\v2\".bytebase.v1.IssueComment.ApprovalH\x00R\bapproval\x12J\n" +
-	"\fissue_update\x18\t \x01(\v2%.bytebase.v1.IssueComment.IssueUpdateH\x00R\vissueUpdate\x12A\n" +
-	"\tstage_end\x18\n" +
-	" \x01(\v2\".bytebase.v1.IssueComment.StageEndH\x00R\bstageEnd\x12G\n" +
-	"\vtask_update\x18\v \x01(\v2$.bytebase.v1.IssueComment.TaskUpdateH\x00R\n" +
+	"\acreator\x18\x06 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
+	"\bapproval\x18\a \x01(\v2\".bytebase.v1.IssueComment.ApprovalH\x00R\bapproval\x12J\n" +
+	"\fissue_update\x18\b \x01(\v2%.bytebase.v1.IssueComment.IssueUpdateH\x00R\vissueUpdate\x12A\n" +
+	"\tstage_end\x18\t \x01(\v2\".bytebase.v1.IssueComment.StageEndH\x00R\bstageEnd\x12G\n" +
+	"\vtask_update\x18\n" +
+	" \x01(\v2$.bytebase.v1.IssueComment.TaskUpdateH\x00R\n" +
 	"taskUpdate\x12W\n" +
-	"\x11task_prior_backup\x18\f \x01(\v2).bytebase.v1.IssueComment.TaskPriorBackupH\x00R\x0ftaskPriorBackup\x1a\x98\x01\n" +
+	"\x11task_prior_backup\x18\v \x01(\v2).bytebase.v1.IssueComment.TaskPriorBackupH\x00R\x0ftaskPriorBackup\x1a\x98\x01\n" +
 	"\bApproval\x12A\n" +
 	"\x06status\x18\x01 \x01(\x0e2).bytebase.v1.IssueComment.Approval.StatusR\x06status\"I\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\f\n" +
 	"\bAPPROVED\x10\x02\x12\f\n" +
-	"\bREJECTED\x10\x03\x1a\xd5\x03\n" +
+	"\bREJECTED\x10\x03\x1a\xc9\x03\n" +
 	"\vIssueUpdate\x12\"\n" +
 	"\n" +
 	"from_title\x18\x01 \x01(\tH\x00R\tfromTitle\x88\x01\x01\x12\x1e\n" +
@@ -2635,17 +2635,16 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\vfrom_status\x18\x05 \x01(\x0e2\x18.bytebase.v1.IssueStatusH\x04R\n" +
 	"fromStatus\x88\x01\x01\x12:\n" +
 	"\tto_status\x18\x06 \x01(\x0e2\x18.bytebase.v1.IssueStatusH\x05R\btoStatus\x88\x01\x01\x12\x1f\n" +
-	"\vfrom_labels\x18\t \x03(\tR\n" +
+	"\vfrom_labels\x18\a \x03(\tR\n" +
 	"fromLabels\x12\x1b\n" +
-	"\tto_labels\x18\n" +
-	" \x03(\tR\btoLabelsB\r\n" +
+	"\tto_labels\x18\b \x03(\tR\btoLabelsB\r\n" +
 	"\v_from_titleB\v\n" +
 	"\t_to_titleB\x13\n" +
 	"\x11_from_descriptionB\x11\n" +
 	"\x0f_to_descriptionB\x0e\n" +
 	"\f_from_statusB\f\n" +
 	"\n" +
-	"_to_statusJ\x04\b\a\x10\bJ\x04\b\b\x10\t\x1a \n" +
+	"_to_status\x1a \n" +
 	"\bStageEnd\x12\x14\n" +
 	"\x05stage\x18\x01 \x01(\tR\x05stage\x1a\xcc\x02\n" +
 	"\n" +
@@ -2678,7 +2677,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x06schema\x18\x01 \x01(\tR\x06schema\x12\x14\n" +
 	"\x05table\x18\x02 \x01(\tR\x05tableB\x10\n" +
 	"\x0e_original_lineB\a\n" +
-	"\x05eventJ\x04\b\x06\x10\a*M\n" +
+	"\x05event*M\n" +
 	"\vIssueStatus\x12\x1c\n" +
 	"\x18ISSUE_STATUS_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04OPEN\x10\x01\x12\b\n" +

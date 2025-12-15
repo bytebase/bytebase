@@ -490,9 +490,6 @@ func (x *PlanCheckRun_Result_SqlSummaryReport) Equal(y *PlanCheckRun_Result_SqlS
 	if x.AffectedRows != y.AffectedRows {
 		return false
 	}
-	if !x.ChangedResources.Equal(y.ChangedResources) {
-		return false
-	}
 	return true
 }
 

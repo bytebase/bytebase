@@ -353,11 +353,11 @@ func (s *Store) GetMaskingRulePolicy(ctx context.Context) (*storepb.MaskingRuleP
 	return p, nil
 }
 
-// GetMaskingExceptionPolicyByProject gets the masking exception policy for a project.
-func (s *Store) GetMaskingExceptionPolicyByProject(ctx context.Context, projectID string) (*storepb.MaskingExceptionPolicy, error) {
+// GetMaskingExemptionPolicyByProject gets the masking exemption policy for a project.
+func (s *Store) GetMaskingExemptionPolicyByProject(ctx context.Context, projectID string) (*storepb.MaskingExemptionPolicy, error) {
 	resourceType := storepb.Policy_PROJECT
 	resource := common.FormatProject(projectID)
-	pType := storepb.Policy_MASKING_EXCEPTION
+	pType := storepb.Policy_MASKING_EXEMPTION
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		ResourceType: &resourceType,
 		Resource:     &resource,
@@ -368,10 +368,10 @@ func (s *Store) GetMaskingExceptionPolicyByProject(ctx context.Context, projectI
 	}
 
 	if policy == nil {
-		return &storepb.MaskingExceptionPolicy{}, nil
+		return &storepb.MaskingExemptionPolicy{}, nil
 	}
 
-	p := new(storepb.MaskingExceptionPolicy)
+	p := new(storepb.MaskingExemptionPolicy)
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 		return nil, err
 	}

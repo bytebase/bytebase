@@ -90,6 +90,15 @@ func Execute() error {
 }
 
 func init() {
+	// Set default data directory based on environment.
+	// In Docker, default to /var/opt/bytebase to match the Dockerfile's CMD.
+	// This ensures the data directory is correct even when users add other flags,
+	// which would otherwise cause Docker to replace the entire CMD and lose --data.
+	defaultDataDir := "."
+	if isDocker() {
+		defaultDataDir = "/var/opt/bytebase"
+	}
+
 	// In the release build, Bytebase bundles frontend and backend together and runs on a single port as a mono server.
 	// During development, Bytebase frontend runs on a separate port.
 	rootCmd.PersistentFlags().IntVar(&flags.port, "port", 8080, "port where Bytebase server runs. Default to 80")
@@ -97,7 +106,7 @@ func init() {
 	// Instead they would configure a gateway to forward the traffic to Bytebase. Users need to set --external-url to the address
 	// exposed on that gateway accordingly.
 	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://")
-	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "not recommended for production. Directory where Bytebase stores data if PG_URL is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
+	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", defaultDataDir, "not recommended for production. Directory where Bytebase stores data if PG_URL is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.ha, "ha", false, "run in HA mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "run in SaaS mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.enableJSONLogging, "enable-json-logging", false, "enable output logs in bytebase in json format")

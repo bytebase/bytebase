@@ -874,12 +874,6 @@
           "suffix-length": "后缀长度"
         }
       },
-      "action": {
-        "self": "操作类型",
-        "select-action": "选择操作",
-        "query": "查询",
-        "export": "导出"
-      },
       "classification": {
         "upload": "导入分类分级",
         "upload-label": "您可以上传数据分类分级的 JSON 格式文件。",
@@ -2260,7 +2254,6 @@
       "duplicated-table-name": "重复的表名",
       "invalid-schema": "无效的 Schema",
       "cannot-drop-the-last-column": "不能删除最后一列",
-      "cannot-change-config": "数据库配置必须同 Schema 一起变更",
       "duplicated-procedure-name": "重复的存储过程名称",
       "invalid-procedure-name": "无效的存储过程名称",
       "duplicated-function-name": "重复的函数名称",

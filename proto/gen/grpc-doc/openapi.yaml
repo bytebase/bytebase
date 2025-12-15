@@ -366,9 +366,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -412,9 +412,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -1716,9 +1716,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -1768,9 +1768,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -2591,9 +2591,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -2637,9 +2637,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -3167,9 +3167,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -3217,9 +3217,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -4855,9 +4855,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -4901,9 +4901,9 @@ paths:
                   schema:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -8803,83 +8803,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Content_Part'
                     description: parts is used for a result content with multiple parts.
-        ChangedResourceDatabase:
-            type: object
-            properties:
-                name:
-                    type: string
-                schemas:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceSchema'
-        ChangedResourceFunction:
-            type: object
-            properties:
-                name:
-                    type: string
-                ranges:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
-        ChangedResourceProcedure:
-            type: object
-            properties:
-                name:
-                    type: string
-                ranges:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
-        ChangedResourceSchema:
-            type: object
-            properties:
-                name:
-                    type: string
-                tables:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceTable'
-                views:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceView'
-                functions:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceFunction'
-                procedures:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceProcedure'
-        ChangedResourceTable:
-            type: object
-            properties:
-                name:
-                    type: string
-                ranges:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
-        ChangedResourceView:
-            type: object
-            properties:
-                name:
-                    type: string
-                ranges:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Range'
-                    description: The ranges of sub-strings correspond to the statements on the sheet.
-        ChangedResources:
-            type: object
-            properties:
-                databases:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ChangedResourceDatabase'
         Changelog:
             type: object
             properties:
@@ -8929,8 +8852,6 @@ components:
                     description: |-
                         Could be empty
                          Or present but not found if deleted
-                changedResources:
-                    $ref: '#/components/schemas/ChangedResources'
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
@@ -9028,17 +8949,6 @@ components:
                     description: The risk level of the statement on the target.
                     format: enum
             description: Check result for a single release file on a target database.
-        Checkers_RequiredStatusChecks:
-            type: object
-            properties:
-                planCheckEnforcement:
-                    enum:
-                        - PLAN_CHECK_ENFORCEMENT_UNSPECIFIED
-                        - ERROR_ONLY
-                        - STRICT
-                    type: string
-                    description: Enforcement level for plan check results during rollout validation.
-                    format: enum
         ColumnCatalog:
             type: object
             properties:
@@ -9874,10 +9784,6 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/DatabaseMetadata'
                     description: The metadata of the target schema.
-                sourceCatalog:
-                    $ref: '#/components/schemas/DatabaseCatalog'
-                targetCatalog:
-                    $ref: '#/components/schemas/DatabaseCatalog'
                 engine:
                     enum:
                         - ENGINE_UNSPECIFIED
@@ -11718,33 +11624,25 @@ components:
             type: object
             properties: {}
             description: Request to logout current user session.
-        MaskingExceptionPolicy:
+        MaskingExemptionPolicy:
             type: object
             properties:
-                maskingExceptions:
+                exemptions:
                     type: array
                     items:
-                        $ref: '#/components/schemas/MaskingExceptionPolicy_MaskingException'
-                    description: The list of masking exceptions.
-            description: MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
-        MaskingExceptionPolicy_MaskingException:
+                        $ref: '#/components/schemas/MaskingExemptionPolicy_Exemption'
+            description: MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
+        MaskingExemptionPolicy_Exemption:
             type: object
             properties:
-                action:
-                    enum:
-                        - ACTION_UNSPECIFIED
-                        - QUERY
-                        - EXPORT
-                    type: string
-                    description: The action that the user can perform on sensitive data.
-                    format: enum
-                member:
-                    type: string
+                members:
+                    type: array
+                    items:
+                        type: string
                     description: |-
-                        Member is the principal who bind to this exception policy instance.
+                        Members who bind to this exemption.
 
-                         - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
-                         - `group:{email}`: An email address for group.
+                         Format: users/{email} or groups/{group email}
                 condition:
                     allOf:
                         - $ref: '#/components/schemas/Expr'
@@ -11765,7 +11663,6 @@ components:
                          For example:
                          resource.instance_id == "local" && resource.database_name == "employee" && request.time < timestamp("2025-04-30T11:10:39.000Z")
                          resource.instance_id == "local" && resource.database_name == "employee"
-            description: An exception allowing specific users to access masked data.
         MaskingReason:
             type: object
             properties:
@@ -12309,9 +12206,9 @@ components:
                 type:
                     enum:
                         - POLICY_TYPE_UNSPECIFIED
-                        - ROLLOUT_POLICY
                         - MASKING_RULE
-                        - MASKING_EXCEPTION
+                        - MASKING_EXEMPTION
+                        - ROLLOUT_POLICY
                         - TAG
                         - DATA_SOURCE_QUERY
                         - DATA_QUERY
@@ -12322,8 +12219,8 @@ components:
                     $ref: '#/components/schemas/RolloutPolicy'
                 maskingRulePolicy:
                     $ref: '#/components/schemas/MaskingRulePolicy'
-                maskingExceptionPolicy:
-                    $ref: '#/components/schemas/MaskingExceptionPolicy'
+                maskingExemptionPolicy:
+                    $ref: '#/components/schemas/MaskingExemptionPolicy'
                 tagPolicy:
                     $ref: '#/components/schemas/TagPolicy'
                 dataSourceQueryPolicy:
@@ -13098,8 +12995,6 @@ components:
                     description: statement_types are the types of statements that are found in the sql.
                 affectedRows:
                     type: string
-                changedResources:
-                    $ref: '#/components/schemas/ChangedResources'
         ReviewConfig:
             type: object
             properties:
@@ -13280,23 +13175,7 @@ components:
                     items:
                         type: string
                     description: The roles that can approve rollout execution.
-                checkers:
-                    allOf:
-                        - $ref: '#/components/schemas/RolloutPolicy_Checkers'
-                    description: |-
-                        Checkers that must pass before rollout execution.
-                         These checks are performed in UI workflows only.
             description: Rollout policy configuration.
-        RolloutPolicy_Checkers:
-            type: object
-            properties:
-                requiredIssueApproval:
-                    type: boolean
-                    description: Whether issue approval is required before proceeding with rollout.
-                requiredStatusChecks:
-                    allOf:
-                        - $ref: '#/components/schemas/Checkers_RequiredStatusChecks'
-                    description: Status checks that must pass before rollout can be executed.
         RowValue:
             type: object
             properties:
@@ -13538,8 +13417,6 @@ components:
                     $ref: '#/components/schemas/SQLReviewRule_StringArrayRulePayload'
                 commentConventionPayload:
                     $ref: '#/components/schemas/SQLReviewRule_CommentConventionRulePayload'
-                requiredColumnPayload:
-                    $ref: '#/components/schemas/SQLReviewRule_RequiredColumnRulePayload'
                 stringPayload:
                     $ref: '#/components/schemas/SQLReviewRule_StringRulePayload'
                 namingCasePayload:
@@ -13604,13 +13481,6 @@ components:
                 number:
                     type: integer
                     format: int32
-        SQLReviewRule_RequiredColumnRulePayload:
-            type: object
-            properties:
-                columnList:
-                    type: array
-                    items:
-                        type: string
         SQLReviewRule_StringArrayRulePayload:
             type: object
             properties:
@@ -14219,9 +14089,10 @@ components:
                     type: string
                     description: content_size is the full size of the content, may not match the size of the `content` field.
                 payload:
+                    readOnly: true
                     allOf:
                         - $ref: '#/components/schemas/SheetPayload'
-                    description: Additional metadata and configuration for the sheet.
+                    description: Parsed metadata about SQL commands in the sheet.
                 engine:
                     enum:
                         - ENGINE_UNSPECIFIED
@@ -14253,28 +14124,13 @@ components:
                     type: string
                     description: The SQL dialect.
                     format: enum
-        SheetCommand:
-            type: object
-            properties:
-                start:
-                    type: integer
-                    format: int32
-                end:
-                    type: integer
-                    format: int32
         SheetPayload:
             type: object
             properties:
-                type:
-                    enum:
-                        - TYPE_UNSPECIFIED
-                        - SCHEMA_DESIGN
-                    type: string
-                    format: enum
                 commands:
                     type: array
                     items:
-                        $ref: '#/components/schemas/SheetCommand'
+                        $ref: '#/components/schemas/Range'
                     description: The start and end position of each command in the sheet statement.
         SpatialIndexConfig:
             type: object
@@ -14704,8 +14560,8 @@ components:
                         - GENERAL
                         - DATABASE_CREATE
                         - DATABASE_MIGRATE
-                        - DATABASE_SDL
                         - DATABASE_EXPORT
+                        - DATABASE_SDL
                     type: string
                     format: enum
                 target:
@@ -15569,15 +15425,15 @@ components:
                     items:
                         enum:
                             - TYPE_UNSPECIFIED
-                            - NOTIFY_ISSUE_APPROVED
-                            - NOTIFY_PIPELINE_ROLLOUT
                             - ISSUE_CREATE
                             - ISSUE_COMMENT_CREATE
                             - ISSUE_FIELD_UPDATE
                             - ISSUE_STATUS_UPDATE
-                            - ISSUE_APPROVAL_NOTIFY
                             - ISSUE_PIPELINE_STAGE_STATUS_UPDATE
+                            - ISSUE_APPROVAL_NOTIFY
                             - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
+                            - NOTIFY_ISSUE_APPROVED
+                            - NOTIFY_PIPELINE_ROLLOUT
                         type: string
                         format: enum
                     description: |-

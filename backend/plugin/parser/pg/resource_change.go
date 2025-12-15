@@ -164,8 +164,7 @@ func (l *changedResourcesListener) EnterCreatestmt(ctx *parser.CreatestmtContext
 		db,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name:   table,
-			Ranges: []*storepb.Range{l.getRange(ctx)},
+			Name: table,
 		},
 		false,
 	)
@@ -201,6 +200,10 @@ func (l *changedResourcesListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 	}
 
 	isView := objectTypeAnyName.VIEW() != nil
+	// Skip views since they're not used in risk/approval calculations
+	if isView {
+		return
+	}
 
 	for _, anyName := range anyNameList.AllAny_name() {
 		db, schema, name := l.extractAnyName(anyName)
@@ -216,28 +219,15 @@ func (l *changedResourcesListener) EnterDropstmt(ctx *parser.DropstmtContext) {
 			}
 		}
 
-		if isView {
-			// For views, add to views
-			l.changedResources.AddView(
-				db,
-				schema,
-				&storepb.ChangedResourceView{
-					Name:   name,
-					Ranges: []*storepb.Range{l.getRange(ctx)},
-				},
-			)
-		} else {
-			// For tables
-			l.changedResources.AddTable(
-				db,
-				schema,
-				&storepb.ChangedResourceTable{
-					Name:   name,
-					Ranges: []*storepb.Range{l.getRange(ctx)},
-				},
-				true,
-			)
-		}
+		// For tables
+		l.changedResources.AddTable(
+			db,
+			schema,
+			&storepb.ChangedResourceTable{
+				Name: name,
+			},
+			true,
+		)
 	}
 }
 
@@ -275,8 +265,7 @@ func (l *changedResourcesListener) EnterAltertablestmt(ctx *parser.Altertablestm
 		db,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name:   table,
-			Ranges: []*storepb.Range{l.getRange(ctx)},
+			Name: table,
 		},
 		true,
 	)
@@ -320,8 +309,7 @@ func (l *changedResourcesListener) EnterRenamestmt(ctx *parser.RenamestmtContext
 		db,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name:   oldTableName,
-			Ranges: []*storepb.Range{l.getRange(ctx)},
+			Name: oldTableName,
 		},
 		true,
 	)
@@ -331,8 +319,7 @@ func (l *changedResourcesListener) EnterRenamestmt(ctx *parser.RenamestmtContext
 		db,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name:   newTableName,
-			Ranges: []*storepb.Range{l.getRange(ctx)},
+			Name: newTableName,
 		},
 		false,
 	)
@@ -367,8 +354,7 @@ func (l *changedResourcesListener) EnterIndexstmt(ctx *parser.IndexstmtContext) 
 		db,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name:   table,
-			Ranges: []*storepb.Range{l.getRange(ctx)},
+			Name: table,
 		},
 		false,
 	)
@@ -399,8 +385,7 @@ func (l *changedResourcesListener) handleDropIndex(ctx *parser.DropstmtContext) 
 						db,
 						schemaName,
 						&storepb.ChangedResourceTable{
-							Name:   tableProto.GetName(),
-							Ranges: []*storepb.Range{l.getRange(ctx)},
+							Name: tableProto.GetName(),
 						},
 						false,
 					)
@@ -416,111 +401,13 @@ func (l *changedResourcesListener) handleDropIndex(ctx *parser.DropstmtContext) 
 						db,
 						schemaName,
 						&storepb.ChangedResourceTable{
-							Name:   tableProto.GetName(),
-							Ranges: []*storepb.Range{l.getRange(ctx)},
+							Name: tableProto.GetName(),
 						},
 						false,
 					)
 				}
 			}
 		}
-	}
-}
-
-// EnterViewstmt handles CREATE VIEW statements
-func (l *changedResourcesListener) EnterViewstmt(ctx *parser.ViewstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Get view name
-	qualifiedName := ctx.Qualified_name()
-	if qualifiedName == nil {
-		return
-	}
-
-	db, schema, view := l.extractQualifiedName(qualifiedName)
-	if db == "" {
-		db = l.database
-	}
-	if schema == "" {
-		schema = l.searchPath[0]
-	}
-
-	l.changedResources.AddView(
-		db,
-		schema,
-		&storepb.ChangedResourceView{
-			Name:   view,
-			Ranges: []*storepb.Range{l.getRange(ctx)},
-		},
-	)
-}
-
-// EnterCreatefunctionstmt handles CREATE FUNCTION statements
-func (l *changedResourcesListener) EnterCreatefunctionstmt(ctx *parser.CreatefunctionstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Get function name
-	funcName := ctx.Func_name()
-	if funcName == nil {
-		return
-	}
-
-	db, schema, function := l.extractFuncName(funcName)
-	if db == "" {
-		db = l.database
-	}
-	if schema == "" {
-		schema = l.searchPath[0]
-	}
-
-	l.changedResources.AddFunction(
-		db,
-		schema,
-		&storepb.ChangedResourceFunction{
-			Name:   function,
-			Ranges: []*storepb.Range{l.getRange(ctx)},
-		},
-	)
-}
-
-// EnterRemovefuncstmt handles DROP FUNCTION statements
-func (l *changedResourcesListener) EnterRemovefuncstmt(ctx *parser.RemovefuncstmtContext) {
-	if !isTopLevel(ctx.GetParent()) {
-		return
-	}
-
-	// Get function names
-	funcTableList := ctx.Function_with_argtypes_list()
-	if funcTableList == nil {
-		return
-	}
-
-	for _, funcWithArgs := range funcTableList.AllFunction_with_argtypes() {
-		funcName := funcWithArgs.Func_name()
-		if funcName == nil {
-			continue
-		}
-
-		db, schema, function := l.extractFuncName(funcName)
-		if db == "" {
-			db = l.database
-		}
-		if schema == "" {
-			schema = l.searchPath[0]
-		}
-
-		l.changedResources.AddFunction(
-			db,
-			schema,
-			&storepb.ChangedResourceFunction{
-				Name:   function,
-				Ranges: []*storepb.Range{l.getRange(ctx)},
-			},
-		)
 	}
 }
 
@@ -557,8 +444,7 @@ func (l *changedResourcesListener) EnterInsertstmt(ctx *parser.InsertstmtContext
 		db,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name:   table,
-			Ranges: []*storepb.Range{l.getRange(ctx)},
+			Name: table,
 		},
 		false,
 	)
@@ -610,8 +496,7 @@ func (l *changedResourcesListener) EnterUpdatestmt(ctx *parser.UpdatestmtContext
 		db,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name:   table,
-			Ranges: []*storepb.Range{l.getRange(ctx)},
+			Name: table,
 		},
 		false,
 	)
@@ -657,8 +542,7 @@ func (l *changedResourcesListener) EnterDeletestmt(ctx *parser.DeletestmtContext
 		db,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name:   table,
-			Ranges: []*storepb.Range{l.getRange(ctx)},
+			Name: table,
 		},
 		false,
 	)
@@ -774,75 +658,6 @@ func (l *changedResourcesListener) extractRelationExpr(ctx parser.IRelation_expr
 	}
 
 	return l.extractQualifiedName(qualifiedName)
-}
-
-func (*changedResourcesListener) extractFuncName(ctx parser.IFunc_nameContext) (string, string, string) {
-	if ctx == nil {
-		return "", "", ""
-	}
-
-	typeFunc := ctx.Type_function_name()
-	if typeFunc != nil {
-		// Simple function name
-		return "", "", typeFunc.GetText()
-	}
-
-	colid := ctx.Colid()
-	if colid == nil {
-		return "", "", ""
-	}
-
-	name := colid.GetText()
-
-	// Check for indirection
-	indirection := ctx.Indirection()
-	if indirection == nil {
-		return "", "", name
-	}
-
-	indirectionEls := indirection.AllIndirection_el()
-	if len(indirectionEls) == 0 {
-		return "", "", name
-	}
-
-	// schema.function
-	if len(indirectionEls) == 1 {
-		attrName := indirectionEls[0].Attr_name()
-		if attrName != nil {
-			return "", name, attrName.GetText()
-		}
-	}
-
-	// db.schema.function
-	if len(indirectionEls) >= 2 {
-		schema := indirectionEls[0].Attr_name()
-		function := indirectionEls[1].Attr_name()
-		if schema != nil && function != nil {
-			return name, schema.GetText(), function.GetText()
-		}
-	}
-
-	return "", "", name
-}
-
-func (l *changedResourcesListener) getRange(ctx antlr.ParserRuleContext) *storepb.Range {
-	// Use GetTextFromInterval to get the actual text with whitespace
-	start := ctx.GetStart().GetTokenIndex()
-	stop := ctx.GetStop().GetTokenIndex()
-
-	// Check if the next token is a semicolon and include it
-	tokens, ok := l.tokenStream.(*antlr.CommonTokenStream)
-	if ok {
-		nextToken := tokens.Get(stop + 1)
-		if nextToken != nil && nextToken.GetText() == ";" {
-			// Include the semicolon
-			text := l.tokenStream.GetTextFromInterval(antlr.NewInterval(start, stop+1))
-			return base.NewRange(l.statement, text)
-		}
-	}
-
-	text := l.tokenStream.GetTextFromInterval(antlr.NewInterval(start, stop))
-	return base.NewRange(l.statement, text)
 }
 
 // getStatementText returns the text of a statement, including trailing semicolon if present

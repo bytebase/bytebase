@@ -200,14 +200,14 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
   /**
    * Whether this policy inherits from its parent resource.
    *
-   * @generated from field: bool inherit_from_parent = 4;
+   * @generated from field: bool inherit_from_parent = 2;
    */
   inheritFromParent: boolean;
 
   /**
    * The type of policy.
    *
-   * @generated from field: bytebase.v1.PolicyType type = 5;
+   * @generated from field: bytebase.v1.PolicyType type = 3;
    */
   type: PolicyType;
 
@@ -218,37 +218,37 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
    */
   policy: {
     /**
-     * @generated from field: bytebase.v1.RolloutPolicy rollout_policy = 19;
+     * @generated from field: bytebase.v1.RolloutPolicy rollout_policy = 4;
      */
     value: RolloutPolicy;
     case: "rolloutPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.MaskingRulePolicy masking_rule_policy = 17;
+     * @generated from field: bytebase.v1.MaskingRulePolicy masking_rule_policy = 5;
      */
     value: MaskingRulePolicy;
     case: "maskingRulePolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.MaskingExceptionPolicy masking_exception_policy = 18;
+     * @generated from field: bytebase.v1.MaskingExemptionPolicy masking_exemption_policy = 6;
      */
-    value: MaskingExceptionPolicy;
-    case: "maskingExceptionPolicy";
+    value: MaskingExemptionPolicy;
+    case: "maskingExemptionPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.TagPolicy tag_policy = 21;
+     * @generated from field: bytebase.v1.TagPolicy tag_policy = 7;
      */
     value: TagPolicy;
     case: "tagPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.DataSourceQueryPolicy data_source_query_policy = 22;
+     * @generated from field: bytebase.v1.DataSourceQueryPolicy data_source_query_policy = 8;
      */
     value: DataSourceQueryPolicy;
     case: "dataSourceQueryPolicy";
   } | {
     /**
-     * @generated from field: bytebase.v1.QueryDataPolicy query_data_policy = 24;
+     * @generated from field: bytebase.v1.QueryDataPolicy query_data_policy = 9;
      */
     value: QueryDataPolicy;
     case: "queryDataPolicy";
@@ -257,14 +257,14 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
   /**
    * Whether the policy is enforced.
    *
-   * @generated from field: bool enforce = 13;
+   * @generated from field: bool enforce = 10;
    */
   enforce: boolean;
 
   /**
    * The resource type for the policy.
    *
-   * @generated from field: bytebase.v1.PolicyResourceType resource_type = 14;
+   * @generated from field: bytebase.v1.PolicyResourceType resource_type = 11;
    */
   resourceType: PolicyResourceType;
 };
@@ -294,14 +294,6 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
    * @generated from field: repeated string roles = 2;
    */
   roles: string[];
-
-  /**
-   * Checkers that must pass before rollout execution.
-   * These checks are performed in UI workflows only.
-   *
-   * @generated from field: bytebase.v1.RolloutPolicy.Checkers checkers = 4;
-   */
-  checkers?: RolloutPolicy_Checkers;
 };
 
 /**
@@ -309,80 +301,6 @@ export declare type RolloutPolicy = Message<"bytebase.v1.RolloutPolicy"> & {
  * Use `create(RolloutPolicySchema)` to create a new message.
  */
 export declare const RolloutPolicySchema: GenMessage<RolloutPolicy>;
-
-/**
- * @generated from message bytebase.v1.RolloutPolicy.Checkers
- */
-export declare type RolloutPolicy_Checkers = Message<"bytebase.v1.RolloutPolicy.Checkers"> & {
-  /**
-   * Whether issue approval is required before proceeding with rollout.
-   *
-   * @generated from field: bool required_issue_approval = 1;
-   */
-  requiredIssueApproval: boolean;
-
-  /**
-   * Status checks that must pass before rollout can be executed.
-   *
-   * @generated from field: bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks required_status_checks = 2;
-   */
-  requiredStatusChecks?: RolloutPolicy_Checkers_RequiredStatusChecks;
-};
-
-/**
- * Describes the message bytebase.v1.RolloutPolicy.Checkers.
- * Use `create(RolloutPolicy_CheckersSchema)` to create a new message.
- */
-export declare const RolloutPolicy_CheckersSchema: GenMessage<RolloutPolicy_Checkers>;
-
-/**
- * @generated from message bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks
- */
-export declare type RolloutPolicy_Checkers_RequiredStatusChecks = Message<"bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks"> & {
-  /**
-   * Enforcement level for plan check results during rollout validation.
-   *
-   * @generated from field: bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement plan_check_enforcement = 1;
-   */
-  planCheckEnforcement: RolloutPolicy_Checkers_PlanCheckEnforcement;
-};
-
-/**
- * Describes the message bytebase.v1.RolloutPolicy.Checkers.RequiredStatusChecks.
- * Use `create(RolloutPolicy_Checkers_RequiredStatusChecksSchema)` to create a new message.
- */
-export declare const RolloutPolicy_Checkers_RequiredStatusChecksSchema: GenMessage<RolloutPolicy_Checkers_RequiredStatusChecks>;
-
-/**
- * @generated from enum bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement
- */
-export enum RolloutPolicy_Checkers_PlanCheckEnforcement {
-  /**
-   * Allow rollout regardless of plan check results (no enforcement).
-   *
-   * @generated from enum value: PLAN_CHECK_ENFORCEMENT_UNSPECIFIED = 0;
-   */
-  PLAN_CHECK_ENFORCEMENT_UNSPECIFIED = 0,
-
-  /**
-   * Block rollout only when plan check finds errors.
-   *
-   * @generated from enum value: ERROR_ONLY = 1;
-   */
-  ERROR_ONLY = 1,
-
-  /**
-   * Block rollout when plan check finds errors or warnings.
-   *
-   * @generated from enum value: STRICT = 2;
-   */
-  STRICT = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.RolloutPolicy.Checkers.PlanCheckEnforcement.
- */
-export declare const RolloutPolicy_Checkers_PlanCheckEnforcementSchema: GenEnum<RolloutPolicy_Checkers_PlanCheckEnforcement>;
 
 /**
  * QueryDataPolicy is the policy configuration for querying data.
@@ -435,47 +353,35 @@ export declare type QueryDataPolicy = Message<"bytebase.v1.QueryDataPolicy"> & {
 export declare const QueryDataPolicySchema: GenMessage<QueryDataPolicy>;
 
 /**
- * MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
+ * MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
  *
- * @generated from message bytebase.v1.MaskingExceptionPolicy
+ * @generated from message bytebase.v1.MaskingExemptionPolicy
  */
-export declare type MaskingExceptionPolicy = Message<"bytebase.v1.MaskingExceptionPolicy"> & {
+export declare type MaskingExemptionPolicy = Message<"bytebase.v1.MaskingExemptionPolicy"> & {
   /**
-   * The list of masking exceptions.
-   *
-   * @generated from field: repeated bytebase.v1.MaskingExceptionPolicy.MaskingException masking_exceptions = 1;
+   * @generated from field: repeated bytebase.v1.MaskingExemptionPolicy.Exemption exemptions = 1;
    */
-  maskingExceptions: MaskingExceptionPolicy_MaskingException[];
+  exemptions: MaskingExemptionPolicy_Exemption[];
 };
 
 /**
- * Describes the message bytebase.v1.MaskingExceptionPolicy.
- * Use `create(MaskingExceptionPolicySchema)` to create a new message.
+ * Describes the message bytebase.v1.MaskingExemptionPolicy.
+ * Use `create(MaskingExemptionPolicySchema)` to create a new message.
  */
-export declare const MaskingExceptionPolicySchema: GenMessage<MaskingExceptionPolicy>;
+export declare const MaskingExemptionPolicySchema: GenMessage<MaskingExemptionPolicy>;
 
 /**
- * An exception allowing specific users to access masked data.
- *
- * @generated from message bytebase.v1.MaskingExceptionPolicy.MaskingException
+ * @generated from message bytebase.v1.MaskingExemptionPolicy.Exemption
  */
-export declare type MaskingExceptionPolicy_MaskingException = Message<"bytebase.v1.MaskingExceptionPolicy.MaskingException"> & {
+export declare type MaskingExemptionPolicy_Exemption = Message<"bytebase.v1.MaskingExemptionPolicy.Exemption"> & {
   /**
-   * The action that the user can perform on sensitive data.
+   * Members who bind to this exemption.
    *
-   * @generated from field: bytebase.v1.MaskingExceptionPolicy.MaskingException.Action action = 1;
+   * Format: users/{email} or groups/{group email}
+   *
+   * @generated from field: repeated string members = 1;
    */
-  action: MaskingExceptionPolicy_MaskingException_Action;
-
-  /**
-   * Member is the principal who bind to this exception policy instance.
-   *
-   * - `user:{email}`: An email address that represents a specific Bytebase account. For example, `alice@example.com`.
-   * - `group:{email}`: An email address for group.
-   *
-   * @generated from field: string member = 3;
-   */
-  member: string;
+  members: string[];
 
   /**
    * The condition that is associated with this exception policy instance.
@@ -495,49 +401,16 @@ export declare type MaskingExceptionPolicy_MaskingException = Message<"bytebase.
    * resource.instance_id == "local" && resource.database_name == "employee" && request.time < timestamp("2025-04-30T11:10:39.000Z")
    * resource.instance_id == "local" && resource.database_name == "employee"
    *
-   * @generated from field: google.type.Expr condition = 4;
+   * @generated from field: google.type.Expr condition = 2;
    */
   condition?: Expr;
 };
 
 /**
- * Describes the message bytebase.v1.MaskingExceptionPolicy.MaskingException.
- * Use `create(MaskingExceptionPolicy_MaskingExceptionSchema)` to create a new message.
+ * Describes the message bytebase.v1.MaskingExemptionPolicy.Exemption.
+ * Use `create(MaskingExemptionPolicy_ExemptionSchema)` to create a new message.
  */
-export declare const MaskingExceptionPolicy_MaskingExceptionSchema: GenMessage<MaskingExceptionPolicy_MaskingException>;
-
-/**
- * The action that the exception permits.
- *
- * @generated from enum bytebase.v1.MaskingExceptionPolicy.MaskingException.Action
- */
-export enum MaskingExceptionPolicy_MaskingException_Action {
-  /**
-   * Unspecified action.
-   *
-   * @generated from enum value: ACTION_UNSPECIFIED = 0;
-   */
-  ACTION_UNSPECIFIED = 0,
-
-  /**
-   * Allow querying sensitive data.
-   *
-   * @generated from enum value: QUERY = 1;
-   */
-  QUERY = 1,
-
-  /**
-   * Allow exporting sensitive data.
-   *
-   * @generated from enum value: EXPORT = 2;
-   */
-  EXPORT = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.MaskingExceptionPolicy.MaskingException.Action.
- */
-export declare const MaskingExceptionPolicy_MaskingException_ActionSchema: GenEnum<MaskingExceptionPolicy_MaskingException_Action>;
+export declare const MaskingExemptionPolicy_ExemptionSchema: GenMessage<MaskingExemptionPolicy_Exemption>;
 
 /**
  * Policy for configuring data masking rules.
@@ -717,46 +590,46 @@ export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0,
 
   /**
-   * Rollout deployment policy.
-   *
-   * @generated from enum value: ROLLOUT_POLICY = 11;
-   */
-  ROLLOUT_POLICY = 11,
-
-  /**
    * Data masking rule policy.
    *
-   * @generated from enum value: MASKING_RULE = 9;
+   * @generated from enum value: MASKING_RULE = 1;
    */
-  MASKING_RULE = 9,
+  MASKING_RULE = 1,
 
   /**
-   * Data masking exception policy.
+   * Data masking exemption policy.
    *
-   * @generated from enum value: MASKING_EXCEPTION = 10;
+   * @generated from enum value: MASKING_EXEMPTION = 2;
    */
-  MASKING_EXCEPTION = 10,
+  MASKING_EXEMPTION = 2,
+
+  /**
+   * Rollout deployment policy.
+   *
+   * @generated from enum value: ROLLOUT_POLICY = 3;
+   */
+  ROLLOUT_POLICY = 3,
 
   /**
    * Resource tag policy.
    *
-   * @generated from enum value: TAG = 13;
+   * @generated from enum value: TAG = 4;
    */
-  TAG = 13,
+  TAG = 4,
 
   /**
    * Data source query restrictions policy.
    *
-   * @generated from enum value: DATA_SOURCE_QUERY = 14;
+   * @generated from enum value: DATA_SOURCE_QUERY = 5;
    */
-  DATA_SOURCE_QUERY = 14,
+  DATA_SOURCE_QUERY = 5,
 
   /**
    * Query data access policy.
    *
-   * @generated from enum value: DATA_QUERY = 16;
+   * @generated from enum value: DATA_QUERY = 6;
    */
-  DATA_QUERY = 16,
+  DATA_QUERY = 6,
 }
 
 /**

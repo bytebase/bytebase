@@ -33,13 +33,13 @@ const (
 	// Fake advise check for testing purposes without executing against database.
 	PlanCheckRun_DATABASE_STATEMENT_FAKE_ADVISE PlanCheckRun_Type = 1
 	// SQL review check that analyzes statements against configured SQL review rules.
-	PlanCheckRun_DATABASE_STATEMENT_ADVISE PlanCheckRun_Type = 3
+	PlanCheckRun_DATABASE_STATEMENT_ADVISE PlanCheckRun_Type = 2
 	// Summary report check that generates impact analysis for the statements.
-	PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT PlanCheckRun_Type = 5
+	PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT PlanCheckRun_Type = 3
 	// Connection check that verifies database connectivity.
-	PlanCheckRun_DATABASE_CONNECT PlanCheckRun_Type = 6
+	PlanCheckRun_DATABASE_CONNECT PlanCheckRun_Type = 4
 	// Ghost sync check that validates gh-ost online schema change compatibility.
-	PlanCheckRun_DATABASE_GHOST_SYNC PlanCheckRun_Type = 7
+	PlanCheckRun_DATABASE_GHOST_SYNC PlanCheckRun_Type = 5
 )
 
 // Enum value maps for PlanCheckRun_Type.
@@ -47,18 +47,18 @@ var (
 	PlanCheckRun_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
 		1: "DATABASE_STATEMENT_FAKE_ADVISE",
-		3: "DATABASE_STATEMENT_ADVISE",
-		5: "DATABASE_STATEMENT_SUMMARY_REPORT",
-		6: "DATABASE_CONNECT",
-		7: "DATABASE_GHOST_SYNC",
+		2: "DATABASE_STATEMENT_ADVISE",
+		3: "DATABASE_STATEMENT_SUMMARY_REPORT",
+		4: "DATABASE_CONNECT",
+		5: "DATABASE_GHOST_SYNC",
 	}
 	PlanCheckRun_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED":                  0,
 		"DATABASE_STATEMENT_FAKE_ADVISE":    1,
-		"DATABASE_STATEMENT_ADVISE":         3,
-		"DATABASE_STATEMENT_SUMMARY_REPORT": 5,
-		"DATABASE_CONNECT":                  6,
-		"DATABASE_GHOST_SYNC":               7,
+		"DATABASE_STATEMENT_ADVISE":         2,
+		"DATABASE_STATEMENT_SUMMARY_REPORT": 3,
+		"DATABASE_CONNECT":                  4,
+		"DATABASE_GHOST_SYNC":               5,
 	}
 )
 
@@ -608,13 +608,13 @@ type Plan struct {
 	// The rollout associated with the plan.
 	// Can be empty.
 	// Format: projects/{project}/rollouts/{rollout}
-	Rollout string `protobuf:"bytes,15,opt,name=rollout,proto3" json:"rollout,omitempty"`
+	Rollout string `protobuf:"bytes,4,opt,name=rollout,proto3" json:"rollout,omitempty"`
 	// The title of the plan.
-	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Title string `protobuf:"bytes,5,opt,name=title,proto3" json:"title,omitempty"`
 	// The description of the plan.
-	Description string `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	Description string `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
 	// The deployment specs for the plan.
-	Specs []*Plan_Spec `protobuf:"bytes,14,rep,name=specs,proto3" json:"specs,omitempty"`
+	Specs []*Plan_Spec `protobuf:"bytes,7,rep,name=specs,proto3" json:"specs,omitempty"`
 	// Format: users/hello@world.com
 	Creator    string                 `protobuf:"bytes,8,opt,name=creator,proto3" json:"creator,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
@@ -626,7 +626,7 @@ type Plan struct {
 	// - ERROR
 	// - RUNNING
 	PlanCheckRunStatusCount map[string]int32 `protobuf:"bytes,11,rep,name=plan_check_run_status_count,json=planCheckRunStatusCount,proto3" json:"plan_check_run_status_count,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	Deployment              *Plan_Deployment `protobuf:"bytes,13,opt,name=deployment,proto3" json:"deployment,omitempty"`
+	Deployment              *Plan_Deployment `protobuf:"bytes,12,opt,name=deployment,proto3" json:"deployment,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -1055,16 +1055,16 @@ type PlanCheckRun struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
 	Name   string              `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Type   PlanCheckRun_Type   `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.v1.PlanCheckRun_Type" json:"type,omitempty"`
-	Status PlanCheckRun_Status `protobuf:"varint,4,opt,name=status,proto3,enum=bytebase.v1.PlanCheckRun_Status" json:"status,omitempty"`
+	Type   PlanCheckRun_Type   `protobuf:"varint,2,opt,name=type,proto3,enum=bytebase.v1.PlanCheckRun_Type" json:"type,omitempty"`
+	Status PlanCheckRun_Status `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.PlanCheckRun_Status" json:"status,omitempty"`
 	// Format: instances/{instance}/databases/{database}
-	Target string `protobuf:"bytes,5,opt,name=target,proto3" json:"target,omitempty"`
+	Target string `protobuf:"bytes,4,opt,name=target,proto3" json:"target,omitempty"`
 	// Format: project/{project}/sheets/{sheet}
-	Sheet   string                 `protobuf:"bytes,6,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	Results []*PlanCheckRun_Result `protobuf:"bytes,7,rep,name=results,proto3" json:"results,omitempty"`
+	Sheet   string                 `protobuf:"bytes,5,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	Results []*PlanCheckRun_Result `protobuf:"bytes,6,rep,name=results,proto3" json:"results,omitempty"`
 	// error is set if the Status is FAILED.
-	Error         string                 `protobuf:"bytes,8,opt,name=error,proto3" json:"error,omitempty"`
-	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	Error         string                 `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
+	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1158,7 +1158,7 @@ func (x *PlanCheckRun) GetCreateTime() *timestamppb.Timestamp {
 type Plan_Spec struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// A UUID4 string that uniquely identifies the Spec.
-	Id string `protobuf:"bytes,5,opt,name=id,proto3" json:"id,omitempty"`
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Types that are valid to be assigned to Config:
 	//
 	//	*Plan_Spec_CreateDatabaseConfig
@@ -1245,15 +1245,15 @@ type isPlan_Spec_Config interface {
 }
 
 type Plan_Spec_CreateDatabaseConfig struct {
-	CreateDatabaseConfig *Plan_CreateDatabaseConfig `protobuf:"bytes,1,opt,name=create_database_config,json=createDatabaseConfig,proto3,oneof"`
+	CreateDatabaseConfig *Plan_CreateDatabaseConfig `protobuf:"bytes,2,opt,name=create_database_config,json=createDatabaseConfig,proto3,oneof"`
 }
 
 type Plan_Spec_ChangeDatabaseConfig struct {
-	ChangeDatabaseConfig *Plan_ChangeDatabaseConfig `protobuf:"bytes,2,opt,name=change_database_config,json=changeDatabaseConfig,proto3,oneof"`
+	ChangeDatabaseConfig *Plan_ChangeDatabaseConfig `protobuf:"bytes,3,opt,name=change_database_config,json=changeDatabaseConfig,proto3,oneof"`
 }
 
 type Plan_Spec_ExportDataConfig struct {
-	ExportDataConfig *Plan_ExportDataConfig `protobuf:"bytes,7,opt,name=export_data_config,json=exportDataConfig,proto3,oneof"`
+	ExportDataConfig *Plan_ExportDataConfig `protobuf:"bytes,4,opt,name=export_data_config,json=exportDataConfig,proto3,oneof"`
 }
 
 func (*Plan_Spec_CreateDatabaseConfig) isPlan_Spec_Config() {}
@@ -1378,20 +1378,20 @@ type Plan_ChangeDatabaseConfig struct {
 	// The list of targets.
 	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
 	// Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
-	Targets []string `protobuf:"bytes,10,rep,name=targets,proto3" json:"targets,omitempty"`
+	Targets []string `protobuf:"bytes,1,rep,name=targets,proto3" json:"targets,omitempty"`
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The resource name of the release.
 	// Format: projects/{project}/releases/{release}
-	Release string `protobuf:"bytes,9,opt,name=release,proto3" json:"release,omitempty"`
+	Release string `protobuf:"bytes,3,opt,name=release,proto3" json:"release,omitempty"`
 	// Type is the database change type.
-	Type       DatabaseChangeType `protobuf:"varint,3,opt,name=type,proto3,enum=bytebase.v1.DatabaseChangeType" json:"type,omitempty"`
-	GhostFlags map[string]string  `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Type       DatabaseChangeType `protobuf:"varint,4,opt,name=type,proto3,enum=bytebase.v1.DatabaseChangeType" json:"type,omitempty"`
+	GhostFlags map[string]string  `protobuf:"bytes,5,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
-	EnablePriorBackup bool `protobuf:"varint,8,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
+	EnablePriorBackup bool `protobuf:"varint,6,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	// Whether to use gh-ost for online schema migration.
-	EnableGhost   bool `protobuf:"varint,12,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
+	EnableGhost   bool `protobuf:"varint,7,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1480,7 +1480,7 @@ type Plan_ExportDataConfig struct {
 	// The list of targets.
 	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
 	// Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
-	Targets []string `protobuf:"bytes,5,rep,name=targets,proto3" json:"targets,omitempty"`
+	Targets []string `protobuf:"bytes,1,rep,name=targets,proto3" json:"targets,omitempty"`
 	// The resource name of the sheet.
 	// Format: projects/{project}/sheets/{sheet}
 	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
@@ -1776,11 +1776,10 @@ func (*PlanCheckRun_Result_SqlReviewReport_) isPlanCheckRun_Result_Report() {}
 type PlanCheckRun_Result_SqlSummaryReport struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// statement_types are the types of statements that are found in the sql.
-	StatementTypes   []string          `protobuf:"bytes,2,rep,name=statement_types,json=statementTypes,proto3" json:"statement_types,omitempty"`
-	AffectedRows     int64             `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
-	ChangedResources *ChangedResources `protobuf:"bytes,4,opt,name=changed_resources,json=changedResources,proto3" json:"changed_resources,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	StatementTypes []string `protobuf:"bytes,2,rep,name=statement_types,json=statementTypes,proto3" json:"statement_types,omitempty"`
+	AffectedRows   int64    `protobuf:"varint,3,opt,name=affected_rows,json=affectedRows,proto3" json:"affected_rows,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *PlanCheckRun_Result_SqlSummaryReport) Reset() {
@@ -1825,13 +1824,6 @@ func (x *PlanCheckRun_Result_SqlSummaryReport) GetAffectedRows() int64 {
 		return x.AffectedRows
 	}
 	return 0
-}
-
-func (x *PlanCheckRun_Result_SqlSummaryReport) GetChangedResources() *ChangedResources {
-	if x != nil {
-		return x.ChangedResources
-	}
-	return nil
 }
 
 type PlanCheckRun_Result_SqlReviewReport struct {
@@ -1891,7 +1883,7 @@ var File_v1_plan_service_proto protoreflect.FileDescriptor
 
 const file_v1_plan_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/plan_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/database_service.proto\x1a\x14v1/sql_service.proto\"?\n" +
+	"\x15v1/plan_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x14v1/sql_service.proto\"?\n" +
 	"\x0eGetPlanRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x04name\"\x84\x01\n" +
@@ -1921,15 +1913,15 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xf3\x10\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xe7\x10\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
 	"\x05issue\x18\x03 \x01(\tB\x03\xe0A\x03R\x05issue\x12\x1d\n" +
-	"\arollout\x18\x0f \x01(\tB\x03\xe0A\x03R\arollout\x12\x1e\n" +
-	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
-	"\vdescription\x18\x05 \x01(\tB\b\xbaH\x05r\x03\x18\x90NR\vdescription\x12,\n" +
-	"\x05specs\x18\x0e \x03(\v2\x16.bytebase.v1.Plan.SpecR\x05specs\x12\x1d\n" +
+	"\arollout\x18\x04 \x01(\tB\x03\xe0A\x03R\arollout\x12\x1e\n" +
+	"\x05title\x18\x05 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
+	"\vdescription\x18\x06 \x01(\tB\b\xbaH\x05r\x03\x18\x90NR\vdescription\x12,\n" +
+	"\x05specs\x18\a \x03(\v2\x16.bytebase.v1.Plan.SpecR\x05specs\x12\x1d\n" +
 	"\acreator\x18\b \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
 	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12@\n" +
@@ -1938,13 +1930,13 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"updateTime\x12q\n" +
 	"\x1bplan_check_run_status_count\x18\v \x03(\v2..bytebase.v1.Plan.PlanCheckRunStatusCountEntryB\x03\xe0A\x03R\x17planCheckRunStatusCount\x12<\n" +
 	"\n" +
-	"deployment\x18\r \x01(\v2\x1c.bytebase.v1.Plan.DeploymentR\n" +
+	"deployment\x18\f \x01(\v2\x1c.bytebase.v1.Plan.DeploymentR\n" +
 	"deployment\x1a\xb4\x02\n" +
 	"\x04Spec\x12\x0e\n" +
-	"\x02id\x18\x05 \x01(\tR\x02id\x12^\n" +
-	"\x16create_database_config\x18\x01 \x01(\v2&.bytebase.v1.Plan.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12^\n" +
-	"\x16change_database_config\x18\x02 \x01(\v2&.bytebase.v1.Plan.ChangeDatabaseConfigH\x00R\x14changeDatabaseConfig\x12R\n" +
-	"\x12export_data_config\x18\a \x01(\v2\".bytebase.v1.Plan.ExportDataConfigH\x00R\x10exportDataConfigB\b\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12^\n" +
+	"\x16create_database_config\x18\x02 \x01(\v2&.bytebase.v1.Plan.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12^\n" +
+	"\x16change_database_config\x18\x03 \x01(\v2&.bytebase.v1.Plan.ChangeDatabaseConfigH\x00R\x14changeDatabaseConfig\x12R\n" +
+	"\x12export_data_config\x18\x04 \x01(\v2\".bytebase.v1.Plan.ExportDataConfigH\x00R\x10exportDataConfigB\b\n" +
 	"\x06config\x1aJ\n" +
 	"\x1cPlanCheckRunStatusCountEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -1957,23 +1949,22 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x03\xe0A\x01R\tcollation\x12\x1d\n" +
 	"\acluster\x18\x06 \x01(\tB\x03\xe0A\x01R\acluster\x12\x19\n" +
 	"\x05owner\x18\a \x01(\tB\x03\xe0A\x01R\x05owner\x12%\n" +
-	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xa7\x03\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\x9b\x03\n" +
 	"\x14ChangeDatabaseConfig\x12\x18\n" +
-	"\atargets\x18\n" +
-	" \x03(\tR\atargets\x12\x14\n" +
+	"\atargets\x18\x01 \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x123\n" +
-	"\arelease\x18\t \x01(\tB\x19\xfaA\x16\n" +
+	"\arelease\x18\x03 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x123\n" +
-	"\x04type\x18\x03 \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeTypeR\x04type\x12W\n" +
-	"\vghost_flags\x18\a \x03(\v26.bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
+	"\x04type\x18\x04 \x01(\x0e2\x1f.bytebase.v1.DatabaseChangeTypeR\x04type\x12W\n" +
+	"\vghost_flags\x18\x05 \x03(\v26.bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
 	"ghostFlags\x12.\n" +
-	"\x13enable_prior_backup\x18\b \x01(\bR\x11enablePriorBackup\x12!\n" +
-	"\fenable_ghost\x18\f \x01(\bR\venableGhost\x1a=\n" +
+	"\x13enable_prior_backup\x18\x06 \x01(\bR\x11enablePriorBackup\x12!\n" +
+	"\fenable_ghost\x18\a \x01(\bR\venableGhost\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x05\x10\x06J\x04\b\x06\x10\a\x1a\xa3\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a\xa3\x01\n" +
 	"\x10ExportDataConfig\x12\x18\n" +
-	"\atargets\x18\x05 \x03(\tR\atargets\x12\x14\n" +
+	"\atargets\x18\x01 \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x121\n" +
 	"\x06format\x18\x03 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x1f\n" +
 	"\bpassword\x18\x04 \x01(\tH\x00R\bpassword\x88\x01\x01B\v\n" +
@@ -2005,47 +1996,45 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x06parent\x12&\n" +
 	"\x0fplan_check_runs\x18\x02 \x03(\tR\rplanCheckRuns\"\"\n" +
-	" BatchCancelPlanCheckRunsResponse\"\x8b\n" +
-	"\n" +
+	" BatchCancelPlanCheckRunsResponse\"\x9a\t\n" +
 	"\fPlanCheckRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x122\n" +
-	"\x04type\x18\x03 \x01(\x0e2\x1e.bytebase.v1.PlanCheckRun.TypeR\x04type\x128\n" +
-	"\x06status\x18\x04 \x01(\x0e2 .bytebase.v1.PlanCheckRun.StatusR\x06status\x12\x16\n" +
-	"\x06target\x18\x05 \x01(\tR\x06target\x12\x14\n" +
-	"\x05sheet\x18\x06 \x01(\tR\x05sheet\x12:\n" +
-	"\aresults\x18\a \x03(\v2 .bytebase.v1.PlanCheckRun.ResultR\aresults\x12\x14\n" +
-	"\x05error\x18\b \x01(\tR\x05error\x12@\n" +
-	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x1a\xa5\x05\n" +
+	"\x04type\x18\x02 \x01(\x0e2\x1e.bytebase.v1.PlanCheckRun.TypeR\x04type\x128\n" +
+	"\x06status\x18\x03 \x01(\x0e2 .bytebase.v1.PlanCheckRun.StatusR\x06status\x12\x16\n" +
+	"\x06target\x18\x04 \x01(\tR\x06target\x12\x14\n" +
+	"\x05sheet\x18\x05 \x01(\tR\x05sheet\x12:\n" +
+	"\aresults\x18\x06 \x03(\v2 .bytebase.v1.PlanCheckRun.ResultR\aresults\x12\x14\n" +
+	"\x05error\x18\a \x01(\tR\x05error\x12@\n" +
+	"\vcreate_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"createTime\x1a\xba\x04\n" +
 	"\x06Result\x121\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x19.bytebase.v1.Advice.LevelR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x12\n" +
 	"\x04code\x18\x04 \x01(\x05R\x04code\x12a\n" +
 	"\x12sql_summary_report\x18\x05 \x01(\v21.bytebase.v1.PlanCheckRun.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12^\n" +
-	"\x11sql_review_report\x18\x06 \x01(\v20.bytebase.v1.PlanCheckRun.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xb2\x01\n" +
+	"\x11sql_review_report\x18\x06 \x01(\v20.bytebase.v1.PlanCheckRun.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a`\n" +
 	"\x10SqlSummaryReport\x12'\n" +
 	"\x0fstatement_types\x18\x02 \x03(\tR\x0estatementTypes\x12#\n" +
-	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x12J\n" +
-	"\x11changed_resources\x18\x04 \x01(\v2\x1d.bytebase.v1.ChangedResourcesR\x10changedResourcesJ\x04\b\x01\x10\x02\x1a\xa1\x01\n" +
+	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x1a\x89\x01\n" +
 	"\x0fSqlReviewReport\x12<\n" +
 	"\x0estart_position\x18\x05 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
-	"\fend_position\x18\x06 \x01(\v2\x15.bytebase.v1.PositionR\vendPositionJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05B\b\n" +
+	"\fend_position\x18\x06 \x01(\v2\x15.bytebase.v1.PositionR\vendPositionB\b\n" +
 	"\x06report\"\xb5\x01\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\"\n" +
 	"\x1eDATABASE_STATEMENT_FAKE_ADVISE\x10\x01\x12\x1d\n" +
-	"\x19DATABASE_STATEMENT_ADVISE\x10\x03\x12%\n" +
-	"!DATABASE_STATEMENT_SUMMARY_REPORT\x10\x05\x12\x14\n" +
-	"\x10DATABASE_CONNECT\x10\x06\x12\x17\n" +
-	"\x13DATABASE_GHOST_SYNC\x10\a\"Q\n" +
+	"\x19DATABASE_STATEMENT_ADVISE\x10\x02\x12%\n" +
+	"!DATABASE_STATEMENT_SUMMARY_REPORT\x10\x03\x12\x14\n" +
+	"\x10DATABASE_CONNECT\x10\x04\x12\x17\n" +
+	"\x13DATABASE_GHOST_SYNC\x10\x05\"Q\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aRUNNING\x10\x01\x12\b\n" +
 	"\x04DONE\x10\x02\x12\n" +
 	"\n" +
 	"\x06FAILED\x10\x03\x12\f\n" +
-	"\bCANCELED\x10\x04J\x04\b\x02\x10\x032\xd2\n" +
+	"\bCANCELED\x10\x042\xd2\n" +
 	"\n" +
 	"\vPlanService\x12{\n" +
 	"\aGetPlan\x12\x1b.bytebase.v1.GetPlanRequest\x1a\x11.bytebase.v1.Plan\"@\xdaA\x04name\x8a\xea0\fbb.plans.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{name=projects/*/plans/*}\x12\x8f\x01\n" +
@@ -2109,8 +2098,7 @@ var file_v1_plan_service_proto_goTypes = []any{
 	(DatabaseChangeType)(0),                      // 31: bytebase.v1.DatabaseChangeType
 	(ExportFormat)(0),                            // 32: bytebase.v1.ExportFormat
 	(Advice_Level)(0),                            // 33: bytebase.v1.Advice.Level
-	(*ChangedResources)(nil),                     // 34: bytebase.v1.ChangedResources
-	(*Position)(nil),                             // 35: bytebase.v1.Position
+	(*Position)(nil),                             // 34: bytebase.v1.Position
 }
 var file_v1_plan_service_proto_depIdxs = []int32{
 	9,  // 0: bytebase.v1.ListPlansResponse.plans:type_name -> bytebase.v1.Plan
@@ -2139,30 +2127,29 @@ var file_v1_plan_service_proto_depIdxs = []int32{
 	33, // 23: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.Advice.Level
 	26, // 24: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
 	27, // 25: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
-	34, // 26: bytebase.v1.PlanCheckRun.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.v1.ChangedResources
-	35, // 27: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.start_position:type_name -> bytebase.v1.Position
-	35, // 28: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.end_position:type_name -> bytebase.v1.Position
-	2,  // 29: bytebase.v1.PlanService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
-	3,  // 30: bytebase.v1.PlanService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
-	5,  // 31: bytebase.v1.PlanService.SearchPlans:input_type -> bytebase.v1.SearchPlansRequest
-	7,  // 32: bytebase.v1.PlanService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
-	8,  // 33: bytebase.v1.PlanService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
-	10, // 34: bytebase.v1.PlanService.ListPlanCheckRuns:input_type -> bytebase.v1.ListPlanCheckRunsRequest
-	12, // 35: bytebase.v1.PlanService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
-	14, // 36: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:input_type -> bytebase.v1.BatchCancelPlanCheckRunsRequest
-	9,  // 37: bytebase.v1.PlanService.GetPlan:output_type -> bytebase.v1.Plan
-	4,  // 38: bytebase.v1.PlanService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
-	6,  // 39: bytebase.v1.PlanService.SearchPlans:output_type -> bytebase.v1.SearchPlansResponse
-	9,  // 40: bytebase.v1.PlanService.CreatePlan:output_type -> bytebase.v1.Plan
-	9,  // 41: bytebase.v1.PlanService.UpdatePlan:output_type -> bytebase.v1.Plan
-	11, // 42: bytebase.v1.PlanService.ListPlanCheckRuns:output_type -> bytebase.v1.ListPlanCheckRunsResponse
-	13, // 43: bytebase.v1.PlanService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
-	15, // 44: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:output_type -> bytebase.v1.BatchCancelPlanCheckRunsResponse
-	37, // [37:45] is the sub-list for method output_type
-	29, // [29:37] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	34, // 26: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.start_position:type_name -> bytebase.v1.Position
+	34, // 27: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.end_position:type_name -> bytebase.v1.Position
+	2,  // 28: bytebase.v1.PlanService.GetPlan:input_type -> bytebase.v1.GetPlanRequest
+	3,  // 29: bytebase.v1.PlanService.ListPlans:input_type -> bytebase.v1.ListPlansRequest
+	5,  // 30: bytebase.v1.PlanService.SearchPlans:input_type -> bytebase.v1.SearchPlansRequest
+	7,  // 31: bytebase.v1.PlanService.CreatePlan:input_type -> bytebase.v1.CreatePlanRequest
+	8,  // 32: bytebase.v1.PlanService.UpdatePlan:input_type -> bytebase.v1.UpdatePlanRequest
+	10, // 33: bytebase.v1.PlanService.ListPlanCheckRuns:input_type -> bytebase.v1.ListPlanCheckRunsRequest
+	12, // 34: bytebase.v1.PlanService.RunPlanChecks:input_type -> bytebase.v1.RunPlanChecksRequest
+	14, // 35: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:input_type -> bytebase.v1.BatchCancelPlanCheckRunsRequest
+	9,  // 36: bytebase.v1.PlanService.GetPlan:output_type -> bytebase.v1.Plan
+	4,  // 37: bytebase.v1.PlanService.ListPlans:output_type -> bytebase.v1.ListPlansResponse
+	6,  // 38: bytebase.v1.PlanService.SearchPlans:output_type -> bytebase.v1.SearchPlansResponse
+	9,  // 39: bytebase.v1.PlanService.CreatePlan:output_type -> bytebase.v1.Plan
+	9,  // 40: bytebase.v1.PlanService.UpdatePlan:output_type -> bytebase.v1.Plan
+	11, // 41: bytebase.v1.PlanService.ListPlanCheckRuns:output_type -> bytebase.v1.ListPlanCheckRunsResponse
+	13, // 42: bytebase.v1.PlanService.RunPlanChecks:output_type -> bytebase.v1.RunPlanChecksResponse
+	15, // 43: bytebase.v1.PlanService.BatchCancelPlanCheckRuns:output_type -> bytebase.v1.BatchCancelPlanCheckRunsResponse
+	36, // [36:44] is the sub-list for method output_type
+	28, // [28:36] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_v1_plan_service_proto_init() }
@@ -2172,7 +2159,6 @@ func file_v1_plan_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
-	file_v1_database_service_proto_init()
 	file_v1_sql_service_proto_init()
 	file_v1_plan_service_proto_msgTypes[10].OneofWrappers = []any{}
 	file_v1_plan_service_proto_msgTypes[15].OneofWrappers = []any{

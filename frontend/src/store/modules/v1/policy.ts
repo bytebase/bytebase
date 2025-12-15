@@ -20,7 +20,6 @@ import {
   PolicySchema,
   PolicyType,
   QueryDataPolicySchema,
-  RolloutPolicy_Checkers_PlanCheckEnforcement,
   RolloutPolicySchema,
   UpdatePolicyRequestSchema,
 } from "@/types/proto-es/v1/org_policy_service_pb";
@@ -295,8 +294,8 @@ const getUpdateMaskFromPolicyType = (policyType: PolicyType) => {
   switch (policyType) {
     case PolicyType.ROLLOUT_POLICY:
       return [PolicySchema.field.rolloutPolicy.name];
-    case PolicyType.MASKING_EXCEPTION:
-      return [PolicySchema.field.maskingExceptionPolicy.name];
+    case PolicyType.MASKING_EXEMPTION:
+      return [PolicySchema.field.maskingExemptionPolicy.name];
     case PolicyType.MASKING_RULE:
       return [PolicySchema.field.maskingRulePolicy.name];
     case PolicyType.DATA_QUERY:
@@ -405,13 +404,6 @@ export const getEmptyRolloutPolicy = (
       value: create(RolloutPolicySchema, {
         automatic: false,
         roles: [],
-        checkers: {
-          requiredIssueApproval: true,
-          requiredStatusChecks: {
-            planCheckEnforcement:
-              RolloutPolicy_Checkers_PlanCheckEnforcement.ERROR_ONLY,
-          },
-        },
       }),
     },
   });

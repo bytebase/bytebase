@@ -115,10 +115,6 @@
         "title": "Schema 偏差检测",
         "desc": "检测带外 schema 更改并报告差异。"
       },
-      "FEATURE_SCHEMA_TEMPLATE": {
-        "title": "Schema 模板",
-        "desc": "创建可重用的字段模板以实现一致的 schema 设计。"
-      },
       "FEATURE_ROLLOUT_POLICY": {
         "title": "发布策略",
         "desc": "控制 schema 变更任务是否需要手动发布。"

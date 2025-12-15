@@ -46,27 +46,27 @@ enum Engine {
   // OceanBase distributed database.
   OCEANBASE = 14;
   // StarRocks analytics database.
-  STARROCKS = 18;
+  STARROCKS = 15;
   // Apache Doris analytics database.
-  DORIS = 19;
+  DORIS = 16;
   // Apache Hive data warehouse.
-  HIVE = 20;
+  HIVE = 17;
   // Elasticsearch search engine.
-  ELASTICSEARCH = 21;
+  ELASTICSEARCH = 18;
   // Google BigQuery data warehouse.
-  BIGQUERY = 22;
+  BIGQUERY = 19;
   // Amazon DynamoDB NoSQL database.
-  DYNAMODB = 23;
+  DYNAMODB = 20;
   // Databricks lakehouse platform.
-  DATABRICKS = 24;
+  DATABRICKS = 21;
   // CockroachDB distributed SQL database.
-  COCKROACHDB = 25;
+  COCKROACHDB = 22;
   // Azure Cosmos DB multi-model database.
-  COSMOSDB = 26;
+  COSMOSDB = 23;
   // Trino distributed SQL query engine.
-  TRINO = 27;
+  TRINO = 24;
   // Apache Cassandra NoSQL database.
-  CASSANDRA = 28;
+  CASSANDRA = 25;
 }
 
 // Version control system type.
@@ -139,9 +139,9 @@ message Range {
 enum DatabaseChangeType {
   DATABASE_CHANGE_TYPE_UNSPECIFIED = 0;
   // Used for imperative schema migration including CREATE DATABASE.
-  MIGRATE = 2;
+  MIGRATE = 1;
   // Used for state-based declarative schema migration including CREATE DATABASE.
-  SDL = 3;
+  SDL = 2;
 }
 
 // RiskLevel is the risk level.
@@ -173,5 +173,5 @@ enum WebhookType {
   // WeCom (WeChat Work) integration.
   WECOM = 6;
   // Lark integration.
-  LARK = 8;
+  LARK = 7;
 }

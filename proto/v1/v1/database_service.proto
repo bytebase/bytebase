@@ -422,46 +422,44 @@ message Database {
     pattern: "instances/{instance}/databases/{database}"
   };
 
-  reserved 2;
-
   // The name of the database.
   // Format: instances/{instance}/databases/{database}
   // {database} is the database name in the instance.
   string name = 1;
 
   // The existence of a database.
-  State state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  State state = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The latest synchronization time.
-  google.protobuf.Timestamp successful_sync_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp successful_sync_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The project for a database.
   // Format: projects/{project}
-  string project = 5;
+  string project = 4;
 
   // The version of database schema.
-  string schema_version = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string schema_version = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The environment resource.
   // Format: environments/prod where prod is the environment resource ID.
-  optional string environment = 7 [(google.api.field_behavior) = OPTIONAL];
+  optional string environment = 6 [(google.api.field_behavior) = OPTIONAL];
 
   // The effective environment based on environment tag above and environment
   // tag on the instance. Inheritance follows
   // https://cloud.google.com/resource-manager/docs/tags/tags-overview.
-  optional string effective_environment = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  optional string effective_environment = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Labels will be used for deployment and policy control.
-  map<string, string> labels = 9;
+  map<string, string> labels = 8;
 
   // The instance resource.
-  InstanceResource instance_resource = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  InstanceResource instance_resource = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The database is available for DML prior backup.
-  bool backup_available = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool backup_available = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The schema is drifted from the source of truth.
-  bool drifted = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  bool drifted = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // DatabaseMetadata is the metadata for databases.
@@ -489,10 +487,10 @@ message DatabaseMetadata {
   repeated ExtensionMetadata extensions = 5;
 
   // The owner of the database.
-  string owner = 7;
+  string owner = 6;
 
   // The search_path is the search path of a PostgreSQL database.
-  string search_path = 8;
+  string search_path = 7;
 }
 
 // SchemaMetadata is the metadata for schemas.
@@ -535,19 +533,19 @@ message SchemaMetadata {
   string owner = 11;
 
   // The sequences is the list of sequences in a schema, sorted by name.
-  repeated SequenceMetadata sequences = 13;
+  repeated SequenceMetadata sequences = 12;
 
   // The events is the list of scheduled events in a schema.
-  repeated EventMetadata events = 14;
+  repeated EventMetadata events = 13;
 
   // The enum_types is the list of user-defined enum types in a schema.
-  repeated EnumTypeMetadata enum_types = 15;
+  repeated EnumTypeMetadata enum_types = 14;
 
   // Whether to skip this schema during schema dump operations.
-  bool skip_dump = 16;
+  bool skip_dump = 15;
 
   // The comment is the comment of a schema.
-  string comment = 17;
+  string comment = 16;
 }
 
 message EnumTypeMetadata {
@@ -634,28 +632,28 @@ message TriggerMetadata {
 
   // The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
   // TRUNCATE.
-  string event = 3;
+  string event = 2;
 
   // The timing is the timing of the trigger, such as BEFORE, AFTER.
-  string timing = 4;
+  string timing = 3;
 
   // The body is the body of the trigger.
-  string body = 5;
+  string body = 4;
 
   // The SQL mode setting for the trigger.
-  string sql_mode = 6;
+  string sql_mode = 5;
 
   // The character set used by the client creating the trigger.
-  string character_set_client = 7;
+  string character_set_client = 6;
 
   // The collation used for the connection when creating the trigger.
-  string collation_connection = 8;
+  string collation_connection = 7;
 
   // The comment describing the trigger.
-  string comment = 9;
+  string comment = 8;
 
   // Whether to skip this trigger during schema dump operations.
-  bool skip_dump = 10;
+  bool skip_dump = 9;
 }
 
 message ExternalTableMetadata {
@@ -690,54 +688,54 @@ message TableMetadata {
   string collation = 5;
 
   // The character set of table.
-  string charset = 17;
+  string charset = 6;
 
   // The row_count is the estimated number of rows of a table.
-  int64 row_count = 6;
+  int64 row_count = 7;
 
   // The data_size is the estimated data size of a table.
-  int64 data_size = 7;
+  int64 data_size = 8;
 
   // The index_size is the estimated index size of a table.
-  int64 index_size = 8;
+  int64 index_size = 9;
 
   // The data_free is the estimated free data size of a table.
-  int64 data_free = 9;
+  int64 data_free = 10;
 
   // The create_options is the create option of a table.
-  string create_options = 10;
+  string create_options = 11;
 
   // The comment is the comment of a table.
-  string comment = 11;
+  string comment = 12;
 
   // The foreign_keys is the list of foreign keys in a table.
-  repeated ForeignKeyMetadata foreign_keys = 12;
+  repeated ForeignKeyMetadata foreign_keys = 13;
 
   // The partitions is the list of partitions in a table.
-  repeated TablePartitionMetadata partitions = 15;
+  repeated TablePartitionMetadata partitions = 14;
 
   // The check_constraints is the list of check constraints in a table.
-  repeated CheckConstraintMetadata check_constraints = 16;
+  repeated CheckConstraintMetadata check_constraints = 15;
 
   // The owner of the table.
-  string owner = 18;
+  string owner = 16;
 
   // The sorting_keys is a tuple of column names or arbitrary expressions. ClickHouse specific field.
   // Reference: https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#order_by
-  repeated string sorting_keys = 19;
+  repeated string sorting_keys = 17;
 
   // The triggers is the list of triggers associated with the table.
-  repeated TriggerMetadata triggers = 20;
+  repeated TriggerMetadata triggers = 18;
 
   // Whether to skip this table during schema dump operations.
-  bool skip_dump = 21;
+  bool skip_dump = 19;
 
   // https://docs.pingcap.com/tidb/stable/information-schema-tables/
-  string sharding_info = 22;
+  string sharding_info = 20;
 
   // https://docs.pingcap.com/tidb/stable/clustered-indexes/#clustered-indexes
   // CLUSTERED or NONCLUSTERED.
-  string primary_key_type = 23;
+  string primary_key_type = 21;
 }
 
 // CheckConstraintMetadata is the metadata for check constraints.
@@ -823,16 +821,16 @@ message ColumnMetadata {
   bool has_default = 3;
 
   // The default value of column.
-  string default = 23;
+  string default = 4;
 
   // Oracle specific metadata.
   // The default_on_null is the default on null of a column.
-  bool default_on_null = 18;
+  bool default_on_null = 5;
 
   // The on_update is the on update action of a column.
   // For MySQL like databases, it's only supported for TIMESTAMP columns with
   // CURRENT_TIMESTAMP as on update value.
-  string on_update = 15;
+  string on_update = 6;
 
   // The nullable is the nullable of a column.
   bool nullable = 7;
@@ -850,9 +848,9 @@ message ColumnMetadata {
   string comment = 11;
 
   // The generation is the generation of a column.
-  GenerationMetadata generation = 16;
+  GenerationMetadata generation = 12;
 
-  bool is_identity = 19;
+  bool is_identity = 13;
 
   enum IdentityGeneration {
     IDENTITY_GENERATION_UNSPECIFIED = 0;
@@ -861,13 +859,13 @@ message ColumnMetadata {
   }
 
   // The identity_generation is for identity columns, PG only.
-  IdentityGeneration identity_generation = 17;
+  IdentityGeneration identity_generation = 14;
 
   // The identity_seed is for identity columns, MSSQL only.
-  int64 identity_seed = 20;
+  int64 identity_seed = 15;
 
   // The identity_increment is for identity columns, MSSQL only.
-  int64 identity_increment = 21;
+  int64 identity_increment = 16;
 
   // The default_constraint_name is the name of the default constraint, MSSQL only.
   // In MSSQL, default values are implemented as named constraints. When modifying or
@@ -889,7 +887,7 @@ message ColumnMetadata {
   //
   // This field is populated when syncing from the database. When empty (e.g., when parsing
   // from SQL files), the system cannot automatically drop the constraint.
-  string default_constraint_name = 22;
+  string default_constraint_name = 17;
 }
 
 message GenerationMetadata {
@@ -1230,28 +1228,28 @@ message IndexMetadata {
 
   // The key_lengths are the ordered key lengths of an index.
   // If the key length is not specified, it's -1.
-  repeated int64 key_length = 9;
+  repeated int64 key_length = 3;
 
   // The descending is the ordered descending of an index.
-  repeated bool descending = 10;
+  repeated bool descending = 4;
 
   // The type is the type of an index.
-  string type = 3;
+  string type = 5;
 
   // The unique is whether the index is unique.
-  bool unique = 4;
+  bool unique = 6;
 
   // The primary is whether the index is a primary key index.
-  bool primary = 5;
+  bool primary = 7;
 
   // The visible is whether the index is visible.
-  bool visible = 6;
+  bool visible = 8;
 
   // The comment is the comment of an index.
-  string comment = 7;
+  string comment = 9;
 
   // The definition of an index.
-  string definition = 8;
+  string definition = 10;
 
   // The schema name of the parent index.
   string parent_index_schema = 11;
@@ -1343,56 +1341,6 @@ message DatabaseSDLSchema {
   string content_type = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
-message ChangedResources {
-  repeated ChangedResourceDatabase databases = 1;
-}
-
-message ChangedResourceDatabase {
-  string name = 1;
-
-  repeated ChangedResourceSchema schemas = 2;
-}
-
-message ChangedResourceSchema {
-  string name = 1;
-
-  repeated ChangedResourceTable tables = 2;
-
-  repeated ChangedResourceView views = 3;
-
-  repeated ChangedResourceFunction functions = 4;
-
-  repeated ChangedResourceProcedure procedures = 5;
-}
-
-message ChangedResourceTable {
-  string name = 1;
-
-  // The ranges of sub-strings correspond to the statements on the sheet.
-  repeated Range ranges = 3;
-}
-
-message ChangedResourceView {
-  string name = 1;
-
-  // The ranges of sub-strings correspond to the statements on the sheet.
-  repeated Range ranges = 2;
-}
-
-message ChangedResourceFunction {
-  string name = 1;
-
-  // The ranges of sub-strings correspond to the statements on the sheet.
-  repeated Range ranges = 2;
-}
-
-message ChangedResourceProcedure {
-  string name = 1;
-
-  // The ranges of sub-strings correspond to the statements on the sheet.
-  repeated Range ranges = 2;
-}
-
 enum ChangelogView {
   // The default / unset value.
   // The API will default to the BASIC view.
@@ -1453,7 +1401,7 @@ message Changelog {
   // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
   string name = 1;
 
-  google.protobuf.Timestamp create_time = 3;
+  google.protobuf.Timestamp create_time = 2;
 
   enum Status {
     STATUS_UNSPECIFIED = 0;
@@ -1461,31 +1409,29 @@ message Changelog {
     DONE = 2;
     FAILED = 3;
   }
-  Status status = 4;
+  Status status = 3;
 
   // The statement is used for preview purpose.
-  string statement = 5;
-  int64 statement_size = 6;
+  string statement = 4;
+  int64 statement_size = 5;
   // The name of the sheet resource.
   // Format: projects/{project}/sheets/{sheet}
-  string statement_sheet = 7;
-  string schema = 8;
-  int64 schema_size = 9;
-  string prev_schema = 10;
-  int64 prev_schema_size = 11;
+  string statement_sheet = 6;
+  string schema = 7;
+  int64 schema_size = 8;
+  string prev_schema = 9;
+  int64 prev_schema_size = 10;
 
   // Format: projects/{project}/issues/{issue}
-  string issue = 12;
+  string issue = 11;
   // Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-  string task_run = 13;
+  string task_run = 12;
 
   // Could be empty
-  string version = 14;
+  string version = 13;
   // Could be empty
   // Or present but not found if deleted
-  string revision = 15;
-
-  ChangedResources changed_resources = 16;
+  string revision = 14;
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
@@ -1493,7 +1439,7 @@ message Changelog {
     MIGRATE = 2;
     SDL = 3;
   }
-  Type type = 17;
+  Type type = 16;
 }
 
 message GetSchemaStringRequest {

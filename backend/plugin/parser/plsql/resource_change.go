@@ -75,8 +75,7 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_table(ctx *parser.Crea
 		schema,
 		"",
 		&storepb.ChangedResourceTable{
-			Name:   tableName,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+			Name: tableName,
 		},
 		false)
 }
@@ -102,8 +101,7 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_table(ctx *parser.Drop_t
 		schema,
 		"",
 		&storepb.ChangedResourceTable{
-			Name:   table,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+			Name: table,
 		},
 		true)
 }
@@ -129,8 +127,7 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_table(ctx *parser.Alter
 		schema,
 		"",
 		&storepb.ChangedResourceTable{
-			Name:   table,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+			Name: table,
 		},
 		true)
 }
@@ -157,8 +154,7 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_table_properties(ctx *p
 		schema,
 		"",
 		&storepb.ChangedResourceTable{
-			Name:   table,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+			Name: table,
 		},
 		false)
 }
@@ -185,8 +181,7 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_index(ctx *parser.Crea
 		schema,
 		"",
 		&storepb.ChangedResourceTable{
-			Name:   table,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+			Name: table,
 		},
 		false)
 }
@@ -211,217 +206,9 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_index(ctx *parser.Drop_i
 		schema,
 		"",
 		&storepb.ChangedResourceTable{
-			Name:   foundTable,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+			Name: foundTable,
 		},
 		false)
-}
-
-// EnterCreate_view is called when production create_view is entered.
-func (l *plsqlChangedResourceExtractListener) EnterCreate_view(ctx *parser.Create_viewContext) {
-	var schema, view string
-	if ctx.Schema_name() != nil {
-		schema = NormalizeIdentifierContext(ctx.Schema_name().Identifier())
-	}
-	if len(ctx.AllId_expression()) > 0 {
-		view = NormalizeIDExpression(ctx.AllId_expression()[0])
-	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	l.changedResources.AddView(
-		schema,
-		"",
-		&storepb.ChangedResourceView{
-			Name:   view,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
-		},
-	)
-}
-
-func (l *plsqlChangedResourceExtractListener) EnterDrop_view(ctx *parser.Drop_viewContext) {
-	var schema, view string
-	tableViewName := ctx.Tableview_name()
-	if tableViewName.Id_expression() == nil {
-		view = NormalizeIdentifierContext(tableViewName.Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(tableViewName.Identifier())
-		view = NormalizeIDExpression(tableViewName.Id_expression())
-	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	l.changedResources.AddView(
-		schema,
-		"",
-		&storepb.ChangedResourceView{
-			Name:   view,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
-		},
-	)
-}
-
-func (l *plsqlChangedResourceExtractListener) EnterAlter_view(ctx *parser.Alter_viewContext) {
-	var schema, view string
-	tableViewName := ctx.Tableview_name()
-	if tableViewName.Id_expression() == nil {
-		view = NormalizeIdentifierContext(tableViewName.Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(tableViewName.Identifier())
-		view = NormalizeIDExpression(tableViewName.Id_expression())
-	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	l.changedResources.AddView(
-		schema,
-		"",
-		&storepb.ChangedResourceView{
-			Name:   view,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
-		},
-	)
-}
-
-func (l *plsqlChangedResourceExtractListener) EnterCreate_procedure_body(ctx *parser.Create_procedure_bodyContext) {
-	var schema, procedure string
-	procedureName := ctx.Procedure_name()
-	if procedureName.Id_expression() == nil {
-		procedure = NormalizeIdentifierContext(procedureName.Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(procedureName.Identifier())
-		procedure = NormalizeIDExpression(procedureName.Id_expression())
-	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	l.changedResources.AddProcedure(
-		schema,
-		"",
-		&storepb.ChangedResourceProcedure{
-			Name:   procedure,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
-		},
-	)
-}
-
-func (l *plsqlChangedResourceExtractListener) EnterDrop_procedure(ctx *parser.Drop_procedureContext) {
-	var schema, procedure string
-	procedureName := ctx.Procedure_name()
-	if procedureName.Id_expression() == nil {
-		procedure = NormalizeIdentifierContext(procedureName.Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(procedureName.Identifier())
-		procedure = NormalizeIDExpression(procedureName.Id_expression())
-	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	l.changedResources.AddProcedure(
-		schema,
-		"",
-		&storepb.ChangedResourceProcedure{
-			Name:   procedure,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
-		},
-	)
-}
-
-func (l *plsqlChangedResourceExtractListener) EnterAlter_procedure(ctx *parser.Alter_procedureContext) {
-	var schema, procedure string
-	procedureName := ctx.Procedure_name()
-	if procedureName.Id_expression() == nil {
-		procedure = NormalizeIdentifierContext(procedureName.Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(procedureName.Identifier())
-		procedure = NormalizeIDExpression(procedureName.Id_expression())
-	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	l.changedResources.AddProcedure(
-		schema,
-		"",
-		&storepb.ChangedResourceProcedure{
-			Name:   procedure,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
-		},
-	)
-}
-
-func (l *plsqlChangedResourceExtractListener) EnterCreate_function_body(ctx *parser.Create_function_bodyContext) {
-	var schema, function string
-	functionName := ctx.Function_name()
-	if functionName.Id_expression() == nil {
-		function = NormalizeIdentifierContext(functionName.Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(functionName.Identifier())
-		function = NormalizeIDExpression(functionName.Id_expression())
-	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	l.changedResources.AddFunction(
-		schema,
-		"",
-		&storepb.ChangedResourceFunction{
-			Name:   function,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
-		},
-	)
-}
-
-func (l *plsqlChangedResourceExtractListener) EnterDrop_function(ctx *parser.Drop_functionContext) {
-	var schema, function string
-	functionName := ctx.Function_name()
-	if functionName.Id_expression() == nil {
-		function = NormalizeIdentifierContext(functionName.Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(functionName.Identifier())
-		function = NormalizeIDExpression(functionName.Id_expression())
-	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	l.changedResources.AddFunction(
-		schema,
-		"",
-		&storepb.ChangedResourceFunction{
-			Name:   function,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
-		},
-	)
-}
-
-func (l *plsqlChangedResourceExtractListener) EnterAlter_function(ctx *parser.Alter_functionContext) {
-	var schema, function string
-	functionName := ctx.Function_name()
-	if functionName.Id_expression() == nil {
-		function = NormalizeIdentifierContext(functionName.Identifier())
-	} else {
-		schema = NormalizeIdentifierContext(functionName.Identifier())
-		function = NormalizeIDExpression(functionName.Id_expression())
-	}
-	if schema == "" {
-		schema = l.currentSchema
-	}
-
-	l.changedResources.AddFunction(
-		schema,
-		"",
-		&storepb.ChangedResourceFunction{
-			Name:   function,
-			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
-		},
-	)
 }
 
 func (l *plsqlChangedResourceExtractListener) EnterInsert_statement(ctx *parser.Insert_statementContext) {
@@ -452,8 +239,7 @@ func (l *plsqlChangedResourceExtractListener) EnterInsert_statement(ctx *parser.
 			resource.Database,
 			"",
 			&storepb.ChangedResourceTable{
-				Name:   resource.Table,
-				Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+				Name: resource.Table,
 			},
 			false,
 		)
@@ -480,8 +266,7 @@ func (l *plsqlChangedResourceExtractListener) EnterUpdate_statement(ctx *parser.
 			resource.Database,
 			"",
 			&storepb.ChangedResourceTable{
-				Name:   resource.Table,
-				Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+				Name: resource.Table,
 			},
 			false,
 		)
@@ -500,8 +285,7 @@ func (l *plsqlChangedResourceExtractListener) EnterDelete_statement(ctx *parser.
 			resource.Database,
 			"",
 			&storepb.ChangedResourceTable{
-				Name:   resource.Table,
-				Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+				Name: resource.Table,
 			},
 			false,
 		)

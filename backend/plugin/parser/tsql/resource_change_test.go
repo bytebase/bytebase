@@ -23,13 +23,6 @@ func TestExtractChangedResources(t *testing.T) {
 		"dbo",
 		&storepb.ChangedResourceTable{
 			Name: "t1",
-			Ranges: []*storepb.Range{
-				{Start: 0, End: 25},
-				{Start: 27, End: 41},
-				{Start: 43, End: 71},
-				{Start: 73, End: 109},
-				{Start: 111, End: 132},
-			},
 		},
 		true,
 	)

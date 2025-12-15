@@ -115,10 +115,6 @@
         "title": "Detección de desviación de esquema",
         "desc": "Detecte cambios de esquema fuera de banda e informe discrepancias."
       },
-      "FEATURE_SCHEMA_TEMPLATE": {
-        "title": "Plantilla de esquema",
-        "desc": "Cree plantillas de campos reutilizables para un diseño de esquema consistente."
-      },
       "FEATURE_ROLLOUT_POLICY": {
         "title": "Política de despliegue",
         "desc": "Controle si la tarea de cambio de esquema requiere despliegue manual."

@@ -419,15 +419,15 @@ type AdminExecuteRequest struct {
 	// Format: instances/{instance}/databases/{databaseName}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The SQL statement to execute.
-	Statement string `protobuf:"bytes,3,opt,name=statement,proto3" json:"statement,omitempty"`
+	Statement string `protobuf:"bytes,2,opt,name=statement,proto3" json:"statement,omitempty"`
 	// The maximum number of rows to return.
-	Limit int32 `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit int32 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 	// The default schema to execute the statement. Equals to the current schema
 	// in Oracle and search path in Postgres.
-	Schema *string `protobuf:"bytes,6,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
+	Schema *string `protobuf:"bytes,4,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
 	// Container is the container name to execute the query against, used for
 	// CosmosDB only.
-	Container     *string `protobuf:"bytes,7,opt,name=container,proto3,oneof" json:"container,omitempty"`
+	Container     *string `protobuf:"bytes,5,opt,name=container,proto3,oneof" json:"container,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -548,23 +548,23 @@ type QueryRequest struct {
 	// Format: instances/{instance}/databases/{databaseName}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The SQL statement to execute.
-	Statement string `protobuf:"bytes,3,opt,name=statement,proto3" json:"statement,omitempty"`
+	Statement string `protobuf:"bytes,2,opt,name=statement,proto3" json:"statement,omitempty"`
 	// The maximum number of rows to return.
-	Limit int32 `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit int32 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 	// The id of data source.
 	// It is used for querying admin data source even if the instance has
 	// read-only data sources. Or it can be used to query a specific read-only
 	// data source.
-	DataSourceId string `protobuf:"bytes,6,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
+	DataSourceId string `protobuf:"bytes,4,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
 	// Explain the statement.
-	Explain bool `protobuf:"varint,7,opt,name=explain,proto3" json:"explain,omitempty"`
+	Explain bool `protobuf:"varint,5,opt,name=explain,proto3" json:"explain,omitempty"`
 	// The default schema to search objects. Equals to the current schema in
 	// Oracle and search path in Postgres.
-	Schema      *string      `protobuf:"bytes,8,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
-	QueryOption *QueryOption `protobuf:"bytes,9,opt,name=query_option,json=queryOption,proto3" json:"query_option,omitempty"`
+	Schema      *string      `protobuf:"bytes,6,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
+	QueryOption *QueryOption `protobuf:"bytes,7,opt,name=query_option,json=queryOption,proto3" json:"query_option,omitempty"`
 	// Container is the container name to execute the query against, used for
 	// CosmosDB only.
-	Container     *string `protobuf:"bytes,10,opt,name=container,proto3,oneof" json:"container,omitempty"`
+	Container     *string `protobuf:"bytes,8,opt,name=container,proto3,oneof" json:"container,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -761,13 +761,13 @@ type QueryResult struct {
 	ColumnTypeNames []string `protobuf:"bytes,2,rep,name=column_type_names,json=columnTypeNames,proto3" json:"column_type_names,omitempty"`
 	// Rows of the query result.
 	Rows      []*QueryRow `protobuf:"bytes,3,rep,name=rows,proto3" json:"rows,omitempty"`
-	RowsCount int64       `protobuf:"varint,10,opt,name=rows_count,json=rowsCount,proto3" json:"rows_count,omitempty"`
+	RowsCount int64       `protobuf:"varint,4,opt,name=rows_count,json=rowsCount,proto3" json:"rows_count,omitempty"`
 	// The error message if the query failed.
-	Error string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	Error string `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
 	// The time it takes to execute the query.
-	Latency *durationpb.Duration `protobuf:"bytes,7,opt,name=latency,proto3" json:"latency,omitempty"`
+	Latency *durationpb.Duration `protobuf:"bytes,6,opt,name=latency,proto3" json:"latency,omitempty"`
 	// The query statement for the result.
-	Statement string `protobuf:"bytes,8,opt,name=statement,proto3" json:"statement,omitempty"`
+	Statement string `protobuf:"bytes,7,opt,name=statement,proto3" json:"statement,omitempty"`
 	// Types that are valid to be assigned to DetailedError:
 	//
 	//	*QueryResult_PostgresError_
@@ -776,9 +776,9 @@ type QueryResult struct {
 	DetailedError isQueryResult_DetailedError `protobuf_oneof:"detailed_error"`
 	// Informational or debug messages returned by the database engine during query execution.
 	// Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
-	Messages []*QueryResult_Message `protobuf:"bytes,12,rep,name=messages,proto3" json:"messages,omitempty"`
+	Messages []*QueryResult_Message `protobuf:"bytes,11,rep,name=messages,proto3" json:"messages,omitempty"`
 	// Masking reasons for each column (empty for non-masked columns).
-	Masked        []*MaskingReason `protobuf:"bytes,4,rep,name=masked,proto3" json:"masked,omitempty"`
+	Masked        []*MaskingReason `protobuf:"bytes,12,rep,name=masked,proto3" json:"masked,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -915,15 +915,15 @@ type isQueryResult_DetailedError interface {
 }
 
 type QueryResult_PostgresError_ struct {
-	PostgresError *QueryResult_PostgresError `protobuf:"bytes,9,opt,name=postgres_error,json=postgresError,proto3,oneof"`
+	PostgresError *QueryResult_PostgresError `protobuf:"bytes,8,opt,name=postgres_error,json=postgresError,proto3,oneof"`
 }
 
 type QueryResult_SyntaxError_ struct {
-	SyntaxError *QueryResult_SyntaxError `protobuf:"bytes,13,opt,name=syntax_error,json=syntaxError,proto3,oneof"`
+	SyntaxError *QueryResult_SyntaxError `protobuf:"bytes,9,opt,name=syntax_error,json=syntaxError,proto3,oneof"`
 }
 
 type QueryResult_PermissionDenied_ struct {
-	PermissionDenied *QueryResult_PermissionDenied `protobuf:"bytes,14,opt,name=permission_denied,json=permissionDenied,proto3,oneof"`
+	PermissionDenied *QueryResult_PermissionDenied `protobuf:"bytes,10,opt,name=permission_denied,json=permissionDenied,proto3,oneof"`
 }
 
 func (*QueryResult_PostgresError_) isQueryResult_DetailedError() {}
@@ -1353,10 +1353,10 @@ type Advice struct {
 	Content string `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
 	// The start_position is inclusive and the end_position is exclusive.
 	// TODO: use range instead
-	StartPosition *Position `protobuf:"bytes,8,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
-	EndPosition   *Position `protobuf:"bytes,9,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
+	StartPosition *Position `protobuf:"bytes,5,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
+	EndPosition   *Position `protobuf:"bytes,6,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
 	// The type of linting rule that generated this advice.
-	RuleType      Advice_RuleType `protobuf:"varint,10,opt,name=rule_type,json=ruleType,proto3,enum=bytebase.v1.Advice_RuleType" json:"rule_type,omitempty"`
+	RuleType      Advice_RuleType `protobuf:"varint,7,opt,name=rule_type,json=ruleType,proto3,enum=bytebase.v1.Advice_RuleType" json:"rule_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1449,24 +1449,24 @@ type ExportRequest struct {
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The SQL statement to execute.
-	Statement string `protobuf:"bytes,3,opt,name=statement,proto3" json:"statement,omitempty"`
+	Statement string `protobuf:"bytes,2,opt,name=statement,proto3" json:"statement,omitempty"`
 	// The maximum number of rows to return.
-	Limit int32 `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	Limit int32 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 	// The export format.
-	Format ExportFormat `protobuf:"varint,5,opt,name=format,proto3,enum=bytebase.v1.ExportFormat" json:"format,omitempty"`
+	Format ExportFormat `protobuf:"varint,4,opt,name=format,proto3,enum=bytebase.v1.ExportFormat" json:"format,omitempty"`
 	// The admin is used for workspace owner and DBA for exporting data from SQL
 	// Editor Admin mode. The exported data is not masked.
-	Admin bool `protobuf:"varint,6,opt,name=admin,proto3" json:"admin,omitempty"`
+	Admin bool `protobuf:"varint,5,opt,name=admin,proto3" json:"admin,omitempty"`
 	// The zip password provide by users.
-	Password string `protobuf:"bytes,7,opt,name=password,proto3" json:"password,omitempty"`
+	Password string `protobuf:"bytes,6,opt,name=password,proto3" json:"password,omitempty"`
 	// The id of data source.
 	// It is used for querying admin data source even if the instance has
 	// read-only data sources. Or it can be used to query a specific read-only
 	// data source.
-	DataSourceId string `protobuf:"bytes,8,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
+	DataSourceId string `protobuf:"bytes,7,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
 	// The default schema to search objects. Equals to the current schema in
 	// Oracle and search path in Postgres.
-	Schema        *string `protobuf:"bytes,9,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
+	Schema        *string `protobuf:"bytes,8,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1608,8 +1608,6 @@ type DiffMetadataRequest struct {
 	SourceMetadata *DatabaseMetadata `protobuf:"bytes,1,opt,name=source_metadata,json=sourceMetadata,proto3" json:"source_metadata,omitempty"`
 	// The metadata of the target schema.
 	TargetMetadata *DatabaseMetadata `protobuf:"bytes,2,opt,name=target_metadata,json=targetMetadata,proto3" json:"target_metadata,omitempty"`
-	SourceCatalog  *DatabaseCatalog  `protobuf:"bytes,5,opt,name=source_catalog,json=sourceCatalog,proto3" json:"source_catalog,omitempty"`
-	TargetCatalog  *DatabaseCatalog  `protobuf:"bytes,6,opt,name=target_catalog,json=targetCatalog,proto3" json:"target_catalog,omitempty"`
 	// The database engine of the schema.
 	Engine        Engine `protobuf:"varint,3,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1656,20 +1654,6 @@ func (x *DiffMetadataRequest) GetSourceMetadata() *DatabaseMetadata {
 func (x *DiffMetadataRequest) GetTargetMetadata() *DatabaseMetadata {
 	if x != nil {
 		return x.TargetMetadata
-	}
-	return nil
-}
-
-func (x *DiffMetadataRequest) GetSourceCatalog() *DatabaseCatalog {
-	if x != nil {
-		return x.SourceCatalog
-	}
-	return nil
-}
-
-func (x *DiffMetadataRequest) GetTargetCatalog() *DatabaseCatalog {
-	if x != nil {
-		return x.TargetCatalog
 	}
 	return nil
 }
@@ -2710,35 +2694,34 @@ var File_v1_sql_service_proto protoreflect.FileDescriptor
 
 const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
-	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a!v1/database_catalog_service.proto\x1a\x19v1/database_service.proto\"\xdb\x01\n" +
+	"\x14v1/sql_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x19v1/database_service.proto\"\xd5\x01\n" +
 	"\x13AdminExecuteRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
-	"\tstatement\x18\x03 \x01(\tR\tstatement\x12\x14\n" +
-	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12\x1b\n" +
-	"\x06schema\x18\x06 \x01(\tH\x00R\x06schema\x88\x01\x01\x12!\n" +
-	"\tcontainer\x18\a \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
+	"\tstatement\x18\x02 \x01(\tR\tstatement\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x1b\n" +
+	"\x06schema\x18\x04 \x01(\tH\x00R\x06schema\x88\x01\x01\x12!\n" +
+	"\tcontainer\x18\x05 \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
 	"\a_schemaB\f\n" +
 	"\n" +
-	"_containerJ\x04\b\x02\x10\x03\"J\n" +
+	"_container\"J\n" +
 	"\x14AdminExecuteResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xd6\x02\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xd0\x02\n" +
 	"\fQueryRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
-	"\tstatement\x18\x03 \x01(\tR\tstatement\x12\x14\n" +
-	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12)\n" +
-	"\x0edata_source_id\x18\x06 \x01(\tB\x03\xe0A\x02R\fdataSourceId\x12\x18\n" +
-	"\aexplain\x18\a \x01(\bR\aexplain\x12\x1b\n" +
-	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01\x12;\n" +
-	"\fquery_option\x18\t \x01(\v2\x18.bytebase.v1.QueryOptionR\vqueryOption\x12!\n" +
-	"\tcontainer\x18\n" +
-	" \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
+	"\tstatement\x18\x02 \x01(\tR\tstatement\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12)\n" +
+	"\x0edata_source_id\x18\x04 \x01(\tB\x03\xe0A\x02R\fdataSourceId\x12\x18\n" +
+	"\aexplain\x18\x05 \x01(\bR\aexplain\x12\x1b\n" +
+	"\x06schema\x18\x06 \x01(\tH\x00R\x06schema\x88\x01\x01\x12;\n" +
+	"\fquery_option\x18\a \x01(\v2\x18.bytebase.v1.QueryOptionR\vqueryOption\x12!\n" +
+	"\tcontainer\x18\b \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
 	"\a_schemaB\f\n" +
 	"\n" +
-	"_containerJ\x04\b\x02\x10\x03\"I\n" +
+	"_container\"C\n" +
 	"\rQueryResponse\x122\n" +
-	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresultsJ\x04\b\x02\x10\x03\"\xa1\x03\n" +
+	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\"\xa1\x03\n" +
 	"\vQueryOption\x12^\n" +
 	"\x15redis_run_commands_on\x18\x01 \x01(\x0e2+.bytebase.v1.QueryOption.RedisRunCommandsOnR\x12redisRunCommandsOn\x12]\n" +
 	"\x14mssql_explain_format\x18\x02 \x01(\x0e2+.bytebase.v1.QueryOption.MSSQLExplainFormatR\x12mssqlExplainFormat\"[\n" +
@@ -2749,22 +2732,22 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x12MSSQLExplainFormat\x12$\n" +
 	" MSSQL_EXPLAIN_FORMAT_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18MSSQL_EXPLAIN_FORMAT_ALL\x10\x01\x12\x1c\n" +
-	"\x18MSSQL_EXPLAIN_FORMAT_XML\x10\x02\"\x85\r\n" +
+	"\x18MSSQL_EXPLAIN_FORMAT_XML\x10\x02\"\xff\f\n" +
 	"\vQueryResult\x12!\n" +
 	"\fcolumn_names\x18\x01 \x03(\tR\vcolumnNames\x12*\n" +
 	"\x11column_type_names\x18\x02 \x03(\tR\x0fcolumnTypeNames\x12)\n" +
 	"\x04rows\x18\x03 \x03(\v2\x15.bytebase.v1.QueryRowR\x04rows\x12\x1d\n" +
 	"\n" +
-	"rows_count\x18\n" +
-	" \x01(\x03R\trowsCount\x12\x14\n" +
-	"\x05error\x18\x06 \x01(\tR\x05error\x123\n" +
-	"\alatency\x18\a \x01(\v2\x19.google.protobuf.DurationR\alatency\x12\x1c\n" +
-	"\tstatement\x18\b \x01(\tR\tstatement\x12O\n" +
-	"\x0epostgres_error\x18\t \x01(\v2&.bytebase.v1.QueryResult.PostgresErrorH\x00R\rpostgresError\x12I\n" +
-	"\fsyntax_error\x18\r \x01(\v2$.bytebase.v1.QueryResult.SyntaxErrorH\x00R\vsyntaxError\x12X\n" +
-	"\x11permission_denied\x18\x0e \x01(\v2).bytebase.v1.QueryResult.PermissionDeniedH\x00R\x10permissionDenied\x12<\n" +
-	"\bmessages\x18\f \x03(\v2 .bytebase.v1.QueryResult.MessageR\bmessages\x122\n" +
-	"\x06masked\x18\x04 \x03(\v2\x1a.bytebase.v1.MaskingReasonR\x06masked\x1a\xfd\x03\n" +
+	"rows_count\x18\x04 \x01(\x03R\trowsCount\x12\x14\n" +
+	"\x05error\x18\x05 \x01(\tR\x05error\x123\n" +
+	"\alatency\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\alatency\x12\x1c\n" +
+	"\tstatement\x18\a \x01(\tR\tstatement\x12O\n" +
+	"\x0epostgres_error\x18\b \x01(\v2&.bytebase.v1.QueryResult.PostgresErrorH\x00R\rpostgresError\x12I\n" +
+	"\fsyntax_error\x18\t \x01(\v2$.bytebase.v1.QueryResult.SyntaxErrorH\x00R\vsyntaxError\x12X\n" +
+	"\x11permission_denied\x18\n" +
+	" \x01(\v2).bytebase.v1.QueryResult.PermissionDeniedH\x00R\x10permissionDenied\x12<\n" +
+	"\bmessages\x18\v \x03(\v2 .bytebase.v1.QueryResult.MessageR\bmessages\x122\n" +
+	"\x06masked\x18\f \x03(\v2\x1a.bytebase.v1.MaskingReasonR\x06masked\x1a\xfd\x03\n" +
 	"\rPostgresError\x12\x1a\n" +
 	"\bseverity\x18\x01 \x01(\tR\bseverity\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\tR\x04code\x12\x18\n" +
@@ -2809,7 +2792,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06NOTICE\x10\x05\x12\r\n" +
 	"\tEXCEPTION\x10\x06B\x10\n" +
-	"\x0edetailed_errorJ\x04\b\v\x10\f\"\xaa\x02\n" +
+	"\x0edetailed_error\"\xaa\x02\n" +
 	"\rMaskingReason\x12(\n" +
 	"\x10semantic_type_id\x18\x01 \x01(\tR\x0esemanticTypeId\x12.\n" +
 	"\x13semantic_type_title\x18\x02 \x01(\tR\x11semanticTypeTitle\x12&\n" +
@@ -2850,16 +2833,15 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x04zone\x18\x02 \x01(\tR\x04zone\x12\x16\n" +
 	"\x06offset\x18\x03 \x01(\x05R\x06offset\x12\x1a\n" +
 	"\baccuracy\x18\x04 \x01(\x05R\baccuracyB\x06\n" +
-	"\x04kind\"\xd9\x03\n" +
+	"\x04kind\"\xc7\x03\n" +
 	"\x06Advice\x121\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x19.bytebase.v1.Advice.LevelR\x06status\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\x05R\x04code\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x04 \x01(\tR\acontent\x12<\n" +
-	"\x0estart_position\x18\b \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
-	"\fend_position\x18\t \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\x129\n" +
-	"\trule_type\x18\n" +
-	" \x01(\x0e2\x1c.bytebase.v1.Advice.RuleTypeR\bruleType\"J\n" +
+	"\x0estart_position\x18\x05 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
+	"\fend_position\x18\x06 \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\x129\n" +
+	"\trule_type\x18\a \x01(\x0e2\x1c.bytebase.v1.Advice.RuleTypeR\bruleType\"J\n" +
 	"\x05Level\x12\x1c\n" +
 	"\x18ADVICE_LEVEL_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aSUCCESS\x10\x01\x12\v\n" +
@@ -2869,25 +2851,23 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x15RULE_TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fPARSER_BASED\x10\x01\x12\x0e\n" +
 	"\n" +
-	"AI_POWERED\x10\x02J\x04\b\a\x10\bJ\x04\b\x05\x10\x06J\x04\b\x06\x10\a\"\xaf\x02\n" +
+	"AI_POWERED\x10\x02\"\xa9\x02\n" +
 	"\rExportRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
-	"\tstatement\x18\x03 \x01(\tR\tstatement\x12\x14\n" +
-	"\x05limit\x18\x04 \x01(\x05R\x05limit\x121\n" +
-	"\x06format\x18\x05 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x14\n" +
-	"\x05admin\x18\x06 \x01(\bR\x05admin\x12\x1a\n" +
-	"\bpassword\x18\a \x01(\tR\bpassword\x12$\n" +
-	"\x0edata_source_id\x18\b \x01(\tR\fdataSourceId\x12\x1b\n" +
-	"\x06schema\x18\t \x01(\tH\x00R\x06schema\x88\x01\x01B\t\n" +
-	"\a_schemaJ\x04\b\x02\x10\x03\"*\n" +
+	"\tstatement\x18\x02 \x01(\tR\tstatement\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\x121\n" +
+	"\x06format\x18\x04 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x14\n" +
+	"\x05admin\x18\x05 \x01(\bR\x05admin\x12\x1a\n" +
+	"\bpassword\x18\x06 \x01(\tR\bpassword\x12$\n" +
+	"\x0edata_source_id\x18\a \x01(\tR\fdataSourceId\x12\x1b\n" +
+	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01B\t\n" +
+	"\a_schema\"*\n" +
 	"\x0eExportResponse\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\fR\acontent\"\xe6\x02\n" +
+	"\acontent\x18\x01 \x01(\fR\acontent\"\xdc\x01\n" +
 	"\x13DiffMetadataRequest\x12K\n" +
 	"\x0fsource_metadata\x18\x01 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0esourceMetadata\x12K\n" +
-	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0etargetMetadata\x12C\n" +
-	"\x0esource_catalog\x18\x05 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogR\rsourceCatalog\x12C\n" +
-	"\x0etarget_catalog\x18\x06 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogR\rtargetCatalog\x12+\n" +
+	"\x0ftarget_metadata\x18\x02 \x01(\v2\x1d.bytebase.v1.DatabaseMetadataB\x03\xe0A\x02R\x0etargetMetadata\x12+\n" +
 	"\x06engine\x18\x03 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\"*\n" +
 	"\x14DiffMetadataResponse\x12\x12\n" +
 	"\x04diff\x18\x01 \x01(\tR\x04diff\"q\n" +
@@ -2997,9 +2977,8 @@ var file_v1_sql_service_proto_goTypes = []any{
 	(*Position)(nil),                                    // 39: bytebase.v1.Position
 	(ExportFormat)(0),                                   // 40: bytebase.v1.ExportFormat
 	(*DatabaseMetadata)(nil),                            // 41: bytebase.v1.DatabaseMetadata
-	(*DatabaseCatalog)(nil),                             // 42: bytebase.v1.DatabaseCatalog
-	(Engine)(0),                                         // 43: bytebase.v1.Engine
-	(*timestamppb.Timestamp)(nil),                       // 44: google.protobuf.Timestamp
+	(Engine)(0),                                         // 42: bytebase.v1.Engine
+	(*timestamppb.Timestamp)(nil),                       // 43: google.protobuf.Timestamp
 }
 var file_v1_sql_service_proto_depIdxs = []int32{
 	12, // 0: bytebase.v1.AdminExecuteResponse.results:type_name -> bytebase.v1.QueryResult
@@ -3026,39 +3005,37 @@ var file_v1_sql_service_proto_depIdxs = []int32{
 	40, // 21: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportFormat
 	41, // 22: bytebase.v1.DiffMetadataRequest.source_metadata:type_name -> bytebase.v1.DatabaseMetadata
 	41, // 23: bytebase.v1.DiffMetadataRequest.target_metadata:type_name -> bytebase.v1.DatabaseMetadata
-	42, // 24: bytebase.v1.DiffMetadataRequest.source_catalog:type_name -> bytebase.v1.DatabaseCatalog
-	42, // 25: bytebase.v1.DiffMetadataRequest.target_catalog:type_name -> bytebase.v1.DatabaseCatalog
-	43, // 26: bytebase.v1.DiffMetadataRequest.engine:type_name -> bytebase.v1.Engine
-	23, // 27: bytebase.v1.SearchQueryHistoriesResponse.query_histories:type_name -> bytebase.v1.QueryHistory
-	44, // 28: bytebase.v1.QueryHistory.create_time:type_name -> google.protobuf.Timestamp
-	36, // 29: bytebase.v1.QueryHistory.duration:type_name -> google.protobuf.Duration
-	6,  // 30: bytebase.v1.QueryHistory.type:type_name -> bytebase.v1.QueryHistory.Type
-	32, // 31: bytebase.v1.AICompletionRequest.messages:type_name -> bytebase.v1.AICompletionRequest.Message
-	33, // 32: bytebase.v1.AICompletionResponse.candidates:type_name -> bytebase.v1.AICompletionResponse.Candidate
-	39, // 33: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
-	2,  // 34: bytebase.v1.QueryResult.PermissionDenied.command_type:type_name -> bytebase.v1.QueryResult.PermissionDenied.CommandType
-	3,  // 35: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
-	44, // 36: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
-	44, // 37: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
-	34, // 38: bytebase.v1.AICompletionResponse.Candidate.content:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content
-	35, // 39: bytebase.v1.AICompletionResponse.Candidate.Content.parts:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content.Part
-	9,  // 40: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
-	7,  // 41: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
-	21, // 42: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
-	17, // 43: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
-	19, // 44: bytebase.v1.SQLService.DiffMetadata:input_type -> bytebase.v1.DiffMetadataRequest
-	24, // 45: bytebase.v1.SQLService.AICompletion:input_type -> bytebase.v1.AICompletionRequest
-	10, // 46: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
-	8,  // 47: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
-	22, // 48: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
-	18, // 49: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
-	20, // 50: bytebase.v1.SQLService.DiffMetadata:output_type -> bytebase.v1.DiffMetadataResponse
-	25, // 51: bytebase.v1.SQLService.AICompletion:output_type -> bytebase.v1.AICompletionResponse
-	46, // [46:52] is the sub-list for method output_type
-	40, // [40:46] is the sub-list for method input_type
-	40, // [40:40] is the sub-list for extension type_name
-	40, // [40:40] is the sub-list for extension extendee
-	0,  // [0:40] is the sub-list for field type_name
+	42, // 24: bytebase.v1.DiffMetadataRequest.engine:type_name -> bytebase.v1.Engine
+	23, // 25: bytebase.v1.SearchQueryHistoriesResponse.query_histories:type_name -> bytebase.v1.QueryHistory
+	43, // 26: bytebase.v1.QueryHistory.create_time:type_name -> google.protobuf.Timestamp
+	36, // 27: bytebase.v1.QueryHistory.duration:type_name -> google.protobuf.Duration
+	6,  // 28: bytebase.v1.QueryHistory.type:type_name -> bytebase.v1.QueryHistory.Type
+	32, // 29: bytebase.v1.AICompletionRequest.messages:type_name -> bytebase.v1.AICompletionRequest.Message
+	33, // 30: bytebase.v1.AICompletionResponse.candidates:type_name -> bytebase.v1.AICompletionResponse.Candidate
+	39, // 31: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
+	2,  // 32: bytebase.v1.QueryResult.PermissionDenied.command_type:type_name -> bytebase.v1.QueryResult.PermissionDenied.CommandType
+	3,  // 33: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
+	43, // 34: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
+	43, // 35: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
+	34, // 36: bytebase.v1.AICompletionResponse.Candidate.content:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content
+	35, // 37: bytebase.v1.AICompletionResponse.Candidate.Content.parts:type_name -> bytebase.v1.AICompletionResponse.Candidate.Content.Part
+	9,  // 38: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
+	7,  // 39: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
+	21, // 40: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
+	17, // 41: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
+	19, // 42: bytebase.v1.SQLService.DiffMetadata:input_type -> bytebase.v1.DiffMetadataRequest
+	24, // 43: bytebase.v1.SQLService.AICompletion:input_type -> bytebase.v1.AICompletionRequest
+	10, // 44: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
+	8,  // 45: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
+	22, // 46: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
+	18, // 47: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
+	20, // 48: bytebase.v1.SQLService.DiffMetadata:output_type -> bytebase.v1.DiffMetadataResponse
+	25, // 49: bytebase.v1.SQLService.AICompletion:output_type -> bytebase.v1.AICompletionResponse
+	44, // [44:50] is the sub-list for method output_type
+	38, // [38:44] is the sub-list for method input_type
+	38, // [38:38] is the sub-list for extension type_name
+	38, // [38:38] is the sub-list for extension extendee
+	0,  // [0:38] is the sub-list for field type_name
 }
 
 func init() { file_v1_sql_service_proto_init() }
@@ -3068,7 +3045,6 @@ func file_v1_sql_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
-	file_v1_database_catalog_service_proto_init()
 	file_v1_database_service_proto_init()
 	file_v1_sql_service_proto_msgTypes[0].OneofWrappers = []any{}
 	file_v1_sql_service_proto_msgTypes[2].OneofWrappers = []any{}

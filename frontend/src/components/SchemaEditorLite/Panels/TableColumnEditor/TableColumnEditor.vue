@@ -110,8 +110,6 @@ const {
   markEditStatus,
   removeEditStatus,
   getColumnStatus,
-  removeColumnCatalog,
-  upsertColumnCatalog,
   useConsumePendingScrollToColumn,
   getAllColumnsSelectionState,
   updateAllColumnsSelection,
@@ -212,12 +210,6 @@ const handleDropColumn = (column: ColumnMetadata) => {
 
     removeColumnPrimaryKey(table, column.name);
     removeColumnFromAllForeignKeys(table, column.name);
-    removeColumnCatalog({
-      database: props.db.name,
-      schema: props.schema.name,
-      table: props.table.name,
-      column: column.name,
-    });
   } else {
     markColumnStatus(column, "dropped");
   }
@@ -299,23 +291,6 @@ const columns = computed(() => {
             "--n-text-color-disabled": "rgb(var(--color-main))",
           },
           "onUpdate:value": (value: string) => {
-            upsertColumnCatalog(
-              {
-                database: props.db.name,
-                schema: props.schema.name,
-                table: props.table.name,
-                column: column.name,
-              },
-              (catalog) => {
-                catalog.name = value;
-              }
-            );
-            removeColumnCatalog({
-              database: props.db.name,
-              schema: props.schema.name,
-              table: props.table.name,
-              column: column.name,
-            });
             const oldStatus = statusForColumn(column);
 
             const oldName = column.name;

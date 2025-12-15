@@ -28,22 +28,22 @@ type PlanConfig_ChangeDatabaseConfig_Type int32
 const (
 	PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED PlanConfig_ChangeDatabaseConfig_Type = 0
 	// Used for imperative schema migration including CREATE DATABASE.
-	PlanConfig_ChangeDatabaseConfig_MIGRATE PlanConfig_ChangeDatabaseConfig_Type = 2
+	PlanConfig_ChangeDatabaseConfig_MIGRATE PlanConfig_ChangeDatabaseConfig_Type = 1
 	// Used for state-based declarative schema migration including CREATE DATABASE.
-	PlanConfig_ChangeDatabaseConfig_SDL PlanConfig_ChangeDatabaseConfig_Type = 3
+	PlanConfig_ChangeDatabaseConfig_SDL PlanConfig_ChangeDatabaseConfig_Type = 2
 )
 
 // Enum value maps for PlanConfig_ChangeDatabaseConfig_Type.
 var (
 	PlanConfig_ChangeDatabaseConfig_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
-		2: "MIGRATE",
-		3: "SDL",
+		1: "MIGRATE",
+		2: "SDL",
 	}
 	PlanConfig_ChangeDatabaseConfig_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
-		"MIGRATE":          2,
-		"SDL":              3,
+		"MIGRATE":          1,
+		"SDL":              2,
 	}
 )
 
@@ -77,7 +77,7 @@ func (PlanConfig_ChangeDatabaseConfig_Type) EnumDescriptor() ([]byte, []int) {
 type PlanConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Specs         []*PlanConfig_Spec     `protobuf:"bytes,1,rep,name=specs,proto3" json:"specs,omitempty"`
-	Deployment    *PlanConfig_Deployment `protobuf:"bytes,4,opt,name=deployment,proto3" json:"deployment,omitempty"`
+	Deployment    *PlanConfig_Deployment `protobuf:"bytes,2,opt,name=deployment,proto3" json:"deployment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -638,7 +638,7 @@ const file_store_plan_proto_rawDesc = "" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12E\n" +
 	"\n" +
-	"deployment\x18\x04 \x01(\v2%.bytebase.store.PlanConfig.DeploymentR\n" +
+	"deployment\x18\x02 \x01(\v2%.bytebase.store.PlanConfig.DeploymentR\n" +
 	"deployment\x1a\xcf\x02\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x05 \x01(\tR\x02id\x12g\n" +
@@ -670,8 +670,8 @@ const file_store_plan_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"2\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
-	"\aMIGRATE\x10\x02\x12\a\n" +
-	"\x03SDL\x10\x03\x1a\xa6\x01\n" +
+	"\aMIGRATE\x10\x01\x12\a\n" +
+	"\x03SDL\x10\x02\x1a\xa6\x01\n" +
 	"\x10ExportDataConfig\x12\x18\n" +
 	"\atargets\x18\x05 \x03(\tR\atargets\x12\x14\n" +
 	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x124\n" +
