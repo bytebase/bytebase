@@ -136,7 +136,6 @@ func (*Server) formatEndpoints(endpoints []*EndpointInfo, limit int) string {
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString("Use `search_api(operationId=\"Service/Method\")` to get full request/response schema.\n")
 	return sb.String()
 }
 
