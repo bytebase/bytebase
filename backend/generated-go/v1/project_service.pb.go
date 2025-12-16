@@ -107,7 +107,7 @@ func (x Activity_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Activity_Type.Descriptor instead.
 func (Activity_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{20, 0}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{22, 0}
 }
 
 type GetProjectRequest struct {
@@ -156,6 +156,97 @@ func (x *GetProjectRequest) GetName() string {
 	return ""
 }
 
+type BatchGetProjectsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The names of projects to retrieve.
+	// Format: projects/{project}
+	Names         []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchGetProjectsRequest) Reset() {
+	*x = BatchGetProjectsRequest{}
+	mi := &file_v1_project_service_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchGetProjectsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchGetProjectsRequest) ProtoMessage() {}
+
+func (x *BatchGetProjectsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchGetProjectsRequest.ProtoReflect.Descriptor instead.
+func (*BatchGetProjectsRequest) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *BatchGetProjectsRequest) GetNames() []string {
+	if x != nil {
+		return x.Names
+	}
+	return nil
+}
+
+type BatchGetProjectsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The projects from the specified request.
+	Projects      []*Project `protobuf:"bytes,1,rep,name=projects,proto3" json:"projects,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchGetProjectsResponse) Reset() {
+	*x = BatchGetProjectsResponse{}
+	mi := &file_v1_project_service_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchGetProjectsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchGetProjectsResponse) ProtoMessage() {}
+
+func (x *BatchGetProjectsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_project_service_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchGetProjectsResponse.ProtoReflect.Descriptor instead.
+func (*BatchGetProjectsResponse) Descriptor() ([]byte, []int) {
+	return file_v1_project_service_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *BatchGetProjectsResponse) GetProjects() []*Project {
+	if x != nil {
+		return x.Projects
+	}
+	return nil
+}
+
 type ListProjectsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The maximum number of projects to return. The service may return fewer than
@@ -181,7 +272,7 @@ type ListProjectsRequest struct {
 
 func (x *ListProjectsRequest) Reset() {
 	*x = ListProjectsRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[1]
+	mi := &file_v1_project_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -193,7 +284,7 @@ func (x *ListProjectsRequest) String() string {
 func (*ListProjectsRequest) ProtoMessage() {}
 
 func (x *ListProjectsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[1]
+	mi := &file_v1_project_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -206,7 +297,7 @@ func (x *ListProjectsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProjectsRequest.ProtoReflect.Descriptor instead.
 func (*ListProjectsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{1}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ListProjectsRequest) GetPageSize() int32 {
@@ -250,7 +341,7 @@ type ListProjectsResponse struct {
 
 func (x *ListProjectsResponse) Reset() {
 	*x = ListProjectsResponse{}
-	mi := &file_v1_project_service_proto_msgTypes[2]
+	mi := &file_v1_project_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -262,7 +353,7 @@ func (x *ListProjectsResponse) String() string {
 func (*ListProjectsResponse) ProtoMessage() {}
 
 func (x *ListProjectsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[2]
+	mi := &file_v1_project_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -275,7 +366,7 @@ func (x *ListProjectsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProjectsResponse.ProtoReflect.Descriptor instead.
 func (*ListProjectsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{2}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListProjectsResponse) GetProjects() []*Project {
@@ -338,7 +429,7 @@ type SearchProjectsRequest struct {
 
 func (x *SearchProjectsRequest) Reset() {
 	*x = SearchProjectsRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[3]
+	mi := &file_v1_project_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -350,7 +441,7 @@ func (x *SearchProjectsRequest) String() string {
 func (*SearchProjectsRequest) ProtoMessage() {}
 
 func (x *SearchProjectsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[3]
+	mi := &file_v1_project_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -363,7 +454,7 @@ func (x *SearchProjectsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchProjectsRequest.ProtoReflect.Descriptor instead.
 func (*SearchProjectsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SearchProjectsRequest) GetShowDeleted() bool {
@@ -407,7 +498,7 @@ type SearchProjectsResponse struct {
 
 func (x *SearchProjectsResponse) Reset() {
 	*x = SearchProjectsResponse{}
-	mi := &file_v1_project_service_proto_msgTypes[4]
+	mi := &file_v1_project_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -419,7 +510,7 @@ func (x *SearchProjectsResponse) String() string {
 func (*SearchProjectsResponse) ProtoMessage() {}
 
 func (x *SearchProjectsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[4]
+	mi := &file_v1_project_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -432,7 +523,7 @@ func (x *SearchProjectsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchProjectsResponse.ProtoReflect.Descriptor instead.
 func (*SearchProjectsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *SearchProjectsResponse) GetProjects() []*Project {
@@ -465,7 +556,7 @@ type CreateProjectRequest struct {
 
 func (x *CreateProjectRequest) Reset() {
 	*x = CreateProjectRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[5]
+	mi := &file_v1_project_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -477,7 +568,7 @@ func (x *CreateProjectRequest) String() string {
 func (*CreateProjectRequest) ProtoMessage() {}
 
 func (x *CreateProjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[5]
+	mi := &file_v1_project_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -490,7 +581,7 @@ func (x *CreateProjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProjectRequest.ProtoReflect.Descriptor instead.
 func (*CreateProjectRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateProjectRequest) GetProject() *Project {
@@ -525,7 +616,7 @@ type UpdateProjectRequest struct {
 
 func (x *UpdateProjectRequest) Reset() {
 	*x = UpdateProjectRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[6]
+	mi := &file_v1_project_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -537,7 +628,7 @@ func (x *UpdateProjectRequest) String() string {
 func (*UpdateProjectRequest) ProtoMessage() {}
 
 func (x *UpdateProjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[6]
+	mi := &file_v1_project_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -550,7 +641,7 @@ func (x *UpdateProjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProjectRequest.ProtoReflect.Descriptor instead.
 func (*UpdateProjectRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UpdateProjectRequest) GetProject() *Project {
@@ -595,7 +686,7 @@ type DeleteProjectRequest struct {
 
 func (x *DeleteProjectRequest) Reset() {
 	*x = DeleteProjectRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[7]
+	mi := &file_v1_project_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -607,7 +698,7 @@ func (x *DeleteProjectRequest) String() string {
 func (*DeleteProjectRequest) ProtoMessage() {}
 
 func (x *DeleteProjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[7]
+	mi := &file_v1_project_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -620,7 +711,7 @@ func (x *DeleteProjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProjectRequest.ProtoReflect.Descriptor instead.
 func (*DeleteProjectRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DeleteProjectRequest) GetName() string {
@@ -655,7 +746,7 @@ type UndeleteProjectRequest struct {
 
 func (x *UndeleteProjectRequest) Reset() {
 	*x = UndeleteProjectRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[8]
+	mi := &file_v1_project_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -667,7 +758,7 @@ func (x *UndeleteProjectRequest) String() string {
 func (*UndeleteProjectRequest) ProtoMessage() {}
 
 func (x *UndeleteProjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[8]
+	mi := &file_v1_project_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -680,7 +771,7 @@ func (x *UndeleteProjectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UndeleteProjectRequest.ProtoReflect.Descriptor instead.
 func (*UndeleteProjectRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{8}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *UndeleteProjectRequest) GetName() string {
@@ -706,7 +797,7 @@ type BatchDeleteProjectsRequest struct {
 
 func (x *BatchDeleteProjectsRequest) Reset() {
 	*x = BatchDeleteProjectsRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[9]
+	mi := &file_v1_project_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -718,7 +809,7 @@ func (x *BatchDeleteProjectsRequest) String() string {
 func (*BatchDeleteProjectsRequest) ProtoMessage() {}
 
 func (x *BatchDeleteProjectsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[9]
+	mi := &file_v1_project_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -731,7 +822,7 @@ func (x *BatchDeleteProjectsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchDeleteProjectsRequest.ProtoReflect.Descriptor instead.
 func (*BatchDeleteProjectsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{9}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *BatchDeleteProjectsRequest) GetNames() []string {
@@ -759,7 +850,7 @@ type BatchGetIamPolicyRequest struct {
 
 func (x *BatchGetIamPolicyRequest) Reset() {
 	*x = BatchGetIamPolicyRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[10]
+	mi := &file_v1_project_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -771,7 +862,7 @@ func (x *BatchGetIamPolicyRequest) String() string {
 func (*BatchGetIamPolicyRequest) ProtoMessage() {}
 
 func (x *BatchGetIamPolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[10]
+	mi := &file_v1_project_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -784,7 +875,7 @@ func (x *BatchGetIamPolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchGetIamPolicyRequest.ProtoReflect.Descriptor instead.
 func (*BatchGetIamPolicyRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *BatchGetIamPolicyRequest) GetScope() string {
@@ -811,7 +902,7 @@ type BatchGetIamPolicyResponse struct {
 
 func (x *BatchGetIamPolicyResponse) Reset() {
 	*x = BatchGetIamPolicyResponse{}
-	mi := &file_v1_project_service_proto_msgTypes[11]
+	mi := &file_v1_project_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -823,7 +914,7 @@ func (x *BatchGetIamPolicyResponse) String() string {
 func (*BatchGetIamPolicyResponse) ProtoMessage() {}
 
 func (x *BatchGetIamPolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[11]
+	mi := &file_v1_project_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -836,7 +927,7 @@ func (x *BatchGetIamPolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchGetIamPolicyResponse.ProtoReflect.Descriptor instead.
 func (*BatchGetIamPolicyResponse) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{11}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *BatchGetIamPolicyResponse) GetPolicyResults() []*BatchGetIamPolicyResponse_PolicyResult {
@@ -861,7 +952,7 @@ type Label struct {
 
 func (x *Label) Reset() {
 	*x = Label{}
-	mi := &file_v1_project_service_proto_msgTypes[12]
+	mi := &file_v1_project_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -873,7 +964,7 @@ func (x *Label) String() string {
 func (*Label) ProtoMessage() {}
 
 func (x *Label) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[12]
+	mi := &file_v1_project_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -886,7 +977,7 @@ func (x *Label) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Label.ProtoReflect.Descriptor instead.
 func (*Label) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{12}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Label) GetValue() string {
@@ -965,7 +1056,7 @@ type Project struct {
 
 func (x *Project) Reset() {
 	*x = Project{}
-	mi := &file_v1_project_service_proto_msgTypes[13]
+	mi := &file_v1_project_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -977,7 +1068,7 @@ func (x *Project) String() string {
 func (*Project) ProtoMessage() {}
 
 func (x *Project) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[13]
+	mi := &file_v1_project_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -990,7 +1081,7 @@ func (x *Project) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Project.ProtoReflect.Descriptor instead.
 func (*Project) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{13}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Project) GetName() string {
@@ -1153,7 +1244,7 @@ type AddWebhookRequest struct {
 
 func (x *AddWebhookRequest) Reset() {
 	*x = AddWebhookRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[14]
+	mi := &file_v1_project_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1165,7 +1256,7 @@ func (x *AddWebhookRequest) String() string {
 func (*AddWebhookRequest) ProtoMessage() {}
 
 func (x *AddWebhookRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[14]
+	mi := &file_v1_project_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1178,7 +1269,7 @@ func (x *AddWebhookRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddWebhookRequest.ProtoReflect.Descriptor instead.
 func (*AddWebhookRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{14}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *AddWebhookRequest) GetProject() string {
@@ -1210,7 +1301,7 @@ type UpdateWebhookRequest struct {
 
 func (x *UpdateWebhookRequest) Reset() {
 	*x = UpdateWebhookRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[15]
+	mi := &file_v1_project_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1222,7 +1313,7 @@ func (x *UpdateWebhookRequest) String() string {
 func (*UpdateWebhookRequest) ProtoMessage() {}
 
 func (x *UpdateWebhookRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[15]
+	mi := &file_v1_project_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1235,7 +1326,7 @@ func (x *UpdateWebhookRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateWebhookRequest.ProtoReflect.Descriptor instead.
 func (*UpdateWebhookRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{15}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *UpdateWebhookRequest) GetWebhook() *Webhook {
@@ -1269,7 +1360,7 @@ type RemoveWebhookRequest struct {
 
 func (x *RemoveWebhookRequest) Reset() {
 	*x = RemoveWebhookRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[16]
+	mi := &file_v1_project_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1281,7 +1372,7 @@ func (x *RemoveWebhookRequest) String() string {
 func (*RemoveWebhookRequest) ProtoMessage() {}
 
 func (x *RemoveWebhookRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[16]
+	mi := &file_v1_project_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1294,7 +1385,7 @@ func (x *RemoveWebhookRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveWebhookRequest.ProtoReflect.Descriptor instead.
 func (*RemoveWebhookRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{16}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *RemoveWebhookRequest) GetWebhook() *Webhook {
@@ -1317,7 +1408,7 @@ type TestWebhookRequest struct {
 
 func (x *TestWebhookRequest) Reset() {
 	*x = TestWebhookRequest{}
-	mi := &file_v1_project_service_proto_msgTypes[17]
+	mi := &file_v1_project_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1329,7 +1420,7 @@ func (x *TestWebhookRequest) String() string {
 func (*TestWebhookRequest) ProtoMessage() {}
 
 func (x *TestWebhookRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[17]
+	mi := &file_v1_project_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1342,7 +1433,7 @@ func (x *TestWebhookRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TestWebhookRequest.ProtoReflect.Descriptor instead.
 func (*TestWebhookRequest) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{17}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *TestWebhookRequest) GetProject() string {
@@ -1369,7 +1460,7 @@ type TestWebhookResponse struct {
 
 func (x *TestWebhookResponse) Reset() {
 	*x = TestWebhookResponse{}
-	mi := &file_v1_project_service_proto_msgTypes[18]
+	mi := &file_v1_project_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1381,7 +1472,7 @@ func (x *TestWebhookResponse) String() string {
 func (*TestWebhookResponse) ProtoMessage() {}
 
 func (x *TestWebhookResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[18]
+	mi := &file_v1_project_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1394,7 +1485,7 @@ func (x *TestWebhookResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TestWebhookResponse.ProtoReflect.Descriptor instead.
 func (*TestWebhookResponse) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{18}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *TestWebhookResponse) GetError() string {
@@ -1439,7 +1530,7 @@ type Webhook struct {
 
 func (x *Webhook) Reset() {
 	*x = Webhook{}
-	mi := &file_v1_project_service_proto_msgTypes[19]
+	mi := &file_v1_project_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1451,7 +1542,7 @@ func (x *Webhook) String() string {
 func (*Webhook) ProtoMessage() {}
 
 func (x *Webhook) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[19]
+	mi := &file_v1_project_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1464,7 +1555,7 @@ func (x *Webhook) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Webhook.ProtoReflect.Descriptor instead.
 func (*Webhook) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{19}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *Webhook) GetName() string {
@@ -1518,7 +1609,7 @@ type Activity struct {
 
 func (x *Activity) Reset() {
 	*x = Activity{}
-	mi := &file_v1_project_service_proto_msgTypes[20]
+	mi := &file_v1_project_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1530,7 +1621,7 @@ func (x *Activity) String() string {
 func (*Activity) ProtoMessage() {}
 
 func (x *Activity) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[20]
+	mi := &file_v1_project_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1543,7 +1634,7 @@ func (x *Activity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Activity.ProtoReflect.Descriptor instead.
 func (*Activity) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{20}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{22}
 }
 
 // Result for a single project's IAM policy.
@@ -1559,7 +1650,7 @@ type BatchGetIamPolicyResponse_PolicyResult struct {
 
 func (x *BatchGetIamPolicyResponse_PolicyResult) Reset() {
 	*x = BatchGetIamPolicyResponse_PolicyResult{}
-	mi := &file_v1_project_service_proto_msgTypes[21]
+	mi := &file_v1_project_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1571,7 +1662,7 @@ func (x *BatchGetIamPolicyResponse_PolicyResult) String() string {
 func (*BatchGetIamPolicyResponse_PolicyResult) ProtoMessage() {}
 
 func (x *BatchGetIamPolicyResponse_PolicyResult) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[21]
+	mi := &file_v1_project_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1584,7 +1675,7 @@ func (x *BatchGetIamPolicyResponse_PolicyResult) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use BatchGetIamPolicyResponse_PolicyResult.ProtoReflect.Descriptor instead.
 func (*BatchGetIamPolicyResponse_PolicyResult) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{11, 0}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{13, 0}
 }
 
 func (x *BatchGetIamPolicyResponse_PolicyResult) GetProject() string {
@@ -1612,7 +1703,7 @@ type Project_ExecutionRetryPolicy struct {
 
 func (x *Project_ExecutionRetryPolicy) Reset() {
 	*x = Project_ExecutionRetryPolicy{}
-	mi := &file_v1_project_service_proto_msgTypes[22]
+	mi := &file_v1_project_service_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1624,7 +1715,7 @@ func (x *Project_ExecutionRetryPolicy) String() string {
 func (*Project_ExecutionRetryPolicy) ProtoMessage() {}
 
 func (x *Project_ExecutionRetryPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_project_service_proto_msgTypes[22]
+	mi := &file_v1_project_service_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1637,7 +1728,7 @@ func (x *Project_ExecutionRetryPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Project_ExecutionRetryPolicy.ProtoReflect.Descriptor instead.
 func (*Project_ExecutionRetryPolicy) Descriptor() ([]byte, []int) {
-	return file_v1_project_service_proto_rawDescGZIP(), []int{13, 0}
+	return file_v1_project_service_proto_rawDescGZIP(), []int{15, 0}
 }
 
 func (x *Project_ExecutionRetryPolicy) GetMaximumRetries() int32 {
@@ -1654,7 +1745,12 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x18v1/project_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\"E\n" +
 	"\x11GetProjectRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x04name\"\x8c\x01\n" +
+	"\x14bytebase.com/ProjectR\x04name\"M\n" +
+	"\x17BatchGetProjectsRequest\x122\n" +
+	"\x05names\x18\x01 \x03(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x05names\"L\n" +
+	"\x18BatchGetProjectsResponse\x120\n" +
+	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\"\x8c\x01\n" +
 	"\x13ListProjectsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -1771,10 +1867,11 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x15ISSUE_APPROVAL_NOTIFY\x10\x06\x12)\n" +
 	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\a\x12\x19\n" +
 	"\x15NOTIFY_ISSUE_APPROVED\x10\b\x12\x1b\n" +
-	"\x17NOTIFY_PIPELINE_ROLLOUT\x10\t2\x9d\x12\n" +
+	"\x17NOTIFY_PIPELINE_ROLLOUT\x10\t2\xb5\x13\n" +
 	"\x0eProjectService\x12\x7f\n" +
 	"\n" +
-	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x84\x01\n" +
+	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x95\x01\n" +
+	"\x10BatchGetProjects\x12$.bytebase.v1.BatchGetProjectsRequest\x1a%.bytebase.v1.BatchGetProjectsResponse\"4\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/projects:batchGet\x12\x84\x01\n" +
 	"\fListProjects\x12 .bytebase.v1.ListProjectsRequest\x1a!.bytebase.v1.ListProjectsResponse\"/\xdaA\x00\x8a\xea0\x10bb.projects.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/projects\x12\x80\x01\n" +
 	"\x0eSearchProjects\x12\".bytebase.v1.SearchProjectsRequest\x1a#.bytebase.v1.SearchProjectsResponse\"%\xdaA\x00\x90\xea0\x02\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/v1/projects:search\x12\x84\x01\n" +
 	"\rCreateProject\x12!.bytebase.v1.CreateProjectRequest\x1a\x14.bytebase.v1.Project\":\xdaA\x00\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17:\aproject\"\f/v1/projects\x12\xa8\x01\n" +
@@ -1805,96 +1902,101 @@ func file_v1_project_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_project_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_project_service_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_v1_project_service_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_v1_project_service_proto_goTypes = []any{
 	(Activity_Type)(0),                             // 0: bytebase.v1.Activity.Type
 	(*GetProjectRequest)(nil),                      // 1: bytebase.v1.GetProjectRequest
-	(*ListProjectsRequest)(nil),                    // 2: bytebase.v1.ListProjectsRequest
-	(*ListProjectsResponse)(nil),                   // 3: bytebase.v1.ListProjectsResponse
-	(*SearchProjectsRequest)(nil),                  // 4: bytebase.v1.SearchProjectsRequest
-	(*SearchProjectsResponse)(nil),                 // 5: bytebase.v1.SearchProjectsResponse
-	(*CreateProjectRequest)(nil),                   // 6: bytebase.v1.CreateProjectRequest
-	(*UpdateProjectRequest)(nil),                   // 7: bytebase.v1.UpdateProjectRequest
-	(*DeleteProjectRequest)(nil),                   // 8: bytebase.v1.DeleteProjectRequest
-	(*UndeleteProjectRequest)(nil),                 // 9: bytebase.v1.UndeleteProjectRequest
-	(*BatchDeleteProjectsRequest)(nil),             // 10: bytebase.v1.BatchDeleteProjectsRequest
-	(*BatchGetIamPolicyRequest)(nil),               // 11: bytebase.v1.BatchGetIamPolicyRequest
-	(*BatchGetIamPolicyResponse)(nil),              // 12: bytebase.v1.BatchGetIamPolicyResponse
-	(*Label)(nil),                                  // 13: bytebase.v1.Label
-	(*Project)(nil),                                // 14: bytebase.v1.Project
-	(*AddWebhookRequest)(nil),                      // 15: bytebase.v1.AddWebhookRequest
-	(*UpdateWebhookRequest)(nil),                   // 16: bytebase.v1.UpdateWebhookRequest
-	(*RemoveWebhookRequest)(nil),                   // 17: bytebase.v1.RemoveWebhookRequest
-	(*TestWebhookRequest)(nil),                     // 18: bytebase.v1.TestWebhookRequest
-	(*TestWebhookResponse)(nil),                    // 19: bytebase.v1.TestWebhookResponse
-	(*Webhook)(nil),                                // 20: bytebase.v1.Webhook
-	(*Activity)(nil),                               // 21: bytebase.v1.Activity
-	(*BatchGetIamPolicyResponse_PolicyResult)(nil), // 22: bytebase.v1.BatchGetIamPolicyResponse.PolicyResult
-	(*Project_ExecutionRetryPolicy)(nil),           // 23: bytebase.v1.Project.ExecutionRetryPolicy
-	nil,                                            // 24: bytebase.v1.Project.LabelsEntry
-	(*fieldmaskpb.FieldMask)(nil),                  // 25: google.protobuf.FieldMask
-	(State)(0),                                     // 26: bytebase.v1.State
-	(WebhookType)(0),                               // 27: bytebase.v1.WebhookType
-	(*IamPolicy)(nil),                              // 28: bytebase.v1.IamPolicy
-	(*GetIamPolicyRequest)(nil),                    // 29: bytebase.v1.GetIamPolicyRequest
-	(*SetIamPolicyRequest)(nil),                    // 30: bytebase.v1.SetIamPolicyRequest
-	(*emptypb.Empty)(nil),                          // 31: google.protobuf.Empty
+	(*BatchGetProjectsRequest)(nil),                // 2: bytebase.v1.BatchGetProjectsRequest
+	(*BatchGetProjectsResponse)(nil),               // 3: bytebase.v1.BatchGetProjectsResponse
+	(*ListProjectsRequest)(nil),                    // 4: bytebase.v1.ListProjectsRequest
+	(*ListProjectsResponse)(nil),                   // 5: bytebase.v1.ListProjectsResponse
+	(*SearchProjectsRequest)(nil),                  // 6: bytebase.v1.SearchProjectsRequest
+	(*SearchProjectsResponse)(nil),                 // 7: bytebase.v1.SearchProjectsResponse
+	(*CreateProjectRequest)(nil),                   // 8: bytebase.v1.CreateProjectRequest
+	(*UpdateProjectRequest)(nil),                   // 9: bytebase.v1.UpdateProjectRequest
+	(*DeleteProjectRequest)(nil),                   // 10: bytebase.v1.DeleteProjectRequest
+	(*UndeleteProjectRequest)(nil),                 // 11: bytebase.v1.UndeleteProjectRequest
+	(*BatchDeleteProjectsRequest)(nil),             // 12: bytebase.v1.BatchDeleteProjectsRequest
+	(*BatchGetIamPolicyRequest)(nil),               // 13: bytebase.v1.BatchGetIamPolicyRequest
+	(*BatchGetIamPolicyResponse)(nil),              // 14: bytebase.v1.BatchGetIamPolicyResponse
+	(*Label)(nil),                                  // 15: bytebase.v1.Label
+	(*Project)(nil),                                // 16: bytebase.v1.Project
+	(*AddWebhookRequest)(nil),                      // 17: bytebase.v1.AddWebhookRequest
+	(*UpdateWebhookRequest)(nil),                   // 18: bytebase.v1.UpdateWebhookRequest
+	(*RemoveWebhookRequest)(nil),                   // 19: bytebase.v1.RemoveWebhookRequest
+	(*TestWebhookRequest)(nil),                     // 20: bytebase.v1.TestWebhookRequest
+	(*TestWebhookResponse)(nil),                    // 21: bytebase.v1.TestWebhookResponse
+	(*Webhook)(nil),                                // 22: bytebase.v1.Webhook
+	(*Activity)(nil),                               // 23: bytebase.v1.Activity
+	(*BatchGetIamPolicyResponse_PolicyResult)(nil), // 24: bytebase.v1.BatchGetIamPolicyResponse.PolicyResult
+	(*Project_ExecutionRetryPolicy)(nil),           // 25: bytebase.v1.Project.ExecutionRetryPolicy
+	nil,                                            // 26: bytebase.v1.Project.LabelsEntry
+	(*fieldmaskpb.FieldMask)(nil),                  // 27: google.protobuf.FieldMask
+	(State)(0),                                     // 28: bytebase.v1.State
+	(WebhookType)(0),                               // 29: bytebase.v1.WebhookType
+	(*IamPolicy)(nil),                              // 30: bytebase.v1.IamPolicy
+	(*GetIamPolicyRequest)(nil),                    // 31: bytebase.v1.GetIamPolicyRequest
+	(*SetIamPolicyRequest)(nil),                    // 32: bytebase.v1.SetIamPolicyRequest
+	(*emptypb.Empty)(nil),                          // 33: google.protobuf.Empty
 }
 var file_v1_project_service_proto_depIdxs = []int32{
-	14, // 0: bytebase.v1.ListProjectsResponse.projects:type_name -> bytebase.v1.Project
-	14, // 1: bytebase.v1.SearchProjectsResponse.projects:type_name -> bytebase.v1.Project
-	14, // 2: bytebase.v1.CreateProjectRequest.project:type_name -> bytebase.v1.Project
-	14, // 3: bytebase.v1.UpdateProjectRequest.project:type_name -> bytebase.v1.Project
-	25, // 4: bytebase.v1.UpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
-	22, // 5: bytebase.v1.BatchGetIamPolicyResponse.policy_results:type_name -> bytebase.v1.BatchGetIamPolicyResponse.PolicyResult
-	26, // 6: bytebase.v1.Project.state:type_name -> bytebase.v1.State
-	20, // 7: bytebase.v1.Project.webhooks:type_name -> bytebase.v1.Webhook
-	13, // 8: bytebase.v1.Project.issue_labels:type_name -> bytebase.v1.Label
-	23, // 9: bytebase.v1.Project.execution_retry_policy:type_name -> bytebase.v1.Project.ExecutionRetryPolicy
-	24, // 10: bytebase.v1.Project.labels:type_name -> bytebase.v1.Project.LabelsEntry
-	20, // 11: bytebase.v1.AddWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	20, // 12: bytebase.v1.UpdateWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	25, // 13: bytebase.v1.UpdateWebhookRequest.update_mask:type_name -> google.protobuf.FieldMask
-	20, // 14: bytebase.v1.RemoveWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	20, // 15: bytebase.v1.TestWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
-	27, // 16: bytebase.v1.Webhook.type:type_name -> bytebase.v1.WebhookType
-	0,  // 17: bytebase.v1.Webhook.notification_types:type_name -> bytebase.v1.Activity.Type
-	28, // 18: bytebase.v1.BatchGetIamPolicyResponse.PolicyResult.policy:type_name -> bytebase.v1.IamPolicy
-	1,  // 19: bytebase.v1.ProjectService.GetProject:input_type -> bytebase.v1.GetProjectRequest
-	2,  // 20: bytebase.v1.ProjectService.ListProjects:input_type -> bytebase.v1.ListProjectsRequest
-	4,  // 21: bytebase.v1.ProjectService.SearchProjects:input_type -> bytebase.v1.SearchProjectsRequest
-	6,  // 22: bytebase.v1.ProjectService.CreateProject:input_type -> bytebase.v1.CreateProjectRequest
-	7,  // 23: bytebase.v1.ProjectService.UpdateProject:input_type -> bytebase.v1.UpdateProjectRequest
-	8,  // 24: bytebase.v1.ProjectService.DeleteProject:input_type -> bytebase.v1.DeleteProjectRequest
-	9,  // 25: bytebase.v1.ProjectService.UndeleteProject:input_type -> bytebase.v1.UndeleteProjectRequest
-	10, // 26: bytebase.v1.ProjectService.BatchDeleteProjects:input_type -> bytebase.v1.BatchDeleteProjectsRequest
-	29, // 27: bytebase.v1.ProjectService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
-	11, // 28: bytebase.v1.ProjectService.BatchGetIamPolicy:input_type -> bytebase.v1.BatchGetIamPolicyRequest
-	30, // 29: bytebase.v1.ProjectService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
-	15, // 30: bytebase.v1.ProjectService.AddWebhook:input_type -> bytebase.v1.AddWebhookRequest
-	16, // 31: bytebase.v1.ProjectService.UpdateWebhook:input_type -> bytebase.v1.UpdateWebhookRequest
-	17, // 32: bytebase.v1.ProjectService.RemoveWebhook:input_type -> bytebase.v1.RemoveWebhookRequest
-	18, // 33: bytebase.v1.ProjectService.TestWebhook:input_type -> bytebase.v1.TestWebhookRequest
-	14, // 34: bytebase.v1.ProjectService.GetProject:output_type -> bytebase.v1.Project
-	3,  // 35: bytebase.v1.ProjectService.ListProjects:output_type -> bytebase.v1.ListProjectsResponse
-	5,  // 36: bytebase.v1.ProjectService.SearchProjects:output_type -> bytebase.v1.SearchProjectsResponse
-	14, // 37: bytebase.v1.ProjectService.CreateProject:output_type -> bytebase.v1.Project
-	14, // 38: bytebase.v1.ProjectService.UpdateProject:output_type -> bytebase.v1.Project
-	31, // 39: bytebase.v1.ProjectService.DeleteProject:output_type -> google.protobuf.Empty
-	14, // 40: bytebase.v1.ProjectService.UndeleteProject:output_type -> bytebase.v1.Project
-	31, // 41: bytebase.v1.ProjectService.BatchDeleteProjects:output_type -> google.protobuf.Empty
-	28, // 42: bytebase.v1.ProjectService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	12, // 43: bytebase.v1.ProjectService.BatchGetIamPolicy:output_type -> bytebase.v1.BatchGetIamPolicyResponse
-	28, // 44: bytebase.v1.ProjectService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	14, // 45: bytebase.v1.ProjectService.AddWebhook:output_type -> bytebase.v1.Project
-	14, // 46: bytebase.v1.ProjectService.UpdateWebhook:output_type -> bytebase.v1.Project
-	14, // 47: bytebase.v1.ProjectService.RemoveWebhook:output_type -> bytebase.v1.Project
-	19, // 48: bytebase.v1.ProjectService.TestWebhook:output_type -> bytebase.v1.TestWebhookResponse
-	34, // [34:49] is the sub-list for method output_type
-	19, // [19:34] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	16, // 0: bytebase.v1.BatchGetProjectsResponse.projects:type_name -> bytebase.v1.Project
+	16, // 1: bytebase.v1.ListProjectsResponse.projects:type_name -> bytebase.v1.Project
+	16, // 2: bytebase.v1.SearchProjectsResponse.projects:type_name -> bytebase.v1.Project
+	16, // 3: bytebase.v1.CreateProjectRequest.project:type_name -> bytebase.v1.Project
+	16, // 4: bytebase.v1.UpdateProjectRequest.project:type_name -> bytebase.v1.Project
+	27, // 5: bytebase.v1.UpdateProjectRequest.update_mask:type_name -> google.protobuf.FieldMask
+	24, // 6: bytebase.v1.BatchGetIamPolicyResponse.policy_results:type_name -> bytebase.v1.BatchGetIamPolicyResponse.PolicyResult
+	28, // 7: bytebase.v1.Project.state:type_name -> bytebase.v1.State
+	22, // 8: bytebase.v1.Project.webhooks:type_name -> bytebase.v1.Webhook
+	15, // 9: bytebase.v1.Project.issue_labels:type_name -> bytebase.v1.Label
+	25, // 10: bytebase.v1.Project.execution_retry_policy:type_name -> bytebase.v1.Project.ExecutionRetryPolicy
+	26, // 11: bytebase.v1.Project.labels:type_name -> bytebase.v1.Project.LabelsEntry
+	22, // 12: bytebase.v1.AddWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	22, // 13: bytebase.v1.UpdateWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	27, // 14: bytebase.v1.UpdateWebhookRequest.update_mask:type_name -> google.protobuf.FieldMask
+	22, // 15: bytebase.v1.RemoveWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	22, // 16: bytebase.v1.TestWebhookRequest.webhook:type_name -> bytebase.v1.Webhook
+	29, // 17: bytebase.v1.Webhook.type:type_name -> bytebase.v1.WebhookType
+	0,  // 18: bytebase.v1.Webhook.notification_types:type_name -> bytebase.v1.Activity.Type
+	30, // 19: bytebase.v1.BatchGetIamPolicyResponse.PolicyResult.policy:type_name -> bytebase.v1.IamPolicy
+	1,  // 20: bytebase.v1.ProjectService.GetProject:input_type -> bytebase.v1.GetProjectRequest
+	2,  // 21: bytebase.v1.ProjectService.BatchGetProjects:input_type -> bytebase.v1.BatchGetProjectsRequest
+	4,  // 22: bytebase.v1.ProjectService.ListProjects:input_type -> bytebase.v1.ListProjectsRequest
+	6,  // 23: bytebase.v1.ProjectService.SearchProjects:input_type -> bytebase.v1.SearchProjectsRequest
+	8,  // 24: bytebase.v1.ProjectService.CreateProject:input_type -> bytebase.v1.CreateProjectRequest
+	9,  // 25: bytebase.v1.ProjectService.UpdateProject:input_type -> bytebase.v1.UpdateProjectRequest
+	10, // 26: bytebase.v1.ProjectService.DeleteProject:input_type -> bytebase.v1.DeleteProjectRequest
+	11, // 27: bytebase.v1.ProjectService.UndeleteProject:input_type -> bytebase.v1.UndeleteProjectRequest
+	12, // 28: bytebase.v1.ProjectService.BatchDeleteProjects:input_type -> bytebase.v1.BatchDeleteProjectsRequest
+	31, // 29: bytebase.v1.ProjectService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
+	13, // 30: bytebase.v1.ProjectService.BatchGetIamPolicy:input_type -> bytebase.v1.BatchGetIamPolicyRequest
+	32, // 31: bytebase.v1.ProjectService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
+	17, // 32: bytebase.v1.ProjectService.AddWebhook:input_type -> bytebase.v1.AddWebhookRequest
+	18, // 33: bytebase.v1.ProjectService.UpdateWebhook:input_type -> bytebase.v1.UpdateWebhookRequest
+	19, // 34: bytebase.v1.ProjectService.RemoveWebhook:input_type -> bytebase.v1.RemoveWebhookRequest
+	20, // 35: bytebase.v1.ProjectService.TestWebhook:input_type -> bytebase.v1.TestWebhookRequest
+	16, // 36: bytebase.v1.ProjectService.GetProject:output_type -> bytebase.v1.Project
+	3,  // 37: bytebase.v1.ProjectService.BatchGetProjects:output_type -> bytebase.v1.BatchGetProjectsResponse
+	5,  // 38: bytebase.v1.ProjectService.ListProjects:output_type -> bytebase.v1.ListProjectsResponse
+	7,  // 39: bytebase.v1.ProjectService.SearchProjects:output_type -> bytebase.v1.SearchProjectsResponse
+	16, // 40: bytebase.v1.ProjectService.CreateProject:output_type -> bytebase.v1.Project
+	16, // 41: bytebase.v1.ProjectService.UpdateProject:output_type -> bytebase.v1.Project
+	33, // 42: bytebase.v1.ProjectService.DeleteProject:output_type -> google.protobuf.Empty
+	16, // 43: bytebase.v1.ProjectService.UndeleteProject:output_type -> bytebase.v1.Project
+	33, // 44: bytebase.v1.ProjectService.BatchDeleteProjects:output_type -> google.protobuf.Empty
+	30, // 45: bytebase.v1.ProjectService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	14, // 46: bytebase.v1.ProjectService.BatchGetIamPolicy:output_type -> bytebase.v1.BatchGetIamPolicyResponse
+	30, // 47: bytebase.v1.ProjectService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	16, // 48: bytebase.v1.ProjectService.AddWebhook:output_type -> bytebase.v1.Project
+	16, // 49: bytebase.v1.ProjectService.UpdateWebhook:output_type -> bytebase.v1.Project
+	16, // 50: bytebase.v1.ProjectService.RemoveWebhook:output_type -> bytebase.v1.Project
+	21, // 51: bytebase.v1.ProjectService.TestWebhook:output_type -> bytebase.v1.TestWebhookResponse
+	36, // [36:52] is the sub-list for method output_type
+	20, // [20:36] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_v1_project_service_proto_init() }
@@ -1911,7 +2013,7 @@ func file_v1_project_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_project_service_proto_rawDesc), len(file_v1_project_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   24,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

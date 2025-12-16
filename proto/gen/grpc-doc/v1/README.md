@@ -485,6 +485,8 @@
     - [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest)
     - [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse)
     - [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult)
+    - [BatchGetProjectsRequest](#bytebase-v1-BatchGetProjectsRequest)
+    - [BatchGetProjectsResponse](#bytebase-v1-BatchGetProjectsResponse)
     - [CreateProjectRequest](#bytebase-v1-CreateProjectRequest)
     - [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
@@ -8023,6 +8025,36 @@ Result for a single project&#39;s IAM policy.
 
 
 
+<a name="bytebase-v1-BatchGetProjectsRequest"></a>
+
+### BatchGetProjectsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| names | [string](#string) | repeated | The names of projects to retrieve. Format: projects/{project} |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchGetProjectsResponse"></a>
+
+### BatchGetProjectsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateProjectRequest"></a>
 
 ### CreateProjectRequest
@@ -8387,6 +8419,7 @@ ProjectService manages projects that group databases and changes.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetProject | [GetProjectRequest](#bytebase-v1-GetProjectRequest) | [Project](#bytebase-v1-Project) | GetProject retrieves a project by name. Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method. Permissions required: bb.projects.get |
+| BatchGetProjects | [BatchGetProjectsRequest](#bytebase-v1-BatchGetProjectsRequest) | [BatchGetProjectsResponse](#bytebase-v1-BatchGetProjectsResponse) | BatchGetProjects retrieves multiple projects by their names. Permissions required: bb.projects.get |
 | ListProjects | [ListProjectsRequest](#bytebase-v1-ListProjectsRequest) | [ListProjectsResponse](#bytebase-v1-ListProjectsResponse) | Lists all projects in the workspace with optional filtering. Permissions required: bb.projects.list |
 | SearchProjects | [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest) | [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse) | Searches for projects with advanced filtering capabilities. Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects) |
 | CreateProject | [CreateProjectRequest](#bytebase-v1-CreateProjectRequest) | [Project](#bytebase-v1-Project) | Creates a new project in the workspace. Permissions required: bb.projects.create |

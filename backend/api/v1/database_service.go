@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -14,7 +13,6 @@ import (
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -400,105 +398,15 @@ func (s *DatabaseService) BatchSyncDatabases(ctx context.Context, req *connect.R
 	return connect.NewResponse(&v1pb.BatchSyncDatabasesResponse{}), nil
 }
 
-// BatchUpdateDatabases updates a database in batch.
+// BatchUpdateDatabases updates databases in batch.
 func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, req *connect.Request[v1pb.BatchUpdateDatabasesRequest]) (*connect.Response[v1pb.BatchUpdateDatabasesResponse], error) {
-	databases := []*store.DatabaseMessage{}
-	batchUpdate := &store.BatchUpdateDatabases{}
-	var updateMask *fieldmaskpb.FieldMask
-	for _, req := range req.Msg.Requests {
-		if req.Database == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database must be set"))
-		}
-		if req.UpdateMask == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask must be set"))
-		}
-		database, err := getDatabaseMessage(ctx, s.store, req.Database.Name)
+	response := &v1pb.BatchUpdateDatabasesResponse{}
+	for _, updateReq := range req.Msg.GetRequests() {
+		updated, err := s.UpdateDatabase(ctx, connect.NewRequest(updateReq))
 		if err != nil {
 			return nil, err
 		}
-		if database.Deleted {
-			continue
-		}
-		if updateMask == nil {
-			updateMask = req.UpdateMask
-		}
-		if !slices.Equal(updateMask.Paths, req.UpdateMask.Paths) {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("all databases should have the same update_mask"))
-		}
-		for _, path := range req.UpdateMask.Paths {
-			switch path {
-			case "project":
-				projectID, err := common.GetProjectID(req.Database.Project)
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-				}
-				if batchUpdate.ProjectID != nil && *batchUpdate.ProjectID != projectID {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("all databases should use the same project"))
-				}
-				batchUpdate.ProjectID = &projectID
-			case "environment":
-				if req.Database.Environment != nil && *req.Database.Environment != "" {
-					envID, err := common.GetEnvironmentID(*req.Database.Environment)
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-					}
-					if batchUpdate.EnvironmentID != nil && *batchUpdate.EnvironmentID != envID {
-						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("all databases should use the same environment"))
-					}
-					batchUpdate.EnvironmentID = &envID
-				} else {
-					if batchUpdate.EnvironmentID != nil && *batchUpdate.EnvironmentID != "" {
-						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("all databases should use the same environment"))
-					}
-					unsetEnvironment := ""
-					batchUpdate.EnvironmentID = &unsetEnvironment
-				}
-			default:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported update_mask path %q", path))
-			}
-		}
-		databases = append(databases, database)
-	}
-	if batchUpdate.ProjectID != nil {
-		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-			ResourceID:  batchUpdate.ProjectID,
-			ShowDeleted: true,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
-		}
-		if project == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", *batchUpdate.ProjectID))
-		}
-		if project.Deleted {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("project %q is deleted", *batchUpdate.ProjectID))
-		}
-	}
-	if batchUpdate.EnvironmentID != nil && *batchUpdate.EnvironmentID != "" {
-		environment, err := s.store.GetEnvironmentByID(ctx, *batchUpdate.EnvironmentID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
-		}
-		if environment == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", *batchUpdate.EnvironmentID))
-		}
-	}
-
-	response := &v1pb.BatchUpdateDatabasesResponse{}
-	if len(databases) == 0 {
-		return connect.NewResponse(response), nil
-	}
-
-	updatedDatabases, err := s.store.BatchUpdateDatabases(ctx, databases, batchUpdate)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
-	}
-	for _, databaseMessage := range updatedDatabases {
-		database, err := s.convertToDatabase(ctx, databaseMessage)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert database, error: %v", err))
-		}
-		response.Databases = append(response.Databases, database)
+		response.Databases = append(response.Databases, updated.Msg)
 	}
 	return connect.NewResponse(response), nil
 }

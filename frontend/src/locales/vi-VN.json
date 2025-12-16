@@ -1658,7 +1658,7 @@
     "edit-labels": "Chỉnh sửa nhãn",
     "edit-environment": "Chỉnh sửa Môi trường",
     "mixed-values-for-label": "Nhãn đã chọn này có các giá trị hỗn hợp",
-    "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị hỗn hợp cho cùng một khóa",
+    "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
     "table-detail": "Chi tiết bảng",
     "batch-action-permission-denied": "Không có quyền {action} đối với cơ sở dữ liệu",
     "batch-action-disabled": "Không thể {action} đối với các cơ sở dữ liệu từ các dự án khác nhau",

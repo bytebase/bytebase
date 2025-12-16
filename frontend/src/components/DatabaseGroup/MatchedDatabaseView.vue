@@ -106,15 +106,14 @@ const props = defineProps<{
 const { t } = useI18n();
 const matchedDatabaseNameList = ref<string[]>([]);
 const pageSize = computed(() => getDefaultPagination());
+const dbGroupStore = useDBGroupStore();
+const databaseStore = useDatabaseV1Store();
 
 const loadMoreMatched = async (index: number) => {
   const previous = index;
   const next = previous + pageSize.value;
-
-  const databases = await Promise.all(
-    matchedDatabaseNameList.value
-      .slice(previous, next)
-      .map((name) => databaseStore.getOrFetchDatabaseByName(name))
+  const databases = await databaseStore.batchGetDatabases(
+    matchedDatabaseNameList.value.slice(previous, next)
   );
 
   return {
@@ -177,9 +176,6 @@ const state = reactive<LocalState>({
   databaseMatchLists: getInitialState(),
   collapseExpandedNames: [],
 });
-
-const dbGroupStore = useDBGroupStore();
-const databaseStore = useDatabaseV1Store();
 
 // biome-ignore format: ESLint requires trailing comma for generic type parameter
 const loadMoreDatabase = async <T,>(state: DatabaseMatchList<T>) => {

@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	ProjectService_GetProject_FullMethodName          = "/bytebase.v1.ProjectService/GetProject"
+	ProjectService_BatchGetProjects_FullMethodName    = "/bytebase.v1.ProjectService/BatchGetProjects"
 	ProjectService_ListProjects_FullMethodName        = "/bytebase.v1.ProjectService/ListProjects"
 	ProjectService_SearchProjects_FullMethodName      = "/bytebase.v1.ProjectService/SearchProjects"
 	ProjectService_CreateProject_FullMethodName       = "/bytebase.v1.ProjectService/CreateProject"
@@ -47,6 +48,9 @@ type ProjectServiceClient interface {
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	// Permissions required: bb.projects.get
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*Project, error)
+	// BatchGetProjects retrieves multiple projects by their names.
+	// Permissions required: bb.projects.get
+	BatchGetProjects(ctx context.Context, in *BatchGetProjectsRequest, opts ...grpc.CallOption) (*BatchGetProjectsResponse, error)
 	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list
 	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error)
@@ -103,6 +107,16 @@ func (c *projectServiceClient) GetProject(ctx context.Context, in *GetProjectReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Project)
 	err := c.cc.Invoke(ctx, ProjectService_GetProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *projectServiceClient) BatchGetProjects(ctx context.Context, in *BatchGetProjectsRequest, opts ...grpc.CallOption) (*BatchGetProjectsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchGetProjectsResponse)
+	err := c.cc.Invoke(ctx, ProjectService_BatchGetProjects_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -259,6 +273,9 @@ type ProjectServiceServer interface {
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	// Permissions required: bb.projects.get
 	GetProject(context.Context, *GetProjectRequest) (*Project, error)
+	// BatchGetProjects retrieves multiple projects by their names.
+	// Permissions required: bb.projects.get
+	BatchGetProjects(context.Context, *BatchGetProjectsRequest) (*BatchGetProjectsResponse, error)
 	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list
 	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error)
@@ -313,6 +330,9 @@ type UnimplementedProjectServiceServer struct{}
 
 func (UnimplementedProjectServiceServer) GetProject(context.Context, *GetProjectRequest) (*Project, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetProject not implemented")
+}
+func (UnimplementedProjectServiceServer) BatchGetProjects(context.Context, *BatchGetProjectsRequest) (*BatchGetProjectsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BatchGetProjects not implemented")
 }
 func (UnimplementedProjectServiceServer) ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListProjects not implemented")
@@ -391,6 +411,24 @@ func _ProjectService_GetProject_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProjectServiceServer).GetProject(ctx, req.(*GetProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProjectService_BatchGetProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchGetProjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).BatchGetProjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_BatchGetProjects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).BatchGetProjects(ctx, req.(*BatchGetProjectsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -657,6 +695,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProject",
 			Handler:    _ProjectService_GetProject_Handler,
+		},
+		{
+			MethodName: "BatchGetProjects",
+			Handler:    _ProjectService_BatchGetProjects_Handler,
 		},
 		{
 			MethodName: "ListProjects",

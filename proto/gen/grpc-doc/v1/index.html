@@ -2031,6 +2031,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.BatchGetProjectsRequest"><span class="badge">M</span>BatchGetProjectsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchGetProjectsResponse"><span class="badge">M</span>BatchGetProjectsResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.CreateProjectRequest"><span class="badge">M</span>CreateProjectRequest</a>
                 </li>
               
@@ -22569,6 +22577,55 @@ If set to false, the operation will fail if the project has databases or open is
 
         
       
+        <h3 id="bytebase.v1.BatchGetProjectsRequest">BatchGetProjectsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>names</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The names of projects to retrieve.
+Format: projects/{project} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchGetProjectsResponse">BatchGetProjectsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>projects</td>
+                  <td><a href="#bytebase.v1.Project">Project</a></td>
+                  <td>repeated</td>
+                  <td><p>The projects from the specified request. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.CreateProjectRequest">CreateProjectRequest</h3>
         <p></p>
 
@@ -23488,6 +23545,14 @@ Permissions required: bb.projects.get</p></td>
               </tr>
             
               <tr>
+                <td>BatchGetProjects</td>
+                <td><a href="#bytebase.v1.BatchGetProjectsRequest">BatchGetProjectsRequest</a></td>
+                <td><a href="#bytebase.v1.BatchGetProjectsResponse">BatchGetProjectsResponse</a></td>
+                <td><p>BatchGetProjects retrieves multiple projects by their names.
+Permissions required: bb.projects.get</p></td>
+              </tr>
+            
+              <tr>
                 <td>ListProjects</td>
                 <td><a href="#bytebase.v1.ListProjectsRequest">ListProjectsRequest</a></td>
                 <td><a href="#bytebase.v1.ListProjectsResponse">ListProjectsResponse</a></td>
@@ -23623,6 +23688,16 @@ Permissions required: bb.projects.update</p></td>
                 <td>GetProject</td>
                 <td>GET</td>
                 <td>/v1/{name=projects/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchGetProjects</td>
+                <td>GET</td>
+                <td>/v1/projects:batchGet</td>
                 <td></td>
               </tr>
               

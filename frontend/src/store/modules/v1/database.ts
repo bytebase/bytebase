@@ -291,6 +291,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     return request;
   };
   const batchGetDatabases = async (names: string[], silent = true) => {
+    if (names.length === 0) {
+      return [];
+    }
     const request = create(BatchGetDatabasesRequestSchema, {
       names,
     });

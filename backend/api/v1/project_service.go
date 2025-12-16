@@ -64,6 +64,22 @@ func (s *ProjectService) GetProject(ctx context.Context, req *connect.Request[v1
 	return connect.NewResponse(convertToProject(project)), nil
 }
 
+// BatchGetProjects gets projects in batch.
+func (s *ProjectService) BatchGetProjects(ctx context.Context, req *connect.Request[v1pb.BatchGetProjectsRequest]) (*connect.Response[v1pb.BatchGetProjectsResponse], error) {
+	projects := make([]*v1pb.Project, 0, len(req.Msg.Names))
+	for _, name := range req.Msg.Names {
+		project, err := s.getProjectMessage(ctx, name)
+		if err != nil {
+			return nil, err
+		}
+		if project.Deleted {
+			continue
+		}
+		projects = append(projects, convertToProject(project))
+	}
+	return connect.NewResponse(&v1pb.BatchGetProjectsResponse{Projects: projects}), nil
+}
+
 // ListProjects lists all projects.
 func (s *ProjectService) ListProjects(ctx context.Context, req *connect.Request[v1pb.ListProjectsRequest]) (*connect.Response[v1pb.ListProjectsResponse], error) {
 	offset, err := parseLimitAndOffset(&pageSize{

@@ -19,6 +19,7 @@ import {
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
   BatchDeleteProjectsRequestSchema,
+  BatchGetProjectsRequestSchema,
   CreateProjectRequestSchema,
   DeleteProjectRequestSchema,
   GetProjectRequestSchema,
@@ -185,6 +186,20 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     };
   };
 
+  const batchGetProjects = async (names: string[], silent = true) => {
+    const request = create(BatchGetProjectsRequestSchema, {
+      names,
+    });
+    const response = await projectServiceClientConnect.batchGetProjects(
+      request,
+      {
+        contextValues: createContextValues().set(silentContextKey, silent),
+      }
+    );
+    const composedProjects = await upsertProjectMap(response.projects);
+    return composedProjects;
+  };
+
   const getOrFetchProjectByName = async (name: string, silent = true) => {
     const cachedData = getProjectByName(name);
     if (cachedData && cachedData.name !== UNKNOWN_PROJECT_NAME) {
@@ -277,6 +292,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     restoreProject,
     updateProjectCache,
     fetchProjectList,
+    batchGetProjects,
   };
 });
 
@@ -308,17 +324,21 @@ export const useCurrentProjectV1 = () => {
 export const batchGetOrFetchProjects = async (projectNames: string[]) => {
   const store = useProjectV1Store();
 
-  const distinctProjectList = uniq(projectNames);
-  await Promise.all(
-    distinctProjectList.map((projectName) => {
-      if (
-        !projectName ||
-        !isValidProjectName(projectName) ||
-        projectName === DEFAULT_PROJECT_NAME
-      ) {
-        return;
-      }
-      return store.getOrFetchProjectByName(projectName, true /* silent */);
-    })
-  );
+  const distinctProjectList = uniq(projectNames).filter((projectName) => {
+    if (
+      !projectName ||
+      !isValidProjectName(projectName) ||
+      projectName === DEFAULT_PROJECT_NAME
+    ) {
+      return false;
+    }
+    const project = store.getProjectByName(projectName);
+    if (isValidProjectName(project.name)) {
+      return false;
+    }
+    return true;
+  });
+  if (distinctProjectList.length > 0) {
+    return store.batchGetProjects(distinctProjectList, true /* silent */);
+  }
 };

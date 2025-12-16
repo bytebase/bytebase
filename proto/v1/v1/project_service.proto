@@ -27,6 +27,14 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // BatchGetProjects retrieves multiple projects by their names.
+  // Permissions required: bb.projects.get
+  rpc BatchGetProjects(BatchGetProjectsRequest) returns (BatchGetProjectsResponse) {
+    option (google.api.http) = {get: "/v1/projects:batchGet"};
+    option (bytebase.v1.permission) = "bb.projects.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   // Lists all projects in the workspace with optional filtering.
   // Permissions required: bb.projects.list
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
@@ -187,6 +195,20 @@ message GetProjectRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Project"}
   ];
+}
+
+message BatchGetProjectsRequest {
+  // The names of projects to retrieve.
+  // Format: projects/{project}
+  repeated string names = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+}
+
+message BatchGetProjectsResponse {
+  // The projects from the specified request.
+  repeated Project projects = 1;
 }
 
 message ListProjectsRequest {
