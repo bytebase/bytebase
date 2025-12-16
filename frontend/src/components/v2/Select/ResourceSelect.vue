@@ -12,7 +12,7 @@
     :filter="filterResource"
     :render-label="renderLabel"
     :render-tag="renderTag"
-    :placeholder="placeholder"
+    :placeholder="placeholder ?? $t('common.search-for-more')"
     :size="size"
     :consistent-menu-width="consistentMenuWidth"
     class="bb-user-select"

@@ -137,6 +137,7 @@
     "manage": "Quản lý",
     "table": "Bảng",
     "search": "Tìm kiếm",
+    "search-for-more": "Tìm kiếm thêm",
     "warning": "Cảnh báo",
     "edited": "đã chỉnh sửa",
     "preview": "Xem trước",
@@ -1312,7 +1313,6 @@
     }
   },
   "instance": {
-    "select": "Chọn phiên bản",
     "select-database-user": "Chọn người dùng cơ sở dữ liệu",
     "new-database": "Cơ sở dữ liệu mới",
     "syncing": "Đang đồng bộ hóa ...",

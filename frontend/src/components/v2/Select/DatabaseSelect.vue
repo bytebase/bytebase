@@ -4,7 +4,6 @@
     class="bb-database-select"
     :remote="true"
     :loading="state.loading"
-    :placeholder="$t('database.select')"
     :multiple="multiple"
     :value="databaseName"
     :values="databaseNames"

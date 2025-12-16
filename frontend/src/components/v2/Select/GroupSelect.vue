@@ -8,7 +8,6 @@
     :multiple="multiple"
     :options="options"
     :custom-label="renderLabel"
-    :placeholder="$t('settings.members.select-group', multiple ? 2 : 1)"
     @search="handleSearch"
     @update:value="(val) => $emit('update:group', val)"
     @update:values="(val) => $emit('update:groups', val)"

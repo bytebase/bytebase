@@ -137,6 +137,7 @@
     "manage": "Manage",
     "table": "Table",
     "search": "Search",
+    "search-for-more": "Search for more",
     "warning": "Warning",
     "edited": "edited",
     "preview": "Preview",
@@ -1312,7 +1313,6 @@
     }
   },
   "instance": {
-    "select": "Select instance",
     "select-database-user": "Select database user",
     "new-database": "New Database",
     "syncing": "Syncing ...",

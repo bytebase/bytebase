@@ -3,7 +3,6 @@
     v-bind="$attrs"
     :remote="true"
     :loading="state.loading"
-    :placeholder="$t('project.select')"
     :multiple="multiple"
     :disabled="disabled"
     :value="projectName"

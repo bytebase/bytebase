@@ -137,6 +137,7 @@
     "manage": "管理",
     "table": "テーブル",
     "search": "検索",
+    "search-for-more": "さらに検索",
     "warning": "警告する",
     "edited": "編集日時",
     "preview": "プレビュー",
@@ -1312,7 +1313,6 @@
     }
   },
   "instance": {
-    "select": "インスタンスの選択",
     "select-database-user": "データベースユーザーの選択",
     "new-database": "@:common.new@:common.database",
     "syncing": "同期中 ...",

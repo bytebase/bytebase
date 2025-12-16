@@ -5,7 +5,6 @@
     :loading="state.loading"
     :value="instanceName"
     :options="options"
-    :placeholder="$t('instance.select')"
     :custom-label="renderLabel"
     :virtual-scroll="true"
     :fallback-option="false"
