@@ -124,10 +124,7 @@ import {
   useUserStore,
 } from "@/store";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  IssueComment_Approval_Status,
-  IssueComment_TaskUpdate_Status,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { IssueComment_Approval_Status } from "@/types/proto-es/v1/issue_service_pb";
 
 type ActionIconType =
   | "avatar"
@@ -171,43 +168,6 @@ const icon = computed((): ActionIconType => {
       case IssueComment_Approval_Status.PENDING:
         return "re-request-review";
     }
-  } else if (commentType === IssueCommentType.STAGE_END) {
-    return "complete";
-  } else if (
-    commentType === IssueCommentType.TASK_UPDATE &&
-    issueComment.event?.case === "taskUpdate"
-  ) {
-    const { toStatus } = issueComment.event.value;
-    let action: ActionIconType = "update";
-    if (toStatus !== undefined) {
-      switch (toStatus) {
-        case IssueComment_TaskUpdate_Status.PENDING: {
-          action = "rollout";
-          break;
-        }
-        case IssueComment_TaskUpdate_Status.RUNNING: {
-          action = "run";
-          break;
-        }
-        case IssueComment_TaskUpdate_Status.DONE: {
-          action = "complete";
-          break;
-        }
-        case IssueComment_TaskUpdate_Status.FAILED: {
-          action = "fail";
-          break;
-        }
-        case IssueComment_TaskUpdate_Status.SKIPPED: {
-          action = "skip";
-          break;
-        }
-        case IssueComment_TaskUpdate_Status.CANCELED: {
-          action = "cancel";
-          break;
-        }
-      }
-    }
-    return action;
   } else if (
     commentType === IssueCommentType.ISSUE_UPDATE &&
     issueComment.event?.case === "issueUpdate"
@@ -223,16 +183,8 @@ const icon = computed((): ActionIconType => {
       return "update";
     }
     // Otherwise, show avatar icon based on the creator.
-  } else if (
-    commentType === IssueCommentType.TASK_PRIOR_BACKUP &&
-    issueComment.event?.case === "taskPriorBackup"
-  ) {
-    const taskPriorBackup = issueComment.event.value;
-    if (taskPriorBackup.error !== "") {
-      return "fail";
-    } else {
-      return "complete";
-    }
+  } else if (commentType === IssueCommentType.PLAN_SPEC_UPDATE) {
+    return "update";
   }
 
   return extractUserId(issueComment.creator) == userStore.systemBotUser?.email

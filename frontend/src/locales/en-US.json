@@ -907,17 +907,7 @@
       "reopened-issue": "reopened issue",
       "resolved-issue": "resolved issue",
       "canceled-issue": "canceled issue",
-      "changed": "changed",
-      "canceled": "canceled",
-      "started": "started",
-      "completed": "completed",
-      "failed": "failed",
-      "skipped": "skipped",
-      "rolled-out": "rolled out",
-      "xxx-automatically": "{verb} automatically",
-      "failed-to-backup": "Failed to backup data: {error}",
-      "prior-back-table": "Data backup to database {database} and tables {tables}",
-      "prior-back-table-for-line": "Data backup to database {database} and table {tables} for DML in line {line}"
+      "xxx-automatically": "{verb} automatically"
     },
     "n-similar-activities": "({count} similar activity) | ({count} similar activities)"
   },

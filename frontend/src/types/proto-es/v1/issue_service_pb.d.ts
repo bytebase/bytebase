@@ -1028,28 +1028,12 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
     case: "issueUpdate";
   } | {
     /**
-     * Stage end event.
+     * Plan spec update event.
      *
-     * @generated from field: bytebase.v1.IssueComment.StageEnd stage_end = 9;
+     * @generated from field: bytebase.v1.IssueComment.PlanSpecUpdate plan_spec_update = 12;
      */
-    value: IssueComment_StageEnd;
-    case: "stageEnd";
-  } | {
-    /**
-     * Task update event.
-     *
-     * @generated from field: bytebase.v1.IssueComment.TaskUpdate task_update = 10;
-     */
-    value: IssueComment_TaskUpdate;
-    case: "taskUpdate";
-  } | {
-    /**
-     * Task prior backup event.
-     *
-     * @generated from field: bytebase.v1.IssueComment.TaskPriorBackup task_prior_backup = 11;
-     */
-    value: IssueComment_TaskPriorBackup;
-    case: "taskPriorBackup";
+    value: IssueComment_PlanSpecUpdate;
+    case: "planSpecUpdate";
   } | { case: undefined; value?: undefined };
 };
 
@@ -1173,39 +1157,21 @@ export declare type IssueComment_IssueUpdate = Message<"bytebase.v1.IssueComment
 export declare const IssueComment_IssueUpdateSchema: GenMessage<IssueComment_IssueUpdate>;
 
 /**
- * Stage end event information.
+ * Plan spec update event information (tracks sheet changes to plan specs).
  *
- * @generated from message bytebase.v1.IssueComment.StageEnd
+ * @generated from message bytebase.v1.IssueComment.PlanSpecUpdate
  */
-export declare type IssueComment_StageEnd = Message<"bytebase.v1.IssueComment.StageEnd"> & {
+export declare type IssueComment_PlanSpecUpdate = Message<"bytebase.v1.IssueComment.PlanSpecUpdate"> & {
   /**
-   * The stage that ended.
+   * The spec that was updated.
+   * Format: projects/{project}/plans/{plan}/specs/{spec}
    *
-   * @generated from field: string stage = 1;
+   * @generated from field: string spec = 1;
    */
-  stage: string;
-};
-
-/**
- * Describes the message bytebase.v1.IssueComment.StageEnd.
- * Use `create(IssueComment_StageEndSchema)` to create a new message.
- */
-export declare const IssueComment_StageEndSchema: GenMessage<IssueComment_StageEnd>;
-
-/**
- * Task update event information.
- *
- * @generated from message bytebase.v1.IssueComment.TaskUpdate
- */
-export declare type IssueComment_TaskUpdate = Message<"bytebase.v1.IssueComment.TaskUpdate"> & {
-  /**
-   * The tasks that were updated.
-   *
-   * @generated from field: repeated string tasks = 1;
-   */
-  tasks: string[];
+  spec: string;
 
   /**
+   * The previous sheet.
    * Format: projects/{project}/sheets/{sheet}
    *
    * @generated from field: optional string from_sheet = 2;
@@ -1213,159 +1179,19 @@ export declare type IssueComment_TaskUpdate = Message<"bytebase.v1.IssueComment.
   fromSheet?: string;
 
   /**
+   * The new sheet.
    * Format: projects/{project}/sheets/{sheet}
    *
    * @generated from field: optional string to_sheet = 3;
    */
   toSheet?: string;
-
-  /**
-   * @generated from field: optional bytebase.v1.IssueComment.TaskUpdate.Status to_status = 6;
-   */
-  toStatus?: IssueComment_TaskUpdate_Status;
 };
 
 /**
- * Describes the message bytebase.v1.IssueComment.TaskUpdate.
- * Use `create(IssueComment_TaskUpdateSchema)` to create a new message.
+ * Describes the message bytebase.v1.IssueComment.PlanSpecUpdate.
+ * Use `create(IssueComment_PlanSpecUpdateSchema)` to create a new message.
  */
-export declare const IssueComment_TaskUpdateSchema: GenMessage<IssueComment_TaskUpdate>;
-
-/**
- * Task status values.
- *
- * @generated from enum bytebase.v1.IssueComment.TaskUpdate.Status
- */
-export enum IssueComment_TaskUpdate_Status {
-  /**
-   * Unspecified status.
-   *
-   * @generated from enum value: STATUS_UNSPECIFIED = 0;
-   */
-  STATUS_UNSPECIFIED = 0,
-
-  /**
-   * Task is pending.
-   *
-   * @generated from enum value: PENDING = 1;
-   */
-  PENDING = 1,
-
-  /**
-   * Task is running.
-   *
-   * @generated from enum value: RUNNING = 2;
-   */
-  RUNNING = 2,
-
-  /**
-   * Task is done.
-   *
-   * @generated from enum value: DONE = 3;
-   */
-  DONE = 3,
-
-  /**
-   * Task failed.
-   *
-   * @generated from enum value: FAILED = 4;
-   */
-  FAILED = 4,
-
-  /**
-   * Task was skipped.
-   *
-   * @generated from enum value: SKIPPED = 5;
-   */
-  SKIPPED = 5,
-
-  /**
-   * Task was canceled.
-   *
-   * @generated from enum value: CANCELED = 6;
-   */
-  CANCELED = 6,
-}
-
-/**
- * Describes the enum bytebase.v1.IssueComment.TaskUpdate.Status.
- */
-export declare const IssueComment_TaskUpdate_StatusSchema: GenEnum<IssueComment_TaskUpdate_Status>;
-
-/**
- * Task prior backup event information.
- *
- * @generated from message bytebase.v1.IssueComment.TaskPriorBackup
- */
-export declare type IssueComment_TaskPriorBackup = Message<"bytebase.v1.IssueComment.TaskPriorBackup"> & {
-  /**
-   * The task for which backup was performed.
-   *
-   * @generated from field: string task = 1;
-   */
-  task: string;
-
-  /**
-   * The tables that were backed up.
-   *
-   * @generated from field: repeated bytebase.v1.IssueComment.TaskPriorBackup.Table tables = 2;
-   */
-  tables: IssueComment_TaskPriorBackup_Table[];
-
-  /**
-   * The original line number in the statement.
-   *
-   * @generated from field: optional int32 original_line = 3;
-   */
-  originalLine?: number;
-
-  /**
-   * The database that was backed up.
-   *
-   * @generated from field: string database = 4;
-   */
-  database: string;
-
-  /**
-   * Error message if backup failed.
-   *
-   * @generated from field: string error = 5;
-   */
-  error: string;
-};
-
-/**
- * Describes the message bytebase.v1.IssueComment.TaskPriorBackup.
- * Use `create(IssueComment_TaskPriorBackupSchema)` to create a new message.
- */
-export declare const IssueComment_TaskPriorBackupSchema: GenMessage<IssueComment_TaskPriorBackup>;
-
-/**
- * Table identification.
- *
- * @generated from message bytebase.v1.IssueComment.TaskPriorBackup.Table
- */
-export declare type IssueComment_TaskPriorBackup_Table = Message<"bytebase.v1.IssueComment.TaskPriorBackup.Table"> & {
-  /**
-   * The schema name.
-   *
-   * @generated from field: string schema = 1;
-   */
-  schema: string;
-
-  /**
-   * The table name.
-   *
-   * @generated from field: string table = 2;
-   */
-  table: string;
-};
-
-/**
- * Describes the message bytebase.v1.IssueComment.TaskPriorBackup.Table.
- * Use `create(IssueComment_TaskPriorBackup_TableSchema)` to create a new message.
- */
-export declare const IssueComment_TaskPriorBackup_TableSchema: GenMessage<IssueComment_TaskPriorBackup_Table>;
+export declare const IssueComment_PlanSpecUpdateSchema: GenMessage<IssueComment_PlanSpecUpdate>;
 
 /**
  * The status of an issue.

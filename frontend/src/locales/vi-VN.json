@@ -907,17 +907,7 @@
       "reopened-issue": "đã mở lại vấn đề",
       "resolved-issue": "đã giải quyết vấn đề",
       "canceled-issue": "đã hủy vấn đề",
-      "changed": "đã thay đổi",
-      "canceled": "đã hủy",
-      "started": "đã bắt đầu",
-      "completed": "đã hoàn thành",
-      "failed": "đã thất bại",
-      "skipped": "đã bỏ qua",
-      "rolled-out": "đã triển khai",
-      "xxx-automatically": "{verb} tự động",
-      "failed-to-backup": "Không thể sao lưu dữ liệu: {error}",
-      "prior-back-table": "Sao lưu dữ liệu vào cơ sở dữ liệu {database} và các bảng {tables}",
-      "prior-back-table-for-line": "Sao lưu dữ liệu vào cơ sở dữ liệu {database} và bảng {tables} cho DML ở dòng {line}"
+      "xxx-automatically": "{verb} tự động"
     },
     "n-similar-activities": "({count} hoạt động tương tự) | ({count} hoạt động tương tự)"
   },

@@ -907,17 +907,7 @@
       "reopened-issue": "イシューを再開する",
       "resolved-issue": "イシューを完了する",
       "canceled-issue": "イシューをキャンセルする",
-      "changed": "改訂",
-      "canceled": "キャンセル",
-      "started": "始める",
-      "completed": "仕上げる",
-      "failed": "失敗",
-      "skipped": "飛び越える",
-      "rolled-out": "リリース",
-      "xxx-automatically": "自動{verb}",
-      "failed-to-backup": "データのバックアップに失敗しました: {error}",
-      "prior-back-table": "データベース {database} のテーブル {tables} にバックアップされました",
-      "prior-back-table-for-line": "DML のデータベース {database} とテーブル {tables} の行 {line} へのデータのバックアップ"
+      "xxx-automatically": "自動{verb}"
     },
     "n-similar-activities": "({count} 件の同様のイベント)"
   },

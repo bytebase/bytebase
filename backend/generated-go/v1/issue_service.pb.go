@@ -324,75 +324,6 @@ func (IssueComment_Approval_Status) EnumDescriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{20, 0, 0}
 }
 
-// Task status values.
-type IssueComment_TaskUpdate_Status int32
-
-const (
-	// Unspecified status.
-	IssueComment_TaskUpdate_STATUS_UNSPECIFIED IssueComment_TaskUpdate_Status = 0
-	// Task is pending.
-	IssueComment_TaskUpdate_PENDING IssueComment_TaskUpdate_Status = 1
-	// Task is running.
-	IssueComment_TaskUpdate_RUNNING IssueComment_TaskUpdate_Status = 2
-	// Task is done.
-	IssueComment_TaskUpdate_DONE IssueComment_TaskUpdate_Status = 3
-	// Task failed.
-	IssueComment_TaskUpdate_FAILED IssueComment_TaskUpdate_Status = 4
-	// Task was skipped.
-	IssueComment_TaskUpdate_SKIPPED IssueComment_TaskUpdate_Status = 5
-	// Task was canceled.
-	IssueComment_TaskUpdate_CANCELED IssueComment_TaskUpdate_Status = 6
-)
-
-// Enum value maps for IssueComment_TaskUpdate_Status.
-var (
-	IssueComment_TaskUpdate_Status_name = map[int32]string{
-		0: "STATUS_UNSPECIFIED",
-		1: "PENDING",
-		2: "RUNNING",
-		3: "DONE",
-		4: "FAILED",
-		5: "SKIPPED",
-		6: "CANCELED",
-	}
-	IssueComment_TaskUpdate_Status_value = map[string]int32{
-		"STATUS_UNSPECIFIED": 0,
-		"PENDING":            1,
-		"RUNNING":            2,
-		"DONE":               3,
-		"FAILED":             4,
-		"SKIPPED":            5,
-		"CANCELED":           6,
-	}
-)
-
-func (x IssueComment_TaskUpdate_Status) Enum() *IssueComment_TaskUpdate_Status {
-	p := new(IssueComment_TaskUpdate_Status)
-	*p = x
-	return p
-}
-
-func (x IssueComment_TaskUpdate_Status) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (IssueComment_TaskUpdate_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_issue_service_proto_enumTypes[5].Descriptor()
-}
-
-func (IssueComment_TaskUpdate_Status) Type() protoreflect.EnumType {
-	return &file_v1_issue_service_proto_enumTypes[5]
-}
-
-func (x IssueComment_TaskUpdate_Status) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use IssueComment_TaskUpdate_Status.Descriptor instead.
-func (IssueComment_TaskUpdate_Status) EnumDescriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{20, 3, 0}
-}
-
 type GetIssueRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the issue to retrieve.
@@ -1834,9 +1765,7 @@ type IssueComment struct {
 	//
 	//	*IssueComment_Approval_
 	//	*IssueComment_IssueUpdate_
-	//	*IssueComment_StageEnd_
-	//	*IssueComment_TaskUpdate_
-	//	*IssueComment_TaskPriorBackup_
+	//	*IssueComment_PlanSpecUpdate_
 	Event         isIssueComment_Event `protobuf_oneof:"event"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1939,28 +1868,10 @@ func (x *IssueComment) GetIssueUpdate() *IssueComment_IssueUpdate {
 	return nil
 }
 
-func (x *IssueComment) GetStageEnd() *IssueComment_StageEnd {
+func (x *IssueComment) GetPlanSpecUpdate() *IssueComment_PlanSpecUpdate {
 	if x != nil {
-		if x, ok := x.Event.(*IssueComment_StageEnd_); ok {
-			return x.StageEnd
-		}
-	}
-	return nil
-}
-
-func (x *IssueComment) GetTaskUpdate() *IssueComment_TaskUpdate {
-	if x != nil {
-		if x, ok := x.Event.(*IssueComment_TaskUpdate_); ok {
-			return x.TaskUpdate
-		}
-	}
-	return nil
-}
-
-func (x *IssueComment) GetTaskPriorBackup() *IssueComment_TaskPriorBackup {
-	if x != nil {
-		if x, ok := x.Event.(*IssueComment_TaskPriorBackup_); ok {
-			return x.TaskPriorBackup
+		if x, ok := x.Event.(*IssueComment_PlanSpecUpdate_); ok {
+			return x.PlanSpecUpdate
 		}
 	}
 	return nil
@@ -1980,30 +1891,16 @@ type IssueComment_IssueUpdate_ struct {
 	IssueUpdate *IssueComment_IssueUpdate `protobuf:"bytes,8,opt,name=issue_update,json=issueUpdate,proto3,oneof"`
 }
 
-type IssueComment_StageEnd_ struct {
-	// Stage end event.
-	StageEnd *IssueComment_StageEnd `protobuf:"bytes,9,opt,name=stage_end,json=stageEnd,proto3,oneof"`
-}
-
-type IssueComment_TaskUpdate_ struct {
-	// Task update event.
-	TaskUpdate *IssueComment_TaskUpdate `protobuf:"bytes,10,opt,name=task_update,json=taskUpdate,proto3,oneof"`
-}
-
-type IssueComment_TaskPriorBackup_ struct {
-	// Task prior backup event.
-	TaskPriorBackup *IssueComment_TaskPriorBackup `protobuf:"bytes,11,opt,name=task_prior_backup,json=taskPriorBackup,proto3,oneof"`
+type IssueComment_PlanSpecUpdate_ struct {
+	// Plan spec update event.
+	PlanSpecUpdate *IssueComment_PlanSpecUpdate `protobuf:"bytes,12,opt,name=plan_spec_update,json=planSpecUpdate,proto3,oneof"`
 }
 
 func (*IssueComment_Approval_) isIssueComment_Event() {}
 
 func (*IssueComment_IssueUpdate_) isIssueComment_Event() {}
 
-func (*IssueComment_StageEnd_) isIssueComment_Event() {}
-
-func (*IssueComment_TaskUpdate_) isIssueComment_Event() {}
-
-func (*IssueComment_TaskPriorBackup_) isIssueComment_Event() {}
+func (*IssueComment_PlanSpecUpdate_) isIssueComment_Event() {}
 
 // Approvers and their approval status for the issue.
 type Issue_Approver struct {
@@ -2207,29 +2104,36 @@ func (x *IssueComment_IssueUpdate) GetToLabels() []string {
 	return nil
 }
 
-// Stage end event information.
-type IssueComment_StageEnd struct {
+// Plan spec update event information (tracks sheet changes to plan specs).
+type IssueComment_PlanSpecUpdate struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The stage that ended.
-	Stage         string `protobuf:"bytes,1,opt,name=stage,proto3" json:"stage,omitempty"`
+	// The spec that was updated.
+	// Format: projects/{project}/plans/{plan}/specs/{spec}
+	Spec string `protobuf:"bytes,1,opt,name=spec,proto3" json:"spec,omitempty"`
+	// The previous sheet.
+	// Format: projects/{project}/sheets/{sheet}
+	FromSheet *string `protobuf:"bytes,2,opt,name=from_sheet,json=fromSheet,proto3,oneof" json:"from_sheet,omitempty"`
+	// The new sheet.
+	// Format: projects/{project}/sheets/{sheet}
+	ToSheet       *string `protobuf:"bytes,3,opt,name=to_sheet,json=toSheet,proto3,oneof" json:"to_sheet,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *IssueComment_StageEnd) Reset() {
-	*x = IssueComment_StageEnd{}
+func (x *IssueComment_PlanSpecUpdate) Reset() {
+	*x = IssueComment_PlanSpecUpdate{}
 	mi := &file_v1_issue_service_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *IssueComment_StageEnd) String() string {
+func (x *IssueComment_PlanSpecUpdate) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*IssueComment_StageEnd) ProtoMessage() {}
+func (*IssueComment_PlanSpecUpdate) ProtoMessage() {}
 
-func (x *IssueComment_StageEnd) ProtoReflect() protoreflect.Message {
+func (x *IssueComment_PlanSpecUpdate) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_issue_service_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2241,223 +2145,28 @@ func (x *IssueComment_StageEnd) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use IssueComment_StageEnd.ProtoReflect.Descriptor instead.
-func (*IssueComment_StageEnd) Descriptor() ([]byte, []int) {
+// Deprecated: Use IssueComment_PlanSpecUpdate.ProtoReflect.Descriptor instead.
+func (*IssueComment_PlanSpecUpdate) Descriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{20, 2}
 }
 
-func (x *IssueComment_StageEnd) GetStage() string {
+func (x *IssueComment_PlanSpecUpdate) GetSpec() string {
 	if x != nil {
-		return x.Stage
+		return x.Spec
 	}
 	return ""
 }
 
-// Task update event information.
-type IssueComment_TaskUpdate struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The tasks that were updated.
-	Tasks []string `protobuf:"bytes,1,rep,name=tasks,proto3" json:"tasks,omitempty"`
-	// Format: projects/{project}/sheets/{sheet}
-	FromSheet *string `protobuf:"bytes,2,opt,name=from_sheet,json=fromSheet,proto3,oneof" json:"from_sheet,omitempty"`
-	// Format: projects/{project}/sheets/{sheet}
-	ToSheet       *string                         `protobuf:"bytes,3,opt,name=to_sheet,json=toSheet,proto3,oneof" json:"to_sheet,omitempty"`
-	ToStatus      *IssueComment_TaskUpdate_Status `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.v1.IssueComment_TaskUpdate_Status,oneof" json:"to_status,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *IssueComment_TaskUpdate) Reset() {
-	*x = IssueComment_TaskUpdate{}
-	mi := &file_v1_issue_service_proto_msgTypes[26]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *IssueComment_TaskUpdate) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IssueComment_TaskUpdate) ProtoMessage() {}
-
-func (x *IssueComment_TaskUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[26]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use IssueComment_TaskUpdate.ProtoReflect.Descriptor instead.
-func (*IssueComment_TaskUpdate) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{20, 3}
-}
-
-func (x *IssueComment_TaskUpdate) GetTasks() []string {
-	if x != nil {
-		return x.Tasks
-	}
-	return nil
-}
-
-func (x *IssueComment_TaskUpdate) GetFromSheet() string {
+func (x *IssueComment_PlanSpecUpdate) GetFromSheet() string {
 	if x != nil && x.FromSheet != nil {
 		return *x.FromSheet
 	}
 	return ""
 }
 
-func (x *IssueComment_TaskUpdate) GetToSheet() string {
+func (x *IssueComment_PlanSpecUpdate) GetToSheet() string {
 	if x != nil && x.ToSheet != nil {
 		return *x.ToSheet
-	}
-	return ""
-}
-
-func (x *IssueComment_TaskUpdate) GetToStatus() IssueComment_TaskUpdate_Status {
-	if x != nil && x.ToStatus != nil {
-		return *x.ToStatus
-	}
-	return IssueComment_TaskUpdate_STATUS_UNSPECIFIED
-}
-
-// Task prior backup event information.
-type IssueComment_TaskPriorBackup struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The task for which backup was performed.
-	Task string `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
-	// The tables that were backed up.
-	Tables []*IssueComment_TaskPriorBackup_Table `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
-	// The original line number in the statement.
-	OriginalLine *int32 `protobuf:"varint,3,opt,name=original_line,json=originalLine,proto3,oneof" json:"original_line,omitempty"`
-	// The database that was backed up.
-	Database string `protobuf:"bytes,4,opt,name=database,proto3" json:"database,omitempty"`
-	// Error message if backup failed.
-	Error         string `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *IssueComment_TaskPriorBackup) Reset() {
-	*x = IssueComment_TaskPriorBackup{}
-	mi := &file_v1_issue_service_proto_msgTypes[27]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *IssueComment_TaskPriorBackup) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IssueComment_TaskPriorBackup) ProtoMessage() {}
-
-func (x *IssueComment_TaskPriorBackup) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[27]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use IssueComment_TaskPriorBackup.ProtoReflect.Descriptor instead.
-func (*IssueComment_TaskPriorBackup) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{20, 4}
-}
-
-func (x *IssueComment_TaskPriorBackup) GetTask() string {
-	if x != nil {
-		return x.Task
-	}
-	return ""
-}
-
-func (x *IssueComment_TaskPriorBackup) GetTables() []*IssueComment_TaskPriorBackup_Table {
-	if x != nil {
-		return x.Tables
-	}
-	return nil
-}
-
-func (x *IssueComment_TaskPriorBackup) GetOriginalLine() int32 {
-	if x != nil && x.OriginalLine != nil {
-		return *x.OriginalLine
-	}
-	return 0
-}
-
-func (x *IssueComment_TaskPriorBackup) GetDatabase() string {
-	if x != nil {
-		return x.Database
-	}
-	return ""
-}
-
-func (x *IssueComment_TaskPriorBackup) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
-}
-
-// Table identification.
-type IssueComment_TaskPriorBackup_Table struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The schema name.
-	Schema string `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
-	// The table name.
-	Table         string `protobuf:"bytes,2,opt,name=table,proto3" json:"table,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *IssueComment_TaskPriorBackup_Table) Reset() {
-	*x = IssueComment_TaskPriorBackup_Table{}
-	mi := &file_v1_issue_service_proto_msgTypes[28]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *IssueComment_TaskPriorBackup_Table) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IssueComment_TaskPriorBackup_Table) ProtoMessage() {}
-
-func (x *IssueComment_TaskPriorBackup_Table) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_issue_service_proto_msgTypes[28]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use IssueComment_TaskPriorBackup_Table.ProtoReflect.Descriptor instead.
-func (*IssueComment_TaskPriorBackup_Table) Descriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{20, 4, 0}
-}
-
-func (x *IssueComment_TaskPriorBackup_Table) GetSchema() string {
-	if x != nil {
-		return x.Schema
-	}
-	return ""
-}
-
-func (x *IssueComment_TaskPriorBackup_Table) GetTable() string {
-	if x != nil {
-		return x.Table
 	}
 	return ""
 }
@@ -2602,7 +2311,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\rissue_comment\x18\x02 \x01(\v2\x19.bytebase.v1.IssueCommentR\fissueComment\x12@\n" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xee\x0e\n" +
+	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xdf\t\n" +
 	"\fIssueComment\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
 	"\acomment\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x18\x80\x80\x04R\acomment\x12\x18\n" +
@@ -2613,12 +2322,8 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"updateTime\x12\x1d\n" +
 	"\acreator\x18\x06 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
 	"\bapproval\x18\a \x01(\v2\".bytebase.v1.IssueComment.ApprovalH\x00R\bapproval\x12J\n" +
-	"\fissue_update\x18\b \x01(\v2%.bytebase.v1.IssueComment.IssueUpdateH\x00R\vissueUpdate\x12A\n" +
-	"\tstage_end\x18\t \x01(\v2\".bytebase.v1.IssueComment.StageEndH\x00R\bstageEnd\x12G\n" +
-	"\vtask_update\x18\n" +
-	" \x01(\v2$.bytebase.v1.IssueComment.TaskUpdateH\x00R\n" +
-	"taskUpdate\x12W\n" +
-	"\x11task_prior_backup\x18\v \x01(\v2).bytebase.v1.IssueComment.TaskPriorBackupH\x00R\x0ftaskPriorBackup\x1a\x98\x01\n" +
+	"\fissue_update\x18\b \x01(\v2%.bytebase.v1.IssueComment.IssueUpdateH\x00R\vissueUpdate\x12T\n" +
+	"\x10plan_spec_update\x18\f \x01(\v2(.bytebase.v1.IssueComment.PlanSpecUpdateH\x00R\x0eplanSpecUpdate\x1a\x98\x01\n" +
 	"\bApproval\x12A\n" +
 	"\x06status\x18\x01 \x01(\x0e2).bytebase.v1.IssueComment.Approval.StatusR\x06status\"I\n" +
 	"\x06Status\x12\x16\n" +
@@ -2644,39 +2349,14 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x0f_to_descriptionB\x0e\n" +
 	"\f_from_statusB\f\n" +
 	"\n" +
-	"_to_status\x1a \n" +
-	"\bStageEnd\x12\x14\n" +
-	"\x05stage\x18\x01 \x01(\tR\x05stage\x1a\xcc\x02\n" +
-	"\n" +
-	"TaskUpdate\x12\x14\n" +
-	"\x05tasks\x18\x01 \x03(\tR\x05tasks\x12\"\n" +
+	"_to_status\x1a\x84\x01\n" +
+	"\x0ePlanSpecUpdate\x12\x12\n" +
+	"\x04spec\x18\x01 \x01(\tR\x04spec\x12\"\n" +
 	"\n" +
 	"from_sheet\x18\x02 \x01(\tH\x00R\tfromSheet\x88\x01\x01\x12\x1e\n" +
-	"\bto_sheet\x18\x03 \x01(\tH\x01R\atoSheet\x88\x01\x01\x12M\n" +
-	"\tto_status\x18\x06 \x01(\x0e2+.bytebase.v1.IssueComment.TaskUpdate.StatusH\x02R\btoStatus\x88\x01\x01\"k\n" +
-	"\x06Status\x12\x16\n" +
-	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
-	"\aPENDING\x10\x01\x12\v\n" +
-	"\aRUNNING\x10\x02\x12\b\n" +
-	"\x04DONE\x10\x03\x12\n" +
-	"\n" +
-	"\x06FAILED\x10\x04\x12\v\n" +
-	"\aSKIPPED\x10\x05\x12\f\n" +
-	"\bCANCELED\x10\x06B\r\n" +
+	"\bto_sheet\x18\x03 \x01(\tH\x01R\atoSheet\x88\x01\x01B\r\n" +
 	"\v_from_sheetB\v\n" +
-	"\t_to_sheetB\f\n" +
-	"\n" +
-	"_to_status\x1a\x93\x02\n" +
-	"\x0fTaskPriorBackup\x12\x12\n" +
-	"\x04task\x18\x01 \x01(\tR\x04task\x12G\n" +
-	"\x06tables\x18\x02 \x03(\v2/.bytebase.v1.IssueComment.TaskPriorBackup.TableR\x06tables\x12(\n" +
-	"\roriginal_line\x18\x03 \x01(\x05H\x00R\foriginalLine\x88\x01\x01\x12\x1a\n" +
-	"\bdatabase\x18\x04 \x01(\tR\bdatabase\x12\x14\n" +
-	"\x05error\x18\x05 \x01(\tR\x05error\x1a5\n" +
-	"\x05Table\x12\x16\n" +
-	"\x06schema\x18\x01 \x01(\tR\x06schema\x12\x14\n" +
-	"\x05table\x18\x02 \x01(\tR\x05tableB\x10\n" +
-	"\x0e_original_lineB\a\n" +
+	"\t_to_sheetB\a\n" +
 	"\x05event*M\n" +
 	"\vIssueStatus\x12\x1c\n" +
 	"\x18ISSUE_STATUS_UNSPECIFIED\x10\x00\x12\b\n" +
@@ -2711,116 +2391,108 @@ func file_v1_issue_service_proto_rawDescGZIP() []byte {
 	return file_v1_issue_service_proto_rawDescData
 }
 
-var file_v1_issue_service_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_v1_issue_service_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_v1_issue_service_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
+var file_v1_issue_service_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_v1_issue_service_proto_goTypes = []any{
-	(IssueStatus)(0),                           // 0: bytebase.v1.IssueStatus
-	(Issue_Type)(0),                            // 1: bytebase.v1.Issue.Type
-	(Issue_ApprovalStatus)(0),                  // 2: bytebase.v1.Issue.ApprovalStatus
-	(Issue_Approver_Status)(0),                 // 3: bytebase.v1.Issue.Approver.Status
-	(IssueComment_Approval_Status)(0),          // 4: bytebase.v1.IssueComment.Approval.Status
-	(IssueComment_TaskUpdate_Status)(0),        // 5: bytebase.v1.IssueComment.TaskUpdate.Status
-	(*GetIssueRequest)(nil),                    // 6: bytebase.v1.GetIssueRequest
-	(*CreateIssueRequest)(nil),                 // 7: bytebase.v1.CreateIssueRequest
-	(*ListIssuesRequest)(nil),                  // 8: bytebase.v1.ListIssuesRequest
-	(*ListIssuesResponse)(nil),                 // 9: bytebase.v1.ListIssuesResponse
-	(*SearchIssuesRequest)(nil),                // 10: bytebase.v1.SearchIssuesRequest
-	(*SearchIssuesResponse)(nil),               // 11: bytebase.v1.SearchIssuesResponse
-	(*UpdateIssueRequest)(nil),                 // 12: bytebase.v1.UpdateIssueRequest
-	(*BatchUpdateIssuesStatusRequest)(nil),     // 13: bytebase.v1.BatchUpdateIssuesStatusRequest
-	(*BatchUpdateIssuesStatusResponse)(nil),    // 14: bytebase.v1.BatchUpdateIssuesStatusResponse
-	(*ApproveIssueRequest)(nil),                // 15: bytebase.v1.ApproveIssueRequest
-	(*RejectIssueRequest)(nil),                 // 16: bytebase.v1.RejectIssueRequest
-	(*RequestIssueRequest)(nil),                // 17: bytebase.v1.RequestIssueRequest
-	(*Issue)(nil),                              // 18: bytebase.v1.Issue
-	(*GrantRequest)(nil),                       // 19: bytebase.v1.GrantRequest
-	(*ApprovalTemplate)(nil),                   // 20: bytebase.v1.ApprovalTemplate
-	(*ApprovalFlow)(nil),                       // 21: bytebase.v1.ApprovalFlow
-	(*ListIssueCommentsRequest)(nil),           // 22: bytebase.v1.ListIssueCommentsRequest
-	(*ListIssueCommentsResponse)(nil),          // 23: bytebase.v1.ListIssueCommentsResponse
-	(*CreateIssueCommentRequest)(nil),          // 24: bytebase.v1.CreateIssueCommentRequest
-	(*UpdateIssueCommentRequest)(nil),          // 25: bytebase.v1.UpdateIssueCommentRequest
-	(*IssueComment)(nil),                       // 26: bytebase.v1.IssueComment
-	(*Issue_Approver)(nil),                     // 27: bytebase.v1.Issue.Approver
-	nil,                                        // 28: bytebase.v1.Issue.TaskStatusCountEntry
-	(*IssueComment_Approval)(nil),              // 29: bytebase.v1.IssueComment.Approval
-	(*IssueComment_IssueUpdate)(nil),           // 30: bytebase.v1.IssueComment.IssueUpdate
-	(*IssueComment_StageEnd)(nil),              // 31: bytebase.v1.IssueComment.StageEnd
-	(*IssueComment_TaskUpdate)(nil),            // 32: bytebase.v1.IssueComment.TaskUpdate
-	(*IssueComment_TaskPriorBackup)(nil),       // 33: bytebase.v1.IssueComment.TaskPriorBackup
-	(*IssueComment_TaskPriorBackup_Table)(nil), // 34: bytebase.v1.IssueComment.TaskPriorBackup.Table
-	(*fieldmaskpb.FieldMask)(nil),              // 35: google.protobuf.FieldMask
-	(*timestamppb.Timestamp)(nil),              // 36: google.protobuf.Timestamp
-	(RiskLevel)(0),                             // 37: bytebase.v1.RiskLevel
-	(*expr.Expr)(nil),                          // 38: google.type.Expr
-	(*durationpb.Duration)(nil),                // 39: google.protobuf.Duration
+	(IssueStatus)(0),                        // 0: bytebase.v1.IssueStatus
+	(Issue_Type)(0),                         // 1: bytebase.v1.Issue.Type
+	(Issue_ApprovalStatus)(0),               // 2: bytebase.v1.Issue.ApprovalStatus
+	(Issue_Approver_Status)(0),              // 3: bytebase.v1.Issue.Approver.Status
+	(IssueComment_Approval_Status)(0),       // 4: bytebase.v1.IssueComment.Approval.Status
+	(*GetIssueRequest)(nil),                 // 5: bytebase.v1.GetIssueRequest
+	(*CreateIssueRequest)(nil),              // 6: bytebase.v1.CreateIssueRequest
+	(*ListIssuesRequest)(nil),               // 7: bytebase.v1.ListIssuesRequest
+	(*ListIssuesResponse)(nil),              // 8: bytebase.v1.ListIssuesResponse
+	(*SearchIssuesRequest)(nil),             // 9: bytebase.v1.SearchIssuesRequest
+	(*SearchIssuesResponse)(nil),            // 10: bytebase.v1.SearchIssuesResponse
+	(*UpdateIssueRequest)(nil),              // 11: bytebase.v1.UpdateIssueRequest
+	(*BatchUpdateIssuesStatusRequest)(nil),  // 12: bytebase.v1.BatchUpdateIssuesStatusRequest
+	(*BatchUpdateIssuesStatusResponse)(nil), // 13: bytebase.v1.BatchUpdateIssuesStatusResponse
+	(*ApproveIssueRequest)(nil),             // 14: bytebase.v1.ApproveIssueRequest
+	(*RejectIssueRequest)(nil),              // 15: bytebase.v1.RejectIssueRequest
+	(*RequestIssueRequest)(nil),             // 16: bytebase.v1.RequestIssueRequest
+	(*Issue)(nil),                           // 17: bytebase.v1.Issue
+	(*GrantRequest)(nil),                    // 18: bytebase.v1.GrantRequest
+	(*ApprovalTemplate)(nil),                // 19: bytebase.v1.ApprovalTemplate
+	(*ApprovalFlow)(nil),                    // 20: bytebase.v1.ApprovalFlow
+	(*ListIssueCommentsRequest)(nil),        // 21: bytebase.v1.ListIssueCommentsRequest
+	(*ListIssueCommentsResponse)(nil),       // 22: bytebase.v1.ListIssueCommentsResponse
+	(*CreateIssueCommentRequest)(nil),       // 23: bytebase.v1.CreateIssueCommentRequest
+	(*UpdateIssueCommentRequest)(nil),       // 24: bytebase.v1.UpdateIssueCommentRequest
+	(*IssueComment)(nil),                    // 25: bytebase.v1.IssueComment
+	(*Issue_Approver)(nil),                  // 26: bytebase.v1.Issue.Approver
+	nil,                                     // 27: bytebase.v1.Issue.TaskStatusCountEntry
+	(*IssueComment_Approval)(nil),           // 28: bytebase.v1.IssueComment.Approval
+	(*IssueComment_IssueUpdate)(nil),        // 29: bytebase.v1.IssueComment.IssueUpdate
+	(*IssueComment_PlanSpecUpdate)(nil),     // 30: bytebase.v1.IssueComment.PlanSpecUpdate
+	(*fieldmaskpb.FieldMask)(nil),           // 31: google.protobuf.FieldMask
+	(*timestamppb.Timestamp)(nil),           // 32: google.protobuf.Timestamp
+	(RiskLevel)(0),                          // 33: bytebase.v1.RiskLevel
+	(*expr.Expr)(nil),                       // 34: google.type.Expr
+	(*durationpb.Duration)(nil),             // 35: google.protobuf.Duration
 }
 var file_v1_issue_service_proto_depIdxs = []int32{
-	18, // 0: bytebase.v1.CreateIssueRequest.issue:type_name -> bytebase.v1.Issue
-	18, // 1: bytebase.v1.ListIssuesResponse.issues:type_name -> bytebase.v1.Issue
-	18, // 2: bytebase.v1.SearchIssuesResponse.issues:type_name -> bytebase.v1.Issue
-	18, // 3: bytebase.v1.UpdateIssueRequest.issue:type_name -> bytebase.v1.Issue
-	35, // 4: bytebase.v1.UpdateIssueRequest.update_mask:type_name -> google.protobuf.FieldMask
+	17, // 0: bytebase.v1.CreateIssueRequest.issue:type_name -> bytebase.v1.Issue
+	17, // 1: bytebase.v1.ListIssuesResponse.issues:type_name -> bytebase.v1.Issue
+	17, // 2: bytebase.v1.SearchIssuesResponse.issues:type_name -> bytebase.v1.Issue
+	17, // 3: bytebase.v1.UpdateIssueRequest.issue:type_name -> bytebase.v1.Issue
+	31, // 4: bytebase.v1.UpdateIssueRequest.update_mask:type_name -> google.protobuf.FieldMask
 	0,  // 5: bytebase.v1.BatchUpdateIssuesStatusRequest.status:type_name -> bytebase.v1.IssueStatus
 	1,  // 6: bytebase.v1.Issue.type:type_name -> bytebase.v1.Issue.Type
 	0,  // 7: bytebase.v1.Issue.status:type_name -> bytebase.v1.IssueStatus
-	27, // 8: bytebase.v1.Issue.approvers:type_name -> bytebase.v1.Issue.Approver
-	20, // 9: bytebase.v1.Issue.approval_template:type_name -> bytebase.v1.ApprovalTemplate
-	36, // 10: bytebase.v1.Issue.create_time:type_name -> google.protobuf.Timestamp
-	36, // 11: bytebase.v1.Issue.update_time:type_name -> google.protobuf.Timestamp
-	19, // 12: bytebase.v1.Issue.grant_request:type_name -> bytebase.v1.GrantRequest
-	37, // 13: bytebase.v1.Issue.risk_level:type_name -> bytebase.v1.RiskLevel
-	28, // 14: bytebase.v1.Issue.task_status_count:type_name -> bytebase.v1.Issue.TaskStatusCountEntry
+	26, // 8: bytebase.v1.Issue.approvers:type_name -> bytebase.v1.Issue.Approver
+	19, // 9: bytebase.v1.Issue.approval_template:type_name -> bytebase.v1.ApprovalTemplate
+	32, // 10: bytebase.v1.Issue.create_time:type_name -> google.protobuf.Timestamp
+	32, // 11: bytebase.v1.Issue.update_time:type_name -> google.protobuf.Timestamp
+	18, // 12: bytebase.v1.Issue.grant_request:type_name -> bytebase.v1.GrantRequest
+	33, // 13: bytebase.v1.Issue.risk_level:type_name -> bytebase.v1.RiskLevel
+	27, // 14: bytebase.v1.Issue.task_status_count:type_name -> bytebase.v1.Issue.TaskStatusCountEntry
 	2,  // 15: bytebase.v1.Issue.approval_status:type_name -> bytebase.v1.Issue.ApprovalStatus
-	38, // 16: bytebase.v1.GrantRequest.condition:type_name -> google.type.Expr
-	39, // 17: bytebase.v1.GrantRequest.expiration:type_name -> google.protobuf.Duration
-	21, // 18: bytebase.v1.ApprovalTemplate.flow:type_name -> bytebase.v1.ApprovalFlow
-	26, // 19: bytebase.v1.ListIssueCommentsResponse.issue_comments:type_name -> bytebase.v1.IssueComment
-	26, // 20: bytebase.v1.CreateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
-	26, // 21: bytebase.v1.UpdateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
-	35, // 22: bytebase.v1.UpdateIssueCommentRequest.update_mask:type_name -> google.protobuf.FieldMask
-	36, // 23: bytebase.v1.IssueComment.create_time:type_name -> google.protobuf.Timestamp
-	36, // 24: bytebase.v1.IssueComment.update_time:type_name -> google.protobuf.Timestamp
-	29, // 25: bytebase.v1.IssueComment.approval:type_name -> bytebase.v1.IssueComment.Approval
-	30, // 26: bytebase.v1.IssueComment.issue_update:type_name -> bytebase.v1.IssueComment.IssueUpdate
-	31, // 27: bytebase.v1.IssueComment.stage_end:type_name -> bytebase.v1.IssueComment.StageEnd
-	32, // 28: bytebase.v1.IssueComment.task_update:type_name -> bytebase.v1.IssueComment.TaskUpdate
-	33, // 29: bytebase.v1.IssueComment.task_prior_backup:type_name -> bytebase.v1.IssueComment.TaskPriorBackup
-	3,  // 30: bytebase.v1.Issue.Approver.status:type_name -> bytebase.v1.Issue.Approver.Status
-	4,  // 31: bytebase.v1.IssueComment.Approval.status:type_name -> bytebase.v1.IssueComment.Approval.Status
-	0,  // 32: bytebase.v1.IssueComment.IssueUpdate.from_status:type_name -> bytebase.v1.IssueStatus
-	0,  // 33: bytebase.v1.IssueComment.IssueUpdate.to_status:type_name -> bytebase.v1.IssueStatus
-	5,  // 34: bytebase.v1.IssueComment.TaskUpdate.to_status:type_name -> bytebase.v1.IssueComment.TaskUpdate.Status
-	34, // 35: bytebase.v1.IssueComment.TaskPriorBackup.tables:type_name -> bytebase.v1.IssueComment.TaskPriorBackup.Table
-	6,  // 36: bytebase.v1.IssueService.GetIssue:input_type -> bytebase.v1.GetIssueRequest
-	7,  // 37: bytebase.v1.IssueService.CreateIssue:input_type -> bytebase.v1.CreateIssueRequest
-	8,  // 38: bytebase.v1.IssueService.ListIssues:input_type -> bytebase.v1.ListIssuesRequest
-	10, // 39: bytebase.v1.IssueService.SearchIssues:input_type -> bytebase.v1.SearchIssuesRequest
-	12, // 40: bytebase.v1.IssueService.UpdateIssue:input_type -> bytebase.v1.UpdateIssueRequest
-	22, // 41: bytebase.v1.IssueService.ListIssueComments:input_type -> bytebase.v1.ListIssueCommentsRequest
-	24, // 42: bytebase.v1.IssueService.CreateIssueComment:input_type -> bytebase.v1.CreateIssueCommentRequest
-	25, // 43: bytebase.v1.IssueService.UpdateIssueComment:input_type -> bytebase.v1.UpdateIssueCommentRequest
-	13, // 44: bytebase.v1.IssueService.BatchUpdateIssuesStatus:input_type -> bytebase.v1.BatchUpdateIssuesStatusRequest
-	15, // 45: bytebase.v1.IssueService.ApproveIssue:input_type -> bytebase.v1.ApproveIssueRequest
-	16, // 46: bytebase.v1.IssueService.RejectIssue:input_type -> bytebase.v1.RejectIssueRequest
-	17, // 47: bytebase.v1.IssueService.RequestIssue:input_type -> bytebase.v1.RequestIssueRequest
-	18, // 48: bytebase.v1.IssueService.GetIssue:output_type -> bytebase.v1.Issue
-	18, // 49: bytebase.v1.IssueService.CreateIssue:output_type -> bytebase.v1.Issue
-	9,  // 50: bytebase.v1.IssueService.ListIssues:output_type -> bytebase.v1.ListIssuesResponse
-	11, // 51: bytebase.v1.IssueService.SearchIssues:output_type -> bytebase.v1.SearchIssuesResponse
-	18, // 52: bytebase.v1.IssueService.UpdateIssue:output_type -> bytebase.v1.Issue
-	23, // 53: bytebase.v1.IssueService.ListIssueComments:output_type -> bytebase.v1.ListIssueCommentsResponse
-	26, // 54: bytebase.v1.IssueService.CreateIssueComment:output_type -> bytebase.v1.IssueComment
-	26, // 55: bytebase.v1.IssueService.UpdateIssueComment:output_type -> bytebase.v1.IssueComment
-	14, // 56: bytebase.v1.IssueService.BatchUpdateIssuesStatus:output_type -> bytebase.v1.BatchUpdateIssuesStatusResponse
-	18, // 57: bytebase.v1.IssueService.ApproveIssue:output_type -> bytebase.v1.Issue
-	18, // 58: bytebase.v1.IssueService.RejectIssue:output_type -> bytebase.v1.Issue
-	18, // 59: bytebase.v1.IssueService.RequestIssue:output_type -> bytebase.v1.Issue
-	48, // [48:60] is the sub-list for method output_type
-	36, // [36:48] is the sub-list for method input_type
-	36, // [36:36] is the sub-list for extension type_name
-	36, // [36:36] is the sub-list for extension extendee
-	0,  // [0:36] is the sub-list for field type_name
+	34, // 16: bytebase.v1.GrantRequest.condition:type_name -> google.type.Expr
+	35, // 17: bytebase.v1.GrantRequest.expiration:type_name -> google.protobuf.Duration
+	20, // 18: bytebase.v1.ApprovalTemplate.flow:type_name -> bytebase.v1.ApprovalFlow
+	25, // 19: bytebase.v1.ListIssueCommentsResponse.issue_comments:type_name -> bytebase.v1.IssueComment
+	25, // 20: bytebase.v1.CreateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
+	25, // 21: bytebase.v1.UpdateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
+	31, // 22: bytebase.v1.UpdateIssueCommentRequest.update_mask:type_name -> google.protobuf.FieldMask
+	32, // 23: bytebase.v1.IssueComment.create_time:type_name -> google.protobuf.Timestamp
+	32, // 24: bytebase.v1.IssueComment.update_time:type_name -> google.protobuf.Timestamp
+	28, // 25: bytebase.v1.IssueComment.approval:type_name -> bytebase.v1.IssueComment.Approval
+	29, // 26: bytebase.v1.IssueComment.issue_update:type_name -> bytebase.v1.IssueComment.IssueUpdate
+	30, // 27: bytebase.v1.IssueComment.plan_spec_update:type_name -> bytebase.v1.IssueComment.PlanSpecUpdate
+	3,  // 28: bytebase.v1.Issue.Approver.status:type_name -> bytebase.v1.Issue.Approver.Status
+	4,  // 29: bytebase.v1.IssueComment.Approval.status:type_name -> bytebase.v1.IssueComment.Approval.Status
+	0,  // 30: bytebase.v1.IssueComment.IssueUpdate.from_status:type_name -> bytebase.v1.IssueStatus
+	0,  // 31: bytebase.v1.IssueComment.IssueUpdate.to_status:type_name -> bytebase.v1.IssueStatus
+	5,  // 32: bytebase.v1.IssueService.GetIssue:input_type -> bytebase.v1.GetIssueRequest
+	6,  // 33: bytebase.v1.IssueService.CreateIssue:input_type -> bytebase.v1.CreateIssueRequest
+	7,  // 34: bytebase.v1.IssueService.ListIssues:input_type -> bytebase.v1.ListIssuesRequest
+	9,  // 35: bytebase.v1.IssueService.SearchIssues:input_type -> bytebase.v1.SearchIssuesRequest
+	11, // 36: bytebase.v1.IssueService.UpdateIssue:input_type -> bytebase.v1.UpdateIssueRequest
+	21, // 37: bytebase.v1.IssueService.ListIssueComments:input_type -> bytebase.v1.ListIssueCommentsRequest
+	23, // 38: bytebase.v1.IssueService.CreateIssueComment:input_type -> bytebase.v1.CreateIssueCommentRequest
+	24, // 39: bytebase.v1.IssueService.UpdateIssueComment:input_type -> bytebase.v1.UpdateIssueCommentRequest
+	12, // 40: bytebase.v1.IssueService.BatchUpdateIssuesStatus:input_type -> bytebase.v1.BatchUpdateIssuesStatusRequest
+	14, // 41: bytebase.v1.IssueService.ApproveIssue:input_type -> bytebase.v1.ApproveIssueRequest
+	15, // 42: bytebase.v1.IssueService.RejectIssue:input_type -> bytebase.v1.RejectIssueRequest
+	16, // 43: bytebase.v1.IssueService.RequestIssue:input_type -> bytebase.v1.RequestIssueRequest
+	17, // 44: bytebase.v1.IssueService.GetIssue:output_type -> bytebase.v1.Issue
+	17, // 45: bytebase.v1.IssueService.CreateIssue:output_type -> bytebase.v1.Issue
+	8,  // 46: bytebase.v1.IssueService.ListIssues:output_type -> bytebase.v1.ListIssuesResponse
+	10, // 47: bytebase.v1.IssueService.SearchIssues:output_type -> bytebase.v1.SearchIssuesResponse
+	17, // 48: bytebase.v1.IssueService.UpdateIssue:output_type -> bytebase.v1.Issue
+	22, // 49: bytebase.v1.IssueService.ListIssueComments:output_type -> bytebase.v1.ListIssueCommentsResponse
+	25, // 50: bytebase.v1.IssueService.CreateIssueComment:output_type -> bytebase.v1.IssueComment
+	25, // 51: bytebase.v1.IssueService.UpdateIssueComment:output_type -> bytebase.v1.IssueComment
+	13, // 52: bytebase.v1.IssueService.BatchUpdateIssuesStatus:output_type -> bytebase.v1.BatchUpdateIssuesStatusResponse
+	17, // 53: bytebase.v1.IssueService.ApproveIssue:output_type -> bytebase.v1.Issue
+	17, // 54: bytebase.v1.IssueService.RejectIssue:output_type -> bytebase.v1.Issue
+	17, // 55: bytebase.v1.IssueService.RequestIssue:output_type -> bytebase.v1.Issue
+	44, // [44:56] is the sub-list for method output_type
+	32, // [32:44] is the sub-list for method input_type
+	32, // [32:32] is the sub-list for extension type_name
+	32, // [32:32] is the sub-list for extension extendee
+	0,  // [0:32] is the sub-list for field type_name
 }
 
 func init() { file_v1_issue_service_proto_init() }
@@ -2833,20 +2505,17 @@ func file_v1_issue_service_proto_init() {
 	file_v1_issue_service_proto_msgTypes[20].OneofWrappers = []any{
 		(*IssueComment_Approval_)(nil),
 		(*IssueComment_IssueUpdate_)(nil),
-		(*IssueComment_StageEnd_)(nil),
-		(*IssueComment_TaskUpdate_)(nil),
-		(*IssueComment_TaskPriorBackup_)(nil),
+		(*IssueComment_PlanSpecUpdate_)(nil),
 	}
 	file_v1_issue_service_proto_msgTypes[24].OneofWrappers = []any{}
-	file_v1_issue_service_proto_msgTypes[26].OneofWrappers = []any{}
-	file_v1_issue_service_proto_msgTypes[27].OneofWrappers = []any{}
+	file_v1_issue_service_proto_msgTypes[25].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_issue_service_proto_rawDesc), len(file_v1_issue_service_proto_rawDesc)),
-			NumEnums:      6,
-			NumMessages:   29,
+			NumEnums:      5,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

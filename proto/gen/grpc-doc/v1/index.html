@@ -317,19 +317,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.IssueComment.StageEnd"><span class="badge">M</span>IssueComment.StageEnd</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.IssueComment.TaskPriorBackup"><span class="badge">M</span>IssueComment.TaskPriorBackup</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.IssueComment.TaskPriorBackup.Table"><span class="badge">M</span>IssueComment.TaskPriorBackup.Table</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.IssueComment.TaskUpdate"><span class="badge">M</span>IssueComment.TaskUpdate</a>
+                  <a href="#bytebase.v1.IssueComment.PlanSpecUpdate"><span class="badge">M</span>IssueComment.PlanSpecUpdate</a>
                 </li>
               
                 <li>
@@ -387,10 +375,6 @@
               
                 <li>
                   <a href="#bytebase.v1.IssueComment.Approval.Status"><span class="badge">E</span>IssueComment.Approval.Status</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.IssueComment.TaskUpdate.Status"><span class="badge">E</span>IssueComment.TaskUpdate.Status</a>
                 </li>
               
                 <li>
@@ -3946,24 +3930,10 @@ Keys are the following:
                 </tr>
               
                 <tr>
-                  <td>stage_end</td>
-                  <td><a href="#bytebase.v1.IssueComment.StageEnd">IssueComment.StageEnd</a></td>
+                  <td>plan_spec_update</td>
+                  <td><a href="#bytebase.v1.IssueComment.PlanSpecUpdate">IssueComment.PlanSpecUpdate</a></td>
                   <td></td>
-                  <td><p>Stage end event. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task_update</td>
-                  <td><a href="#bytebase.v1.IssueComment.TaskUpdate">IssueComment.TaskUpdate</a></td>
-                  <td></td>
-                  <td><p>Task update event. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task_prior_backup</td>
-                  <td><a href="#bytebase.v1.IssueComment.TaskPriorBackup">IssueComment.TaskPriorBackup</a></td>
-                  <td></td>
-                  <td><p>Task prior backup event. </p></td>
+                  <td><p>Plan spec update event. </p></td>
                 </tr>
               
             </tbody>
@@ -4070,8 +4040,8 @@ Keys are the following:
 
         
       
-        <h3 id="bytebase.v1.IssueComment.StageEnd">IssueComment.StageEnd</h3>
-        <p>Stage end event information.</p>
+        <h3 id="bytebase.v1.IssueComment.PlanSpecUpdate">IssueComment.PlanSpecUpdate</h3>
+        <p>Plan spec update event information (tracks sheet changes to plan specs).</p>
 
         
           <table class="field-table">
@@ -4081,138 +4051,27 @@ Keys are the following:
             <tbody>
               
                 <tr>
-                  <td>stage</td>
+                  <td>spec</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The stage that ended. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.IssueComment.TaskPriorBackup">IssueComment.TaskPriorBackup</h3>
-        <p>Task prior backup event information.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>task</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The task for which backup was performed. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>tables</td>
-                  <td><a href="#bytebase.v1.IssueComment.TaskPriorBackup.Table">IssueComment.TaskPriorBackup.Table</a></td>
-                  <td>repeated</td>
-                  <td><p>The tables that were backed up. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>original_line</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td>optional</td>
-                  <td><p>The original line number in the statement. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database that was backed up. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>error</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Error message if backup failed. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.IssueComment.TaskPriorBackup.Table">IssueComment.TaskPriorBackup.Table</h3>
-        <p>Table identification.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>schema</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The schema name. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The table name. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.IssueComment.TaskUpdate">IssueComment.TaskUpdate</h3>
-        <p>Task update event information.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>tasks</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The tasks that were updated. </p></td>
+                  <td><p>The spec that was updated.
+Format: projects/{project}/plans/{plan}/specs/{spec} </p></td>
                 </tr>
               
                 <tr>
                   <td>from_sheet</td>
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
-                  <td><p>Format: projects/{project}/sheets/{sheet} </p></td>
+                  <td><p>The previous sheet.
+Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
                   <td>to_sheet</td>
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
-                  <td><p>Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>to_status</td>
-                  <td><a href="#bytebase.v1.IssueComment.TaskUpdate.Status">IssueComment.TaskUpdate.Status</a></td>
-                  <td>optional</td>
-                  <td><p> </p></td>
+                  <td><p>The new sheet.
+Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
             </tbody>
@@ -4814,59 +4673,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>REJECTED</td>
                 <td>3</td>
                 <td><p>Rejected.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.IssueComment.TaskUpdate.Status">IssueComment.TaskUpdate.Status</h3>
-        <p>Task status values.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Unspecified status.</p></td>
-              </tr>
-            
-              <tr>
-                <td>PENDING</td>
-                <td>1</td>
-                <td><p>Task is pending.</p></td>
-              </tr>
-            
-              <tr>
-                <td>RUNNING</td>
-                <td>2</td>
-                <td><p>Task is running.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>3</td>
-                <td><p>Task is done.</p></td>
-              </tr>
-            
-              <tr>
-                <td>FAILED</td>
-                <td>4</td>
-                <td><p>Task failed.</p></td>
-              </tr>
-            
-              <tr>
-                <td>SKIPPED</td>
-                <td>5</td>
-                <td><p>Task was skipped.</p></td>
-              </tr>
-            
-              <tr>
-                <td>CANCELED</td>
-                <td>6</td>
-                <td><p>Task was canceled.</p></td>
               </tr>
             
           </tbody>

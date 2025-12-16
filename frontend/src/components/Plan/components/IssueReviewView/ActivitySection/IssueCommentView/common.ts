@@ -7,23 +7,18 @@ export interface DistinctIssueComment {
   similar: IssueComment[];
 }
 
-const isSimilarTaskUpdate = (a: IssueComment, b: IssueComment): boolean => {
-  const fromTaskUpdate = a.event?.case === "taskUpdate" ? a.event.value : null;
-  const toTaskUpdate = b.event?.case === "taskUpdate" ? b.event.value : null;
-  if (!fromTaskUpdate || !toTaskUpdate) {
+const isSimilarPlanSpecUpdate = (a: IssueComment, b: IssueComment): boolean => {
+  const fromPlanSpecUpdate =
+    a.event?.case === "planSpecUpdate" ? a.event.value : null;
+  const toPlanSpecUpdate =
+    b.event?.case === "planSpecUpdate" ? b.event.value : null;
+  if (!fromPlanSpecUpdate || !toPlanSpecUpdate) {
     return false;
   }
-  // Group task updates by status or sheet changes, regardless of specific task IDs
-  // This allows grouping of "completed Task d1", "completed Task d2", etc.
+  // Group plan spec updates by sheet changes
   if (
-    fromTaskUpdate.toSheet &&
-    fromTaskUpdate.toSheet === toTaskUpdate.toSheet
-  ) {
-    return true;
-  }
-  if (
-    fromTaskUpdate.toStatus &&
-    fromTaskUpdate.toStatus === toTaskUpdate.toStatus
+    fromPlanSpecUpdate.toSheet &&
+    fromPlanSpecUpdate.toSheet === toPlanSpecUpdate.toSheet
   ) {
     return true;
   }
@@ -64,8 +59,8 @@ export const isSimilarIssueComment = (
     return false;
   }
 
-  if (aType === IssueCommentType.TASK_UPDATE) {
-    return isSimilarTaskUpdate(a, b);
+  if (aType === IssueCommentType.PLAN_SPEC_UPDATE) {
+    return isSimilarPlanSpecUpdate(a, b);
   }
   if (aType === IssueCommentType.ISSUE_UPDATE) {
     return isSimilarIssueUpdate(a, b);

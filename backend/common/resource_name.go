@@ -30,6 +30,7 @@ const (
 	TaskRunPrefix              = "taskRuns/"
 	PlanPrefix                 = "plans/"
 	PlanCheckRunPrefix         = "planCheckRuns/"
+	SpecPrefix                 = "specs/"
 	RolePrefix                 = "roles/"
 	WebhookIDPrefix            = "webhooks/"
 	SheetIDPrefix              = "sheets/"
@@ -614,6 +615,10 @@ func FormatPlan(projectID string, planUID int64) string {
 
 func FormatPlanCheckRun(projectID string, planUID, runUID int64) string {
 	return fmt.Sprintf("%s/%s%d", FormatPlan(projectID, planUID), PlanCheckRunPrefix, runUID)
+}
+
+func FormatSpec(projectID string, planUID int64, specID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatPlan(projectID, planUID), SpecPrefix, specID)
 }
 
 func GetPolicyResourceTypeAndResource(requestName string) (storepb.Policy_Resource, *string, error) {

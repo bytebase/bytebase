@@ -628,9 +628,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 								issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
 									IssueUID: issue.UID,
 									Payload: &storepb.IssueCommentPayload{
-										Event: &storepb.IssueCommentPayload_TaskUpdate_{
-											TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
-												Tasks:     []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.Environment, task.ID)},
+										Event: &storepb.IssueCommentPayload_PlanSpecUpdate_{
+											PlanSpecUpdate: &storepb.IssueCommentPayload_PlanSpecUpdate{
+												Spec:      common.FormatSpec(issue.Project.ResourceID, oldPlan.UID, specID),
 												FromSheet: &oldSheet,
 												ToSheet:   &newSheet,
 											},

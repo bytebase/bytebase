@@ -53,10 +53,7 @@ import {
   useUserStore,
 } from "@/store";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
-import {
-  IssueComment_Approval_Status,
-  IssueComment_TaskUpdate_Status,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { IssueComment_Approval_Status } from "@/types/proto-es/v1/issue_service_pb";
 
 type ActionIconType =
   | "avatar"
@@ -189,33 +186,6 @@ const iconType = computed((): ActionIconType => {
     }
   }
 
-  if (commentType === IssueCommentType.STAGE_END) {
-    return "complete";
-  }
-
-  if (
-    commentType === IssueCommentType.TASK_UPDATE &&
-    issueComment.event?.case === "taskUpdate"
-  ) {
-    const { toStatus } = issueComment.event.value;
-    if (toStatus !== undefined) {
-      const statusToIcon: Record<
-        IssueComment_TaskUpdate_Status,
-        ActionIconType
-      > = {
-        [IssueComment_TaskUpdate_Status.STATUS_UNSPECIFIED]: "update",
-        [IssueComment_TaskUpdate_Status.PENDING]: "rollout",
-        [IssueComment_TaskUpdate_Status.RUNNING]: "run",
-        [IssueComment_TaskUpdate_Status.DONE]: "complete",
-        [IssueComment_TaskUpdate_Status.FAILED]: "fail",
-        [IssueComment_TaskUpdate_Status.SKIPPED]: "skip",
-        [IssueComment_TaskUpdate_Status.CANCELED]: "cancel",
-      };
-      return statusToIcon[toStatus] ?? "update";
-    }
-    return "update";
-  }
-
   if (
     commentType === IssueCommentType.ISSUE_UPDATE &&
     issueComment.event?.case === "issueUpdate"
@@ -232,11 +202,8 @@ const iconType = computed((): ActionIconType => {
     }
   }
 
-  if (
-    commentType === IssueCommentType.TASK_PRIOR_BACKUP &&
-    issueComment.event?.case === "taskPriorBackup"
-  ) {
-    return issueComment.event.value.error !== "" ? "fail" : "complete";
+  if (commentType === IssueCommentType.PLAN_SPEC_UPDATE) {
+    return "update";
   }
 
   return extractUserId(issueComment.creator) === userStore.systemBotUser?.email

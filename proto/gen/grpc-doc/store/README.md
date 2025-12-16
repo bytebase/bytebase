@@ -146,25 +146,11 @@
     - [Issue.Status](#bytebase-store-Issue-Status)
     - [Issue.Type](#bytebase-store-Issue-Type)
   
-- [store/task_run.proto](#store_task_run-proto)
-    - [PriorBackupDetail](#bytebase-store-PriorBackupDetail)
-    - [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item)
-    - [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table)
-    - [SchedulerInfo](#bytebase-store-SchedulerInfo)
-    - [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause)
-    - [TaskRun](#bytebase-store-TaskRun)
-    - [TaskRunResult](#bytebase-store-TaskRunResult)
-  
-    - [TaskRun.Status](#bytebase-store-TaskRun-Status)
-  
 - [store/issue_comment.proto](#store_issue_comment-proto)
     - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
     - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
     - [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate)
-    - [IssueCommentPayload.StageEnd](#bytebase-store-IssueCommentPayload-StageEnd)
-    - [IssueCommentPayload.TaskPriorBackup](#bytebase-store-IssueCommentPayload-TaskPriorBackup)
-    - [IssueCommentPayload.TaskPriorBackup.Table](#bytebase-store-IssueCommentPayload-TaskPriorBackup-Table)
-    - [IssueCommentPayload.TaskUpdate](#bytebase-store-IssueCommentPayload-TaskUpdate)
+    - [IssueCommentPayload.PlanSpecUpdate](#bytebase-store-IssueCommentPayload-PlanSpecUpdate)
   
 - [store/oauth2.proto](#store_oauth2-proto)
     - [OAuth2AuthorizationCodeConfig](#bytebase-store-OAuth2AuthorizationCodeConfig)
@@ -302,6 +288,17 @@
     - [TaskReleaseSource](#bytebase-store-TaskReleaseSource)
   
     - [Task.Type](#bytebase-store-Task-Type)
+  
+- [store/task_run.proto](#store_task_run-proto)
+    - [PriorBackupDetail](#bytebase-store-PriorBackupDetail)
+    - [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item)
+    - [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table)
+    - [SchedulerInfo](#bytebase-store-SchedulerInfo)
+    - [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause)
+    - [TaskRun](#bytebase-store-TaskRun)
+    - [TaskRunResult](#bytebase-store-TaskRunResult)
+  
+    - [TaskRun.Status](#bytebase-store-TaskRun-Status)
   
 - [store/task_run_log.proto](#store_task_run_log-proto)
     - [TaskRunLog](#bytebase-store-TaskRunLog)
@@ -2634,154 +2631,6 @@ Type represents the category of issue.
 
 
 
-<a name="store_task_run-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/task_run.proto
-
-
-
-<a name="bytebase-store-PriorBackupDetail"></a>
-
-### PriorBackupDetail
-PriorBackupDetail contains information about automatic backups created before migration.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| items | [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item) | repeated | List of backup operations performed. |
-
-
-
-
-
-
-<a name="bytebase-store-PriorBackupDetail-Item"></a>
-
-### PriorBackupDetail.Item
-Item represents a single backup operation for a table.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| source_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The original table that was backed up. |
-| target_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The backup table where data was copied. |
-| start_position | [Position](#bytebase-store-Position) |  | Starting position in SQL for this backup operation. |
-| end_position | [Position](#bytebase-store-Position) |  | Ending position in SQL for this backup operation. |
-
-
-
-
-
-
-<a name="bytebase-store-PriorBackupDetail-Item-Table"></a>
-
-### PriorBackupDetail.Item.Table
-Table identifies a database table.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database containing the table. Format: instances/{instance}/databases/{database} |
-| schema | [string](#string) |  | Schema name (for databases that support schemas). |
-| table | [string](#string) |  | Table name. |
-
-
-
-
-
-
-<a name="bytebase-store-SchedulerInfo"></a>
-
-### SchedulerInfo
-SchedulerInfo contains information about task scheduling and execution delays.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| report_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Timestamp when the scheduler reported this information. |
-| waiting_cause | [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause) |  | Reason why the task run is currently waiting. |
-
-
-
-
-
-
-<a name="bytebase-store-SchedulerInfo-WaitingCause"></a>
-
-### SchedulerInfo.WaitingCause
-WaitingCause indicates why a task run is waiting to execute.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| connection_limit | [bool](#bool) |  | Task is waiting due to database connection limit. |
-| task_uid | [int32](#int32) |  | Task is waiting for another task to complete. |
-| parallel_tasks_limit | [bool](#bool) |  | Task is waiting due to parallel execution limit. |
-
-
-
-
-
-
-<a name="bytebase-store-TaskRun"></a>
-
-### TaskRun
-TaskRun represents an execution attempt of a task.
-
-
-
-
-
-
-<a name="bytebase-store-TaskRunResult"></a>
-
-### TaskRunResult
-TaskRunResult contains the outcome and metadata from a task run execution.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| detail | [string](#string) |  | Detailed execution information or error message. |
-| version | [string](#string) |  | Schema version after the migration was applied. |
-| start_position | [Position](#bytebase-store-Position) |  | Starting position in the SQL statement where an error occurred. |
-| end_position | [Position](#bytebase-store-Position) |  | Ending position in the SQL statement where an error occurred. |
-| export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
-| prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | Backup details that can be used to rollback changes. |
-| changelog | [string](#string) |  | Resource name of the changelog entry created by this run. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-TaskRun-Status"></a>
-
-### TaskRun.Status
-Status represents the current execution state of a task run.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| PENDING | 1 | Task run is queued and waiting to execute. |
-| RUNNING | 2 | Task run is currently executing. |
-| DONE | 3 | Task run completed successfully. |
-| FAILED | 4 | Task run encountered an error and failed. |
-| CANCELED | 5 | Task run was canceled by user or system. |
-| NOT_STARTED | 6 | Task run has not started yet. |
-| SKIPPED | 7 | Task run was skipped and will not execute. |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="store_issue_comment-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2800,9 +2649,7 @@ Status represents the current execution state of a task run.
 | comment | [string](#string) |  |  |
 | approval | [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval) |  |  |
 | issue_update | [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate) |  |  |
-| stage_end | [IssueCommentPayload.StageEnd](#bytebase-store-IssueCommentPayload-StageEnd) |  |  |
-| task_update | [IssueCommentPayload.TaskUpdate](#bytebase-store-IssueCommentPayload-TaskUpdate) |  |  |
-| task_prior_backup | [IssueCommentPayload.TaskPriorBackup](#bytebase-store-IssueCommentPayload-TaskPriorBackup) |  |  |
+| plan_spec_update | [IssueCommentPayload.PlanSpecUpdate](#bytebase-store-IssueCommentPayload-PlanSpecUpdate) |  |  |
 
 
 
@@ -2846,68 +2693,17 @@ Status represents the current execution state of a task run.
 
 
 
-<a name="bytebase-store-IssueCommentPayload-StageEnd"></a>
+<a name="bytebase-store-IssueCommentPayload-PlanSpecUpdate"></a>
 
-### IssueCommentPayload.StageEnd
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| stage | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-IssueCommentPayload-TaskPriorBackup"></a>
-
-### IssueCommentPayload.TaskPriorBackup
-
+### IssueCommentPayload.PlanSpecUpdate
+Plan spec update event (tracks sheet changes to plan specs)
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| task | [string](#string) |  |  |
-| tables | [IssueCommentPayload.TaskPriorBackup.Table](#bytebase-store-IssueCommentPayload-TaskPriorBackup-Table) | repeated |  |
-| original_line | [int32](#int32) | optional |  |
-| database | [string](#string) |  |  |
-| error | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-IssueCommentPayload-TaskPriorBackup-Table"></a>
-
-### IssueCommentPayload.TaskPriorBackup.Table
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
-| table | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-IssueCommentPayload-TaskUpdate"></a>
-
-### IssueCommentPayload.TaskUpdate
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| tasks | [string](#string) | repeated |  |
+| spec | [string](#string) |  | The spec that was updated Format: projects/{project}/plans/{plan}/specs/{spec} |
 | from_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
 | to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
-| to_status | [TaskRun.Status](#bytebase-store-TaskRun-Status) | optional |  |
 
 
 
@@ -4983,6 +4779,154 @@ Type represents the type of database operation to perform.
 | DATABASE_MIGRATE | 2 | Apply schema/data migrations to an existing database. |
 | DATABASE_EXPORT | 3 | Export data from a database. |
 | DATABASE_SDL | 4 | Apply declarative schema changes (state-based migration). |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_task_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/task_run.proto
+
+
+
+<a name="bytebase-store-PriorBackupDetail"></a>
+
+### PriorBackupDetail
+PriorBackupDetail contains information about automatic backups created before migration.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| items | [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item) | repeated | List of backup operations performed. |
+
+
+
+
+
+
+<a name="bytebase-store-PriorBackupDetail-Item"></a>
+
+### PriorBackupDetail.Item
+Item represents a single backup operation for a table.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The original table that was backed up. |
+| target_table | [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table) |  | The backup table where data was copied. |
+| start_position | [Position](#bytebase-store-Position) |  | Starting position in SQL for this backup operation. |
+| end_position | [Position](#bytebase-store-Position) |  | Ending position in SQL for this backup operation. |
+
+
+
+
+
+
+<a name="bytebase-store-PriorBackupDetail-Item-Table"></a>
+
+### PriorBackupDetail.Item.Table
+Table identifies a database table.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The database containing the table. Format: instances/{instance}/databases/{database} |
+| schema | [string](#string) |  | Schema name (for databases that support schemas). |
+| table | [string](#string) |  | Table name. |
+
+
+
+
+
+
+<a name="bytebase-store-SchedulerInfo"></a>
+
+### SchedulerInfo
+SchedulerInfo contains information about task scheduling and execution delays.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| report_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Timestamp when the scheduler reported this information. |
+| waiting_cause | [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause) |  | Reason why the task run is currently waiting. |
+
+
+
+
+
+
+<a name="bytebase-store-SchedulerInfo-WaitingCause"></a>
+
+### SchedulerInfo.WaitingCause
+WaitingCause indicates why a task run is waiting to execute.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| connection_limit | [bool](#bool) |  | Task is waiting due to database connection limit. |
+| task_uid | [int32](#int32) |  | Task is waiting for another task to complete. |
+| parallel_tasks_limit | [bool](#bool) |  | Task is waiting due to parallel execution limit. |
+
+
+
+
+
+
+<a name="bytebase-store-TaskRun"></a>
+
+### TaskRun
+TaskRun represents an execution attempt of a task.
+
+
+
+
+
+
+<a name="bytebase-store-TaskRunResult"></a>
+
+### TaskRunResult
+TaskRunResult contains the outcome and metadata from a task run execution.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| detail | [string](#string) |  | Detailed execution information or error message. |
+| version | [string](#string) |  | Schema version after the migration was applied. |
+| start_position | [Position](#bytebase-store-Position) |  | Starting position in the SQL statement where an error occurred. |
+| end_position | [Position](#bytebase-store-Position) |  | Ending position in the SQL statement where an error occurred. |
+| export_archive_uid | [int32](#int32) |  | UID of the export archive generated for export tasks. |
+| prior_backup_detail | [PriorBackupDetail](#bytebase-store-PriorBackupDetail) |  | Backup details that can be used to rollback changes. |
+| changelog | [string](#string) |  | Resource name of the changelog entry created by this run. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-TaskRun-Status"></a>
+
+### TaskRun.Status
+Status represents the current execution state of a task run.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 | Task run is queued and waiting to execute. |
+| RUNNING | 2 | Task run is currently executing. |
+| DONE | 3 | Task run completed successfully. |
+| FAILED | 4 | Task run encountered an error and failed. |
+| CANCELED | 5 | Task run was canceled by user or system. |
+| NOT_STARTED | 6 | Task run has not started yet. |
+| SKIPPED | 7 | Task run was skipped and will not execute. |
 
 
  
