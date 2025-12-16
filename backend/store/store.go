@@ -33,8 +33,8 @@ type Store struct {
 	sheetMetadataCache   *lru.Cache[int, *SheetMessage]
 
 	// Large objects.
-	sheetFullCache       *lru.Cache[int, *SheetMessage]
-	dbMetadataCache     *lru.Cache[string, *model.DatabaseMetadata]
+	sheetFullCache  *lru.Cache[int, *SheetMessage]
+	dbMetadataCache *lru.Cache[string, *model.DatabaseMetadata]
 }
 
 // New creates a new instance of Store.

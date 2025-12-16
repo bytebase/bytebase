@@ -180,7 +180,6 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 	return connect.NewResponse(v1pbSheet), nil
 }
 
-
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
 	creator, err := s.store.GetUserByEmail(ctx, sheet.Creator)
 	if err != nil {
