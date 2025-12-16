@@ -9,7 +9,6 @@
     :size="size"
     :options="options"
     :custom-label="renderLabel"
-    :placeholder="$t('settings.members.select-user', multiple ? 2 : 1)"
     :filter="filterByEmail"
     :show-resource-name="false"
     @search="handleSearch"
