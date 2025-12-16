@@ -7,6 +7,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"html"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"slices"
@@ -16,6 +17,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -50,6 +52,7 @@ func NewService(store *store.Store, profile *config.Profile, secret string) *Ser
 func (s *Service) getExternalURL(ctx context.Context) string {
 	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
+		slog.Warn("failed to get workspace profile setting for OAuth2, using profile external URL", log.BBError(err))
 		return s.profile.ExternalURL
 	}
 	return common.GetEffectiveExternalURL(s.profile.ExternalURL, setting.ExternalUrl)
@@ -183,7 +186,11 @@ func oauth2Error(c echo.Context, statusCode int, errorCode, description string) 
 }
 
 func oauth2ErrorRedirect(c echo.Context, redirectURI, state, errorCode, description string) error {
-	u, _ := url.Parse(redirectURI)
+	u, err := url.Parse(redirectURI)
+	if err != nil {
+		slog.Error("failed to parse redirect URI for OAuth2 error redirect", slog.String("redirectURI", redirectURI), log.BBError(err))
+		return oauth2Error(c, http.StatusInternalServerError, errorCode, description)
+	}
 	q := u.Query()
 	q.Set("error", errorCode)
 	q.Set("error_description", description)
