@@ -46,8 +46,8 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronDownIcon, ChevronUpIcon } from "lucide-vue-next";
 import { computed, ref } from "vue";
-import { ChevronDownIcon, ChevronUpIcon } from "lucide-vue-next"
 import type { SpannerChildLink, SpannerPlanNodeData } from "./types";
 
 const props = defineProps<{
