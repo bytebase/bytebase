@@ -32,7 +32,7 @@ service ProjectService {
   rpc BatchGetProjects(BatchGetProjectsRequest) returns (BatchGetProjectsResponse) {
     option (google.api.http) = {get: "/v1/projects:batchGet"};
     option (bytebase.v1.permission) = "bb.projects.get";
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   // Lists all projects in the workspace with optional filtering.

@@ -66,11 +66,6 @@ func (s *ProjectService) GetProject(ctx context.Context, req *connect.Request[v1
 
 // BatchGetProjects gets projects in batch.
 func (s *ProjectService) BatchGetProjects(ctx context.Context, req *connect.Request[v1pb.BatchGetProjectsRequest]) (*connect.Response[v1pb.BatchGetProjectsResponse], error) {
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-
 	projects := make([]*v1pb.Project, 0, len(req.Msg.Names))
 	for _, name := range req.Msg.Names {
 		project, err := s.getProjectMessage(ctx, name)
@@ -78,14 +73,6 @@ func (s *ProjectService) BatchGetProjects(ctx context.Context, req *connect.Requ
 			return nil, err
 		}
 		if project.Deleted {
-			continue
-		}
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
-		}
-		if !ok {
-			// Ignore no permission project.
 			continue
 		}
 		projects = append(projects, convertToProject(project))

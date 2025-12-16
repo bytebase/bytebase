@@ -1871,7 +1871,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x0eProjectService\x12\x7f\n" +
 	"\n" +
 	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x95\x01\n" +
-	"\x10BatchGetProjects\x12$.bytebase.v1.BatchGetProjectsRequest\x1a%.bytebase.v1.BatchGetProjectsResponse\"4\x8a\xea0\x0fbb.projects.get\x90\xea0\x02\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/projects:batchGet\x12\x84\x01\n" +
+	"\x10BatchGetProjects\x12$.bytebase.v1.BatchGetProjectsRequest\x1a%.bytebase.v1.BatchGetProjectsResponse\"4\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/projects:batchGet\x12\x84\x01\n" +
 	"\fListProjects\x12 .bytebase.v1.ListProjectsRequest\x1a!.bytebase.v1.ListProjectsResponse\"/\xdaA\x00\x8a\xea0\x10bb.projects.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/projects\x12\x80\x01\n" +
 	"\x0eSearchProjects\x12\".bytebase.v1.SearchProjectsRequest\x1a#.bytebase.v1.SearchProjectsResponse\"%\xdaA\x00\x90\xea0\x02\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/v1/projects:search\x12\x84\x01\n" +
 	"\rCreateProject\x12!.bytebase.v1.CreateProjectRequest\x1a\x14.bytebase.v1.Project\":\xdaA\x00\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17:\aproject\"\f/v1/projects\x12\xa8\x01\n" +
