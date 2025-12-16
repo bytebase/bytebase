@@ -55,16 +55,16 @@ func (s *Server) registerCallTool() {
 	}, s.handleCallAPI)
 }
 
-func (s *Server) handleCallAPI(ctx context.Context, _ *mcp.CallToolRequest, input CallInput) (*mcp.CallToolResult, CallOutput, error) {
+func (s *Server) handleCallAPI(ctx context.Context, _ *mcp.CallToolRequest, input CallInput) (*mcp.CallToolResult, any, error) {
 	// Validate input
 	if input.OperationID == "" {
-		return nil, CallOutput{}, errors.New("operationId is required")
+		return nil, nil, errors.New("operationId is required")
 	}
 
 	// Look up endpoint
 	endpoint, ok := s.openAPIIndex.GetEndpoint(input.OperationID)
 	if !ok {
-		return nil, CallOutput{}, errors.Errorf("unknown operation %s, use search_api to find valid operations", input.OperationID)
+		return nil, nil, errors.Errorf("unknown operation %s, use search_api to find valid operations", input.OperationID)
 	}
 
 	// Build request body
@@ -74,14 +74,14 @@ func (s *Server) handleCallAPI(ctx context.Context, _ *mcp.CallToolRequest, inpu
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return nil, CallOutput{}, errors.Wrap(err, "failed to marshal request body")
+		return nil, nil, errors.Wrap(err, "failed to marshal request body")
 	}
 
 	// Build HTTP request
 	url := fmt.Sprintf("http://localhost:%d%s", s.profile.Port, endpoint.Path)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
-		return nil, CallOutput{}, errors.Wrap(err, "failed to create HTTP request")
+		return nil, nil, errors.Wrap(err, "failed to create HTTP request")
 	}
 
 	// Set headers for Connect RPC
@@ -97,20 +97,20 @@ func (s *Server) handleCallAPI(ctx context.Context, _ *mcp.CallToolRequest, inpu
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(httpReq)
 	if err != nil {
-		return nil, CallOutput{}, errors.Wrap(err, "failed to execute API request")
+		return nil, nil, errors.Wrap(err, "failed to execute API request")
 	}
 	defer resp.Body.Close()
 
 	// Read response body
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, CallOutput{}, errors.Wrap(err, "failed to read response body")
+		return nil, nil, errors.Wrap(err, "failed to read response body")
 	}
 
 	// Check for binary response - not supported
 	contentType := resp.Header.Get("Content-Type")
 	if isBinaryContentType(contentType) {
-		return nil, CallOutput{}, errors.Errorf("binary response not supported (content-type: %s)", contentType)
+		return nil, nil, errors.Errorf("binary response not supported (content-type: %s)", contentType)
 	}
 
 	// Parse JSON response

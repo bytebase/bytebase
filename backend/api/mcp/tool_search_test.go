@@ -299,3 +299,98 @@ func TestSearchAPIQueryWithService(t *testing.T) {
 	// Should only return SQLService endpoints
 	require.NotContains(t, text, "DatabaseService/")
 }
+
+func TestSearchAPISchemaLookup(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	s, err := NewServer(nil, profile, "test-secret")
+	require.NoError(t, err)
+
+	// Test schema lookup with full name
+	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
+		Schema: "bytebase.v1.Instance",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Len(t, result.Content, 1)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "bytebase.v1.Instance")
+	require.Contains(t, text, "\"name\":")
+	require.Contains(t, text, "\"engine\":")
+}
+
+func TestSearchAPISchemaLookupShortName(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	s, err := NewServer(nil, profile, "test-secret")
+	require.NoError(t, err)
+
+	// Test schema lookup with short name
+	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
+		Schema: "Instance",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Len(t, result.Content, 1)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "bytebase.v1.Instance")
+	require.Contains(t, text, "\"name\":")
+}
+
+func TestSearchAPISchemaLookupNotFound(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	s, err := NewServer(nil, profile, "test-secret")
+	require.NoError(t, err)
+
+	// Test schema lookup with unknown name
+	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
+		Schema: "NonExistentSchema",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Len(t, result.Content, 1)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "Unknown schema")
+}
+
+func TestSearchAPISchemaLookupEnum(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	s, err := NewServer(nil, profile, "test-secret")
+	require.NoError(t, err)
+
+	// Test enum schema lookup
+	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
+		Schema: "Engine",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Len(t, result.Content, 1)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "Enum values:")
+}
+
+func TestSearchAPIProtobufDescriptionTruncation(t *testing.T) {
+	profile := &config.Profile{Mode: common.ReleaseModeDev}
+	s, err := NewServer(nil, profile, "test-secret")
+	require.NoError(t, err)
+
+	// Test that protobuf types have short descriptions
+	result, _, err := s.handleSearchAPI(context.Background(), nil, SearchInput{
+		OperationID: "InstanceService/CreateInstance",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+
+	// Should NOT contain verbose protobuf documentation
+	require.NotContains(t, text, "A Timestamp represents a point in time")
+	require.NotContains(t, text, "A Duration represents a signed")
+
+	// Should contain short description if there's a timestamp field
+	if strings.Contains(text, "google.protobuf.Timestamp") {
+		require.Contains(t, text, "ISO 8601")
+	}
+}

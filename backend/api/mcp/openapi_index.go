@@ -9,11 +9,30 @@ import (
 	"unicode"
 
 	"github.com/pb33f/libopenapi"
+	v3base "github.com/pb33f/libopenapi/datamodel/high/base"
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
 )
 
 //go:embed gen/openapi.yaml
 var openAPISpec []byte
+
+// typeDescriptions provides concise descriptions for known types.
+// These replace verbose protobuf documentation.
+var typeDescriptions = map[string]string{
+	"google.protobuf.Timestamp": `ISO 8601 format, e.g. "2024-01-15T01:30:15Z"`,
+	"google.protobuf.Duration":  `e.g. "3.5s" or "1h30m"`,
+	"google.protobuf.FieldMask": `e.g. "title,engine"`,
+	"google.protobuf.Empty":     "empty message",
+	"google.protobuf.Any":       "any JSON value",
+	"google.protobuf.Struct":    "JSON object",
+	"google.protobuf.Value":     "any JSON value",
+}
+
+// GetTypeDescription returns a concise description for known types.
+func GetTypeDescription(typeName string) (string, bool) {
+	desc, ok := typeDescriptions[typeName]
+	return desc, ok
+}
 
 // EndpointInfo is the indexed representation of an API endpoint.
 type EndpointInfo struct {
@@ -430,23 +449,7 @@ func (idx *OpenAPIIndex) GetRequestSchema(schemaRef string) []PropertyInfo {
 		name := pair.Key()
 		prop := pair.Value()
 
-		propType := "object"
-		if prop != nil {
-			propSchema := prop.Schema()
-			if propSchema != nil && len(propSchema.Type) > 0 {
-				propType = propSchema.Type[0]
-			}
-			if prop.GetReference() != "" {
-				// It's a reference to another type
-				refParts := strings.Split(prop.GetReference(), "/")
-				propType = refParts[len(refParts)-1]
-			}
-		}
-
-		desc := ""
-		if prop != nil && prop.Schema() != nil {
-			desc = prop.Schema().Description
-		}
+		propType, desc := extractPropertyTypeAndDesc(prop)
 
 		props = append(props, PropertyInfo{
 			Name:        name,
@@ -457,6 +460,125 @@ func (idx *OpenAPIIndex) GetRequestSchema(schemaRef string) []PropertyInfo {
 	}
 
 	// Sort by name for consistent output
+	slices.SortFunc(props, func(a, b PropertyInfo) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	return props
+}
+
+// extractPropertyTypeAndDesc extracts the type string and description from a schema property.
+// For arrays, it includes the item type (e.g., "array<string>").
+func extractPropertyTypeAndDesc(prop *v3base.SchemaProxy) (string, string) {
+	if prop == nil {
+		return "object", ""
+	}
+
+	propSchema := prop.Schema()
+	propType := "object"
+
+	if propSchema != nil && len(propSchema.Type) > 0 {
+		propType = propSchema.Type[0]
+
+		// For arrays, get the item type
+		if propType == "array" && propSchema.Items != nil && propSchema.Items.A != nil {
+			// Check for $ref first (before resolving schema)
+			if propSchema.Items.A.GetReference() != "" {
+				refParts := strings.Split(propSchema.Items.A.GetReference(), "/")
+				propType = fmt.Sprintf("array<%s>", refParts[len(refParts)-1])
+			} else if itemSchema := propSchema.Items.A.Schema(); itemSchema != nil && len(itemSchema.Type) > 0 {
+				propType = fmt.Sprintf("array<%s>", itemSchema.Type[0])
+			}
+		}
+	}
+
+	if prop.GetReference() != "" {
+		// It's a reference to another type
+		refParts := strings.Split(prop.GetReference(), "/")
+		propType = refParts[len(refParts)-1]
+	}
+
+	desc := ""
+	if propSchema != nil {
+		desc = propSchema.Description
+	}
+
+	return propType, desc
+}
+
+// GetSchema returns the schema properties for a component schema by name.
+// Supports both full name (bytebase.v1.Instance) and short name (Instance).
+func (idx *OpenAPIIndex) GetSchema(name string) ([]PropertyInfo, bool) {
+	if idx.doc.Model.Components == nil || idx.doc.Model.Components.Schemas == nil {
+		return nil, false
+	}
+
+	// Try exact name first
+	if props := idx.getSchemaByName(name); props != nil {
+		return props, true
+	}
+
+	// Try with bytebase.v1. prefix
+	if !strings.HasPrefix(name, "bytebase.v1.") {
+		fullName := "bytebase.v1." + name
+		if props := idx.getSchemaByName(fullName); props != nil {
+			return props, true
+		}
+	}
+
+	return nil, false
+}
+
+func (idx *OpenAPIIndex) getSchemaByName(name string) []PropertyInfo {
+	schemaProxy, ok := idx.doc.Model.Components.Schemas.Get(name)
+	if !ok || schemaProxy == nil {
+		return nil
+	}
+
+	schema := schemaProxy.Schema()
+	if schema == nil {
+		return nil
+	}
+
+	// Handle enum types
+	if len(schema.Enum) > 0 {
+		var enumValues []string
+		for _, v := range schema.Enum {
+			if v != nil && v.Value != "" {
+				enumValues = append(enumValues, v.Value)
+			}
+		}
+		return []PropertyInfo{{
+			Name:        "enum",
+			Type:        "string",
+			Description: strings.Join(enumValues, ", "),
+		}}
+	}
+
+	if schema.Properties == nil {
+		return nil
+	}
+
+	var props []PropertyInfo
+	requiredSet := make(map[string]bool)
+	for _, r := range schema.Required {
+		requiredSet[r] = true
+	}
+
+	for pair := schema.Properties.First(); pair != nil; pair = pair.Next() {
+		propName := pair.Key()
+		prop := pair.Value()
+
+		propType, desc := extractPropertyTypeAndDesc(prop)
+
+		props = append(props, PropertyInfo{
+			Name:        propName,
+			Type:        propType,
+			Description: desc,
+			Required:    requiredSet[propName],
+		})
+	}
+
 	slices.SortFunc(props, func(a, b PropertyInfo) int {
 		return strings.Compare(a.Name, b.Name)
 	})
