@@ -47,6 +47,23 @@ type FindSheetMessage struct {
 	LoadFull bool
 }
 
+// GetSheetMetadata gets a sheet with truncated statement (max 2MB).
+// Use this when you need to check sheet.Size or other metadata before processing.
+// Statement field will be truncated to MaxSheetSize (2MB).
+func (s *Store) GetSheetMetadata(ctx context.Context, id int) (*SheetMessage, error) {
+	if v, ok := s.sheetMetadataCache.Get(id); ok && s.enableCache {
+		return v, nil
+	}
+
+	sheet, err := s.getSheet(ctx, id, false)
+	if err != nil {
+		return nil, err
+	}
+
+	s.sheetMetadataCache.Add(id, sheet)
+	return sheet, nil
+}
+
 // GetSheetStatementByID gets the statement of a sheet by ID.
 func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
 	if v, ok := s.sheetStatementCache.Get(id); ok && s.enableCache {
