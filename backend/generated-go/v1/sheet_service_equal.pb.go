@@ -3,11 +3,6 @@
 
 package v1
 
-import (
-	proto "google.golang.org/protobuf/proto"
-	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
-)
-
 func (x *CreateSheetRequest) Equal(y *CreateSheetRequest) bool {
 	if x == y {
 		return true
@@ -74,29 +69,6 @@ func (x *GetSheetRequest) Equal(y *GetSheetRequest) bool {
 		return false
 	}
 	if x.Raw != y.Raw {
-		return false
-	}
-	return true
-}
-
-func (x *UpdateSheetRequest) Equal(y *UpdateSheetRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if !x.Sheet.Equal(y.Sheet) {
-		return false
-	}
-	if equal, ok := interface{}(x.UpdateMask).(interface {
-		Equal(*fieldmaskpb.FieldMask) bool
-	}); !ok || !equal.Equal(y.UpdateMask) {
-		return false
-	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
-		return false
-	}
-	if x.AllowMissing != y.AllowMissing {
 		return false
 	}
 	return true

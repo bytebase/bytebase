@@ -7,7 +7,6 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
-import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
@@ -45,18 +44,6 @@ service SheetService {
     option (google.api.http) = {get: "/v1/{name=projects/*/sheets/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.sheets.get";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
-  // Updates a SQL sheet's title or content.
-  // Permissions required: bb.sheets.update
-  rpc UpdateSheet(UpdateSheetRequest) returns (Sheet) {
-    option (google.api.http) = {
-      patch: "/v1/{sheet.name=projects/*/sheets/*}"
-      body: "sheet"
-    };
-    option (google.api.method_signature) = "sheet,update_mask";
-    option (bytebase.v1.permission) = "bb.sheets.update";
     option (bytebase.v1.auth_method) = IAM;
   }
 }
@@ -98,26 +85,6 @@ message GetSheetRequest {
 
   // By default, the content of the sheet is cut off, set the `raw` to true to retrieve the full content.
   bool raw = 2;
-}
-
-message UpdateSheetRequest {
-  // The sheet to update.
-  //
-  // The sheet's `name` field is used to identify the sheet to update.
-  // Format: projects/{project}/sheets/{sheet}
-  Sheet sheet = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to be updated.
-  // Fields are specified relative to the sheet.
-  // (e.g., `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
-  // Only support update the following fields for now:
-  // - `title`
-  // - `statement`
-  google.protobuf.FieldMask update_mask = 2;
-
-  // If set to true, and the sheet is not found, a new sheet will be created.
-  // In this situation, `update_mask` is ignored.
-  bool allow_missing = 3;
 }
 
 message Sheet {

@@ -11,7 +11,6 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -233,78 +232,6 @@ func (x *GetSheetRequest) GetRaw() bool {
 	return false
 }
 
-type UpdateSheetRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The sheet to update.
-	//
-	// The sheet's `name` field is used to identify the sheet to update.
-	// Format: projects/{project}/sheets/{sheet}
-	Sheet *Sheet `protobuf:"bytes,1,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	// The list of fields to be updated.
-	// Fields are specified relative to the sheet.
-	// (e.g., `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
-	// Only support update the following fields for now:
-	// - `title`
-	// - `statement`
-	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
-	// If set to true, and the sheet is not found, a new sheet will be created.
-	// In this situation, `update_mask` is ignored.
-	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateSheetRequest) Reset() {
-	*x = UpdateSheetRequest{}
-	mi := &file_v1_sheet_service_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateSheetRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateSheetRequest) ProtoMessage() {}
-
-func (x *UpdateSheetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sheet_service_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateSheetRequest.ProtoReflect.Descriptor instead.
-func (*UpdateSheetRequest) Descriptor() ([]byte, []int) {
-	return file_v1_sheet_service_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *UpdateSheetRequest) GetSheet() *Sheet {
-	if x != nil {
-		return x.Sheet
-	}
-	return nil
-}
-
-func (x *UpdateSheetRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
-	if x != nil {
-		return x.UpdateMask
-	}
-	return nil
-}
-
-func (x *UpdateSheetRequest) GetAllowMissing() bool {
-	if x != nil {
-		return x.AllowMissing
-	}
-	return false
-}
-
 type Sheet struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the sheet resource.
@@ -334,7 +261,7 @@ type Sheet struct {
 
 func (x *Sheet) Reset() {
 	*x = Sheet{}
-	mi := &file_v1_sheet_service_proto_msgTypes[5]
+	mi := &file_v1_sheet_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -346,7 +273,7 @@ func (x *Sheet) String() string {
 func (*Sheet) ProtoMessage() {}
 
 func (x *Sheet) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sheet_service_proto_msgTypes[5]
+	mi := &file_v1_sheet_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -359,7 +286,7 @@ func (x *Sheet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Sheet.ProtoReflect.Descriptor instead.
 func (*Sheet) Descriptor() ([]byte, []int) {
-	return file_v1_sheet_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_sheet_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Sheet) GetName() string {
@@ -428,7 +355,7 @@ type SheetPayload struct {
 
 func (x *SheetPayload) Reset() {
 	*x = SheetPayload{}
-	mi := &file_v1_sheet_service_proto_msgTypes[6]
+	mi := &file_v1_sheet_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -440,7 +367,7 @@ func (x *SheetPayload) String() string {
 func (*SheetPayload) ProtoMessage() {}
 
 func (x *SheetPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sheet_service_proto_msgTypes[6]
+	mi := &file_v1_sheet_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -453,7 +380,7 @@ func (x *SheetPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SheetPayload.ProtoReflect.Descriptor instead.
 func (*SheetPayload) Descriptor() ([]byte, []int) {
-	return file_v1_sheet_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_sheet_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SheetPayload) GetCommands() []*Range {
@@ -467,7 +394,7 @@ var File_v1_sheet_service_proto protoreflect.FileDescriptor
 
 const file_v1_sheet_service_proto_rawDesc = "" +
 	"\n" +
-	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"y\n" +
+	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"y\n" +
 	"\x12CreateSheetRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12-\n" +
@@ -481,12 +408,7 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\x0fGetSheetRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x04name\x12\x10\n" +
-	"\x03raw\x18\x02 \x01(\bR\x03raw\"\xa5\x01\n" +
-	"\x12UpdateSheetRequest\x12-\n" +
-	"\x05sheet\x18\x01 \x01(\v2\x12.bytebase.v1.SheetB\x03\xe0A\x02R\x05sheet\x12;\n" +
-	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\x96\x03\n" +
+	"\x03raw\x18\x02 \x01(\bR\x03raw\"\x96\x03\n" +
 	"\x05Sheet\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12!\n" +
 	"\x05title\x18\x02 \x01(\tB\v\xe0A\x02\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x1d\n" +
@@ -499,12 +421,11 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\x06engine\x18\b \x01(\x0e2\x13.bytebase.v1.EngineB\x03\xe0A\x02R\x06engine::\xeaA7\n" +
 	"\x12bytebase.com/Sheet\x12!projects/{project}/sheets/{sheet}\">\n" +
 	"\fSheetPayload\x12.\n" +
-	"\bcommands\x18\x01 \x03(\v2\x12.bytebase.v1.RangeR\bcommands2\x86\x05\n" +
+	"\bcommands\x18\x01 \x03(\v2\x12.bytebase.v1.RangeR\bcommands2\xe0\x03\n" +
 	"\fSheetService\x12\x98\x01\n" +
 	"\vCreateSheet\x12\x1f.bytebase.v1.CreateSheetRequest\x1a\x12.bytebase.v1.Sheet\"T\xdaA\fparent,sheet\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02':\x05sheet\"\x1e/v1/{parent=projects/*}/sheets\x12\xb1\x01\n" +
 	"\x11BatchCreateSheets\x12%.bytebase.v1.BatchCreateSheetsRequest\x1a&.bytebase.v1.BatchCreateSheetsResponse\"M\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02/:\x01*\"*/v1/{parent=projects/*}/sheets:batchCreate\x12\x80\x01\n" +
-	"\bGetSheet\x12\x1c.bytebase.v1.GetSheetRequest\x1a\x12.bytebase.v1.Sheet\"B\xdaA\x04name\x8a\xea0\rbb.sheets.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/sheets/*}\x12\xa3\x01\n" +
-	"\vUpdateSheet\x12\x1f.bytebase.v1.UpdateSheetRequest\x1a\x12.bytebase.v1.Sheet\"_\xdaA\x11sheet,update_mask\x8a\xea0\x10bb.sheets.update\x90\xea0\x01\x82\xd3\xe4\x93\x02-:\x05sheet2$/v1/{sheet.name=projects/*/sheets/*}B\xa7\x01\n" +
+	"\bGetSheet\x12\x1c.bytebase.v1.GetSheetRequest\x1a\x12.bytebase.v1.Sheet\"B\xdaA\x04name\x8a\xea0\rbb.sheets.get\x90\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/sheets/*}B\xa7\x01\n" +
 	"\x0fcom.bytebase.v1B\x11SheetServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -519,43 +440,37 @@ func file_v1_sheet_service_proto_rawDescGZIP() []byte {
 	return file_v1_sheet_service_proto_rawDescData
 }
 
-var file_v1_sheet_service_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_v1_sheet_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_v1_sheet_service_proto_goTypes = []any{
 	(*CreateSheetRequest)(nil),        // 0: bytebase.v1.CreateSheetRequest
 	(*BatchCreateSheetsRequest)(nil),  // 1: bytebase.v1.BatchCreateSheetsRequest
 	(*BatchCreateSheetsResponse)(nil), // 2: bytebase.v1.BatchCreateSheetsResponse
 	(*GetSheetRequest)(nil),           // 3: bytebase.v1.GetSheetRequest
-	(*UpdateSheetRequest)(nil),        // 4: bytebase.v1.UpdateSheetRequest
-	(*Sheet)(nil),                     // 5: bytebase.v1.Sheet
-	(*SheetPayload)(nil),              // 6: bytebase.v1.SheetPayload
-	(*fieldmaskpb.FieldMask)(nil),     // 7: google.protobuf.FieldMask
-	(*timestamppb.Timestamp)(nil),     // 8: google.protobuf.Timestamp
-	(Engine)(0),                       // 9: bytebase.v1.Engine
-	(*Range)(nil),                     // 10: bytebase.v1.Range
+	(*Sheet)(nil),                     // 4: bytebase.v1.Sheet
+	(*SheetPayload)(nil),              // 5: bytebase.v1.SheetPayload
+	(*timestamppb.Timestamp)(nil),     // 6: google.protobuf.Timestamp
+	(Engine)(0),                       // 7: bytebase.v1.Engine
+	(*Range)(nil),                     // 8: bytebase.v1.Range
 }
 var file_v1_sheet_service_proto_depIdxs = []int32{
-	5,  // 0: bytebase.v1.CreateSheetRequest.sheet:type_name -> bytebase.v1.Sheet
+	4,  // 0: bytebase.v1.CreateSheetRequest.sheet:type_name -> bytebase.v1.Sheet
 	0,  // 1: bytebase.v1.BatchCreateSheetsRequest.requests:type_name -> bytebase.v1.CreateSheetRequest
-	5,  // 2: bytebase.v1.BatchCreateSheetsResponse.sheets:type_name -> bytebase.v1.Sheet
-	5,  // 3: bytebase.v1.UpdateSheetRequest.sheet:type_name -> bytebase.v1.Sheet
-	7,  // 4: bytebase.v1.UpdateSheetRequest.update_mask:type_name -> google.protobuf.FieldMask
-	8,  // 5: bytebase.v1.Sheet.create_time:type_name -> google.protobuf.Timestamp
-	6,  // 6: bytebase.v1.Sheet.payload:type_name -> bytebase.v1.SheetPayload
-	9,  // 7: bytebase.v1.Sheet.engine:type_name -> bytebase.v1.Engine
-	10, // 8: bytebase.v1.SheetPayload.commands:type_name -> bytebase.v1.Range
-	0,  // 9: bytebase.v1.SheetService.CreateSheet:input_type -> bytebase.v1.CreateSheetRequest
-	1,  // 10: bytebase.v1.SheetService.BatchCreateSheets:input_type -> bytebase.v1.BatchCreateSheetsRequest
-	3,  // 11: bytebase.v1.SheetService.GetSheet:input_type -> bytebase.v1.GetSheetRequest
-	4,  // 12: bytebase.v1.SheetService.UpdateSheet:input_type -> bytebase.v1.UpdateSheetRequest
-	5,  // 13: bytebase.v1.SheetService.CreateSheet:output_type -> bytebase.v1.Sheet
-	2,  // 14: bytebase.v1.SheetService.BatchCreateSheets:output_type -> bytebase.v1.BatchCreateSheetsResponse
-	5,  // 15: bytebase.v1.SheetService.GetSheet:output_type -> bytebase.v1.Sheet
-	5,  // 16: bytebase.v1.SheetService.UpdateSheet:output_type -> bytebase.v1.Sheet
-	13, // [13:17] is the sub-list for method output_type
-	9,  // [9:13] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	4,  // 2: bytebase.v1.BatchCreateSheetsResponse.sheets:type_name -> bytebase.v1.Sheet
+	6,  // 3: bytebase.v1.Sheet.create_time:type_name -> google.protobuf.Timestamp
+	5,  // 4: bytebase.v1.Sheet.payload:type_name -> bytebase.v1.SheetPayload
+	7,  // 5: bytebase.v1.Sheet.engine:type_name -> bytebase.v1.Engine
+	8,  // 6: bytebase.v1.SheetPayload.commands:type_name -> bytebase.v1.Range
+	0,  // 7: bytebase.v1.SheetService.CreateSheet:input_type -> bytebase.v1.CreateSheetRequest
+	1,  // 8: bytebase.v1.SheetService.BatchCreateSheets:input_type -> bytebase.v1.BatchCreateSheetsRequest
+	3,  // 9: bytebase.v1.SheetService.GetSheet:input_type -> bytebase.v1.GetSheetRequest
+	4,  // 10: bytebase.v1.SheetService.CreateSheet:output_type -> bytebase.v1.Sheet
+	2,  // 11: bytebase.v1.SheetService.BatchCreateSheets:output_type -> bytebase.v1.BatchCreateSheetsResponse
+	4,  // 12: bytebase.v1.SheetService.GetSheet:output_type -> bytebase.v1.Sheet
+	10, // [10:13] is the sub-list for method output_type
+	7,  // [7:10] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_v1_sheet_service_proto_init() }
@@ -571,7 +486,7 @@ func file_v1_sheet_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_sheet_service_proto_rawDesc), len(file_v1_sheet_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

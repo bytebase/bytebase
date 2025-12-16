@@ -11,7 +11,6 @@ import {
   CreateSheetRequestSchema,
   GetSheetRequestSchema,
   SheetSchema,
-  UpdateSheetRequestSchema,
 } from "@/types/proto-es/v1/sheet_service_pb";
 import { extractSheetUID, getSheetStatement } from "@/utils";
 
@@ -121,27 +120,6 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     return getOrFetchSheetByName(`projects/-/sheets/${uid}`);
   };
 
-  const patchSheetContent = async (sheet: Partial<Sheet>) => {
-    if (!sheet.name) return;
-    const fullSheet = create(SheetSchema, {
-      name: sheet.name || "",
-      title: sheet.title || "",
-      creator: sheet.creator || "",
-      content: sheet.content || new Uint8Array(),
-      contentSize: sheet.contentSize || BigInt(0),
-      engine: sheet.engine || Engine.MYSQL,
-      payload: sheet.payload,
-      createTime: sheet.createTime,
-    });
-    const request = create(UpdateSheetRequestSchema, {
-      sheet: fullSheet,
-      updateMask: { paths: ["content"] },
-    });
-    const response = await sheetServiceClientConnect.updateSheet(request);
-    setCache(response);
-    return response;
-  };
-
   return {
     createSheet,
     getSheetByName,
@@ -149,7 +127,6 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     getOrFetchSheetByName,
     getSheetByUID,
     getOrFetchSheetByUID,
-    patchSheetContent,
   };
 });
 

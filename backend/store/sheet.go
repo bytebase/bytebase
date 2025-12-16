@@ -47,13 +47,6 @@ type FindSheetMessage struct {
 	LoadFull bool
 }
 
-// PatchSheetMessage is the message to patch a sheet.
-type PatchSheetMessage struct {
-	UID       int
-	Updater   string
-	Statement *string
-}
-
 // GetSheetStatementByID gets the statement of a sheet by ID.
 func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
 	if v, ok := s.sheetStatementCache.Get(id); ok && s.enableCache {
@@ -197,7 +190,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 	h := sha256.Sum256([]byte(create.Statement))
 	create.Sha256 = h[:]
 
-	if err := s.BatchCreateSheetBlob(ctx, [][]byte{create.Sha256}, []string{create.Statement}); err != nil {
+	if err := s.batchCreateSheetBlob(ctx, [][]byte{create.Sha256}, []string{create.Statement}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create sheet blobs")
 	}
 
@@ -266,7 +259,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates 
 		payloads = append(payloads, payload)
 	}
 
-	if err := s.BatchCreateSheetBlob(ctx, sha256s, statements); err != nil {
+	if err := s.batchCreateSheetBlob(ctx, sha256s, statements); err != nil {
 		return nil, errors.Wrapf(err, "failed to create sheet blobs")
 	}
 
@@ -327,7 +320,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates 
 	return creates, nil
 }
 
-func (s *Store) BatchCreateSheetBlob(ctx context.Context, sha256s [][]byte, contents []string) error {
+func (s *Store) batchCreateSheetBlob(ctx context.Context, sha256s [][]byte, contents []string) error {
 	q := qb.Q().Space(`
 		INSERT INTO sheet_blob (
 			sha256,
@@ -348,45 +341,4 @@ func (s *Store) BatchCreateSheetBlob(ctx context.Context, sha256s [][]byte, cont
 	}
 
 	return nil
-}
-
-// PatchSheet updates a sheet.
-func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*SheetMessage, error) {
-	if patch.Statement == nil {
-		return s.GetSheet(ctx, &FindSheetMessage{UID: &patch.UID})
-	}
-
-	h := sha256.Sum256([]byte(*patch.Statement))
-
-	if err := s.BatchCreateSheetBlob(ctx, [][]byte{h[:]}, []string{*patch.Statement}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create sheet blobs")
-	}
-
-	q := qb.Q().Space(`
-		UPDATE sheet
-		SET
-			sha256 = ?
-		WHERE id = ?
-		RETURNING id
-	`, h[:], patch.UID)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	var uid int
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&uid,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("sheet ID not found: %d", patch.UID)}
-		}
-		return nil, errors.Wrapf(err, "failed to update sheet")
-	}
-
-	s.sheetStatementCache.Add(patch.UID, *patch.Statement)
-	s.sheetCache.Remove(patch.UID)
-
-	return s.GetSheet(ctx, &FindSheetMessage{UID: &patch.UID})
 }

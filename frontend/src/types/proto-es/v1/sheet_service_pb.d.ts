@@ -4,7 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import type { Engine, Range } from "./common_pb";
 
 /**
@@ -103,47 +103,6 @@ export declare type GetSheetRequest = Message<"bytebase.v1.GetSheetRequest"> & {
  * Use `create(GetSheetRequestSchema)` to create a new message.
  */
 export declare const GetSheetRequestSchema: GenMessage<GetSheetRequest>;
-
-/**
- * @generated from message bytebase.v1.UpdateSheetRequest
- */
-export declare type UpdateSheetRequest = Message<"bytebase.v1.UpdateSheetRequest"> & {
-  /**
-   * The sheet to update.
-   *
-   * The sheet's `name` field is used to identify the sheet to update.
-   * Format: projects/{project}/sheets/{sheet}
-   *
-   * @generated from field: bytebase.v1.Sheet sheet = 1;
-   */
-  sheet?: Sheet;
-
-  /**
-   * The list of fields to be updated.
-   * Fields are specified relative to the sheet.
-   * (e.g., `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
-   * Only support update the following fields for now:
-   * - `title`
-   * - `statement`
-   *
-   * @generated from field: google.protobuf.FieldMask update_mask = 2;
-   */
-  updateMask?: FieldMask;
-
-  /**
-   * If set to true, and the sheet is not found, a new sheet will be created.
-   * In this situation, `update_mask` is ignored.
-   *
-   * @generated from field: bool allow_missing = 3;
-   */
-  allowMissing: boolean;
-};
-
-/**
- * Describes the message bytebase.v1.UpdateSheetRequest.
- * Use `create(UpdateSheetRequestSchema)` to create a new message.
- */
-export declare const UpdateSheetRequestSchema: GenMessage<UpdateSheetRequest>;
 
 /**
  * @generated from message bytebase.v1.Sheet
@@ -272,17 +231,6 @@ export declare const SheetService: GenService<{
   getSheet: {
     methodKind: "unary";
     input: typeof GetSheetRequestSchema;
-    output: typeof SheetSchema;
-  },
-  /**
-   * Updates a SQL sheet's title or content.
-   * Permissions required: bb.sheets.update
-   *
-   * @generated from rpc bytebase.v1.SheetService.UpdateSheet
-   */
-  updateSheet: {
-    methodKind: "unary";
-    input: typeof UpdateSheetRequestSchema;
     output: typeof SheetSchema;
   },
 }>;

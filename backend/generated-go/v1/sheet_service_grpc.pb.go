@@ -22,7 +22,6 @@ const (
 	SheetService_CreateSheet_FullMethodName       = "/bytebase.v1.SheetService/CreateSheet"
 	SheetService_BatchCreateSheets_FullMethodName = "/bytebase.v1.SheetService/BatchCreateSheets"
 	SheetService_GetSheet_FullMethodName          = "/bytebase.v1.SheetService/GetSheet"
-	SheetService_UpdateSheet_FullMethodName       = "/bytebase.v1.SheetService/UpdateSheet"
 )
 
 // SheetServiceClient is the client API for SheetService service.
@@ -40,9 +39,6 @@ type SheetServiceClient interface {
 	// Retrieves a SQL sheet by name.
 	// Permissions required: bb.sheets.get
 	GetSheet(ctx context.Context, in *GetSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
-	// Updates a SQL sheet's title or content.
-	// Permissions required: bb.sheets.update
-	UpdateSheet(ctx context.Context, in *UpdateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
 }
 
 type sheetServiceClient struct {
@@ -83,16 +79,6 @@ func (c *sheetServiceClient) GetSheet(ctx context.Context, in *GetSheetRequest, 
 	return out, nil
 }
 
-func (c *sheetServiceClient) UpdateSheet(ctx context.Context, in *UpdateSheetRequest, opts ...grpc.CallOption) (*Sheet, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Sheet)
-	err := c.cc.Invoke(ctx, SheetService_UpdateSheet_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // SheetServiceServer is the server API for SheetService service.
 // All implementations must embed UnimplementedSheetServiceServer
 // for forward compatibility.
@@ -108,9 +94,6 @@ type SheetServiceServer interface {
 	// Retrieves a SQL sheet by name.
 	// Permissions required: bb.sheets.get
 	GetSheet(context.Context, *GetSheetRequest) (*Sheet, error)
-	// Updates a SQL sheet's title or content.
-	// Permissions required: bb.sheets.update
-	UpdateSheet(context.Context, *UpdateSheetRequest) (*Sheet, error)
 	mustEmbedUnimplementedSheetServiceServer()
 }
 
@@ -129,9 +112,6 @@ func (UnimplementedSheetServiceServer) BatchCreateSheets(context.Context, *Batch
 }
 func (UnimplementedSheetServiceServer) GetSheet(context.Context, *GetSheetRequest) (*Sheet, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSheet not implemented")
-}
-func (UnimplementedSheetServiceServer) UpdateSheet(context.Context, *UpdateSheetRequest) (*Sheet, error) {
-	return nil, status.Error(codes.Unimplemented, "method UpdateSheet not implemented")
 }
 func (UnimplementedSheetServiceServer) mustEmbedUnimplementedSheetServiceServer() {}
 func (UnimplementedSheetServiceServer) testEmbeddedByValue()                      {}
@@ -208,24 +188,6 @@ func _SheetService_GetSheet_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SheetService_UpdateSheet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateSheetRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SheetServiceServer).UpdateSheet(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SheetService_UpdateSheet_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SheetServiceServer).UpdateSheet(ctx, req.(*UpdateSheetRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // SheetService_ServiceDesc is the grpc.ServiceDesc for SheetService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -244,10 +206,6 @@ var SheetService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSheet",
 			Handler:    _SheetService_GetSheet_Handler,
-		},
-		{
-			MethodName: "UpdateSheet",
-			Handler:    _SheetService_UpdateSheet_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
