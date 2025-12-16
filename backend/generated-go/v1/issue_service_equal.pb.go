@@ -548,87 +548,20 @@ func (x *IssueComment_IssueUpdate) Equal(y *IssueComment_IssueUpdate) bool {
 	return true
 }
 
-func (x *IssueComment_StageEnd) Equal(y *IssueComment_StageEnd) bool {
+func (x *IssueComment_PlanSpecUpdate) Equal(y *IssueComment_PlanSpecUpdate) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Stage != y.Stage {
+	if x.Spec != y.Spec {
 		return false
-	}
-	return true
-}
-
-func (x *IssueComment_TaskUpdate) Equal(y *IssueComment_TaskUpdate) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Tasks) != len(y.Tasks) {
-		return false
-	}
-	for i := 0; i < len(x.Tasks); i++ {
-		if x.Tasks[i] != y.Tasks[i] {
-			return false
-		}
 	}
 	if p, q := x.FromSheet, y.FromSheet; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
 	if p, q := x.ToSheet, y.ToSheet; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
-		return false
-	}
-	if p, q := x.ToStatus, y.ToStatus; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
-		return false
-	}
-	return true
-}
-
-func (x *IssueComment_TaskPriorBackup_Table) Equal(y *IssueComment_TaskPriorBackup_Table) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Schema != y.Schema {
-		return false
-	}
-	if x.Table != y.Table {
-		return false
-	}
-	return true
-}
-
-func (x *IssueComment_TaskPriorBackup) Equal(y *IssueComment_TaskPriorBackup) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Task != y.Task {
-		return false
-	}
-	if len(x.Tables) != len(y.Tables) {
-		return false
-	}
-	for i := 0; i < len(x.Tables); i++ {
-		if !x.Tables[i].Equal(y.Tables[i]) {
-			return false
-		}
-	}
-	if p, q := x.OriginalLine, y.OriginalLine; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
-		return false
-	}
-	if x.Database != y.Database {
-		return false
-	}
-	if x.Error != y.Error {
 		return false
 	}
 	return true
@@ -665,13 +598,7 @@ func (x *IssueComment) Equal(y *IssueComment) bool {
 	if !x.GetIssueUpdate().Equal(y.GetIssueUpdate()) {
 		return false
 	}
-	if !x.GetStageEnd().Equal(y.GetStageEnd()) {
-		return false
-	}
-	if !x.GetTaskUpdate().Equal(y.GetTaskUpdate()) {
-		return false
-	}
-	if !x.GetTaskPriorBackup().Equal(y.GetTaskPriorBackup()) {
+	if !x.GetPlanSpecUpdate().Equal(y.GetPlanSpecUpdate()) {
 		return false
 	}
 	return true

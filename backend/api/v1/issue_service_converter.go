@@ -359,12 +359,8 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 		r.Event = convertToIssueCommentEventApproval(e)
 	case *storepb.IssueCommentPayload_IssueUpdate_:
 		r.Event = convertToIssueCommentEventIssueUpdate(e)
-	case *storepb.IssueCommentPayload_StageEnd_:
-		r.Event = convertToIssueCommentEventStageEnd(e)
-	case *storepb.IssueCommentPayload_TaskUpdate_:
-		r.Event = convertToIssueCommentEventTaskUpdate(e)
-	case *storepb.IssueCommentPayload_TaskPriorBackup_:
-		r.Event = convertToIssueCommentEventTaskPriorBackup(e)
+	case *storepb.IssueCommentPayload_PlanSpecUpdate_:
+		r.Event = convertToIssueCommentEventPlanSpecUpdate(e)
 	}
 
 	return r
@@ -389,14 +385,6 @@ func convertToIssueCommentEventIssueUpdate(u *storepb.IssueCommentPayload_IssueU
 			ToStatus:        convertToIssueCommentEventIssueUpdateStatus(u.IssueUpdate.ToStatus),
 			FromLabels:      u.IssueUpdate.FromLabels,
 			ToLabels:        u.IssueUpdate.ToLabels,
-		},
-	}
-}
-
-func convertToIssueCommentEventStageEnd(e *storepb.IssueCommentPayload_StageEnd_) *v1pb.IssueComment_StageEnd_ {
-	return &v1pb.IssueComment_StageEnd_{
-		StageEnd: &v1pb.IssueComment_StageEnd{
-			Stage: e.StageEnd.Stage,
 		},
 	}
 }
@@ -456,64 +444,12 @@ func convertToIssueCommentEventApprovalStatus(s storepb.IssuePayloadApproval_App
 	}
 }
 
-func convertToIssueCommentEventTaskUpdate(u *storepb.IssueCommentPayload_TaskUpdate_) *v1pb.IssueComment_TaskUpdate_ {
-	return &v1pb.IssueComment_TaskUpdate_{
-		TaskUpdate: &v1pb.IssueComment_TaskUpdate{
-			Tasks:     u.TaskUpdate.Tasks,
-			FromSheet: u.TaskUpdate.FromSheet,
-			ToSheet:   u.TaskUpdate.ToSheet,
-			ToStatus:  convertToIssueCommentEventTaskUpdateStatus(u.TaskUpdate.ToStatus),
+func convertToIssueCommentEventPlanSpecUpdate(u *storepb.IssueCommentPayload_PlanSpecUpdate_) *v1pb.IssueComment_PlanSpecUpdate_ {
+	return &v1pb.IssueComment_PlanSpecUpdate_{
+		PlanSpecUpdate: &v1pb.IssueComment_PlanSpecUpdate{
+			Spec:      u.PlanSpecUpdate.Spec,
+			FromSheet: u.PlanSpecUpdate.FromSheet,
+			ToSheet:   u.PlanSpecUpdate.ToSheet,
 		},
 	}
-}
-
-func convertToIssueCommentEventTaskUpdateStatus(s *storepb.TaskRun_Status) *v1pb.IssueComment_TaskUpdate_Status {
-	if s == nil {
-		return nil
-	}
-	var r v1pb.IssueComment_TaskUpdate_Status
-	//exhaustive:enforce
-	switch *s {
-	case storepb.TaskRun_DONE:
-		r = v1pb.IssueComment_TaskUpdate_DONE
-	case storepb.TaskRun_CANCELED:
-		r = v1pb.IssueComment_TaskUpdate_CANCELED
-	case storepb.TaskRun_FAILED:
-		r = v1pb.IssueComment_TaskUpdate_FAILED
-	case storepb.TaskRun_PENDING:
-		r = v1pb.IssueComment_TaskUpdate_PENDING
-	case storepb.TaskRun_RUNNING:
-		r = v1pb.IssueComment_TaskUpdate_RUNNING
-	case storepb.TaskRun_SKIPPED:
-		r = v1pb.IssueComment_TaskUpdate_SKIPPED
-	case storepb.TaskRun_NOT_STARTED:
-		r = v1pb.IssueComment_TaskUpdate_STATUS_UNSPECIFIED
-	case storepb.TaskRun_STATUS_UNSPECIFIED:
-		r = v1pb.IssueComment_TaskUpdate_STATUS_UNSPECIFIED
-	default:
-		r = v1pb.IssueComment_TaskUpdate_STATUS_UNSPECIFIED
-	}
-	return &r
-}
-
-func convertToIssueCommentEventTaskPriorBackup(b *storepb.IssueCommentPayload_TaskPriorBackup_) *v1pb.IssueComment_TaskPriorBackup_ {
-	return &v1pb.IssueComment_TaskPriorBackup_{
-		TaskPriorBackup: &v1pb.IssueComment_TaskPriorBackup{
-			Task:         b.TaskPriorBackup.Task,
-			Tables:       convertToIssueCommentEventTaskPriorBackupTables(b.TaskPriorBackup.Tables),
-			Database:     b.TaskPriorBackup.Database,
-			OriginalLine: b.TaskPriorBackup.OriginalLine,
-			Error:        b.TaskPriorBackup.Error,
-		},
-	}
-}
-
-func convertToIssueCommentEventTaskPriorBackupTables(tables []*storepb.IssueCommentPayload_TaskPriorBackup_Table) (r []*v1pb.IssueComment_TaskPriorBackup_Table) {
-	for _, t := range tables {
-		r = append(r, &v1pb.IssueComment_TaskPriorBackup_Table{
-			Schema: t.Schema,
-			Table:  t.Table,
-		})
-	}
-	return r
 }

@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"database/sql"
-	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -14,7 +13,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -735,11 +733,6 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 	}
 
-	if issueN != nil {
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, request.Tasks, storepb.TaskRun_SKIPPED, user.Email, request.Reason); err != nil {
-			slog.Warn("failed to create issue comment", "issueUID", issueN.UID, log.BBError(err))
-		}
-	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
 		Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,

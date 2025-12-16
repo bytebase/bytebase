@@ -11079,29 +11079,13 @@ components:
               required:
                 - issueUpdate
             - properties:
-                stageEnd:
-                  title: stage_end
-                  description: Stage end event.
-                  $ref: '#/components/schemas/bytebase.v1.IssueComment.StageEnd'
-              title: stage_end
+                planSpecUpdate:
+                  title: plan_spec_update
+                  description: Plan spec update event.
+                  $ref: '#/components/schemas/bytebase.v1.IssueComment.PlanSpecUpdate'
+              title: plan_spec_update
               required:
-                - stageEnd
-            - properties:
-                taskPriorBackup:
-                  title: task_prior_backup
-                  description: Task prior backup event.
-                  $ref: '#/components/schemas/bytebase.v1.IssueComment.TaskPriorBackup'
-              title: task_prior_backup
-              required:
-                - taskPriorBackup
-            - properties:
-                taskUpdate:
-                  title: task_update
-                  description: Task update event.
-                  $ref: '#/components/schemas/bytebase.v1.IssueComment.TaskUpdate'
-              title: task_update
-              required:
-                - taskUpdate
+                - planSpecUpdate
       title: IssueComment
       additionalProperties: false
       description: A comment on an issue.
@@ -11164,98 +11148,32 @@ components:
       title: IssueUpdate
       additionalProperties: false
       description: Issue update event information.
-    bytebase.v1.IssueComment.StageEnd:
+    bytebase.v1.IssueComment.PlanSpecUpdate:
       type: object
       properties:
-        stage:
+        spec:
           type: string
-          title: stage
-          description: The stage that ended.
-      title: StageEnd
-      additionalProperties: false
-      description: Stage end event information.
-    bytebase.v1.IssueComment.TaskPriorBackup:
-      type: object
-      properties:
-        task:
-          type: string
-          title: task
-          description: The task for which backup was performed.
-        tables:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.IssueComment.TaskPriorBackup.Table'
-          title: tables
-          description: The tables that were backed up.
-        originalLine:
-          type: integer
-          title: original_line
-          format: int32
-          description: The original line number in the statement.
-          nullable: true
-        database:
-          type: string
-          title: database
-          description: The database that was backed up.
-        error:
-          type: string
-          title: error
-          description: Error message if backup failed.
-      title: TaskPriorBackup
-      additionalProperties: false
-      description: Task prior backup event information.
-    bytebase.v1.IssueComment.TaskPriorBackup.Table:
-      type: object
-      properties:
-        schema:
-          type: string
-          title: schema
-          description: The schema name.
-        table:
-          type: string
-          title: table
-          description: The table name.
-      title: Table
-      additionalProperties: false
-      description: Table identification.
-    bytebase.v1.IssueComment.TaskUpdate:
-      type: object
-      properties:
-        tasks:
-          type: array
-          items:
-            type: string
-          title: tasks
-          description: The tasks that were updated.
+          title: spec
+          description: |-
+            The spec that was updated.
+             Format: projects/{project}/plans/{plan}/specs/{spec}
         fromSheet:
           type: string
           title: from_sheet
-          description: 'Format: projects/{project}/sheets/{sheet}'
+          description: |-
+            The previous sheet.
+             Format: projects/{project}/sheets/{sheet}
           nullable: true
         toSheet:
           type: string
           title: to_sheet
-          description: 'Format: projects/{project}/sheets/{sheet}'
+          description: |-
+            The new sheet.
+             Format: projects/{project}/sheets/{sheet}
           nullable: true
-        toStatus:
-          title: to_status
-          nullable: true
-          $ref: '#/components/schemas/bytebase.v1.IssueComment.TaskUpdate.Status'
-      title: TaskUpdate
+      title: PlanSpecUpdate
       additionalProperties: false
-      description: Task update event information.
-    bytebase.v1.IssueComment.TaskUpdate.Status:
-      type: string
-      title: Status
-      enum:
-        - STATUS_UNSPECIFIED
-        - PENDING
-        - RUNNING
-        - DONE
-        - FAILED
-        - SKIPPED
-        - CANCELED
-      description: Task status values.
+      description: Plan spec update event information (tracks sheet changes to plan specs).
     bytebase.v1.IssueStatus:
       type: string
       title: IssueStatus

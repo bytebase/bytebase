@@ -4,7 +4,6 @@ package bytebase.store;
 
 import "store/approval.proto";
 import "store/issue.proto";
-import "store/task_run.proto";
 
 option go_package = "generated-go/store";
 
@@ -14,9 +13,7 @@ message IssueCommentPayload {
   oneof event {
     Approval approval = 2;
     IssueUpdate issue_update = 3;
-    StageEnd stage_end = 4;
-    TaskUpdate task_update = 5;
-    TaskPriorBackup task_prior_backup = 6;
+    PlanSpecUpdate plan_spec_update = 7;
   }
 
   message Approval {
@@ -34,29 +31,14 @@ message IssueCommentPayload {
     repeated string to_labels = 8;
   }
 
-  message StageEnd {
-    string stage = 1;
-  }
-
-  message TaskUpdate {
-    repeated string tasks = 1;
+  // Plan spec update event (tracks sheet changes to plan specs)
+  message PlanSpecUpdate {
+    // The spec that was updated
+    // Format: projects/{project}/plans/{plan}/specs/{spec}
+    string spec = 1;
     // Format: projects/{project}/sheets/{sheet}
     optional string from_sheet = 2;
     // Format: projects/{project}/sheets/{sheet}
     optional string to_sheet = 3;
-    optional TaskRun.Status to_status = 6;
-  }
-
-  message TaskPriorBackup {
-    string task = 1;
-    repeated Table tables = 2;
-    optional int32 original_line = 3;
-    string database = 4;
-    string error = 5;
-
-    message Table {
-      string schema = 1;
-      string table = 2;
-    }
   }
 }

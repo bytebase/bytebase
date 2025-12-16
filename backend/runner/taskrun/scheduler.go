@@ -245,12 +245,6 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 		return errors.Wrapf(err, "failed to create pending task runs")
 	}
 
-	if issue != nil {
-		tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, common.FormatStageID(task.Environment), taskUID)}
-		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_PENDING, common.SystemBotEmail, ""); err != nil {
-			slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
-		}
-	}
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   store.SystemBotUser,
 		Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
@@ -648,21 +642,6 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 			)
 			return
 		}
-		if err := func() error {
-			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-				PipelineID: &task.PipelineID,
-			})
-			if err != nil {
-				return errors.Wrap(err, "failed to get issue")
-			}
-			if issue == nil {
-				return nil
-			}
-			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, common.FormatStageID(task.Environment), task.ID)}
-			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_FAILED, common.SystemBotEmail, "")
-		}(); err != nil {
-			slog.Warn("failed to create issue comment", log.BBError(err))
-		}
 		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_FAILED, taskRunResult.Detail)
 		return
 
@@ -691,21 +670,6 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 				log.BBError(err),
 			)
 			return
-		}
-		if err := func() error {
-			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-				PipelineID: &task.PipelineID,
-			})
-			if err != nil {
-				return errors.Wrap(err, "failed to get issue")
-			}
-			if issue == nil {
-				return nil
-			}
-			tasks := []string{common.FormatTask(issue.Project.ResourceID, task.PipelineID, common.FormatStageID(task.Environment), task.ID)}
-			return s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, tasks, storepb.TaskRun_DONE, common.SystemBotEmail, "")
-		}(); err != nil {
-			slog.Warn("failed to create issue comment", log.BBError(err))
 		}
 		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_DONE, "")
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
@@ -850,26 +814,6 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 						StageID:    currentEnvironment,
 					},
 				})
-
-				if err := func() error {
-					p := &storepb.IssueCommentPayload{
-						Event: &storepb.IssueCommentPayload_StageEnd_{
-							StageEnd: &storepb.IssueCommentPayload_StageEnd{
-								Stage: common.FormatStage(project.ResourceID, task.PipelineID, common.FormatStageID(task.Environment)),
-							},
-						},
-					}
-					if issueN != nil {
-						_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-							IssueUID: issueN.UID,
-							Payload:  p,
-						}, common.SystemBotEmail)
-						return err
-					}
-					return nil
-				}(); err != nil {
-					slog.Warn("failed to create issue comment", log.BBError(err))
-				}
 
 				// create "notify pipeline rollout" activity.
 				if err := func() error {

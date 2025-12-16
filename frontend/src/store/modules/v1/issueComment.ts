@@ -22,9 +22,7 @@ export enum IssueCommentType {
   USER_COMMENT = "USER_COMMENT",
   APPROVAL = "APPROVAL",
   ISSUE_UPDATE = "ISSUE_UPDATE",
-  STAGE_END = "STAGE_END",
-  TASK_UPDATE = "TASK_UPDATE",
-  TASK_PRIOR_BACKUP = "TASK_PRIOR_BACKUP",
+  PLAN_SPEC_UPDATE = "PLAN_SPEC_UPDATE",
 }
 
 export const getIssueCommentType = (
@@ -34,12 +32,8 @@ export const getIssueCommentType = (
     return IssueCommentType.APPROVAL;
   } else if (issueComment.event?.case === "issueUpdate") {
     return IssueCommentType.ISSUE_UPDATE;
-  } else if (issueComment.event?.case === "stageEnd") {
-    return IssueCommentType.STAGE_END;
-  } else if (issueComment.event?.case === "taskUpdate") {
-    return IssueCommentType.TASK_UPDATE;
-  } else if (issueComment.event?.case === "taskPriorBackup") {
-    return IssueCommentType.TASK_PRIOR_BACKUP;
+  } else if (issueComment.event?.case === "planSpecUpdate") {
+    return IssueCommentType.PLAN_SPEC_UPDATE;
   }
   return IssueCommentType.USER_COMMENT;
 };

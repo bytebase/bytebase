@@ -39,10 +39,7 @@
     - [IssueComment](#bytebase-v1-IssueComment)
     - [IssueComment.Approval](#bytebase-v1-IssueComment-Approval)
     - [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate)
-    - [IssueComment.StageEnd](#bytebase-v1-IssueComment-StageEnd)
-    - [IssueComment.TaskPriorBackup](#bytebase-v1-IssueComment-TaskPriorBackup)
-    - [IssueComment.TaskPriorBackup.Table](#bytebase-v1-IssueComment-TaskPriorBackup-Table)
-    - [IssueComment.TaskUpdate](#bytebase-v1-IssueComment-TaskUpdate)
+    - [IssueComment.PlanSpecUpdate](#bytebase-v1-IssueComment-PlanSpecUpdate)
     - [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest)
     - [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse)
     - [ListIssuesRequest](#bytebase-v1-ListIssuesRequest)
@@ -58,7 +55,6 @@
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
-    - [IssueComment.TaskUpdate.Status](#bytebase-v1-IssueComment-TaskUpdate-Status)
     - [IssueStatus](#bytebase-v1-IssueStatus)
   
     - [IssueService](#bytebase-v1-IssueService)
@@ -1141,9 +1137,7 @@ A comment on an issue.
 | creator | [string](#string) |  | Format: users/{email} |
 | approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  | Approval event. |
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
-| stage_end | [IssueComment.StageEnd](#bytebase-v1-IssueComment-StageEnd) |  | Stage end event. |
-| task_update | [IssueComment.TaskUpdate](#bytebase-v1-IssueComment-TaskUpdate) |  | Task update event. |
-| task_prior_backup | [IssueComment.TaskPriorBackup](#bytebase-v1-IssueComment-TaskPriorBackup) |  | Task prior backup event. |
+| plan_spec_update | [IssueComment.PlanSpecUpdate](#bytebase-v1-IssueComment-PlanSpecUpdate) |  | Plan spec update event. |
 
 
 
@@ -1187,68 +1181,17 @@ Issue update event information.
 
 
 
-<a name="bytebase-v1-IssueComment-StageEnd"></a>
+<a name="bytebase-v1-IssueComment-PlanSpecUpdate"></a>
 
-### IssueComment.StageEnd
-Stage end event information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| stage | [string](#string) |  | The stage that ended. |
-
-
-
-
-
-
-<a name="bytebase-v1-IssueComment-TaskPriorBackup"></a>
-
-### IssueComment.TaskPriorBackup
-Task prior backup event information.
+### IssueComment.PlanSpecUpdate
+Plan spec update event information (tracks sheet changes to plan specs).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| task | [string](#string) |  | The task for which backup was performed. |
-| tables | [IssueComment.TaskPriorBackup.Table](#bytebase-v1-IssueComment-TaskPriorBackup-Table) | repeated | The tables that were backed up. |
-| original_line | [int32](#int32) | optional | The original line number in the statement. |
-| database | [string](#string) |  | The database that was backed up. |
-| error | [string](#string) |  | Error message if backup failed. |
-
-
-
-
-
-
-<a name="bytebase-v1-IssueComment-TaskPriorBackup-Table"></a>
-
-### IssueComment.TaskPriorBackup.Table
-Table identification.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  | The schema name. |
-| table | [string](#string) |  | The table name. |
-
-
-
-
-
-
-<a name="bytebase-v1-IssueComment-TaskUpdate"></a>
-
-### IssueComment.TaskUpdate
-Task update event information.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| tasks | [string](#string) | repeated | The tasks that were updated. |
-| from_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
-| to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
-| to_status | [IssueComment.TaskUpdate.Status](#bytebase-v1-IssueComment-TaskUpdate-Status) | optional |  |
+| spec | [string](#string) |  | The spec that was updated. Format: projects/{project}/plans/{plan}/specs/{spec} |
+| from_sheet | [string](#string) | optional | The previous sheet. Format: projects/{project}/sheets/{sheet} |
+| to_sheet | [string](#string) | optional | The new sheet. Format: projects/{project}/sheets/{sheet} |
 
 
 
@@ -1495,23 +1438,6 @@ Approval status values.
 | PENDING | 1 | Approval pending. |
 | APPROVED | 2 | Approved. |
 | REJECTED | 3 | Rejected. |
-
-
-
-<a name="bytebase-v1-IssueComment-TaskUpdate-Status"></a>
-
-### IssueComment.TaskUpdate.Status
-Task status values.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 | Unspecified status. |
-| PENDING | 1 | Task is pending. |
-| RUNNING | 2 | Task is running. |
-| DONE | 3 | Task is done. |
-| FAILED | 4 | Task failed. |
-| SKIPPED | 5 | Task was skipped. |
-| CANCELED | 6 | Task was canceled. |
 
 
 

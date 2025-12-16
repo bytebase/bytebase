@@ -118,24 +118,6 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 	return issueComments, nil
 }
 
-func (s *Store) CreateIssueCommentTaskUpdateStatus(ctx context.Context, issueUID int, tasks []string, status storepb.TaskRun_Status, creator string, comment string) error {
-	create := &IssueCommentMessage{
-		IssueUID: issueUID,
-		Payload: &storepb.IssueCommentPayload{
-			Comment: comment,
-			Event: &storepb.IssueCommentPayload_TaskUpdate_{
-				TaskUpdate: &storepb.IssueCommentPayload_TaskUpdate{
-					Tasks:    tasks,
-					ToStatus: &status,
-				},
-			},
-		},
-	}
-
-	_, err := s.CreateIssueComment(ctx, create, creator)
-	return err
-}
-
 func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage, creator string) (*IssueCommentMessage, error) {
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {

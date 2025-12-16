@@ -28,9 +28,7 @@ type IssueCommentPayload struct {
 	//
 	//	*IssueCommentPayload_Approval_
 	//	*IssueCommentPayload_IssueUpdate_
-	//	*IssueCommentPayload_StageEnd_
-	//	*IssueCommentPayload_TaskUpdate_
-	//	*IssueCommentPayload_TaskPriorBackup_
+	//	*IssueCommentPayload_PlanSpecUpdate_
 	Event         isIssueCommentPayload_Event `protobuf_oneof:"event"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -98,28 +96,10 @@ func (x *IssueCommentPayload) GetIssueUpdate() *IssueCommentPayload_IssueUpdate 
 	return nil
 }
 
-func (x *IssueCommentPayload) GetStageEnd() *IssueCommentPayload_StageEnd {
+func (x *IssueCommentPayload) GetPlanSpecUpdate() *IssueCommentPayload_PlanSpecUpdate {
 	if x != nil {
-		if x, ok := x.Event.(*IssueCommentPayload_StageEnd_); ok {
-			return x.StageEnd
-		}
-	}
-	return nil
-}
-
-func (x *IssueCommentPayload) GetTaskUpdate() *IssueCommentPayload_TaskUpdate {
-	if x != nil {
-		if x, ok := x.Event.(*IssueCommentPayload_TaskUpdate_); ok {
-			return x.TaskUpdate
-		}
-	}
-	return nil
-}
-
-func (x *IssueCommentPayload) GetTaskPriorBackup() *IssueCommentPayload_TaskPriorBackup {
-	if x != nil {
-		if x, ok := x.Event.(*IssueCommentPayload_TaskPriorBackup_); ok {
-			return x.TaskPriorBackup
+		if x, ok := x.Event.(*IssueCommentPayload_PlanSpecUpdate_); ok {
+			return x.PlanSpecUpdate
 		}
 	}
 	return nil
@@ -137,27 +117,15 @@ type IssueCommentPayload_IssueUpdate_ struct {
 	IssueUpdate *IssueCommentPayload_IssueUpdate `protobuf:"bytes,3,opt,name=issue_update,json=issueUpdate,proto3,oneof"`
 }
 
-type IssueCommentPayload_StageEnd_ struct {
-	StageEnd *IssueCommentPayload_StageEnd `protobuf:"bytes,4,opt,name=stage_end,json=stageEnd,proto3,oneof"`
-}
-
-type IssueCommentPayload_TaskUpdate_ struct {
-	TaskUpdate *IssueCommentPayload_TaskUpdate `protobuf:"bytes,5,opt,name=task_update,json=taskUpdate,proto3,oneof"`
-}
-
-type IssueCommentPayload_TaskPriorBackup_ struct {
-	TaskPriorBackup *IssueCommentPayload_TaskPriorBackup `protobuf:"bytes,6,opt,name=task_prior_backup,json=taskPriorBackup,proto3,oneof"`
+type IssueCommentPayload_PlanSpecUpdate_ struct {
+	PlanSpecUpdate *IssueCommentPayload_PlanSpecUpdate `protobuf:"bytes,7,opt,name=plan_spec_update,json=planSpecUpdate,proto3,oneof"`
 }
 
 func (*IssueCommentPayload_Approval_) isIssueCommentPayload_Event() {}
 
 func (*IssueCommentPayload_IssueUpdate_) isIssueCommentPayload_Event() {}
 
-func (*IssueCommentPayload_StageEnd_) isIssueCommentPayload_Event() {}
-
-func (*IssueCommentPayload_TaskUpdate_) isIssueCommentPayload_Event() {}
-
-func (*IssueCommentPayload_TaskPriorBackup_) isIssueCommentPayload_Event() {}
+func (*IssueCommentPayload_PlanSpecUpdate_) isIssueCommentPayload_Event() {}
 
 type IssueCommentPayload_Approval struct {
 	state         protoimpl.MessageState               `protogen:"open.v1"`
@@ -303,27 +271,34 @@ func (x *IssueCommentPayload_IssueUpdate) GetToLabels() []string {
 	return nil
 }
 
-type IssueCommentPayload_StageEnd struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Stage         string                 `protobuf:"bytes,1,opt,name=stage,proto3" json:"stage,omitempty"`
+// Plan spec update event (tracks sheet changes to plan specs)
+type IssueCommentPayload_PlanSpecUpdate struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The spec that was updated
+	// Format: projects/{project}/plans/{plan}/specs/{spec}
+	Spec string `protobuf:"bytes,1,opt,name=spec,proto3" json:"spec,omitempty"`
+	// Format: projects/{project}/sheets/{sheet}
+	FromSheet *string `protobuf:"bytes,2,opt,name=from_sheet,json=fromSheet,proto3,oneof" json:"from_sheet,omitempty"`
+	// Format: projects/{project}/sheets/{sheet}
+	ToSheet       *string `protobuf:"bytes,3,opt,name=to_sheet,json=toSheet,proto3,oneof" json:"to_sheet,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *IssueCommentPayload_StageEnd) Reset() {
-	*x = IssueCommentPayload_StageEnd{}
+func (x *IssueCommentPayload_PlanSpecUpdate) Reset() {
+	*x = IssueCommentPayload_PlanSpecUpdate{}
 	mi := &file_store_issue_comment_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *IssueCommentPayload_StageEnd) String() string {
+func (x *IssueCommentPayload_PlanSpecUpdate) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*IssueCommentPayload_StageEnd) ProtoMessage() {}
+func (*IssueCommentPayload_PlanSpecUpdate) ProtoMessage() {}
 
-func (x *IssueCommentPayload_StageEnd) ProtoReflect() protoreflect.Message {
+func (x *IssueCommentPayload_PlanSpecUpdate) ProtoReflect() protoreflect.Message {
 	mi := &file_store_issue_comment_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -335,212 +310,28 @@ func (x *IssueCommentPayload_StageEnd) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use IssueCommentPayload_StageEnd.ProtoReflect.Descriptor instead.
-func (*IssueCommentPayload_StageEnd) Descriptor() ([]byte, []int) {
+// Deprecated: Use IssueCommentPayload_PlanSpecUpdate.ProtoReflect.Descriptor instead.
+func (*IssueCommentPayload_PlanSpecUpdate) Descriptor() ([]byte, []int) {
 	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 2}
 }
 
-func (x *IssueCommentPayload_StageEnd) GetStage() string {
+func (x *IssueCommentPayload_PlanSpecUpdate) GetSpec() string {
 	if x != nil {
-		return x.Stage
+		return x.Spec
 	}
 	return ""
 }
 
-type IssueCommentPayload_TaskUpdate struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Tasks []string               `protobuf:"bytes,1,rep,name=tasks,proto3" json:"tasks,omitempty"`
-	// Format: projects/{project}/sheets/{sheet}
-	FromSheet *string `protobuf:"bytes,2,opt,name=from_sheet,json=fromSheet,proto3,oneof" json:"from_sheet,omitempty"`
-	// Format: projects/{project}/sheets/{sheet}
-	ToSheet       *string         `protobuf:"bytes,3,opt,name=to_sheet,json=toSheet,proto3,oneof" json:"to_sheet,omitempty"`
-	ToStatus      *TaskRun_Status `protobuf:"varint,6,opt,name=to_status,json=toStatus,proto3,enum=bytebase.store.TaskRun_Status,oneof" json:"to_status,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *IssueCommentPayload_TaskUpdate) Reset() {
-	*x = IssueCommentPayload_TaskUpdate{}
-	mi := &file_store_issue_comment_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *IssueCommentPayload_TaskUpdate) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IssueCommentPayload_TaskUpdate) ProtoMessage() {}
-
-func (x *IssueCommentPayload_TaskUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_store_issue_comment_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use IssueCommentPayload_TaskUpdate.ProtoReflect.Descriptor instead.
-func (*IssueCommentPayload_TaskUpdate) Descriptor() ([]byte, []int) {
-	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 3}
-}
-
-func (x *IssueCommentPayload_TaskUpdate) GetTasks() []string {
-	if x != nil {
-		return x.Tasks
-	}
-	return nil
-}
-
-func (x *IssueCommentPayload_TaskUpdate) GetFromSheet() string {
+func (x *IssueCommentPayload_PlanSpecUpdate) GetFromSheet() string {
 	if x != nil && x.FromSheet != nil {
 		return *x.FromSheet
 	}
 	return ""
 }
 
-func (x *IssueCommentPayload_TaskUpdate) GetToSheet() string {
+func (x *IssueCommentPayload_PlanSpecUpdate) GetToSheet() string {
 	if x != nil && x.ToSheet != nil {
 		return *x.ToSheet
-	}
-	return ""
-}
-
-func (x *IssueCommentPayload_TaskUpdate) GetToStatus() TaskRun_Status {
-	if x != nil && x.ToStatus != nil {
-		return *x.ToStatus
-	}
-	return TaskRun_STATUS_UNSPECIFIED
-}
-
-type IssueCommentPayload_TaskPriorBackup struct {
-	state         protoimpl.MessageState                       `protogen:"open.v1"`
-	Task          string                                       `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
-	Tables        []*IssueCommentPayload_TaskPriorBackup_Table `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
-	OriginalLine  *int32                                       `protobuf:"varint,3,opt,name=original_line,json=originalLine,proto3,oneof" json:"original_line,omitempty"`
-	Database      string                                       `protobuf:"bytes,4,opt,name=database,proto3" json:"database,omitempty"`
-	Error         string                                       `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *IssueCommentPayload_TaskPriorBackup) Reset() {
-	*x = IssueCommentPayload_TaskPriorBackup{}
-	mi := &file_store_issue_comment_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *IssueCommentPayload_TaskPriorBackup) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IssueCommentPayload_TaskPriorBackup) ProtoMessage() {}
-
-func (x *IssueCommentPayload_TaskPriorBackup) ProtoReflect() protoreflect.Message {
-	mi := &file_store_issue_comment_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use IssueCommentPayload_TaskPriorBackup.ProtoReflect.Descriptor instead.
-func (*IssueCommentPayload_TaskPriorBackup) Descriptor() ([]byte, []int) {
-	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 4}
-}
-
-func (x *IssueCommentPayload_TaskPriorBackup) GetTask() string {
-	if x != nil {
-		return x.Task
-	}
-	return ""
-}
-
-func (x *IssueCommentPayload_TaskPriorBackup) GetTables() []*IssueCommentPayload_TaskPriorBackup_Table {
-	if x != nil {
-		return x.Tables
-	}
-	return nil
-}
-
-func (x *IssueCommentPayload_TaskPriorBackup) GetOriginalLine() int32 {
-	if x != nil && x.OriginalLine != nil {
-		return *x.OriginalLine
-	}
-	return 0
-}
-
-func (x *IssueCommentPayload_TaskPriorBackup) GetDatabase() string {
-	if x != nil {
-		return x.Database
-	}
-	return ""
-}
-
-func (x *IssueCommentPayload_TaskPriorBackup) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
-}
-
-type IssueCommentPayload_TaskPriorBackup_Table struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Schema        string                 `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
-	Table         string                 `protobuf:"bytes,2,opt,name=table,proto3" json:"table,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *IssueCommentPayload_TaskPriorBackup_Table) Reset() {
-	*x = IssueCommentPayload_TaskPriorBackup_Table{}
-	mi := &file_store_issue_comment_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *IssueCommentPayload_TaskPriorBackup_Table) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IssueCommentPayload_TaskPriorBackup_Table) ProtoMessage() {}
-
-func (x *IssueCommentPayload_TaskPriorBackup_Table) ProtoReflect() protoreflect.Message {
-	mi := &file_store_issue_comment_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use IssueCommentPayload_TaskPriorBackup_Table.ProtoReflect.Descriptor instead.
-func (*IssueCommentPayload_TaskPriorBackup_Table) Descriptor() ([]byte, []int) {
-	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 4, 0}
-}
-
-func (x *IssueCommentPayload_TaskPriorBackup_Table) GetSchema() string {
-	if x != nil {
-		return x.Schema
-	}
-	return ""
-}
-
-func (x *IssueCommentPayload_TaskPriorBackup_Table) GetTable() string {
-	if x != nil {
-		return x.Table
 	}
 	return ""
 }
@@ -549,15 +340,12 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x11store/issue.proto\x1a\x14store/task_run.proto\"\xa2\f\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x11store/issue.proto\"\xef\a\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
-	"\fissue_update\x18\x03 \x01(\v2/.bytebase.store.IssueCommentPayload.IssueUpdateH\x00R\vissueUpdate\x12K\n" +
-	"\tstage_end\x18\x04 \x01(\v2,.bytebase.store.IssueCommentPayload.StageEndH\x00R\bstageEnd\x12Q\n" +
-	"\vtask_update\x18\x05 \x01(\v2..bytebase.store.IssueCommentPayload.TaskUpdateH\x00R\n" +
-	"taskUpdate\x12a\n" +
-	"\x11task_prior_backup\x18\x06 \x01(\v23.bytebase.store.IssueCommentPayload.TaskPriorBackupH\x00R\x0ftaskPriorBackup\x1aX\n" +
+	"\fissue_update\x18\x03 \x01(\v2/.bytebase.store.IssueCommentPayload.IssueUpdateH\x00R\vissueUpdate\x12^\n" +
+	"\x10plan_spec_update\x18\a \x01(\v22.bytebase.store.IssueCommentPayload.PlanSpecUpdateH\x00R\x0eplanSpecUpdate\x1aX\n" +
 	"\bApproval\x12L\n" +
 	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x1a\xd1\x03\n" +
 	"\vIssueUpdate\x12\"\n" +
@@ -578,30 +366,14 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"\x0f_to_descriptionB\x0e\n" +
 	"\f_from_statusB\f\n" +
 	"\n" +
-	"_to_status\x1a \n" +
-	"\bStageEnd\x12\x14\n" +
-	"\x05stage\x18\x01 \x01(\tR\x05stage\x1a\xd2\x01\n" +
-	"\n" +
-	"TaskUpdate\x12\x14\n" +
-	"\x05tasks\x18\x01 \x03(\tR\x05tasks\x12\"\n" +
+	"_to_status\x1a\x84\x01\n" +
+	"\x0ePlanSpecUpdate\x12\x12\n" +
+	"\x04spec\x18\x01 \x01(\tR\x04spec\x12\"\n" +
 	"\n" +
 	"from_sheet\x18\x02 \x01(\tH\x00R\tfromSheet\x88\x01\x01\x12\x1e\n" +
-	"\bto_sheet\x18\x03 \x01(\tH\x01R\atoSheet\x88\x01\x01\x12@\n" +
-	"\tto_status\x18\x06 \x01(\x0e2\x1e.bytebase.store.TaskRun.StatusH\x02R\btoStatus\x88\x01\x01B\r\n" +
+	"\bto_sheet\x18\x03 \x01(\tH\x01R\atoSheet\x88\x01\x01B\r\n" +
 	"\v_from_sheetB\v\n" +
-	"\t_to_sheetB\f\n" +
-	"\n" +
-	"_to_status\x1a\x9d\x02\n" +
-	"\x0fTaskPriorBackup\x12\x12\n" +
-	"\x04task\x18\x01 \x01(\tR\x04task\x12Q\n" +
-	"\x06tables\x18\x02 \x03(\v29.bytebase.store.IssueCommentPayload.TaskPriorBackup.TableR\x06tables\x12(\n" +
-	"\roriginal_line\x18\x03 \x01(\x05H\x00R\foriginalLine\x88\x01\x01\x12\x1a\n" +
-	"\bdatabase\x18\x04 \x01(\tR\bdatabase\x12\x14\n" +
-	"\x05error\x18\x05 \x01(\tR\x05error\x1a5\n" +
-	"\x05Table\x12\x16\n" +
-	"\x06schema\x18\x01 \x01(\tR\x06schema\x12\x14\n" +
-	"\x05table\x18\x02 \x01(\tR\x05tableB\x10\n" +
-	"\x0e_original_lineB\a\n" +
+	"\t_to_sheetB\a\n" +
 	"\x05eventB\x94\x01\n" +
 	"\x12com.bytebase.storeB\x11IssueCommentProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
@@ -617,35 +389,27 @@ func file_store_issue_comment_proto_rawDescGZIP() []byte {
 	return file_store_issue_comment_proto_rawDescData
 }
 
-var file_store_issue_comment_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_store_issue_comment_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_store_issue_comment_proto_goTypes = []any{
-	(*IssueCommentPayload)(nil),                       // 0: bytebase.store.IssueCommentPayload
-	(*IssueCommentPayload_Approval)(nil),              // 1: bytebase.store.IssueCommentPayload.Approval
-	(*IssueCommentPayload_IssueUpdate)(nil),           // 2: bytebase.store.IssueCommentPayload.IssueUpdate
-	(*IssueCommentPayload_StageEnd)(nil),              // 3: bytebase.store.IssueCommentPayload.StageEnd
-	(*IssueCommentPayload_TaskUpdate)(nil),            // 4: bytebase.store.IssueCommentPayload.TaskUpdate
-	(*IssueCommentPayload_TaskPriorBackup)(nil),       // 5: bytebase.store.IssueCommentPayload.TaskPriorBackup
-	(*IssueCommentPayload_TaskPriorBackup_Table)(nil), // 6: bytebase.store.IssueCommentPayload.TaskPriorBackup.Table
-	(IssuePayloadApproval_Approver_Status)(0),         // 7: bytebase.store.IssuePayloadApproval.Approver.Status
-	(Issue_Status)(0),                                 // 8: bytebase.store.Issue.Status
-	(TaskRun_Status)(0),                               // 9: bytebase.store.TaskRun.Status
+	(*IssueCommentPayload)(nil),                // 0: bytebase.store.IssueCommentPayload
+	(*IssueCommentPayload_Approval)(nil),       // 1: bytebase.store.IssueCommentPayload.Approval
+	(*IssueCommentPayload_IssueUpdate)(nil),    // 2: bytebase.store.IssueCommentPayload.IssueUpdate
+	(*IssueCommentPayload_PlanSpecUpdate)(nil), // 3: bytebase.store.IssueCommentPayload.PlanSpecUpdate
+	(IssuePayloadApproval_Approver_Status)(0),  // 4: bytebase.store.IssuePayloadApproval.Approver.Status
+	(Issue_Status)(0),                          // 5: bytebase.store.Issue.Status
 }
 var file_store_issue_comment_proto_depIdxs = []int32{
-	1,  // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
-	2,  // 1: bytebase.store.IssueCommentPayload.issue_update:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate
-	3,  // 2: bytebase.store.IssueCommentPayload.stage_end:type_name -> bytebase.store.IssueCommentPayload.StageEnd
-	4,  // 3: bytebase.store.IssueCommentPayload.task_update:type_name -> bytebase.store.IssueCommentPayload.TaskUpdate
-	5,  // 4: bytebase.store.IssueCommentPayload.task_prior_backup:type_name -> bytebase.store.IssueCommentPayload.TaskPriorBackup
-	7,  // 5: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
-	8,  // 6: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.Issue.Status
-	8,  // 7: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.Issue.Status
-	9,  // 8: bytebase.store.IssueCommentPayload.TaskUpdate.to_status:type_name -> bytebase.store.TaskRun.Status
-	6,  // 9: bytebase.store.IssueCommentPayload.TaskPriorBackup.tables:type_name -> bytebase.store.IssueCommentPayload.TaskPriorBackup.Table
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	1, // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
+	2, // 1: bytebase.store.IssueCommentPayload.issue_update:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate
+	3, // 2: bytebase.store.IssueCommentPayload.plan_spec_update:type_name -> bytebase.store.IssueCommentPayload.PlanSpecUpdate
+	4, // 3: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
+	5, // 4: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.Issue.Status
+	5, // 5: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.Issue.Status
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_store_issue_comment_proto_init() }
@@ -655,24 +419,20 @@ func file_store_issue_comment_proto_init() {
 	}
 	file_store_approval_proto_init()
 	file_store_issue_proto_init()
-	file_store_task_run_proto_init()
 	file_store_issue_comment_proto_msgTypes[0].OneofWrappers = []any{
 		(*IssueCommentPayload_Approval_)(nil),
 		(*IssueCommentPayload_IssueUpdate_)(nil),
-		(*IssueCommentPayload_StageEnd_)(nil),
-		(*IssueCommentPayload_TaskUpdate_)(nil),
-		(*IssueCommentPayload_TaskPriorBackup_)(nil),
+		(*IssueCommentPayload_PlanSpecUpdate_)(nil),
 	}
 	file_store_issue_comment_proto_msgTypes[2].OneofWrappers = []any{}
-	file_store_issue_comment_proto_msgTypes[4].OneofWrappers = []any{}
-	file_store_issue_comment_proto_msgTypes[5].OneofWrappers = []any{}
+	file_store_issue_comment_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_issue_comment_proto_rawDesc), len(file_store_issue_comment_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

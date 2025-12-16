@@ -595,12 +595,8 @@ message IssueComment {
     Approval approval = 7;
     // Issue update event.
     IssueUpdate issue_update = 8;
-    // Stage end event.
-    StageEnd stage_end = 9;
-    // Task update event.
-    TaskUpdate task_update = 10;
-    // Task prior backup event.
-    TaskPriorBackup task_prior_backup = 11;
+    // Plan spec update event.
+    PlanSpecUpdate plan_spec_update = 12;
   }
 
   // Approval event information.
@@ -634,60 +630,16 @@ message IssueComment {
     repeated string to_labels = 8;
   }
 
-  // Stage end event information.
-  message StageEnd {
-    // The stage that ended.
-    string stage = 1;
-  }
-
-  // Task update event information.
-  message TaskUpdate {
-    // The tasks that were updated.
-    repeated string tasks = 1;
+  // Plan spec update event information (tracks sheet changes to plan specs).
+  message PlanSpecUpdate {
+    // The spec that was updated.
+    // Format: projects/{project}/plans/{plan}/specs/{spec}
+    string spec = 1;
+    // The previous sheet.
     // Format: projects/{project}/sheets/{sheet}
     optional string from_sheet = 2;
+    // The new sheet.
     // Format: projects/{project}/sheets/{sheet}
     optional string to_sheet = 3;
-    optional Status to_status = 6;
-
-    // Task status values.
-    enum Status {
-      // Unspecified status.
-      STATUS_UNSPECIFIED = 0;
-      // Task is pending.
-      PENDING = 1;
-      // Task is running.
-      RUNNING = 2;
-      // Task is done.
-      DONE = 3;
-      // Task failed.
-      FAILED = 4;
-      // Task was skipped.
-      SKIPPED = 5;
-      // Task was canceled.
-      CANCELED = 6;
-    }
-  }
-
-  // Task prior backup event information.
-  message TaskPriorBackup {
-    // The task for which backup was performed.
-    string task = 1;
-    // The tables that were backed up.
-    repeated Table tables = 2;
-    // The original line number in the statement.
-    optional int32 original_line = 3;
-    // The database that was backed up.
-    string database = 4;
-    // Error message if backup failed.
-    string error = 5;
-
-    // Table identification.
-    message Table {
-      // The schema name.
-      string schema = 1;
-      // The table name.
-      string table = 2;
-    }
   }
 }

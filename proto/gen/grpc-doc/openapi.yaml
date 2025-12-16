@@ -11082,18 +11082,10 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/IssueComment_IssueUpdate'
                     description: Issue update event.
-                stageEnd:
+                planSpecUpdate:
                     allOf:
-                        - $ref: '#/components/schemas/IssueComment_StageEnd'
-                    description: Stage end event.
-                taskUpdate:
-                    allOf:
-                        - $ref: '#/components/schemas/IssueComment_TaskUpdate'
-                    description: Task update event.
-                taskPriorBackup:
-                    allOf:
-                        - $ref: '#/components/schemas/IssueComment_TaskPriorBackup'
-                    description: Task prior backup event.
+                        - $ref: '#/components/schemas/IssueComment_PlanSpecUpdate'
+                    description: Plan spec update event.
             description: A comment on an issue.
         IssueComment_Approval:
             type: object
@@ -11144,61 +11136,25 @@ components:
                     items:
                         type: string
             description: Issue update event information.
-        IssueComment_StageEnd:
+        IssueComment_PlanSpecUpdate:
             type: object
             properties:
-                stage:
+                spec:
                     type: string
-                    description: The stage that ended.
-            description: Stage end event information.
-        IssueComment_TaskPriorBackup:
-            type: object
-            properties:
-                task:
-                    type: string
-                    description: The task for which backup was performed.
-                tables:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/TaskPriorBackup_Table'
-                    description: The tables that were backed up.
-                originalLine:
-                    type: integer
-                    description: The original line number in the statement.
-                    format: int32
-                database:
-                    type: string
-                    description: The database that was backed up.
-                error:
-                    type: string
-                    description: Error message if backup failed.
-            description: Task prior backup event information.
-        IssueComment_TaskUpdate:
-            type: object
-            properties:
-                tasks:
-                    type: array
-                    items:
-                        type: string
-                    description: The tasks that were updated.
+                    description: |-
+                        The spec that was updated.
+                         Format: projects/{project}/plans/{plan}/specs/{spec}
                 fromSheet:
                     type: string
-                    description: 'Format: projects/{project}/sheets/{sheet}'
+                    description: |-
+                        The previous sheet.
+                         Format: projects/{project}/sheets/{sheet}
                 toSheet:
                     type: string
-                    description: 'Format: projects/{project}/sheets/{sheet}'
-                toStatus:
-                    enum:
-                        - STATUS_UNSPECIFIED
-                        - PENDING
-                        - RUNNING
-                        - DONE
-                        - FAILED
-                        - SKIPPED
-                        - CANCELED
-                    type: string
-                    format: enum
-            description: Task update event information.
+                    description: |-
+                        The new sheet.
+                         Format: projects/{project}/sheets/{sheet}
+            description: Plan spec update event information (tracks sheet changes to plan specs).
         Issue_Approver:
             type: object
             properties:
@@ -14626,16 +14582,6 @@ components:
                 definition:
                     type: string
                     description: The definition of the task.
-        TaskPriorBackup_Table:
-            type: object
-            properties:
-                schema:
-                    type: string
-                    description: The schema name.
-                table:
-                    type: string
-                    description: The table name.
-            description: Table identification.
         TaskRun:
             type: object
             properties:
