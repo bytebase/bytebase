@@ -239,29 +239,8 @@ func (s *Store) CreateProject(ctx context.Context, create *ProjectMessage, creat
 	return project, nil
 }
 
-// UpdateProject updates a project.
-func (s *Store) UpdateProject(ctx context.Context, patch *UpdateProjectMessage) (*ProjectMessage, error) {
-	s.removeProjectCache(patch.ResourceID)
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	if err := updateProjectImpl(ctx, tx, patch); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return s.GetProject(ctx, &FindProjectMessage{ResourceID: &patch.ResourceID})
-}
-
-// BatchUpdateProjects updates multiple projects in a single transaction.
-func (s *Store) BatchUpdateProjects(ctx context.Context, patches []*UpdateProjectMessage) ([]*ProjectMessage, error) {
+// UpdateProjects updates projects in a single transaction.
+func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMessage) ([]*ProjectMessage, error) {
 	if len(patches) == 0 {
 		return nil, nil
 	}
