@@ -103,7 +103,10 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 	}
 
 	// Get current user from session
-	accessToken := getTokenFromEchoRequest(c)
+	accessToken, err := auth.GetTokenFromHeaders(c.Request().Header)
+	if err != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", err.Error())
+	}
 	if accessToken == "" {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "user not authenticated")
 	}
@@ -196,25 +199,6 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 	// Return HTML page that redirects to callback URL
 	// This avoids CSP form-action restrictions
 	return c.HTML(http.StatusOK, buildRedirectHTML(redirectURL))
-}
-
-// getTokenFromEchoRequest extracts the access token from an Echo request.
-func getTokenFromEchoRequest(c echo.Context) string {
-	// Check Authorization header first
-	authHeader := c.Request().Header.Get("Authorization")
-	if authHeader != "" {
-		if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
-			return authHeader[7:]
-		}
-	}
-
-	// Check HTTP cookies
-	cookie, err := c.Cookie(auth.AccessTokenCookieName)
-	if err == nil && cookie != nil {
-		return cookie.Value
-	}
-
-	return ""
 }
 
 // audienceContains checks if the audience claim contains the given token.
