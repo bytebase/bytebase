@@ -1,5 +1,5 @@
 ---
-name: execute-sql
+name: query
 description: Run SQL queries on databases
 ---
 
