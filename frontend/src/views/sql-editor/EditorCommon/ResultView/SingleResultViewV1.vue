@@ -232,7 +232,7 @@
 import { create } from "@bufbuild/protobuf";
 import { isEmpty } from "lodash-es";
 import { ArrowDownIcon, ArrowUpIcon, XIcon } from "lucide-vue-next";
-import { NButton, NEmpty, NFormItem, NSwitch, NTooltip } from "naive-ui";
+import { NButton, NFormItem, NSwitch, NTooltip } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
