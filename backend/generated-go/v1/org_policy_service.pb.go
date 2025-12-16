@@ -1089,9 +1089,9 @@ func (x *DataSourceQueryPolicy) GetDisallowDml() bool {
 
 type MaskingExemptionPolicy_Exemption struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Members who bind to this exemption.
-	//
-	// Format: users/{email} or groups/{group email}
+	// Specifies the principals who are exempt from masking.
+	// For users, the member should be: user:{email}
+	// For groups, the member should be: group:{email}
 	Members []string `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
 	// The condition that is associated with this exception policy instance.
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
