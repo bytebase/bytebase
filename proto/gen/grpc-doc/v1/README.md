@@ -9321,7 +9321,6 @@ When paginating, all other parameters provided to `ListRevisions` must match the
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | statement | [string](#string) |  | The statement is used for preview purpose. |
 | statement_size | [int64](#int64) |  | The size of the statement in bytes. |
-| issue | [string](#string) |  | The issue associated with the revision. Can be empty. Format: projects/{project}/issues/{issue} |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | type | [Revision.Type](#bytebase-v1-Revision-Type) |  | The type of the revision. |
 
@@ -10040,7 +10039,6 @@ Information about a blocking task.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | task | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
-| issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
 
 
 

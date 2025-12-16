@@ -93,18 +93,11 @@ func (s *Store) CreateIdentityProvider(ctx context.Context, create *IdentityProv
 		return nil, err
 	}
 
-	s.idpCache.Add(identityProvider.ResourceID, identityProvider)
 	return identityProvider, nil
 }
 
 // GetIdentityProvider gets an identity provider.
 func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProviderMessage) (*IdentityProviderMessage, error) {
-	if find.ResourceID != nil {
-		if v, ok := s.idpCache.Get(*find.ResourceID); ok && s.enableCache {
-			return v, nil
-		}
-	}
-
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
@@ -125,9 +118,7 @@ func (s *Store) GetIdentityProvider(ctx context.Context, find *FindIdentityProvi
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d identity providers with filter %+v, expect 1", len(identityProviders), find)}
 	}
 
-	identityProvider := identityProviders[0]
-	s.idpCache.Add(identityProvider.ResourceID, identityProvider)
-	return identityProvider, nil
+	return identityProviders[0], nil
 }
 
 // ListIdentityProviders lists identity providers.
@@ -191,9 +182,6 @@ func (s *Store) ListIdentityProviders(ctx context.Context, find *FindIdentityPro
 		return nil, err
 	}
 
-	for _, identityProvider := range identityProviderMessages {
-		s.idpCache.Add(identityProvider.ResourceID, identityProvider)
-	}
 	return identityProviderMessages, nil
 }
 
@@ -213,7 +201,6 @@ func (s *Store) UpdateIdentityProvider(ctx context.Context, patch *UpdateIdentit
 		return nil, err
 	}
 
-	s.idpCache.Add(identityProvider.ResourceID, identityProvider)
 	return identityProvider, nil
 }
 
@@ -290,13 +277,7 @@ func (s *Store) DeleteIdentityProvider(ctx context.Context, resourceID string) e
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
 		return err
 	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	s.idpCache.Remove(resourceID)
-	return nil
+	return tx.Commit()
 }
 
 func convertIdentityProviderType(identityProviderType string) storepb.IdentityProviderType {

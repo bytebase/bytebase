@@ -582,8 +582,6 @@ message TaskRun {
       message Task {
         // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
         string task = 1;
-        // Format: projects/{project}/issues/{issue}
-        string issue = 2;
       }
     }
     // The cause for the task run waiting.

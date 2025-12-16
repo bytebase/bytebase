@@ -87,10 +87,6 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 		if database == nil {
 			return true, nil, errors.Errorf("database not found for task %v", task.ID)
 		}
-		issueN, err := exec.store.GetIssue(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-		if err != nil {
-			return true, nil, errors.Wrapf(err, "failed to find issue for pipeline %v", task.PipelineID)
-		}
 
 		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
 			Type:             storepb.TaskRunLog_PRIOR_BACKUP_START,
@@ -100,7 +96,7 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 		// Check if we should skip backup or not.
 		if common.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
 			var backupErr error
-			priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, statement, task.Payload, task, issueN, instance, database)
+			priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, statement, task.Payload, task, instance, database)
 			if backupErr != nil {
 				exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
 					Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
@@ -108,22 +104,7 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 						Error: backupErr.Error(),
 					},
 				})
-				// Create issue comment for backup error.
-				if issueN != nil {
-					if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-						IssueUID: issueN.UID,
-						Payload: &storepb.IssueCommentPayload{
-							Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
-								TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
-									Task:  common.FormatTask(issueN.Project.ResourceID, task.PipelineID, task.Environment, task.ID),
-									Error: backupErr.Error(),
-								},
-							},
-						},
-					}, common.SystemBotEmail); err != nil {
-						slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
-					}
-				}
+
 				// Check if we should skip backup error and continue to run migration.
 				skip, err := exec.shouldSkipBackupError(ctx, task)
 				if err != nil {
@@ -275,7 +256,6 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	originStatement string,
 	payload *storepb.Task,
 	task *store.TaskMessage,
-	issueN *store.IssueMessage,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 ) (*storepb.PriorBackupDetail, error) {
@@ -355,9 +335,6 @@ func (exec *DatabaseMigrateExecutor) backupData(
 
 	priorBackupDetail := &storepb.PriorBackupDetail{}
 	bbSource := fmt.Sprintf("task %d", task.ID)
-	if issueN != nil {
-		bbSource = fmt.Sprintf("issue %d", issueN.UID)
-	}
 	for _, statement := range statements {
 		backupStatement := statement.Statement
 		if prependStatements != "" {
@@ -422,28 +399,6 @@ func (exec *DatabaseMigrateExecutor) backupData(
 			}
 		}
 		priorBackupDetail.Items = append(priorBackupDetail.Items, item)
-
-		if issueN != nil {
-			if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-				IssueUID: issueN.UID,
-				Payload: &storepb.IssueCommentPayload{
-					Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
-						TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
-							Task:     common.FormatTask(issueN.Project.ResourceID, task.PipelineID, task.Environment, task.ID),
-							Database: backupDatabaseName,
-							Tables: []*storepb.IssueCommentPayload_TaskPriorBackup_Table{
-								{
-									Schema: "",
-									Table:  statement.TargetTableName,
-								},
-							},
-						},
-					},
-				},
-			}, common.SystemBotEmail); err != nil {
-				slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err))
-			}
-		}
 	}
 
 	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {

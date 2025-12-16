@@ -183,11 +183,6 @@ message Revision {
   // The size of the statement in bytes.
   int64 statement_size = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The issue associated with the revision.
-  // Can be empty.
-  // Format: projects/{project}/issues/{issue}
-  string issue = 12 [(google.api.resource_reference) = {type: "bytebase.com/Issue"}];
-
   // The task run associated with the revision.
   // Can be empty.
   // Format:

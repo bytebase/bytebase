@@ -2784,9 +2784,7 @@ func (*TaskRun_SchedulerInfo_WaitingCause_ParallelTasksLimit) isTaskRun_Schedule
 type TaskRun_SchedulerInfo_WaitingCause_Task struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-	Task string `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
-	// Format: projects/{project}/issues/{issue}
-	Issue         string `protobuf:"bytes,2,opt,name=issue,proto3" json:"issue,omitempty"`
+	Task          string `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2824,13 +2822,6 @@ func (*TaskRun_SchedulerInfo_WaitingCause_Task) Descriptor() ([]byte, []int) {
 func (x *TaskRun_SchedulerInfo_WaitingCause_Task) GetTask() string {
 	if x != nil {
 		return x.Task
-	}
-	return ""
-}
-
-func (x *TaskRun_SchedulerInfo_WaitingCause_Task) GetIssue() string {
-	if x != nil {
-		return x.Issue
 	}
 	return ""
 }
@@ -3765,7 +3756,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x11bytebase.com/Task\x12Aprojects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}B\t\n" +
 	"\apayloadB\x0e\n" +
 	"\f_update_timeB\v\n" +
-	"\t_run_time\"\xa0\x0f\n" +
+	"\t_run_time\"\x8a\x0f\n" +
 	"\aTaskRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\acreator\x18\x02 \x01(\tR\acreator\x12@\n" +
@@ -3795,18 +3786,17 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x05Table\x12\x1a\n" +
 	"\bdatabase\x18\x01 \x01(\tR\bdatabase\x12\x16\n" +
 	"\x06schema\x18\x02 \x01(\tR\x06schema\x12\x14\n" +
-	"\x05table\x18\x03 \x01(\tR\x05table\x1a\x9b\x03\n" +
+	"\x05table\x18\x03 \x01(\tR\x05table\x1a\x85\x03\n" +
 	"\rSchedulerInfo\x12;\n" +
 	"\vreport_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"reportTime\x12T\n" +
-	"\rwaiting_cause\x18\x02 \x01(\v2/.bytebase.v1.TaskRun.SchedulerInfo.WaitingCauseR\fwaitingCause\x1a\xf6\x01\n" +
+	"\rwaiting_cause\x18\x02 \x01(\v2/.bytebase.v1.TaskRun.SchedulerInfo.WaitingCauseR\fwaitingCause\x1a\xe0\x01\n" +
 	"\fWaitingCause\x12+\n" +
 	"\x10connection_limit\x18\x01 \x01(\bH\x00R\x0fconnectionLimit\x12J\n" +
 	"\x04task\x18\x02 \x01(\v24.bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.TaskH\x00R\x04task\x122\n" +
-	"\x14parallel_tasks_limit\x18\x03 \x01(\bH\x00R\x12parallelTasksLimit\x1a0\n" +
+	"\x14parallel_tasks_limit\x18\x03 \x01(\bH\x00R\x12parallelTasksLimit\x1a\x1a\n" +
 	"\x04Task\x12\x12\n" +
-	"\x04task\x18\x01 \x01(\tR\x04task\x12\x14\n" +
-	"\x05issue\x18\x02 \x01(\tR\x05issueB\a\n" +
+	"\x04task\x18\x01 \x01(\tR\x04taskB\a\n" +
 	"\x05cause\"^\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +

@@ -15,12 +15,6 @@
           :date="getDateForPbTimestampProtoEs(revision.createTime)"
         />
       </span>
-      <span v-if="relatedIssueUID">
-        {{ $t("common.issue") }}:
-        <RouterLink class="normal-link" :to="`/${revision.issue}`"
-          >#{{ relatedIssueUID }}</RouterLink
-        >
-      </span>
     </div>
   </div>
 
@@ -59,7 +53,7 @@ import {
   GetTaskRunLogRequestSchema,
   GetTaskRunRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { extractIssueUID, getSheetStatement } from "@/utils";
+import { getSheetStatement } from "@/utils";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import { TaskRunLogViewer } from "../Plan/components/RolloutView/v2/TaskRunLogViewer";
 
@@ -132,10 +126,4 @@ const sheet = computed(() =>
 const statement = computed(() =>
   sheet.value ? getSheetStatement(sheet.value) : ""
 );
-
-const relatedIssueUID = computed(() => {
-  const uid = extractIssueUID(revision.value?.issue || "");
-  if (!uid) return null;
-  return uid;
-});
 </script>

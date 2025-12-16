@@ -13074,12 +13074,6 @@ components:
                     readOnly: true
                     type: string
                     description: The size of the statement in bytes.
-                issue:
-                    type: string
-                    description: |-
-                        The issue associated with the revision.
-                         Can be empty.
-                         Format: projects/{project}/issues/{issue}
                 taskRun:
                     type: string
                     description: |-
@@ -15378,9 +15372,6 @@ components:
                 task:
                     type: string
                     description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}'
-                issue:
-                    type: string
-                    description: 'Format: projects/{project}/issues/{issue}'
             description: Information about a blocking task.
         Webhook:
             required:

@@ -1146,13 +1146,6 @@ export declare type TaskRun_SchedulerInfo_WaitingCause_Task = Message<"bytebase.
    * @generated from field: string task = 1;
    */
   task: string;
-
-  /**
-   * Format: projects/{project}/issues/{issue}
-   *
-   * @generated from field: string issue = 2;
-   */
-  issue: string;
 };
 
 /**
