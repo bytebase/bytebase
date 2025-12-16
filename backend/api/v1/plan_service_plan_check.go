@@ -178,15 +178,12 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{
-		UID:       &sheetUID,
-		ProjectID: &plan.ProjectID,
-	})
+	sheet, err := s.GetSheetMetadata(ctx, sheetUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
 	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, plan.ProjectID)
+	if sheet.ProjectID != plan.ProjectID {
+		return nil, errors.Errorf("sheet %d not in project %s", sheetUID, plan.ProjectID)
 	}
 
 	enableSDL := config.Type == storepb.PlanConfig_ChangeDatabaseConfig_SDL

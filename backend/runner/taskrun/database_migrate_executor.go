@@ -63,10 +63,11 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 
 func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
 	sheetID := int(task.Payload.GetSheetId())
-	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
+	sheet, err := exec.store.GetSheetFull(ctx, sheetID)
 	if err != nil {
 		return true, nil, err
 	}
+	statement := sheet.Statement
 
 	// Handle prior backup if enabled.
 	// TransformDMLToSelect will automatically filter out DDL statements,
@@ -134,10 +135,11 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 
 func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
 	sheetID := int(task.Payload.GetSheetId())
-	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
+	sheet, err := exec.store.GetSheetFull(ctx, sheetID)
 	if err != nil {
 		return true, nil, err
 	}
+	statement := sheet.Statement
 	flags := task.Payload.GetFlags()
 
 	instance, err := exec.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})

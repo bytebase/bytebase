@@ -39,65 +39,44 @@ func (s *SheetMessage) GetSha256Hex() string {
 	return hex.EncodeToString(s.Sha256)
 }
 
-// FindSheetMessage is the API message for finding sheets.
-type FindSheetMessage struct {
-	ProjectID *string
-	UID       *int
-	// LoadFull is used if we want to load the full sheet.
-	LoadFull bool
-}
-
-// GetSheetStatementByID gets the statement of a sheet by ID.
-func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
-	if v, ok := s.sheetStatementCache.Get(id); ok && s.enableCache {
+// GetSheetMetadata gets a sheet with truncated statement (max 2MB).
+// Use this when you need to check sheet.Size or other metadata before processing.
+// Statement field will be truncated to MaxSheetSize (2MB).
+func (s *Store) GetSheetMetadata(ctx context.Context, id int) (*SheetMessage, error) {
+	if v, ok := s.sheetMetadataCache.Get(id); ok && s.enableCache {
 		return v, nil
 	}
 
-	sheet, err := s.GetSheet(ctx, &FindSheetMessage{UID: &id, LoadFull: true})
-	if err != nil {
-		return "", err
-	}
-	if sheet == nil {
-		return "", errors.Errorf("sheet not found with id %d", id)
-	}
-
-	statement := sheet.Statement
-	s.sheetStatementCache.Add(id, statement)
-	return statement, nil
-}
-
-// GetSheet gets a sheet.
-func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMessage, error) {
-	shouldCache := !find.LoadFull && find.UID != nil
-	if shouldCache {
-		if v, ok := s.sheetCache.Get(*find.UID); ok && s.enableCache {
-			return v, nil
-		}
-	}
-
-	sheets, err := s.listSheets(ctx, find)
+	sheet, err := s.getSheet(ctx, id, false)
 	if err != nil {
 		return nil, err
 	}
-	if len(sheets) == 0 {
-		return nil, nil
-	}
-	if len(sheets) > 1 {
-		return nil, errors.Errorf("expected 1 sheet, got %d", len(sheets))
-	}
-	sheet := sheets[0]
 
-	if shouldCache {
-		s.sheetCache.Add(sheet.UID, sheet)
-	}
-
+	s.sheetMetadataCache.Add(id, sheet)
 	return sheet, nil
 }
 
-// listSheets returns a list of sheets.
-func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*SheetMessage, error) {
+// GetSheetFull gets a sheet with the complete statement.
+// Use this when you need the full statement for execution or processing.
+// Statement field contains the complete content regardless of size.
+func (s *Store) GetSheetFull(ctx context.Context, id int) (*SheetMessage, error) {
+	if v, ok := s.sheetFullCache.Get(id); ok && s.enableCache {
+		return v, nil
+	}
+
+	sheet, err := s.getSheet(ctx, id, true)
+	if err != nil {
+		return nil, err
+	}
+
+	s.sheetFullCache.Add(id, sheet)
+	return sheet, nil
+}
+
+// getSheet is the internal helper for fetching a single sheet by ID.
+func (s *Store) getSheet(ctx context.Context, id int, loadFull bool) (*SheetMessage, error) {
 	statementField := fmt.Sprintf("LEFT(sheet_blob.content, %d)", common.MaxSheetSize)
-	if find.LoadFull {
+	if loadFull {
 		statementField = "sheet_blob.content"
 	}
 
@@ -114,14 +93,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			OCTET_LENGTH(sheet_blob.content)
 		FROM sheet
 		LEFT JOIN sheet_blob ON sheet.sha256 = sheet_blob.sha256
-		WHERE TRUE`, statementField))
-
-	if v := find.UID; v != nil {
-		q.And("sheet.id = ?", *v)
-	}
-	if v := find.ProjectID; v != nil {
-		q.And("sheet.project = ?", *v)
-	}
+		WHERE sheet.id = ?`, statementField), id)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -140,9 +112,9 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 	}
 	defer rows.Close()
 
-	var sheets []*SheetMessage
-	for rows.Next() {
-		var sheet SheetMessage
+	var sheet *SheetMessage
+	if rows.Next() {
+		sheet = &SheetMessage{}
 		var payload []byte
 		if err := rows.Scan(
 			&sheet.UID,
@@ -162,9 +134,8 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			return nil, err
 		}
 		sheet.Payload = sheetPayload
-
-		sheets = append(sheets, &sheet)
 	}
+
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -172,7 +143,11 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 		return nil, err
 	}
 
-	return sheets, nil
+	if sheet == nil {
+		return nil, errors.Errorf("sheet not found with id %d", id)
+	}
+
+	return sheet, nil
 }
 
 // CreateSheets creates new sheets.

@@ -155,14 +155,22 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	find := &store.FindSheetMessage{
-		ProjectID: &project.ResourceID,
-		UID:       &sheetUID,
-		LoadFull:  request.Msg.Raw,
+	var sheet *store.SheetMessage
+	var sheetErr error
+	if request.Msg.Raw {
+		sheet, sheetErr = s.store.GetSheetFull(ctx, sheetUID)
+	} else {
+		sheet, sheetErr = s.store.GetSheetMetadata(ctx, sheetUID)
 	}
-	sheet, err := s.findSheet(ctx, find)
-	if err != nil {
-		return nil, err
+	if sheetErr != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(sheetErr, "failed to get sheet"))
+	}
+	if sheet == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the sheet"))
+	}
+	// Verify project matches
+	if sheet.ProjectID != project.ResourceID {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet not found in project"))
 	}
 
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
@@ -170,17 +178,6 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 		return nil, err
 	}
 	return connect.NewResponse(v1pbSheet), nil
-}
-
-func (s *SheetService) findSheet(ctx context.Context, find *store.FindSheetMessage) (*store.SheetMessage, error) {
-	sheet, err := s.store.GetSheet(ctx, find)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet"))
-	}
-	if sheet == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the sheet"))
-	}
-	return sheet, nil
 }
 
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
