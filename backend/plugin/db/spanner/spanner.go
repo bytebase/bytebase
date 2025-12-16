@@ -610,33 +610,33 @@ func (d *Driver) explainStatement(ctx context.Context, statement string) ([]*v1p
 	return results, nil
 }
 
-// SpannerPlanNode represents a node in the Spanner query plan for JSON serialization.
-type SpannerPlanNode struct {
-	Index               int32                        `json:"index"`
-	Kind                string                       `json:"kind"`
-	DisplayName         string                       `json:"displayName"`
-	ChildLinks          []SpannerChildLink           `json:"childLinks,omitempty"`
-	ShortRepresentation *SpannerShortRepresentation  `json:"shortRepresentation,omitempty"`
-	Metadata            map[string]any               `json:"metadata,omitempty"`
-	ExecutionStats      map[string]any               `json:"executionStats,omitempty"`
+// PlanNode represents a node in the Spanner query plan for JSON serialization.
+type PlanNode struct {
+	Index               int32                `json:"index"`
+	Kind                string               `json:"kind"`
+	DisplayName         string               `json:"displayName"`
+	ChildLinks          []ChildLink          `json:"childLinks,omitempty"`
+	ShortRepresentation *ShortRepresentation `json:"shortRepresentation,omitempty"`
+	Metadata            map[string]any       `json:"metadata,omitempty"`
+	ExecutionStats      map[string]any       `json:"executionStats,omitempty"`
 }
 
-// SpannerChildLink represents a child link in the query plan.
-type SpannerChildLink struct {
+// ChildLink represents a child link in the query plan.
+type ChildLink struct {
 	ChildIndex int32  `json:"childIndex"`
 	Type       string `json:"type,omitempty"`
 	Variable   string `json:"variable,omitempty"`
 }
 
-// SpannerShortRepresentation represents the short representation of a scalar node.
-type SpannerShortRepresentation struct {
+// ShortRepresentation represents the short representation of a scalar node.
+type ShortRepresentation struct {
 	Description string           `json:"description"`
 	Subqueries  map[string]int32 `json:"subqueries,omitempty"`
 }
 
-// SpannerQueryPlan represents the full query plan for JSON serialization.
-type SpannerQueryPlan struct {
-	PlanNodes []SpannerPlanNode `json:"planNodes"`
+// QueryPlan represents the full query plan for JSON serialization.
+type QueryPlan struct {
+	PlanNodes []PlanNode `json:"planNodes"`
 }
 
 // convertQueryPlanToJSON converts a Spanner QueryPlan to JSON string.
@@ -645,12 +645,12 @@ func convertQueryPlanToJSON(plan *sppb.QueryPlan) (string, error) {
 		return "{}", nil
 	}
 
-	queryPlan := SpannerQueryPlan{
-		PlanNodes: make([]SpannerPlanNode, 0, len(plan.PlanNodes)),
+	queryPlan := QueryPlan{
+		PlanNodes: make([]PlanNode, 0, len(plan.PlanNodes)),
 	}
 
 	for _, node := range plan.PlanNodes {
-		planNode := SpannerPlanNode{
+		planNode := PlanNode{
 			Index:       node.Index,
 			Kind:        node.Kind.String(),
 			DisplayName: node.DisplayName,
@@ -658,9 +658,9 @@ func convertQueryPlanToJSON(plan *sppb.QueryPlan) (string, error) {
 
 		// Convert child links
 		if len(node.ChildLinks) > 0 {
-			planNode.ChildLinks = make([]SpannerChildLink, 0, len(node.ChildLinks))
+			planNode.ChildLinks = make([]ChildLink, 0, len(node.ChildLinks))
 			for _, link := range node.ChildLinks {
-				planNode.ChildLinks = append(planNode.ChildLinks, SpannerChildLink{
+				planNode.ChildLinks = append(planNode.ChildLinks, ChildLink{
 					ChildIndex: link.ChildIndex,
 					Type:       link.Type,
 					Variable:   link.Variable,
@@ -670,7 +670,7 @@ func convertQueryPlanToJSON(plan *sppb.QueryPlan) (string, error) {
 
 		// Convert short representation
 		if node.ShortRepresentation != nil {
-			planNode.ShortRepresentation = &SpannerShortRepresentation{
+			planNode.ShortRepresentation = &ShortRepresentation{
 				Description: node.ShortRepresentation.Description,
 				Subqueries:  node.ShortRepresentation.Subqueries,
 			}
