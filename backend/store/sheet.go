@@ -39,14 +39,6 @@ func (s *SheetMessage) GetSha256Hex() string {
 	return hex.EncodeToString(s.Sha256)
 }
 
-// FindSheetMessage is the API message for finding sheets.
-type FindSheetMessage struct {
-	ProjectID *string
-	UID       *int
-	// LoadFull is used if we want to load the full sheet.
-	LoadFull bool
-}
-
 // GetSheetMetadata gets a sheet with truncated statement (max 2MB).
 // Use this when you need to check sheet.Size or other metadata before processing.
 // Statement field will be truncated to MaxSheetSize (2MB).
@@ -78,53 +70,6 @@ func (s *Store) GetSheetFull(ctx context.Context, id int) (*SheetMessage, error)
 	}
 
 	s.sheetFullCache.Add(id, sheet)
-	return sheet, nil
-}
-
-// GetSheetStatementByID gets the statement of a sheet by ID.
-func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
-	if v, ok := s.sheetStatementCache.Get(id); ok && s.enableCache {
-		return v, nil
-	}
-
-	sheet, err := s.GetSheet(ctx, &FindSheetMessage{UID: &id, LoadFull: true})
-	if err != nil {
-		return "", err
-	}
-	if sheet == nil {
-		return "", errors.Errorf("sheet not found with id %d", id)
-	}
-
-	statement := sheet.Statement
-	s.sheetStatementCache.Add(id, statement)
-	return statement, nil
-}
-
-// GetSheet gets a sheet.
-func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMessage, error) {
-	shouldCache := !find.LoadFull && find.UID != nil
-	if shouldCache {
-		if v, ok := s.sheetCache.Get(*find.UID); ok && s.enableCache {
-			return v, nil
-		}
-	}
-
-	sheets, err := s.listSheets(ctx, find)
-	if err != nil {
-		return nil, err
-	}
-	if len(sheets) == 0 {
-		return nil, nil
-	}
-	if len(sheets) > 1 {
-		return nil, errors.Errorf("expected 1 sheet, got %d", len(sheets))
-	}
-	sheet := sheets[0]
-
-	if shouldCache {
-		s.sheetCache.Add(sheet.UID, sheet)
-	}
-
 	return sheet, nil
 }
 
