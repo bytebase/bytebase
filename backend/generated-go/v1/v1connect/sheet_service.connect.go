@@ -41,9 +41,6 @@ const (
 	SheetServiceBatchCreateSheetsProcedure = "/bytebase.v1.SheetService/BatchCreateSheets"
 	// SheetServiceGetSheetProcedure is the fully-qualified name of the SheetService's GetSheet RPC.
 	SheetServiceGetSheetProcedure = "/bytebase.v1.SheetService/GetSheet"
-	// SheetServiceUpdateSheetProcedure is the fully-qualified name of the SheetService's UpdateSheet
-	// RPC.
-	SheetServiceUpdateSheetProcedure = "/bytebase.v1.SheetService/UpdateSheet"
 )
 
 // SheetServiceClient is a client for the bytebase.v1.SheetService service.
@@ -57,9 +54,6 @@ type SheetServiceClient interface {
 	// Retrieves a SQL sheet by name.
 	// Permissions required: bb.sheets.get
 	GetSheet(context.Context, *connect.Request[v1.GetSheetRequest]) (*connect.Response[v1.Sheet], error)
-	// Updates a SQL sheet's title or content.
-	// Permissions required: bb.sheets.update
-	UpdateSheet(context.Context, *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error)
 }
 
 // NewSheetServiceClient constructs a client for the bytebase.v1.SheetService service. By default,
@@ -91,12 +85,6 @@ func NewSheetServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(sheetServiceMethods.ByName("GetSheet")),
 			connect.WithClientOptions(opts...),
 		),
-		updateSheet: connect.NewClient[v1.UpdateSheetRequest, v1.Sheet](
-			httpClient,
-			baseURL+SheetServiceUpdateSheetProcedure,
-			connect.WithSchema(sheetServiceMethods.ByName("UpdateSheet")),
-			connect.WithClientOptions(opts...),
-		),
 	}
 }
 
@@ -105,7 +93,6 @@ type sheetServiceClient struct {
 	createSheet       *connect.Client[v1.CreateSheetRequest, v1.Sheet]
 	batchCreateSheets *connect.Client[v1.BatchCreateSheetsRequest, v1.BatchCreateSheetsResponse]
 	getSheet          *connect.Client[v1.GetSheetRequest, v1.Sheet]
-	updateSheet       *connect.Client[v1.UpdateSheetRequest, v1.Sheet]
 }
 
 // CreateSheet calls bytebase.v1.SheetService.CreateSheet.
@@ -123,11 +110,6 @@ func (c *sheetServiceClient) GetSheet(ctx context.Context, req *connect.Request[
 	return c.getSheet.CallUnary(ctx, req)
 }
 
-// UpdateSheet calls bytebase.v1.SheetService.UpdateSheet.
-func (c *sheetServiceClient) UpdateSheet(ctx context.Context, req *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error) {
-	return c.updateSheet.CallUnary(ctx, req)
-}
-
 // SheetServiceHandler is an implementation of the bytebase.v1.SheetService service.
 type SheetServiceHandler interface {
 	// Creates a new SQL sheet.
@@ -139,9 +121,6 @@ type SheetServiceHandler interface {
 	// Retrieves a SQL sheet by name.
 	// Permissions required: bb.sheets.get
 	GetSheet(context.Context, *connect.Request[v1.GetSheetRequest]) (*connect.Response[v1.Sheet], error)
-	// Updates a SQL sheet's title or content.
-	// Permissions required: bb.sheets.update
-	UpdateSheet(context.Context, *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error)
 }
 
 // NewSheetServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -169,12 +148,6 @@ func NewSheetServiceHandler(svc SheetServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(sheetServiceMethods.ByName("GetSheet")),
 		connect.WithHandlerOptions(opts...),
 	)
-	sheetServiceUpdateSheetHandler := connect.NewUnaryHandler(
-		SheetServiceUpdateSheetProcedure,
-		svc.UpdateSheet,
-		connect.WithSchema(sheetServiceMethods.ByName("UpdateSheet")),
-		connect.WithHandlerOptions(opts...),
-	)
 	return "/bytebase.v1.SheetService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SheetServiceCreateSheetProcedure:
@@ -183,8 +156,6 @@ func NewSheetServiceHandler(svc SheetServiceHandler, opts ...connect.HandlerOpti
 			sheetServiceBatchCreateSheetsHandler.ServeHTTP(w, r)
 		case SheetServiceGetSheetProcedure:
 			sheetServiceGetSheetHandler.ServeHTTP(w, r)
-		case SheetServiceUpdateSheetProcedure:
-			sheetServiceUpdateSheetHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -204,8 +175,4 @@ func (UnimplementedSheetServiceHandler) BatchCreateSheets(context.Context, *conn
 
 func (UnimplementedSheetServiceHandler) GetSheet(context.Context, *connect.Request[v1.GetSheetRequest]) (*connect.Response[v1.Sheet], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SheetService.GetSheet is not implemented"))
-}
-
-func (UnimplementedSheetServiceHandler) UpdateSheet(context.Context, *connect.Request[v1.UpdateSheetRequest]) (*connect.Response[v1.Sheet], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.SheetService.UpdateSheet is not implemented"))
 }

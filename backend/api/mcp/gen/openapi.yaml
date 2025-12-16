@@ -5559,44 +5559,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Sheet'
-  /bytebase.v1.SheetService/UpdateSheet:
-    post:
-      tags:
-        - bytebase.v1.SheetService
-      summary: 'Updates a SQL sheet''s title or content.  Permissions required: bb.sheets.update'
-      description: |-
-        Updates a SQL sheet's title or content.
-         Permissions required: bb.sheets.update
-      operationId: bytebase.v1.SheetService.UpdateSheet
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.UpdateSheetRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.Sheet'
   /bytebase.v1.SubscriptionService/GetSubscription:
     post:
       tags:
@@ -17670,35 +17632,6 @@ components:
       title: UpdateSettingRequest
       additionalProperties: false
       description: The request message for updating or creating a setting.
-    bytebase.v1.UpdateSheetRequest:
-      type: object
-      properties:
-        sheet:
-          title: sheet
-          description: |-
-            The sheet to update.
-
-             The sheet's `name` field is used to identify the sheet to update.
-             Format: projects/{project}/sheets/{sheet}
-          $ref: '#/components/schemas/bytebase.v1.Sheet'
-        updateMask:
-          title: update_mask
-          description: |-
-            The list of fields to be updated.
-             Fields are specified relative to the sheet.
-             (e.g., `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
-             Only support update the following fields for now:
-             - `title`
-             - `statement`
-          $ref: '#/components/schemas/google.protobuf.FieldMask'
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the sheet is not found, a new sheet will be created.
-             In this situation, `update_mask` is ignored.
-      title: UpdateSheetRequest
-      additionalProperties: false
     bytebase.v1.UpdateSubscriptionRequest:
       type: object
       properties:

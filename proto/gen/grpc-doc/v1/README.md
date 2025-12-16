@@ -645,7 +645,6 @@
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
     - [SheetPayload](#bytebase-v1-SheetPayload)
-    - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
   
     - [SheetService](#bytebase-v1-SheetService)
   
@@ -10545,25 +10544,6 @@ RolloutService manages the execution of deployment plans.
 
 
 
-
-<a name="bytebase-v1-UpdateSheetRequest"></a>
-
-### UpdateSheetRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [Sheet](#bytebase-v1-Sheet) |  | The sheet to update.
-
-The sheet&#39;s `name` field is used to identify the sheet to update. Format: projects/{project}/sheets/{sheet} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet. (e.g., `title`, `statement`; *not* `sheet.title` or `sheet.statement`) Only support update the following fields for now: - `title` - `statement` |
-| allow_missing | [bool](#bool) |  | If set to true, and the sheet is not found, a new sheet will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
  
 
  
@@ -10581,7 +10561,6 @@ SheetService manages SQL scripts and saved queries.
 | CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) | Creates a new SQL sheet. Permissions required: bb.sheets.create |
 | BatchCreateSheets | [BatchCreateSheetsRequest](#bytebase-v1-BatchCreateSheetsRequest) | [BatchCreateSheetsResponse](#bytebase-v1-BatchCreateSheetsResponse) | Creates multiple SQL sheets in a single operation. Permissions required: bb.sheets.create |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) | Retrieves a SQL sheet by name. Permissions required: bb.sheets.get |
-| UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) | Updates a SQL sheet&#39;s title or content. Permissions required: bb.sheets.update |
 
  
 

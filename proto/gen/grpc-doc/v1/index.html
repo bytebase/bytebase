@@ -2640,10 +2640,6 @@
                   <a href="#bytebase.v1.SheetPayload"><span class="badge">M</span>SheetPayload</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.v1.UpdateSheetRequest"><span class="badge">M</span>UpdateSheetRequest</a>
-                </li>
-              
               
               
               
@@ -29639,53 +29635,6 @@ set the `raw` to true in GetSheet request to retrieve the full content. </p></td
 
         
       
-        <h3 id="bytebase.v1.UpdateSheetRequest">UpdateSheetRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#bytebase.v1.Sheet">Sheet</a></td>
-                  <td></td>
-                  <td><p>The sheet to update.
-
-The sheet&#39;s `name` field is used to identify the sheet to update.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to be updated.
-Fields are specified relative to the sheet.
-(e.g., `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
-Only support update the following fields for now:
-- `title`
-- `statement` </p></td>
-                </tr>
-              
-                <tr>
-                  <td>allow_missing</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set to true, and the sheet is not found, a new sheet will be created.
-In this situation, `update_mask` is ignored. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
 
       
 
@@ -29722,14 +29671,6 @@ Permissions required: bb.sheets.create</p></td>
                 <td><a href="#bytebase.v1.Sheet">Sheet</a></td>
                 <td><p>Retrieves a SQL sheet by name.
 Permissions required: bb.sheets.get</p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateSheet</td>
-                <td><a href="#bytebase.v1.UpdateSheetRequest">UpdateSheetRequest</a></td>
-                <td><a href="#bytebase.v1.Sheet">Sheet</a></td>
-                <td><p>Updates a SQL sheet&#39;s title or content.
-Permissions required: bb.sheets.update</p></td>
               </tr>
             
           </tbody>
@@ -29777,16 +29718,6 @@ Permissions required: bb.sheets.update</p></td>
                 <td>GET</td>
                 <td>/v1/{name=projects/*/sheets/*}</td>
                 <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateSheet</td>
-                <td>PATCH</td>
-                <td>/v1/{sheet.name=projects/*/sheets/*}</td>
-                <td>sheet</td>
               </tr>
               
             

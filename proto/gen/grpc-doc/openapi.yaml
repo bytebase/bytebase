@@ -6077,64 +6077,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - SheetService
-            description: |-
-                Updates a SQL sheet's title or content.
-                 Permissions required: bb.sheets.update
-            operationId: SheetService_UpdateSheet
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: sheet
-                  in: path
-                  description: The sheet id.
-                  required: true
-                  schema:
-                    type: string
-                - name: updateMask
-                  in: query
-                  description: |-
-                    The list of fields to be updated.
-                     Fields are specified relative to the sheet.
-                     (e.g., `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
-                     Only support update the following fields for now:
-                     - `title`
-                     - `statement`
-                  schema:
-                    type: string
-                    format: field-mask
-                - name: allowMissing
-                  in: query
-                  description: |-
-                    If set to true, and the sheet is not found, a new sheet will be created.
-                     In this situation, `update_mask` is ignored.
-                  schema:
-                    type: boolean
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Sheet'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Sheet'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/sheets:batchCreate:
         post:
             tags:
