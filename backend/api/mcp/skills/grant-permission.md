@@ -1,6 +1,6 @@
 ---
 name: grant-permission
-description: Grant roles and permissions to users at workspace or project level
+description: Use when granting roles, managing access control, adding users to projects, or setting up RBAC permissions
 ---
 
 # Grant Permission

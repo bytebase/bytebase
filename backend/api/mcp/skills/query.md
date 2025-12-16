@@ -1,6 +1,6 @@
 ---
 name: query
-description: Run SQL queries on databases
+description: Use when running SQL queries, executing SELECT/INSERT/UPDATE/DELETE statements, or fetching data from databases
 ---
 
 # Execute SQL
