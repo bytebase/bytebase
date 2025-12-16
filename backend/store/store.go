@@ -30,10 +30,10 @@ type Store struct {
 	settingCache         *lru.Cache[storepb.SettingName, *SettingMessage]
 	rolesCache           *lru.Cache[string, *RoleMessage]
 	groupCache           *lru.Cache[string, *GroupMessage]
-	sheetCache           *lru.Cache[int, *SheetMessage]
+	sheetMetadataCache   *lru.Cache[int, *SheetMessage]
 
 	// Large objects.
-	sheetStatementCache *lru.Cache[int, string]
+	sheetFullCache       *lru.Cache[int, *SheetMessage]
 	dbMetadataCache     *lru.Cache[string, *model.DatabaseMetadata]
 }
 
@@ -80,11 +80,11 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	sheetCache, err := lru.New[int, *SheetMessage](64)
+	sheetMetadataCache, err := lru.New[int, *SheetMessage](64)
 	if err != nil {
 		return nil, err
 	}
-	sheetStatementCache, err := lru.New[int, string](10)
+	sheetFullCache, err := lru.New[int, *SheetMessage](10)
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +118,8 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		pipelineCache:        pipelineCache,
 		settingCache:         settingCache,
 		rolesCache:           rolesCache,
-		sheetCache:           sheetCache,
-		sheetStatementCache:  sheetStatementCache,
+		sheetMetadataCache:   sheetMetadataCache,
+		sheetFullCache:       sheetFullCache,
 		dbMetadataCache:      dbMetadataCache,
 		groupCache:           groupCache,
 	}
