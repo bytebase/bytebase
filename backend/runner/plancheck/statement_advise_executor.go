@@ -46,12 +46,9 @@ type StatementAdviseExecutor struct {
 // Run will run the plan check statement advise executor once, and run its sub-advisors one-by-one.
 func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
 	sheetUID := int(config.SheetUid)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
+	sheet, err := e.store.GetSheetMetadata(ctx, sheetUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
-	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %d not found", sheetUID)
 	}
 	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -63,10 +60,11 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 			},
 		}, nil
 	}
-	statement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
+	fullSheet, err := e.store.GetSheetFull(ctx, sheetUID)
 	if err != nil {
 		return nil, err
 	}
+	statement := fullSheet.Statement
 	enablePriorBackup := config.EnablePriorBackup
 	enableGhost := config.EnableGhost
 	enableSDL := config.EnableSdl
