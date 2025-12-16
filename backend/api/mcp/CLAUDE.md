@@ -10,10 +10,9 @@ Skills are markdown files in `skills/` that get embedded into the binary and ser
 
 ```
 skills/
-├── execute-sql.md
-├── create-instance.md
-├── create-project.md
-└── schema-change.md
+├── query.md
+├── database-change.md
+└── grant-permission.md
 ```
 
 ### Skill Format
@@ -23,7 +22,7 @@ Each skill file must have YAML frontmatter followed by markdown content:
 ```markdown
 ---
 name: skill-name
-description: Short description for the skill list
+description: Use when [triggering conditions] - [what it does]
 ---
 
 # Skill Title
@@ -59,26 +58,31 @@ One-liner explaining what this accomplishes.
 
 ### Guidelines
 
-1. **Always include `search_api` before `call_api`** - Claude needs to fetch the schema to know exact field names
+1. **Description starts with "Use when..."** - Include triggering conditions and keywords for discoverability
 
-2. **Use placeholders consistently**:
+2. **Always include `search_api` before `call_api`** - Claude needs to fetch the schema to know exact field names
+
+3. **Use placeholders consistently**:
    - `{project-id}` - project identifier
    - `{instance-id}` - instance identifier
    - `{database-name}` - database name
    - `{sheet-id}` - sheet identifier
    - `{plan-id}` - plan identifier
 
-3. **Note encoding requirements** - e.g., sheet content is base64 encoded
+4. **Prefer discovery over hardcoding** - Use `search_api(schema="EnumName")` instead of listing enum values
 
-4. **List required permissions** in Prerequisites
+5. **Note encoding requirements** - e.g., sheet content is base64 encoded
 
-5. **Include common errors** to help with troubleshooting
+6. **List required permissions** in Prerequisites
+
+7. **Include common errors** to help with troubleshooting
 
 ### Adding a New Skill
 
 1. Create `skills/new-skill.md` with frontmatter and content
-2. Run tests: `go test ./backend/api/mcp/... -run TestGetSkill`
-3. The skill is automatically discovered via `//go:embed`
+2. Update `tool_skill.go` to add the skill name to `getSkillDescription`
+3. Update `tool_skill_test.go` to include the skill in `TestGetSkillAllSkillsLoadable`
+4. Run tests: `go test ./backend/api/mcp/... -run TestGetSkill`
 
 ### Testing
 
@@ -99,5 +103,5 @@ const getSkillDescription = `Get step-by-step guides for Bytebase tasks.
 
 **Workflow:** get_skill("task") → search_api(operationId) → call_api(...)
 
-Skills: execute-sql, create-instance, create-project, schema-change, NEW-SKILL`
+Skills: query, database-change, grant-permission, NEW-SKILL`
 ```

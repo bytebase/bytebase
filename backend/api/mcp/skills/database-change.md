@@ -1,6 +1,6 @@
 ---
 name: database-change
-description: Create database change issues (single or batch) through review workflow
+description: Use when making schema changes (DDL), data migrations, ALTER TABLE, CREATE TABLE, or deploying SQL changes through review workflow
 ---
 
 # Database Change
@@ -36,7 +36,7 @@ call_api(operationId="SheetService/CreateSheet", body={
 
 Note: `Q1JFQVRFIFRBQkxFIHVzZXJzIChpZCBJTlQgUFJJTUFSWSBLRVkpOw==` decodes to `CREATE TABLE users (id INT PRIMARY KEY);`
 
-**Engine values:** `POSTGRES`, `MYSQL`, `TIDB`, `CLICKHOUSE`, `SNOWFLAKE`, `SQLITE`, `MONGODB`, `REDIS`, `ORACLE`, `MSSQL`, `MARIADB`, `OCEANBASE`
+Use `search_api(schema="Engine")` to discover valid engine values.
 
 ### Step 2: Create a plan
 
