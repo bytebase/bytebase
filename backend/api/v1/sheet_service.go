@@ -156,14 +156,14 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 	}
 
 	var sheet *store.SheetMessage
-	var err error
+	var sheetErr error
 	if request.Msg.Raw {
-		sheet, err = s.store.GetSheetFull(ctx, sheetUID)
+		sheet, sheetErr = s.store.GetSheetFull(ctx, sheetUID)
 	} else {
-		sheet, err = s.store.GetSheetMetadata(ctx, sheetUID)
+		sheet, sheetErr = s.store.GetSheetMetadata(ctx, sheetUID)
 	}
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet"))
+	if sheetErr != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(sheetErr, "failed to get sheet"))
 	}
 	if sheet == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the sheet"))

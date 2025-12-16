@@ -278,12 +278,12 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheetUID from %q", revision.Payload.Sheet)
 	}
-	sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID, ProjectID: &sheetProjectID})
+	sheet, err := s.GetSheetMetadata(ctx, sheetUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %q", revision.Payload.Sheet)
 	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, sheetProjectID)
+	if sheet.ProjectID != sheetProjectID {
+		return nil, errors.Errorf("sheet %d not in project %s", sheetUID, sheetProjectID)
 	}
 
 	taskRunName := revision.Payload.TaskRun

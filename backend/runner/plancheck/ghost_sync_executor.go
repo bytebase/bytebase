@@ -84,15 +84,11 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	}
 
 	sheetUID := int(config.SheetUid)
-	sheet, err := e.store.GetSheetMetadata(ctx, sheetUID)
+	sheet, err := e.store.GetSheetFull(ctx, sheetUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
 	}
-	fullSheet, err := e.store.GetSheetFull(ctx, sheetUID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
-	}
-	statement := fullSheet.Statement
+	statement := sheet.Statement
 
 	// Database secrets feature has been removed
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.

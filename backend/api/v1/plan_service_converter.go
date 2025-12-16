@@ -298,12 +298,12 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string
 	}
 
 	if sheetUID := int(run.Config.GetSheetUid()); sheetUID != 0 {
-		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID, ProjectID: &projectID})
+		sheet, err := s.GetSheetMetadata(ctx, sheetUID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet")
 		}
-		if sheet == nil {
-			return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, projectID)
+		if sheet.ProjectID != projectID {
+			return nil, errors.Errorf("sheet %d not in project %s", sheetUID, projectID)
 		}
 		converted.Sheet = common.FormatSheet(projectID, sheet.UID)
 	}
