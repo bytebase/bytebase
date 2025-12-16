@@ -13,6 +13,12 @@
         ref="mssqlContainer"
         class="mssql-query-plan-container"
       />
+      <!-- Spanner visualization -->
+      <SpannerQueryPlan
+        v-else-if="isSpanner"
+        :plan-source="storedQuery.explain"
+        :plan-query="storedQuery.statement"
+      />
       <!-- Fallback for unsupported engines -->
       <div v-else class="unsupported-engine">
         <h2>Unsupported Database Engine</h2>
@@ -31,6 +37,7 @@ import "pev2/dist/pev2.css";
 import "html-query-plan/css/qp.css";
 import { parse } from "qs";
 import { computed, onMounted, ref } from "vue";
+import { SpannerQueryPlan } from "@/components/SpannerQueryPlan";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { readExplainFromToken } from "@/utils/pev2";
 
@@ -54,6 +61,7 @@ const isPostgreSQL = computed(
   () => storedQuery.value?.engine === Engine.POSTGRES
 );
 const isMSSQL = computed(() => storedQuery.value?.engine === Engine.MSSQL);
+const isSpanner = computed(() => storedQuery.value?.engine === Engine.SPANNER);
 
 const mssqlContainer = ref<HTMLDivElement>();
 const qpLoaded = ref(false);

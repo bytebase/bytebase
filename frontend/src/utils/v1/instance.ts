@@ -244,6 +244,7 @@ export const instanceV1AllowsExplain = (
     Engine.REDSHIFT,
     Engine.SNOWFLAKE,
     Engine.STARROCKS,
+    Engine.SPANNER,
   ].includes(engine);
 };
 

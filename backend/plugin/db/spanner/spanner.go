@@ -320,7 +320,7 @@ func getDatabaseFromDSN(dsn string) (string, error) {
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext.Explain {
-		return nil, errors.New("Spanner does not support EXPLAIN")
+		return d.explainStatement(ctx, statement)
 	}
 
 	stmts, err := util.SanitizeSQL(statement)
@@ -391,7 +391,15 @@ func (d *Driver) queryStatement(ctx context.Context, statement string, queryCont
 
 	row, err := iter.Next()
 	if err == iterator.Done {
-		return nil, nil
+		// Empty result set - return empty QueryResult with column info
+		columnTypeNames, typeErr := getColumnTypeNames(iter)
+		if typeErr != nil {
+			return nil, typeErr
+		}
+		return &v1pb.QueryResult{
+			ColumnNames:     getColumnNames(iter),
+			ColumnTypeNames: columnTypeNames,
+		}, nil
 	}
 	if err != nil {
 		return nil, err
@@ -548,4 +556,143 @@ func readRow(row *spanner.Row) (*v1pb.QueryRow, error) {
 	}
 
 	return result, nil
+}
+
+// explainStatement returns the query plan for the given statement as JSON.
+func (d *Driver) explainStatement(ctx context.Context, statement string) ([]*v1pb.QueryResult, error) {
+	if d.client == nil {
+		return nil, errors.New("spanner client is not initialized, database name may be missing")
+	}
+
+	stmts, err := util.SanitizeSQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*v1pb.QueryResult
+	for _, stmt := range stmts {
+		startTime := time.Now()
+		queryResult, err := func() (*v1pb.QueryResult, error) {
+			plan, err := d.client.Single().AnalyzeQuery(ctx, spanner.NewStatement(stmt))
+			if err != nil {
+				return nil, err
+			}
+
+			// Convert the query plan to JSON
+			planJSON, err := convertQueryPlanToJSON(plan)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to convert query plan to JSON")
+			}
+
+			return &v1pb.QueryResult{
+				ColumnNames:     []string{"QUERY PLAN"},
+				ColumnTypeNames: []string{"JSON"},
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_StringValue{StringValue: planJSON}},
+						},
+					},
+				},
+			}, nil
+		}()
+		if err != nil {
+			queryResult = &v1pb.QueryResult{
+				Error: err.Error(),
+			}
+		}
+		queryResult.Statement = stmt
+		queryResult.Latency = durationpb.New(time.Since(startTime))
+		queryResult.RowsCount = int64(len(queryResult.Rows))
+		results = append(results, queryResult)
+	}
+
+	return results, nil
+}
+
+// SpannerPlanNode represents a node in the Spanner query plan for JSON serialization.
+type SpannerPlanNode struct {
+	Index               int32                        `json:"index"`
+	Kind                string                       `json:"kind"`
+	DisplayName         string                       `json:"displayName"`
+	ChildLinks          []SpannerChildLink           `json:"childLinks,omitempty"`
+	ShortRepresentation *SpannerShortRepresentation  `json:"shortRepresentation,omitempty"`
+	Metadata            map[string]any               `json:"metadata,omitempty"`
+	ExecutionStats      map[string]any               `json:"executionStats,omitempty"`
+}
+
+// SpannerChildLink represents a child link in the query plan.
+type SpannerChildLink struct {
+	ChildIndex int32  `json:"childIndex"`
+	Type       string `json:"type,omitempty"`
+	Variable   string `json:"variable,omitempty"`
+}
+
+// SpannerShortRepresentation represents the short representation of a scalar node.
+type SpannerShortRepresentation struct {
+	Description string           `json:"description"`
+	Subqueries  map[string]int32 `json:"subqueries,omitempty"`
+}
+
+// SpannerQueryPlan represents the full query plan for JSON serialization.
+type SpannerQueryPlan struct {
+	PlanNodes []SpannerPlanNode `json:"planNodes"`
+}
+
+// convertQueryPlanToJSON converts a Spanner QueryPlan to JSON string.
+func convertQueryPlanToJSON(plan *sppb.QueryPlan) (string, error) {
+	if plan == nil {
+		return "{}", nil
+	}
+
+	queryPlan := SpannerQueryPlan{
+		PlanNodes: make([]SpannerPlanNode, 0, len(plan.PlanNodes)),
+	}
+
+	for _, node := range plan.PlanNodes {
+		planNode := SpannerPlanNode{
+			Index:       node.Index,
+			Kind:        node.Kind.String(),
+			DisplayName: node.DisplayName,
+		}
+
+		// Convert child links
+		if len(node.ChildLinks) > 0 {
+			planNode.ChildLinks = make([]SpannerChildLink, 0, len(node.ChildLinks))
+			for _, link := range node.ChildLinks {
+				planNode.ChildLinks = append(planNode.ChildLinks, SpannerChildLink{
+					ChildIndex: link.ChildIndex,
+					Type:       link.Type,
+					Variable:   link.Variable,
+				})
+			}
+		}
+
+		// Convert short representation
+		if node.ShortRepresentation != nil {
+			planNode.ShortRepresentation = &SpannerShortRepresentation{
+				Description: node.ShortRepresentation.Description,
+				Subqueries:  node.ShortRepresentation.Subqueries,
+			}
+		}
+
+		// Convert metadata
+		if node.Metadata != nil {
+			planNode.Metadata = node.Metadata.AsMap()
+		}
+
+		// Convert execution stats
+		if node.ExecutionStats != nil {
+			planNode.ExecutionStats = node.ExecutionStats.AsMap()
+		}
+
+		queryPlan.PlanNodes = append(queryPlan.PlanNodes, planNode)
+	}
+
+	jsonBytes, err := json.Marshal(queryPlan)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
 }

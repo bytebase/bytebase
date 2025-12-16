@@ -609,7 +609,9 @@ const engine = computed(() => props.database.instanceResource.engine);
 
 const showVisualizeButton = computed((): boolean => {
   return (
-    (engine.value === Engine.POSTGRES || engine.value === Engine.MSSQL) &&
+    (engine.value === Engine.POSTGRES ||
+      engine.value === Engine.MSSQL ||
+      engine.value === Engine.SPANNER) &&
     props.params.explain
   );
 });
@@ -617,7 +619,7 @@ const showVisualizeButton = computed((): boolean => {
 const visualizeExplain = async () => {
   let token: string | undefined;
   try {
-    if (engine.value === Engine.POSTGRES) {
+    if (engine.value === Engine.POSTGRES || engine.value === Engine.SPANNER) {
       token = getExplainToken(props.result);
     } else if (engine.value === Engine.MSSQL) {
       token = await getExplainTokenForMSSQL();
