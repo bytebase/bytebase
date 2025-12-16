@@ -142,9 +142,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, err
 		}
-		sheet, err := sheetManager.CreateSheet(ctx, &store.SheetMessage{
-			Creator:   common.SystemBotEmail,
-			ProjectID: project.ResourceID,
+		sheets, err := sheetManager.CreateSheets(ctx, project.ResourceID, common.SystemBotEmail, &store.SheetMessage{
 			Title:     fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement: statement,
 			Payload: &storepb.SheetPayload{
@@ -154,6 +152,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create database creation sheet")
 		}
+		sheet := sheets[0]
 
 		v := &store.TaskMessage{
 			InstanceID:   instance.ResourceID,

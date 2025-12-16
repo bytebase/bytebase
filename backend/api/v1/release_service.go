@@ -94,7 +94,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 
 	// Batch create sheets if needed.
 	if len(sheetsToCreate) > 0 {
-		createdSheets, err := s.sheetManager.BatchCreateSheets(ctx, sheetsToCreate, project.ResourceID, user.Email)
+		createdSheets, err := s.sheetManager.CreateSheets(ctx, project.ResourceID, user.Email, sheetsToCreate...)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheets"))
 		}
