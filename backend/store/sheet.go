@@ -64,6 +64,23 @@ func (s *Store) GetSheetMetadata(ctx context.Context, id int) (*SheetMessage, er
 	return sheet, nil
 }
 
+// GetSheetFull gets a sheet with the complete statement.
+// Use this when you need the full statement for execution or processing.
+// Statement field contains the complete content regardless of size.
+func (s *Store) GetSheetFull(ctx context.Context, id int) (*SheetMessage, error) {
+	if v, ok := s.sheetFullCache.Get(id); ok && s.enableCache {
+		return v, nil
+	}
+
+	sheet, err := s.getSheet(ctx, id, true)
+	if err != nil {
+		return nil, err
+	}
+
+	s.sheetFullCache.Add(id, sheet)
+	return sheet, nil
+}
+
 // GetSheetStatementByID gets the statement of a sheet by ID.
 func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
 	if v, ok := s.sheetStatementCache.Get(id); ok && s.enableCache {
