@@ -23,7 +23,8 @@
     "sentence": {
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
-      "changed-x-link": "cambiado {name}. \n{link}"
+      "changed-x-link": "cambiado {name}. \n{link}",
+      "modified-sql-of-spec-link": "SQL modificado de {spec}. {link}"
     }
   },
   "settings": {

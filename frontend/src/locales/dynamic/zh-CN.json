@@ -23,7 +23,8 @@
     "sentence": {
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
-      "changed-x-link": "修改了 {name}。{link}"
+      "changed-x-link": "修改了 {name}。{link}",
+      "modified-sql-of-spec-link": "修改了 {spec} 的 SQL。{link}"
     }
   },
   "settings": {
