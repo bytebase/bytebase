@@ -482,12 +482,12 @@ func extractPropertyTypeAndDesc(prop *v3base.SchemaProxy) (string, string) {
 
 		// For arrays, get the item type
 		if propType == "array" && propSchema.Items != nil && propSchema.Items.A != nil {
-			itemSchema := propSchema.Items.A.Schema()
-			if itemSchema != nil && len(itemSchema.Type) > 0 {
-				propType = fmt.Sprintf("array<%s>", itemSchema.Type[0])
-			} else if propSchema.Items.A.GetReference() != "" {
+			// Check for $ref first (before resolving schema)
+			if propSchema.Items.A.GetReference() != "" {
 				refParts := strings.Split(propSchema.Items.A.GetReference(), "/")
 				propType = fmt.Sprintf("array<%s>", refParts[len(refParts)-1])
+			} else if itemSchema := propSchema.Items.A.Schema(); itemSchema != nil && len(itemSchema.Type) > 0 {
+				propType = fmt.Sprintf("array<%s>", itemSchema.Type[0])
 			}
 		}
 	}
