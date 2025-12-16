@@ -1313,7 +1313,6 @@
     }
   },
   "instance": {
-    "select": "Seleccionar instancia",
     "select-database-user": "Seleccionar usuario de base de datos",
     "new-database": "Nueva base de datos",
     "syncing": "Sincronizando...",

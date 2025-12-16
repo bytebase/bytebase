@@ -1313,7 +1313,6 @@
     }
   },
   "instance": {
-    "select": "选择实例",
     "select-database-user": "选择数据库用户",
     "new-database": "@:common.new@:common.database",
     "syncing": "同步中 ...",

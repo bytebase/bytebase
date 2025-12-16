@@ -1313,7 +1313,6 @@
     }
   },
   "instance": {
-    "select": "Chọn phiên bản",
     "select-database-user": "Chọn người dùng cơ sở dữ liệu",
     "new-database": "Cơ sở dữ liệu mới",
     "syncing": "Đang đồng bộ hóa ...",
