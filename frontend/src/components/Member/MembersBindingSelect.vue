@@ -89,7 +89,7 @@ type MemberType = "USERS" | "GROUPS";
 
 const props = withDefaults(
   defineProps<{
-    // member binding list, for users, should be user:{email}, for groups, shoud be groups:{email}
+    // member binding list, for users, should be user:{email}, for groups, should be group:{email}
     // We don't support mixed data.
     value: string[];
     required: boolean;

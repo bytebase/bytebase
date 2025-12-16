@@ -375,9 +375,9 @@ export declare const MaskingExemptionPolicySchema: GenMessage<MaskingExemptionPo
  */
 export declare type MaskingExemptionPolicy_Exemption = Message<"bytebase.v1.MaskingExemptionPolicy.Exemption"> & {
   /**
-   * Members who bind to this exemption.
-   *
-   * Format: users/{email} or groups/{group email}
+   * Specifies the principals who are exempt from masking.
+   * For users, the member should be: user:{email}
+   * For groups, the member should be: group:{email}
    *
    * @generated from field: repeated string members = 1;
    */

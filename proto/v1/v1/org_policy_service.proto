@@ -307,9 +307,9 @@ message QueryDataPolicy {
 // MaskingExemptionPolicy is the allowlist of users who can access sensitive data.
 message MaskingExemptionPolicy {
   message Exemption {
-    // Members who bind to this exemption.
-    //
-    // Format: users/{email} or groups/{group email}
+    // Specifies the principals who are exempt from masking.
+    // For users, the member should be: user:{email}
+    // For groups, the member should be: group:{email}
     repeated string members = 1;
 
     // The condition that is associated with this exception policy instance.
