@@ -21,6 +21,42 @@ func (x *GetProjectRequest) Equal(y *GetProjectRequest) bool {
 	return true
 }
 
+func (x *BatchGetProjectsRequest) Equal(y *BatchGetProjectsRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Names) != len(y.Names) {
+		return false
+	}
+	for i := 0; i < len(x.Names); i++ {
+		if x.Names[i] != y.Names[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *BatchGetProjectsResponse) Equal(y *BatchGetProjectsResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Projects) != len(y.Projects) {
+		return false
+	}
+	for i := 0; i < len(x.Projects); i++ {
+		if !x.Projects[i].Equal(y.Projects[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *ListProjectsRequest) Equal(y *ListProjectsRequest) bool {
 	if x == y {
 		return true

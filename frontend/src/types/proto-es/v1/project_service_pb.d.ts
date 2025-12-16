@@ -33,6 +33,43 @@ export declare type GetProjectRequest = Message<"bytebase.v1.GetProjectRequest">
 export declare const GetProjectRequestSchema: GenMessage<GetProjectRequest>;
 
 /**
+ * @generated from message bytebase.v1.BatchGetProjectsRequest
+ */
+export declare type BatchGetProjectsRequest = Message<"bytebase.v1.BatchGetProjectsRequest"> & {
+  /**
+   * The names of projects to retrieve.
+   * Format: projects/{project}
+   *
+   * @generated from field: repeated string names = 1;
+   */
+  names: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.BatchGetProjectsRequest.
+ * Use `create(BatchGetProjectsRequestSchema)` to create a new message.
+ */
+export declare const BatchGetProjectsRequestSchema: GenMessage<BatchGetProjectsRequest>;
+
+/**
+ * @generated from message bytebase.v1.BatchGetProjectsResponse
+ */
+export declare type BatchGetProjectsResponse = Message<"bytebase.v1.BatchGetProjectsResponse"> & {
+  /**
+   * The projects from the specified request.
+   *
+   * @generated from field: repeated bytebase.v1.Project projects = 1;
+   */
+  projects: Project[];
+};
+
+/**
+ * Describes the message bytebase.v1.BatchGetProjectsResponse.
+ * Use `create(BatchGetProjectsResponseSchema)` to create a new message.
+ */
+export declare const BatchGetProjectsResponseSchema: GenMessage<BatchGetProjectsResponse>;
+
+/**
  * @generated from message bytebase.v1.ListProjectsRequest
  */
 export declare type ListProjectsRequest = Message<"bytebase.v1.ListProjectsRequest"> & {
@@ -944,6 +981,17 @@ export declare const ProjectService: GenService<{
     methodKind: "unary";
     input: typeof GetProjectRequestSchema;
     output: typeof ProjectSchema;
+  },
+  /**
+   * BatchGetProjects retrieves multiple projects by their names.
+   * Permissions required: bb.projects.get
+   *
+   * @generated from rpc bytebase.v1.ProjectService.BatchGetProjects
+   */
+  batchGetProjects: {
+    methodKind: "unary";
+    input: typeof BatchGetProjectsRequestSchema;
+    output: typeof BatchGetProjectsResponseSchema;
   },
   /**
    * Lists all projects in the workspace with optional filtering.

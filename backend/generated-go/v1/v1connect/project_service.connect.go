@@ -37,6 +37,9 @@ const (
 	// ProjectServiceGetProjectProcedure is the fully-qualified name of the ProjectService's GetProject
 	// RPC.
 	ProjectServiceGetProjectProcedure = "/bytebase.v1.ProjectService/GetProject"
+	// ProjectServiceBatchGetProjectsProcedure is the fully-qualified name of the ProjectService's
+	// BatchGetProjects RPC.
+	ProjectServiceBatchGetProjectsProcedure = "/bytebase.v1.ProjectService/BatchGetProjects"
 	// ProjectServiceListProjectsProcedure is the fully-qualified name of the ProjectService's
 	// ListProjects RPC.
 	ProjectServiceListProjectsProcedure = "/bytebase.v1.ProjectService/ListProjects"
@@ -87,6 +90,9 @@ type ProjectServiceClient interface {
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	// Permissions required: bb.projects.get
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
+	// BatchGetProjects retrieves multiple projects by their names.
+	// Permissions required: bb.projects.get
+	BatchGetProjects(context.Context, *connect.Request[v1.BatchGetProjectsRequest]) (*connect.Response[v1.BatchGetProjectsResponse], error)
 	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
@@ -146,6 +152,12 @@ func NewProjectServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+ProjectServiceGetProjectProcedure,
 			connect.WithSchema(projectServiceMethods.ByName("GetProject")),
+			connect.WithClientOptions(opts...),
+		),
+		batchGetProjects: connect.NewClient[v1.BatchGetProjectsRequest, v1.BatchGetProjectsResponse](
+			httpClient,
+			baseURL+ProjectServiceBatchGetProjectsProcedure,
+			connect.WithSchema(projectServiceMethods.ByName("BatchGetProjects")),
 			connect.WithClientOptions(opts...),
 		),
 		listProjects: connect.NewClient[v1.ListProjectsRequest, v1.ListProjectsResponse](
@@ -238,6 +250,7 @@ func NewProjectServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 // projectServiceClient implements ProjectServiceClient.
 type projectServiceClient struct {
 	getProject          *connect.Client[v1.GetProjectRequest, v1.Project]
+	batchGetProjects    *connect.Client[v1.BatchGetProjectsRequest, v1.BatchGetProjectsResponse]
 	listProjects        *connect.Client[v1.ListProjectsRequest, v1.ListProjectsResponse]
 	searchProjects      *connect.Client[v1.SearchProjectsRequest, v1.SearchProjectsResponse]
 	createProject       *connect.Client[v1.CreateProjectRequest, v1.Project]
@@ -257,6 +270,11 @@ type projectServiceClient struct {
 // GetProject calls bytebase.v1.ProjectService.GetProject.
 func (c *projectServiceClient) GetProject(ctx context.Context, req *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error) {
 	return c.getProject.CallUnary(ctx, req)
+}
+
+// BatchGetProjects calls bytebase.v1.ProjectService.BatchGetProjects.
+func (c *projectServiceClient) BatchGetProjects(ctx context.Context, req *connect.Request[v1.BatchGetProjectsRequest]) (*connect.Response[v1.BatchGetProjectsResponse], error) {
+	return c.batchGetProjects.CallUnary(ctx, req)
 }
 
 // ListProjects calls bytebase.v1.ProjectService.ListProjects.
@@ -335,6 +353,9 @@ type ProjectServiceHandler interface {
 	// Users with "bb.projects.get" permission on the workspace or the project owner can access this method.
 	// Permissions required: bb.projects.get
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
+	// BatchGetProjects retrieves multiple projects by their names.
+	// Permissions required: bb.projects.get
+	BatchGetProjects(context.Context, *connect.Request[v1.BatchGetProjectsRequest]) (*connect.Response[v1.BatchGetProjectsResponse], error)
 	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
@@ -390,6 +411,12 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.Handler
 		ProjectServiceGetProjectProcedure,
 		svc.GetProject,
 		connect.WithSchema(projectServiceMethods.ByName("GetProject")),
+		connect.WithHandlerOptions(opts...),
+	)
+	projectServiceBatchGetProjectsHandler := connect.NewUnaryHandler(
+		ProjectServiceBatchGetProjectsProcedure,
+		svc.BatchGetProjects,
+		connect.WithSchema(projectServiceMethods.ByName("BatchGetProjects")),
 		connect.WithHandlerOptions(opts...),
 	)
 	projectServiceListProjectsHandler := connect.NewUnaryHandler(
@@ -480,6 +507,8 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.Handler
 		switch r.URL.Path {
 		case ProjectServiceGetProjectProcedure:
 			projectServiceGetProjectHandler.ServeHTTP(w, r)
+		case ProjectServiceBatchGetProjectsProcedure:
+			projectServiceBatchGetProjectsHandler.ServeHTTP(w, r)
 		case ProjectServiceListProjectsProcedure:
 			projectServiceListProjectsHandler.ServeHTTP(w, r)
 		case ProjectServiceSearchProjectsProcedure:
@@ -519,6 +548,10 @@ type UnimplementedProjectServiceHandler struct{}
 
 func (UnimplementedProjectServiceHandler) GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.GetProject is not implemented"))
+}
+
+func (UnimplementedProjectServiceHandler) BatchGetProjects(context.Context, *connect.Request[v1.BatchGetProjectsRequest]) (*connect.Response[v1.BatchGetProjectsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.BatchGetProjects is not implemented"))
 }
 
 func (UnimplementedProjectServiceHandler) ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error) {

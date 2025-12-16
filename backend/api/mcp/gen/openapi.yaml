@@ -3350,6 +3350,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchGetIamPolicyResponse'
+  /bytebase.v1.ProjectService/BatchGetProjects:
+    post:
+      tags:
+        - bytebase.v1.ProjectService
+      summary: 'BatchGetProjects retrieves multiple projects by their names.  Permissions required: bb.projects.get'
+      description: |-
+        BatchGetProjects retrieves multiple projects by their names.
+         Permissions required: bb.projects.get
+      operationId: bytebase.v1.ProjectService.BatchGetProjects
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.BatchGetProjectsRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.BatchGetProjectsResponse'
   /bytebase.v1.ProjectService/CreateProject:
     post:
       tags:
@@ -7368,6 +7406,30 @@ components:
       title: PolicyResult
       additionalProperties: false
       description: Result for a single project's IAM policy.
+    bytebase.v1.BatchGetProjectsRequest:
+      type: object
+      properties:
+        names:
+          type: array
+          items:
+            type: string
+          title: names
+          description: |-
+            The names of projects to retrieve.
+             Format: projects/{project}
+      title: BatchGetProjectsRequest
+      additionalProperties: false
+    bytebase.v1.BatchGetProjectsResponse:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.Project'
+          title: projects
+          description: The projects from the specified request.
+      title: BatchGetProjectsResponse
+      additionalProperties: false
     bytebase.v1.BatchGetUsersRequest:
       type: object
       properties:

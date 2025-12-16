@@ -1658,7 +1658,7 @@
     "edit-labels": "Edit Labels",
     "edit-environment": "Edit Environment",
     "mixed-values-for-label": "This selected label have mixed values",
-    "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key",
+    "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
     "table-detail": "Table detail",
     "batch-action-permission-denied": "Don't have permission to {action} for databases",
     "batch-action-disabled": "Can not {action} for the databases from different projects",

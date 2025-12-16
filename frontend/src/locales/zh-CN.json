@@ -1658,7 +1658,7 @@
     "edit-labels": "编辑标签",
     "edit-environment": "编辑环境",
     "mixed-values-for-label": "该标签拥有不同的值",
-    "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用",
+    "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
     "table-detail": "表详情",
     "batch-action-permission-denied": "没有权限对数据库{action}",
     "batch-action-disabled": "无法对来自不同项目的数据库{action}",

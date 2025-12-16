@@ -1658,7 +1658,7 @@
     "edit-labels": "タグを編集する",
     "edit-environment": "環境の編集",
     "mixed-values-for-label": "タグの値が異なります",
-    "mixed-label-values-warning": "一部のタグには異なる値があり、タグの編集はバッチで適用されます",
+    "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
     "table-detail": "テーブルの詳細",
     "batch-action-permission-denied": "データベース {action} に対する権限がありません",
     "batch-action-disabled": "異なるプロジェクトのデータベース {action} を比較できません",

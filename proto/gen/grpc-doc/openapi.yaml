@@ -6426,6 +6426,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/projects:batchGet:
+        get:
+            tags:
+                - ProjectService
+            description: |-
+                BatchGetProjects retrieves multiple projects by their names.
+                 Permissions required: bb.projects.get
+            operationId: ProjectService_BatchGetProjects
+            parameters:
+                - name: names
+                  in: query
+                  description: |-
+                    The names of projects to retrieve.
+                     Format: projects/{project}
+                  schema:
+                    type: array
+                    items:
+                        type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchGetProjectsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/projects:search:
         post:
             tags:
@@ -8479,6 +8510,14 @@ components:
                         - $ref: '#/components/schemas/IamPolicy'
                     description: The IAM policy for the project.
             description: Result for a single project's IAM policy.
+        BatchGetProjectsResponse:
+            type: object
+            properties:
+                projects:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Project'
+                    description: The projects from the specified request.
         BatchGetUsersResponse:
             type: object
             properties:

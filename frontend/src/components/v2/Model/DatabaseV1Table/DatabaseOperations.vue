@@ -566,20 +566,20 @@ const onLabelsApply = async (labelsList: { [key: string]: string }[]) => {
     return;
   }
 
-  // We doesn't support batch update labels, so we update one by one.
-  const updatedDatabases = await Promise.all(
-    props.databases.map(async (database, i) => {
-      const label = labelsList[i];
-      const patch = create(DatabaseSchema$, {
-        ...database,
-        labels: label,
-      });
-      return await databaseStore.updateDatabase(
-        create(UpdateDatabaseRequestSchema, {
+  const updatedDatabases = await databaseStore.batchUpdateDatabases(
+    create(BatchUpdateDatabasesRequestSchema, {
+      parent: "-",
+      requests: props.databases.map((database, i) => {
+        const label = labelsList[i];
+        const patch = create(DatabaseSchema$, {
+          ...database,
+          labels: label,
+        });
+        return create(UpdateDatabaseRequestSchema, {
           database: patch,
           updateMask: create(FieldMaskProtoEsSchema, { paths: ["labels"] }),
-        })
-      );
+        });
+      }),
     })
   );
   emit("update", updatedDatabases);
