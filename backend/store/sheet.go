@@ -94,10 +94,10 @@ func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMes
 	return sheet, nil
 }
 
-// listSheets returns a list of sheets.
-func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*SheetMessage, error) {
+// getSheet is the internal helper for fetching a single sheet by ID.
+func (s *Store) getSheet(ctx context.Context, id int, loadFull bool) (*SheetMessage, error) {
 	statementField := fmt.Sprintf("LEFT(sheet_blob.content, %d)", common.MaxSheetSize)
-	if find.LoadFull {
+	if loadFull {
 		statementField = "sheet_blob.content"
 	}
 
@@ -114,14 +114,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			OCTET_LENGTH(sheet_blob.content)
 		FROM sheet
 		LEFT JOIN sheet_blob ON sheet.sha256 = sheet_blob.sha256
-		WHERE TRUE`, statementField))
-
-	if v := find.UID; v != nil {
-		q.And("sheet.id = ?", *v)
-	}
-	if v := find.ProjectID; v != nil {
-		q.And("sheet.project = ?", *v)
-	}
+		WHERE sheet.id = ?`, statementField), id)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -140,9 +133,9 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 	}
 	defer rows.Close()
 
-	var sheets []*SheetMessage
-	for rows.Next() {
-		var sheet SheetMessage
+	var sheet *SheetMessage
+	if rows.Next() {
+		sheet = &SheetMessage{}
 		var payload []byte
 		if err := rows.Scan(
 			&sheet.UID,
@@ -162,9 +155,8 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			return nil, err
 		}
 		sheet.Payload = sheetPayload
-
-		sheets = append(sheets, &sheet)
 	}
+
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -172,7 +164,11 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 		return nil, err
 	}
 
-	return sheets, nil
+	if sheet == nil {
+		return nil, errors.Errorf("sheet not found with id %d", id)
+	}
+
+	return sheet, nil
 }
 
 // CreateSheets creates new sheets.
