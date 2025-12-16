@@ -42,17 +42,11 @@ type DatabaseCreateExecutor struct {
 // RunOnce will run the database create task executor once.
 func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	sheetID := int(task.Payload.GetSheetId())
-	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
-	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get sheet statement of sheet: %d", sheetID)
-	}
-	sheet, err := exec.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetID})
+	sheet, err := exec.store.GetSheetFull(ctx, sheetID)
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get sheet: %d", sheetID)
 	}
-	if sheet == nil {
-		return true, nil, errors.Errorf("sheet not found: %d", sheetID)
-	}
+	statement := sheet.Statement
 
 	statement = strings.TrimSpace(statement)
 	if statement == "" {
