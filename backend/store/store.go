@@ -28,7 +28,6 @@ type Store struct {
 	issueByPipelineCache *lru.Cache[int, *IssueMessage]
 	pipelineCache        *lru.Cache[int, *PipelineMessage]
 	settingCache         *lru.Cache[storepb.SettingName, *SettingMessage]
-	databaseGroupCache   *lru.Cache[string, *DatabaseGroupMessage]
 	rolesCache           *lru.Cache[string, *RoleMessage]
 	groupCache           *lru.Cache[string, *GroupMessage]
 	sheetCache           *lru.Cache[int, *SheetMessage]
@@ -85,10 +84,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	databaseGroupCache, err := lru.New[string, *DatabaseGroupMessage](1024)
-	if err != nil {
-		return nil, err
-	}
 	sheetStatementCache, err := lru.New[int, string](10)
 	if err != nil {
 		return nil, err
@@ -124,7 +119,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		settingCache:         settingCache,
 		rolesCache:           rolesCache,
 		sheetCache:           sheetCache,
-		databaseGroupCache:   databaseGroupCache,
 		sheetStatementCache:  sheetStatementCache,
 		dbMetadataCache:      dbMetadataCache,
 		groupCache:           groupCache,
@@ -159,8 +153,4 @@ func getPolicyCacheKey(resourceType storepb.Policy_Resource, resource string, po
 
 func getDatabaseCacheKey(instanceID, databaseName string) string {
 	return fmt.Sprintf("%s/%s", instanceID, databaseName)
-}
-
-func getDatabaseGroupCacheKey(projectID, resourceID string) string {
-	return fmt.Sprintf("%s/%s", projectID, resourceID)
 }

@@ -51,7 +51,6 @@ func (s *Store) DeleteDatabaseGroup(ctx context.Context, projectID, resourceID s
 	if err := tx.Commit(); err != nil {
 		return errors.Wrapf(err, "failed to commit transaction")
 	}
-	s.databaseGroupCache.Remove(getDatabaseGroupCacheKey(projectID, resourceID))
 	return nil
 }
 
@@ -119,20 +118,12 @@ func (s *Store) ListDatabaseGroups(ctx context.Context, find *FindDatabaseGroupM
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	for _, databaseGroup := range databaseGroups {
-		s.databaseGroupCache.Add(getDatabaseGroupCacheKey(databaseGroup.ProjectID, databaseGroup.ResourceID), databaseGroup)
-	}
 
 	return databaseGroups, nil
 }
 
 // GetDatabaseGroup gets a database group.
 func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMessage) (*DatabaseGroupMessage, error) {
-	if find.ProjectID != nil && find.ResourceID != nil {
-		if v, ok := s.databaseGroupCache.Get(getDatabaseGroupCacheKey(*find.ProjectID, *find.ResourceID)); ok && s.enableCache {
-			return v, nil
-		}
-	}
 	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
@@ -154,7 +145,6 @@ func (s *Store) GetDatabaseGroup(ctx context.Context, find *FindDatabaseGroupMes
 	if len(databaseGroups) > 1 {
 		return nil, errors.Errorf("found multiple database groups")
 	}
-	s.databaseGroupCache.Add(getDatabaseGroupCacheKey(databaseGroups[0].ProjectID, databaseGroups[0].ResourceID), databaseGroups[0])
 	return databaseGroups[0], nil
 }
 
@@ -209,7 +199,6 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID s
 		return nil, errors.Wrapf(err, "failed to unmarshal expression")
 	}
 	updatedDatabaseGroup.Expression = &expression
-	s.databaseGroupCache.Add(getDatabaseGroupCacheKey(updatedDatabaseGroup.ProjectID, updatedDatabaseGroup.ResourceID), &updatedDatabaseGroup)
 	return &updatedDatabaseGroup, nil
 }
 
@@ -247,6 +236,5 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, create *DatabaseGroupMe
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	s.databaseGroupCache.Add(getDatabaseGroupCacheKey(create.ProjectID, create.ResourceID), create)
 	return create, nil
 }
