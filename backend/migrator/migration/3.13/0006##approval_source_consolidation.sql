@@ -7,10 +7,14 @@ SET value = (
     value::jsonb,
     '{rules}',
     (
-      -- DDL rules: rename to CHANGE_DATABASE and add DDL condition filter
+      -- DDL rules: rename to CHANGE_DATABASE, append (DDL) to title, and add DDL condition filter
       SELECT COALESCE(jsonb_agg(
         jsonb_set(
-          jsonb_set(rule, '{source}', '"CHANGE_DATABASE"'),
+          jsonb_set(
+            jsonb_set(rule, '{source}', '"CHANGE_DATABASE"'),
+            '{template,title}',
+            to_jsonb((rule->'template'->>'title') || ' (DDL)')
+          ),
           '{condition,expression}',
           to_jsonb(
             CASE
@@ -24,10 +28,14 @@ SET value = (
       FROM jsonb_array_elements(value::jsonb->'rules') AS rule
       WHERE rule->>'source' = 'DDL'
     ) || (
-      -- DML rules: rename to CHANGE_DATABASE and add DML condition filter (appended after DDL)
+      -- DML rules: rename to CHANGE_DATABASE, append (DML) to title, and add DML condition filter (appended after DDL)
       SELECT COALESCE(jsonb_agg(
         jsonb_set(
-          jsonb_set(rule, '{source}', '"CHANGE_DATABASE"'),
+          jsonb_set(
+            jsonb_set(rule, '{source}', '"CHANGE_DATABASE"'),
+            '{template,title}',
+            to_jsonb((rule->'template'->>'title') || ' (DML)')
+          ),
           '{condition,expression}',
           to_jsonb(
             CASE
