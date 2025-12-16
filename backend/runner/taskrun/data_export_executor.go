@@ -74,10 +74,11 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Errorf("instance not found")
 	}
 
-	statement, err := exec.store.GetSheetStatementByID(ctx, int(task.Payload.GetSheetId()))
+	sheet, err := exec.store.GetSheetFull(ctx, int(task.Payload.GetSheetId()))
 	if err != nil {
 		return true, nil, err
 	}
+	statement := sheet.Statement
 
 	dataSource := apiv1.GetQueriableDataSource(instance)
 	creatorUser, err := exec.store.GetUserByEmail(ctx, issue.CreatorEmail)
