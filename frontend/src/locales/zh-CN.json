@@ -907,17 +907,7 @@
       "reopened-issue": "重开工单",
       "resolved-issue": "完成工单",
       "canceled-issue": "取消工单",
-      "changed": "修改",
-      "canceled": "取消",
-      "started": "开始",
-      "completed": "完成",
-      "failed": "失败",
-      "skipped": "跳过",
-      "rolled-out": "发布",
-      "xxx-automatically": "自动{verb}",
-      "failed-to-backup": "数据备份失败：{error}",
-      "prior-back-table": "已备份到数据库 {database} 中表 {tables}",
-      "prior-back-table-for-line": "数据备份到数据库 {database} 和表 {tables}，用于第 {line} 行的DML"
+      "xxx-automatically": "自动{verb}"
     },
     "n-similar-activities": "({count} 个相似的活动)"
   },

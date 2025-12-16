@@ -907,17 +907,7 @@
       "reopened-issue": "incidencia reabierta",
       "resolved-issue": "incidencia resuelta",
       "canceled-issue": "incidencia cancelada",
-      "changed": "cambio",
-      "canceled": "cancelado",
-      "started": "iniciado",
-      "completed": "completado",
-      "failed": "fallido",
-      "skipped": "omitido",
-      "rolled-out": "implementado",
-      "xxx-automatically": "{verb} automáticamente",
-      "failed-to-backup": "No se pudo realizar la copia de seguridad de los datos: {error}",
-      "prior-back-table": "Copia de seguridad de datos en la base de datos {database} y tablas {tables}",
-      "prior-back-table-for-line": "Copia de seguridad de datos en la base de datos {database} y la tabla {tables} para DML en la línea {line}"
+      "xxx-automatically": "{verb} automáticamente"
     },
     "n-similar-activities": "({count} actividad similar) | ({count} actividades similares)"
   },
