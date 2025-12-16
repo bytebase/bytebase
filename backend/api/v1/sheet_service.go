@@ -68,10 +68,11 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 	}
 
 	storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, user.Email, request.Msg.Sheet)
-	sheet, err := s.sheetManager.CreateSheet(ctx, storeSheetCreate)
+	sheets, err := s.sheetManager.CreateSheets(ctx, project.ResourceID, user.Email, storeSheetCreate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}
+	sheet := sheets[0]
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 	if err != nil {
 		return nil, err
@@ -116,7 +117,7 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 		sheetCreates = append(sheetCreates, storeSheetCreate)
 	}
 
-	sheets, err := s.sheetManager.BatchCreateSheets(ctx, sheetCreates, project.ResourceID, user.Email)
+	sheets, err := s.sheetManager.CreateSheets(ctx, project.ResourceID, user.Email, sheetCreates...)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}

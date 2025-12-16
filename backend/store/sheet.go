@@ -175,75 +175,18 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 	return sheets, nil
 }
 
-// CreateSheet creates a new sheet.
+// CreateSheets creates new sheets.
 // You should not use this function directly to create sheets.
-// Use CreateSheet in component/sheet instead.
-func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMessage, error) {
-	if create.Payload == nil {
-		create.Payload = &storepb.SheetPayload{}
-	}
-	payload, err := protojson.Marshal(create.Payload)
-	if err != nil {
-		return nil, err
-	}
-
-	h := sha256.Sum256([]byte(create.Statement))
-	create.Sha256 = h[:]
-
-	if err := s.batchCreateSheetBlob(ctx, [][]byte{create.Sha256}, []string{create.Statement}); err != nil {
-		return nil, errors.Wrapf(err, "failed to create sheet blobs")
-	}
-
-	q := qb.Q().Space(`
-		INSERT INTO sheet (
-			creator,
-			project,
-			name,
-			sha256,
-			payload
-		)
-		VALUES (?, ?, ?, ?, ?)
-		RETURNING id, created_at
-	`, create.Creator, create.ProjectID, create.Title, create.Sha256, payload)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
-		&create.UID,
-		&create.CreatedAt,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
-
-	create.Size = int64(len(create.Statement))
-
-	return create, nil
-}
-
-// BatchCreateSheet creates a new sheet.
-// You should not use this function directly to create sheets.
-// Use BatchCreateSheet in component/sheet instead.
-func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates []*SheetMessage, creator string) ([]*SheetMessage, error) {
+// Use CreateSheets in component/sheet instead.
+func (s *Store) CreateSheets(ctx context.Context, projectID string, creator string, creates ...*SheetMessage) ([]*SheetMessage, error) {
 	var names []string
 	var statements []string
 	var sha256s [][]byte
 	var payloads [][]byte
 
 	for _, c := range creates {
+		c.ProjectID = projectID
+		c.Creator = creator
 		names = append(names, c.Title)
 		statements = append(statements, c.Statement)
 		h := sha256.Sum256([]byte(c.Statement))
@@ -297,8 +240,6 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectID string, creates 
 	defer rows.Close()
 
 	for i := 0; rows.Next(); i++ {
-		creates[i].Creator = creator
-
 		if err := rows.Scan(
 			&creates[i].UID,
 			&creates[i].CreatedAt,

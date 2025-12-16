@@ -58,16 +58,7 @@ func NewManager(store *store.Store) *Manager {
 	}
 }
 
-func (sm *Manager) CreateSheet(ctx context.Context, sheet *store.SheetMessage) (*store.SheetMessage, error) {
-	if sheet.Payload == nil {
-		sheet.Payload = &storepb.SheetPayload{}
-	}
-	sheet.Payload.Commands = getSheetCommands(sheet.Payload.Engine, sheet.Statement)
-
-	return sm.store.CreateSheet(ctx, sheet)
-}
-
-func (sm *Manager) BatchCreateSheets(ctx context.Context, sheets []*store.SheetMessage, projectID string, creator string) ([]*store.SheetMessage, error) {
+func (sm *Manager) CreateSheets(ctx context.Context, projectID string, creator string, sheets ...*store.SheetMessage) ([]*store.SheetMessage, error) {
 	for _, sheet := range sheets {
 		if sheet.Payload == nil {
 			sheet.Payload = &storepb.SheetPayload{}
@@ -75,11 +66,11 @@ func (sm *Manager) BatchCreateSheets(ctx context.Context, sheets []*store.SheetM
 		sheet.Payload.Commands = getSheetCommands(sheet.Payload.Engine, sheet.Statement)
 	}
 
-	sheets, err := sm.store.BatchCreateSheet(ctx, projectID, sheets, creator)
+	result, err := sm.store.CreateSheets(ctx, projectID, creator, sheets...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to batch create sheets")
+		return nil, errors.Wrapf(err, "failed to create sheets")
 	}
-	return sheets, nil
+	return result, nil
 }
 
 func getSheetCommands(engine storepb.Engine, statement string) []*storepb.Range {

@@ -348,10 +348,11 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		}
 	}
 
-	project, err = s.store.UpdateProject(ctx, patch)
+	projects, err := s.store.UpdateProjects(ctx, patch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+	project = projects[0]
 	return connect.NewResponse(convertToProject(project)), nil
 }
 
@@ -416,7 +417,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		}
 	}
 
-	if _, err := s.store.UpdateProject(ctx, &store.UpdateProjectMessage{
+	if _, err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
 		ResourceID: project.ResourceID,
 		Delete:     &deletePatch,
 	}); err != nil {
@@ -436,13 +437,14 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("project %q is active", req.Msg.Name))
 	}
 
-	project, err = s.store.UpdateProject(ctx, &store.UpdateProjectMessage{
+	projects, err := s.store.UpdateProjects(ctx, &store.UpdateProjectMessage{
 		ResourceID: project.ResourceID,
 		Delete:     &undeletePatch,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+	project = projects[0]
 	return connect.NewResponse(convertToProject(project)), nil
 }
 
@@ -537,7 +539,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 		})
 	}
 
-	if _, err := s.store.BatchUpdateProjects(ctx, updatePatches); err != nil {
+	if _, err := s.store.UpdateProjects(ctx, updatePatches...); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
