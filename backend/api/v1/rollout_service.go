@@ -913,10 +913,11 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 	if taskRun.SheetUID == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no sheet", taskRun.ID))
 	}
-	statements, err := s.store.GetSheetStatementByID(ctx, *taskRun.SheetUID)
+	sheet, err := s.store.GetSheetFull(ctx, *taskRun.SheetUID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet statements, error: %v", err))
 	}
+	statements := sheet.Statement
 
 	var results []string
 	for _, item := range backupDetail.Items {

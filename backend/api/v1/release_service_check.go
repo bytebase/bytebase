@@ -446,7 +446,9 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 						// Get sheet statement from revision
 						_, sheetUID, err := common.GetProjectResourceIDSheetUID(revisions[0].Payload.Sheet)
 						if err == nil {
-							previousUserSDL, _ = s.store.GetSheetStatementByID(ctx, sheetUID)
+							if sheet, err := s.store.GetSheetFull(ctx, sheetUID); err == nil {
+								previousUserSDL = sheet.Statement
+							}
 						}
 					}
 
