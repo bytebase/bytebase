@@ -119,11 +119,6 @@
         :search="state.searchParams"
         @toggle-sort="toggleSort"
       />
-      <NEmpty v-if="rows.length === 0">
-        <template #extra>
-          {{ $t("sql-editor.no-data-available") }}
-        </template>
-      </NEmpty>
 
       <div class="absolute bottom-2 right-4 flex items-end gap-x-2">
         <div v-if="state.searchCandidateRowIndexs.length > 0" class="flex flex-row gap-x-2 border shadow rounded bg-white py-1 px-2">
