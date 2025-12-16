@@ -521,10 +521,6 @@ func FormatUserEmail(email string) string {
 	return fmt.Sprintf("%s%s", UserNamePrefix, email)
 }
 
-func FormatUserUID(uid int) string {
-	return fmt.Sprintf("%s%d", UserNamePrefix, uid)
-}
-
 func FormatGroupEmail(email string) string {
 	return fmt.Sprintf("%s%s", GroupPrefix, email)
 }
