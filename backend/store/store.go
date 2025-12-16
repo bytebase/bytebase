@@ -85,6 +85,14 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	databaseGroupCache, err := lru.New[string, *DatabaseGroupMessage](1024)
+	if err != nil {
+		return nil, err
+	}
+	sheetStatementCache, err := lru.New[int, string](10)
+	if err != nil {
+		return nil, err
+	}
 	dbMetadataCache, err := lru.New[string, *model.DatabaseMetadata](128)
 	if err != nil {
 		return nil, err
@@ -116,6 +124,8 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		settingCache:         settingCache,
 		rolesCache:           rolesCache,
 		sheetCache:           sheetCache,
+		databaseGroupCache:   databaseGroupCache,
+		sheetStatementCache:  sheetStatementCache,
 		dbMetadataCache:      dbMetadataCache,
 		groupCache:           groupCache,
 	}
