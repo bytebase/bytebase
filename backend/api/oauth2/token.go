@@ -2,6 +2,7 @@ package oauth2
 
 import (
 	"encoding/base64"
+	"log/slog"
 	"net/http"
 	"slices"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -118,7 +120,9 @@ func (s *Service) handleAuthorizationCodeGrant(c echo.Context, client *store.OAu
 	// Validate code not expired
 	if time.Now().After(authCode.ExpiresAt) {
 		// Delete expired code
-		_ = s.store.DeleteOAuth2AuthorizationCode(ctx, req.Code)
+		if err := s.store.DeleteOAuth2AuthorizationCode(ctx, req.Code); err != nil {
+			slog.Warn("failed to delete expired OAuth2 authorization code", slog.String("code", req.Code), log.BBError(err))
+		}
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "code has expired")
 	}
 
@@ -136,7 +140,9 @@ func (s *Service) handleAuthorizationCodeGrant(c echo.Context, client *store.OAu
 	}
 
 	// Delete code after all validations pass (single use)
-	_ = s.store.DeleteOAuth2AuthorizationCode(ctx, req.Code)
+	if err := s.store.DeleteOAuth2AuthorizationCode(ctx, req.Code); err != nil {
+		slog.Warn("failed to delete OAuth2 authorization code after use", slog.String("code", req.Code), log.BBError(err))
+	}
 
 	// Get user
 	user, err := s.store.GetUserByEmail(ctx, authCode.UserEmail)
@@ -179,12 +185,16 @@ func (s *Service) handleRefreshTokenGrant(c echo.Context, client *store.OAuth2Cl
 	// Validate not expired
 	if time.Now().After(refreshToken.ExpiresAt) {
 		// Delete expired token
-		_ = s.store.DeleteOAuth2RefreshToken(ctx, tokenHash)
+		if err := s.store.DeleteOAuth2RefreshToken(ctx, tokenHash); err != nil {
+			slog.Warn("failed to delete expired OAuth2 refresh token", log.BBError(err))
+		}
 		return oauth2Error(c, http.StatusBadRequest, "invalid_grant", "refresh token has expired")
 	}
 
 	// Delete token after validations pass (single use, will issue new one)
-	_ = s.store.DeleteOAuth2RefreshToken(ctx, tokenHash)
+	if err := s.store.DeleteOAuth2RefreshToken(ctx, tokenHash); err != nil {
+		slog.Warn("failed to delete OAuth2 refresh token after use", log.BBError(err))
+	}
 
 	// Get user
 	user, err := s.store.GetUserByEmail(ctx, refreshToken.UserEmail)
@@ -236,7 +246,9 @@ func (s *Service) issueTokens(c echo.Context, client *store.OAuth2ClientMessage,
 	}
 
 	// Update client last active
-	_ = s.store.UpdateOAuth2ClientLastActiveAt(ctx, client.ClientID)
+	if err := s.store.UpdateOAuth2ClientLastActiveAt(ctx, client.ClientID); err != nil {
+		slog.Warn("failed to update OAuth2 client last active", slog.String("clientID", client.ClientID), log.BBError(err))
+	}
 
 	return c.JSON(http.StatusOK, &tokenResponse{
 		AccessToken:  accessToken,

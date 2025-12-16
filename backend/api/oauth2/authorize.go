@@ -2,6 +2,7 @@ package oauth2
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -157,10 +159,15 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 	}
 
 	// Update client last active
-	_ = s.store.UpdateOAuth2ClientLastActiveAt(ctx, clientID)
+	if err := s.store.UpdateOAuth2ClientLastActiveAt(ctx, clientID); err != nil {
+		slog.Warn("failed to update OAuth2 client last active", slog.String("clientID", clientID), log.BBError(err))
+	}
 
 	// Build redirect URL with code
-	u, _ := url.Parse(redirectURI)
+	u, err := url.Parse(redirectURI)
+	if err != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, "server_error", "failed to parse redirect URI")
+	}
 	q := u.Query()
 	q.Set("code", code)
 	if state != "" {
