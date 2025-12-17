@@ -3,7 +3,6 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
@@ -44,7 +43,7 @@ func (*StatementWhereRequiredUpdateDeleteAdvisor) Check(_ context.Context, check
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText: stmtInfo.Text,
+			tokens: stmtInfo.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -58,7 +57,7 @@ func (*StatementWhereRequiredUpdateDeleteAdvisor) Check(_ context.Context, check
 
 type statementWhereRequiredRule struct {
 	BaseRule
-	statementText string
+	tokens *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.
@@ -91,7 +90,7 @@ func (r *statementWhereRequiredRule) handleUpdatestmt(ctx *parser.UpdatestmtCont
 
 	// Check if WHERE clause exists
 	if ctx.Where_or_current_clause() == nil || ctx.Where_or_current_clause().WHERE() == nil {
-		stmtText := strings.TrimSpace(r.statementText)
+		stmtText := getTextFromTokens(r.tokens, ctx)
 		if stmtText == "" {
 			stmtText = "<unknown statement>"
 		}
@@ -115,7 +114,7 @@ func (r *statementWhereRequiredRule) handleDeletestmt(ctx *parser.DeletestmtCont
 
 	// Check if WHERE clause exists
 	if ctx.Where_or_current_clause() == nil || ctx.Where_or_current_clause().WHERE() == nil {
-		stmtText := strings.TrimSpace(r.statementText)
+		stmtText := getTextFromTokens(r.tokens, ctx)
 		if stmtText == "" {
 			stmtText = "<unknown statement>"
 		}

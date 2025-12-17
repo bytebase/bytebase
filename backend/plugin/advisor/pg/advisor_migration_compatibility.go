@@ -46,7 +46,7 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText:   stmtInfo.Text,
+			tokens:          stmtInfo.Tokens,
 			lastCreateTable: lastCreateTable,
 		}
 
@@ -65,7 +65,7 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 type compatibilityRule struct {
 	BaseRule
 
-	statementText   string
+	tokens          *antlr.CommonTokenStream
 	lastCreateTable string
 }
 
@@ -129,7 +129,7 @@ func (r *compatibilityRule) handleDropdbstmt(ctx antlr.ParserRuleContext) {
 		Status:  r.level,
 		Code:    advisorcode.CompatibilityDropDatabase.Int32(),
 		Title:   r.title,
-		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, r.statementText),
+		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, dropdbstmtCtx)),
 		StartPosition: &storepb.Position{
 			Line:   int32(dropdbstmtCtx.GetStart().GetLine()),
 			Column: 0,
@@ -156,7 +156,7 @@ func (r *compatibilityRule) handleDropstmt(ctx antlr.ParserRuleContext) {
 				Status:  r.level,
 				Code:    advisorcode.CompatibilityDropTable.Int32(),
 				Title:   r.title,
-				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, r.statementText),
+				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, dropstmtCtx)),
 				StartPosition: &storepb.Position{
 					Line:   int32(dropstmtCtx.GetStart().GetLine()),
 					Column: 0,
@@ -198,7 +198,7 @@ func (r *compatibilityRule) handleRenamestmt(ctx antlr.ParserRuleContext) {
 			Status:  r.level,
 			Code:    code.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, r.statementText),
+			Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, renamestmtCtx)),
 			StartPosition: &storepb.Position{
 				Line:   int32(renamestmtCtx.GetStart().GetLine()),
 				Column: 0,
@@ -292,7 +292,7 @@ func (r *compatibilityRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
 				Status:  r.level,
 				Code:    code.Int32(),
 				Title:   r.title,
-				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, r.statementText),
+				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, altertablestmtCtx)),
 				StartPosition: &storepb.Position{
 					Line:   int32(altertablestmtCtx.GetStart().GetLine()),
 					Column: 0,
@@ -334,7 +334,7 @@ func (r *compatibilityRule) handleIndexstmt(ctx antlr.ParserRuleContext) {
 		Status:  r.level,
 		Code:    advisorcode.CompatibilityAddUniqueKey.Int32(),
 		Title:   r.title,
-		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, r.statementText),
+		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, getTextFromTokens(r.tokens, indexstmtCtx)),
 		StartPosition: &storepb.Position{
 			Line:   int32(indexstmtCtx.GetStart().GetLine()),
 			Column: 0,

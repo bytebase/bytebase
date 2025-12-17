@@ -44,7 +44,7 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx a
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText: stmtInfo.Text,
+			statementText: stmtInfo.Text, // Kept for ConvertANTLRPositionToPosition
 		}
 
 		checker := NewGenericChecker([]Rule{rule})
@@ -60,7 +60,7 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx a
 
 type statementDisallowOnDelCascadeRule struct {
 	BaseRule
-	statementText string
+	statementText string // Kept for ConvertANTLRPositionToPosition
 }
 
 // Name returns the rule name.

@@ -17,7 +17,7 @@
     - status: 2
       code: 203
       title: STATEMENT_SELECT_NO_SELECT_ALL
-      content: '"SELECT a, b FROM (SELECT * from t1, t2) t" uses SELECT all'
+      content: '"SELECT * from t1, t2" uses SELECT all'
       startposition:
         line: 1
         column: 0
@@ -28,7 +28,7 @@
     - status: 2
       code: 203
       title: STATEMENT_SELECT_NO_SELECT_ALL
-      content: '"INSERT INTO t SELECT * FROM t1" uses SELECT all'
+      content: '"SELECT * FROM t1" uses SELECT all'
       startposition:
         line: 1
         column: 0

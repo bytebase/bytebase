@@ -44,7 +44,7 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText: stmtInfo.Text,
+			tokens: stmtInfo.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -58,7 +58,7 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 
 type noSelectAllRule struct {
 	BaseRule
-	statementText string
+	tokens *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.
@@ -96,11 +96,15 @@ func (r *noSelectAllRule) handleSimpleSelectPramary(ctx *parser.Simple_select_pr
 		for _, target := range allTargets {
 			// Check if target is a Target_star (SELECT *)
 			if _, ok := target.(*parser.Target_starContext); ok {
+				stmtText := getTextFromTokens(r.tokens, ctx)
+				if stmtText == "" {
+					stmtText = "<unknown statement>"
+				}
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
 					Code:    code.StatementSelectAll.Int32(),
 					Title:   r.title,
-					Content: fmt.Sprintf("\"%s\" uses SELECT all", r.statementText),
+					Content: fmt.Sprintf("\"%s\" uses SELECT all", stmtText),
 					StartPosition: &storepb.Position{
 						Line:   int32(ctx.GetStart().GetLine()),
 						Column: 0,

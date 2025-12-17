@@ -61,7 +61,8 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			ctx:                      ctx,
 			driver:                   checkCtx.Driver,
 			usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
-			statementText:            stmtInfo.Text,
+			tokens:                   stmtInfo.Tokens,
+			statementText:            stmtInfo.Text, // Kept for EXPLAIN queries
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -75,14 +76,14 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 
 type statementAffectedRowLimitRule struct {
 	BaseRule
-
 	maxRow                   int
 	driver                   *sql.DB
 	ctx                      context.Context
 	explainCount             int
 	setRoles                 []string
 	usePostgresDatabaseOwner bool
-	statementText            string
+	tokens                   *antlr.CommonTokenStream
+	statementText            string // Kept for EXPLAIN queries and SET ROLE
 }
 
 func (*statementAffectedRowLimitRule) Name() string {

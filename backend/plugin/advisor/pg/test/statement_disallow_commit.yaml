@@ -7,7 +7,7 @@
     - status: 2
       code: 206
       title: STATEMENT_DISALLOW_COMMIT
-      content: 'Commit is not allowed, related statement: "COMMIT;"'
+      content: 'Commit is not allowed, related statement: "COMMIT"'
       startposition:
         line: 3
         column: 0
@@ -25,7 +25,7 @@
     - status: 2
       code: 206
       title: STATEMENT_DISALLOW_COMMIT
-      content: 'Commit is not allowed, related statement: "COMMIT;"'
+      content: 'Commit is not allowed, related statement: "COMMIT"'
       startposition:
         line: 3
         column: 0
@@ -33,7 +33,7 @@
     - status: 2
       code: 206
       title: STATEMENT_DISALLOW_COMMIT
-      content: 'Commit is not allowed, related statement: "COMMIT;"'
+      content: 'Commit is not allowed, related statement: "COMMIT"'
       startposition:
         line: 7
         column: 0

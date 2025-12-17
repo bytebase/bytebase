@@ -44,7 +44,8 @@ func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText: stmtInfo.Text,
+			tokens:        stmtInfo.Tokens,
+			statementText: stmtInfo.Text, // Keep for IsNonTransactionStatement check
 		}
 		checker := NewGenericChecker([]Rule{rule})
 		rule.SetBaseLine(stmtInfo.BaseLine)
@@ -58,7 +59,8 @@ func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 
 type nonTransactionalRule struct {
 	BaseRule
-	statementText string
+	tokens        *antlr.CommonTokenStream
+	statementText string // Kept for pg.IsNonTransactionStatement check
 }
 
 // Name returns the rule name.

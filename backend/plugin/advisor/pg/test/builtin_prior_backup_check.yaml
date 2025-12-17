@@ -34,7 +34,7 @@
     - status: 2
       code: 2001
       title: BUILTIN_PRIOR_BACKUP_CHECK
-      content: Data change can only run DML, "CREATE TABLE t_test_backup(a int);" is not DML
+      content: Data change can only run DML, "CREATE TABLE t_test_backup(a int)" is not DML
       startposition:
         line: 1
         column: 0

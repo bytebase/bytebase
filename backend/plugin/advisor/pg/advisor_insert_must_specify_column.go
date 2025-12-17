@@ -44,7 +44,7 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText: stmtInfo.Text,
+			tokens: stmtInfo.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -58,7 +58,7 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 
 type insertMustSpecifyColumnRule struct {
 	BaseRule
-	statementText string
+	tokens *antlr.CommonTokenStream
 }
 
 func (*insertMustSpecifyColumnRule) Name() string {
@@ -105,7 +105,7 @@ func (r *insertMustSpecifyColumnRule) handleInsertstmt(ctx antlr.ParserRuleConte
 			Status:  r.level,
 			Code:    code.InsertNotSpecifyColumn.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", r.statementText),
+			Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", getTextFromTokens(r.tokens, insertstmtCtx)),
 			StartPosition: &storepb.Position{
 				Line:   int32(insertstmtCtx.GetStart().GetLine()),
 				Column: 0,

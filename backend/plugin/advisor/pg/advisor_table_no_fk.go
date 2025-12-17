@@ -45,7 +45,7 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText: stmtInfo.Text,
+			tokens: stmtInfo.Tokens,
 		}
 
 		checker := NewGenericChecker([]Rule{rule})
@@ -60,7 +60,7 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 type tableNoFKRule struct {
 	BaseRule
 
-	statementText string
+	tokens *antlr.CommonTokenStream
 }
 
 func (*tableNoFKRule) Name() string {
@@ -186,7 +186,7 @@ func (r *tableNoFKRule) addFKAdvice(schemaName, tableName string, ctx antlr.Pars
 		Status:  r.level,
 		Code:    code.TableHasFK.Int32(),
 		Title:   r.title,
-		Content: fmt.Sprintf("Foreign key is not allowed in the table %q.%q, related statement: \"%s\"", schemaName, tableName, r.statementText),
+		Content: fmt.Sprintf("Foreign key is not allowed in the table %q.%q, related statement: \"%s\"", schemaName, tableName, getTextFromTokens(r.tokens, ctx)),
 		StartPosition: &storepb.Position{
 			Line:   int32(ctx.GetStart().GetLine()),
 			Column: 0,

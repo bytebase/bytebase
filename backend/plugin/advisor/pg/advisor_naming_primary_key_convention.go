@@ -70,7 +70,6 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 			maxLength:        maxLength,
 			templateList:     templateList,
 			originalMetadata: checkCtx.OriginalMetadata,
-			statementText:    stmtInfo.Text,
 		}
 
 		checker := NewGenericChecker([]Rule{rule})
@@ -90,7 +89,6 @@ type namingPKConventionRule struct {
 	maxLength        int
 	templateList     []string
 	originalMetadata *model.DatabaseMetadata
-	statementText    string
 }
 
 type pkMetaData struct {

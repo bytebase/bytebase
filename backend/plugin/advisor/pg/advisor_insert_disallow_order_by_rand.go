@@ -45,7 +45,7 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText: stmtInfo.Text,
+			tokens: stmtInfo.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -60,7 +60,7 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 type insertDisallowOrderByRandRule struct {
 	BaseRule
 
-	statementText string
+	tokens *antlr.CommonTokenStream
 }
 
 func (*insertDisallowOrderByRandRule) Name() string {
@@ -102,7 +102,7 @@ func (r *insertDisallowOrderByRandRule) handleInsertstmt(ctx antlr.ParserRuleCon
 			Status:  r.level,
 			Code:    code.InsertUseOrderByRand.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", r.statementText),
+			Content: fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", getTextFromTokens(r.tokens, insertstmtCtx)),
 			StartPosition: &storepb.Position{
 				Line:   int32(insertstmtCtx.GetStart().GetLine()),
 				Column: 0,

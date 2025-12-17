@@ -60,7 +60,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 				level: level,
 				title: title,
 			},
-			statementText: stmtInfo.Text,
+			tokens: stmtInfo.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -221,7 +221,7 @@ func isDDLStatement(ctx antlr.Tree) bool {
 // ddlRule checks for DDL statements in DML context
 type ddlRule struct {
 	BaseRule
-	statementText string
+	tokens *antlr.CommonTokenStream
 }
 
 func (*ddlRule) Name() string {
@@ -246,7 +246,7 @@ func (r *ddlRule) handleEveryRule(ctx antlr.ParserRuleContext) error {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Title:   r.title,
-			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", r.statementText),
+			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", getTextFromTokens(r.tokens, ctx)),
 			Code:    code.BuiltinPriorBackupCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),

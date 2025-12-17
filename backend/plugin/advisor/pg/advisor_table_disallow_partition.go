@@ -45,7 +45,7 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText: stmtInfo.Text,
+			tokens: stmtInfo.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -59,7 +59,7 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 
 type tableDisallowPartitionRule struct {
 	BaseRule
-	statementText string
+	tokens *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.
@@ -96,7 +96,7 @@ func (r *tableDisallowPartitionRule) handleCreatestmt(ctx *parser.CreatestmtCont
 			Status:  r.level,
 			Code:    code.CreateTablePartition.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("Table partition is forbidden, but %q creates", r.statementText),
+			Content: fmt.Sprintf("Table partition is forbidden, but %q creates", getTextFromTokens(r.tokens, ctx)),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
 				Column: 0,
@@ -121,7 +121,7 @@ func (r *tableDisallowPartitionRule) handlePartitionCmd(ctx *parser.Partition_cm
 					Status:  r.level,
 					Code:    code.CreateTablePartition.Int32(),
 					Title:   r.title,
-					Content: fmt.Sprintf("Table partition is forbidden, but %q creates", r.statementText),
+					Content: fmt.Sprintf("Table partition is forbidden, but %q creates", getTextFromTokens(r.tokens, alterTableCtx)),
 					StartPosition: &storepb.Position{
 						Line:   int32(alterTableCtx.GetStart().GetLine()),
 						Column: 0,

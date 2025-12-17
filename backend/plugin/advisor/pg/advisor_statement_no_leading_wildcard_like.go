@@ -13,6 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
+// Note: strings import is still needed for pattern checking (HasPrefix)
+
 var (
 	_ advisor.Advisor = (*StatementNoLeadingWildcardLikeAdvisor)(nil)
 )
@@ -44,7 +46,7 @@ func (*StatementNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx 
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText:      stmtInfo.Text,
+			tokens:             stmtInfo.Tokens,
 			reportedStatements: make(map[antlr.ParserRuleContext]bool),
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
@@ -59,7 +61,7 @@ func (*StatementNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx 
 
 type statementNoLeadingWildcardLikeRule struct {
 	BaseRule
-	statementText      string
+	tokens             *antlr.CommonTokenStream
 	reportedStatements map[antlr.ParserRuleContext]bool
 }
 
@@ -113,11 +115,15 @@ func (r *statementNoLeadingWildcardLikeRule) handleAExprLike(ctx *parser.A_expr_
 		}
 		r.reportedStatements[stmtCtx] = true
 
+		stmtText := getTextFromTokens(r.tokens, stmtCtx)
+		if stmtText == "" {
+			stmtText = "<unknown statement>"
+		}
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Code:    code.StatementLeadingWildcardLike.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", r.statementText),
+			Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", stmtText),
 			StartPosition: &storepb.Position{
 				Line:   int32(stmtCtx.GetStart().GetLine()),
 				Column: 0,

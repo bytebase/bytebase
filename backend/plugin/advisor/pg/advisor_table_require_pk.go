@@ -3,7 +3,6 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -53,7 +52,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 
 	for _, stmtInfo := range stmtInfos {
 		rule.SetBaseLine(stmtInfo.BaseLine)
-		rule.statementText = stmtInfo.Text
+		rule.tokens = stmtInfo.Tokens
 		checker.SetBaseLine(stmtInfo.BaseLine)
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
 	}
@@ -72,7 +71,7 @@ type tableMention struct {
 
 type tableRequirePKRule struct {
 	BaseRule
-	statementText string
+	tokens        *antlr.CommonTokenStream
 	finalMetadata *model.DatabaseMetadata
 
 	// Simple Solution: Track last mention of each table
@@ -126,7 +125,7 @@ func (r *tableRequirePKRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	r.tableMentions[key] = &tableMention{
 		startLine: ctx.GetStart().GetLine() + r.baseLine,
 		endLine:   ctx.GetStop().GetLine() + r.baseLine,
-		text:      strings.TrimSpace(r.statementText),
+		text:      getTextFromTokens(r.tokens, ctx),
 	}
 }
 
@@ -151,7 +150,7 @@ func (r *tableRequirePKRule) handleAltertablestmt(ctx *parser.AltertablestmtCont
 	r.tableMentions[key] = &tableMention{
 		startLine: ctx.GetStart().GetLine() + r.baseLine,
 		endLine:   ctx.GetStop().GetLine() + r.baseLine,
-		text:      strings.TrimSpace(r.statementText),
+		text:      getTextFromTokens(r.tokens, ctx),
 	}
 }
 

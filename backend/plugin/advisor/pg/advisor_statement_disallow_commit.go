@@ -3,7 +3,6 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -41,8 +40,8 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 	var adviceList []*storepb.Advice
 	for _, stmtInfo := range stmtInfos {
 		rule := &statementDisallowCommitRule{
-			BaseRule:      BaseRule{level: level, title: checkCtx.Rule.Type.String()},
-			statementText: stmtInfo.Text,
+			BaseRule: BaseRule{level: level, title: checkCtx.Rule.Type.String()},
+			tokens:   stmtInfo.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -56,8 +55,7 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 
 type statementDisallowCommitRule struct {
 	BaseRule
-
-	statementText string
+	tokens *antlr.CommonTokenStream
 }
 
 // Name returns the rule name for logging/debugging.
@@ -85,7 +83,10 @@ func (r *statementDisallowCommitRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 		return nil
 	}
 
-	stmtText := strings.TrimSpace(r.statementText)
+	stmtText := getTextFromTokens(r.tokens, transactionCtx)
+	if stmtText == "" {
+		stmtText = "<unknown statement>"
+	}
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
 		Code:    code.StatementDisallowCommit.Int32(),
