@@ -98,8 +98,6 @@ func convertToSettingMessage(setting *store.SettingMessage, profile *config.Prof
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
 		}
-		// DO NOT expose the api key.
-		storeValue.ApiKey = ""
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.SettingValue{
@@ -763,8 +761,9 @@ func convertToAISetting(storeSetting *storepb.AISetting) *v1pb.AISetting {
 		Enabled:  storeSetting.Enabled,
 		Provider: v1pb.AISetting_Provider(storeSetting.Provider),
 		Endpoint: storeSetting.Endpoint,
-		ApiKey:   storeSetting.ApiKey,
-		Model:    storeSetting.Model,
-		Version:  storeSetting.Version,
+		// Do not return the API key for security reasons.
+		ApiKey:  "",
+		Model:   storeSetting.Model,
+		Version: storeSetting.Version,
 	}
 }
