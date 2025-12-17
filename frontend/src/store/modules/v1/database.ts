@@ -12,6 +12,7 @@ import {
   isValidInstanceName,
   isValidProjectName,
   unknownDatabase,
+  unknownEnvironment,
   unknownInstanceResource,
 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -112,7 +113,9 @@ const getListDatabaseFilter = (filter: DatabaseFilter): string => {
   if (isValidInstanceName(filter.instance)) {
     params.push(`instance == "${filter.instance}"`);
   }
-  if (isValidEnvironmentName(filter.environment)) {
+  if (filter.environment === unknownEnvironment().name) {
+    params.push(`environment == ""`);
+  } else if (isValidEnvironmentName(filter.environment)) {
     params.push(`environment == "${filter.environment}"`);
   }
   if (filter.excludeUnassigned) {
