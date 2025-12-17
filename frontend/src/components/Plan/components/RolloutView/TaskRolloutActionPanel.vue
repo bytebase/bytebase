@@ -221,7 +221,7 @@
                 type="primary"
                 @click="handleConfirm"
               >
-                {{ title }}
+                {{ action === "RUN" ? $t("common.run") : action === "SKIP" ? $t("common.skip") : $t("common.cancel") }}
               </NButton>
             </template>
             <template #default>

@@ -336,7 +336,7 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行の問題に分割することをアドバイスします。"
     },
-    "prior-backup-tips": "影響を受けるデータを事前にバックアップする",
+    "prior-backup-tips": "影響を受けるデータを事前にバックアップします。データ変更（UPDATE、DELETE）のみに適用され、スキーマ変更には適用されません。",
     "database-create": {
       "created": "作成済み",
       "pending": "保留中"
@@ -531,14 +531,23 @@
     "mcp": {
       "title": "MCP 統合",
       "description": "Model Context Protocol を使用して、AI アシスタントを Bytebase に接続します。",
+      "auth": {
+        "title": "認証が必要",
+        "description": "初回接続時に OAuth 認証が必要です。適切な Bytebase 権限があることを確認してください。"
+      },
+      "general-config": {
+        "title": "方法 1：JSON 設定"
+      },
+      "quick-start": {
+        "title": "方法 2：CLI コマンド",
+        "description": "または、以下の CLI コマンドを使用してください。"
+      },
       "setup": {
-        "add-to-config": "MCP 設定に追加",
-        "run-command": "このコマンドを実行",
-        "oauth-note": "初回使用時に、アクセスの承認を求められます。"
+        "add-to-config": "この JSON を MCP クライアント設定ファイルに追加してください。"
       },
       "first-prompt": {
         "title": "最初のプロンプト",
-        "description": "接続後、AI アシスタントに聞いてみてください",
+        "description": "接続後、AI アシスタントに聞いてみてください：",
         "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする"
       }
     },
@@ -1234,7 +1243,7 @@
     },
     "stage": {
       "self": "ステージ | ステージ",
-      "run-stage": "ランステージ",
+      "run-stage": "タスクを実行",
       "confirm-create": "このステージのタスクを作成してもよろしいですか？",
       "back-to-stage": "ステージに戻る {stage}"
     },
