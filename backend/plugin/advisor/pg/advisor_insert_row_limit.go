@@ -32,7 +32,7 @@ type InsertRowLimitAdvisor struct {
 
 // Check checks for the INSERT row limit.
 func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := getParsedStatements(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -46,30 +46,31 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	rule := &insertRowLimitRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		maxRow:                   int(numberPayload.Number),
-		driver:                   checkCtx.Driver,
-		ctx:                      ctx,
-		statementsText:           checkCtx.Statements,
-		UsePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
+	if int(numberPayload.Number) <= 0 {
+		return nil, nil
 	}
 
-	if int(numberPayload.Number) > 0 {
-		checker := NewGenericChecker([]Rule{rule})
-
-		for _, parseResult := range parseResults {
-			rule.SetBaseLine(parseResult.BaseLine)
-			checker.SetBaseLine(parseResult.BaseLine)
-			antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &insertRowLimitRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			maxRow:                   int(numberPayload.Number),
+			driver:                   checkCtx.Driver,
+			ctx:                      ctx,
+			statementText:            stmtInfo.Text,
+			UsePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
 		}
-		return checker.GetAdviceList(), nil
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	return nil, nil
+	return adviceList, nil
 }
 
 type insertRowLimitRule struct {
@@ -78,7 +79,7 @@ type insertRowLimitRule struct {
 	maxRow                   int
 	driver                   *sql.DB
 	ctx                      context.Context
-	statementsText           string
+	statementText            string
 	explainCount             int
 	setRoles                 []string
 	UsePostgresDatabaseOwner bool
@@ -148,18 +149,17 @@ func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
 			}
 			r.explainCount++
 
-			stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
 			res, err := advisor.Query(r.ctx, advisor.QueryContext{
 				UsePostgresDatabaseOwner: r.UsePostgresDatabaseOwner,
 				PreExecutions:            r.setRoles,
-			}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", stmtText))
+			}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", r.statementText))
 
 			if err != nil {
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
 					Code:    advisorcode.InsertTooManyRows.Int32(),
 					Title:   r.title,
-					Content: fmt.Sprintf("\"%s\" dry runs failed: %s", stmtText, err.Error()),
+					Content: fmt.Sprintf("\"%s\" dry runs failed: %s", r.statementText, err.Error()),
 					StartPosition: &storepb.Position{
 						Line:   int32(ctx.GetStart().GetLine()),
 						Column: 0,
@@ -174,7 +174,7 @@ func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
 					Status:  r.level,
 					Code:    advisorcode.Internal.Int32(),
 					Title:   r.title,
-					Content: fmt.Sprintf("failed to get row count for \"%s\": %s", stmtText, err.Error()),
+					Content: fmt.Sprintf("failed to get row count for \"%s\": %s", r.statementText, err.Error()),
 					StartPosition: &storepb.Position{
 						Line:   int32(ctx.GetStart().GetLine()),
 						Column: 0,
@@ -191,12 +191,11 @@ func (r *insertRowLimitRule) handleInsertstmt(ctx *parser.InsertstmtContext) {
 	}
 
 	if code != advisorcode.Ok {
-		stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Code:    code.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("The statement \"%s\" inserts %d rows. The count exceeds %d.", stmtText, rows, r.maxRow),
+			Content: fmt.Sprintf("The statement \"%s\" inserts %d rows. The count exceeds %d.", r.statementText, rows, r.maxRow),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
 				Column: 0,
