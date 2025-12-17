@@ -1,5 +1,7 @@
 <template>
   <div class="w-full flex flex-col p-4 gap-4">
+    <DatabaseChangeSection />
+
     <IssueStatusSection v-if="issue.approvalTemplate" :issue="issue" />
 
     <ApprovalFlowSection :issue="issue" />
@@ -10,8 +12,6 @@
       :disabled="!allowChange"
       @update:value="onIssueLabelsUpdate"
     />
-
-    <DatabaseChangeSection />
   </div>
 </template>
 
