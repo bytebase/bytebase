@@ -36,13 +36,18 @@ Run SQL queries against databases managed by Bytebase.
    - `engine == "MYSQL"` - MySQL databases only
    - `environment == "environments/prod" && name.matches("user")` - combine filters
 
+   **Extract `dataSourceId`** from `instanceResource.dataSources` in the response. Prefer `type: "READ_ONLY"` over `type: "ADMIN"` when available.
+
 3. **Execute SQL**:
    ```
    call_api(operationId="SQLService/Query", body={
      "name": "instances/{instance-id}/databases/{database-name}",
+     "dataSourceId": "{data-source-id}",
      "statement": "SELECT * FROM users LIMIT 10"
    })
    ```
+
+   `dataSourceId` is **required**.
 
 ## Notes
 
@@ -52,6 +57,7 @@ Run SQL queries against databases managed by Bytebase.
 
 | Error | Cause | Fix |
 |-------|-------|-----|
+| data source id is required | Missing dataSourceId field | Get dataSourceId from instanceResource.dataSources in database listing |
 | database not found | Wrong instance/database name | List databases first |
 | permission denied | Missing bb.sql.query | Check user permissions |
 | syntax error | Invalid SQL | Check SQL syntax for the database engine |
