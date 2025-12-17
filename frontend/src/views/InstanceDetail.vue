@@ -9,7 +9,7 @@
       {{ $t("instance.no-environment") }}
     </BBAttention>
 
-    <div v-if="!embedded" class="flex items-center justify-between">
+    <div class="flex items-center justify-between">
       <div class="flex items-center gap-x-2">
         <EngineIcon :engine="instance.engine" custom-class="h-6!" />
         <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
@@ -158,7 +158,6 @@ interface LocalState {
 
 const props = defineProps<{
   instanceId: string;
-  embedded?: boolean;
   hideArchiveRestore?: boolean;
 }>();
 
@@ -166,10 +165,8 @@ defineOptions({
   inheritAttrs: false,
 });
 
-if (!props.embedded) {
-  const { overrideMainContainerClass } = useBodyLayoutContext();
-  overrideMainContainerClass("pb-0!");
-}
+const { overrideMainContainerClass } = useBodyLayoutContext();
+overrideMainContainerClass("pb-0!");
 
 const { t } = useI18n();
 const router = useRouter();

@@ -21,7 +21,7 @@ const props = withDefaults(
   }>(),
   {
     allowAdmin: false,
-    enableRawExpression: false,
+    enableRawExpression: true,
     factorOperatorOverrideMap: undefined,
     optionConfigMap: () => new Map(),
   }

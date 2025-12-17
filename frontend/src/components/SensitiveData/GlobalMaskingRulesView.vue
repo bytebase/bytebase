@@ -185,9 +185,6 @@ interface LocalState {
   processing: boolean;
   reorderRules: boolean;
 }
-const props = defineProps<{
-  embedded?: boolean;
-}>();
 const { t } = useI18n();
 const state = reactive<LocalState>({
   maskingRuleItemList: [],
@@ -203,9 +200,7 @@ const hasSensitiveDataFeature = featureToRef(PlanFeature.FEATURE_DATA_MASKING);
 const layout = {
   mainContainerRef: ref<HTMLDivElement>(),
 };
-if (!props.embedded) {
-  layout.mainContainerRef = useBodyLayoutContext().mainContainerRef;
-}
+layout.mainContainerRef = useBodyLayoutContext().mainContainerRef;
 
 const updateList = async () => {
   const policy = await policyStore.getOrFetchPolicyByParentAndType({

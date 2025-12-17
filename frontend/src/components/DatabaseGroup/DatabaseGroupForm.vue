@@ -35,7 +35,6 @@
           <ExprEditor
             :expr="state.expr"
             :allow-admin="!readonly"
-            :enable-raw-expression="true"
             :factor-list="FactorList"
             :option-config-map="getDatabaseGroupOptionConfigMap(project.name)"
           />
