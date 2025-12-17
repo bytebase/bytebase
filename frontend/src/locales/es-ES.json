@@ -336,7 +336,7 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "Se recomienda dividir esta declaración en un único problema de migración en línea."
     },
-    "prior-backup-tips": "La copia de seguridad de los datos afectados con anticipación",
+    "prior-backup-tips": "Copia de seguridad de los datos afectados con anticipación. Solo aplica a cambios de datos (UPDATE, DELETE), no a cambios de esquema.",
     "database-create": {
       "created": "Creado",
       "pending": "Pendiente"

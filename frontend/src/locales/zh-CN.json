@@ -336,7 +336,7 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。"
     },
-    "prior-backup-tips": "备份提前影响数据",
+    "prior-backup-tips": "提前备份受影响的数据。仅适用于数据变更（UPDATE、DELETE），不适用于结构变更。",
     "database-create": {
       "created": "已创建",
       "pending": "待创建"

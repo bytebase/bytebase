@@ -336,7 +336,7 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行の問題に分割することをアドバイスします。"
     },
-    "prior-backup-tips": "影響を受けるデータを事前にバックアップする",
+    "prior-backup-tips": "影響を受けるデータを事前にバックアップします。データ変更（UPDATE、DELETE）のみに適用され、スキーマ変更には適用されません。",
     "database-create": {
       "created": "作成済み",
       "pending": "保留中"

@@ -336,7 +336,7 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "Đề nghị chia câu lệnh này thành một vấn đề di chuyển trực tuyến."
     },
-    "prior-backup-tips": "Sao lưu dữ liệu bị ảnh hưởng trước thời hạn",
+    "prior-backup-tips": "Sao lưu dữ liệu bị ảnh hưởng trước thời hạn. Chỉ áp dụng cho thay đổi dữ liệu (UPDATE, DELETE), không áp dụng cho thay đổi cấu trúc.",
     "database-create": {
       "created": "Đã tạo",
       "pending": "Đang chờ xử lý"

@@ -336,7 +336,7 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "Advice splitting this statement to single online migration issue."
     },
-    "prior-backup-tips": "Backup affected data ahead of time",
+    "prior-backup-tips": "Backup affected data ahead of time. Only applies to data changes (UPDATE, DELETE), not schema changes.",
     "database-create": {
       "created": "Created",
       "pending": "Pending"
