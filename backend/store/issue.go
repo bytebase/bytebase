@@ -104,11 +104,6 @@ func (s *Store) GetIssue(ctx context.Context, find *FindIssueMessage) (*IssueMes
 			return v, nil
 		}
 	}
-	if find.PipelineID != nil {
-		if v, ok := s.issueByPipelineCache.Get(*find.PipelineID); ok && s.enableCache {
-			return v, nil
-		}
-	}
 
 	issues, err := s.ListIssues(ctx, find)
 	if err != nil {
@@ -123,9 +118,6 @@ func (s *Store) GetIssue(ctx context.Context, find *FindIssueMessage) (*IssueMes
 	issue := issues[0]
 
 	s.issueCache.Add(issue.UID, issue)
-	if issue.PipelineUID != nil {
-		s.issueByPipelineCache.Add(*issue.PipelineUID, issue)
-	}
 	return issue, nil
 }
 
@@ -253,9 +245,6 @@ func (s *Store) UpdateIssue(ctx context.Context, uid int, patch *UpdateIssueMess
 
 	// Invalid the cache and read the value again.
 	s.issueCache.Remove(uid)
-	if oldIssue.PipelineUID != nil {
-		s.issueByPipelineCache.Remove(*oldIssue.PipelineUID)
-	}
 	return s.GetIssue(ctx, &FindIssueMessage{UID: &uid})
 }
 
@@ -467,9 +456,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		issue.Project = project
 
 		s.issueCache.Add(issue.UID, issue)
-		if issue.PipelineUID != nil {
-			s.issueByPipelineCache.Add(*issue.PipelineUID, issue)
-		}
 	}
 
 	return issues, nil
@@ -535,9 +521,6 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 	// Invalidate caches
 	for _, info := range infos {
 		s.issueCache.Remove(info.id)
-		if info.pipelineUID != nil {
-			s.issueByPipelineCache.Remove(*info.pipelineUID)
-		}
 	}
 
 	return nil
