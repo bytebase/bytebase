@@ -40,6 +40,11 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, nil
 	}
 
+	stmtInfos, err := getParsedStatements(checkCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -49,27 +54,20 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	var adviceList []*storepb.Advice
 
 	// Check for DDL statements in DML context
-	parseResults, err := getANTLRTree(checkCtx)
-	if err != nil {
-		return nil, err
-	}
+	for _, stmtInfo := range stmtInfos {
+		rule := &ddlRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: title,
+			},
+			statementText: stmtInfo.Text,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
 
-	ddlRule := &ddlRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
-	checker := NewGenericChecker([]Rule{ddlRule})
-
-	for _, parseResult := range parseResults {
-		ddlRule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		ddlRule.tokens = parseResult.Tokens
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	adviceList = append(adviceList, checker.GetAdviceList()...)
 
 	// Check if backup schema exists
 	schemaName := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
@@ -223,8 +221,7 @@ func isDDLStatement(ctx antlr.Tree) bool {
 // ddlRule checks for DDL statements in DML context
 type ddlRule struct {
 	BaseRule
-
-	tokens *antlr.CommonTokenStream
+	statementText string
 }
 
 func (*ddlRule) Name() string {
@@ -239,10 +236,6 @@ func (*ddlRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 
-func (r *ddlRule) getStatementText(ctx antlr.ParserRuleContext) string {
-	return r.tokens.GetTextFromRuleContext(ctx)
-}
-
 func (r *ddlRule) handleEveryRule(ctx antlr.ParserRuleContext) error {
 	// Check if this is a top-level DDL statement
 	if !isTopLevel(ctx.GetParent()) {
@@ -253,7 +246,7 @@ func (r *ddlRule) handleEveryRule(ctx antlr.ParserRuleContext) error {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Title:   r.title,
-			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", r.getStatementText(ctx)),
+			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", r.statementText),
 			Code:    code.BuiltinPriorBackupCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
