@@ -134,6 +134,7 @@ func SQLReviewCheck(
 		checkContext.AST = asts
 		checkContext.Statements = statements
 		checkContext.Rule = rule
+		checkContext.ParsedStatements = stmts
 
 		adviceList, err := Check(
 			ctx,
