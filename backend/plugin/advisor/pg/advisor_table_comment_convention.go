@@ -27,7 +27,7 @@ type TableCommentConventionAdvisor struct {
 }
 
 func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := getParsedStatements(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,18 +44,17 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 			level: level,
 			title: checkCtx.Rule.Type.String(),
 		},
-		payload:        commentPayload,
-		statementsText: checkCtx.Statements,
-		createdTables:  make(map[string]*tableInfo),
-		tableComments:  make(map[string]*tableCommentInfo),
+		payload:       commentPayload,
+		createdTables: make(map[string]*tableInfo),
+		tableComments: make(map[string]*tableCommentInfo),
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
 
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	for _, stmtInfo := range stmtInfos {
+		rule.SetBaseLine(stmtInfo.BaseLine)
+		checker.SetBaseLine(stmtInfo.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
 	}
 
 	// Check each created table for comment requirements
@@ -110,9 +109,7 @@ type tableCommentInfo struct {
 type tableCommentConventionRule struct {
 	BaseRule
 
-	payload        *storepb.SQLReviewRule_CommentConventionRulePayload
-	statementsText string
-
+	payload       *storepb.SQLReviewRule_CommentConventionRulePayload
 	createdTables map[string]*tableInfo
 	tableComments map[string]*tableCommentInfo
 }
