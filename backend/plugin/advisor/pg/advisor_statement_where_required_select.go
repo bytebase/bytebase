@@ -3,7 +3,6 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
@@ -44,7 +43,7 @@ func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx ad
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText: stmtInfo.Text,
+			tokens: stmtInfo.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -58,7 +57,7 @@ func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx ad
 
 type statementWhereRequiredSelectRule struct {
 	BaseRule
-	statementText string
+	tokens *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.
@@ -119,9 +118,8 @@ func (r *statementWhereRequiredSelectRule) checkSelect(
 		return
 	}
 
-	// Use full statement text (trimmed) for better user experience
-	// Even for subqueries, show the full statement context
-	stmtText := strings.TrimSpace(r.statementText)
+	// Get clean statement text from token stream
+	stmtText := getTextFromTokens(r.tokens, ctx)
 	if stmtText == "" {
 		stmtText = "<unknown statement>"
 	}

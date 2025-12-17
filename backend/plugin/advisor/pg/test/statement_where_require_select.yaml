@@ -17,7 +17,7 @@
     - status: 2
       code: 202
       title: STATEMENT_WHERE_REQUIRE_SELECT
-      content: '"SELECT a FROM t WHERE a > (SELECT max(id) FROM user)" requires WHERE clause'
+      content: '"(SELECT max(id) FROM user)" requires WHERE clause'
       startposition:
         line: 1
         column: 0
