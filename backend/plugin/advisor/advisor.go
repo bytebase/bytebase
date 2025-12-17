@@ -50,6 +50,8 @@ type Context struct {
 	OriginalMetadata *model.DatabaseMetadata
 	FinalMetadata    *model.DatabaseMetadata
 	Driver           *sql.DB
+	// ParsedStatements contains complete per-statement info including text. Use this instead of AST + Statements for accessing statement text.
+	ParsedStatements []base.ParsedStatement
 
 	// CurrentDatabase is the current database.
 	CurrentDatabase string
