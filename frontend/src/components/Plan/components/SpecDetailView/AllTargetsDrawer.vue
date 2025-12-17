@@ -172,7 +172,7 @@ watch(
     if (show) {
       state.searchText = "";
     }
-  },
+  }
 );
 
 // Load all targets when drawer opens
