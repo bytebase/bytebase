@@ -17975,6 +17975,7 @@ components:
       enum:
         - PROVIDER_TYPE_UNSPECIFIED
         - GITHUB
+        - GITLAB
       description: ProviderType identifies the CI/CD platform.
     bytebase.v1.Worksheet:
       type: object
