@@ -51,7 +51,10 @@ Run SQL queries against databases managed by Bytebase.
 
 ## Notes
 
-- Query results may contain masked values shown as `******` due to data masking policies. Do not remove or modify masked values.
+- Query results may contain masked values due to data masking policies. Do not remove or modify masked values.
+  - Full mask: `******`
+  - Partial mask: `**rn**` (only "rn" visible)
+- **Displaying partial masks:** Use backticks or code blocks when presenting results. Without escaping, markdown interprets `**text**` as bold formatting.
 
 ## Common Errors
 
