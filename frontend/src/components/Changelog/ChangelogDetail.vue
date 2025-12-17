@@ -28,22 +28,6 @@
               )?.toLocaleString()
             }}</span>
           </div>
-          <dl class="flex flex-col gap-y-1 md:gap-y-0 md:flex-row md:flex-wrap">
-            <dt class="sr-only">{{ $t("common.issue") }}</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.issue") }}&nbsp;-&nbsp;</span
-              >
-              <router-link
-                :to="{
-                  path: `/${changelog.issue}`,
-                }"
-                class="normal-link"
-              >
-                #{{ extractIssueUID(changelog.issue) }}
-              </router-link>
-            </dd>
-          </dl>
         </div>
       </div>
 
@@ -127,7 +111,6 @@ import {
   ChangelogView,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
-  extractIssueUID,
   getStatementSize,
   hasProjectPermissionV2,
   wrapRefAsPromise,

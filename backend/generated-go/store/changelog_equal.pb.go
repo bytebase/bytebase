@@ -13,9 +13,6 @@ func (x *ChangelogPayload) Equal(y *ChangelogPayload) bool {
 	if x.TaskRun != y.TaskRun {
 		return false
 	}
-	if x.Issue != y.Issue {
-		return false
-	}
 	if x.Revision != y.Revision {
 		return false
 	}
