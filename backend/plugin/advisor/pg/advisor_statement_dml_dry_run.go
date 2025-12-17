@@ -28,7 +28,7 @@ type StatementDMLDryRunAdvisor struct {
 
 // Check checks for DML dry run.
 func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := getParsedStatements(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -38,30 +38,31 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := &statementDMLDryRunRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		ctx:                      ctx,
-		driver:                   checkCtx.Driver,
-		usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
-		statementsText:           checkCtx.Statements,
-	}
-
 	// Only run EXPLAIN queries if we have a database connection
-	if rule.driver != nil {
-		checker := NewGenericChecker([]Rule{rule})
-
-		for _, parseResult := range parseResults {
-			rule.SetBaseLine(parseResult.BaseLine)
-			checker.SetBaseLine(parseResult.BaseLine)
-			antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-		}
-		return checker.GetAdviceList(), nil
+	if checkCtx.Driver == nil {
+		return nil, nil
 	}
 
-	return nil, nil
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &statementDMLDryRunRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			ctx:                      ctx,
+			driver:                   checkCtx.Driver,
+			usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
+			statementText:            stmtInfo.Text,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
+	}
+
+	return adviceList, nil
 }
 
 type statementDMLDryRunRule struct {
@@ -71,7 +72,7 @@ type statementDMLDryRunRule struct {
 	explainCount             int
 	setRoles                 []string
 	usePostgresDatabaseOwner bool
-	statementsText           string
+	statementText            string
 }
 
 // Name returns the rule name.
@@ -111,8 +112,7 @@ func (r *statementDMLDryRunRule) handleVariablesetstmt(ctx *parser.Variablesetst
 		setRestMore := ctx.Set_rest().Set_rest_more()
 		if setRestMore.ROLE() != nil {
 			// Store the SET ROLE statement text
-			stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-			r.setRoles = append(r.setRoles, stmtText)
+			r.setRoles = append(r.setRoles, r.statementText)
 		}
 	}
 }
@@ -149,15 +149,13 @@ func (r *statementDMLDryRunRule) checkDMLDryRun(ctx antlr.ParserRuleContext) {
 
 	r.explainCount++
 
-	// Get the statement text
-	stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-	normalizedStmt := advisor.NormalizeStatement(stmtText)
+	normalizedStmt := advisor.NormalizeStatement(r.statementText)
 
 	// Run EXPLAIN to perform dry run
 	_, err := advisor.Query(r.ctx, advisor.QueryContext{
 		UsePostgresDatabaseOwner: r.usePostgresDatabaseOwner,
 		PreExecutions:            r.setRoles,
-	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", stmtText))
+	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", r.statementText))
 
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{
