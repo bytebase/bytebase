@@ -1655,7 +1655,8 @@
     "establish-database-baseline": "ベースライン「{name}」を作成します",
     "export": "変更履歴のエクスポート",
     "need-to-select-first": "最初に変更履歴を選択する必要があります",
-    "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。"
+    "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。",
+    "task-at": "タスク日時 {time}"
   },
   "database": {
     "labels": "データベースラベル",

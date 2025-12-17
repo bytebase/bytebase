@@ -1655,7 +1655,8 @@
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "export": "Export Changelog",
     "need-to-select-first": "Need to select changelog first",
-    "rollback-tip": "Select a specific DDL changelog to rollback."
+    "rollback-tip": "Select a specific DDL changelog to rollback.",
+    "task-at": "Task at {time}"
   },
   "database": {
     "labels": "Database Labels",
