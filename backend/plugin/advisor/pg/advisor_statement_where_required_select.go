@@ -85,7 +85,7 @@ func (*statementWhereRequiredSelectRule) OnExit(_ antlr.ParserRuleContext, _ str
 }
 
 func (r *statementWhereRequiredSelectRule) handleSelectstmt(ctx *parser.SelectstmtContext) {
-	r.checkSelect(ctx, ctx.GetStart(), ctx.GetStop(), func() (bool, bool) {
+	r.checkSelect(ctx, func() (bool, bool) {
 		return r.checkSelectClauses(ctx)
 	})
 }
@@ -96,7 +96,7 @@ func (r *statementWhereRequiredSelectRule) handleSelectWithParens(ctx *parser.Se
 		return
 	}
 
-	r.checkSelect(ctx, ctx.GetStart(), ctx.GetStop(), func() (bool, bool) {
+	r.checkSelect(ctx, func() (bool, bool) {
 		return r.checkSelectWithParensForWhere(ctx)
 	})
 }
@@ -104,8 +104,6 @@ func (r *statementWhereRequiredSelectRule) handleSelectWithParens(ctx *parser.Se
 // checkSelect is a common function to check for WHERE clause requirement
 func (r *statementWhereRequiredSelectRule) checkSelect(
 	ctx antlr.ParserRuleContext,
-	_ antlr.Token,
-	_ antlr.Token,
 	checkFunc func() (hasWhere bool, hasFrom bool),
 ) {
 	// Check if this SELECT has a WHERE clause and FROM clause
@@ -121,7 +119,8 @@ func (r *statementWhereRequiredSelectRule) checkSelect(
 		return
 	}
 
-	// Use the statement text directly
+	// Use full statement text (trimmed) for better user experience
+	// Even for subqueries, show the full statement context
 	stmtText := strings.TrimSpace(r.statementText)
 	if stmtText == "" {
 		stmtText = "<unknown statement>"

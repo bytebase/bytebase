@@ -66,6 +66,17 @@ type ParsedStatementInfo struct {
 	Text     string
 }
 
+// getTextFromTokens extracts the original text for a rule context from the token stream.
+// Uses GetTextFromRuleContext to include hidden channel tokens (whitespace, comments).
+// Returns clean text without leading/trailing whitespace.
+func getTextFromTokens(tokens *antlr.CommonTokenStream, ctx antlr.ParserRuleContext) string {
+	if tokens == nil || ctx == nil {
+		return ""
+	}
+	text := tokens.GetTextFromRuleContext(ctx)
+	return strings.TrimSpace(text)
+}
+
 // getParsedStatements extracts statement info from the advisor context.
 // This is the preferred way to access statements - use stmtInfo.Text directly
 // instead of extractStatementText().
