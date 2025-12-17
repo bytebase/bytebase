@@ -22,12 +22,16 @@
             <NTag v-if="changelog.version" round>
               {{ $t("common.version") }} {{ changelog.version }}
             </NTag>
-            <span class="text-xl">{{
-              getDateForPbTimestampProtoEs(
-                changelog.createTime
-              )?.toLocaleString()
-            }}</span>
           </div>
+
+          <dl v-if="taskFullLink" class="flex flex-col gap-y-1">
+            <dt class="sr-only">{{ $t("common.task") }}</dt>
+            <dd class="flex items-center text-sm md:mr-4">
+              <router-link :to="taskFullLink" class="normal-link">
+                {{ $t("changelog.task-at", { time: formattedCreateTime }) }}
+              </router-link>
+            </dd>
+          </dl>
         </div>
       </div>
 
@@ -149,6 +153,26 @@ const changelogName = computed(() => {
 
 const changelog = computed((): Changelog | undefined => {
   return changelogStore.getChangelogByName(changelogName.value);
+});
+
+const taskFullLink = computed(() => {
+  if (!changelog.value?.taskRun) {
+    return "";
+  }
+  const parts = changelog.value.taskRun.split("/taskRuns/");
+  if (parts.length !== 2) {
+    return "";
+  }
+  return `/${parts[0]}`;
+});
+
+const formattedCreateTime = computed(() => {
+  if (!changelog.value) {
+    return "";
+  }
+  return getDateForPbTimestampProtoEs(
+    changelog.value.createTime
+  )?.toLocaleString();
 });
 
 const changelogSchema = computed(() => {

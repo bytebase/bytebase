@@ -1655,7 +1655,8 @@
     "establish-database-baseline": "建立「{name}」基线",
     "export": "导出变更历史",
     "need-to-select-first": "需要先选择变更历史",
-    "rollback-tip": "选择要回滚到的某个 DDL 历史记录。"
+    "rollback-tip": "选择要回滚到的某个 DDL 历史记录。",
+    "task-at": "任务于 {time}"
   },
   "database": {
     "labels": "数据库标签",

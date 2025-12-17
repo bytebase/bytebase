@@ -1655,7 +1655,8 @@
     "establish-database-baseline": "Thiết lập đường cơ sở \"{name}\"",
     "export": "Xuất Nhật ký thay đổi",
     "need-to-select-first": "Cần chọn nhật ký thay đổi trước",
-    "rollback-tip": "Chọn một nhật ký thay đổi DDL cụ thể để hoàn tác."
+    "rollback-tip": "Chọn một nhật ký thay đổi DDL cụ thể để hoàn tác.",
+    "task-at": "Task at {time}"
   },
   "database": {
     "labels": "Nhãn cơ sở dữ liệu",

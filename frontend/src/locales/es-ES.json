@@ -1655,7 +1655,8 @@
     "establish-database-baseline": "Establecer línea base de \"{name}\"",
     "export": "Exportar historial de cambios",
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
-    "rollback-tip": "Seleccione un historial de DDL específico para revertir."
+    "rollback-tip": "Seleccione un historial de DDL específico para revertir.",
+    "task-at": "Tarea el {time}"
   },
   "database": {
     "labels": "Etiquetas de base de datos",
