@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/postgresql"
@@ -26,7 +27,7 @@ type StatementWhereRequiredSelectAdvisor struct {
 
 // Check checks for WHERE clause requirement in SELECT statements.
 func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := getParsedStatements(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -36,28 +37,28 @@ func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, err
 	}
 
-	rule := &statementWhereRequiredSelectRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &statementWhereRequiredSelectRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			statementText: stmtInfo.Text,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type statementWhereRequiredSelectRule struct {
 	BaseRule
-	statementsText string
+	statementText string
 }
 
 // Name returns the rule name.
@@ -120,11 +121,11 @@ func (r *statementWhereRequiredSelectRule) checkSelect(
 		return
 	}
 
-	// Always use the full top-level statement text for the error message
-	// This matches the legacy behavior where violations in subqueries
-	// are reported with the full statement text
-	stmtLine := r.findTopLevelLine(ctx)
-	stmtText := extractStatementText(r.statementsText, stmtLine, stmtLine)
+	// Use the statement text directly
+	stmtText := strings.TrimSpace(r.statementText)
+	if stmtText == "" {
+		stmtText = "<unknown statement>"
+	}
 
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
@@ -132,26 +133,10 @@ func (r *statementWhereRequiredSelectRule) checkSelect(
 		Title:   r.title,
 		Content: fmt.Sprintf("\"%s\" requires WHERE clause", stmtText),
 		StartPosition: &storepb.Position{
-			Line:   int32(stmtLine),
+			Line:   int32(ctx.GetStart().GetLine()),
 			Column: 0,
 		},
 	})
-}
-
-// findTopLevelLine finds the line number of the top-level statement
-func (*statementWhereRequiredSelectRule) findTopLevelLine(ctx antlr.ParserRuleContext) int {
-	for ctx != nil {
-		if isTopLevel(ctx.GetParent()) {
-			return ctx.GetStart().GetLine()
-		}
-		parent := ctx.GetParent()
-		if ruleCtx, ok := parent.(antlr.ParserRuleContext); ok {
-			ctx = ruleCtx
-		} else {
-			break
-		}
-	}
-	return ctx.GetStart().GetLine()
 }
 
 // checkSelectWithParensForWhere checks a select_with_parens for WHERE and FROM
