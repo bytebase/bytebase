@@ -45,18 +45,24 @@ type Context struct {
 	IsObjectCaseSensitive bool
 
 	// SQL review rule special fields.
+	//
+	// Deprecated: AST is deprecated. Use ParsedStatements instead, which provides
+	// per-statement text directly without needing line-number-based extraction.
 	AST              []base.AST
 	Rule             *storepb.SQLReviewRule
 	OriginalMetadata *model.DatabaseMetadata
 	FinalMetadata    *model.DatabaseMetadata
 	Driver           *sql.DB
-	// ParsedStatements contains complete per-statement info including text. Use this instead of AST + Statements for accessing statement text.
+	// ParsedStatements contains complete per-statement info including text.
+	// Use this instead of AST + Statements for accessing statement text.
 	ParsedStatements []base.ParsedStatement
 
 	// CurrentDatabase is the current database.
 	CurrentDatabase string
-	// Statement is the original statement of AST, it is used for some PostgreSQL
-	// advisors which need to check the token stream.
+	// Deprecated: Statements is deprecated. Use ParsedStatements instead, which
+	// provides per-statement text directly. Using Statements with ANTLR line
+	// numbers for text extraction is buggy because line numbers are relative to
+	// each statement, not the full text.
 	Statements string
 	// UsePostgresDatabaseOwner is true if the advisor should use the database owner as default role.
 	UsePostgresDatabaseOwner bool
