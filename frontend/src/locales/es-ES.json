@@ -531,14 +531,23 @@
     "mcp": {
       "title": "Integración MCP",
       "description": "Conecte asistentes de IA a Bytebase usando el Model Context Protocol.",
+      "auth": {
+        "title": "Autenticación requerida",
+        "description": "Se requiere autenticación OAuth en la primera conexión. Asegúrese de tener los permisos apropiados en Bytebase."
+      },
+      "general-config": {
+        "title": "Opción 1: Configuración JSON"
+      },
+      "quick-start": {
+        "title": "Opción 2: Comandos CLI",
+        "description": "Alternativamente, use uno de estos comandos CLI."
+      },
       "setup": {
-        "add-to-config": "Agregar a su configuración MCP",
-        "run-command": "Ejecute este comando",
-        "oauth-note": "En el primer uso, se le pedirá que autorice el acceso."
+        "add-to-config": "Agregue este JSON a su archivo de configuración del cliente MCP."
       },
       "first-prompt": {
         "title": "Tu primer prompt",
-        "description": "Una vez conectado, intente preguntar a su asistente de IA",
+        "description": "Una vez conectado, intente preguntar a su asistente de IA:",
         "example": "Listar todos los proyectos en mi instancia de Bytebase"
       }
     },
