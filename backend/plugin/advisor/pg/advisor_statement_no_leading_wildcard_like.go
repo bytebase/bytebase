@@ -27,7 +27,7 @@ type StatementNoLeadingWildcardLikeAdvisor struct {
 
 // Check checks for no leading wildcard LIKE.
 func (*StatementNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := getParsedStatements(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,29 +37,29 @@ func (*StatementNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx 
 		return nil, err
 	}
 
-	rule := &statementNoLeadingWildcardLikeRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText:     checkCtx.Statements,
-		reportedStatements: make(map[antlr.ParserRuleContext]bool),
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &statementNoLeadingWildcardLikeRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			statementText:      stmtInfo.Text,
+			reportedStatements: make(map[antlr.ParserRuleContext]bool),
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type statementNoLeadingWildcardLikeRule struct {
 	BaseRule
-	statementsText     string
+	statementText      string
 	reportedStatements map[antlr.ParserRuleContext]bool
 }
 
@@ -113,12 +113,11 @@ func (r *statementNoLeadingWildcardLikeRule) handleAExprLike(ctx *parser.A_expr_
 		}
 		r.reportedStatements[stmtCtx] = true
 
-		stmtText := extractStatementText(r.statementsText, stmtCtx.GetStart().GetLine(), stmtCtx.GetStop().GetLine())
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Code:    code.StatementLeadingWildcardLike.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", stmtText),
+			Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", r.statementText),
 			StartPosition: &storepb.Position{
 				Line:   int32(stmtCtx.GetStart().GetLine()),
 				Column: 0,
