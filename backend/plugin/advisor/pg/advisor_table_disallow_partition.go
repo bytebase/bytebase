@@ -28,7 +28,7 @@ type TableDisallowPartitionAdvisor struct {
 
 // Check checks for partitioned tables.
 func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := getParsedStatements(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -38,28 +38,28 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &tableDisallowPartitionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &tableDisallowPartitionRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			statementText: stmtInfo.Text,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type tableDisallowPartitionRule struct {
 	BaseRule
-	statementsText string
+	statementText string
 }
 
 // Name returns the rule name.
@@ -92,13 +92,11 @@ func (r *tableDisallowPartitionRule) handleCreatestmt(ctx *parser.CreatestmtCont
 
 	// Check if this is a partitioned table
 	if ctx.Optpartitionspec() != nil {
-		stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Code:    code.CreateTablePartition.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("Table partition is forbidden, but %q creates", stmtText),
+			Content: fmt.Sprintf("Table partition is forbidden, but %q creates", r.statementText),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
 				Column: 0,
@@ -115,16 +113,15 @@ func (r *tableDisallowPartitionRule) handlePartitionCmd(ctx *parser.Partition_cm
 
 	// Check for ATTACH PARTITION
 	if ctx.ATTACH() != nil && ctx.PARTITION() != nil {
-		// Navigate up to get the Altertablestmt context for statement text
+		// Navigate up to get the Altertablestmt context for line position
 		parent := ctx.GetParent()
 		for parent != nil {
 			if alterTableCtx, ok := parent.(*parser.AltertablestmtContext); ok {
-				stmtText := extractStatementText(r.statementsText, alterTableCtx.GetStart().GetLine(), alterTableCtx.GetStop().GetLine())
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
 					Code:    code.CreateTablePartition.Int32(),
 					Title:   r.title,
-					Content: fmt.Sprintf("Table partition is forbidden, but %q creates", stmtText),
+					Content: fmt.Sprintf("Table partition is forbidden, but %q creates", r.statementText),
 					StartPosition: &storepb.Position{
 						Line:   int32(alterTableCtx.GetStart().GetLine()),
 						Column: 0,
