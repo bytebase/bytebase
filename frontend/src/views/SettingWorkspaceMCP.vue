@@ -9,15 +9,28 @@
     </div>
 
     <!-- Warning if external URL not configured -->
-     <MissingExternalURLAttention />
+    <MissingExternalURLAttention />
 
-    <!-- General JSON Config (always visible) -->
+    <!-- Authentication Notice -->
+    <NAlert type="info" :show-icon="true">
+      <template #header>
+        {{ $t("settings.mcp.auth.title") }}
+      </template>
+      {{ $t("settings.mcp.auth.description") }}
+    </NAlert>
+
+    <!-- Section 1: General Config -->
     <div class="flex flex-col gap-y-3">
-      <div class="flex items-center gap-x-2">
-        <span class="text-sm text-control-light">
+      <div class="flex flex-col gap-y-1">
+        <div class="flex items-center gap-x-2">
+          <h3 class="text-base font-medium">
+            {{ $t("settings.mcp.general-config.title") }}
+          </h3>
+          <CopyButton :content="generalConfig" />
+        </div>
+        <p class="text-sm text-control-light">
           {{ $t("settings.mcp.setup.add-to-config") }}
-        </span>
-        <CopyButton :content="generalConfig" />
+        </p>
       </div>
       <NInput
         type="textarea"
@@ -28,46 +41,49 @@
       />
     </div>
 
-    <!-- CLI Quick Commands Tabs -->
-    <div class="flex flex-col gap-y-2">
-      <NTabs type="line" animated>
-        <!-- Claude Code -->
+    <!-- Section 2: Quick Start CLI Commands -->
+    <div class="flex flex-col gap-y-3">
+      <div class="flex flex-col gap-y-1">
+        <div class="flex items-center gap-x-2">
+          <h3 class="text-base font-medium">
+            {{ $t("settings.mcp.quick-start.title") }}
+          </h3>
+          <CopyButton :content="activeTabContent" />
+        </div>
+        <p class="text-sm text-control-light">
+          {{ $t("settings.mcp.quick-start.description") }}
+        </p>
+      </div>
+      <NTabs v-model:value="activeTab" type="line" animated>
         <NTabPane
           v-for="tab in tabs"
           :key="tab.id"
           :name="tab.id"
           :tab="tab.title"
         >
-          <div class="flex flex-col gap-y-2 pt-3">
-            <div class="flex items-center gap-x-2">
-              <span class="text-sm text-control-light">
-                {{ $t("settings.mcp.setup.run-command") }}
-              </span>
-              <CopyButton :content="tab.content" />
-            </div>
-            <NInput
-              :value="tab.content"
-              readonly
-              class="font-mono text-sm"
-            />
-          </div>
+          <NInput
+            :value="tab.content"
+            readonly
+            class="font-mono text-sm mt-3"
+          />
         </NTabPane>
       </NTabs>
-      <p class="text-sm text-control-light">
-        {{ $t("settings.mcp.setup.oauth-note") }}
-      </p>
     </div>
 
-    <!-- Your First Prompt -->
-    <div class="flex flex-col gap-y-1">
-      <span class="text-sm text-control-light">
-        {{ $t("settings.mcp.first-prompt.title") }}
-      </span>
-      <div class="flex items-center gap-x-2 text-sm text-control-light">
-        {{ $t("settings.mcp.first-prompt.description") }}
-        <CopyButton :content="$t('settings.mcp.first-prompt.example')" />
+    <!-- Section 3: Your First Prompt -->
+    <div class="flex flex-col gap-y-3">
+      <div class="flex flex-col gap-y-1">
+        <div class="flex items-center gap-x-2">
+          <h3 class="text-base font-medium">
+            {{ $t("settings.mcp.first-prompt.title") }}
+          </h3>
+          <CopyButton :content="$t('settings.mcp.first-prompt.example')" />
+        </div>
+        <p class="text-sm text-control-light">
+          {{ $t("settings.mcp.first-prompt.description") }}
+        </p>
       </div>
-      <code class="mt-1 text-sm bg-gray-100 px-3 py-2 rounded">
+      <code class="text-sm bg-gray-100 px-3 py-2 rounded">
         {{ $t("settings.mcp.first-prompt.example") }}
       </code>
     </div>
@@ -75,12 +91,13 @@
 </template>
 
 <script lang="ts" setup>
-import { NInput, NTabPane, NTabs } from "naive-ui";
-import { computed } from "vue";
+import { NAlert, NInput, NTabPane, NTabs } from "naive-ui";
+import { computed, ref } from "vue";
 import { CopyButton, MissingExternalURLAttention } from "@/components/v2";
 import { useActuatorV1Store } from "@/store";
 
 const actuatorStore = useActuatorV1Store();
+const activeTab = ref("claude-code");
 
 const hasExternalUrl = computed(() => {
   return !actuatorStore.needConfigureExternalUrl;
@@ -150,4 +167,9 @@ const tabs = computed(
     ];
   }
 );
+
+const activeTabContent = computed(() => {
+  const tab = tabs.value.find((t) => t.id === activeTab.value);
+  return tab?.content ?? "";
+});
 </script>
