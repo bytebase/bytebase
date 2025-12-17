@@ -27,7 +27,7 @@ type StatementDisallowOnDelCascadeAdvisor struct {
 
 // Check checks for ON DELETE CASCADE.
 func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := getParsedStatements(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,28 +37,30 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx a
 		return nil, err
 	}
 
-	rule := &statementDisallowOnDelCascadeRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &statementDisallowOnDelCascadeRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			statementText: stmtInfo.Text,
+		}
+
+		checker := NewGenericChecker([]Rule{rule})
+		rule.SetBaseLine(stmtInfo.BaseLine)
+		checker.SetBaseLine(stmtInfo.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type statementDisallowOnDelCascadeRule struct {
 	BaseRule
-	statementsText string
+	statementText string
 }
 
 // Name returns the rule name.
@@ -119,7 +121,7 @@ func (r *statementDisallowOnDelCascadeRule) handleKeyDelete(ctx *parser.Key_dele
 					StartPosition: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 						Line:   int32(line),
 						Column: 0,
-					}, r.statementsText),
+					}, r.statementText),
 				})
 			}
 		}
