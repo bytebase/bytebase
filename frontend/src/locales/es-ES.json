@@ -1622,6 +1622,9 @@
     "self": "Historial de cambios",
     "select": "La versión del esquema se registra cada vez que se aplica un cambio de esquema a través de Bytebase",
     "change-type": "Tipo",
+    "type": {
+      "migrate": "Migrar"
+    },
     "no-schema-change": "esta migración no tiene cambios de esquema",
     "show-diff": "Mostrar diferencias",
     "schema-snapshot-after-change": "La instantánea de esquema registrada después de aplicar este cambio",

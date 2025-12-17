@@ -1622,6 +1622,9 @@
     "self": "Changelog",
     "select": "Schema version is recorded each time a schema change is applied via Bytebase",
     "change-type": "Type",
+    "type": {
+      "migrate": "Migrate"
+    },
     "no-schema-change": "this migration has no schema change",
     "show-diff": "Show diff",
     "schema-snapshot-after-change": "The schema snapshot recorded after applying this change",

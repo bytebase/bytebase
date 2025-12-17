@@ -1622,6 +1622,9 @@
     "self": "Nhật ký thay đổi",
     "select": "Phiên bản lược đồ được ghi lại mỗi khi thay đổi lược đồ được áp dụng qua Bytebase",
     "change-type": "Loại thay đổi",
+    "type": {
+      "migrate": "Di chuyển"
+    },
     "no-schema-change": "di chuyển này không có thay đổi lược đồ",
     "show-diff": "Hiển thị khác biệt",
     "schema-snapshot-after-change": "Ảnh chụp nhanh lược đồ được ghi lại sau khi áp dụng thay đổi này",
