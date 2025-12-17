@@ -1622,6 +1622,9 @@
     "self": "変更履歴",
     "select": "スキーマのバージョンは、Bytebase を通じてスキーマの変更が実行されるたびに記録されます。",
     "change-type": "タイプ",
+    "type": {
+      "migrate": "マイグレート"
+    },
     "no-schema-change": "この変更ではスキーマの変更はありません",
     "show-diff": "違いを表示",
     "schema-snapshot-after-change": "この変更を完了した後のスキーマのスナップショット",

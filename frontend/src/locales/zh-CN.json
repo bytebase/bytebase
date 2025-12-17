@@ -1622,6 +1622,9 @@
     "self": "变更历史",
     "select": "Schema 版本是在每次通过 Bytebase 执行 Schema 变更后被记录下来的",
     "change-type": "类型",
+    "type": {
+      "migrate": "变更"
+    },
     "no-schema-change": "本次变更没有任何 Schema 的改动",
     "show-diff": "显示差异",
     "schema-snapshot-after-change": "完成这次变更后的 schema 快照",

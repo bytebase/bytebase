@@ -60,7 +60,7 @@ export const getChangelogChangeType = (type: Changelog_Type) => {
     case Changelog_Type.SDL:
       return "SDL";
     case Changelog_Type.MIGRATE:
-      return t("issue.title.change-database");
+      return t("changelog.type.migrate");
     case Changelog_Type.BASELINE:
       return t("common.baseline");
     default:
