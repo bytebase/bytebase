@@ -5302,6 +5302,7 @@ ProviderType identifies the CI/CD platform.
 | ---- | ------ | ----------- |
 | PROVIDER_TYPE_UNSPECIFIED | 0 |  |
 | GITHUB | 1 |  |
+| GITLAB | 2 |  |
 
 
  

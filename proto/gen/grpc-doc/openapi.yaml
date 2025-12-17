@@ -15372,6 +15372,7 @@ components:
                     enum:
                         - PROVIDER_TYPE_UNSPECIFIED
                         - GITHUB
+                        - GITLAB
                     type: string
                     description: Platform type (currently only GITHUB is supported)
                     format: enum

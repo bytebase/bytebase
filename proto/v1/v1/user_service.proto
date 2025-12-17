@@ -320,6 +320,7 @@ message WorkloadIdentityConfig {
   enum ProviderType {
     PROVIDER_TYPE_UNSPECIFIED = 0;
     GITHUB = 1;
+    GITLAB = 2;
   }
 
   // Platform type (currently only GITHUB is supported)
