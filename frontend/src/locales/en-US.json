@@ -1243,7 +1243,7 @@
     },
     "stage": {
       "self": "Stage | Stages",
-      "run-stage": "Run Stage",
+      "run-stage": "Run Tasks",
       "confirm-create": "Confirm to create tasks for this stage?",
       "back-to-stage": "Back to Stage {stage}"
     },
