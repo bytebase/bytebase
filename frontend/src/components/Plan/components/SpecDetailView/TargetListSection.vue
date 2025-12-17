@@ -216,7 +216,7 @@ const loadTargetData = async () => {
       })
     );
 
-    await Promise.allSettled([...dbGroupPromises]);
+    await Promise.allSettled(dbGroupPromises);
   } catch {
     // Ignore errors
   } finally {

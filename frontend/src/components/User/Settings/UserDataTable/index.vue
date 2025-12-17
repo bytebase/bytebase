@@ -31,8 +31,8 @@ import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import {
+  batchGetOrFetchGroups,
   pushNotification,
-  useGroupStore,
   useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
@@ -68,7 +68,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const userStore = useUserStore();
-const groupStore = useGroupStore();
 const workspaceStore = useWorkspaceV1Store();
 
 const { copy: copyTextToClipboard, isSupported } = useClipboard({
@@ -76,15 +75,11 @@ const { copy: copyTextToClipboard, isSupported } = useClipboard({
 });
 
 watchEffect(async () => {
-  const groupNames = new Set<string>();
+  const groupNames: string[] = [];
   for (const user of props.userList) {
-    for (const groupName of user.groups) {
-      if (!groupStore.getGroupByIdentifier(groupName)) {
-        groupNames.add(groupName);
-      }
-    }
+    groupNames.push(...user.groups);
   }
-  await groupStore.batchFetchGroups([...groupNames]);
+  await batchGetOrFetchGroups(groupNames);
 });
 
 const state = reactive<LocalState>({

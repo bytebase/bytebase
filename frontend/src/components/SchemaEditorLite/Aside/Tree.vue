@@ -231,7 +231,7 @@ const handleSearch = debounce(
         targets.value.map(async (target) => {
           const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
             database: target.database.name,
-            skipCache: true,
+            skipCache: false,
             limit: 100,
             filter: `table.matches("${search.trim()}")`,
           });
