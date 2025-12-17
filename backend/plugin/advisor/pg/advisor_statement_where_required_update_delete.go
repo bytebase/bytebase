@@ -3,9 +3,9 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-
 	parser "github.com/bytebase/parser/postgresql"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -27,7 +27,7 @@ type StatementWhereRequiredUpdateDeleteAdvisor struct {
 
 // Check checks for WHERE clause requirement in UPDATE/DELETE statements.
 func (*StatementWhereRequiredUpdateDeleteAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := getParsedStatements(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,28 +37,28 @@ func (*StatementWhereRequiredUpdateDeleteAdvisor) Check(_ context.Context, check
 		return nil, err
 	}
 
-	rule := &statementWhereRequiredRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &statementWhereRequiredRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			statementText: stmtInfo.Text,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type statementWhereRequiredRule struct {
 	BaseRule
-	statementsText string
+	statementText string
 }
 
 // Name returns the rule name.
@@ -91,7 +91,10 @@ func (r *statementWhereRequiredRule) handleUpdatestmt(ctx *parser.UpdatestmtCont
 
 	// Check if WHERE clause exists
 	if ctx.Where_or_current_clause() == nil || ctx.Where_or_current_clause().WHERE() == nil {
-		stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+		stmtText := strings.TrimSpace(r.statementText)
+		if stmtText == "" {
+			stmtText = "<unknown statement>"
+		}
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Code:    code.StatementNoWhere.Int32(),
@@ -112,7 +115,10 @@ func (r *statementWhereRequiredRule) handleDeletestmt(ctx *parser.DeletestmtCont
 
 	// Check if WHERE clause exists
 	if ctx.Where_or_current_clause() == nil || ctx.Where_or_current_clause().WHERE() == nil {
-		stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
+		stmtText := strings.TrimSpace(r.statementText)
+		if stmtText == "" {
+			stmtText = "<unknown statement>"
+		}
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Code:    code.StatementNoWhere.Int32(),
