@@ -7,18 +7,16 @@ option go_package = "generated-go/store";
 message ChangelogPayload {
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}
   string task_run = 1;
-  // Format: projects/{project}/issues/{issue}
-  string issue = 2;
 
   // The revision uid.
   // optional
-  int64 revision = 3;
+  int64 revision = 2;
 
   // The sheet that holds the content.
   // Format: projects/{project}/sheets/{sheet}
-  string sheet = 5;
+  string sheet = 3;
 
-  string version = 6;
+  string version = 4;
 
   enum Type {
     TYPE_UNSPECIFIED = 0;
@@ -26,12 +24,12 @@ message ChangelogPayload {
     MIGRATE = 2;
     SDL = 3;
   }
-  Type type = 7;
+  Type type = 5;
 
-  string git_commit = 8;
+  string git_commit = 6;
 
   // Dump format version for drift detection reliability.
   // Engine-specific version stored when baseline/migration is created.
   // 0 = legacy changelog (pre-versioning).
-  int32 dump_version = 9;
+  int32 dump_version = 7;
 }
