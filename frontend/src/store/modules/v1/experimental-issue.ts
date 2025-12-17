@@ -38,13 +38,12 @@ export interface ComposeIssueConfig {
   withRollout?: boolean;
 }
 
-export const composeIssue = async (
+const composeIssue = async (
   rawIssue: Issue,
   config: ComposeIssueConfig = { withPlan: true, withRollout: true }
 ): Promise<ComposedIssue> => {
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
-  const projectEntity =
-    await useProjectV1Store().getOrFetchProjectByName(project);
+  const projectEntity = useProjectV1Store().getProjectByName(project);
 
   const issue: ComposedIssue = {
     ...rawIssue,

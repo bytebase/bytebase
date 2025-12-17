@@ -66,14 +66,16 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   });
 
   // Utilities
-  const setCache = async (worksheet: Worksheet, view: WorksheetView) => {
+  const setCacheEntry = (worksheet: Worksheet, view: WorksheetView) => {
     const uid = extractWorksheetUID(worksheet.name);
     if (uid === String(UNKNOWN_ID)) return;
     if (view === "FULL") {
-      // A FULL version should override BASIC version
       cacheByUID.invalidateEntity([uid, "BASIC"]);
     }
+    cacheByUID.setEntity([uid, view], worksheet);
+  };
 
+  const setCache = async (worksheet: Worksheet, view: WorksheetView) => {
     try {
       await Promise.all([
         projectStore.getOrFetchProjectByName(worksheet.project),
@@ -83,8 +85,9 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     } catch {
       // ignore error
     }
-    cacheByUID.setEntity([uid, view], worksheet);
+    setCacheEntry(worksheet, view);
   };
+
   const setListCache = async (worksheets: Worksheet[]) => {
     await Promise.all([
       batchGetOrFetchProjects(worksheets.map((worksheet) => worksheet.project)),
@@ -94,7 +97,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
       userStore.batchGetUsers(worksheets.map((worksheet) => worksheet.creator)),
     ]);
     for (const worksheet of worksheets) {
-      await setCache(worksheet, "BASIC");
+      setCacheEntry(worksheet, "BASIC");
     }
   };
 
@@ -108,7 +111,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     });
     const response =
       await worksheetServiceClientConnect.createWorksheet(request);
-    await setCache(response, "FULL");
+    setCacheEntry(response, "FULL");
     return response;
   };
 
@@ -206,7 +209,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     });
     const response =
       await worksheetServiceClientConnect.updateWorksheet(request);
-    await setCache(response, "FULL");
+    setCacheEntry(response, "FULL");
     return response;
   };
 
@@ -218,21 +221,16 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     cacheByUID.invalidateEntity([uid, "BASIC"]);
   };
 
-  const updateWorksheetCacheWithOrganizer = async (
-    organizer: WorksheetOrganizer
-  ) => {
+  const updateWorksheetCacheWithOrganizer = (organizer: WorksheetOrganizer) => {
     // Update local sheet values
-    const fullViewWorksheet = getWorksheetByName(organizer.worksheet, "FULL");
-    if (fullViewWorksheet) {
-      fullViewWorksheet.starred = organizer.starred;
-      fullViewWorksheet.folders = organizer.folders;
-      await setCache(fullViewWorksheet, "FULL");
-    }
-    const basicViewWorksheet = getWorksheetByName(organizer.worksheet, "BASIC");
-    if (basicViewWorksheet) {
-      basicViewWorksheet.starred = organizer.starred;
-      basicViewWorksheet.folders = organizer.folders;
-      await setCache(basicViewWorksheet, "BASIC");
+    const views: WorksheetView[] = ["FULL", "BASIC"];
+    for (const view of views) {
+      const worksheet = getWorksheetByName(organizer.worksheet, view);
+      if (worksheet) {
+        worksheet.starred = organizer.starred;
+        worksheet.folders = organizer.folders;
+        setCacheEntry(worksheet, view);
+      }
     }
   };
 
@@ -257,9 +255,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
         request
       );
 
-    await Promise.all(
-      response.worksheetOrganizers.map(updateWorksheetCacheWithOrganizer)
-    );
+    response.worksheetOrganizers.map(updateWorksheetCacheWithOrganizer);
   };
 
   const upsertWorksheetOrganizer = async (
@@ -274,7 +270,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     });
     const response =
       await worksheetServiceClientConnect.updateWorksheetOrganizer(request);
-    await updateWorksheetCacheWithOrganizer(response);
+    updateWorksheetCacheWithOrganizer(response);
   };
 
   return {

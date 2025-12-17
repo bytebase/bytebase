@@ -166,24 +166,23 @@ const loadAllTargets = async () => {
   }
 };
 
-// Load all targets when drawer opens
 watch(
   () => props.show,
   async (show) => {
     if (show) {
       state.searchText = "";
-      await loadAllTargets();
     }
   }
 );
 
-// Reload if targets change while drawer is open
+// Load all targets when drawer opens
 watch(
-  () => props.targets,
-  async () => {
-    if (props.show) {
+  () => props.show,
+  async (show) => {
+    if (show) {
       await loadAllTargets();
     }
-  }
+  },
+  { once: true }
 );
 </script>

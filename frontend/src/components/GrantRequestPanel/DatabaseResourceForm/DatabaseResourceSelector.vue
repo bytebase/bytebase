@@ -303,13 +303,12 @@ onMounted(async () => {
   );
 
   const selectedKeys: string[] = [];
+  const databaseNames = new Set<string>();
   for (const databaseResource of props.databaseResources) {
     selectedKeys.push(...parseResourceToKeys(databaseResource));
+    databaseNames.add(databaseResource.databaseFullName);
   }
 
-  const databaseNames = new Set(
-    selectedKeys.map((key) => key.split("/schemas/")[0]).filter((key) => key)
-  );
   await Promise.all(
     [...databaseNames].map(async (databaseName) => {
       await dbSchemaStore.getOrFetchDatabaseMetadata({

@@ -28,7 +28,7 @@ import {
   type ComposeIssueConfig,
   shallowComposeIssue,
 } from "./experimental-issue";
-import { useProjectV1Store } from "./project";
+import { batchGetOrFetchProjects, useProjectV1Store } from "./project";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export type ListIssueParams = {
@@ -84,6 +84,8 @@ export const buildIssueFilter = (find: IssueFilter): string => {
 };
 
 export const useIssueV1Store = defineStore("issue_v1", () => {
+  const projectStore = useProjectV1Store();
+
   const regenerateReviewV1 = async (name: string) => {
     const request = create(UpdateIssueRequestSchema, {
       issue: create(IssueSchema, {
@@ -108,6 +110,11 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     });
     const resp = await issueServiceClientConnect.searchIssues(request);
     const issues = resp.issues;
+
+    const projects = issues.map((issue) => {
+      return `projects/${extractProjectResourceName(issue.name)}`;
+    });
+    await batchGetOrFetchProjects(projects);
     const composedIssues = await Promise.all(
       issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
     );
@@ -126,10 +133,12 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     silent: boolean = false
   ) => {
     const request = create(GetIssueRequestSchema, { name });
-    const newIssue = await issueServiceClientConnect.getIssue(request, {
+    const issue = await issueServiceClientConnect.getIssue(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
-    const issue = newIssue;
+    await projectStore.getOrFetchProjectByName(
+      `projects/${extractProjectResourceName(issue.name)}`
+    );
     return shallowComposeIssue(issue, composeIssueConfig);
   };
 
