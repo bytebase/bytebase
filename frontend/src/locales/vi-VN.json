@@ -1234,7 +1234,7 @@
     },
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
-      "run-stage": "Chạy sân khấu",
+      "run-stage": "Chạy tác vụ",
       "confirm-create": "Bạn có chắc chắn muốn tạo tác vụ cho giai đoạn này không?",
       "back-to-stage": "Trở lại sân khấu {stage}"
     },

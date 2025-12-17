@@ -1234,7 +1234,7 @@
     },
     "stage": {
       "self": "阶段 | 阶段",
-      "run-stage": "运行阶段",
+      "run-stage": "运行任务",
       "confirm-create": "确定要为此阶段创建任务吗？",
       "back-to-stage": "返回阶段 {stage}"
     },
