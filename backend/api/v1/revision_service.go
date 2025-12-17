@@ -131,11 +131,11 @@ func (s *RevisionService) CreateRevision(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get sheet from %v", request.Revision.Sheet))
 	}
-	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID, ProjectID: &sheetProjectID})
+	sheet, err := s.store.GetSheetMetadata(ctx, sheetUID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet"))
 	}
-	if sheet == nil {
+	if sheet.ProjectID != sheetProjectID {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %d not found in project %s", sheetUID, sheetProjectID))
 	}
 
@@ -278,12 +278,12 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheetUID from %q", revision.Payload.Sheet)
 	}
-	sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID, ProjectID: &sheetProjectID})
+	sheet, err := s.GetSheetMetadata(ctx, sheetUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %q", revision.Payload.Sheet)
 	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, sheetProjectID)
+	if sheet.ProjectID != sheetProjectID {
+		return nil, errors.Errorf("sheet %d not in project %s", sheetUID, sheetProjectID)
 	}
 
 	taskRunName := revision.Payload.TaskRun

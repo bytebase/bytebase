@@ -11,6 +11,7 @@ import ProjectV1Table from "./ProjectV1Table.vue";
 import RichDatabaseName from "./RichDatabaseName.vue";
 
 export * from "./Instance";
+export * from "./Plan";
 export * from "./User";
 export * from "./DatabaseV1Table";
 export * from "./Project";

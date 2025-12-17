@@ -562,7 +562,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				DataClassificationConfigID: &classificationID,
 			})
 		}
-		if _, err = s.store.BatchUpdateProjects(ctx, batchUpdate); err != nil {
+		if _, err = s.store.UpdateProjects(ctx, batchUpdate...); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to patch project classification with error: %v", err))
 		}
 	}

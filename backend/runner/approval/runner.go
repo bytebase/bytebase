@@ -502,11 +502,11 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 		taskStatement := ""
 		sheetUID := int(task.Payload.GetSheetId())
 		if sheetUID != 0 {
-			statement, err := r.store.GetSheetStatementByID(ctx, sheetUID)
+			sheet, err := r.store.GetSheetFull(ctx, sheetUID)
 			if err != nil {
 				return nil, true, errors.Wrapf(err, "failed to get statement in sheet %v", sheetUID)
 			}
-			taskStatement = statement
+			taskStatement = sheet.Statement
 		}
 
 		var environmentID string

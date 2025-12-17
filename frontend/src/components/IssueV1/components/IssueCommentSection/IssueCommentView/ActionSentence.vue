@@ -5,20 +5,28 @@
 <script lang="tsx" setup>
 import { defineComponent } from "vue";
 import { Translation, useI18n } from "vue-i18n";
+import { SpecLink } from "@/components/v2";
 import {
   extractUserId,
   getIssueCommentType,
   IssueCommentType,
   useUserStore,
 } from "@/store";
+import type { ComposedIssue } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
   IssueComment_Approval_Status,
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  extractPlanUID,
+  extractProjectResourceName,
+  getSpecDisplayInfo,
+} from "@/utils";
 import StatementUpdate from "./StatementUpdate.vue";
 
 const props = defineProps<{
+  issue: ComposedIssue;
   issueComment: IssueComment;
 }>();
 
@@ -94,12 +102,25 @@ const renderActionSentence = () => {
     commentType === IssueCommentType.PLAN_SPEC_UPDATE &&
     issueComment.event?.case === "planSpecUpdate"
   ) {
-    const { fromSheet, toSheet } = issueComment.event.value;
+    const { spec, fromSheet, toSheet } = issueComment.event.value;
     if (fromSheet !== undefined && toSheet !== undefined) {
+      const specs = props.issue.planEntity?.specs ?? [];
+      const specInfo = getSpecDisplayInfo(specs, spec);
+      const planName = props.issue.planEntity?.name ?? props.issue.plan;
+      const projectName = extractProjectResourceName(props.issue.project);
+      const planUID = extractPlanUID(planName);
+
       return (
-        <Translation keypath="dynamic.activity.sentence.changed-x-link">
+        <Translation keypath="dynamic.activity.sentence.modified-sql-of-spec-link">
           {{
-            name: () => "SQL",
+            spec: () => (
+              <SpecLink
+                projectName={projectName}
+                planUID={planUID}
+                specId={specInfo?.specId ?? ""}
+                displayIndex={specInfo?.displayIndex ?? 0}
+              />
+            ),
             link: () => (
               <StatementUpdate oldSheet={fromSheet} newSheet={toSheet} />
             ),

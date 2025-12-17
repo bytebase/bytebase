@@ -24,8 +24,8 @@ func TestGetSkillListSkills(t *testing.T) {
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "Available Skills")
-	require.Contains(t, text, "execute-sql")
-	require.Contains(t, text, "create-instance")
+	require.Contains(t, text, "query")
+	require.Contains(t, text, "database-change")
 }
 
 func TestGetSkillSpecificSkill(t *testing.T) {
@@ -33,9 +33,9 @@ func TestGetSkillSpecificSkill(t *testing.T) {
 	s, err := NewServer(nil, profile, "test-secret")
 	require.NoError(t, err)
 
-	// Test getting execute-sql skill
+	// Test getting query skill
 	result, _, err := s.handleGetSkill(context.Background(), nil, SkillInput{
-		Skill: "execute-sql",
+		Skill: "query",
 	})
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -70,7 +70,7 @@ func TestGetSkillAllSkillsLoadable(t *testing.T) {
 	s, err := NewServer(nil, profile, "test-secret")
 	require.NoError(t, err)
 
-	skills := []string{"execute-sql", "create-instance", "create-project", "schema-change"}
+	skills := []string{"query", "database-change", "grant-permission"}
 	for _, skill := range skills {
 		t.Run(skill, func(t *testing.T) {
 			result, _, err := s.handleGetSkill(context.Background(), nil, SkillInput{

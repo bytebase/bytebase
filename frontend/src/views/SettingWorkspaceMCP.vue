@@ -49,7 +49,6 @@
               :value="tab.content"
               readonly
               class="font-mono text-sm"
-              v-bind="tab.inputProps"
             />
           </div>
         </NTabPane>
@@ -76,7 +75,7 @@
 </template>
 
 <script lang="ts" setup>
-import { type InputProps, NInput, NTabPane, NTabs } from "naive-ui";
+import { NInput, NTabPane, NTabs } from "naive-ui";
 import { computed } from "vue";
 import { CopyButton, MissingExternalURLAttention } from "@/components/v2";
 import { useActuatorV1Store } from "@/store";
@@ -113,26 +112,14 @@ const cliCommands = computed(() => ({
   codex: `codex mcp add --name bytebase --transport http --url ${mcpEndpointUrl.value}`,
   copilotCli: `gh copilot mcp add bytebase --transport http --url ${mcpEndpointUrl.value}`,
   geminiCli: `gemini mcp add --name bytebase --transport http --url ${mcpEndpointUrl.value}`,
+  vscode: `code --add-mcp '{"name":"bytebase","type":"http","url":"${mcpEndpointUrl.value}"}'`,
 }));
-
-const vscodeConfig = computed(() => {
-  const config = {
-    "mcp.servers": {
-      bytebase: {
-        type: "http",
-        url: mcpEndpointUrl.value,
-      },
-    },
-  };
-  return JSON.stringify(config, null, 2);
-});
 
 const tabs = computed(
   (): {
     id: string;
     title: string;
     content: string;
-    inputProps?: InputProps;
   }[] => {
     return [
       {
@@ -158,11 +145,7 @@ const tabs = computed(
       {
         id: "vscode",
         title: "VS Code",
-        content: vscodeConfig.value,
-        inputProps: {
-          type: "textarea",
-          autosize: { minRows: 5, maxRows: 8 },
-        },
+        content: cliCommands.value.vscode,
       },
     ];
   }

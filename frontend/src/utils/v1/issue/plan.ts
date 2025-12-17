@@ -32,3 +32,27 @@ export const extractPlanCheckRunUID = (name: string) => {
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
 };
+
+export const extractSpecId = (name: string) => {
+  const pattern = /(?:^|\/)specs\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
+
+/**
+ * Get spec display info from spec resource name.
+ * Returns specId and 1-based display index, or null if not found.
+ */
+export const getSpecDisplayInfo = (
+  specs: Plan_Spec[],
+  specResourceName: string
+): { specId: string; displayIndex: number } | null => {
+  const specId = extractSpecId(specResourceName);
+  if (!specId) return null;
+
+  const index = specs.findIndex((spec) => spec.id === specId);
+  if (index >= 0) {
+    return { specId, displayIndex: index + 1 };
+  }
+  return null;
+};

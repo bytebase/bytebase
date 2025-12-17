@@ -23,7 +23,8 @@
     "sentence": {
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
-      "changed-x-link": "{name} が変更されました。 {link}"
+      "changed-x-link": "{name} が変更されました。 {link}",
+      "modified-sql-of-spec-link": "{spec} の SQL が変更されました。{link}"
     }
   },
   "settings": {

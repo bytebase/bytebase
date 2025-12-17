@@ -56,12 +56,9 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 	}
 
 	if taskRun.SheetUID != nil && *taskRun.SheetUID != 0 {
-		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: taskRun.SheetUID})
+		sheet, err := s.GetSheetMetadata(ctx, *taskRun.SheetUID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet")
-		}
-		if sheet == nil {
-			return nil, errors.Errorf("sheet not found for uid %d", *taskRun.SheetUID)
 		}
 		t.Sheet = common.FormatSheet(taskRun.ProjectID, sheet.UID)
 	}

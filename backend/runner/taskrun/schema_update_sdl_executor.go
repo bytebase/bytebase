@@ -52,10 +52,11 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 	}
 
 	sheetID := int(task.Payload.GetSheetId())
-	sheetContent, err := exec.store.GetSheetStatementByID(ctx, sheetID)
+	sheet, err := exec.store.GetSheetFull(ctx, sheetID)
 	if err != nil {
 		return true, nil, err
 	}
+	sheetContent := sheet.Statement
 
 	execFunc := func(ctx context.Context, execStatement string, driver db.Driver, opts db.ExecuteOptions) error {
 		opts.LogComputeDiffStart()
@@ -165,10 +166,11 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 		}
 
 		// Get the sheet content (original SDL text)
-		previousUserSDLText, err = s.GetSheetStatementByID(ctx, sheetID)
+		sheet, err := s.GetSheetFull(ctx, sheetID)
 		if err != nil {
 			return "", nil, errors.Wrapf(err, "failed to get sheet statement for previous SDL changelog sheet ID %d", sheetID)
 		}
+		previousUserSDLText = sheet.Statement
 	}
 
 	// Get the previous schema from sync history

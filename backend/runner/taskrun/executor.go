@@ -199,12 +199,9 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	}
 
 	if sheetID != nil {
-		sheet, err := stores.GetSheet(ctx, &store.FindSheetMessage{UID: sheetID})
+		sheet, err := stores.GetSheetMetadata(ctx, *sheetID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet")
-		}
-		if sheet == nil {
-			return nil, errors.Errorf("sheet not found")
 		}
 		mc.sheet = sheet
 		mc.sheetName = common.FormatSheet(pipeline.ProjectID, sheet.UID)

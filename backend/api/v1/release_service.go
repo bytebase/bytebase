@@ -94,7 +94,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 
 	// Batch create sheets if needed.
 	if len(sheetsToCreate) > 0 {
-		createdSheets, err := s.sheetManager.BatchCreateSheets(ctx, sheetsToCreate, project.ResourceID, user.Email)
+		createdSheets, err := s.sheetManager.CreateSheets(ctx, project.ResourceID, user.Email, sheetsToCreate...)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheets"))
 		}
@@ -449,12 +449,12 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
 		}
-		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID, ProjectID: &projectID})
+		sheet, err := s.GetSheetMetadata(ctx, sheetUID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
 		}
-		if sheet == nil {
-			return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, projectID)
+		if sheet.ProjectID != projectID {
+			return nil, errors.Errorf("sheet %d not in project %s", sheetUID, projectID)
 		}
 		v1Files = append(v1Files, &v1pb.Release_File{
 			Id:            f.Id,
@@ -491,16 +491,12 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
 		}
-		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{
-			UID:       &sheetUID,
-			ProjectID: &projectID,
-			LoadFull:  false,
-		})
+		sheet, err := s.GetSheetMetadata(ctx, sheetUID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
 		}
-		if sheet == nil {
-			return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, projectID)
+		if sheet.ProjectID != projectID {
+			return nil, errors.Errorf("sheet %d not in project %s", sheetUID, projectID)
 		}
 
 		rFiles = append(rFiles, &storepb.ReleasePayload_File{
@@ -558,16 +554,12 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get sheet UID from %q", f.Sheet)
 			}
-			sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{
-				UID:       &sheetUID,
-				ProjectID: &projectID,
-				LoadFull:  true,
-			})
+			sheet, err := s.GetSheetFull(ctx, sheetUID)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
 			}
-			if sheet == nil {
-				return nil, errors.Errorf("sheet %d not found in project %s", sheetUID, projectID)
+			if sheet.ProjectID != projectID {
+				return nil, errors.Errorf("sheet %d not in project %s", sheetUID, projectID)
 			}
 			f.Statement = []byte(sheet.Statement)
 			f.SheetSha256 = sheet.GetSha256Hex()

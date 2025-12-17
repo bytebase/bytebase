@@ -609,14 +609,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 								return nil
 							}
 
-							sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-								UID:       &sheetUID,
-								ProjectID: &sheetProjectID,
-							})
+							sheet, err := s.store.GetSheetMetadata(ctx, sheetUID)
 							if err != nil {
 								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet %q: %v", oldSheetName, err))
 							}
-							if sheet == nil {
+							if sheet.ProjectID != sheetProjectID {
 								return connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %d not found in project %s", sheetUID, sheetProjectID))
 							}
 							doUpdate = true
