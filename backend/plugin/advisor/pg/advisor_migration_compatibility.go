@@ -27,7 +27,7 @@ type CompatibilityAdvisor struct {
 
 // Check checks schema backward compatibility.
 func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := getParsedStatements(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,29 +37,35 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 		return nil, err
 	}
 
-	rule := &compatibilityRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	lastCreateTable := ""
+
+	for _, stmtInfo := range stmtInfos {
+		rule := &compatibilityRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			statementText:   stmtInfo.Text,
+			lastCreateTable: lastCreateTable,
+		}
+
+		checker := NewGenericChecker([]Rule{rule})
+		rule.SetBaseLine(stmtInfo.BaseLine)
+		checker.SetBaseLine(stmtInfo.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+
+		adviceList = append(adviceList, checker.GetAdviceList()...)
+		lastCreateTable = rule.lastCreateTable
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type compatibilityRule struct {
 	BaseRule
 
-	statementsText  string
+	statementText   string
 	lastCreateTable string
 }
 
@@ -119,12 +125,11 @@ func (r *compatibilityRule) handleDropdbstmt(ctx antlr.ParserRuleContext) {
 		return
 	}
 
-	stmtText := extractStatementText(r.statementsText, dropdbstmtCtx.GetStart().GetLine(), dropdbstmtCtx.GetStop().GetLine())
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
 		Code:    advisorcode.CompatibilityDropDatabase.Int32(),
 		Title:   r.title,
-		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
+		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, r.statementText),
 		StartPosition: &storepb.Position{
 			Line:   int32(dropdbstmtCtx.GetStart().GetLine()),
 			Column: 0,
@@ -147,12 +152,11 @@ func (r *compatibilityRule) handleDropstmt(ctx antlr.ParserRuleContext) {
 	if dropstmtCtx.Object_type_any_name() != nil {
 		objType := dropstmtCtx.Object_type_any_name()
 		if objType.TABLE() != nil || objType.VIEW() != nil {
-			stmtText := extractStatementText(r.statementsText, dropstmtCtx.GetStart().GetLine(), dropstmtCtx.GetStop().GetLine())
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
 				Code:    advisorcode.CompatibilityDropTable.Int32(),
 				Title:   r.title,
-				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
+				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, r.statementText),
 				StartPosition: &storepb.Position{
 					Line:   int32(dropstmtCtx.GetStart().GetLine()),
 					Column: 0,
@@ -190,12 +194,11 @@ func (r *compatibilityRule) handleRenamestmt(ctx antlr.ParserRuleContext) {
 	}
 
 	if code != advisorcode.Ok {
-		stmtText := extractStatementText(r.statementsText, renamestmtCtx.GetStart().GetLine(), renamestmtCtx.GetStop().GetLine())
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Code:    code.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
+			Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, r.statementText),
 			StartPosition: &storepb.Position{
 				Line:   int32(renamestmtCtx.GetStart().GetLine()),
 				Column: 0,
@@ -285,12 +288,11 @@ func (r *compatibilityRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
 		}
 
 		if code != advisorcode.Ok {
-			stmtText := extractStatementText(r.statementsText, altertablestmtCtx.GetStart().GetLine(), altertablestmtCtx.GetStop().GetLine())
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.level,
 				Code:    code.Int32(),
 				Title:   r.title,
-				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
+				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, r.statementText),
 				StartPosition: &storepb.Position{
 					Line:   int32(altertablestmtCtx.GetStart().GetLine()),
 					Column: 0,
@@ -328,12 +330,11 @@ func (r *compatibilityRule) handleIndexstmt(ctx antlr.ParserRuleContext) {
 		return
 	}
 
-	stmtText := extractStatementText(r.statementsText, indexstmtCtx.GetStart().GetLine(), indexstmtCtx.GetStop().GetLine())
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
 		Code:    advisorcode.CompatibilityAddUniqueKey.Int32(),
 		Title:   r.title,
-		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
+		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, r.statementText),
 		StartPosition: &storepb.Position{
 			Line:   int32(indexstmtCtx.GetStart().GetLine()),
 			Column: 0,
