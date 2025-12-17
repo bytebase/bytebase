@@ -77,6 +77,10 @@ func getParsedStatements(checkCtx advisor.Context) ([]ParsedStatementInfo, error
 
 	var results []ParsedStatementInfo
 	for _, stmt := range checkCtx.ParsedStatements {
+		// Skip empty statements (no AST)
+		if stmt.AST == nil {
+			continue
+		}
 		antlrAST, ok := base.GetANTLRAST(stmt.AST)
 		if !ok {
 			return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
