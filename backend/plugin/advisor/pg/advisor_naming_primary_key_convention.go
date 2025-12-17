@@ -30,7 +30,7 @@ type NamingPKConventionAdvisor struct {
 
 // Check checks for primary key naming convention.
 func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := getParsedStatements(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -59,27 +59,28 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		maxLength = advisor.DefaultNameLengthLimit
 	}
 
-	rule := &namingPKConventionRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		format:           format,
-		maxLength:        maxLength,
-		templateList:     templateList,
-		originalMetadata: checkCtx.OriginalMetadata,
-		statementsText:   checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &namingPKConventionRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			format:           format,
+			maxLength:        maxLength,
+			templateList:     templateList,
+			originalMetadata: checkCtx.OriginalMetadata,
+			statementText:    stmtInfo.Text,
+		}
+
+		checker := NewGenericChecker([]Rule{rule})
+		rule.SetBaseLine(stmtInfo.BaseLine)
+		checker.SetBaseLine(stmtInfo.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type namingPKConventionRule struct {
@@ -89,7 +90,7 @@ type namingPKConventionRule struct {
 	maxLength        int
 	templateList     []string
 	originalMetadata *model.DatabaseMetadata
-	statementsText   string
+	statementText    string
 }
 
 type pkMetaData struct {
