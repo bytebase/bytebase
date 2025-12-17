@@ -10,7 +10,7 @@
     <div v-else>
       <!-- Profile header -->
       <div>
-        <div class="-m-6 h-32 bg-accent lg:h-48"></div>
+        <div class="-mt-4 h-32 bg-accent lg:h-48"></div>
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="-mt-20 sm:flex sm:items-end sm:gap-x-5">
             <UserAvatar :user="user" size="HUGE" />
