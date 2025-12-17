@@ -531,14 +531,23 @@
     "mcp": {
       "title": "MCP 集成",
       "description": "使用模型上下文协议将 AI 助手连接到 Bytebase。",
+      "auth": {
+        "title": "需要身份验证",
+        "description": "首次连接需要 OAuth 身份验证。请确保您拥有相应的 Bytebase 权限。"
+      },
+      "general-config": {
+        "title": "方式一：JSON 配置"
+      },
+      "quick-start": {
+        "title": "方式二：CLI 命令",
+        "description": "或者使用以下 CLI 命令。"
+      },
       "setup": {
-        "add-to-config": "添加到您的 MCP 配置",
-        "run-command": "运行此命令",
-        "oauth-note": "首次使用时，系统会提示您授权访问。"
+        "add-to-config": "将此 JSON 添加到您的 MCP 客户端配置文件。"
       },
       "first-prompt": {
         "title": "您的第一个提示",
-        "description": "连接后，尝试向 AI 助手提问",
+        "description": "连接后，尝试向 AI 助手提问：",
         "example": "列出我的 Bytebase 实例中的所有项目"
       }
     },
