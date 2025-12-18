@@ -69,7 +69,6 @@ import {
   useDBGroupStore,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
-import { usePlanContext } from "../../logic/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import { useSelectedSpec } from "./context";
 import DatabaseGroupTargetDisplay from "./DatabaseGroupTargetDisplay.vue";
