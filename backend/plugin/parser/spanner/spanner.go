@@ -12,15 +12,15 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-// ParseSpannerGoogleSQL parses the given SQL and returns a list of ParseResult (one per statement).
+// ParseSpannerGoogleSQL parses the given SQL and returns a list of ANTLRAST (one per statement).
 // Use the GoogleSQL parser based on antlr4.
-func ParseSpannerGoogleSQL(sql string) ([]*base.ParseResult, error) {
+func ParseSpannerGoogleSQL(sql string) ([]*base.ANTLRAST, error) {
 	stmts, err := SplitSQL(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	var results []*base.ParseResult
+	var results []*base.ANTLRAST
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -36,8 +36,8 @@ func ParseSpannerGoogleSQL(sql string) ([]*base.ParseResult, error) {
 	return results, nil
 }
 
-// parseSingleSpannerGoogleSQL parses a single Spanner statement and returns the ParseResult.
-func parseSingleSpannerGoogleSQL(statement string, baseLine int) (*base.ParseResult, error) {
+// parseSingleSpannerGoogleSQL parses a single Spanner statement and returns the ANTLRAST.
+func parseSingleSpannerGoogleSQL(statement string, baseLine int) (*base.ANTLRAST, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewGoogleSQLLexer(inputStream)
@@ -72,10 +72,10 @@ func parseSingleSpannerGoogleSQL(statement string, baseLine int) (*base.ParseRes
 		return nil, parserErrorListener.Err
 	}
 
-	result := &base.ParseResult{
-		Tree:     tree,
-		Tokens:   stream,
-		BaseLine: baseLine,
+	result := &base.ANTLRAST{
+		StartPosition: startPosition,
+		Tree:          tree,
+		Tokens:        stream,
 	}
 
 	return result, nil
