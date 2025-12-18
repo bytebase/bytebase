@@ -35,20 +35,11 @@ func parseMySQLForRegistry(statement string) ([]base.AST, error) {
 	if err != nil {
 		return nil, err
 	}
-	return toAST(parseResults), nil
-}
-
-// toAST converts []*ParseResult to []base.AST.
-func toAST(results []*base.ParseResult) []base.AST {
-	var asts []base.AST
-	for _, r := range results {
-		asts = append(asts, &base.ANTLRAST{
-			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
-			Tree:          r.Tree,
-			Tokens:        r.Tokens,
-		})
+	asts := make([]base.AST, len(parseResults))
+	for i, r := range parseResults {
+		asts[i] = r
 	}
-	return asts
+	return asts, nil
 }
 
 // parseMySQLStatements is the ParseStatementsFunc for MySQL, MariaDB, and OceanBase.
@@ -66,8 +57,7 @@ func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
 		return nil, err
 	}
 
-	// Combine: Statement provides text/positions, ParseResult provides AST
-	// Note: parseResults may have fewer items if some statements are empty
+	// Combine: Statement provides text/positions, ANTLRAST provides AST
 	var result []base.ParsedStatement
 	astIndex := 0
 	for _, stmt := range stmts {
@@ -75,11 +65,7 @@ func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
 			Statement: stmt,
 		}
 		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = &base.ANTLRAST{
-				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
-				Tree:          parseResults[astIndex].Tree,
-				Tokens:        parseResults[astIndex].Tokens,
-			}
+			ps.AST = parseResults[astIndex]
 			astIndex++
 		}
 		result = append(result, ps)
@@ -89,7 +75,7 @@ func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
 }
 
 // ParseMySQL parses the given SQL statement and returns the AST.
-func ParseMySQL(statement string) ([]*base.ParseResult, error) {
+func ParseMySQL(statement string) ([]*base.ANTLRAST, error) {
 	statement, err := DealWithDelimiter(statement)
 	if err != nil {
 		return nil, err
@@ -278,8 +264,8 @@ func mysqlAddSemicolonIfNeeded(sql string) string {
 	return sql
 }
 
-func parseInputStream(input *antlr.InputStream, statement string) ([]*base.ParseResult, error) {
-	var result []*base.ParseResult
+func parseInputStream(input *antlr.InputStream, statement string) ([]*base.ANTLRAST, error) {
+	var result []*base.ANTLRAST
 	lexer := parser.NewMySQLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
@@ -303,10 +289,10 @@ func parseInputStream(input *antlr.InputStream, statement string) ([]*base.Parse
 			continue
 		}
 
-		result = append(result, &base.ParseResult{
-			Tree:     tree,
-			Tokens:   tokens,
-			BaseLine: s.BaseLine,
+		result = append(result, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(s.BaseLine) + 1},
+			Tree:          tree,
+			Tokens:        tokens,
 		})
 		// s.End.Line is 1-based, but baseLine should be 0-based
 		baseLine = int(s.End.Line) - 1

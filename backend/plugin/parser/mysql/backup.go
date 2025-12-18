@@ -423,13 +423,13 @@ func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateS
 	}
 }
 
-func ExtractTables(databaseName string, parseResult *base.ParseResult, offset int) ([]StatementInfo, error) {
+func ExtractTables(databaseName string, ast *base.ANTLRAST, offset int) ([]StatementInfo, error) {
 	listener := &tableReferenceListener{
 		databaseName: databaseName,
 		offset:       offset,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, ast.Tree)
 
 	return listener.tables, listener.err
 }
