@@ -901,9 +901,6 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	// Invalidate issue caches
 	for _, issue := range issuesToInvalidate {
 		s.issueCache.Remove(issue.id)
-		if issue.pipelineUID != nil {
-			s.issueByPipelineCache.Remove(*issue.pipelineUID)
-		}
 	}
 
 	// Invalidate policy cache for updated policies
