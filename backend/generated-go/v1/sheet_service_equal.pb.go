@@ -99,29 +99,8 @@ func (x *Sheet) Equal(y *Sheet) bool {
 	if x.ContentSize != y.ContentSize {
 		return false
 	}
-	if !x.Payload.Equal(y.Payload) {
-		return false
-	}
 	if x.Engine != y.Engine {
 		return false
-	}
-	return true
-}
-
-func (x *SheetPayload) Equal(y *SheetPayload) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Commands) != len(y.Commands) {
-		return false
-	}
-	for i := 0; i < len(x.Commands); i++ {
-		if !x.Commands[i].Equal(y.Commands[i]) {
-			return false
-		}
 	}
 	return true
 }

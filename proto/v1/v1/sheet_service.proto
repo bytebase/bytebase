@@ -122,14 +122,6 @@ message Sheet {
   // content_size is the full size of the content, may not match the size of the `content` field.
   int64 content_size = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Parsed metadata about SQL commands in the sheet.
-  SheetPayload payload = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // The SQL dialect.
   Engine engine = 8 [(google.api.field_behavior) = REQUIRED];
-}
-
-message SheetPayload {
-  // The start and end position of each command in the sheet statement.
-  repeated Range commands = 1;
 }

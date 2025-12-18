@@ -256,7 +256,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, commands []base.S
 	}()
 
 	for i, command := range commands {
-		opts.LogCommandExecute([]int32{int32(i)}, command.Text)
+		opts.LogCommandExecute(command.Range, command.Text)
 		// Log the query statement in char code to see if there are some control characters that cause issues.
 		var charCode []rune
 		for _, r := range command.Text {
@@ -296,7 +296,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, commands []base.St
 	totalRowsAffected := int64(0)
 
 	for i, command := range commands {
-		opts.LogCommandExecute([]int32{int32(i)}, command.Text)
+		opts.LogCommandExecute(command.Range, command.Text)
 		// Log the query statement in char code to see if there are some control characters that cause issues.
 		var charCode []rune
 		for _, r := range command.Text {

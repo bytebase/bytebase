@@ -670,14 +670,16 @@ message TaskRunLogEntry {
   message CommandExecute {
     // When the command was logged.
     google.protobuf.Timestamp log_time = 1;
-    // Either `command_indexes` or `statement` is set.
-    // The indexes of the executed commands.
-    repeated int32 command_indexes = 2;
+
+    // The byte offset range of the executed command in the sheet.
+    Range range = 2;
+
     // The executed statement.
     string statement = 4;
 
     // The response from executing the command.
     CommandResponse response = 3;
+
     // Command execution response.
     message CommandResponse {
       // When the response was logged.

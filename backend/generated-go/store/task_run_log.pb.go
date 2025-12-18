@@ -444,9 +444,8 @@ func (x *TaskRunLog_SchemaDumpEnd) GetError() string {
 
 type TaskRunLog_CommandExecute struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Either `command_indexes` or `statement` is set.
-	// The indexes of the executed commands.
-	CommandIndexes []int32 `protobuf:"varint,1,rep,packed,name=command_indexes,json=commandIndexes,proto3" json:"command_indexes,omitempty"`
+	// The byte offset range of the executed command in the sheet.
+	Range *Range `protobuf:"bytes,1,opt,name=range,proto3" json:"range,omitempty"`
 	// The statement to be executed.
 	Statement     string `protobuf:"bytes,2,opt,name=statement,proto3" json:"statement,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -483,9 +482,9 @@ func (*TaskRunLog_CommandExecute) Descriptor() ([]byte, []int) {
 	return file_store_task_run_log_proto_rawDescGZIP(), []int{0, 2}
 }
 
-func (x *TaskRunLog_CommandExecute) GetCommandIndexes() []int32 {
+func (x *TaskRunLog_CommandExecute) GetRange() *Range {
 	if x != nil {
-		return x.CommandIndexes
+		return x.Range
 	}
 	return nil
 }
@@ -967,7 +966,7 @@ var File_store_task_run_log_proto protoreflect.FileDescriptor
 
 const file_store_task_run_log_proto_rawDesc = "" +
 	"\n" +
-	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x14store/task_run.proto\"\x88\x14\n" +
+	"\x18store/task_run_log.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\x1a\x14store/task_run.proto\"\x8c\x14\n" +
 	"\n" +
 	"TaskRunLog\x123\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1f.bytebase.store.TaskRunLog.TypeR\x04type\x12\x1b\n" +
@@ -989,9 +988,9 @@ const file_store_task_run_log_proto_rawDesc = "" +
 	"\x10compute_diff_end\x18\x0f \x01(\v2).bytebase.store.TaskRunLog.ComputeDiffEndR\x0ecomputeDiffEnd\x1a\x11\n" +
 	"\x0fSchemaDumpStart\x1a%\n" +
 	"\rSchemaDumpEnd\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\x1aW\n" +
-	"\x0eCommandExecute\x12'\n" +
-	"\x0fcommand_indexes\x18\x01 \x03(\x05R\x0ecommandIndexes\x12\x1c\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\x1a[\n" +
+	"\x0eCommandExecute\x12+\n" +
+	"\x05range\x18\x01 \x01(\v2\x15.bytebase.store.RangeR\x05range\x12\x1c\n" +
 	"\tstatement\x18\x02 \x01(\tR\tstatement\x1ax\n" +
 	"\x0fCommandResponse\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\x12#\n" +
@@ -1078,7 +1077,8 @@ var file_store_task_run_log_proto_goTypes = []any{
 	(*TaskRunLog_RetryInfo)(nil),               // 14: bytebase.store.TaskRunLog.RetryInfo
 	(*TaskRunLog_ComputeDiffStart)(nil),        // 15: bytebase.store.TaskRunLog.ComputeDiffStart
 	(*TaskRunLog_ComputeDiffEnd)(nil),          // 16: bytebase.store.TaskRunLog.ComputeDiffEnd
-	(*PriorBackupDetail)(nil),                  // 17: bytebase.store.PriorBackupDetail
+	(*Range)(nil),                              // 17: bytebase.store.Range
+	(*PriorBackupDetail)(nil),                  // 18: bytebase.store.PriorBackupDetail
 }
 var file_store_task_run_log_proto_depIdxs = []int32{
 	0,  // 0: bytebase.store.TaskRunLog.type:type_name -> bytebase.store.TaskRunLog.Type
@@ -1095,14 +1095,15 @@ var file_store_task_run_log_proto_depIdxs = []int32{
 	14, // 11: bytebase.store.TaskRunLog.retry_info:type_name -> bytebase.store.TaskRunLog.RetryInfo
 	15, // 12: bytebase.store.TaskRunLog.compute_diff_start:type_name -> bytebase.store.TaskRunLog.ComputeDiffStart
 	16, // 13: bytebase.store.TaskRunLog.compute_diff_end:type_name -> bytebase.store.TaskRunLog.ComputeDiffEnd
-	1,  // 14: bytebase.store.TaskRunLog.TaskRunStatusUpdate.status:type_name -> bytebase.store.TaskRunLog.TaskRunStatusUpdate.Status
-	2,  // 15: bytebase.store.TaskRunLog.TransactionControl.type:type_name -> bytebase.store.TaskRunLog.TransactionControl.Type
-	17, // 16: bytebase.store.TaskRunLog.PriorBackupEnd.prior_backup_detail:type_name -> bytebase.store.PriorBackupDetail
-	17, // [17:17] is the sub-list for method output_type
-	17, // [17:17] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	17, // 14: bytebase.store.TaskRunLog.CommandExecute.range:type_name -> bytebase.store.Range
+	1,  // 15: bytebase.store.TaskRunLog.TaskRunStatusUpdate.status:type_name -> bytebase.store.TaskRunLog.TaskRunStatusUpdate.Status
+	2,  // 16: bytebase.store.TaskRunLog.TransactionControl.type:type_name -> bytebase.store.TaskRunLog.TransactionControl.Type
+	18, // 17: bytebase.store.TaskRunLog.PriorBackupEnd.prior_backup_detail:type_name -> bytebase.store.PriorBackupDetail
+	18, // [18:18] is the sub-list for method output_type
+	18, // [18:18] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_store_task_run_log_proto_init() }
@@ -1110,6 +1111,7 @@ func file_store_task_run_log_proto_init() {
 	if File_store_task_run_log_proto != nil {
 		return
 	}
+	file_store_common_proto_init()
 	file_store_task_run_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{

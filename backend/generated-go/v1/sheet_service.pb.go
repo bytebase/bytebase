@@ -251,8 +251,6 @@ type Sheet struct {
 	Content []byte `protobuf:"bytes,5,opt,name=content,proto3" json:"content,omitempty"`
 	// content_size is the full size of the content, may not match the size of the `content` field.
 	ContentSize int64 `protobuf:"varint,6,opt,name=content_size,json=contentSize,proto3" json:"content_size,omitempty"`
-	// Parsed metadata about SQL commands in the sheet.
-	Payload *SheetPayload `protobuf:"bytes,7,opt,name=payload,proto3" json:"payload,omitempty"`
 	// The SQL dialect.
 	Engine        Engine `protobuf:"varint,8,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -331,63 +329,11 @@ func (x *Sheet) GetContentSize() int64 {
 	return 0
 }
 
-func (x *Sheet) GetPayload() *SheetPayload {
-	if x != nil {
-		return x.Payload
-	}
-	return nil
-}
-
 func (x *Sheet) GetEngine() Engine {
 	if x != nil {
 		return x.Engine
 	}
 	return Engine_ENGINE_UNSPECIFIED
-}
-
-type SheetPayload struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The start and end position of each command in the sheet statement.
-	Commands      []*Range `protobuf:"bytes,1,rep,name=commands,proto3" json:"commands,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SheetPayload) Reset() {
-	*x = SheetPayload{}
-	mi := &file_v1_sheet_service_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SheetPayload) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SheetPayload) ProtoMessage() {}
-
-func (x *SheetPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sheet_service_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SheetPayload.ProtoReflect.Descriptor instead.
-func (*SheetPayload) Descriptor() ([]byte, []int) {
-	return file_v1_sheet_service_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *SheetPayload) GetCommands() []*Range {
-	if x != nil {
-		return x.Commands
-	}
-	return nil
 }
 
 var File_v1_sheet_service_proto protoreflect.FileDescriptor
@@ -408,7 +354,7 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\x0fGetSheetRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x04name\x12\x10\n" +
-	"\x03raw\x18\x02 \x01(\bR\x03raw\"\x96\x03\n" +
+	"\x03raw\x18\x02 \x01(\bR\x03raw\"\xdc\x02\n" +
 	"\x05Sheet\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12!\n" +
 	"\x05title\x18\x02 \x01(\tB\v\xe0A\x02\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x1d\n" +
@@ -416,12 +362,9 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12\x1d\n" +
 	"\acontent\x18\x05 \x01(\fB\x03\xe0A\x02R\acontent\x12&\n" +
-	"\fcontent_size\x18\x06 \x01(\x03B\x03\xe0A\x03R\vcontentSize\x128\n" +
-	"\apayload\x18\a \x01(\v2\x19.bytebase.v1.SheetPayloadB\x03\xe0A\x03R\apayload\x120\n" +
+	"\fcontent_size\x18\x06 \x01(\x03B\x03\xe0A\x03R\vcontentSize\x120\n" +
 	"\x06engine\x18\b \x01(\x0e2\x13.bytebase.v1.EngineB\x03\xe0A\x02R\x06engine::\xeaA7\n" +
-	"\x12bytebase.com/Sheet\x12!projects/{project}/sheets/{sheet}\">\n" +
-	"\fSheetPayload\x12.\n" +
-	"\bcommands\x18\x01 \x03(\v2\x12.bytebase.v1.RangeR\bcommands2\xe0\x03\n" +
+	"\x12bytebase.com/Sheet\x12!projects/{project}/sheets/{sheet}2\xe0\x03\n" +
 	"\fSheetService\x12\x98\x01\n" +
 	"\vCreateSheet\x12\x1f.bytebase.v1.CreateSheetRequest\x1a\x12.bytebase.v1.Sheet\"T\xdaA\fparent,sheet\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02':\x05sheet\"\x1e/v1/{parent=projects/*}/sheets\x12\xb1\x01\n" +
 	"\x11BatchCreateSheets\x12%.bytebase.v1.BatchCreateSheetsRequest\x1a&.bytebase.v1.BatchCreateSheetsResponse\"M\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02/:\x01*\"*/v1/{parent=projects/*}/sheets:batchCreate\x12\x80\x01\n" +
@@ -440,37 +383,33 @@ func file_v1_sheet_service_proto_rawDescGZIP() []byte {
 	return file_v1_sheet_service_proto_rawDescData
 }
 
-var file_v1_sheet_service_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_v1_sheet_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_v1_sheet_service_proto_goTypes = []any{
 	(*CreateSheetRequest)(nil),        // 0: bytebase.v1.CreateSheetRequest
 	(*BatchCreateSheetsRequest)(nil),  // 1: bytebase.v1.BatchCreateSheetsRequest
 	(*BatchCreateSheetsResponse)(nil), // 2: bytebase.v1.BatchCreateSheetsResponse
 	(*GetSheetRequest)(nil),           // 3: bytebase.v1.GetSheetRequest
 	(*Sheet)(nil),                     // 4: bytebase.v1.Sheet
-	(*SheetPayload)(nil),              // 5: bytebase.v1.SheetPayload
-	(*timestamppb.Timestamp)(nil),     // 6: google.protobuf.Timestamp
-	(Engine)(0),                       // 7: bytebase.v1.Engine
-	(*Range)(nil),                     // 8: bytebase.v1.Range
+	(*timestamppb.Timestamp)(nil),     // 5: google.protobuf.Timestamp
+	(Engine)(0),                       // 6: bytebase.v1.Engine
 }
 var file_v1_sheet_service_proto_depIdxs = []int32{
-	4,  // 0: bytebase.v1.CreateSheetRequest.sheet:type_name -> bytebase.v1.Sheet
-	0,  // 1: bytebase.v1.BatchCreateSheetsRequest.requests:type_name -> bytebase.v1.CreateSheetRequest
-	4,  // 2: bytebase.v1.BatchCreateSheetsResponse.sheets:type_name -> bytebase.v1.Sheet
-	6,  // 3: bytebase.v1.Sheet.create_time:type_name -> google.protobuf.Timestamp
-	5,  // 4: bytebase.v1.Sheet.payload:type_name -> bytebase.v1.SheetPayload
-	7,  // 5: bytebase.v1.Sheet.engine:type_name -> bytebase.v1.Engine
-	8,  // 6: bytebase.v1.SheetPayload.commands:type_name -> bytebase.v1.Range
-	0,  // 7: bytebase.v1.SheetService.CreateSheet:input_type -> bytebase.v1.CreateSheetRequest
-	1,  // 8: bytebase.v1.SheetService.BatchCreateSheets:input_type -> bytebase.v1.BatchCreateSheetsRequest
-	3,  // 9: bytebase.v1.SheetService.GetSheet:input_type -> bytebase.v1.GetSheetRequest
-	4,  // 10: bytebase.v1.SheetService.CreateSheet:output_type -> bytebase.v1.Sheet
-	2,  // 11: bytebase.v1.SheetService.BatchCreateSheets:output_type -> bytebase.v1.BatchCreateSheetsResponse
-	4,  // 12: bytebase.v1.SheetService.GetSheet:output_type -> bytebase.v1.Sheet
-	10, // [10:13] is the sub-list for method output_type
-	7,  // [7:10] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	4, // 0: bytebase.v1.CreateSheetRequest.sheet:type_name -> bytebase.v1.Sheet
+	0, // 1: bytebase.v1.BatchCreateSheetsRequest.requests:type_name -> bytebase.v1.CreateSheetRequest
+	4, // 2: bytebase.v1.BatchCreateSheetsResponse.sheets:type_name -> bytebase.v1.Sheet
+	5, // 3: bytebase.v1.Sheet.create_time:type_name -> google.protobuf.Timestamp
+	6, // 4: bytebase.v1.Sheet.engine:type_name -> bytebase.v1.Engine
+	0, // 5: bytebase.v1.SheetService.CreateSheet:input_type -> bytebase.v1.CreateSheetRequest
+	1, // 6: bytebase.v1.SheetService.BatchCreateSheets:input_type -> bytebase.v1.BatchCreateSheetsRequest
+	3, // 7: bytebase.v1.SheetService.GetSheet:input_type -> bytebase.v1.GetSheetRequest
+	4, // 8: bytebase.v1.SheetService.CreateSheet:output_type -> bytebase.v1.Sheet
+	2, // 9: bytebase.v1.SheetService.BatchCreateSheets:output_type -> bytebase.v1.BatchCreateSheetsResponse
+	4, // 10: bytebase.v1.SheetService.GetSheet:output_type -> bytebase.v1.Sheet
+	8, // [8:11] is the sub-list for method output_type
+	5, // [5:8] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_v1_sheet_service_proto_init() }
@@ -486,7 +425,7 @@ func file_v1_sheet_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_sheet_service_proto_rawDesc), len(file_v1_sheet_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -380,9 +380,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	var commands []base.Statement
-	var originalIndex []int32
-	var nonTransactionAndSetRoleStmts []string
-	var nonTransactionAndSetRoleStmtsIndex []int32
+	var nonTransactionAndSetRoleStmts []base.Statement
 	var isPlsql bool
 	// HACK(p0ny): always split for pg
 	//nolint
@@ -391,7 +389,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		if err != nil {
 			return 0, err
 		}
-		commands, originalIndex = base.FilterEmptyStatementsWithIndexes(singleSQLs)
+		commands = base.FilterEmptyStatements(singleSQLs)
 
 		// If the statement is a single statement and is a PL/pgSQL block,
 		// we should execute it as a single statement without transaction.
@@ -402,15 +400,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		}
 
 		var tmpCommands []base.Statement
-		var tmpOriginalIndex []int32
-		for i, command := range commands {
+		for _, command := range commands {
 			switch {
 			case isSetRoleStatement(command.Text):
-				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-				nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command)
 			case IsNonTransactionStatement(command.Text):
-				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-				nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command)
 				continue
 			case isSuperuserStatement(command.Text) && d.connectionCtx.UseDatabaseOwner:
 				// Use superuser privilege to run privileged statements.
@@ -422,17 +417,16 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", ct, owner)
 			}
 			tmpCommands = append(tmpCommands, command)
-			tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
 		}
-		commands, originalIndex = tmpCommands, tmpOriginalIndex
+		commands = tmpCommands
 	}
 
 	// Execute based on transaction mode
 	var affectedRows int64
 	if transactionMode == common.TransactionModeOff {
-		affectedRows, err = d.executeInAutoCommitMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+		affectedRows, err = d.executeInAutoCommitMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
 	} else {
-		affectedRows, err = d.executeInTransactionMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+		affectedRows, err = d.executeInTransactionMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
 	}
 	if err == nil {
 		return affectedRows, nil
@@ -453,9 +447,9 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 		// Do retry.
 		if transactionMode == common.TransactionModeOff {
-			affectedRows, err = d.executeInAutoCommitMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+			affectedRows, err = d.executeInAutoCommitMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
 		} else {
-			affectedRows, err = d.executeInTransactionMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+			affectedRows, err = d.executeInTransactionMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
 		}
 		if err == nil {
 			break
@@ -485,9 +479,7 @@ func (d *Driver) executeInTransactionMode(
 	owner string,
 	statement string,
 	commands []base.Statement,
-	originalIndex []int32,
-	nonTransactionAndSetRoleStmts []string,
-	nonTransactionAndSetRoleStmtsIndex []int32,
+	nonTransactionAndSetRoleStmts []base.Statement,
 	opts db.ExecuteOptions,
 	isPlsql bool,
 ) (int64, error) {
@@ -516,7 +508,7 @@ func (d *Driver) executeInTransactionMode(
 				return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 			}
 		}
-		opts.LogCommandExecute([]int32{0}, statement)
+		opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
 		if _, err := conn.ExecContext(ctx, statement); err != nil {
 			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			return 0, err
@@ -560,9 +552,8 @@ func (d *Driver) executeInTransactionMode(
 				}
 			}
 
-			for i, command := range commands {
-				indexes := []int32{originalIndex[i]}
-				opts.LogCommandExecute(indexes, command.Text)
+			for _, command := range commands {
+				opts.LogCommandExecute(command.Range, command.Text)
 
 				rr := tx.Conn().PgConn().Exec(ctx, command.Text)
 				results, err := rr.ReadAll()
@@ -614,10 +605,9 @@ func (d *Driver) executeInTransactionMode(
 		}
 	}
 	// Run non-transaction statements at the end.
-	for i, stmt := range nonTransactionAndSetRoleStmts {
-		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
-		opts.LogCommandExecute(indexes, stmt)
-		if _, err := conn.ExecContext(ctx, stmt); err != nil {
+	for _, stmt := range nonTransactionAndSetRoleStmts {
+		opts.LogCommandExecute(stmt.Range, stmt.Text)
+		if _, err := conn.ExecContext(ctx, stmt.Text); err != nil {
 			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			return 0, err
 		}
@@ -631,16 +621,13 @@ func (d *Driver) executeInAutoCommitMode(
 	owner string,
 	statement string,
 	commands []base.Statement,
-	originalIndex []int32,
-	nonTransactionAndSetRoleStmts []string,
-	nonTransactionAndSetRoleStmtsIndex []int32,
+	nonTransactionAndSetRoleStmts []base.Statement,
 	opts db.ExecuteOptions,
 	isPlsql bool,
 ) (int64, error) {
 	// For auto-commit mode, treat all statements as non-transactional
-	for i, command := range commands {
-		nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-		nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+	for _, command := range commands {
+		nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command)
 	}
 
 	conn, err := d.db.Conn(ctx)
@@ -669,7 +656,7 @@ func (d *Driver) executeInAutoCommitMode(
 	}
 
 	if isPlsql {
-		opts.LogCommandExecute([]int32{0}, statement)
+		opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
 		if _, err := conn.ExecContext(ctx, statement); err != nil {
 			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			return 0, err
@@ -680,11 +667,10 @@ func (d *Driver) executeInAutoCommitMode(
 
 	totalRowsAffected := int64(0)
 	// Execute all statements individually in auto-commit mode
-	for i, stmt := range nonTransactionAndSetRoleStmts {
-		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
-		opts.LogCommandExecute(indexes, stmt)
+	for _, stmt := range nonTransactionAndSetRoleStmts {
+		opts.LogCommandExecute(stmt.Range, stmt.Text)
 
-		sqlResult, err := conn.ExecContext(ctx, stmt)
+		sqlResult, err := conn.ExecContext(ctx, stmt.Text)
 		if err != nil {
 			opts.LogCommandResponse(0, []int64{0}, err.Error())
 			if isLockTimeoutError(err.Error()) {

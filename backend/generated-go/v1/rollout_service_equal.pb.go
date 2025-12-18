@@ -670,13 +670,8 @@ func (x *TaskRunLogEntry_CommandExecute) Equal(y *TaskRunLogEntry_CommandExecute
 	if p, q := x.LogTime, y.LogTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if len(x.CommandIndexes) != len(y.CommandIndexes) {
+	if !x.Range.Equal(y.Range) {
 		return false
-	}
-	for i := 0; i < len(x.CommandIndexes); i++ {
-		if x.CommandIndexes[i] != y.CommandIndexes[i] {
-			return false
-		}
 	}
 	if x.Statement != y.Statement {
 		return false

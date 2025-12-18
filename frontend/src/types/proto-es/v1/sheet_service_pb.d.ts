@@ -5,7 +5,7 @@
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import type { Engine, Range } from "./common_pb";
+import type { Engine } from "./common_pb";
 
 /**
  * Describes the file v1/sheet_service.proto.
@@ -156,13 +156,6 @@ export declare type Sheet = Message<"bytebase.v1.Sheet"> & {
   contentSize: bigint;
 
   /**
-   * Parsed metadata about SQL commands in the sheet.
-   *
-   * @generated from field: bytebase.v1.SheetPayload payload = 7;
-   */
-  payload?: SheetPayload;
-
-  /**
    * The SQL dialect.
    *
    * @generated from field: bytebase.v1.Engine engine = 8;
@@ -175,24 +168,6 @@ export declare type Sheet = Message<"bytebase.v1.Sheet"> & {
  * Use `create(SheetSchema)` to create a new message.
  */
 export declare const SheetSchema: GenMessage<Sheet>;
-
-/**
- * @generated from message bytebase.v1.SheetPayload
- */
-export declare type SheetPayload = Message<"bytebase.v1.SheetPayload"> & {
-  /**
-   * The start and end position of each command in the sheet statement.
-   *
-   * @generated from field: repeated bytebase.v1.Range commands = 1;
-   */
-  commands: Range[];
-};
-
-/**
- * Describes the message bytebase.v1.SheetPayload.
- * Use `create(SheetPayloadSchema)` to create a new message.
- */
-export declare const SheetPayloadSchema: GenMessage<SheetPayload>;
 
 /**
  * SheetService manages SQL scripts and saved queries.

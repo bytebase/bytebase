@@ -2628,10 +2628,6 @@
                   <a href="#bytebase.v1.Sheet"><span class="badge">M</span>Sheet</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.v1.SheetPayload"><span class="badge">M</span>SheetPayload</a>
-                </li>
-              
               
               
               
@@ -28208,11 +28204,10 @@ Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>command_indexes</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td>repeated</td>
-                  <td><p>Either `command_indexes` or `statement` is set.
-The indexes of the executed commands. </p></td>
+                  <td>range</td>
+                  <td><a href="#bytebase.v1.Range">Range</a></td>
+                  <td></td>
+                  <td><p>The byte offset range of the executed command in the sheet. </p></td>
                 </tr>
               
                 <tr>
@@ -29471,41 +29466,10 @@ set the `raw` to true in GetSheet request to retrieve the full content. </p></td
                 </tr>
               
                 <tr>
-                  <td>payload</td>
-                  <td><a href="#bytebase.v1.SheetPayload">SheetPayload</a></td>
-                  <td></td>
-                  <td><p>Parsed metadata about SQL commands in the sheet. </p></td>
-                </tr>
-              
-                <tr>
                   <td>engine</td>
                   <td><a href="#bytebase.v1.Engine">Engine</a></td>
                   <td></td>
                   <td><p>The SQL dialect. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SheetPayload">SheetPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>commands</td>
-                  <td><a href="#bytebase.v1.Range">Range</a></td>
-                  <td>repeated</td>
-                  <td><p>The start and end position of each command in the sheet statement. </p></td>
                 </tr>
               
             </tbody>

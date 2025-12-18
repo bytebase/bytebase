@@ -14017,11 +14017,6 @@ components:
                     readOnly: true
                     type: string
                     description: content_size is the full size of the content, may not match the size of the `content` field.
-                payload:
-                    readOnly: true
-                    allOf:
-                        - $ref: '#/components/schemas/SheetPayload'
-                    description: Parsed metadata about SQL commands in the sheet.
                 engine:
                     enum:
                         - ENGINE_UNSPECIFIED
@@ -14053,14 +14048,6 @@ components:
                     type: string
                     description: The SQL dialect.
                     format: enum
-        SheetPayload:
-            type: object
-            properties:
-                commands:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Range'
-                    description: The start and end position of each command in the sheet statement.
         SpatialIndexConfig:
             type: object
             properties:
@@ -14709,14 +14696,10 @@ components:
                     type: string
                     description: When the command was logged.
                     format: date-time
-                commandIndexes:
-                    type: array
-                    items:
-                        type: integer
-                        format: int32
-                    description: |-
-                        Either `command_indexes` or `statement` is set.
-                         The indexes of the executed commands.
+                range:
+                    allOf:
+                        - $ref: '#/components/schemas/Range'
+                    description: The byte offset range of the executed command in the sheet.
                 statement:
                     type: string
                     description: The executed statement.

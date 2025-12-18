@@ -6,7 +6,7 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import type { Plan } from "./plan_service_pb";
-import type { DatabaseChangeType, ExportFormat, Position } from "./common_pb";
+import type { DatabaseChangeType, ExportFormat, Position, Range } from "./common_pb";
 
 /**
  * Describes the file v1/rollout_service.proto.
@@ -1398,12 +1398,11 @@ export declare type TaskRunLogEntry_CommandExecute = Message<"bytebase.v1.TaskRu
   logTime?: Timestamp;
 
   /**
-   * Either `command_indexes` or `statement` is set.
-   * The indexes of the executed commands.
+   * The byte offset range of the executed command in the sheet.
    *
-   * @generated from field: repeated int32 command_indexes = 2;
+   * @generated from field: bytebase.v1.Range range = 2;
    */
-  commandIndexes: number[];
+  range?: Range;
 
   /**
    * The executed statement.
