@@ -99,38 +99,3 @@ func getTiDBNodes(checkCtx advisor.Context) ([]ast.StmtNode, error) {
 	}
 	return stmtNodes, nil
 }
-
-// ParsedStatementInfo contains all info needed for checking a single statement.
-type ParsedStatementInfo struct {
-	Node     ast.StmtNode
-	BaseLine int
-	Text     string
-}
-
-// getParsedStatements extracts statement info from the advisor context.
-// This is the preferred way to access statements - use stmtInfo.Text directly
-// instead of calling node.Text().
-// nolint:unused
-func getParsedStatements(checkCtx advisor.Context) ([]ParsedStatementInfo, error) {
-	if checkCtx.ParsedStatements == nil {
-		return nil, errors.New("ParsedStatements is not provided in context")
-	}
-
-	var results []ParsedStatementInfo
-	for _, stmt := range checkCtx.ParsedStatements {
-		// Skip empty statements (no AST)
-		if stmt.AST == nil {
-			continue
-		}
-		tidbAST, ok := tidbparser.GetTiDBAST(stmt.AST)
-		if !ok {
-			return nil, errors.New("AST type mismatch: expected TiDB parser result")
-		}
-		results = append(results, ParsedStatementInfo{
-			Node:     tidbAST.Node,
-			BaseLine: stmt.BaseLine,
-			Text:     stmt.Text,
-		})
-	}
-	return results, nil
-}
