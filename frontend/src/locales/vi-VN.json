@@ -394,7 +394,10 @@
     },
     "log-viewer": {
       "multiple-deploys-notice": "Phát hiện khởi động lại máy chủ trong quá trình thực thi. Nhật ký được nhóm theo triển khai.",
-      "deployment-n": "Triển khai #{n}"
+      "deployment-n": "Triển khai #{n}",
+      "expand-all": "Mở rộng tất cả",
+      "collapse-all": "Thu gọn tất cả",
+      "summary": "{sections} phần · {entries} mục"
     }
   },
   "banner": {

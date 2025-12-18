@@ -394,7 +394,10 @@
     },
     "log-viewer": {
       "multiple-deploys-notice": "Se detectó un reinicio del servidor durante la ejecución. Los registros están agrupados por despliegue.",
-      "deployment-n": "Despliegue #{n}"
+      "deployment-n": "Despliegue #{n}",
+      "expand-all": "Expandir todo",
+      "collapse-all": "Contraer todo",
+      "summary": "{sections} secciones · {entries} entradas"
     }
   },
   "banner": {

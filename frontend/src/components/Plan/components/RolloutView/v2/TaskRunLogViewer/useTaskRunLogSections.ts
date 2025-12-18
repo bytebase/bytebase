@@ -47,6 +47,11 @@ export interface UseTaskRunLogSectionsReturn {
   toggleDeploy: (deployId: string) => void;
   isSectionExpanded: (sectionId: string) => boolean;
   isDeployExpanded: (deployId: string) => boolean;
+  expandAll: () => void;
+  collapseAll: () => void;
+  areAllExpanded: ComputedRef<boolean>;
+  totalSections: ComputedRef<number>;
+  totalEntries: ComputedRef<number>;
 }
 
 export const useTaskRunLogSections = (
@@ -322,6 +327,96 @@ export const useTaskRunLogSections = (
     return expandedDeploys.value.has(deployId);
   };
 
+  // Get all section IDs (both from flat sections and deploy groups)
+  const getAllSectionIds = (): string[] => {
+    if (hasMultipleDeploys.value) {
+      return deployGroups.value.flatMap((group) =>
+        group.sections.map((section) => section.id)
+      );
+    }
+    return sections.value.map((section) => section.id);
+  };
+
+  // Get all deploy IDs
+  const getAllDeployIds = (): string[] => {
+    return deployGroups.value.map((group) => group.deployId);
+  };
+
+  const expandAll = () => {
+    // Expand all sections
+    for (const sectionId of getAllSectionIds()) {
+      addToSet(expandedSections, sectionId);
+      deleteFromSet(userCollapsedSections, sectionId);
+    }
+    // Expand all deploy groups (for multi-deploy view)
+    if (hasMultipleDeploys.value) {
+      for (const deployId of getAllDeployIds()) {
+        addToSet(expandedDeploys, deployId);
+        deleteFromSet(userCollapsedDeploys, deployId);
+      }
+    }
+  };
+
+  const collapseAll = () => {
+    // Collapse all sections
+    for (const sectionId of getAllSectionIds()) {
+      deleteFromSet(expandedSections, sectionId);
+      addToSet(userCollapsedSections, sectionId);
+    }
+    // Collapse all deploy groups (for multi-deploy view)
+    if (hasMultipleDeploys.value) {
+      for (const deployId of getAllDeployIds()) {
+        deleteFromSet(expandedDeploys, deployId);
+        addToSet(userCollapsedDeploys, deployId);
+      }
+    }
+  };
+
+  const areAllExpanded = computed((): boolean => {
+    const allSectionIds = getAllSectionIds();
+    if (allSectionIds.length === 0) return false;
+
+    const allSectionsExpanded = allSectionIds.every((id) =>
+      expandedSections.value.has(id)
+    );
+
+    // For multi-deploy view, also check deploy groups
+    if (hasMultipleDeploys.value) {
+      const allDeployIds = getAllDeployIds();
+      const allDeploysExpanded = allDeployIds.every((id) =>
+        expandedDeploys.value.has(id)
+      );
+      return allSectionsExpanded && allDeploysExpanded;
+    }
+
+    return allSectionsExpanded;
+  });
+
+  const totalSections = computed((): number => {
+    if (hasMultipleDeploys.value) {
+      return deployGroups.value.reduce(
+        (sum, group) => sum + group.sections.length,
+        0
+      );
+    }
+    return sections.value.length;
+  });
+
+  const totalEntries = computed((): number => {
+    if (hasMultipleDeploys.value) {
+      return deployGroups.value.reduce(
+        (sum, group) =>
+          sum +
+          group.sections.reduce(
+            (sSum, section) => sSum + section.entryCount,
+            0
+          ),
+        0
+      );
+    }
+    return sections.value.reduce((sum, section) => sum + section.entryCount, 0);
+  });
+
   // Auto-expand error sections (respecting user's manual collapse)
   watch(
     sections,
@@ -371,5 +466,10 @@ export const useTaskRunLogSections = (
     toggleDeploy,
     isSectionExpanded,
     isDeployExpanded,
+    expandAll,
+    collapseAll,
+    areAllExpanded,
+    totalSections,
+    totalEntries,
   };
 };
