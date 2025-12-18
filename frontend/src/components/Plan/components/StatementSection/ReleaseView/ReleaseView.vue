@@ -166,7 +166,7 @@ import { Release_File_Type } from "@/types/proto-es/v1/release_service_pb";
 import { useSelectedSpec } from "../../SpecDetailView/context";
 
 const { t } = useI18n();
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 
 const releaseName = computed(() => {
   if (selectedSpec.value?.config?.case === "changeDatabaseConfig") {

@@ -97,7 +97,7 @@ const dialog = useDialog();
 const { t } = useI18n();
 const { plan, isCreating } = usePlanContext();
 const sheetStore = useSheetV1Store();
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 const { project } = useCurrentProjectV1();
 const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
 const { setEditingState } = useEditorState();

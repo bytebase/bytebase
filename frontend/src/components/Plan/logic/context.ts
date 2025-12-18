@@ -72,7 +72,7 @@ export const usePlanContextWithRollout = () => {
   };
 };
 
-export const providePlanContext = (context: Partial<PlanContext>) => {
+export const providePlanContext = (context: PlanContext) => {
   provide(KEY, context as PlanContext);
   return context as PlanContext;
 };

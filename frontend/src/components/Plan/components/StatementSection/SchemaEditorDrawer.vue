@@ -6,16 +6,27 @@
     >
       <div class="flex flex-col gap-y-4 h-full">
         <!-- Database selector for multi-database scenarios -->
-        <div v-if="databases.length > 1" class="flex items-center gap-x-2">
+        <div v-if="databaseNames.length > 1" class="flex items-center gap-x-2">
           <span class="text-sm text-control-light">
             {{ $t("schema-editor.template-database") }}:
           </span>
           <NSelect
-            v-model:value="state.selectedDatabaseName"
+            :value="state.selectedDatabaseName"
             :options="databaseOptions"
+            :disabled="state.isPreparingMetadata"
             class="w-64"
             @update:value="handleDatabaseChange"
-          />
+          >
+          <template #action>
+            <NButton
+              class="w-full!"
+              quaternary
+              :loading="state.isLoadingNextPage"
+              @click="onNextPage">
+              {{ $t("common.load-more") }}
+            </NButton>
+          </template>
+          </NSelect>
         </div>
 
         <SchemaEditorLite
@@ -46,6 +57,7 @@
 </template>
 
 <script lang="ts" setup>
+import { watchDebounced } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { NButton, NSelect } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
@@ -54,13 +66,19 @@ import SchemaEditorLite, {
   generateDiffDDL,
 } from "@/components/SchemaEditorLite";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useDBSchemaV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import {
+  batchGetOrFetchDatabases,
+  useDatabaseV1Store,
+  useDBSchemaV1Store,
+} from "@/store";
+import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
+import { DEFAULT_VISIBLE_TARGETS } from "../SpecDetailView/context";
 
 const props = defineProps<{
   show: boolean;
-  databases: ComposedDatabase[];
+  databaseNames: string[];
   project: Project;
 }>();
 
@@ -76,25 +94,58 @@ const show = computed({
 
 const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
 const dbSchemaStore = useDBSchemaV1Store();
+const databaseStore = useDatabaseV1Store();
 
 const state = reactive({
   isPreparingMetadata: false,
+  isLoadingNextPage: false,
   targets: [] as EditTarget[],
   selectedDatabaseName: "",
+  databaseSelectorPageIndex: 0,
 });
+
+const onNextPage = () => {
+  state.isLoadingNextPage = true;
+  state.databaseSelectorPageIndex++;
+};
+
+watchDebounced(
+  () => state.databaseSelectorPageIndex,
+  async (index) => {
+    try {
+      await batchGetOrFetchDatabases(
+        props.databaseNames.slice(
+          DEFAULT_VISIBLE_TARGETS * index,
+          DEFAULT_VISIBLE_TARGETS * (index + 1)
+        )
+      );
+    } catch {
+      // fallback to previous page.
+      state.databaseSelectorPageIndex = Math.max(0, index - 1);
+    } finally {
+      state.isLoadingNextPage = false;
+    }
+  },
+  { immediate: true, debounce: DEBOUNCE_SEARCH_DELAY }
+);
 
 const databaseOptions = computed(() => {
-  return props.databases.map((db) => ({
-    label: `${db.databaseName} (${db.instanceResource.title})`,
-    value: db.name,
-  }));
-});
-
-const selectedDatabase = computed(() => {
-  return (
-    props.databases.find((db) => db.name === state.selectedDatabaseName) ||
-    props.databases[0]
+  const pageIndex = Math.max(
+    0,
+    state.isLoadingNextPage
+      ? state.databaseSelectorPageIndex - 1
+      : state.databaseSelectorPageIndex
   );
+  return props.databaseNames
+    .slice(0, DEFAULT_VISIBLE_TARGETS * (pageIndex + 1))
+    .map((dbName) => {
+      const db = databaseStore.getDatabaseByName(dbName);
+      return {
+        label: `${db.databaseName} (${db.instanceResource.title})`,
+        value: db.name,
+        disabled: !engineSupportsSchemaEditor(db.instanceResource.engine),
+      };
+    });
 });
 
 const editTargets = computed(() => state.targets);
@@ -103,17 +154,20 @@ const hasPendingChanges = computed(() => {
   return schemaEditorRef.value?.isDirty ?? false;
 });
 
-const prepareDatabaseMetadata = async (database: ComposedDatabase) => {
-  if (!database) return;
+const prepareDatabaseMetadata = async (databaseName: string) => {
+  if (!databaseName) return;
 
   state.isPreparingMetadata = true;
   state.targets = [];
 
-  const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
-    database: database.name,
-    skipCache: true,
-    limit: 200,
-  });
+  const [metadata, database] = await Promise.all([
+    dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: databaseName,
+      skipCache: true,
+      limit: 200,
+    }),
+    databaseStore.getOrFetchDatabaseByName(databaseName),
+  ]);
 
   state.targets = [
     {
@@ -126,19 +180,19 @@ const prepareDatabaseMetadata = async (database: ComposedDatabase) => {
   state.isPreparingMetadata = false;
 };
 
-const handleDatabaseChange = async () => {
-  if (selectedDatabase.value) {
-    await prepareDatabaseMetadata(selectedDatabase.value);
+const handleDatabaseChange = async (selectedDatabaseName: string) => {
+  if (selectedDatabaseName) {
+    await prepareDatabaseMetadata(selectedDatabaseName);
   }
+  state.selectedDatabaseName = selectedDatabaseName;
 };
 
 watch(
   () => props.show,
   (show) => {
-    if (show && props.databases.length > 0) {
+    if (show && props.databaseNames.length > 0) {
       // Initialize with first database
-      state.selectedDatabaseName = props.databases[0].name;
-      prepareDatabaseMetadata(props.databases[0]);
+      handleDatabaseChange(props.databaseNames[0]);
     }
   },
   { immediate: true }

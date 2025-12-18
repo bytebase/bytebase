@@ -12,7 +12,7 @@ import { useSelectedSpec } from "../SpecDetailView/context";
 import EditorView from "./EditorView";
 import ReleaseView from "./ReleaseView";
 
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 
 const viewMode = computed((): "NONE" | "EDITOR" | "RELEASE" => {
   if (selectedSpec.value) {
