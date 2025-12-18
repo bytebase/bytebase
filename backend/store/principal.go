@@ -537,45 +537,6 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail string) (*UserMessage, error) {
 	newEmail = strings.ToLower(newEmail)
 
-	// Fetch affected issues for cache invalidation later.
-	// We need to fetch both issue ID and pipeline ID (via plan).
-	// We do this before the transaction/update because finding by old creator is straightforward.
-	issueQuery := qb.Q().Space(`
-		SELECT
-			issue.id,
-			plan.pipeline_id
-		FROM issue
-		LEFT JOIN plan ON issue.plan_id = plan.id
-		WHERE issue.creator = ?
-	`, user.Email)
-	issueSQL, issueArgs, err := issueQuery.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build select issue sql")
-	}
-
-	rows, err := s.GetDB().QueryContext(ctx, issueSQL, issueArgs...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query affected issues")
-	}
-	defer rows.Close()
-
-	type issueInvalidation struct {
-		id          int
-		pipelineUID *int
-	}
-	var issuesToInvalidate []issueInvalidation
-	for rows.Next() {
-		var info issueInvalidation
-		if err := rows.Scan(&info.id, &info.pipelineUID); err != nil {
-			return nil, errors.Wrapf(err, "failed to scan issue info")
-		}
-		issuesToInvalidate = append(issuesToInvalidate, info)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "failed to scan issue rows")
-	}
-	rows.Close()
-
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -705,7 +666,7 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 		  )
 		RETURNING resource_type, resource, type`
 
-	rows, err = tx.QueryContext(ctx, iamPolicySQL, oldUserRef, newUserRef, storepb.Policy_IAM.String())
+	rows, err := tx.QueryContext(ctx, iamPolicySQL, oldUserRef, newUserRef, storepb.Policy_IAM.String())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to update IAM policies")
 	}
@@ -897,11 +858,6 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 
 	// 6. Update caches
 	s.userEmailCache.Remove(user.Email)
-
-	// Invalidate issue caches
-	for _, issue := range issuesToInvalidate {
-		s.issueCache.Remove(issue.id)
-	}
 
 	// Invalidate policy cache for updated policies
 	for _, p := range invalidatedPolicies {
