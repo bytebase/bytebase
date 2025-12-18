@@ -1966,12 +1966,12 @@
           "description": "ロールアウトあたりの並列タスクの数を制御します。\nこれをゼロに設定すると、スロットリングが無効になります。"
         },
         "require-issue-approval": {
-          "self": "Require issue approval",
-          "description": "Issue must be approved before rollout."
+          "self": "イシュー承認が必要",
+          "description": "ロールアウト前にイシューの承認が必要です。"
         },
         "require-plan-check-no-error": {
-          "self": "Require plan check no error",
-          "description": "Block rollout if plan check has errors."
+          "self": "プランチェックエラーなしが必要",
+          "description": "プランチェックにエラーがある場合、ロールアウトをブロックします。"
         }
       },
       "project-labels": {
