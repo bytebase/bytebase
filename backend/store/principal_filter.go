@@ -47,6 +47,8 @@ func GetListUserFilter(filter string) (*GetListUserFilterResult, error) {
 			return storepb.PrincipalType_SYSTEM_BOT, nil
 		case v1pb.UserType_SERVICE_ACCOUNT:
 			return storepb.PrincipalType_SERVICE_ACCOUNT, nil
+		case v1pb.UserType_WORKLOAD_IDENTITY:
+			return storepb.PrincipalType_WORKLOAD_IDENTITY, nil
 		default:
 			return storepb.PrincipalType_END_USER, errors.Errorf("invalid user type %s", v1UserType)
 		}

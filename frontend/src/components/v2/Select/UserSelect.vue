@@ -37,6 +37,7 @@ const props = withDefaults(
     includeAllUsers?: boolean;
     includeSystemBot?: boolean;
     includeServiceAccount?: boolean;
+    includeWorkloadIdentity?: boolean;
     autoReset?: boolean;
     filter?: (user: User, index: number) => boolean;
     size?: "tiny" | "small" | "medium" | "large";
@@ -49,6 +50,7 @@ const props = withDefaults(
     includeAllUsers: false,
     includeSystemBot: false,
     includeServiceAccount: false,
+    includeWorkloadIdentity: false,
     autoReset: true,
     filter: (_1: User, _2: number) => true,
     size: "medium",
@@ -85,6 +87,9 @@ const getFilter = (search: string): UserFilter => {
   }
   if (props.includeSystemBot) {
     allowedType.push(UserType.SYSTEM_BOT);
+  }
+  if (props.includeWorkloadIdentity) {
+    allowedType.push(UserType.WORKLOAD_IDENTITY);
   }
 
   return {
