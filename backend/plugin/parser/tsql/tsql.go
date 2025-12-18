@@ -22,24 +22,15 @@ func init() {
 // parseTSQLForRegistry is the ParseFunc for T-SQL.
 // Returns []base.AST with *ANTLRAST instances.
 func parseTSQLForRegistry(statement string) ([]base.AST, error) {
-	parseResults, err := ParseTSQL(statement)
+	antlrASTs, err := ParseTSQL(statement)
 	if err != nil {
 		return nil, err
 	}
-	return toAST(parseResults), nil
-}
-
-// toAST converts []*ParseResult to []base.AST.
-func toAST(results []*base.ParseResult) []base.AST {
 	var asts []base.AST
-	for _, r := range results {
-		asts = append(asts, &base.ANTLRAST{
-			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
-			Tree:          r.Tree,
-			Tokens:        r.Tokens,
-		})
+	for _, a := range antlrASTs {
+		asts = append(asts, a)
 	}
-	return asts
+	return asts, nil
 }
 
 // parseTSQLStatements is the ParseStatementsFunc for T-SQL (MSSQL).
@@ -52,24 +43,20 @@ func parseTSQLStatements(statement string) ([]base.ParsedStatement, error) {
 	}
 
 	// Then parse to get ASTs
-	parseResults, err := ParseTSQL(statement)
+	antlrASTs, err := ParseTSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	// Combine: Statement provides text/positions, ParseResult provides AST
+	// Combine: Statement provides text/positions, ANTLRAST provides AST
 	var result []base.ParsedStatement
 	astIndex := 0
 	for _, stmt := range stmts {
 		ps := base.ParsedStatement{
 			Statement: stmt,
 		}
-		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = &base.ANTLRAST{
-				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
-				Tree:          parseResults[astIndex].Tree,
-				Tokens:        parseResults[astIndex].Tokens,
-			}
+		if !stmt.Empty && astIndex < len(antlrASTs) {
+			ps.AST = antlrASTs[astIndex]
 			astIndex++
 		}
 		result = append(result, ps)
@@ -78,32 +65,32 @@ func parseTSQLStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// ParseTSQL parses the given SQL and returns a list of ParseResult (one per statement).
+// ParseTSQL parses the given SQL and returns a list of ANTLRAST (one per statement).
 // Use the T-SQL parser based on antlr4.
-func ParseTSQL(sql string) ([]*base.ParseResult, error) {
+func ParseTSQL(sql string) ([]*base.ANTLRAST, error) {
 	stmts, err := SplitSQL(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	var results []*base.ParseResult
+	var results []*base.ANTLRAST
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
 		}
 
-		parseResult, err := parseSingleTSQL(stmt.Text, stmt.BaseLine)
+		antlrAST, err := parseSingleTSQL(stmt.Text, stmt.BaseLine)
 		if err != nil {
 			return nil, err
 		}
-		results = append(results, parseResult)
+		results = append(results, antlrAST)
 	}
 
 	return results, nil
 }
 
-// parseSingleTSQL parses a single T-SQL statement and returns the ParseResult.
-func parseSingleTSQL(statement string, baseLine int) (*base.ParseResult, error) {
+// parseSingleTSQL parses a single T-SQL statement and returns the ANTLRAST.
+func parseSingleTSQL(statement string, baseLine int) (*base.ANTLRAST, error) {
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewTSqlLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -137,10 +124,10 @@ func parseSingleTSQL(statement string, baseLine int) (*base.ParseResult, error) 
 		return nil, parserErrorListener.Err
 	}
 
-	result := &base.ParseResult{
-		Tree:     tree,
-		Tokens:   stream,
-		BaseLine: baseLine,
+	result := &base.ANTLRAST{
+		StartPosition: startPosition,
+		Tree:          tree,
+		Tokens:        stream,
 	}
 
 	return result, nil

@@ -327,7 +327,7 @@ func (e *suffixSelectStatementExtractor) EnterDelete_statement(ctx *parser.Delet
 }
 
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
-	parseResults, err := ParseTSQL(statement)
+	antlrASTs, err := ParseTSQL(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
@@ -336,9 +336,9 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 		databaseName: databaseName,
 	}
 
-	for _, parseResult := range parseResults {
-		extractor.baseLine = parseResult.BaseLine
-		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	for _, ast := range antlrASTs {
+		extractor.baseLine = base.GetLineOffset(ast.StartPosition)
+		antlr.ParseTreeWalkerDefault.Walk(extractor, ast.Tree)
 	}
 
 	return extractor.dmls, nil
