@@ -23,20 +23,11 @@ func parseCassandraForRegistry(statement string) ([]base.AST, error) {
 	if err != nil {
 		return nil, err
 	}
-	return toAST(parseResults), nil
-}
-
-// toAST converts []*ParseResult to []base.AST.
-func toAST(results []*base.ParseResult) []base.AST {
-	var asts []base.AST
-	for _, r := range results {
-		asts = append(asts, &base.ANTLRAST{
-			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
-			Tree:          r.Tree,
-			Tokens:        r.Tokens,
-		})
+	asts := make([]base.AST, len(parseResults))
+	for i, r := range parseResults {
+		asts[i] = r
 	}
-	return asts
+	return asts, nil
 }
 
 // parseCassandraStatements is the ParseStatementsFunc for Cassandra.
@@ -62,11 +53,7 @@ func parseCassandraStatements(statement string) ([]base.ParsedStatement, error) 
 			Statement: stmt,
 		}
 		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = &base.ANTLRAST{
-				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
-				Tree:          parseResults[astIndex].Tree,
-				Tokens:        parseResults[astIndex].Tokens,
-			}
+			ps.AST = parseResults[astIndex]
 			astIndex++
 		}
 		result = append(result, ps)
@@ -76,13 +63,13 @@ func parseCassandraStatements(statement string) ([]base.ParsedStatement, error) 
 }
 
 // ParseCassandraSQL parses the given CQL statement by using antlr4. Returns a list of AST and token stream if no error.
-func ParseCassandraSQL(statement string) ([]*base.ParseResult, error) {
+func ParseCassandraSQL(statement string) ([]*base.ANTLRAST, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*base.ParseResult
+	var result []*base.ANTLRAST
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -98,7 +85,7 @@ func ParseCassandraSQL(statement string) ([]*base.ParseResult, error) {
 	return result, nil
 }
 
-func parseSingleCassandraSQL(statement string, baseLine int) (*base.ParseResult, error) {
+func parseSingleCassandraSQL(statement string, baseLine int) (*base.ANTLRAST, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := cql.NewCqlLexer(inputStream)
@@ -133,10 +120,10 @@ func parseSingleCassandraSQL(statement string, baseLine int) (*base.ParseResult,
 		return nil, parserErrorListener.Err
 	}
 
-	result := &base.ParseResult{
-		Tree:     tree,
-		Tokens:   stream,
-		BaseLine: baseLine,
+	result := &base.ANTLRAST{
+		StartPosition: &storepb.Position{Line: int32(baseLine) + 1},
+		Tree:          tree,
+		Tokens:        stream,
 	}
 
 	return result, nil
