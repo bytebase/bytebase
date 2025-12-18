@@ -43,25 +43,32 @@
           <div
             class="-ml-1 px-1 py-0.5 rounded -mt-0.5"
           >
-            <div
-              class="text-sm leading-4 truncate cursor-pointer hover:underline"
-              @click="handleClickTarget(taskRun)"
-            >
-              <span
-                v-if="getTaskTargetDisplay(taskRun).instance"
-                class="text-gray-500"
-              >
-                {{ getTaskTargetDisplay(taskRun).instance }}
-              </span>
-              <span
-                v-if="getTaskTargetDisplay(taskRun).instance"
-                class="text-gray-400 mx-0.5"
-                >/</span
-              >
-              <span>{{
-                getTaskTargetDisplay(taskRun).database
+            <NTooltip :delay="500">
+              <template #trigger>
+                <div
+                  class="text-sm leading-4 truncate cursor-pointer hover:underline"
+                  @click="handleClickTarget(taskRun)"
+                >
+                  <span
+                    v-if="getTaskTargetDisplay(taskRun).instance"
+                    class="text-gray-500"
+                  >
+                    {{ getTaskTargetDisplay(taskRun).instance }}
+                  </span>
+                  <span
+                    v-if="getTaskTargetDisplay(taskRun).instance"
+                    class="text-gray-400 mx-0.5"
+                    >/</span
+                  >
+                  <span>{{
+                    getTaskTargetDisplay(taskRun).database
+                  }}</span>
+                </div>
+              </template>
+              <span class="max-w-xs">{{
+                getTaskTargetDisplay(taskRun).fullPath
               }}</span>
-            </div>
+            </NTooltip>
             <!-- Error preview for failed -->
             <div
               v-if="taskRun.status === TaskRun_Status.FAILED && taskRun.detail"
@@ -252,32 +259,34 @@ const getTaskFromTaskRun = (taskRun: TaskRun) => {
   return props.stage?.tasks.find((t) => t.name === taskName);
 };
 
+interface TaskTargetDisplay {
+  instance: string;
+  database: string;
+  fullPath: string;
+}
+
 // Pre-compute display data for displayed task runs to avoid repeated calls in template
 const taskRunDisplayMap = computed(() => {
-  const map = new Map<string, { instance: string; database: string }>();
+  const map = new Map<string, TaskTargetDisplay>();
   for (const taskRun of displayedTaskRuns.value) {
     const task = getTaskFromTaskRun(taskRun);
     const target = task?.target;
-    if (!target) {
-      map.set(taskRun.name, {
-        instance: "",
-        database: taskRun.name.split("/").pop() || "unknown",
-      });
-    } else {
-      map.set(taskRun.name, {
-        instance: extractInstanceResourceName(target) || "",
-        database: extractDatabaseResourceName(target).databaseName || "unknown",
-      });
-    }
+    const instance = target ? extractInstanceResourceName(target) || "" : "";
+    const database = target
+      ? extractDatabaseResourceName(target).databaseName || "unknown"
+      : taskRun.name.split("/").pop() || "unknown";
+    const fullPath = instance ? `${instance} / ${database}` : database;
+    map.set(taskRun.name, { instance, database, fullPath });
   }
   return map;
 });
 
-const getTaskTargetDisplay = (taskRun: TaskRun) => {
+const getTaskTargetDisplay = (taskRun: TaskRun): TaskTargetDisplay => {
   return (
     taskRunDisplayMap.value.get(taskRun.name) ?? {
       instance: "",
       database: "unknown",
+      fullPath: "unknown",
     }
   );
 };
