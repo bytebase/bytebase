@@ -31,7 +31,7 @@ type StatementAffectedRowLimitAdvisor struct {
 
 // Check checks for UPDATE/DELETE affected row limit.
 func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -46,42 +46,42 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	rule := &statementAffectedRowLimitRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		maxRow:                   int(numberPayload.Number),
-		ctx:                      ctx,
-		driver:                   checkCtx.Driver,
-		usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
-		statementsText:           checkCtx.Statements,
+	if int(numberPayload.Number) <= 0 || checkCtx.Driver == nil {
+		return nil, nil
 	}
 
-	if int(numberPayload.Number) > 0 && checkCtx.Driver != nil {
-		checker := NewGenericChecker([]Rule{rule})
-
-		for _, parseResult := range parseResults {
-			rule.SetBaseLine(parseResult.BaseLine)
-			checker.SetBaseLine(parseResult.BaseLine)
-			antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &statementAffectedRowLimitRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			maxRow:                   int(numberPayload.Number),
+			ctx:                      ctx,
+			driver:                   checkCtx.Driver,
+			usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
+			tokens:                   stmtInfo.Tokens,
 		}
-		return checker.GetAdviceList(), nil
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	return nil, nil
+	return adviceList, nil
 }
 
 type statementAffectedRowLimitRule struct {
 	BaseRule
-
 	maxRow                   int
 	driver                   *sql.DB
 	ctx                      context.Context
 	explainCount             int
 	setRoles                 []string
 	usePostgresDatabaseOwner bool
-	statementsText           string
+	tokens                   *antlr.CommonTokenStream
 }
 
 func (*statementAffectedRowLimitRule) Name() string {
@@ -122,8 +122,7 @@ func (r *statementAffectedRowLimitRule) handleVariablesetstmt(ctx *parser.Variab
 		setRestMore := ctx.Set_rest().Set_rest_more()
 		if setRestMore.ROLE() != nil {
 			// Store the SET ROLE statement text
-			stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-			r.setRoles = append(r.setRoles, stmtText)
+			r.setRoles = append(r.setRoles, getTextFromTokens(r.tokens, ctx))
 		}
 	}
 }
@@ -153,14 +152,14 @@ func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleCo
 	r.explainCount++
 
 	// Get the statement text
-	stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-	normalizedStmt := advisor.NormalizeStatement(stmtText)
+	statementText := getTextFromTokens(r.tokens, ctx)
+	normalizedStmt := advisor.NormalizeStatement(statementText)
 
 	// Run EXPLAIN to get estimated row count
 	res, err := advisor.Query(r.ctx, advisor.QueryContext{
 		UsePostgresDatabaseOwner: r.usePostgresDatabaseOwner,
 		PreExecutions:            r.setRoles,
-	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", stmtText))
+	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
 
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{

@@ -7,12 +7,12 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/parser/tsql"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
@@ -39,7 +39,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	var adviceList []*storepb.Advice
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 	title := checkCtx.Rule.Type.String()
 
-	if len(checkCtx.Statements) > common.MaxSheetCheckSize {
+	if checkCtx.StatementsTotalSize > common.MaxSheetCheckSize {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,
 			Title:         title,
@@ -91,10 +91,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		})
 	}
 
-	statementInfoList, err := prepareTransformation(checkCtx.DBSchema.Name, checkCtx.Statements)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to prepare transformation")
-	}
+	statementInfoList := prepareTransformation(checkCtx.DBSchema.Name, stmtList)
 
 	groupByTable := make(map[string][]statementInfo)
 	for _, item := range statementInfoList {
@@ -209,12 +206,7 @@ type statementInfo struct {
 	table     *TableReference
 }
 
-func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
-	parseResults, err := tsqlparser.ParseTSQL(statement)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse statement")
-	}
-
+func prepareTransformation(databaseName string, parseResults []*base.ParseResult) []statementInfo {
 	extractor := &dmlExtractor{
 		databaseName: databaseName,
 	}
@@ -223,7 +215,7 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
 	}
 
-	return extractor.dmls, nil
+	return extractor.dmls
 }
 
 type dmlExtractor struct {

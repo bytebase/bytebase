@@ -27,7 +27,7 @@ type StatementDisallowCommitAdvisor struct {
 
 // Check checks for disallowing COMMIT statements.
 func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,26 +37,25 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := &statementDisallowCommitRule{
-		BaseRule:       BaseRule{level: level, title: checkCtx.Rule.Type.String()},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &statementDisallowCommitRule{
+			BaseRule: BaseRule{level: level, title: checkCtx.Rule.Type.String()},
+			tokens:   stmtInfo.Tokens,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type statementDisallowCommitRule struct {
 	BaseRule
-
-	statementsText string
+	tokens *antlr.CommonTokenStream
 }
 
 // Name returns the rule name for logging/debugging.
@@ -84,7 +83,10 @@ func (r *statementDisallowCommitRule) OnEnter(ctx antlr.ParserRuleContext, nodeT
 		return nil
 	}
 
-	stmtText := extractStatementText(r.statementsText, transactionCtx.GetStart().GetLine(), transactionCtx.GetStop().GetLine())
+	stmtText := getTextFromTokens(r.tokens, transactionCtx)
+	if stmtText == "" {
+		stmtText = "<unknown statement>"
+	}
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
 		Code:    code.StatementDisallowCommit.Int32(),

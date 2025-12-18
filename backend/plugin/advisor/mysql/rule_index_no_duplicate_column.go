@@ -32,7 +32,7 @@ type IndexNoDuplicateColumnAdvisor struct {
 
 // Check checks for no duplicate columns in index.
 func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

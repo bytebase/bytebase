@@ -35,7 +35,7 @@ type OnlineMigrationAdvisor struct {
 
 // Check checks for using gh-ost to migrate large tables.
 func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}
@@ -180,23 +180,11 @@ func (r *OnlineMigrationRule) OnExit(ctx antlr.ParserRuleContext, nodeType strin
 }
 
 func (r *OnlineMigrationRule) checkAlterStatement(ctx *mysql.AlterStatementContext) {
-	r.start = common.ConvertANTLRPositionToPosition(
-		&common.ANTLRPosition{
-			Line:   int32(ctx.GetStart().GetLine()),
-			Column: int32(ctx.GetStart().GetColumn()),
-		},
-		r.checkCtx.Statements,
-	)
+	r.start = common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStart().GetLine())
 }
 
 func (r *OnlineMigrationRule) exitAlterStatement(ctx *mysql.AlterStatementContext) {
-	r.end = common.ConvertANTLRPositionToPosition(
-		&common.ANTLRPosition{
-			Line:   int32(r.baseLine) + int32(ctx.GetStop().GetLine()),
-			Column: int32(ctx.GetStop().GetColumn() + len([]rune(ctx.GetStop().GetText()))),
-		},
-		r.checkCtx.Statements,
-	)
+	r.end = common.ConvertANTLRLineToPosition(r.baseLine + ctx.GetStop().GetLine())
 
 	if !r.ghostCompatible {
 		return

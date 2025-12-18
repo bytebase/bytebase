@@ -30,7 +30,7 @@ type FullyQualifiedObjectNameAdvisor struct {
 
 // Check checks for fully qualified object names.
 func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -40,31 +40,31 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	rule := &fullyQualifiedObjectNameRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		dbMetadata:     checkCtx.DBSchema,
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &fullyQualifiedObjectNameRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			dbMetadata: checkCtx.DBSchema,
+			tokens:     stmtInfo.Tokens,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type fullyQualifiedObjectNameRule struct {
 	BaseRule
 
-	dbMetadata     *storepb.DatabaseSchemaMetadata
-	statementsText string
+	dbMetadata *storepb.DatabaseSchemaMetadata
+	tokens     *antlr.CommonTokenStream
 }
 
 func (*fullyQualifiedObjectNameRule) Name() string {
@@ -257,14 +257,7 @@ func (r *fullyQualifiedObjectNameRule) handleSelectstmt(ctx *parser.SelectstmtCo
 		return
 	}
 
-	// Extract the statement text for this SELECT
-	startLine := ctx.GetStop().GetLine()
-	endLine := ctx.GetStop().GetLine()
-	statementText := extractStatementText(r.statementsText, startLine, endLine)
-
-	if statementText == "" {
-		return
-	}
+	statementText := getTextFromTokens(r.tokens, ctx)
 
 	// Find all table references in the SELECT statement
 	for _, tableName := range r.findAllTablesInSelect(statementText) {
@@ -276,7 +269,7 @@ func (r *fullyQualifiedObjectNameRule) handleSelectstmt(ctx *parser.SelectstmtCo
 				Title:   r.title,
 				Content: fmt.Sprintf("unqualified object name: '%s'", objName),
 				StartPosition: &storepb.Position{
-					Line:   int32(startLine),
+					Line:   int32(ctx.GetStop().GetLine()),
 					Column: 0,
 				},
 			})

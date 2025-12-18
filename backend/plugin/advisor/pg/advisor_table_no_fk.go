@@ -28,7 +28,7 @@ type TableNoFKAdvisor struct {
 
 // Check checks table disallow foreign key.
 func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -38,29 +38,29 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		return nil, err
 	}
 
-	rule := &tableNoFKRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &tableNoFKRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			tokens: stmtInfo.Tokens,
+		}
+
+		checker := NewGenericChecker([]Rule{rule})
+		checker.SetBaseLine(stmtInfo.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type tableNoFKRule struct {
 	BaseRule
 
-	statementsText string
+	tokens *antlr.CommonTokenStream
 }
 
 func (*tableNoFKRule) Name() string {
@@ -182,12 +182,11 @@ func (r *tableNoFKRule) handleAltertablestmt(ctx antlr.ParserRuleContext) {
 }
 
 func (r *tableNoFKRule) addFKAdvice(schemaName, tableName string, ctx antlr.ParserRuleContext) {
-	stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
 		Code:    code.TableHasFK.Int32(),
 		Title:   r.title,
-		Content: fmt.Sprintf("Foreign key is not allowed in the table %q.%q, related statement: \"%s\"", schemaName, tableName, stmtText),
+		Content: fmt.Sprintf("Foreign key is not allowed in the table %q.%q, related statement: \"%s\"", schemaName, tableName, getTextFromTokens(r.tokens, ctx)),
 		StartPosition: &storepb.Position{
 			Line:   int32(ctx.GetStart().GetLine()),
 			Column: 0,

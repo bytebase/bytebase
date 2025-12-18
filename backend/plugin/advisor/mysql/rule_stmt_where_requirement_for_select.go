@@ -30,7 +30,7 @@ type WhereRequirementForSelectAdvisor struct {
 
 // Check checks for the WHERE clause requirement.
 func (*WhereRequirementForSelectAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	root, err := getANTLRTree(checkCtx)
+	root, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, errors.Errorf("failed to convert to StmtNode")
 	}

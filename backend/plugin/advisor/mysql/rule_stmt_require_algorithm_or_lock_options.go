@@ -31,7 +31,7 @@ type RequireAlgorithmOrLockOptionAdvisor struct {
 }
 
 func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, errors.Errorf("failed to convert to stmt list")
 	}

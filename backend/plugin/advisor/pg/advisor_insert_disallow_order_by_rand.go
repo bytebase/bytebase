@@ -28,7 +28,7 @@ type InsertDisallowOrderByRandAdvisor struct {
 
 // Check checks for to disallow order by rand in INSERT statements.
 func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -38,29 +38,29 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &insertDisallowOrderByRandRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &insertDisallowOrderByRandRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			tokens: stmtInfo.Tokens,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type insertDisallowOrderByRandRule struct {
 	BaseRule
 
-	statementsText string
+	tokens *antlr.CommonTokenStream
 }
 
 func (*insertDisallowOrderByRandRule) Name() string {
@@ -98,14 +98,11 @@ func (r *insertDisallowOrderByRandRule) handleInsertstmt(ctx antlr.ParserRuleCon
 
 	// Check for ORDER BY random() in the SELECT statement
 	if r.hasOrderByRandom(insertstmtCtx.Insert_rest().Selectstmt()) {
-		// Extract the statement text from the original statements
-		stmtText := extractStatementText(r.statementsText, insertstmtCtx.GetStart().GetLine(), insertstmtCtx.GetStop().GetLine())
-
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Code:    code.InsertUseOrderByRand.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", stmtText),
+			Content: fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", getTextFromTokens(r.tokens, insertstmtCtx)),
 			StartPosition: &storepb.Position{
 				Line:   int32(insertstmtCtx.GetStart().GetLine()),
 				Column: 0,

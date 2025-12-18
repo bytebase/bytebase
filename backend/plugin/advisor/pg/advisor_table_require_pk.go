@@ -29,7 +29,7 @@ type TableRequirePKAdvisor struct {
 
 // Check parses the given statement and checks for errors.
 func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,17 +44,17 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 			level: level,
 			title: checkCtx.Rule.Type.String(),
 		},
-		statementsText: checkCtx.Statements,
-		finalMetadata:  checkCtx.FinalMetadata,
-		tableMentions:  make(map[string]*tableMention),
+		finalMetadata: checkCtx.FinalMetadata,
+		tableMentions: make(map[string]*tableMention),
 	}
 
 	checker := NewGenericChecker([]Rule{rule})
 
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
+	for _, stmtInfo := range stmtInfos {
+		rule.SetBaseLine(stmtInfo.BaseLine)
+		rule.tokens = stmtInfo.Tokens
+		checker.SetBaseLine(stmtInfo.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
 	}
 
 	// Simple Solution: Validate final state after walking all statements
@@ -66,12 +66,13 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 type tableMention struct {
 	startLine int
 	endLine   int
+	text      string
 }
 
 type tableRequirePKRule struct {
 	BaseRule
-	statementsText string
-	finalMetadata  *model.DatabaseMetadata
+	tokens        *antlr.CommonTokenStream
+	finalMetadata *model.DatabaseMetadata
 
 	// Simple Solution: Track last mention of each table
 	tableMentions map[string]*tableMention // key: "schema.table", value: last mention info
@@ -124,6 +125,7 @@ func (r *tableRequirePKRule) handleCreatestmt(ctx *parser.CreatestmtContext) {
 	r.tableMentions[key] = &tableMention{
 		startLine: ctx.GetStart().GetLine() + r.baseLine,
 		endLine:   ctx.GetStop().GetLine() + r.baseLine,
+		text:      getTextFromTokens(r.tokens, ctx),
 	}
 }
 
@@ -148,6 +150,7 @@ func (r *tableRequirePKRule) handleAltertablestmt(ctx *parser.AltertablestmtCont
 	r.tableMentions[key] = &tableMention{
 		startLine: ctx.GetStart().GetLine() + r.baseLine,
 		endLine:   ctx.GetStop().GetLine() + r.baseLine,
+		text:      getTextFromTokens(r.tokens, ctx),
 	}
 }
 
@@ -199,10 +202,9 @@ func (r *tableRequirePKRule) validateFinalState() {
 		if !hasPK {
 			content := fmt.Sprintf("Table %q.%q requires PRIMARY KEY", schemaName, tableName)
 
-			// Extract and include the related statement
-			statement := extractStatementText(r.statementsText, mention.startLine, mention.endLine)
-			if statement != "" {
-				content = fmt.Sprintf("%s, related statement: %q", content, statement)
+			// Include the related statement
+			if mention.text != "" {
+				content = fmt.Sprintf("%s, related statement: %q", content, mention.text)
 			}
 
 			// Note: We already added baseLine offset when storing the line number,

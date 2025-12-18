@@ -45,24 +45,23 @@ type Context struct {
 	IsObjectCaseSensitive bool
 
 	// SQL review rule special fields.
-	AST              []base.AST
 	Rule             *storepb.SQLReviewRule
 	OriginalMetadata *model.DatabaseMetadata
 	FinalMetadata    *model.DatabaseMetadata
 	Driver           *sql.DB
+	// ParsedStatements contains complete per-statement info including text.
+	ParsedStatements []base.ParsedStatement
 
 	// CurrentDatabase is the current database.
 	CurrentDatabase string
-	// Statement is the original statement of AST, it is used for some PostgreSQL
-	// advisors which need to check the token stream.
-	Statements string
+	// StatementsTotalSize is the total size of all statements in bytes.
+	// Used for size limit checks without needing the full statement text.
+	StatementsTotalSize int
 	// UsePostgresDatabaseOwner is true if the advisor should use the database owner as default role.
 	UsePostgresDatabaseOwner bool
 
 	// SQL review level fields.
-	Charset   string
-	Collation string
-	DBType    storepb.Engine
+	DBType storepb.Engine
 
 	// Snowflake specific fields (duplicates CurrentDatabase, kept for compatibility).
 	// CurrentDatabase string
@@ -101,6 +100,31 @@ func Register(dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, f Advi
 		}
 		dbAdvisors[ruleType] = f
 	}
+}
+
+// GetANTLRParseResults extracts ANTLR parse results from the advisor context.
+// This is a unified helper for all ANTLR-based engines (MySQL, MSSQL, Oracle, Snowflake, PostgreSQL).
+func GetANTLRParseResults(checkCtx Context) ([]*base.ParseResult, error) {
+	if checkCtx.ParsedStatements == nil {
+		return nil, errors.New("ParsedStatements is not provided in context")
+	}
+
+	var parseResults []*base.ParseResult
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
+		}
+		parseResults = append(parseResults, &base.ParseResult{
+			Tree:     antlrAST.Tree,
+			Tokens:   antlrAST.Tokens,
+			BaseLine: stmt.BaseLine,
+		})
+	}
+	return parseResults, nil
 }
 
 // Check runs the advisor and returns the advices.

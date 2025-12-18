@@ -26,7 +26,7 @@ type StatementWhereRequiredSelectAdvisor struct {
 
 // Check checks for WHERE clause requirement in SELECT statements.
 func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -36,28 +36,28 @@ func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, err
 	}
 
-	rule := &statementWhereRequiredSelectRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &statementWhereRequiredSelectRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			tokens: stmtInfo.Tokens,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type statementWhereRequiredSelectRule struct {
 	BaseRule
-	statementsText string
+	tokens *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.
@@ -84,7 +84,7 @@ func (*statementWhereRequiredSelectRule) OnExit(_ antlr.ParserRuleContext, _ str
 }
 
 func (r *statementWhereRequiredSelectRule) handleSelectstmt(ctx *parser.SelectstmtContext) {
-	r.checkSelect(ctx, ctx.GetStart(), ctx.GetStop(), func() (bool, bool) {
+	r.checkSelect(ctx, func() (bool, bool) {
 		return r.checkSelectClauses(ctx)
 	})
 }
@@ -95,7 +95,7 @@ func (r *statementWhereRequiredSelectRule) handleSelectWithParens(ctx *parser.Se
 		return
 	}
 
-	r.checkSelect(ctx, ctx.GetStart(), ctx.GetStop(), func() (bool, bool) {
+	r.checkSelect(ctx, func() (bool, bool) {
 		return r.checkSelectWithParensForWhere(ctx)
 	})
 }
@@ -103,8 +103,6 @@ func (r *statementWhereRequiredSelectRule) handleSelectWithParens(ctx *parser.Se
 // checkSelect is a common function to check for WHERE clause requirement
 func (r *statementWhereRequiredSelectRule) checkSelect(
 	ctx antlr.ParserRuleContext,
-	_ antlr.Token,
-	_ antlr.Token,
 	checkFunc func() (hasWhere bool, hasFrom bool),
 ) {
 	// Check if this SELECT has a WHERE clause and FROM clause
@@ -120,11 +118,11 @@ func (r *statementWhereRequiredSelectRule) checkSelect(
 		return
 	}
 
-	// Always use the full top-level statement text for the error message
-	// This matches the legacy behavior where violations in subqueries
-	// are reported with the full statement text
-	stmtLine := r.findTopLevelLine(ctx)
-	stmtText := extractStatementText(r.statementsText, stmtLine, stmtLine)
+	// Get clean statement text from token stream
+	stmtText := getTextFromTokens(r.tokens, ctx)
+	if stmtText == "" {
+		stmtText = "<unknown statement>"
+	}
 
 	r.AddAdvice(&storepb.Advice{
 		Status:  r.level,
@@ -132,26 +130,10 @@ func (r *statementWhereRequiredSelectRule) checkSelect(
 		Title:   r.title,
 		Content: fmt.Sprintf("\"%s\" requires WHERE clause", stmtText),
 		StartPosition: &storepb.Position{
-			Line:   int32(stmtLine),
+			Line:   int32(ctx.GetStart().GetLine()),
 			Column: 0,
 		},
 	})
-}
-
-// findTopLevelLine finds the line number of the top-level statement
-func (*statementWhereRequiredSelectRule) findTopLevelLine(ctx antlr.ParserRuleContext) int {
-	for ctx != nil {
-		if isTopLevel(ctx.GetParent()) {
-			return ctx.GetStart().GetLine()
-		}
-		parent := ctx.GetParent()
-		if ruleCtx, ok := parent.(antlr.ParserRuleContext); ok {
-			ctx = ruleCtx
-		} else {
-			break
-		}
-	}
-	return ctx.GetStart().GetLine()
 }
 
 // checkSelectWithParensForWhere checks a select_with_parens for WHERE and FROM

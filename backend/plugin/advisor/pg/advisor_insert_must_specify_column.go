@@ -27,7 +27,7 @@ type InsertMustSpecifyColumnAdvisor struct {
 
 // Check checks for to enforce column specified.
 func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,29 +37,28 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := &insertMustSpecifyColumnRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &insertMustSpecifyColumnRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			tokens: stmtInfo.Tokens,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type insertMustSpecifyColumnRule struct {
 	BaseRule
-
-	statementsText string
+	tokens *antlr.CommonTokenStream
 }
 
 func (*insertMustSpecifyColumnRule) Name() string {
@@ -102,14 +101,11 @@ func (r *insertMustSpecifyColumnRule) handleInsertstmt(ctx antlr.ParserRuleConte
 	hasColumnList := insertstmtCtx.Insert_rest().Insert_column_list() != nil
 
 	if !hasColumnList {
-		// Extract the statement text from the original statements
-		stmtText := extractStatementText(r.statementsText, insertstmtCtx.GetStart().GetLine(), insertstmtCtx.GetStop().GetLine())
-
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Code:    code.InsertNotSpecifyColumn.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", stmtText),
+			Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", getTextFromTokens(r.tokens, insertstmtCtx)),
 			StartPosition: &storepb.Position{
 				Line:   int32(insertstmtCtx.GetStart().GetLine()),
 				Column: 0,

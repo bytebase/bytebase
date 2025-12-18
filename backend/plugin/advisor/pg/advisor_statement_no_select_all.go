@@ -27,7 +27,7 @@ type NoSelectAllAdvisor struct {
 
 // Check checks for no "select *".
 func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,28 +37,28 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, err
 	}
 
-	rule := &noSelectAllRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &noSelectAllRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			tokens: stmtInfo.Tokens,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
+
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type noSelectAllRule struct {
 	BaseRule
-	statementsText string
+	tokens *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.
@@ -96,46 +96,17 @@ func (r *noSelectAllRule) handleSimpleSelectPramary(ctx *parser.Simple_select_pr
 		for _, target := range allTargets {
 			// Check if target is a Target_star (SELECT *)
 			if _, ok := target.(*parser.Target_starContext); ok {
-				// Find the top-level statement context to get the full statement text
-				var stmtCtx antlr.ParserRuleContext
-				parent := ctx.GetParent()
-				for parent != nil {
-					// Look for top-level statement contexts
-					switch p := parent.(type) {
-					case *parser.SelectstmtContext:
-						if isTopLevel(p.GetParent()) {
-							stmtCtx = p
-						}
-					case *parser.InsertstmtContext:
-						if isTopLevel(p.GetParent()) {
-							stmtCtx = p
-						}
-					}
-					if stmtCtx != nil {
-						break
-					}
-					parent = parent.GetParent()
+				stmtText := getTextFromTokens(r.tokens, ctx)
+				if stmtText == "" {
+					stmtText = "<unknown statement>"
 				}
-
-				// If we found a top-level statement, extract its text
-				var stmtText string
-				var line int
-				if stmtCtx != nil {
-					stmtText = extractStatementText(r.statementsText, stmtCtx.GetStart().GetLine(), stmtCtx.GetStop().GetLine())
-					line = stmtCtx.GetStart().GetLine()
-				} else {
-					// Fallback to the simple_select context
-					stmtText = extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-					line = ctx.GetStart().GetLine()
-				}
-
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
 					Code:    code.StatementSelectAll.Int32(),
 					Title:   r.title,
 					Content: fmt.Sprintf("\"%s\" uses SELECT all", stmtText),
 					StartPosition: &storepb.Position{
-						Line:   int32(line),
+						Line:   int32(ctx.GetStart().GetLine()),
 						Column: 0,
 					},
 				})

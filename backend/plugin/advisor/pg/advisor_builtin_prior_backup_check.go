@@ -15,6 +15,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -40,6 +41,11 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, nil
 	}
 
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -49,27 +55,20 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	var adviceList []*storepb.Advice
 
 	// Check for DDL statements in DML context
-	parseResults, err := getANTLRTree(checkCtx)
-	if err != nil {
-		return nil, err
-	}
+	for _, stmtInfo := range stmtInfos {
+		rule := &ddlRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: title,
+			},
+			tokens: stmtInfo.Tokens,
+		}
+		rule.SetBaseLine(stmtInfo.BaseLine)
 
-	ddlRule := &ddlRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: title,
-		},
+		checker := NewGenericChecker([]Rule{rule})
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
-	checker := NewGenericChecker([]Rule{ddlRule})
-
-	for _, parseResult := range parseResults {
-		ddlRule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		ddlRule.tokens = parseResult.Tokens
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	adviceList = append(adviceList, checker.GetAdviceList()...)
 
 	// Check if backup schema exists
 	schemaName := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
@@ -84,10 +83,11 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	// Check statement type consistency for each table
-	statementInfoList, err := prepareTransformation(checkCtx.Statements)
+	parseResults, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to prepare transformation")
+		return nil, errors.Wrapf(err, "failed to get parse results")
 	}
+	statementInfoList := prepareTransformation(parseResults)
 
 	groupByTable := make(map[string][]statementInfo)
 	for _, item := range statementInfoList {
@@ -223,7 +223,6 @@ func isDDLStatement(ctx antlr.Tree) bool {
 // ddlRule checks for DDL statements in DML context
 type ddlRule struct {
 	BaseRule
-
 	tokens *antlr.CommonTokenStream
 }
 
@@ -239,10 +238,6 @@ func (*ddlRule) OnExit(_ antlr.ParserRuleContext, _ string) error {
 	return nil
 }
 
-func (r *ddlRule) getStatementText(ctx antlr.ParserRuleContext) string {
-	return r.tokens.GetTextFromRuleContext(ctx)
-}
-
 func (r *ddlRule) handleEveryRule(ctx antlr.ParserRuleContext) error {
 	// Check if this is a top-level DDL statement
 	if !isTopLevel(ctx.GetParent()) {
@@ -253,7 +248,7 @@ func (r *ddlRule) handleEveryRule(ctx antlr.ParserRuleContext) error {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Title:   r.title,
-			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", r.getStatementText(ctx)),
+			Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", getTextFromTokens(r.tokens, ctx)),
 			Code:    code.BuiltinPriorBackupCheck.Int32(),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
@@ -289,17 +284,12 @@ type statementInfo struct {
 	table     *TableReference
 }
 
-func prepareTransformation(statement string) ([]statementInfo, error) {
-	parseResults, err := pg.ParsePostgreSQL(statement)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse statement")
-	}
-
+func prepareTransformation(parseResults []*base.ParseResult) []statementInfo {
 	extractor := &dmlExtractor{}
 	for _, parseResult := range parseResults {
 		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
 	}
-	return extractor.dmls, nil
+	return extractor.dmls
 }
 
 type dmlExtractor struct {

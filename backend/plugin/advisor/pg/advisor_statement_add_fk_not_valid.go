@@ -26,7 +26,7 @@ type StatementAddFKNotValidAdvisor struct {
 
 // Check checks for adding foreign key constraints without NOT VALID.
 func (*StatementAddFKNotValidAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	parseResults, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}

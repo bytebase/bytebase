@@ -35,7 +35,7 @@ type UseInnoDBAdvisor struct {
 
 // Check checks for using InnoDB engine.
 func (*UseInnoDBAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	list, err := getANTLRTree(checkCtx)
+	list, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, errors.Errorf("failed to convert to Tree")
 	}

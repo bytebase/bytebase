@@ -32,7 +32,7 @@ type ColumnSetDefaultForNotNullAdvisor struct {
 
 // Check checks for set default value for not null column.
 func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

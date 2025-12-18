@@ -55,7 +55,7 @@
     - status: 2
       code: 601
       title: TABLE_REQUIRE_PK
-      content: 'Table "public"."book" requires PRIMARY KEY, related statement: "ALTER TABLE book DROP CONSTRAINT book_pkey;"'
+      content: 'Table "public"."book" requires PRIMARY KEY, related statement: "ALTER TABLE book DROP CONSTRAINT book_pkey"'
       startposition:
         line: 2
         column: 0
@@ -69,7 +69,7 @@
     - status: 2
       code: 601
       title: TABLE_REQUIRE_PK
-      content: 'Table "public"."product" requires PRIMARY KEY, related statement: "ALTER TABLE product DROP CONSTRAINT product_pkey;"'
+      content: 'Table "public"."product" requires PRIMARY KEY, related statement: "ALTER TABLE product DROP CONSTRAINT product_pkey"'
       startposition:
         line: 3
         column: 0

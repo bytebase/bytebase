@@ -9,8 +9,6 @@ import (
 	parser "github.com/bytebase/parser/postgresql"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -31,31 +29,15 @@ func isTopLevel(ctx antlr.Tree) bool {
 	}
 }
 
-// getANTLRTree extracts the ANTLR parse trees from the advisor context.
-// The AST must be pre-parsed and passed via checkCtx.AST (e.g., in tests or by the framework).
-// This enforces proper AST caching and makes any missing cache obvious.
-// Returns all parse results for multi-statement SQL review.
-func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
-	if checkCtx.AST == nil {
-		return nil, errors.New("AST is not provided in context - must be parsed before calling advisor")
+// getTextFromTokens extracts the original text for a rule context from the token stream.
+// Uses GetTextFromRuleContext to include hidden channel tokens (whitespace, comments).
+// Returns clean text without leading/trailing whitespace.
+func getTextFromTokens(tokens *antlr.CommonTokenStream, ctx antlr.ParserRuleContext) string {
+	if tokens == nil || ctx == nil {
+		return ""
 	}
-
-	var parseResults []*base.ParseResult
-	for _, unifiedAST := range checkCtx.AST {
-		antlrAST, ok := base.GetANTLRAST(unifiedAST)
-		if !ok {
-			return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
-		}
-
-		// Reconstruct base.ParseResult from AST
-		parseResults = append(parseResults, &base.ParseResult{
-			Tree:     antlrAST.Tree,
-			Tokens:   antlrAST.Tokens,
-			BaseLine: base.GetLineOffset(antlrAST.StartPosition),
-		})
-	}
-
-	return parseResults, nil
+	text := tokens.GetTextFromRuleContext(ctx)
+	return strings.TrimSpace(text)
 }
 
 // extractTableName extracts the table name (last component) from a qualified name.
@@ -105,31 +87,6 @@ func extractStringConstant(ctx parser.ISconstContext) string {
 		return text[1 : len(text)-1]
 	}
 	return text
-}
-
-// extractStatementText extracts a statement from the full statements text using line numbers.
-// Handles multi-line statements by extracting all lines from startLine to endLine.
-func extractStatementText(statementsText string, startLine, endLine int) string {
-	lines := strings.Split(statementsText, "\n")
-	if startLine < 1 || startLine > len(lines) {
-		return ""
-	}
-
-	// Convert to 0-indexed
-	startIdx := startLine - 1
-	endIdx := endLine - 1
-
-	if endIdx >= len(lines) {
-		endIdx = len(lines) - 1
-	}
-
-	// Extract the lines for this statement
-	var stmtLines []string
-	for i := startIdx; i <= endIdx; i++ {
-		stmtLines = append(stmtLines, lines[i])
-	}
-
-	return strings.TrimSpace(strings.Join(stmtLines, " "))
 }
 
 // getTemplateRegexp generates a regex pattern by replacing tokens in the template with actual values.

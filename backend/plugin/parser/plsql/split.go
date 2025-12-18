@@ -69,6 +69,8 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 
 			result = append(result, base.Statement{
 				Text: text,
+				// BaseLine is 0-based line offset of this statement in the original SQL
+				BaseLine: stmt.GetStart().GetLine() - 1,
 				Start: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
 						Line:   int32(stmt.GetStart().GetLine()),

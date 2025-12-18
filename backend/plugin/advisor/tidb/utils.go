@@ -82,12 +82,16 @@ func needDefault(column *ast.ColumnDef) bool {
 
 // getTiDBNodes extracts TiDB AST nodes from the advisor context.
 func getTiDBNodes(checkCtx advisor.Context) ([]ast.StmtNode, error) {
-	if checkCtx.AST == nil {
-		return nil, errors.New("AST is not provided in context")
+	if checkCtx.ParsedStatements == nil {
+		return nil, errors.New("ParsedStatements is not provided in context")
 	}
+
 	var stmtNodes []ast.StmtNode
-	for _, unifiedAST := range checkCtx.AST {
-		tidbAST, ok := tidbparser.GetTiDBAST(unifiedAST)
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		tidbAST, ok := tidbparser.GetTiDBAST(stmt.AST)
 		if !ok {
 			return nil, errors.New("AST type mismatch: expected TiDB parser result")
 		}

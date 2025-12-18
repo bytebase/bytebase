@@ -32,7 +32,7 @@ type ColumnNoNullAdvisor struct {
 
 // Check checks for column no NULL value.
 func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	root, err := getANTLRTree(checkCtx)
+	root, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

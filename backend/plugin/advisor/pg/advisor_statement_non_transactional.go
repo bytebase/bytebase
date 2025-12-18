@@ -27,7 +27,7 @@ type NonTransactionalAdvisor struct {
 
 // Check checks for non-transactional statements.
 func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,28 +37,28 @@ func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, err
 	}
 
-	rule := &nonTransactionalRule{
-		BaseRule: BaseRule{
-			level: level,
-			title: checkCtx.Rule.Type.String(),
-		},
-		statementsText: checkCtx.Statements,
+	var adviceList []*storepb.Advice
+	for _, stmtInfo := range stmtInfos {
+		rule := &nonTransactionalRule{
+			BaseRule: BaseRule{
+				level: level,
+				title: checkCtx.Rule.Type.String(),
+			},
+			tokens: stmtInfo.Tokens,
+		}
+		checker := NewGenericChecker([]Rule{rule})
+		rule.SetBaseLine(stmtInfo.BaseLine)
+		checker.SetBaseLine(stmtInfo.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
-	checker := NewGenericChecker([]Rule{rule})
-
-	for _, parseResult := range parseResults {
-		rule.SetBaseLine(parseResult.BaseLine)
-		checker.SetBaseLine(parseResult.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, parseResult.Tree)
-	}
-
-	return checker.GetAdviceList(), nil
+	return adviceList, nil
 }
 
 type nonTransactionalRule struct {
 	BaseRule
-	statementsText string
+	tokens *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.
@@ -110,8 +110,8 @@ func (r *nonTransactionalRule) checkStatement(ctx antlr.ParserRuleContext) {
 		return
 	}
 
-	stmtText := extractStatementText(r.statementsText, ctx.GetStart().GetLine(), ctx.GetStop().GetLine())
-	if pg.IsNonTransactionStatement(stmtText) {
+	statementText := getTextFromTokens(r.tokens, ctx)
+	if pg.IsNonTransactionStatement(statementText) {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.level,
 			Code:    code.StatementNonTransactional.Int32(),

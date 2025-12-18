@@ -32,7 +32,7 @@ type NamingAutoIncrementColumnAdvisor struct {
 
 // Check checks for auto-increment naming convention.
 func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

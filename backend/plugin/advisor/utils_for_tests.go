@@ -216,8 +216,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 		ruleList := []*storepb.SQLReviewRule{rule}
 
 		checkCtx := Context{
-			Charset:                  "",
-			Collation:                "",
 			DBType:                   dbType,
 			OriginalMetadata:         originalMetadata,
 			FinalMetadata:            finalMetadata,
