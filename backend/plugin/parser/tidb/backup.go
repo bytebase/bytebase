@@ -424,13 +424,13 @@ type TableReference struct {
 	Alias    string
 }
 
-func extractTables(databaseName string, parseResult *base.ParseResult, offset int) ([]statementInfo, error) {
+func extractTables(databaseName string, ast *base.ANTLRAST, offset int) ([]statementInfo, error) {
 	listener := &tableReferenceListener{
 		databaseName: databaseName,
 		offset:       offset,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(listener, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, ast.Tree)
 
 	return listener.tables, listener.err
 }
