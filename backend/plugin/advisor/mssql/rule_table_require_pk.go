@@ -126,7 +126,8 @@ func (r *TableRequirePkRule) enterCreateTable(ctx *parser.Create_tableContext) {
 
 	r.tableHasPrimaryKey[normalizedTableName] = false
 	r.tableOriginalName[normalizedTableName] = tableName.GetText()
-	r.tableLine[normalizedTableName] = tableName.GetStart().GetLine()
+	// Store absolute line number (with baseLine offset) so generateFinalAdvice can use it directly
+	r.tableLine[normalizedTableName] = tableName.GetStart().GetLine() + r.baseLine
 
 	r.currentNormalizedTableName = normalizedTableName
 	r.currentConstraintAction = currentConstraintActionAdd
@@ -190,7 +191,9 @@ func (r *TableRequirePkRule) exitAlterTable(*parser.Alter_tableContext) {
 func (r *TableRequirePkRule) generateFinalAdvice() {
 	for tableName, hasPK := range r.tableHasPrimaryKey {
 		if !hasPK {
-			r.AddAdvice(&storepb.Advice{
+			// Directly append to adviceList instead of using AddAdvice,
+			// because tableLine already contains the absolute line number
+			r.adviceList = append(r.adviceList, &storepb.Advice{
 				Status:        r.level,
 				Code:          code.TableNoPK.Int32(),
 				Title:         r.title,

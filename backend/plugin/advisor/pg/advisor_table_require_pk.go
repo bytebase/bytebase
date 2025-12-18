@@ -207,15 +207,15 @@ func (r *tableRequirePKRule) validateFinalState() {
 				content = fmt.Sprintf("%s, related statement: %q", content, mention.text)
 			}
 
-			// Note: We already added baseLine offset when storing the line number,
-			// but AddAdvice will add it again, so we need to subtract it first
-			r.AddAdvice(&storepb.Advice{
+			// Directly append to adviceList instead of using AddAdvice,
+			// because mention.startLine already contains the absolute line number
+			r.adviceList = append(r.adviceList, &storepb.Advice{
 				Status:  r.level,
 				Code:    code.TableNoPK.Int32(),
 				Title:   r.title,
 				Content: content,
 				StartPosition: &storepb.Position{
-					Line:   int32(mention.startLine - r.baseLine),
+					Line:   int32(mention.startLine),
 					Column: 0,
 				},
 			})
