@@ -512,12 +512,12 @@
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
       "entra-sync": {
-        "self": "Entra ID (Azure AD) から同期",
-        "description": "Entra ID (旧 Azure AD) のユーザーとグループを Bytebase インスタンスに同期します。",
+        "self": "SCIM から同期",
+        "description": "Entra ID (旧 Azure AD) または Okta のユーザーとグループを Bytebase インスタンスに同期します。",
         "endpoint": "Endpoint",
-        "endpoint-tip": "これを Entra の「Tenant URL」フィールドに貼り付けます。Entra は、このエンドポイントを介してユーザーとグループを Bytebase に同期します。",
+        "endpoint-tip": "ユーザーとグループはこのエンドポイントを介して Bytebase に同期されます。",
         "secret-token": "Secret Token",
-        "secret-token-tip": "これを Entra の「Secret Token」フィールドに貼り付けます。",
+        "secret-token-tip": "エンドポイントの検証トークンです。秘密にしてください。",
         "reset-token": "トークンをリセット",
         "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。",
         "goto-entra-dashboard": "Entraダッシュボードへ"

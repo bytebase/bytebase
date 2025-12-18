@@ -57,6 +57,7 @@
               :loading="loading"
               :on-click-user="onUserClick"
               @update-group="handleUpdateGroup"
+              @remove-group="handleRemoveGroup"
             />
           </template>
         </PagedTable>
@@ -180,6 +181,10 @@
     v-if="state.showCreateGroupDrawer"
     :group="state.editingGroup"
     @close="state.showCreateGroupDrawer = false"
+    @removed="(group) => {
+      handleRemoveGroup(group)
+      state.showCreateGroupDrawer = false
+    }"
     @updated="handleGroupUpdated"
   />
 
@@ -441,6 +446,10 @@ const handleCreateGroup = () => {
 const handleUpdateGroup = (group: Group) => {
   state.editingGroup = group;
   state.showCreateGroupDrawer = true;
+};
+
+const handleRemoveGroup = (group: Group) => {
+  groupPagedTable.value?.removeCache(group);
 };
 
 const handleCreateUser = () => {

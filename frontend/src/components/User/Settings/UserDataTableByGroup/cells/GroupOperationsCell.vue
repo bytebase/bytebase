@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-end gap-x-2">
-    <RemoveGroupButton v-if="allowDeleteGroup" :group="group!">
+    <RemoveGroupButton v-if="allowDeleteGroup" :group="group" @removed="$emit('remove-group')">
       <Trash2Icon class="w-4 h-auto" />
     </RemoveGroupButton>
 
@@ -30,6 +30,7 @@ const props = defineProps<{
 
 defineEmits<{
   (event: "update-group"): void;
+  (event: "remove-group"): void;
 }>();
 
 const currentUser = useCurrentUserV1();

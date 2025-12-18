@@ -23,10 +23,6 @@
               </div>
               <div class="text-sm text-gray-400">
                 {{ $t(`settings.members.entra-sync.endpoint-tip`) }}
-                <LearnMoreLink
-                  url="https://aka.ms/MSEntraPortal"
-                  :text="$t('settings.members.entra-sync.goto-entra-dashboard')"
-                />
               </div>
             </div>
             <div class="flex gap-x-2">
@@ -56,10 +52,6 @@
               </div>
               <div class="text-sm text-gray-400">
                 {{ $t("settings.members.entra-sync.secret-token-tip") }}
-                <LearnMoreLink
-                  url="https://aka.ms/MSEntraPortal"
-                  :text="$t('settings.members.entra-sync.goto-entra-dashboard')"
-                />
               </div>
             </div>
             <div class="flex gap-x-2">

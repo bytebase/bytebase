@@ -512,12 +512,12 @@
       "add-member": "添加成员",
       "add-user": "添加用户",
       "entra-sync": {
-        "self": "从 Entra ID (Azure AD) 同步",
-        "description": "将 Entra ID（前 Azure AD）中的用户和组同步到您的 Bytebase 实例。",
+        "self": "从 SCIM 同步",
+        "description": "将 Entra ID（前 Azure AD）或 Okta 中的用户和组同步到您的 Bytebase 实例。",
         "endpoint": "Endpoint",
-        "endpoint-tip": "将其粘贴到 Entra 中的「Tenant URL」字段。Entra 将通过该 endpoint 将用户和组同步到 Bytebase。",
+        "endpoint-tip": "用户和组将通过此端点同步到 Bytebase。",
         "secret-token": "Secret Token",
-        "secret-token-tip": "将其粘贴到 Entra 中的「Secret Token」字段。",
+        "secret-token-tip": "端点的验证令牌，请妥善保管。",
         "reset-token": "重置密钥",
         "reset-token-warning": "您需要更新 Entra 应用程序配置。",
         "goto-entra-dashboard": "前往 Entra 配置"
