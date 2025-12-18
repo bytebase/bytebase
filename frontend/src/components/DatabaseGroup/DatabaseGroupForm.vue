@@ -75,7 +75,7 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBButtonConfirm } from "@/bbkit";
@@ -113,6 +113,7 @@ import {
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import { FactorList, getDatabaseGroupOptionConfigMap } from "./utils";
+import { isValidDatabaseGroupName } from "@/types"
 
 const props = defineProps<{
   readonly: boolean;
@@ -148,9 +149,9 @@ const allowDelete = computed(() => {
   return hasProjectPermissionV2(props.project, "bb.databaseGroups.delete");
 });
 
-onMounted(async () => {
+watchEffect(async () => {
   const databaseGroup = props.databaseGroup;
-  if (!databaseGroup) {
+  if (!databaseGroup || !isValidDatabaseGroupName(databaseGroup.name)) {
     return;
   }
 
@@ -160,20 +161,17 @@ onMounted(async () => {
   );
   state.resourceId = databaseGroupName;
   state.placeholder = databaseGroupEntity.title;
-  const fetchedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
-    databaseGroup.name,
-    { silent: true, view: DatabaseGroupView.FULL }
-  );
-  if (fetchedDatabaseGroup?.databaseExpr?.expression) {
+
+  if (databaseGroup.databaseExpr?.expression) {
     // Convert CEL expression to simple expression
-    const expressions = [fetchedDatabaseGroup.databaseExpr.expression];
+    const expressions = [databaseGroup.databaseExpr.expression];
     const exprList = await batchConvertCELStringToParsedExpr(expressions);
     if (exprList.length > 0) {
       const simpleExpr = resolveCELExpr(exprList[0]);
       state.expr = cloneDeep(wrapAsGroup(simpleExpr));
     }
   }
-});
+})
 
 const doDelete = async () => {
   const databaseGroup = props.databaseGroup as DatabaseGroup;
