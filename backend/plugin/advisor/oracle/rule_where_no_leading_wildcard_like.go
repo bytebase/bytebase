@@ -28,7 +28,7 @@ type WhereNoLeadingWildcardLikeAdvisor struct {
 
 // Check checks for no leading wildcard LIKE.
 func (*WhereNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

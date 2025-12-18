@@ -7,9 +7,6 @@ import (
 	"strings"
 
 	"github.com/bytebase/parser/mysql"
-
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type columnSet map[string]bool
@@ -90,10 +87,4 @@ func isCharsetDataType(dataType mysql.IDataTypeContext) bool {
 		dataType.TEXT_SYMBOL() != nil ||
 		dataType.MEDIUMTEXT_SYMBOL() != nil ||
 		dataType.LONGTEXT_SYMBOL() != nil)
-}
-
-// getANTLRTree extracts the ANTLR parse trees from the advisor context.
-// Returns all parse results for multi-statement SQL review.
-func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
-	return advisor.GetANTLRParseResults(checkCtx)
 }

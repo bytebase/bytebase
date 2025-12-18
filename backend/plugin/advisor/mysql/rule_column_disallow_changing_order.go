@@ -32,7 +32,7 @@ type ColumnDisallowChangingOrderAdvisor struct {
 
 // Check checks for disallow changing column order.
 func (*ColumnDisallowChangingOrderAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

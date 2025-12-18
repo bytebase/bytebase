@@ -37,7 +37,7 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

@@ -29,7 +29,7 @@ type FunctionDisallowCreateAdvisor struct {
 
 // Check checks for disallow creating function.
 func (*FunctionDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

@@ -32,7 +32,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	var adviceList []*storepb.Advice
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

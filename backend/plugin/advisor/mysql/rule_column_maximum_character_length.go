@@ -35,7 +35,7 @@ type ColumnMaximumCharacterLengthAdvisor struct {
 
 // Check checks for maximum character length.
 func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

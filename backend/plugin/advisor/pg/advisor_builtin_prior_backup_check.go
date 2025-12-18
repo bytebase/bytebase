@@ -83,7 +83,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	// Check statement type consistency for each table
-	parseResults, err := getANTLRTree(checkCtx)
+	parseResults, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get parse results")
 	}

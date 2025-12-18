@@ -14,12 +14,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
-// getANTLRTree extracts the ANTLR parse trees from the advisor context.
-// Returns all parse results for multi-statement SQL review.
-func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
-	return advisor.GetANTLRParseResults(checkCtx)
-}
-
 // isTopLevel checks if the context is at the top level of the parse tree.
 // Top level contexts are: RootContext, StmtblockContext, StmtmultiContext, or StmtContext.
 func isTopLevel(ctx antlr.Tree) bool {

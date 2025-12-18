@@ -26,7 +26,7 @@ type StatementDisallowRemoveTblCascadeAdvisor struct {
 
 // Check checks for CASCADE option in DROP TABLE and TRUNCATE TABLE statements.
 func (*StatementDisallowRemoveTblCascadeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	parseResults, err := getANTLRTree(checkCtx)
+	parseResults, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}

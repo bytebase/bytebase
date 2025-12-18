@@ -31,7 +31,7 @@ type InsertRowLimitAdvisor struct {
 
 // Check checks for insert row limit.
 func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	list, err := getANTLRTree(checkCtx)
+	list, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

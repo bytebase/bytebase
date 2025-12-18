@@ -28,7 +28,7 @@ type TableDisallowDDLAdvisor struct {
 }
 
 func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	list, err := getANTLRTree(checkCtx)
+	list, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

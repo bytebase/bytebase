@@ -29,7 +29,7 @@ type DisallowOrderByAdvisor struct {
 
 // Check checks for no ORDER BY clause in DELETE/UPDATE statements.
 func (*DisallowOrderByAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

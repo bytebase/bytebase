@@ -30,7 +30,7 @@ type TableCommentConventionAdvisor struct {
 
 // Check checks for table comment convention.
 func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	list, err := getANTLRTree(checkCtx)
+	list, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

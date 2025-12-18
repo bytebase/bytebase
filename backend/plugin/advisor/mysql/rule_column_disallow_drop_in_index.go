@@ -32,7 +32,7 @@ type ColumnDisallowDropInIndexAdvisor struct {
 
 // Check checks for disallow Drop COLUMN in index statement.
 func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

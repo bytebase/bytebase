@@ -28,7 +28,7 @@ type StatementAddColumnWithoutPositionAdvisor struct {
 
 // Check checks for checking no position in ADD COLUMN clause.
 func (*StatementAddColumnWithoutPositionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err

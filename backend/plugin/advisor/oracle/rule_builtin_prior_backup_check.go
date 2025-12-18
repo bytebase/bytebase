@@ -32,7 +32,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, nil
 	}
 
-	stmtList, err := getANTLRTree(checkCtx)
+	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
 
 	if err != nil {
 		return nil, err
@@ -274,7 +274,7 @@ func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 		})
 	}
 
-	parseResults, err := getANTLRTree(r.checkCtx)
+	parseResults, err := advisor.GetANTLRParseResults(r.checkCtx)
 	if err != nil {
 		return
 	}
