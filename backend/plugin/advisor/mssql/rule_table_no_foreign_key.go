@@ -128,7 +128,8 @@ func (r *TableNoForeignKeyRule) enterCreateTable(ctx *parser.Create_tableContext
 
 	r.tableHasForeignKey[normalizedTableName] = false
 	r.tableOriginalName[normalizedTableName] = tableName.GetText()
-	r.tableLine[normalizedTableName] = tableName.GetStart().GetLine()
+	// Store absolute line number (with baseLine offset) so generateFinalAdvice can use it directly
+	r.tableLine[normalizedTableName] = tableName.GetStart().GetLine() + r.baseLine
 
 	r.currentNormalizedTableName = normalizedTableName
 	r.currentConstraintAction = currentConstraintActionAdd
@@ -153,7 +154,8 @@ func (r *TableNoForeignKeyRule) enterColumnDefTableConstraints(ctx *parser.Colum
 					if v.Foreign_key_options() != nil {
 						if r.currentConstraintAction == currentConstraintActionAdd {
 							r.tableHasForeignKey[r.currentNormalizedTableName] = true
-							r.tableLine[r.currentNormalizedTableName] = v.Foreign_key_options().GetStart().GetLine()
+							// Store absolute line number (with baseLine offset)
+							r.tableLine[r.currentNormalizedTableName] = v.Foreign_key_options().GetStart().GetLine() + r.baseLine
 						}
 						return
 					}
@@ -163,7 +165,8 @@ func (r *TableNoForeignKeyRule) enterColumnDefTableConstraints(ctx *parser.Colum
 			if v.Foreign_key_options() != nil {
 				if r.currentConstraintAction == currentConstraintActionAdd {
 					r.tableHasForeignKey[r.currentNormalizedTableName] = true
-					r.tableLine[r.currentNormalizedTableName] = v.Foreign_key_options().GetStart().GetLine()
+					// Store absolute line number (with baseLine offset)
+					r.tableLine[r.currentNormalizedTableName] = v.Foreign_key_options().GetStart().GetLine() + r.baseLine
 				}
 				return
 			}
@@ -194,7 +197,9 @@ func (r *TableNoForeignKeyRule) exitAlterTable(*parser.Alter_tableContext) {
 func (r *TableNoForeignKeyRule) generateFinalAdvice() {
 	for tableName, hasForeignKey := range r.tableHasForeignKey {
 		if hasForeignKey {
-			r.AddAdvice(&storepb.Advice{
+			// Directly append to adviceList instead of using AddAdvice,
+			// because tableLine already contains the absolute line number
+			r.adviceList = append(r.adviceList, &storepb.Advice{
 				Status:        r.level,
 				Code:          code.TableHasFK.Int32(),
 				Title:         r.title,

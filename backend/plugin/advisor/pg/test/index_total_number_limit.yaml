@@ -55,3 +55,37 @@
         line: 9
         column: 0
       endposition: null
+# Test case to verify correct line positions for multi-table scenarios.
+# Each table should report the line where its index was created,
+# not the line of the last statement.
+- statement: |-
+    CREATE TABLE t1(a int PRIMARY KEY, b int, c int);
+    CREATE INDEX idx_t1_1 on t1(a, b);
+    CREATE INDEX idx_t1_2 on t1(a, b);
+    CREATE INDEX idx_t1_3 on t1(a, b);
+    CREATE INDEX idx_t1_4 on t1(a, b);
+    CREATE INDEX idx_t1_5 on t1(a, b);
+    CREATE TABLE t2(a int PRIMARY KEY, b int, c int);
+    CREATE INDEX idx_t2_1 on t2(a, b);
+    CREATE INDEX idx_t2_2 on t2(a, b);
+    CREATE INDEX idx_t2_3 on t2(a, b);
+    CREATE INDEX idx_t2_4 on t2(a, b);
+    CREATE INDEX idx_t2_5 on t2(a, b);
+  changeType: 1
+  want:
+    - status: 2
+      code: 813
+      title: INDEX_TOTAL_NUMBER_LIMIT
+      content: The count of index in table "public"."t1" should be no more than 5, but found 6
+      startposition:
+        line: 6
+        column: 0
+      endposition: null
+    - status: 2
+      code: 813
+      title: INDEX_TOTAL_NUMBER_LIMIT
+      content: The count of index in table "public"."t2" should be no more than 5, but found 6
+      startposition:
+        line: 12
+        column: 0
+      endposition: null

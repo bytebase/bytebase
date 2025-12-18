@@ -128,12 +128,15 @@ func (r *TableRequirePkRule) OnExit(_ antlr.ParserRuleContext, nodeType string) 
 func (r *TableRequirePkRule) GetAdviceList() []*storepb.Advice {
 	for tableName, has := range r.tableHasPrimaryKey {
 		if !has {
-			r.AddAdvice(&storepb.Advice{
+			// Directly append to adviceList instead of using AddAdvice because
+			// tableLine already stores absolute line numbers (baseLine + line at time of encounter).
+			// Using AddAdvice would incorrectly add the current baseLine again.
+			r.adviceList = append(r.adviceList, &storepb.Advice{
 				Status:        r.level,
 				Code:          code.TableNoPK.Int32(),
 				Title:         r.title,
 				Content:       fmt.Sprintf("Table %s requires PRIMARY KEY.", r.tableOriginalName[tableName]),
-				StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + r.tableLine[tableName]),
+				StartPosition: common.ConvertANTLRLineToPosition(r.tableLine[tableName]),
 			})
 		}
 	}
@@ -146,7 +149,7 @@ func (r *TableRequirePkRule) enterCreateTable(ctx *parser.Create_tableContext) {
 
 	r.tableHasPrimaryKey[normalizedTableName] = false
 	r.tableOriginalName[normalizedTableName] = originalTableName.GetText()
-	r.tableLine[normalizedTableName] = ctx.GetStart().GetLine()
+	r.tableLine[normalizedTableName] = r.baseLine + ctx.GetStart().GetLine()
 	r.currentNormalizedTableName = normalizedTableName
 	r.currentConstraintAction = currentConstraintActionAdd
 }
@@ -181,7 +184,7 @@ func (r *TableRequirePkRule) enterOutOfLineConstraint(ctx *parser.Out_of_line_co
 		r.tableHasPrimaryKey[r.currentNormalizedTableName] = true
 	case currentConstraintActionDrop:
 		r.tableHasPrimaryKey[r.currentNormalizedTableName] = false
-		r.tableLine[r.currentNormalizedTableName] = ctx.GetStart().GetLine()
+		r.tableLine[r.currentNormalizedTableName] = r.baseLine + ctx.GetStart().GetLine()
 	default:
 		// No action for other constraint actions
 	}
@@ -194,7 +197,7 @@ func (r *TableRequirePkRule) enterConstraintAction(ctx *parser.Constraint_action
 	if ctx.DROP() != nil && ctx.PRIMARY() != nil {
 		if _, ok := r.tableHasPrimaryKey[r.currentNormalizedTableName]; ok {
 			r.tableHasPrimaryKey[r.currentNormalizedTableName] = false
-			r.tableLine[r.currentNormalizedTableName] = ctx.GetStart().GetLine()
+			r.tableLine[r.currentNormalizedTableName] = r.baseLine + ctx.GetStart().GetLine()
 		}
 		return
 	}
