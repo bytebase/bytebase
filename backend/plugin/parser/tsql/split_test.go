@@ -43,6 +43,7 @@ go
 						Start:    &storepb.Position{Line: 2, Column: 1},
 						End:      &storepb.Position{Line: 2, Column: 26},
 						Empty:    false,
+						Range:    &storepb.Range{Start: 0, End: 45},
 					},
 					{
 						Text:     "\n-- second statement\ninsert into @temp values(1)",
@@ -50,6 +51,7 @@ go
 						Start:    &storepb.Position{Line: 4, Column: 1},
 						End:      &storepb.Position{Line: 4, Column: 27},
 						Empty:    false,
+						Range:    &storepb.Range{Start: 45, End: 93},
 					},
 					{
 						Text:     "\n-- third statement\nselect * from @temp\n-- go statement\ngo",
@@ -57,6 +59,7 @@ go
 						Start:    &storepb.Position{Line: 6, Column: 1},
 						End:      &storepb.Position{Line: 8, Column: 1},
 						Empty:    false,
+						Range:    &storepb.Range{Start: 93, End: 151},
 					},
 					{
 						Text:     "\ngo",
@@ -64,6 +67,7 @@ go
 						Start:    &storepb.Position{Line: 9, Column: 1},
 						End:      &storepb.Position{Line: 9, Column: 1},
 						Empty:    false,
+						Range:    &storepb.Range{Start: 151, End: 154},
 					},
 					{
 						Text:     "\ngo\ngo",
@@ -71,6 +75,7 @@ go
 						Start:    &storepb.Position{Line: 10, Column: 1},
 						End:      &storepb.Position{Line: 11, Column: 1},
 						Empty:    false,
+						Range:    &storepb.Range{Start: 154, End: 160},
 					},
 				},
 			},
@@ -103,6 +108,7 @@ UPDATE SalesLT.ProductModelProductDescription SET Culture = "zh-cn";
 						Start:    &storepb.Position{Line: 10, Column: 1},
 						End:      &storepb.Position{Line: 10, Column: 45},
 						Empty:    false,
+						Range:    &storepb.Range{Start: 0, End: 54},
 					},
 					{
 						Text:     "\n\nUPDATE SalesLT.Address SET PostalCode = 0;",
@@ -110,6 +116,7 @@ UPDATE SalesLT.ProductModelProductDescription SET Culture = "zh-cn";
 						Start:    &storepb.Position{Line: 12, Column: 1},
 						End:      &storepb.Position{Line: 12, Column: 42},
 						Empty:    false,
+						Range:    &storepb.Range{Start: 54, End: 98},
 					},
 					{
 						Text:     "\n\n\nUPDATE SalesLT.ProductModelProductDescription SET Culture = \"zh-cn\";",
@@ -117,6 +124,7 @@ UPDATE SalesLT.ProductModelProductDescription SET Culture = "zh-cn";
 						Start:    &storepb.Position{Line: 15, Column: 1},
 						End:      &storepb.Position{Line: 15, Column: 68},
 						Empty:    false,
+						Range:    &storepb.Range{Start: 98, End: 169},
 					},
 				},
 			},

@@ -62,6 +62,10 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 			result = append(result, base.Statement{
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[i]),
 				BaseLine: tokens[start].GetLine() - 1,
+				Range: &storepb.Range{
+					Start: int32(tokens[start].GetStart()),
+					End:   int32(tokens[i].GetStop() + 1),
+				},
 				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 					Line:   int32(tokens[i].GetLine()),
 					Column: int32(tokens[i].GetColumn()),
@@ -87,6 +91,10 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 				// Use a single semicolon instead of the user defined delimiter.
 				Text:     stream.GetTextFromTokens(tokens[start], tokens[i-1]) + ";",
 				BaseLine: tokens[start].GetLine() - 1,
+				Range: &storepb.Range{
+					Start: int32(tokens[start].GetStart()),
+					End:   int32(tokens[newStart-1].GetStop() + 1),
+				},
 				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 					Line:   int32(tokens[newStart-1].GetLine()),
 					Column: int32(tokens[newStart-1].GetColumn()),
@@ -110,6 +118,10 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[endPos-1]),
 			BaseLine: tokens[start].GetLine() - 1,
+			Range: &storepb.Range{
+				Start: int32(tokens[start].GetStart()),
+				End:   int32(tokens[endPos-1].GetStop() + 1),
+			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[endPos-1].GetLine()),
 				Column: int32(tokens[endPos-1].GetColumn()),
@@ -202,6 +214,10 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
+			Range: &storepb.Range{
+				Start: int32(tokens[start].GetStart()),
+				End:   int32(tokens[pos].GetStop() + 1),
+			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[pos].GetLine()),
 				Column: int32(tokens[pos].GetColumn()),
@@ -220,6 +236,10 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
 			BaseLine: tokens[start].GetLine() - 1,
+			Range: &storepb.Range{
+				Start: int32(tokens[start].GetStart()),
+				End:   int32(tokens[eofPos-1].GetStop() + 1),
+			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[eofPos-1].GetLine()),
 				Column: int32(tokens[eofPos-1].GetColumn()),
@@ -380,6 +400,10 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
+			Range: &storepb.Range{
+				Start: int32(tokens[start].GetStart()),
+				End:   int32(tokens[pos].GetStop() + 1),
+			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[pos].GetLine()),
 				Column: int32(tokens[pos].GetColumn()),
@@ -398,6 +422,10 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
 			BaseLine: tokens[start].GetLine() - 1,
+			Range: &storepb.Range{
+				Start: int32(tokens[start].GetStart()),
+				End:   int32(tokens[eofPos-1].GetStop() + 1),
+			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[eofPos-1].GetLine()),
 				Column: int32(tokens[eofPos-1].GetColumn()),

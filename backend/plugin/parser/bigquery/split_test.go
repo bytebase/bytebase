@@ -30,6 +30,7 @@ func TestBigQuerySplitMultiSQL(t *testing.T) {
 						Start:    &storepb.Position{Line: 1, Column: 1},
 						End:      &storepb.Position{Line: 1, Column: 8},
 						Empty:    false,
+						Range:    &storepb.Range{Start: 0, End: 8},
 					},
 				},
 			},
@@ -44,6 +45,7 @@ func TestBigQuerySplitMultiSQL(t *testing.T) {
 						Start:    &storepb.Position{Line: 1, Column: 1},
 						End:      &storepb.Position{Line: 1, Column: 9},
 						Empty:    false,
+						Range:    &storepb.Range{Start: 0, End: 9},
 					},
 					{
 						Text:     "\n SELECT\n 33;",
@@ -51,6 +53,7 @@ func TestBigQuerySplitMultiSQL(t *testing.T) {
 						Start:    &storepb.Position{Line: 2, Column: 2},
 						End:      &storepb.Position{Line: 3, Column: 4},
 						Empty:    false,
+						Range:    &storepb.Range{Start: 9, End: 22},
 					},
 				},
 			},

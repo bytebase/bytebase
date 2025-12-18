@@ -404,6 +404,10 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
 						Column: int32(firstStatementColumn),
 					},
 					Empty: t.emptyStatement,
+					Range: &store.Range{
+						Start: int32(t.getByteOffset(int(startPos))),
+						End:   int32(t.getByteOffset(int(t.pos()))),
+					},
 				})
 			}
 			t.skipBlank()
@@ -439,6 +443,10 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
 							Column: int32(firstStatementColumn),
 						},
 						Empty: t.emptyStatement,
+						Range: &store.Range{
+							Start: int32(t.getByteOffset(int(startPos))),
+							End:   int32(t.getByteOffset(int(t.pos()))),
+						},
 					})
 				}
 				if err := t.processStreaming(s); err != nil {
@@ -516,6 +524,10 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.Statement, error) {
 					BaseLine: startLine - 1,
 					End:      &store.Position{Line: int32(t.line)},
 					Empty:    t.emptyStatement,
+					Range: &store.Range{
+						Start: int32(t.getByteOffset(int(startPos))),
+						End:   int32(t.getByteOffset(int(t.pos()))),
+					},
 				})
 			}
 			t.skipBlank()
@@ -549,6 +561,10 @@ func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.Statement, error) {
 							Line: int32(t.line - t.aboveNonBlankLineDistance()),
 						},
 						Empty: t.emptyStatement,
+						Range: &store.Range{
+							Start: int32(t.getByteOffset(int(startPos))),
+							End:   int32(t.getByteOffset(int(t.pos()))),
+						},
 					})
 				}
 				if err := t.processStreaming(s); err != nil {

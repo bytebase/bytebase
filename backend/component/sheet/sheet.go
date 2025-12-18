@@ -63,6 +63,7 @@ func (sm *Manager) CreateSheets(ctx context.Context, projectID string, creator s
 		if sheet.Payload == nil {
 			sheet.Payload = &storepb.SheetPayload{}
 		}
+		sheet.Payload.Commands = getSheetCommands(sheet.Payload.Engine, sheet.Statement)
 	}
 
 	result, err := sm.store.CreateSheets(ctx, projectID, creator, sheets...)
@@ -72,9 +73,7 @@ func (sm *Manager) CreateSheets(ctx context.Context, projectID string, creator s
 	return result, nil
 }
 
-// GetSheetCommands computes byte offset ranges for SQL commands in a statement.
-// Returns nil if parsing fails or statement is too large.
-func GetSheetCommands(engine storepb.Engine, statement string) []*storepb.Range {
+func getSheetCommands(engine storepb.Engine, statement string) []*storepb.Range {
 	// Burnout for large SQL.
 	if len(statement) > common.MaxSheetCheckSize {
 		return nil
