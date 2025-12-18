@@ -450,52 +450,18 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 
 // BatchUpdateIssueStatuses updates the status of multiple issues.
 func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status storepb.Issue_Status) error {
-	// First get the pipeline IDs for cache invalidation
-	selectQuery := qb.Q().Space(`
-		SELECT issue.id, plan.pipeline_id
-		FROM issue
-		LEFT JOIN plan ON issue.plan_id = plan.id
-		WHERE issue.id = ANY(?)
-	`, issueUIDs)
-	selectSQL, selectArgs, err := selectQuery.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build select sql")
-	}
-
-	type issueInfo struct {
-		id          int
-		pipelineUID *int
-	}
-	var infos []issueInfo
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, selectSQL, selectArgs...)
-	if err != nil {
-		return errors.Wrapf(err, "failed to query")
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var info issueInfo
-		if err := rows.Scan(&info.id, &info.pipelineUID); err != nil {
-			return errors.Wrapf(err, "failed to scan")
-		}
-		infos = append(infos, info)
-	}
-	if err := rows.Err(); err != nil {
-		return errors.Wrapf(err, "failed to scan issues")
-	}
-
 	// Update the statuses
 	updateQuery := qb.Q().Space("UPDATE issue SET status = ? WHERE id = ANY(?)", status.String(), issueUIDs)
 	updateSQL, updateArgs, err := updateQuery.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build update sql")
 	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, updateSQL, updateArgs...); err != nil {
 		return errors.Wrapf(err, "failed to update")

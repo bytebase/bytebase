@@ -361,50 +361,18 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 	if len(taskRunIDs) == 0 {
 		return nil
 	}
-
-	// Get affected pipeline IDs for cache invalidation
 	q := qb.Q().Space(`
-		SELECT DISTINCT task.pipeline_id
-		FROM task_run
-		JOIN task ON task.id = task_run.task_id
-		WHERE task_run.id = ANY(?)
-	`, taskRunIDs)
+		UPDATE task_run
+		SET status = ?, updated_at = now()
+		WHERE id = ANY(?)
+	`, storepb.TaskRun_CANCELED.String(), taskRunIDs)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get pipeline IDs")
-	}
-	defer rows.Close()
-
-	var pipelineIDs []int
-	for rows.Next() {
-		var pipelineID int
-		if err := rows.Scan(&pipelineID); err != nil {
-			return errors.Wrapf(err, "failed to scan pipeline ID")
-		}
-		pipelineIDs = append(pipelineIDs, pipelineID)
-	}
-	if err := rows.Err(); err != nil {
-		return errors.Wrapf(err, "failed to iterate pipeline IDs")
-	}
-
-	q2 := qb.Q().Space(`
-		UPDATE task_run
-		SET status = ?, updated_at = now()
-		WHERE id = ANY(?)
-	`, storepb.TaskRun_CANCELED.String(), taskRunIDs)
-
-	query2, args2, err := q2.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
-
-	if _, err := s.GetDB().ExecContext(ctx, query2, args2...); err != nil {
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
 	return nil
