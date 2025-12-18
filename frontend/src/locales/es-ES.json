@@ -1966,12 +1966,12 @@
           "description": "Controle el número de tareas paralelas por despliegue. \nEstablecer esto en cero deshabilita cualquier estrangulamiento."
         },
         "require-issue-approval": {
-          "self": "Require issue approval",
-          "description": "Issue must be approved before rollout."
+          "self": "Requiere aprobación de issue",
+          "description": "El issue debe ser aprobado antes del despliegue."
         },
         "require-plan-check-no-error": {
-          "self": "Require plan check no error",
-          "description": "Block rollout if plan check has errors."
+          "self": "Requiere verificación de plan sin errores",
+          "description": "Bloquear despliegue si la verificación del plan tiene errores."
         }
       },
       "project-labels": {
