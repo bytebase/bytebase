@@ -37,7 +37,7 @@ const {
   events,
 } = useIsolationLevelSettingContext();
 
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 const { sheetStatement, sheet, sheetReady } = useSpecSheet(selectedSpec);
 const { plan, isCreating } = usePlanContext();
 

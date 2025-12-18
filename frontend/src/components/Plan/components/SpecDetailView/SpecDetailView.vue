@@ -49,7 +49,7 @@ import TargetListSection from "./TargetListSection.vue";
 const { project } = useCurrentProjectV1();
 const { isCreating, plan, issue, rollout } = usePlanContext();
 
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 
 providePlanSQLCheckContext({
   project,

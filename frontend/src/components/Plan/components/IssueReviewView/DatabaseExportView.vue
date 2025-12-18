@@ -30,7 +30,7 @@ import {
 const databaseStore = useDatabaseV1Store();
 const sheetStore = useSheetV1Store();
 
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 const { taskRuns } = usePlanContextWithRollout();
 
 const exportDataConfig = computed(() => {

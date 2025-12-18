@@ -97,42 +97,19 @@ import { extractProjectResourceName } from "@/utils";
 import { usePlanContext } from "../../logic/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import AllTargetsDrawer from "./AllTargetsDrawer.vue";
-import { useSelectedSpec } from "./context";
+import { DEFAULT_VISIBLE_TARGETS, useSelectedSpec } from "./context";
 import DatabaseGroupTargetDisplay from "./DatabaseGroupTargetDisplay.vue";
 import TargetsSelectorDrawer from "./TargetsSelectorDrawer.vue";
 
-const DEFAULT_VISIBLE_TARGETS = 20;
-
 const { t } = useI18n();
 const { plan, isCreating, readonly } = usePlanContext();
-const selectedSpec = useSelectedSpec();
+const { selectedSpec, targets, getDatabaseTargets } = useSelectedSpec();
 const dbGroupStore = useDBGroupStore();
 const projectStore = useProjectV1Store();
 
 const isLoadingTargets = ref(false);
 const showTargetsSelector = ref(false);
 const showAllTargetsDrawer = ref(false);
-
-const targets = computed(() => {
-  if (!selectedSpec.value) return [];
-  if (
-    selectedSpec.value.config.case === "changeDatabaseConfig" ||
-    selectedSpec.value.config.case === "exportDataConfig"
-  ) {
-    return selectedSpec.value.config.value.targets;
-  }
-  return [];
-});
-
-// Get databases from deployment mapping for a database group
-const getDatabasesForGroup = (groupName: string): string[] => {
-  const deployment = plan.value.deployment;
-  if (!deployment) return [];
-  const mapping = deployment.databaseGroupMappings.find(
-    (m: { databaseGroup: string }) => m.databaseGroup === groupName
-  );
-  return mapping?.databases ?? [];
-};
 
 const project = computed(() => {
   if (!plan.value?.name) return undefined;
@@ -191,20 +168,9 @@ const loadTargetData = async () => {
 
   try {
     // Fetch data for visible targets only
-    const visibleTargets = targets.value.slice(0, DEFAULT_VISIBLE_TARGETS);
-    const databaseTargets: string[] = [];
-    const dbGroupTargets: string[] = [];
-
-    for (const target of visibleTargets) {
-      if (isValidDatabaseGroupName(target)) {
-        dbGroupTargets.push(target);
-        // Also collect databases from deployment mapping for this group
-        const mappedDatabases = getDatabasesForGroup(target);
-        databaseTargets.push(...mappedDatabases);
-      } else {
-        databaseTargets.push(target);
-      }
-    }
+    const { databaseTargets, dbGroupTargets } = getDatabaseTargets(
+      visibleTargets.value
+    );
 
     if (databaseTargets.length > 0) {
       await batchGetOrFetchDatabases(databaseTargets);

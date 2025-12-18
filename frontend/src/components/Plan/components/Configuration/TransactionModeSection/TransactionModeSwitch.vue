@@ -24,7 +24,7 @@ import { useTransactionModeSettingContext } from "./context";
 
 const { allowChange, transactionMode, events } =
   useTransactionModeSettingContext();
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 const { sheetStatement, sheet, sheetReady } = useSpecSheet(selectedSpec);
 const { plan, isCreating } = usePlanContext();
 

@@ -128,7 +128,7 @@ import ChecksView from "../ChecksView/ChecksView.vue";
 import { useSelectedSpec } from "../SpecDetailView/context";
 
 const { plan } = usePlanContext();
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 
 const isRunningChecks = ref(false);
 const drawerVisible = ref(false);
