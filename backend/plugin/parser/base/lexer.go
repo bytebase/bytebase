@@ -6,6 +6,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func GetDefaultChannelTokenType(tokens []antlr.Token, base int, offset int) int {
@@ -106,6 +107,10 @@ func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int, stateme
 			sqls = append(sqls, Statement{
 				Text:     bufStr.String(),
 				BaseLine: buf[0].GetLine() - 1, // BaseLine is the offset of the first token
+				Range: &storepb.Range{
+					Start: int32(buf[0].GetStart()),
+					End:   int32(buf[len(buf)-1].GetStop() + 1),
+				},
 				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 					Line:   int32(token.GetLine()),
 					Column: int32(token.GetColumn()),

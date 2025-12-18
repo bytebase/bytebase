@@ -246,10 +246,12 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						End:             &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance())},
-						Empty:           t.emptyStatement,
-						ByteOffsetStart: t.getByteOffset(int(startPos)),
-						ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
+						End:   &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance())},
+						Empty: t.emptyStatement,
+						Range: &store.Range{
+							Start: int32(t.getByteOffset(int(startPos))),
+							End:   int32(t.getByteOffset(int(t.pos()))),
+						},
 					})
 				}
 				if err := t.processStreaming(s); err != nil {
@@ -265,11 +267,13 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				res = append(res, base.Statement{
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-					BaseLine:        startLine - 1,
-					End:             &store.Position{Line: int32(t.line)},
-					Empty:           t.emptyStatement,
-					ByteOffsetStart: t.getByteOffset(int(startPos)),
-					ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
+					BaseLine: startLine - 1,
+					End:      &store.Position{Line: int32(t.line)},
+					Empty:    t.emptyStatement,
+					Range: &store.Range{
+						Start: int32(t.getByteOffset(int(startPos))),
+						End:   int32(t.getByteOffset(int(t.pos()))),
+					},
 				})
 			}
 			t.skipBlank()
@@ -291,11 +295,13 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				res = append(res, base.Statement{
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-					BaseLine:        startLine - 1,
-					End:             &store.Position{Line: int32(t.line)},
-					Empty:           false,
-					ByteOffsetStart: t.getByteOffset(int(startPos)),
-					ByteOffsetEnd:   t.getByteOffset(int(t.pos())),
+					BaseLine: startLine - 1,
+					End:      &store.Position{Line: int32(t.line)},
+					Empty:    false,
+					Range: &store.Range{
+						Start: int32(t.getByteOffset(int(startPos))),
+						End:   int32(t.getByteOffset(int(t.pos()))),
+					},
 				})
 			}
 			t.skipBlank()

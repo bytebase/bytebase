@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // InstanceMetadata is the metadata for an instance.
@@ -285,15 +286,20 @@ func (o *ExecuteOptions) LogSchemaDumpEnd(derr string) {
 	}
 }
 
-func (o *ExecuteOptions) LogCommandExecute(commandIndexes []int32, commandText string) {
+// LogCommandExecute logs the execution of a command.
+// commandRange should contain the byte offset range of the command in the sheet.
+func (o *ExecuteOptions) LogCommandExecute(commandRange *storepb.Range, commandText string) {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return
 	}
 	ce := &storepb.TaskRunLog_CommandExecute{}
-	if o.LogCommandStatement {
+	// Always populate Range when available
+	if commandRange != nil {
+		ce.Range = commandRange
+	}
+	// Store statement text if explicitly requested or as fallback
+	if o.LogCommandStatement || commandRange == nil {
 		ce.Statement = commandText
-	} else {
-		ce.CommandIndexes = commandIndexes
 	}
 	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
 		Type:           storepb.TaskRunLog_COMMAND_EXECUTE,
@@ -302,6 +308,12 @@ func (o *ExecuteOptions) LogCommandExecute(commandIndexes []int32, commandText s
 	if err != nil {
 		slog.Warn("failed to log command execute", log.BBError(err))
 	}
+}
+
+// CreateCommandRange returns the Range from a Statement.
+// Returns nil if Range is not set.
+func CreateCommandRange(stmt base.Statement) *storepb.Range {
+	return stmt.Range
 }
 
 func (o *ExecuteOptions) LogCommandResponse(affectedRows int64, allAffectedRows []int64, rerr string) {
