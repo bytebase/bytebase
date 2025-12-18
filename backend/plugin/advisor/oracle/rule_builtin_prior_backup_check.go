@@ -249,7 +249,7 @@ func (r *StatementPriorBackupCheckRule) handleUnitStatement(ctx *plsql.Unit_stat
 func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 	var adviceList []*storepb.Advice
 
-	if len(r.checkCtx.Statements) > common.MaxSheetCheckSize {
+	if len(r.checkCtx.FullStatement) > common.MaxSheetCheckSize {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        r.level,
 			Title:         r.title,
@@ -282,7 +282,7 @@ func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 		})
 	}
 
-	statementInfoList, err := prepareTransformation(r.checkCtx.DBSchema.Name, r.checkCtx.Statements)
+	statementInfoList, err := prepareTransformation(r.checkCtx.DBSchema.Name, r.checkCtx.FullStatement)
 	if err != nil {
 		return
 	}

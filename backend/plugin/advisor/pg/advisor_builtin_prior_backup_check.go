@@ -82,7 +82,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	// Check statement type consistency for each table
-	statementInfoList, err := prepareTransformation(checkCtx.Statements)
+	statementInfoList, err := prepareTransformation(checkCtx.FullStatement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to prepare transformation")
 	}

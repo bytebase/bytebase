@@ -13,8 +13,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 type columnSet map[string]bool
@@ -84,12 +82,16 @@ func needDefault(column *ast.ColumnDef) bool {
 
 // getTiDBNodes extracts TiDB AST nodes from the advisor context.
 func getTiDBNodes(checkCtx advisor.Context) ([]ast.StmtNode, error) {
-	if checkCtx.AST == nil {
-		return nil, errors.New("AST is not provided in context")
+	if checkCtx.ParsedStatements == nil {
+		return nil, errors.New("ParsedStatements is not provided in context")
 	}
+
 	var stmtNodes []ast.StmtNode
-	for _, unifiedAST := range checkCtx.AST {
-		tidbAST, ok := tidbparser.GetTiDBAST(unifiedAST)
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		tidbAST, ok := tidbparser.GetTiDBAST(stmt.AST)
 		if !ok {
 			return nil, errors.New("AST type mismatch: expected TiDB parser result")
 		}
@@ -111,8 +113,7 @@ type ParsedStatementInfo struct {
 // nolint:unused
 func getParsedStatements(checkCtx advisor.Context) ([]ParsedStatementInfo, error) {
 	if checkCtx.ParsedStatements == nil {
-		// Fallback to old behavior for backward compatibility
-		return getParsedStatementsFromAST(checkCtx)
+		return nil, errors.New("ParsedStatements is not provided in context")
 	}
 
 	var results []ParsedStatementInfo
@@ -132,37 +133,4 @@ func getParsedStatements(checkCtx advisor.Context) ([]ParsedStatementInfo, error
 		})
 	}
 	return results, nil
-}
-
-// getParsedStatementsFromAST is the fallback when ParsedStatements is not available.
-// Deprecated: Use getParsedStatements with ParsedStatements field instead.
-// nolint:unused
-func getParsedStatementsFromAST(checkCtx advisor.Context) ([]ParsedStatementInfo, error) {
-	if checkCtx.AST == nil {
-		return nil, errors.New("AST is not provided in context")
-	}
-
-	var results []ParsedStatementInfo
-	for _, unifiedAST := range checkCtx.AST {
-		tidbAST, ok := tidbparser.GetTiDBAST(unifiedAST)
-		if !ok {
-			return nil, errors.New("AST type mismatch: expected TiDB parser result")
-		}
-		// Use node.Text() as fallback since Text field is not available
-		results = append(results, ParsedStatementInfo{
-			Node:     tidbAST.Node,
-			BaseLine: getLineOffset(tidbAST.StartPosition),
-			Text:     tidbAST.Node.Text(),
-		})
-	}
-	return results, nil
-}
-
-// getLineOffset converts a 1-based Position to 0-based line offset.
-// nolint:unused
-func getLineOffset(pos *storepb.Position) int {
-	if pos == nil {
-		return 0
-	}
-	return int(pos.Line) - 1
 }

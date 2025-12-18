@@ -95,28 +95,27 @@ func isCharsetDataType(dataType mysql.IDataTypeContext) bool {
 }
 
 // getANTLRTree extracts the ANTLR parse trees from the advisor context.
-// The AST must be pre-parsed and passed via checkCtx.AST.
 // Returns all parse results for multi-statement SQL review.
 func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
-	if checkCtx.AST == nil {
-		return nil, errors.New("AST is not provided in context - must be parsed before calling advisor")
+	if checkCtx.ParsedStatements == nil {
+		return nil, errors.New("ParsedStatements is not provided in context")
 	}
 
 	var parseResults []*base.ParseResult
-	for _, unifiedAST := range checkCtx.AST {
-		antlrAST, ok := base.GetANTLRAST(unifiedAST)
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
 		if !ok {
 			return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
 		}
-
-		// Reconstruct base.ParseResult from AST
 		parseResults = append(parseResults, &base.ParseResult{
 			Tree:     antlrAST.Tree,
 			Tokens:   antlrAST.Tokens,
-			BaseLine: base.GetLineOffset(antlrAST.StartPosition),
+			BaseLine: stmt.BaseLine,
 		})
 	}
-
 	return parseResults, nil
 }
 
@@ -146,8 +145,7 @@ func getTextFromTokens(tokens *antlr.CommonTokenStream, ctx antlr.ParserRuleCont
 // nolint:unused
 func getParsedStatements(checkCtx advisor.Context) ([]ParsedStatementInfo, error) {
 	if checkCtx.ParsedStatements == nil {
-		// Fallback to old behavior for backward compatibility
-		return getParsedStatementsFromAST(checkCtx)
+		return nil, errors.New("ParsedStatements is not provided in context")
 	}
 
 	var results []ParsedStatementInfo
@@ -165,30 +163,6 @@ func getParsedStatements(checkCtx advisor.Context) ([]ParsedStatementInfo, error
 			Tokens:   antlrAST.Tokens,
 			BaseLine: stmt.BaseLine,
 			Text:     stmt.Text,
-		})
-	}
-	return results, nil
-}
-
-// getParsedStatementsFromAST is the fallback when ParsedStatements is not available.
-// Deprecated: Use getParsedStatements with ParsedStatements field instead.
-// nolint:unused
-func getParsedStatementsFromAST(checkCtx advisor.Context) ([]ParsedStatementInfo, error) {
-	if checkCtx.AST == nil {
-		return nil, errors.New("AST is not provided in context")
-	}
-
-	var results []ParsedStatementInfo
-	for _, unifiedAST := range checkCtx.AST {
-		antlrAST, ok := base.GetANTLRAST(unifiedAST)
-		if !ok {
-			return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
-		}
-		results = append(results, ParsedStatementInfo{
-			Tree:     antlrAST.Tree,
-			Tokens:   antlrAST.Tokens,
-			BaseLine: base.GetLineOffset(antlrAST.StartPosition),
-			Text:     "", // Not available in fallback mode
 		})
 	}
 	return results, nil

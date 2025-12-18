@@ -185,7 +185,7 @@ func (r *OnlineMigrationRule) checkAlterStatement(ctx *mysql.AlterStatementConte
 			Line:   int32(ctx.GetStart().GetLine()),
 			Column: int32(ctx.GetStart().GetColumn()),
 		},
-		r.checkCtx.Statements,
+		r.checkCtx.FullStatement,
 	)
 }
 
@@ -195,7 +195,7 @@ func (r *OnlineMigrationRule) exitAlterStatement(ctx *mysql.AlterStatementContex
 			Line:   int32(r.baseLine) + int32(ctx.GetStop().GetLine()),
 			Column: int32(ctx.GetStop().GetColumn() + len([]rune(ctx.GetStop().GetText()))),
 		},
-		r.checkCtx.Statements,
+		r.checkCtx.FullStatement,
 	)
 
 	if !r.ghostCompatible {

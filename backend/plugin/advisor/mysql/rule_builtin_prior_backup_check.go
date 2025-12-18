@@ -44,7 +44,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 	title := checkCtx.Rule.Type.String()
 
-	if len(checkCtx.Statements) > common.MaxSheetCheckSize {
+	if len(checkCtx.FullStatement) > common.MaxSheetCheckSize {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,
 			Title:         title,
