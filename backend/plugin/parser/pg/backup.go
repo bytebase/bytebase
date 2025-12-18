@@ -257,7 +257,7 @@ func prepareTransformation(ctx context.Context, tCtx base.TransformContext, stat
 
 	// Walk all parse results to extract DML statements
 	for _, parseResult := range parseResults {
-		extractor.currentBaseLine = parseResult.BaseLine
+		extractor.currentBaseLine = base.GetLineOffset(parseResult.StartPosition)
 		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
 		if extractor.err != nil {
 			return nil, extractor.err

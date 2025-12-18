@@ -40,13 +40,13 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	}
 
 	// Find the parse result that contains the statement at the backup position
-	var targetResult *base.ParseResult
+	var targetResult *base.ANTLRAST
 	for _, parseResult := range parseResults {
 		// Walk the tree to find if this parse result contains the target statement
 		finder := &statementAtPositionFinder{
 			startPos: backupItem.StartPosition,
 			endPos:   backupItem.EndPosition,
-			baseLine: parseResult.BaseLine,
+			baseLine: base.GetLineOffset(parseResult.StartPosition),
 		}
 		antlr.ParseTreeWalkerDefault.Walk(finder, parseResult.Tree)
 		if finder.found {
@@ -74,7 +74,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	return doGenerate(ctx, rCtx, sqlForComment, targetResult, backupItem, prependStatements)
 }
 
-func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree *base.ParseResult, backupItem *storepb.PriorBackupDetail_Item, prependStatements string) (string, error) {
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree *base.ANTLRAST, backupItem *storepb.PriorBackupDetail_Item, prependStatements string) (string, error) {
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
@@ -257,7 +257,7 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 
 	// Walk all parse results to find statements within the specified position range
 	for _, parseResult := range parseResults {
-		l.baseLine = parseResult.BaseLine
+		l.baseLine = base.GetLineOffset(parseResult.StartPosition)
 		antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
 	}
 
