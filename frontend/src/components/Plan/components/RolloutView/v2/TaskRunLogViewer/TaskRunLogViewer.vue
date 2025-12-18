@@ -3,6 +3,40 @@
     v-if="sections.length > 0"
     class="w-full font-mono text-xs bg-gray-50 border border-gray-200 overflow-hidden rounded"
   >
+    <!-- Toolbar with summary stats and expand/collapse buttons -->
+    <div
+      class="flex items-center justify-between px-2 py-1 bg-gray-100 border-b border-gray-200"
+    >
+      <!-- Left: Summary stats -->
+      <div class="flex items-center gap-x-2 text-gray-500">
+        <ListIcon class="w-3.5 h-3.5" />
+        <span>
+          {{
+            $t("task-run.log-viewer.summary", {
+              sections: totalSections,
+              entries: totalEntries,
+            })
+          }}
+        </span>
+      </div>
+
+      <!-- Right: Expand/Collapse toggle button -->
+      <button
+        class="flex items-center gap-x-1 px-1.5 py-0.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+        @click="toggleExpandAll"
+      >
+        <component
+          :is="areAllExpanded ? ChevronsDownUpIcon : ChevronsUpDownIcon"
+          class="w-3.5 h-3.5"
+        />
+        <span>{{
+          areAllExpanded
+            ? $t("task-run.log-viewer.collapse-all")
+            : $t("task-run.log-viewer.expand-all")
+        }}</span>
+      </button>
+    </div>
+
     <!-- Multi-deploy view: show deploy groups when server restarts detected -->
     <template v-if="hasMultipleDeploys">
       <!-- Server restart notice -->
@@ -86,6 +120,9 @@ import {
   AlertTriangleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  ChevronsDownUpIcon,
+  ChevronsUpDownIcon,
+  ListIcon,
   ServerIcon,
 } from "lucide-vue-next";
 import type { TaskRunLogEntry } from "@/types/proto-es/v1/rollout_service_pb";
@@ -107,8 +144,21 @@ const {
   toggleDeploy,
   isSectionExpanded,
   isDeployExpanded,
+  expandAll,
+  collapseAll,
+  areAllExpanded,
+  totalSections,
+  totalEntries,
 } = useTaskRunLogSections(
   () => props.entries,
   () => props.sheet
 );
+
+const toggleExpandAll = () => {
+  if (areAllExpanded.value) {
+    collapseAll();
+  } else {
+    expandAll();
+  }
+};
 </script>
