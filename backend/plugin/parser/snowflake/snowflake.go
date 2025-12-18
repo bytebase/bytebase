@@ -24,20 +24,11 @@ func parseSnowflakeForRegistry(statement string) ([]base.AST, error) {
 	if err != nil {
 		return nil, err
 	}
-	return toAST(parseResults), nil
-}
-
-// toAST converts []*ParseResult to []base.AST.
-func toAST(results []*base.ParseResult) []base.AST {
-	var asts []base.AST
-	for _, r := range results {
-		asts = append(asts, &base.ANTLRAST{
-			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
-			Tree:          r.Tree,
-			Tokens:        r.Tokens,
-		})
+	asts := make([]base.AST, len(parseResults))
+	for i, r := range parseResults {
+		asts[i] = r
 	}
-	return asts
+	return asts, nil
 }
 
 // parseSnowflakeStatements is the ParseStatementsFunc for Snowflake.
@@ -55,7 +46,7 @@ func parseSnowflakeStatements(statement string) ([]base.ParsedStatement, error) 
 		return nil, err
 	}
 
-	// Combine: Statement provides text/positions, ParseResult provides AST
+	// Combine: Statement provides text/positions, ANTLRAST provides AST
 	var result []base.ParsedStatement
 	astIndex := 0
 	for _, stmt := range stmts {
@@ -63,11 +54,7 @@ func parseSnowflakeStatements(statement string) ([]base.ParsedStatement, error) 
 			Statement: stmt,
 		}
 		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = &base.ANTLRAST{
-				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
-				Tree:          parseResults[astIndex].Tree,
-				Tokens:        parseResults[astIndex].Tokens,
-			}
+			ps.AST = parseResults[astIndex]
 			astIndex++
 		}
 		result = append(result, ps)
@@ -76,15 +63,15 @@ func parseSnowflakeStatements(statement string) ([]base.ParsedStatement, error) 
 	return result, nil
 }
 
-// ParseSnowSQL parses the given SQL and returns a list of ParseResult (one per statement).
+// ParseSnowSQL parses the given SQL and returns a list of ANTLRAST (one per statement).
 // Use the Snowflake parser based on antlr4.
-func ParseSnowSQL(sql string) ([]*base.ParseResult, error) {
+func ParseSnowSQL(sql string) ([]*base.ANTLRAST, error) {
 	stmts, err := SplitSQL(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	var results []*base.ParseResult
+	var results []*base.ANTLRAST
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -100,8 +87,8 @@ func ParseSnowSQL(sql string) ([]*base.ParseResult, error) {
 	return results, nil
 }
 
-// parseSingleSnowSQL parses a single Snowflake statement and returns the ParseResult.
-func parseSingleSnowSQL(statement string, baseLine int) (*base.ParseResult, error) {
+// parseSingleSnowSQL parses a single Snowflake statement and returns the ANTLRAST.
+func parseSingleSnowSQL(statement string, baseLine int) (*base.ANTLRAST, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewSnowflakeLexer(inputStream)
@@ -136,10 +123,10 @@ func parseSingleSnowSQL(statement string, baseLine int) (*base.ParseResult, erro
 		return nil, parserErrorListener.Err
 	}
 
-	result := &base.ParseResult{
-		Tree:     tree,
-		Tokens:   stream,
-		BaseLine: baseLine,
+	result := &base.ANTLRAST{
+		StartPosition: &storepb.Position{Line: int32(baseLine) + 1},
+		Tree:          tree,
+		Tokens:        stream,
 	}
 
 	return result, nil
