@@ -13,29 +13,29 @@ import (
 )
 
 // ParseBigQuerySQL parses the given SQL statement by using antlr4. Returns a list of AST and token stream if no error.
-func ParseBigQuerySQL(statement string) ([]*base.ParseResult, error) {
+func ParseBigQuerySQL(statement string) ([]*base.ANTLRAST, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*base.ParseResult
+	var result []*base.ANTLRAST
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
 		}
 
-		parseResult, err := parseSingleBigQuerySQL(stmt.Text, stmt.BaseLine)
+		ast, err := parseSingleBigQuerySQL(stmt.Text, stmt.BaseLine)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, parseResult)
+		result = append(result, ast)
 	}
 
 	return result, nil
 }
 
-func parseSingleBigQuerySQL(statement string, baseLine int) (*base.ParseResult, error) {
+func parseSingleBigQuerySQL(statement string, baseLine int) (*base.ANTLRAST, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewGoogleSQLLexer(inputStream)
@@ -70,11 +70,11 @@ func parseSingleBigQuerySQL(statement string, baseLine int) (*base.ParseResult, 
 		return nil, parserErrorListener.Err
 	}
 
-	result := &base.ParseResult{
-		Tree:     tree,
-		Tokens:   stream,
-		BaseLine: baseLine,
+	ast := &base.ANTLRAST{
+		StartPosition: startPosition,
+		Tree:          tree,
+		Tokens:        stream,
 	}
 
-	return result, nil
+	return ast, nil
 }
