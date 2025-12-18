@@ -233,7 +233,9 @@ func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage) (*GroupMe
 		return nil, errors.Wrap(err, "failed to commit")
 	}
 
-	s.groupCache.Add(create.Email, create)
+	if create.Email != "" {
+		s.groupCache.Add(create.Email, create)
+	}
 	return create, nil
 }
 
@@ -282,10 +284,11 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 
 	var group GroupMessage
 	var payload []byte
+	var email sql.NullString
 
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(
 		&group.ID,
-		&group.Email,
+		&email,
 		&group.Title,
 		&group.Description,
 		&payload,
@@ -298,12 +301,17 @@ func (s *Store) UpdateGroup(ctx context.Context, patch *UpdateGroupMessage) (*Gr
 		return nil, err
 	}
 	group.Payload = &groupPayload
+	if email.Valid {
+		group.Email = email.String
+	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.groupCache.Add(group.Email, &group)
+	if group.Email != "" {
+		s.groupCache.Add(group.Email, &group)
+	}
 	return &group, nil
 }
 
@@ -321,7 +329,7 @@ func (s *Store) DeleteGroup(ctx context.Context, id string) error {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	var email string
+	var email sql.NullString
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(&email); err != nil {
 		return err
 	}
@@ -330,7 +338,9 @@ func (s *Store) DeleteGroup(ctx context.Context, id string) error {
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.groupCache.Remove(email)
+	if email.Valid && email.String != "" {
+		s.groupCache.Remove(email.String)
+	}
 	return nil
 }
 

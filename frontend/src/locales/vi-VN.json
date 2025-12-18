@@ -515,15 +515,14 @@
       "add-member": "Thêm thành viên",
       "add-user": "Thêm người dùng",
       "entra-sync": {
-        "self": "Đồng bộ từ Entra ID (Azure AD)",
-        "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) sang phiên bản Bytebase của bạn.",
+        "self": "Đồng bộ từ SCIM",
+        "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) hoặc Okta sang phiên bản Bytebase của bạn.",
         "endpoint": "Điểm cuối",
-        "endpoint-tip": "Dán vào trường \"Tenant URL\" trong Entra. Entra sẽ đồng bộ người dùng và nhóm đến Bytebase qua điểm cuối này.",
+        "endpoint-tip": "Người dùng và nhóm sẽ được đồng bộ đến Bytebase qua điểm cuối này.",
         "secret-token": "Mã thông báo bí mật",
-        "secret-token-tip": "Dán vào trường \"Secret Token\" trong Entra.",
+        "secret-token-tip": "Mã xác thực cho điểm cuối. Vui lòng giữ bí mật.",
         "reset-token": "Đặt lại mã thông báo",
-        "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra.",
-        "goto-entra-dashboard": "Đi tới Bảng điều khiển Entra"
+        "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra."
       },
       "all-users": "Tất cả người dùng",
       "search-member": "Tìm kiếm thành viên",

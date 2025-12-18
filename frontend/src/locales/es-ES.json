@@ -515,15 +515,14 @@
       "add-member": "Agregar miembro",
       "add-user": "Agregar usuario",
       "entra-sync": {
-        "self": "Sincronización desde Entra ID (Azure AD)",
-        "description": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) con su instancia de Bytebase.",
+        "self": "Sincronización desde SCIM",
+        "description": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) u Okta con su instancia de Bytebase.",
         "endpoint": "Punto final",
-        "endpoint-tip": "Pegue esto en el campo \"Tenant URL\" en Entra. Entra sincronizará usuarios y grupos con Bytebase a través de este punto de conexión.",
+        "endpoint-tip": "Los usuarios y grupos se sincronizarán con Bytebase a través de este endpoint.",
         "secret-token": "Secret Token",
-        "secret-token-tip": "Pegue esto en el campo \"Secret Token\" en Entra.",
+        "secret-token-tip": "El token de verificación para el endpoint. Por favor, manténgalo en secreto.",
         "reset-token": "Restablecer token",
-        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra.",
-        "goto-entra-dashboard": "Ir al panel de control de Entra"
+        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra."
       },
       "all-users": "Todos los usuarios",
       "search-member": "Buscar miembro",
