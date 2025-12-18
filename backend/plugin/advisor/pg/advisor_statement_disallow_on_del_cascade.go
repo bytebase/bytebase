@@ -27,7 +27,7 @@ type StatementDisallowOnDelCascadeAdvisor struct {
 
 // Check checks for ON DELETE CASCADE.
 func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := getParsedStatements(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx a
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			statementText: stmtInfo.Text, // Kept for ConvertANTLRPositionToPosition
+			tokens: stmtInfo.Tokens,
 		}
 
 		checker := NewGenericChecker([]Rule{rule})
@@ -60,7 +60,7 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx a
 
 type statementDisallowOnDelCascadeRule struct {
 	BaseRule
-	statementText string // Kept for ConvertANTLRPositionToPosition
+	tokens *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.
@@ -113,6 +113,7 @@ func (r *statementDisallowOnDelCascadeRule) handleKeyDelete(ctx *parser.Key_dele
 				if line < 1 {
 					line = 1
 				}
+				statementText := getTextFromTokens(r.tokens, stmtCtx)
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.level,
 					Code:    code.StatementDisallowCascade.Int32(),
@@ -121,7 +122,7 @@ func (r *statementDisallowOnDelCascadeRule) handleKeyDelete(ctx *parser.Key_dele
 					StartPosition: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 						Line:   int32(line),
 						Column: 0,
-					}, r.statementText),
+					}, statementText),
 				})
 			}
 		}

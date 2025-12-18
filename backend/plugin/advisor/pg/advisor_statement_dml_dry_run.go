@@ -28,7 +28,7 @@ type StatementDMLDryRunAdvisor struct {
 
 // Check checks for DML dry run.
 func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := getParsedStatements(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,6 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 			driver:                   checkCtx.Driver,
 			usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
 			tokens:                   stmtInfo.Tokens,
-			statementText:            stmtInfo.Text, // Kept for EXPLAIN queries
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -74,7 +73,6 @@ type statementDMLDryRunRule struct {
 	setRoles                 []string
 	usePostgresDatabaseOwner bool
 	tokens                   *antlr.CommonTokenStream
-	statementText            string // Kept for EXPLAIN queries and SET ROLE
 }
 
 // Name returns the rule name.
@@ -114,7 +112,7 @@ func (r *statementDMLDryRunRule) handleVariablesetstmt(ctx *parser.Variablesetst
 		setRestMore := ctx.Set_rest().Set_rest_more()
 		if setRestMore.ROLE() != nil {
 			// Store the SET ROLE statement text
-			r.setRoles = append(r.setRoles, r.statementText)
+			r.setRoles = append(r.setRoles, getTextFromTokens(r.tokens, ctx))
 		}
 	}
 }
@@ -151,13 +149,14 @@ func (r *statementDMLDryRunRule) checkDMLDryRun(ctx antlr.ParserRuleContext) {
 
 	r.explainCount++
 
-	normalizedStmt := advisor.NormalizeStatement(r.statementText)
+	statementText := getTextFromTokens(r.tokens, ctx)
+	normalizedStmt := advisor.NormalizeStatement(statementText)
 
 	// Run EXPLAIN to perform dry run
 	_, err := advisor.Query(r.ctx, advisor.QueryContext{
 		UsePostgresDatabaseOwner: r.usePostgresDatabaseOwner,
 		PreExecutions:            r.setRoles,
-	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", r.statementText))
+	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
 
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{

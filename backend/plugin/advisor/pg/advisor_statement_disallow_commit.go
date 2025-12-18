@@ -27,7 +27,7 @@ type StatementDisallowCommitAdvisor struct {
 
 // Check checks for disallowing COMMIT statements.
 func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := getParsedStatements(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}

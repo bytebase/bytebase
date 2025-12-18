@@ -30,7 +30,7 @@ type FullyQualifiedObjectNameAdvisor struct {
 
 // Check checks for fully qualified object names.
 func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := getParsedStatements(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -47,8 +47,8 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			dbMetadata:    checkCtx.DBSchema,
-			statementText: stmtInfo.Text,
+			dbMetadata: checkCtx.DBSchema,
+			tokens:     stmtInfo.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -63,8 +63,8 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 type fullyQualifiedObjectNameRule struct {
 	BaseRule
 
-	dbMetadata    *storepb.DatabaseSchemaMetadata
-	statementText string
+	dbMetadata *storepb.DatabaseSchemaMetadata
+	tokens     *antlr.CommonTokenStream
 }
 
 func (*fullyQualifiedObjectNameRule) Name() string {
@@ -257,8 +257,10 @@ func (r *fullyQualifiedObjectNameRule) handleSelectstmt(ctx *parser.SelectstmtCo
 		return
 	}
 
+	statementText := getTextFromTokens(r.tokens, ctx)
+
 	// Find all table references in the SELECT statement
-	for _, tableName := range r.findAllTablesInSelect(r.statementText) {
+	for _, tableName := range r.findAllTablesInSelect(statementText) {
 		objName := tableName.String()
 		if !r.isFullyQualified(objName) {
 			r.AddAdvice(&storepb.Advice{

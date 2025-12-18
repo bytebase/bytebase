@@ -31,7 +31,7 @@ type StatementAffectedRowLimitAdvisor struct {
 
 // Check checks for UPDATE/DELETE affected row limit.
 func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := getParsedStatements(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,6 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			driver:                   checkCtx.Driver,
 			usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
 			tokens:                   stmtInfo.Tokens,
-			statementText:            stmtInfo.Text, // Kept for EXPLAIN queries
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -83,7 +82,6 @@ type statementAffectedRowLimitRule struct {
 	setRoles                 []string
 	usePostgresDatabaseOwner bool
 	tokens                   *antlr.CommonTokenStream
-	statementText            string // Kept for EXPLAIN queries and SET ROLE
 }
 
 func (*statementAffectedRowLimitRule) Name() string {
@@ -124,7 +122,7 @@ func (r *statementAffectedRowLimitRule) handleVariablesetstmt(ctx *parser.Variab
 		setRestMore := ctx.Set_rest().Set_rest_more()
 		if setRestMore.ROLE() != nil {
 			// Store the SET ROLE statement text
-			r.setRoles = append(r.setRoles, r.statementText)
+			r.setRoles = append(r.setRoles, getTextFromTokens(r.tokens, ctx))
 		}
 	}
 }
@@ -154,13 +152,14 @@ func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleCo
 	r.explainCount++
 
 	// Get the statement text
-	normalizedStmt := advisor.NormalizeStatement(r.statementText)
+	statementText := getTextFromTokens(r.tokens, ctx)
+	normalizedStmt := advisor.NormalizeStatement(statementText)
 
 	// Run EXPLAIN to get estimated row count
 	res, err := advisor.Query(r.ctx, advisor.QueryContext{
 		UsePostgresDatabaseOwner: r.usePostgresDatabaseOwner,
 		PreExecutions:            r.setRoles,
-	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", r.statementText))
+	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
 
 	if err != nil {
 		r.AddAdvice(&storepb.Advice{

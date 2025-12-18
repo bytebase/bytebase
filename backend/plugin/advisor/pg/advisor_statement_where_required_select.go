@@ -26,7 +26,7 @@ type StatementWhereRequiredSelectAdvisor struct {
 
 // Check checks for WHERE clause requirement in SELECT statements.
 func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := getParsedStatements(checkCtx)
+	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
 	if err != nil {
 		return nil, err
 	}
