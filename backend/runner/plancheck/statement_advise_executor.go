@@ -169,8 +169,6 @@ func (e *StatementAdviseExecutor) runReview(
 	connection := driver.GetDB()
 
 	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.Context{
-		Charset:                  dbMetadata.GetProto().CharacterSet,
-		Collation:                dbMetadata.GetProto().Collation,
 		DBSchema:                 dbMetadata.GetProto(),
 		EnableSDL:                enableSDL,
 		DBType:                   instance.Metadata.GetEngine(),

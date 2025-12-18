@@ -669,8 +669,6 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	connection := driver.GetDB()
 
 	context := advisor.Context{
-		Charset:                  dbMetadataProto.CharacterSet,
-		Collation:                dbMetadataProto.Collation,
 		EnableSDL:                enableSDL,
 		DBSchema:                 dbMetadataProto,
 		DBType:                   instance.Metadata.GetEngine(),

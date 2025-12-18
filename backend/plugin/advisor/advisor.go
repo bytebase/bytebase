@@ -63,9 +63,7 @@ type Context struct {
 	UsePostgresDatabaseOwner bool
 
 	// SQL review level fields.
-	Charset   string
-	Collation string
-	DBType    storepb.Engine
+	DBType storepb.Engine
 
 	// Snowflake specific fields (duplicates CurrentDatabase, kept for compatibility).
 	// CurrentDatabase string
