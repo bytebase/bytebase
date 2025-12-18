@@ -522,8 +522,7 @@
         "secret-token": "Mã thông báo bí mật",
         "secret-token-tip": "Mã xác thực cho điểm cuối. Vui lòng giữ bí mật.",
         "reset-token": "Đặt lại mã thông báo",
-        "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra.",
-        "goto-entra-dashboard": "Đi tới Bảng điều khiển Entra"
+        "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra."
       },
       "all-users": "Tất cả người dùng",
       "search-member": "Tìm kiếm thành viên",

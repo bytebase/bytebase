@@ -522,8 +522,7 @@
         "secret-token": "Secret Token",
         "secret-token-tip": "The verification token for the endpoint. Please keep it in secret.",
         "reset-token": "Reset token",
-        "reset-token-warning": "You need to update the application provisioning config.",
-        "goto-entra-dashboard": "Go to Entra Dashboard"
+        "reset-token-warning": "You need to update the application provisioning config."
       },
       "all-users": "All users",
       "search-member": "Search member",

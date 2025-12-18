@@ -522,8 +522,7 @@
         "secret-token": "Secret Token",
         "secret-token-tip": "El token de verificación para el endpoint. Por favor, manténgalo en secreto.",
         "reset-token": "Restablecer token",
-        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra.",
-        "goto-entra-dashboard": "Ir al panel de control de Entra"
+        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra."
       },
       "all-users": "Todos los usuarios",
       "search-member": "Buscar miembro",

@@ -522,8 +522,7 @@
         "secret-token": "Secret Token",
         "secret-token-tip": "エンドポイントの検証トークンです。秘密にしてください。",
         "reset-token": "トークンをリセット",
-        "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。",
-        "goto-entra-dashboard": "Entraダッシュボードへ"
+        "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。"
       },
       "all-users": "すべてのユーザー",
       "search-member": "メンバーを検索",
