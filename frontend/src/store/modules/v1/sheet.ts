@@ -45,7 +45,6 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
       content: sheet.content || new Uint8Array(),
       contentSize: sheet.contentSize || BigInt(0),
       engine: sheet.engine || Engine.MYSQL,
-      payload: sheet.payload,
       createTime: sheet.createTime,
     });
     const request = create(CreateSheetRequestSchema, {

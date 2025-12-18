@@ -29,7 +29,6 @@ export const useLocalSheetStore = defineStore("local_sheet", () => {
       content: defaults.content || new Uint8Array(),
       contentSize: defaults.contentSize || BigInt(0),
       engine: defaults.engine,
-      payload: defaults.payload,
       createTime: defaults.createTime,
     });
     return reactive(sheet);
