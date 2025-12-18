@@ -26,8 +26,8 @@ func init() {
 
 // WalkThrough walks through the PostgreSQL ANTLR parse tree and builds catalog metadata.
 func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
-	// Extract ParseResult from AST
-	var parseResults []*base.ParseResult
+	// Extract ANTLRAST from AST
+	var antlrASTList []*base.ANTLRAST
 	for _, unifiedAST := range ast {
 		antlrAST, ok := base.GetANTLRAST(unifiedAST)
 		if !ok {
@@ -41,11 +41,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 				},
 			}
 		}
-		parseResults = append(parseResults, &base.ParseResult{
-			Tree:     antlrAST.Tree,
-			Tokens:   antlrAST.Tokens,
-			BaseLine: base.GetLineOffset(antlrAST.StartPosition),
-		})
+		antlrASTList = append(antlrASTList, antlrAST)
 	}
 
 	// Build listener with database state
@@ -55,14 +51,14 @@ func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 	}
 
 	// Walk through all parse results
-	for _, parseResult := range parseResults {
-		root, ok := parseResult.Tree.(parser.IRootContext)
+	for _, antlrAST := range antlrASTList {
+		root, ok := antlrAST.Tree.(parser.IRootContext)
 		if !ok {
 			return &storepb.Advice{
 				Status:  storepb.Advice_ERROR,
 				Code:    code.Internal.Int32(),
-				Title:   fmt.Sprintf("invalid ANTLR tree type %T", parseResult.Tree),
-				Content: fmt.Sprintf("invalid ANTLR tree type %T", parseResult.Tree),
+				Title:   fmt.Sprintf("invalid ANTLR tree type %T", antlrAST.Tree),
+				Content: fmt.Sprintf("invalid ANTLR tree type %T", antlrAST.Tree),
 				StartPosition: &storepb.Position{
 					Line: 0,
 				},

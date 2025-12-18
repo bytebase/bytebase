@@ -112,10 +112,15 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	return adviceList, nil
 }
 
-func prepareTransformation(databaseName string, parseResult []*base.ParseResult) ([]*mysqlparser.TableReference, error) {
+func prepareTransformation(databaseName string, parseResult []*advisor.AntlrParseResult) ([]*mysqlparser.TableReference, error) {
 	var result []*mysqlparser.TableReference
 	for i, sql := range parseResult {
-		tables, err := mysqlparser.ExtractTables(databaseName, sql, i)
+		// Convert AntlrParseResult to ANTLRAST for ExtractTables
+		ast := &base.ANTLRAST{
+			Tree:   sql.Tree,
+			Tokens: sql.Tokens,
+		}
+		tables, err := mysqlparser.ExtractTables(databaseName, ast, i)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to extract tables")
 		}

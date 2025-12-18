@@ -12,7 +12,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
@@ -206,7 +205,7 @@ type statementInfo struct {
 	table     *TableReference
 }
 
-func prepareTransformation(databaseName string, parseResults []*base.ParseResult) []statementInfo {
+func prepareTransformation(databaseName string, parseResults []*advisor.AntlrParseResult) []statementInfo {
 	extractor := &dmlExtractor{
 		databaseName: databaseName,
 	}

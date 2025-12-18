@@ -44,8 +44,8 @@ func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 		d.CreateSchema("")
 	}
 
-	// Extract ParseResult from AST
-	var nodeList []*base.ParseResult
+	// Extract ANTLRAST from AST
+	var nodeList []*base.ANTLRAST
 	for _, unifiedAST := range ast {
 		antlrAST, ok := base.GetANTLRAST(unifiedAST)
 		if !ok {
@@ -59,11 +59,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 				},
 			}
 		}
-		nodeList = append(nodeList, &base.ParseResult{
-			Tree:     antlrAST.Tree,
-			Tokens:   antlrAST.Tokens,
-			BaseLine: base.GetLineOffset(antlrAST.StartPosition),
-		})
+		nodeList = append(nodeList, antlrAST)
 	}
 
 	for _, node := range nodeList {
@@ -90,9 +86,9 @@ func (l *mysqlListener) EnterQuery(ctx *mysql.QueryContext) {
 	l.lineNumber = l.baseLine + ctx.GetStart().GetLine()
 }
 
-func mysqlChangeState(d *model.DatabaseMetadata, in *base.ParseResult) *storepb.Advice {
+func mysqlChangeState(d *model.DatabaseMetadata, in *base.ANTLRAST) *storepb.Advice {
 	listener := &mysqlListener{
-		baseLine:         in.BaseLine,
+		baseLine:         base.GetLineOffset(in.StartPosition),
 		databaseMetadata: d,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, in.Tree)
