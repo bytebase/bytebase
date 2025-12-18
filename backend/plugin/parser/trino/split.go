@@ -191,6 +191,10 @@ func splitByParser(statement string) ([]base.Statement, error) {
 		result = append(result, base.Statement{
 			Text:     text,
 			BaseLine: firstToken.GetLine() - 1,
+			Range: &storepb.Range{
+				Start: int32(tokens[startIdx].GetStart()),
+				End:   int32(endToken.GetStop() + 1),
+			},
 			Start: &storepb.Position{
 				Line:   int32(firstDefaultToken.GetLine() - 1),
 				Column: int32(firstDefaultToken.GetColumn()),
