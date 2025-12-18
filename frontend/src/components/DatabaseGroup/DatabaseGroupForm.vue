@@ -97,6 +97,7 @@ import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
 } from "@/store/modules/v1/common";
+import { isValidDatabaseGroupName } from "@/types";
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
@@ -113,7 +114,6 @@ import {
 import { ResourceIdField } from "../v2";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import { FactorList, getDatabaseGroupOptionConfigMap } from "./utils";
-import { isValidDatabaseGroupName } from "@/types"
 
 const props = defineProps<{
   readonly: boolean;
@@ -171,7 +171,7 @@ watchEffect(async () => {
       state.expr = cloneDeep(wrapAsGroup(simpleExpr));
     }
   }
-})
+});
 
 const doDelete = async () => {
   const databaseGroup = props.databaseGroup as DatabaseGroup;
