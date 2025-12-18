@@ -32,7 +32,7 @@ import ExportPasswordInputer from "../ExportOption/ExportPasswordInputer.vue";
 import { useSelectedSpec } from "./context";
 
 const { isCreating } = usePlanContext();
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 
 const exportFormat = computed({
   get() {

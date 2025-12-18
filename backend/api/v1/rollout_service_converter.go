@@ -56,11 +56,7 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 	}
 
 	if taskRun.SheetUID != nil && *taskRun.SheetUID != 0 {
-		sheet, err := s.GetSheetMetadata(ctx, *taskRun.SheetUID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet")
-		}
-		t.Sheet = common.FormatSheet(taskRun.ProjectID, sheet.UID)
+		t.Sheet = common.FormatSheet(taskRun.ProjectID, *taskRun.SheetUID)
 	}
 
 	if v, ok := stateCfg.TaskRunSchedulerInfo.Load(taskRun.ID); ok {

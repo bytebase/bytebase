@@ -92,6 +92,7 @@ type WorkloadIdentityConfig_ProviderType int32
 const (
 	WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED WorkloadIdentityConfig_ProviderType = 0
 	WorkloadIdentityConfig_GITHUB                    WorkloadIdentityConfig_ProviderType = 1
+	WorkloadIdentityConfig_GITLAB                    WorkloadIdentityConfig_ProviderType = 2
 )
 
 // Enum value maps for WorkloadIdentityConfig_ProviderType.
@@ -99,10 +100,12 @@ var (
 	WorkloadIdentityConfig_ProviderType_name = map[int32]string{
 		0: "PROVIDER_TYPE_UNSPECIFIED",
 		1: "GITHUB",
+		2: "GITLAB",
 	}
 	WorkloadIdentityConfig_ProviderType_value = map[string]int32{
 		"PROVIDER_TYPE_UNSPECIFIED": 0,
 		"GITHUB":                    1,
+		"GITLAB":                    2,
 	}
 )
 
@@ -1090,17 +1093,19 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
 	"\x06source\x18\x03 \x01(\tR\x06source:%\xeaA\"\n" +
-	"\x11bytebase.com/User\x12\rusers/{email}\"\x9f\x02\n" +
+	"\x11bytebase.com/User\x12\rusers/{email}\"\xab\x02\n" +
 	"\x16WorkloadIdentityConfig\x12U\n" +
 	"\rprovider_type\x18\x01 \x01(\x0e20.bytebase.v1.WorkloadIdentityConfig.ProviderTypeR\fproviderType\x12\x1d\n" +
 	"\n" +
 	"issuer_url\x18\x02 \x01(\tR\tissuerUrl\x12+\n" +
 	"\x11allowed_audiences\x18\x03 \x03(\tR\x10allowedAudiences\x12'\n" +
-	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern\"9\n" +
+	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern\"E\n" +
 	"\fProviderType\x12\x1d\n" +
 	"\x19PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
-	"\x06GITHUB\x10\x01*k\n" +
+	"\x06GITHUB\x10\x01\x12\n" +
+	"\n" +
+	"\x06GITLAB\x10\x02*k\n" +
 	"\bUserType\x12\x19\n" +
 	"\x15USER_TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04USER\x10\x01\x12\x0e\n" +

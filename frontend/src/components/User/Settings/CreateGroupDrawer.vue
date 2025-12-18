@@ -111,7 +111,7 @@
             quaternary
             size="small"
             :group="group!"
-            @removed="$emit('close')"
+            @removed="$emit('removed', group!)"
           >
             <template #icon>
               <Trash2Icon class="w-4 h-auto" />
@@ -189,6 +189,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: "close"): void;
+  (event: "removed", group: Group): void;
   (event: "updated", group: Group): void;
 }>();
 

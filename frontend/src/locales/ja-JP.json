@@ -336,7 +336,7 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "このステートメントを 1 つのオンライン移行の問題に分割することをアドバイスします。"
     },
-    "prior-backup-tips": "影響を受けるデータを事前にバックアップする",
+    "prior-backup-tips": "影響を受けるデータを事前にバックアップします。データ変更（UPDATE、DELETE）のみに適用され、スキーマ変更には適用されません。",
     "database-create": {
       "created": "作成済み",
       "pending": "保留中"
@@ -394,7 +394,10 @@
     },
     "log-viewer": {
       "multiple-deploys-notice": "実行中にサーバーの再起動が検出されました。ログはデプロイごとにグループ化されています。",
-      "deployment-n": "デプロイ #{n}"
+      "deployment-n": "デプロイ #{n}",
+      "expand-all": "すべて展開",
+      "collapse-all": "すべて折りたたむ",
+      "summary": "{sections} セクション · {entries} エントリ"
     }
   },
   "banner": {
@@ -492,6 +495,17 @@
       "workload-identity-subject": "Subject Pattern",
       "workload-identity-repo-hint": "Leave empty for all repositories in the organization",
       "workload-identity-branch-hint": "Leave empty for all branches",
+      "workload-identity-gitlab-url": "GitLab URL",
+      "workload-identity-gitlab-url-hint": "Your GitLab instance URL",
+      "workload-identity-group": "Group / Username",
+      "workload-identity-project": "Project",
+      "workload-identity-project-hint": "Leave empty to allow all projects",
+      "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
+      "workload-identity-all-branches-tags": "All branches and tags",
+      "workload-identity-specific-branch": "Specific branch",
+      "workload-identity-specific-tag": "Specific tag",
+      "workload-identity-tag": "Tag",
+      "workload-identity-tag-hint": "Leave empty to allow all tags",
       "copy-service-key": "サービスキーをコピーする",
       "reset-service-key": "サービスキーのリセット",
       "reset-service-key-alert": "古いサービス キーはすぐにリセットされ、この操作は元に戻すことはできません。サービス キーをリセットしてもよろしいですか?",
@@ -501,15 +515,14 @@
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
       "entra-sync": {
-        "self": "Entra ID (Azure AD) から同期",
-        "description": "Entra ID (旧 Azure AD) のユーザーとグループを Bytebase インスタンスに同期します。",
+        "self": "SCIM から同期",
+        "description": "Entra ID (旧 Azure AD) または Okta のユーザーとグループを Bytebase インスタンスに同期します。",
         "endpoint": "Endpoint",
-        "endpoint-tip": "これを Entra の「Tenant URL」フィールドに貼り付けます。Entra は、このエンドポイントを介してユーザーとグループを Bytebase に同期します。",
+        "endpoint-tip": "ユーザーとグループはこのエンドポイントを介して Bytebase に同期されます。",
         "secret-token": "Secret Token",
-        "secret-token-tip": "これを Entra の「Secret Token」フィールドに貼り付けます。",
+        "secret-token-tip": "エンドポイントの検証トークンです。秘密にしてください。",
         "reset-token": "トークンをリセット",
-        "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。",
-        "goto-entra-dashboard": "Entraダッシュボードへ"
+        "reset-token-warning": "Entra アプリケーションのプロビジョニング設定を更新する必要があります。"
       },
       "all-users": "すべてのユーザー",
       "search-member": "メンバーを検索",
@@ -531,14 +544,23 @@
     "mcp": {
       "title": "MCP 統合",
       "description": "Model Context Protocol を使用して、AI アシスタントを Bytebase に接続します。",
+      "auth": {
+        "title": "認証が必要",
+        "description": "初回接続時に OAuth 認証が必要です。適切な Bytebase 権限があることを確認してください。"
+      },
+      "general-config": {
+        "title": "方法 1：JSON 設定"
+      },
+      "quick-start": {
+        "title": "方法 2：CLI コマンド",
+        "description": "または、以下の CLI コマンドを使用してください。"
+      },
       "setup": {
-        "add-to-config": "MCP 設定に追加",
-        "run-command": "このコマンドを実行",
-        "oauth-note": "初回使用時に、アクセスの承認を求められます。"
+        "add-to-config": "この JSON を MCP クライアント設定ファイルに追加してください。"
       },
       "first-prompt": {
         "title": "最初のプロンプト",
-        "description": "接続後、AI アシスタントに聞いてみてください",
+        "description": "接続後、AI アシスタントに聞いてみてください：",
         "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする"
       }
     },
@@ -1234,7 +1256,7 @@
     },
     "stage": {
       "self": "ステージ | ステージ",
-      "run-stage": "ランステージ",
+      "run-stage": "タスクを実行",
       "confirm-create": "このステージのタスクを作成してもよろしいですか？",
       "back-to-stage": "ステージに戻る {stage}"
     },
@@ -1635,7 +1657,8 @@
     "establish-database-baseline": "ベースライン「{name}」を作成します",
     "export": "変更履歴のエクスポート",
     "need-to-select-first": "最初に変更履歴を選択する必要があります",
-    "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。"
+    "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。",
+    "task-at": "タスク日時 {time}"
   },
   "database": {
     "labels": "データベースラベル",

@@ -35,7 +35,6 @@
           <ExprEditor
             :expr="state.expr"
             :allow-admin="!readonly"
-            :enable-raw-expression="true"
             :factor-list="FactorList"
             :option-config-map="getDatabaseGroupOptionConfigMap(project.name)"
           />
@@ -76,7 +75,7 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, head, isEqual } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBButtonConfirm } from "@/bbkit";
@@ -98,6 +97,7 @@ import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
 } from "@/store/modules/v1/common";
+import { isValidDatabaseGroupName } from "@/types";
 import type { Expr as CELExpr } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import {
@@ -149,9 +149,9 @@ const allowDelete = computed(() => {
   return hasProjectPermissionV2(props.project, "bb.databaseGroups.delete");
 });
 
-onMounted(async () => {
+watchEffect(async () => {
   const databaseGroup = props.databaseGroup;
-  if (!databaseGroup) {
+  if (!databaseGroup || !isValidDatabaseGroupName(databaseGroup.name)) {
     return;
   }
 
@@ -161,13 +161,10 @@ onMounted(async () => {
   );
   state.resourceId = databaseGroupName;
   state.placeholder = databaseGroupEntity.title;
-  const fetchedDatabaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
-    databaseGroup.name,
-    { silent: true, view: DatabaseGroupView.FULL }
-  );
-  if (fetchedDatabaseGroup?.databaseExpr?.expression) {
+
+  if (databaseGroup.databaseExpr?.expression) {
     // Convert CEL expression to simple expression
-    const expressions = [fetchedDatabaseGroup.databaseExpr.expression];
+    const expressions = [databaseGroup.databaseExpr.expression];
     const exprList = await batchConvertCELStringToParsedExpr(expressions);
     if (exprList.length > 0) {
       const simpleExpr = resolveCELExpr(exprList[0]);

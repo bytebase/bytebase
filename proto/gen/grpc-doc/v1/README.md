@@ -2504,6 +2504,7 @@ ProviderType identifies the CI/CD platform.
 | ---- | ------ | ----------- |
 | PROVIDER_TYPE_UNSPECIFIED | 0 |  |
 | GITHUB | 1 |  |
+| GITLAB | 2 |  |
 
 
  
@@ -4589,7 +4590,6 @@ BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
 | schema_size | [int64](#int64) |  |  |
 | prev_schema | [string](#string) |  |  |
 | prev_schema_size | [int64](#int64) |  |  |
-| issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
 | task_run | [string](#string) |  | Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | version | [string](#string) |  | Could be empty |
 | revision | [string](#string) |  | Could be empty Or present but not found if deleted |

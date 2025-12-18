@@ -49,7 +49,7 @@
                 {{ affectedRows }}
               </span>
               <CircleQuestionMarkIcon
-                class="size-[14px] text-control-light opacity-80"
+                class="size-3.5 text-control-light opacity-80"
               />
             </div>
           </NTag>
@@ -97,7 +97,7 @@ import { useSpecSheet } from "../StatementSection/useSpecSheet";
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const { plan, planCheckRuns } = usePlanContext();
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 const { refreshResources } = useResourcePoller();
 const { statusCountString } = usePlanCheckStatus(plan);
 const { sheet } = useSpecSheet(selectedSpec);

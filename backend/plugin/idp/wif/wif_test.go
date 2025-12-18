@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestMatchSubjectPattern(t *testing.T) {
@@ -50,6 +48,24 @@ func TestMatchSubjectPattern(t *testing.T) {
 			subject:  "repo:owner/repo:ref:refs/heads/main",
 			pattern:  "repo:other-owner/*",
 			expected: false,
+		},
+		{
+			name:     "gitlab exact match",
+			subject:  "project_path:mygroup/myproject:ref_type:branch:ref:main",
+			pattern:  "project_path:mygroup/myproject:ref_type:branch:ref:main",
+			expected: true,
+		},
+		{
+			name:     "gitlab wildcard suffix matches",
+			subject:  "project_path:mygroup/myproject:ref_type:branch:ref:main",
+			pattern:  "project_path:mygroup/myproject:*",
+			expected: true,
+		},
+		{
+			name:     "gitlab group wildcard matches",
+			subject:  "project_path:mygroup/myproject:ref_type:branch:ref:main",
+			pattern:  "project_path:mygroup/*",
+			expected: true,
 		},
 	}
 
@@ -114,90 +130,6 @@ func TestValidateAudience(t *testing.T) {
 	}
 }
 
-func TestBuildSubjectPattern(t *testing.T) {
-	tests := []struct {
-		name         string
-		providerType storepb.WorkloadIdentityConfig_ProviderType
-		owner        string
-		repo         string
-		branch       string
-		expected     string
-	}{
-		{
-			name:         "github with all fields",
-			providerType: storepb.WorkloadIdentityConfig_GITHUB,
-			owner:        "myorg",
-			repo:         "myrepo",
-			branch:       "main",
-			expected:     "repo:myorg/myrepo:ref:refs/heads/main",
-		},
-		{
-			name:         "github without branch",
-			providerType: storepb.WorkloadIdentityConfig_GITHUB,
-			owner:        "myorg",
-			repo:         "myrepo",
-			branch:       "",
-			expected:     "repo:myorg/myrepo:*",
-		},
-		{
-			name:         "github without repo",
-			providerType: storepb.WorkloadIdentityConfig_GITHUB,
-			owner:        "myorg",
-			repo:         "",
-			branch:       "",
-			expected:     "repo:myorg/*",
-		},
-		{
-			name:         "unsupported provider",
-			providerType: storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED,
-			owner:        "owner",
-			repo:         "repo",
-			branch:       "main",
-			expected:     "",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result := BuildSubjectPattern(tc.providerType, tc.owner, tc.repo, tc.branch)
-			require.Equal(t, tc.expected, result)
-		})
-	}
-}
-
-func TestGetPlatformPreset(t *testing.T) {
-	tests := []struct {
-		name         string
-		providerType storepb.WorkloadIdentityConfig_ProviderType
-		expectNil    bool
-		issuerURL    string
-	}{
-		{
-			name:         "github preset",
-			providerType: storepb.WorkloadIdentityConfig_GITHUB,
-			expectNil:    false,
-			issuerURL:    "https://token.actions.githubusercontent.com",
-		},
-		{
-			name:         "unsupported provider returns nil",
-			providerType: storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED,
-			expectNil:    true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			preset := GetPlatformPreset(tc.providerType)
-			if tc.expectNil {
-				require.Nil(t, preset)
-			} else {
-				require.NotNil(t, preset)
-				require.Equal(t, tc.issuerURL, preset.IssuerURL)
-			}
-		})
-	}
-}
-
 func TestValidateIssuerURL(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -207,6 +139,16 @@ func TestValidateIssuerURL(t *testing.T) {
 		{
 			name:      "valid https url",
 			issuerURL: "https://token.actions.githubusercontent.com",
+			wantErr:   false,
+		},
+		{
+			name:      "valid gitlab url",
+			issuerURL: "https://gitlab.com",
+			wantErr:   false,
+		},
+		{
+			name:      "valid self-hosted gitlab url",
+			issuerURL: "https://gitlab.example.com",
 			wantErr:   false,
 		},
 		{

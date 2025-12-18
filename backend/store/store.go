@@ -18,19 +18,16 @@ type Store struct {
 	enableCache   bool
 
 	// Cache.
-	Secret               string
-	userEmailCache       *lru.Cache[string, *UserMessage]
-	instanceCache        *lru.Cache[string, *InstanceMessage]
-	databaseCache        *lru.Cache[string, *DatabaseMessage]
-	projectCache         *lru.Cache[string, *ProjectMessage]
-	policyCache          *lru.Cache[string, *PolicyMessage]
-	issueCache           *lru.Cache[int, *IssueMessage]
-	issueByPipelineCache *lru.Cache[int, *IssueMessage]
-	pipelineCache        *lru.Cache[int, *PipelineMessage]
-	settingCache         *lru.Cache[storepb.SettingName, *SettingMessage]
-	rolesCache           *lru.Cache[string, *RoleMessage]
-	groupCache           *lru.Cache[string, *GroupMessage]
-	sheetMetadataCache   *lru.Cache[int, *SheetMessage]
+	Secret             string
+	userEmailCache     *lru.Cache[string, *UserMessage]
+	instanceCache      *lru.Cache[string, *InstanceMessage]
+	databaseCache      *lru.Cache[string, *DatabaseMessage]
+	projectCache       *lru.Cache[string, *ProjectMessage]
+	policyCache        *lru.Cache[string, *PolicyMessage]
+	settingCache       *lru.Cache[storepb.SettingName, *SettingMessage]
+	rolesCache         *lru.Cache[string, *RoleMessage]
+	groupCache         *lru.Cache[string, *GroupMessage]
+	sheetMetadataCache *lru.Cache[int, *SheetMessage]
 
 	// Large objects.
 	sheetFullCache  *lru.Cache[int, *SheetMessage]
@@ -57,18 +54,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		return nil, err
 	}
 	policyCache, err := lru.New[string, *PolicyMessage](128)
-	if err != nil {
-		return nil, err
-	}
-	issueCache, err := lru.New[int, *IssueMessage](256)
-	if err != nil {
-		return nil, err
-	}
-	issueByPipelineCache, err := lru.New[int, *IssueMessage](256)
-	if err != nil {
-		return nil, err
-	}
-	pipelineCache, err := lru.New[int, *PipelineMessage](256)
 	if err != nil {
 		return nil, err
 	}
@@ -108,20 +93,17 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		enableCache:   enableCache,
 
 		// Cache.
-		userEmailCache:       userEmailCache,
-		instanceCache:        instanceCache,
-		databaseCache:        databaseCache,
-		projectCache:         projectCache,
-		policyCache:          policyCache,
-		issueCache:           issueCache,
-		issueByPipelineCache: issueByPipelineCache,
-		pipelineCache:        pipelineCache,
-		settingCache:         settingCache,
-		rolesCache:           rolesCache,
-		sheetMetadataCache:   sheetMetadataCache,
-		sheetFullCache:       sheetFullCache,
-		dbMetadataCache:      dbMetadataCache,
-		groupCache:           groupCache,
+		userEmailCache:     userEmailCache,
+		instanceCache:      instanceCache,
+		databaseCache:      databaseCache,
+		projectCache:       projectCache,
+		policyCache:        policyCache,
+		settingCache:       settingCache,
+		rolesCache:         rolesCache,
+		sheetMetadataCache: sheetMetadataCache,
+		sheetFullCache:     sheetFullCache,
+		dbMetadataCache:    dbMetadataCache,
+		groupCache:         groupCache,
 	}
 
 	return s, nil

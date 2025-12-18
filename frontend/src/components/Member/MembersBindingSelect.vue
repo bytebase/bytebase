@@ -45,6 +45,7 @@
         :project-name="projectName"
         :include-all-users="includeAllUsers"
         :include-service-account="includeServiceAccount"
+        :include-workload-identity="includeWorkloadIdentity"
         @update:users="onMemberListUpdate"
       />
     </div>
@@ -98,6 +99,7 @@ const props = withDefaults(
     allowChangeType?: boolean;
     includeAllUsers?: boolean;
     includeServiceAccount?: boolean;
+    includeWorkloadIdentity?: boolean;
   }>(),
   {
     disabled: false,
@@ -105,6 +107,7 @@ const props = withDefaults(
     allowChangeType: true,
     includeAllUsers: false,
     includeServiceAccount: false,
+    includeWorkloadIdentity: false,
   }
 );
 

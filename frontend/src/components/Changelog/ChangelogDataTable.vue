@@ -17,14 +17,13 @@
 import { type DataTableColumn, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouterLink, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Changelog } from "@/types/proto-es/v1/database_service_pb";
 import {
   Changelog_Status,
   Changelog_Type,
 } from "@/types/proto-es/v1/database_service_pb";
-import { extractIssueUID } from "@/utils";
 import { changelogLink, getChangelogChangeType } from "@/utils/v1/changelog";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangelogStatusIcon from "./ChangelogStatusIcon.vue";
@@ -77,36 +76,6 @@ const columnList = computed(() => {
       width: 96,
       resizable: true,
       render: (changelog) => getChangelogChangeType(changelog.type),
-    },
-    {
-      key: "issue",
-      title: t("common.issue"),
-      width: 96,
-      resizable: true,
-      render: (changelog) => {
-        const uid = extractIssueUID(changelog.issue);
-        if (!uid) return null;
-        return (
-          <RouterLink
-            to={{
-              path: `/${changelog.issue}`,
-            }}
-            custom={true}
-          >
-            {{
-              default: ({ href }: { href: string }) => (
-                <a
-                  href={href}
-                  class="normal-link"
-                  onClick={(e: MouseEvent) => e.stopPropagation()}
-                >
-                  #{uid}
-                </a>
-              ),
-            }}
-          </RouterLink>
-        );
-      },
     },
     {
       key: "version",

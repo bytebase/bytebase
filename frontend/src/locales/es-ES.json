@@ -336,7 +336,7 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "Se recomienda dividir esta declaración en un único problema de migración en línea."
     },
-    "prior-backup-tips": "La copia de seguridad de los datos afectados con anticipación",
+    "prior-backup-tips": "Copia de seguridad de los datos afectados con anticipación. Solo aplica a cambios de datos (UPDATE, DELETE), no a cambios de esquema.",
     "database-create": {
       "created": "Creado",
       "pending": "Pendiente"
@@ -394,7 +394,10 @@
     },
     "log-viewer": {
       "multiple-deploys-notice": "Se detectó un reinicio del servidor durante la ejecución. Los registros están agrupados por despliegue.",
-      "deployment-n": "Despliegue #{n}"
+      "deployment-n": "Despliegue #{n}",
+      "expand-all": "Expandir todo",
+      "collapse-all": "Contraer todo",
+      "summary": "{sections} secciones · {entries} entradas"
     }
   },
   "banner": {
@@ -492,6 +495,17 @@
       "workload-identity-subject": "Subject Pattern",
       "workload-identity-repo-hint": "Leave empty for all repositories in the organization",
       "workload-identity-branch-hint": "Leave empty for all branches",
+      "workload-identity-gitlab-url": "GitLab URL",
+      "workload-identity-gitlab-url-hint": "Your GitLab instance URL",
+      "workload-identity-group": "Group / Username",
+      "workload-identity-project": "Project",
+      "workload-identity-project-hint": "Leave empty to allow all projects",
+      "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
+      "workload-identity-all-branches-tags": "All branches and tags",
+      "workload-identity-specific-branch": "Specific branch",
+      "workload-identity-specific-tag": "Specific tag",
+      "workload-identity-tag": "Tag",
+      "workload-identity-tag-hint": "Leave empty to allow all tags",
       "copy-service-key": "Copiar Clave de Servicio",
       "reset-service-key": "Restablecer Clave de Servicio",
       "reset-service-key-alert": "Esta acción no se puede deshacer. La clave antigua dejará de funcionar de inmediato. ¿Está seguro de que desea restablecer esta clave de servicio?",
@@ -501,15 +515,14 @@
       "add-member": "Agregar miembro",
       "add-user": "Agregar usuario",
       "entra-sync": {
-        "self": "Sincronización desde Entra ID (Azure AD)",
-        "description": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) con su instancia de Bytebase.",
+        "self": "Sincronización desde SCIM",
+        "description": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) u Okta con su instancia de Bytebase.",
         "endpoint": "Punto final",
-        "endpoint-tip": "Pegue esto en el campo \"Tenant URL\" en Entra. Entra sincronizará usuarios y grupos con Bytebase a través de este punto de conexión.",
+        "endpoint-tip": "Los usuarios y grupos se sincronizarán con Bytebase a través de este endpoint.",
         "secret-token": "Secret Token",
-        "secret-token-tip": "Pegue esto en el campo \"Secret Token\" en Entra.",
+        "secret-token-tip": "El token de verificación para el endpoint. Por favor, manténgalo en secreto.",
         "reset-token": "Restablecer token",
-        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra.",
-        "goto-entra-dashboard": "Ir al panel de control de Entra"
+        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra."
       },
       "all-users": "Todos los usuarios",
       "search-member": "Buscar miembro",
@@ -531,14 +544,23 @@
     "mcp": {
       "title": "Integración MCP",
       "description": "Conecte asistentes de IA a Bytebase usando el Model Context Protocol.",
+      "auth": {
+        "title": "Autenticación requerida",
+        "description": "Se requiere autenticación OAuth en la primera conexión. Asegúrese de tener los permisos apropiados en Bytebase."
+      },
+      "general-config": {
+        "title": "Opción 1: Configuración JSON"
+      },
+      "quick-start": {
+        "title": "Opción 2: Comandos CLI",
+        "description": "Alternativamente, use uno de estos comandos CLI."
+      },
       "setup": {
-        "add-to-config": "Agregar a su configuración MCP",
-        "run-command": "Ejecute este comando",
-        "oauth-note": "En el primer uso, se le pedirá que autorice el acceso."
+        "add-to-config": "Agregue este JSON a su archivo de configuración del cliente MCP."
       },
       "first-prompt": {
         "title": "Tu primer prompt",
-        "description": "Una vez conectado, intente preguntar a su asistente de IA",
+        "description": "Una vez conectado, intente preguntar a su asistente de IA:",
         "example": "Listar todos los proyectos en mi instancia de Bytebase"
       }
     },
@@ -1234,7 +1256,7 @@
     },
     "stage": {
       "self": "Escenario | Escenarios",
-      "run-stage": "Etapa de ejecución",
+      "run-stage": "Ejecutar tareas",
       "confirm-create": "¿Está seguro de que desea crear tareas para esta etapa?",
       "back-to-stage": "Volver a la etapa {stage}"
     },
@@ -1635,7 +1657,8 @@
     "establish-database-baseline": "Establecer línea base de \"{name}\"",
     "export": "Exportar historial de cambios",
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
-    "rollback-tip": "Seleccione un historial de DDL específico para revertir."
+    "rollback-tip": "Seleccione un historial de DDL específico para revertir.",
+    "task-at": "Tarea el {time}"
   },
   "database": {
     "labels": "Etiquetas de base de datos",

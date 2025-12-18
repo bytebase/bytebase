@@ -22,7 +22,7 @@
             {{ $t("issue.upload-sql") }}
           </SQLUploadButton>
           <NButton
-            v-if="shouldShowSchemaEditorButton"
+            v-if="shouldShowSchemaEditorButton && targetDatabaseNames.length > 0"
             size="small"
             @click="handleOpenSchemaEditor"
           >
@@ -184,7 +184,7 @@
   <SchemaEditorDrawer
     v-if="shouldShowSchemaEditorButton"
     v-model:show="state.showSchemaEditorDrawer"
-    :databases="targetDatabases"
+    :databaseNames="targetDatabaseNames"
     :project="project"
     @insert="handleInsertSQL"
   />
@@ -221,7 +221,7 @@ import {
   useSheetV1Store,
 } from "@/store";
 import type { SQLDialect } from "@/types";
-import { dialectOfEngineV1 } from "@/types";
+import { dialectOfEngineV1, isValidDatabaseGroupName } from "@/types";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
@@ -249,7 +249,7 @@ const dialog = useDialog();
 const { project } = useCurrentProjectV1();
 const { isCreating, plan, planCheckRuns, rollout, events, readonly } =
   usePlanContext();
-const selectedSpec = useSelectedSpec();
+const { selectedSpec, getDatabaseTargets, targets } = useSelectedSpec();
 const editorState = useEditorState();
 
 const state = reactive<LocalState>({
@@ -402,29 +402,17 @@ const shouldShowSchemaEditorButton = computed(() => {
 
   // Check if at least one target database supports schema editor
   const databaseStore = useDatabaseV1Store();
-  const hasSupported = targets.some((targetName) => {
+  return targets.some((targetName) => {
+    if (isValidDatabaseGroupName(targetName)) {
+      return false;
+    }
     const db = databaseStore.getDatabaseByName(targetName);
     return engineSupportsSchemaEditor(db.instanceResource.engine);
   });
-
-  if (!hasSupported) {
-    return false;
-  }
-
-  return true;
 });
 
-const targetDatabases = computed(() => {
-  const spec = selectedSpec.value;
-  if (!spec?.config || spec.config.case !== "changeDatabaseConfig") {
-    return [];
-  }
-
-  const databaseStore = useDatabaseV1Store();
-  const targets = spec.config.value.targets || [];
-  return targets
-    .map((targetName) => databaseStore.getDatabaseByName(targetName))
-    .filter((db) => engineSupportsSchemaEditor(db.instanceResource.engine));
+const targetDatabaseNames = computed(() => {
+  return getDatabaseTargets(targets.value).databaseTargets;
 });
 
 const beginEdit = () => {

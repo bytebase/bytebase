@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -129,8 +129,7 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 	}
 
 	// Validate audience
-	if !audienceContains(claims.Audience, fmt.Sprintf(auth.AccessTokenAudienceFmt, common.ReleaseModeProd)) &&
-		!audienceContains(claims.Audience, fmt.Sprintf(auth.AccessTokenAudienceFmt, common.ReleaseModeDev)) {
+	if !audienceContains(claims.Audience, fmt.Sprintf(auth.AccessTokenAudienceFmt, s.profile.Mode)) {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "invalid token audience")
 	}
 
@@ -203,10 +202,5 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 
 // audienceContains checks if the audience claim contains the given token.
 func audienceContains(audience jwt.ClaimStrings, token string) bool {
-	for _, aud := range audience {
-		if aud == token {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(audience, token)
 }

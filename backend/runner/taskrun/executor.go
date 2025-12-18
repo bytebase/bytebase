@@ -72,7 +72,6 @@ type migrateContext struct {
 	task        *store.TaskMessage
 	taskRunUID  int
 	taskRunName string
-	issueName   string
 
 	version string
 
@@ -218,13 +217,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		}
 	}
 
-	issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-	if err != nil {
-		slog.Error("failed to find containing issue", log.BBError(err))
-	}
-	if issue != nil {
-		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
-	}
 	return mc, nil
 }
 
@@ -448,7 +440,6 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 		SyncHistoryUID:     nil,
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:     mc.taskRunName,
-			Issue:       mc.issueName,
 			Revision:    0,
 			Sheet:       mc.sheetName,
 			Version:     mc.version,

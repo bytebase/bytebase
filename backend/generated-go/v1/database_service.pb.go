@@ -5337,16 +5337,14 @@ type Changelog struct {
 	SchemaSize     int64  `protobuf:"varint,8,opt,name=schema_size,json=schemaSize,proto3" json:"schema_size,omitempty"`
 	PrevSchema     string `protobuf:"bytes,9,opt,name=prev_schema,json=prevSchema,proto3" json:"prev_schema,omitempty"`
 	PrevSchemaSize int64  `protobuf:"varint,10,opt,name=prev_schema_size,json=prevSchemaSize,proto3" json:"prev_schema_size,omitempty"`
-	// Format: projects/{project}/issues/{issue}
-	Issue string `protobuf:"bytes,11,opt,name=issue,proto3" json:"issue,omitempty"`
 	// Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-	TaskRun string `protobuf:"bytes,12,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
+	TaskRun string `protobuf:"bytes,11,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
 	// Could be empty
-	Version string `protobuf:"bytes,13,opt,name=version,proto3" json:"version,omitempty"`
+	Version string `protobuf:"bytes,12,opt,name=version,proto3" json:"version,omitempty"`
 	// Could be empty
 	// Or present but not found if deleted
-	Revision      string         `protobuf:"bytes,14,opt,name=revision,proto3" json:"revision,omitempty"`
-	Type          Changelog_Type `protobuf:"varint,16,opt,name=type,proto3,enum=bytebase.v1.Changelog_Type" json:"type,omitempty"`
+	Revision      string         `protobuf:"bytes,13,opt,name=revision,proto3" json:"revision,omitempty"`
+	Type          Changelog_Type `protobuf:"varint,14,opt,name=type,proto3,enum=bytebase.v1.Changelog_Type" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5449,13 +5447,6 @@ func (x *Changelog) GetPrevSchemaSize() int64 {
 		return x.PrevSchemaSize
 	}
 	return 0
-}
-
-func (x *Changelog) GetIssue() string {
-	if x != nil {
-		return x.Issue
-	}
-	return ""
 }
 
 func (x *Changelog) GetTaskRun() string {
@@ -6079,7 +6070,7 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x13GetChangelogRequest\x12:\n" +
 	"\x04name\x18\x01 \x01(\tB&\xe0A\x02\xfaA \n" +
 	"\x1ebytebase.com/DatabaseChangelogR\x04name\x12.\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\x8b\x06\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"\xf5\x05\n" +
 	"\tChangelog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -6094,12 +6085,11 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\vprev_schema\x18\t \x01(\tR\n" +
 	"prevSchema\x12(\n" +
 	"\x10prev_schema_size\x18\n" +
-	" \x01(\x03R\x0eprevSchemaSize\x12\x14\n" +
-	"\x05issue\x18\v \x01(\tR\x05issue\x12\x19\n" +
-	"\btask_run\x18\f \x01(\tR\ataskRun\x12\x18\n" +
-	"\aversion\x18\r \x01(\tR\aversion\x12\x1a\n" +
-	"\brevision\x18\x0e \x01(\tR\brevision\x12/\n" +
-	"\x04type\x18\x10 \x01(\x0e2\x1b.bytebase.v1.Changelog.TypeR\x04type\"C\n" +
+	" \x01(\x03R\x0eprevSchemaSize\x12\x19\n" +
+	"\btask_run\x18\v \x01(\tR\ataskRun\x12\x18\n" +
+	"\aversion\x18\f \x01(\tR\aversion\x12\x1a\n" +
+	"\brevision\x18\r \x01(\tR\brevision\x12/\n" +
+	"\x04type\x18\x0e \x01(\x0e2\x1b.bytebase.v1.Changelog.TypeR\x04type\"C\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\b\n" +

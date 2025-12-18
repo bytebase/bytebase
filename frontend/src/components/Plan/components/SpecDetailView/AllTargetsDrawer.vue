@@ -69,8 +69,8 @@ import {
   useDBGroupStore,
 } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
-import { usePlanContext } from "../../logic/context";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
+import { useSelectedSpec } from "./context";
 import DatabaseGroupTargetDisplay from "./DatabaseGroupTargetDisplay.vue";
 
 interface Props {
@@ -90,22 +90,12 @@ defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
-const { plan } = usePlanContext();
+const { getDatabaseTargets } = useSelectedSpec();
 
 const state = reactive<LocalState>({
   searchText: "",
   isLoading: false,
 });
-
-// Get databases from deployment mapping for a database group
-const getDatabasesForGroup = (groupName: string): string[] => {
-  const deployment = plan.value.deployment;
-  if (!deployment) return [];
-  const mapping = deployment.databaseGroupMappings.find(
-    (m: { databaseGroup: string }) => m.databaseGroup === groupName
-  );
-  return mapping?.databases ?? [];
-};
 
 const filteredTargets = computed(() => {
   if (!state.searchText) {
@@ -131,20 +121,9 @@ const loadAllTargets = async () => {
 
   try {
     // Separate different types of targets for optimized fetching
-    const databaseTargets: string[] = [];
-    const dbGroupTargets: string[] = [];
-
-    for (const target of props.targets) {
-      if (isValidDatabaseGroupName(target)) {
-        // If target is a valid database group name
-        dbGroupTargets.push(target);
-        // Also collect databases from deployment mapping for this group
-        const mappedDatabases = getDatabasesForGroup(target);
-        databaseTargets.push(...mappedDatabases);
-      } else if (isValidDatabaseName(target)) {
-        databaseTargets.push(target);
-      }
-    }
+    const { databaseTargets, dbGroupTargets } = getDatabaseTargets(
+      props.targets
+    );
 
     // Batch fetch all targets
     const fetchPromises: Promise<any>[] = [];
@@ -166,24 +145,23 @@ const loadAllTargets = async () => {
   }
 };
 
-// Load all targets when drawer opens
 watch(
   () => props.show,
   async (show) => {
     if (show) {
       state.searchText = "";
-      await loadAllTargets();
     }
   }
 );
 
-// Reload if targets change while drawer is open
+// Load all targets when drawer opens
 watch(
-  () => props.targets,
-  async () => {
-    if (props.show) {
+  () => props.show,
+  async (show) => {
+    if (show) {
       await loadAllTargets();
     }
-  }
+  },
+  { once: true }
 );
 </script>

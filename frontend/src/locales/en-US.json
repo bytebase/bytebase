@@ -336,7 +336,7 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "Advice splitting this statement to single online migration issue."
     },
-    "prior-backup-tips": "Backup affected data ahead of time",
+    "prior-backup-tips": "Backup affected data ahead of time. Only applies to data changes (UPDATE, DELETE), not schema changes.",
     "database-create": {
       "created": "Created",
       "pending": "Pending"
@@ -394,7 +394,10 @@
     },
     "log-viewer": {
       "multiple-deploys-notice": "Server restart detected during execution. Logs are grouped by deployment.",
-      "deployment-n": "Deployment #{n}"
+      "deployment-n": "Deployment #{n}",
+      "expand-all": "Expand all",
+      "collapse-all": "Collapse all",
+      "summary": "{sections} sections · {entries} entries"
     }
   },
   "banner": {
@@ -492,6 +495,17 @@
       "workload-identity-subject": "Subject Pattern",
       "workload-identity-repo-hint": "Leave empty for all repositories in the organization",
       "workload-identity-branch-hint": "Leave empty for all branches",
+      "workload-identity-gitlab-url": "GitLab URL",
+      "workload-identity-gitlab-url-hint": "Your GitLab instance URL",
+      "workload-identity-group": "Group / Username",
+      "workload-identity-project": "Project",
+      "workload-identity-project-hint": "Leave empty to allow all projects",
+      "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
+      "workload-identity-all-branches-tags": "All branches and tags",
+      "workload-identity-specific-branch": "Specific branch",
+      "workload-identity-specific-tag": "Specific tag",
+      "workload-identity-tag": "Tag",
+      "workload-identity-tag-hint": "Leave empty to allow all tags",
       "copy-service-key": "Copy Service Key",
       "reset-service-key": "Reset Service Key",
       "reset-service-key-alert": "This action cannot be undone. The old key will stop working immediately. Are you sure you want to reset this service key?",
@@ -501,15 +515,14 @@
       "add-member": "Add member",
       "add-user": "Add user",
       "entra-sync": {
-        "self": "Sync from Entra ID (Azure AD)",
-        "description": "Sync users and groups from Entra ID (formerly Azure AD) to your Bytebase instance.",
+        "self": "Sync from SCIM",
+        "description": "Sync users and groups from Entra ID (formerly Azure AD) or Okta to your Bytebase instance.",
         "endpoint": "Endpoint",
-        "endpoint-tip": "Entra will sync users and groups to Bytebase via this endpoint. Paste this to the \"Tenant URL\" field in Entra.",
+        "endpoint-tip": "Users and groups will be synced to Bytebase via this endpoint.",
         "secret-token": "Secret Token",
-        "secret-token-tip": "Paste this to the \"Secret Token\" field in Entra.",
+        "secret-token-tip": "The verification token for the endpoint. Please keep it in secret.",
         "reset-token": "Reset token",
-        "reset-token-warning": "You need to update the Entra application provisioning config.",
-        "goto-entra-dashboard": "Go to Entra Dashboard"
+        "reset-token-warning": "You need to update the application provisioning config."
       },
       "all-users": "All users",
       "search-member": "Search member",
@@ -531,14 +544,23 @@
     "mcp": {
       "title": "MCP Integration",
       "description": "Connect AI assistants to Bytebase using the Model Context Protocol.",
+      "auth": {
+        "title": "Authentication Required",
+        "description": "OAuth authentication is required on first connection. Ensure you have appropriate Bytebase permissions."
+      },
+      "general-config": {
+        "title": "Option 1: JSON Configuration"
+      },
+      "quick-start": {
+        "title": "Option 2: CLI Commands",
+        "description": "Alternatively, use one of these CLI commands."
+      },
       "setup": {
-        "add-to-config": "Add to your MCP configuration",
-        "run-command": "Run this command",
-        "oauth-note": "On first use, you'll be prompted to authorize access."
+        "add-to-config": "Add this JSON to your MCP client configuration file."
       },
       "first-prompt": {
         "title": "Your First Prompt",
-        "description": "Once connected, try asking your AI assistant",
+        "description": "Once connected, try asking your AI assistant:",
         "example": "List all projects in my Bytebase instance"
       }
     },
@@ -1234,7 +1256,7 @@
     },
     "stage": {
       "self": "Stage | Stages",
-      "run-stage": "Run Stage",
+      "run-stage": "Run Tasks",
       "confirm-create": "Confirm to create tasks for this stage?",
       "back-to-stage": "Back to Stage {stage}"
     },
@@ -1635,7 +1657,8 @@
     "establish-database-baseline": "Establish \"{name}\" baseline",
     "export": "Export Changelog",
     "need-to-select-first": "Need to select changelog first",
-    "rollback-tip": "Select a specific DDL changelog to rollback."
+    "rollback-tip": "Select a specific DDL changelog to rollback.",
+    "task-at": "Task at {time}"
   },
   "database": {
     "labels": "Database Labels",

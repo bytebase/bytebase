@@ -16,10 +16,10 @@ import SigninModal from "@/views/auth/SigninModal.vue";
 import { t } from "./plugins/i18n";
 import { WORKSPACE_ROOT_MODULE } from "./router/dashboard/workspaceRoutes";
 import {
+  batchGetOrFetchGroups,
   pushNotification,
   useAuthStore,
   useCurrentUserV1,
-  useGroupStore,
   useRoleStore,
   useWorkspaceV1Store,
 } from "./store";
@@ -33,7 +33,6 @@ const router = useRouter();
 const authStore = useAuthStore();
 const currentUser = useCurrentUserV1();
 const workspaceStore = useWorkspaceV1Store();
-const groupStore = useGroupStore();
 const roleStore = useRoleStore();
 
 const authCheckIntervalId = ref<NodeJS.Timeout>();
@@ -102,7 +101,7 @@ watch(
       workspaceStore.fetchIamPolicy(),
       roleStore.fetchRoleList(),
       // we only care about the groups for the current user.
-      groupStore.batchFetchGroups(currentUser.value.groups),
+      batchGetOrFetchGroups(currentUser.value.groups),
     ]);
   },
   {

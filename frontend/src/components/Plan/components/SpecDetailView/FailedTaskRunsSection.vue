@@ -84,7 +84,7 @@ const { t } = useI18n();
 const router = useRouter();
 const { project } = useCurrentProjectV1();
 const { rollout, taskRuns } = usePlanContextWithRollout();
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 const databaseStore = useDatabaseV1Store();
 const taskRunLogStore = useTaskRunLogStore();
 

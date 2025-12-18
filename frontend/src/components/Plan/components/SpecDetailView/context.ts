@@ -1,7 +1,10 @@
-import { head } from "lodash-es";
+import { head, uniq } from "lodash-es";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
+import { isValidDatabaseGroupName } from "@/types";
 import { usePlanContext } from "../../logic";
+
+export const DEFAULT_VISIBLE_TARGETS = 20;
 
 export const useSelectedSpec = () => {
   const route = useRoute();
@@ -36,5 +39,45 @@ export const useSelectedSpec = () => {
     return foundSpec;
   });
 
-  return selectedSpec;
+  const targets = computed(() => {
+    if (!selectedSpec.value) return [];
+    if (
+      selectedSpec.value.config.case === "changeDatabaseConfig" ||
+      selectedSpec.value.config.case === "exportDataConfig"
+    ) {
+      return selectedSpec.value.config.value.targets;
+    }
+    return [];
+  });
+
+  const getDatabasesForGroup = (groupName: string): string[] => {
+    const deployment = plan.value.deployment;
+    if (!deployment) return [];
+    const mapping = deployment.databaseGroupMappings.find(
+      (m: { databaseGroup: string }) => m.databaseGroup === groupName
+    );
+    return mapping?.databases ?? [];
+  };
+
+  const getDatabaseTargets = (
+    targets: string[]
+  ): { databaseTargets: string[]; dbGroupTargets: string[] } => {
+    const databaseTargets: string[] = [];
+    const dbGroupTargets: string[] = [];
+
+    for (const target of targets) {
+      if (isValidDatabaseGroupName(target)) {
+        dbGroupTargets.push(target);
+        // Also collect databases from deployment mapping for this group
+        const mappedDatabases = getDatabasesForGroup(target);
+        databaseTargets.push(...mappedDatabases);
+      } else {
+        databaseTargets.push(target);
+      }
+    }
+
+    return { databaseTargets: uniq(databaseTargets), dbGroupTargets };
+  };
+
+  return { selectedSpec, targets, getDatabaseTargets };
 };

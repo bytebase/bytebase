@@ -8819,9 +8819,6 @@ components:
                     type: string
                 prevSchemaSize:
                     type: string
-                issue:
-                    type: string
-                    description: 'Format: projects/{project}/issues/{issue}'
                 taskRun:
                     type: string
                     description: 'Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
@@ -15375,6 +15372,7 @@ components:
                     enum:
                         - PROVIDER_TYPE_UNSPECIFIED
                         - GITHUB
+                        - GITLAB
                     type: string
                     description: Platform type (currently only GITHUB is supported)
                     format: enum

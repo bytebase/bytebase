@@ -58,6 +58,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (event: "update-group", group: Group): void;
+  (event: "remove-group", group: Group): void;
 }>();
 
 const { t } = useI18n();
@@ -127,6 +128,9 @@ const columns = computed(() => {
             group: row.group,
             "onUpdate-group": () => {
               emit("update-group", row.group);
+            },
+            "onRemove-group": () => {
+              emit("remove-group", row.group);
             },
           });
         } else {

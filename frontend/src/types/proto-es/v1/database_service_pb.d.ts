@@ -3052,23 +3052,16 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
   prevSchemaSize: bigint;
 
   /**
-   * Format: projects/{project}/issues/{issue}
-   *
-   * @generated from field: string issue = 11;
-   */
-  issue: string;
-
-  /**
    * Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
-   * @generated from field: string task_run = 12;
+   * @generated from field: string task_run = 11;
    */
   taskRun: string;
 
   /**
    * Could be empty
    *
-   * @generated from field: string version = 13;
+   * @generated from field: string version = 12;
    */
   version: string;
 
@@ -3076,12 +3069,12 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
    * Could be empty
    * Or present but not found if deleted
    *
-   * @generated from field: string revision = 14;
+   * @generated from field: string revision = 13;
    */
   revision: string;
 
   /**
-   * @generated from field: bytebase.v1.Changelog.Type type = 16;
+   * @generated from field: bytebase.v1.Changelog.Type type = 14;
    */
   type: Changelog_Type;
 };

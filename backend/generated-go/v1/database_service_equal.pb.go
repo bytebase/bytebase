@@ -1704,9 +1704,6 @@ func (x *Changelog) Equal(y *Changelog) bool {
 	if x.PrevSchemaSize != y.PrevSchemaSize {
 		return false
 	}
-	if x.Issue != y.Issue {
-		return false
-	}
 	if x.TaskRun != y.TaskRun {
 		return false
 	}

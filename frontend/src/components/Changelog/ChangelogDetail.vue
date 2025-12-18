@@ -22,25 +22,13 @@
             <NTag v-if="changelog.version" round>
               {{ $t("common.version") }} {{ changelog.version }}
             </NTag>
-            <span class="text-xl">{{
-              getDateForPbTimestampProtoEs(
-                changelog.createTime
-              )?.toLocaleString()
-            }}</span>
           </div>
-          <dl class="flex flex-col gap-y-1 md:gap-y-0 md:flex-row md:flex-wrap">
-            <dt class="sr-only">{{ $t("common.issue") }}</dt>
+
+          <dl v-if="taskFullLink" class="flex flex-col gap-y-1">
+            <dt class="sr-only">{{ $t("common.task") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.issue") }}&nbsp;-&nbsp;</span
-              >
-              <router-link
-                :to="{
-                  path: `/${changelog.issue}`,
-                }"
-                class="normal-link"
-              >
-                #{{ extractIssueUID(changelog.issue) }}
+              <router-link :to="taskFullLink" class="normal-link">
+                {{ $t("changelog.task-at", { time: formattedCreateTime }) }}
               </router-link>
             </dd>
           </dl>
@@ -127,7 +115,6 @@ import {
   ChangelogView,
 } from "@/types/proto-es/v1/database_service_pb";
 import {
-  extractIssueUID,
   getStatementSize,
   hasProjectPermissionV2,
   wrapRefAsPromise,
@@ -166,6 +153,26 @@ const changelogName = computed(() => {
 
 const changelog = computed((): Changelog | undefined => {
   return changelogStore.getChangelogByName(changelogName.value);
+});
+
+const taskFullLink = computed(() => {
+  if (!changelog.value?.taskRun) {
+    return "";
+  }
+  const parts = changelog.value.taskRun.split("/taskRuns/");
+  if (parts.length !== 2) {
+    return "";
+  }
+  return `/${parts[0]}`;
+});
+
+const formattedCreateTime = computed(() => {
+  if (!changelog.value) {
+    return "";
+  }
+  return getDateForPbTimestampProtoEs(
+    changelog.value.createTime
+  )?.toLocaleString();
 });
 
 const changelogSchema = computed(() => {

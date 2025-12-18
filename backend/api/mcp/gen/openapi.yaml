@@ -7828,10 +7828,6 @@ components:
             - string
           title: prev_schema_size
           format: int64
-        issue:
-          type: string
-          title: issue
-          description: 'Format: projects/{project}/issues/{issue}'
         taskRun:
           type: string
           title: task_run
@@ -17979,6 +17975,7 @@ components:
       enum:
         - PROVIDER_TYPE_UNSPECIFIED
         - GITHUB
+        - GITLAB
       description: ProviderType identifies the CI/CD platform.
     bytebase.v1.Worksheet:
       type: object

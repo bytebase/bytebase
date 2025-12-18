@@ -31,8 +31,8 @@
         </span>
         <UserRolesCell v-if="role" :role="role" />
       </div>
-      <span v-if="showEmail" class="textinfolabel text-sm">
-        {{ extractGroupEmail(group.name) }}
+      <span v-if="showEmail && group.email" class="textinfolabel text-sm">
+        {{ group.email }}
       </span>
     </div>
   </div>
@@ -45,7 +45,7 @@ import { computed } from "vue";
 import UserRolesCell from "@/components/Member/MemberDataTable/cells/UserRolesCell.vue";
 import type { MemberRole } from "@/components/Member/types";
 import { WORKSPACE_ROUTE_USERS } from "@/router/dashboard/workspaceRoutes";
-import { extractGroupEmail, extractUserId, useCurrentUserV1 } from "@/store";
+import { extractUserId, useCurrentUserV1 } from "@/store";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 

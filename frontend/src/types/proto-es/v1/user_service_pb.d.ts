@@ -510,6 +510,11 @@ export enum WorkloadIdentityConfig_ProviderType {
    * @generated from enum value: GITHUB = 1;
    */
   GITHUB = 1,
+
+  /**
+   * @generated from enum value: GITLAB = 2;
+   */
+  GITLAB = 2,
 }
 
 /**

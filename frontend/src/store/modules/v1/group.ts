@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { orderBy } from "lodash-es";
+import { orderBy, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import { groupServiceClientConnect } from "@/grpcweb";
@@ -160,3 +160,21 @@ export const useGroupStore = defineStore("group", () => {
     createGroup,
   };
 });
+
+export const batchGetOrFetchGroups = async (groupNames: string[]) => {
+  const store = useGroupStore();
+
+  const distinctGroupList = uniq(groupNames).filter((groupName) => {
+    if (!groupName) {
+      return false;
+    }
+    const group = store.getGroupByIdentifier(groupName);
+    if (group) {
+      return false;
+    }
+    return true;
+  });
+  if (distinctGroupList.length > 0) {
+    return store.batchFetchGroups(distinctGroupList);
+  }
+};

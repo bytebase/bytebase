@@ -76,9 +76,9 @@ import { NTimelineItem } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import {
+  batchGetOrFetchGroups,
   useCurrentProjectV1,
   useCurrentUserV1,
-  useGroupStore,
   useProjectIamPolicyStore,
   useRoleStore,
   useUserStore,
@@ -105,7 +105,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
-const groupStore = useGroupStore();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const roleStore = useRoleStore();
@@ -195,7 +194,7 @@ const stepRoles = computed(() => {
 });
 
 watchEffect(async () => {
-  const groupNames = new Set<string>();
+  const groupNames: string[] = [];
 
   for (const role of stepRoles.value) {
     const policy = projectIamPolicyStore.getProjectIamPolicy(
@@ -206,17 +205,14 @@ watchEffect(async () => {
         continue;
       }
       for (const member of binding.members) {
-        if (
-          member.startsWith(groupBindingPrefix) &&
-          !groupStore.getGroupByIdentifier(member)
-        ) {
-          groupNames.add(member);
+        if (member.startsWith(groupBindingPrefix)) {
+          groupNames.push(member);
         }
       }
     }
   }
 
-  await groupStore.batchFetchGroups([...groupNames]);
+  await batchGetOrFetchGroups(groupNames);
 });
 
 // Get candidates for this approval step

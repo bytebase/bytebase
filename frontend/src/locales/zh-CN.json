@@ -336,7 +336,7 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "建议将该语句拆分成单独的在线大表变更工单。"
     },
-    "prior-backup-tips": "备份提前影响数据",
+    "prior-backup-tips": "提前备份受影响的数据。仅适用于数据变更（UPDATE、DELETE），不适用于结构变更。",
     "database-create": {
       "created": "已创建",
       "pending": "待创建"
@@ -394,7 +394,10 @@
     },
     "log-viewer": {
       "multiple-deploys-notice": "检测到执行期间服务重启，日志按部署分组显示。",
-      "deployment-n": "部署 #{n}"
+      "deployment-n": "部署 #{n}",
+      "expand-all": "全部展开",
+      "collapse-all": "全部收起",
+      "summary": "{sections} 个分组 · {entries} 条记录"
     }
   },
   "banner": {
@@ -492,6 +495,17 @@
       "workload-identity-subject": "主题模式",
       "workload-identity-repo-hint": "留空表示允许组织内所有仓库",
       "workload-identity-branch-hint": "留空表示允许所有分支",
+      "workload-identity-gitlab-url": "GitLab 地址",
+      "workload-identity-gitlab-url-hint": "您的 GitLab 实例地址",
+      "workload-identity-group": "Group / 用户名",
+      "workload-identity-project": "项目",
+      "workload-identity-project-hint": "留空则允许所有项目",
+      "workload-identity-allowed-branches-tags": "允许的分支/标签",
+      "workload-identity-all-branches-tags": "所有分支和标签",
+      "workload-identity-specific-branch": "指定分支",
+      "workload-identity-specific-tag": "指定标签",
+      "workload-identity-tag": "标签",
+      "workload-identity-tag-hint": "留空则允许所有标签",
       "copy-service-key": "复制 Service Key",
       "reset-service-key": "重置 Service Key",
       "reset-service-key-alert": "旧 Service Key 将立即被重置，该操作不可逆。确定要重置 Service Key 吗？",
@@ -501,15 +515,14 @@
       "add-member": "添加成员",
       "add-user": "添加用户",
       "entra-sync": {
-        "self": "从 Entra ID (Azure AD) 同步",
-        "description": "将 Entra ID（前 Azure AD）中的用户和组同步到您的 Bytebase 实例。",
+        "self": "从 SCIM 同步",
+        "description": "将 Entra ID（前 Azure AD）或 Okta 中的用户和组同步到您的 Bytebase 实例。",
         "endpoint": "Endpoint",
-        "endpoint-tip": "将其粘贴到 Entra 中的「Tenant URL」字段。Entra 将通过该 endpoint 将用户和组同步到 Bytebase。",
+        "endpoint-tip": "用户和组将通过此端点同步到 Bytebase。",
         "secret-token": "Secret Token",
-        "secret-token-tip": "将其粘贴到 Entra 中的「Secret Token」字段。",
+        "secret-token-tip": "端点的验证令牌，请妥善保管。",
         "reset-token": "重置密钥",
-        "reset-token-warning": "您需要更新 Entra 应用程序配置。",
-        "goto-entra-dashboard": "前往 Entra 配置"
+        "reset-token-warning": "您需要更新 Entra 应用程序配置。"
       },
       "all-users": "全部用户",
       "search-member": "搜索成员",
@@ -531,14 +544,23 @@
     "mcp": {
       "title": "MCP 集成",
       "description": "使用模型上下文协议将 AI 助手连接到 Bytebase。",
+      "auth": {
+        "title": "需要身份验证",
+        "description": "首次连接需要 OAuth 身份验证。请确保您拥有相应的 Bytebase 权限。"
+      },
+      "general-config": {
+        "title": "方式一：JSON 配置"
+      },
+      "quick-start": {
+        "title": "方式二：CLI 命令",
+        "description": "或者使用以下 CLI 命令。"
+      },
       "setup": {
-        "add-to-config": "添加到您的 MCP 配置",
-        "run-command": "运行此命令",
-        "oauth-note": "首次使用时，系统会提示您授权访问。"
+        "add-to-config": "将此 JSON 添加到您的 MCP 客户端配置文件。"
       },
       "first-prompt": {
         "title": "您的第一个提示",
-        "description": "连接后，尝试向 AI 助手提问",
+        "description": "连接后，尝试向 AI 助手提问：",
         "example": "列出我的 Bytebase 实例中的所有项目"
       }
     },
@@ -1234,7 +1256,7 @@
     },
     "stage": {
       "self": "阶段 | 阶段",
-      "run-stage": "运行阶段",
+      "run-stage": "运行任务",
       "confirm-create": "确定要为此阶段创建任务吗？",
       "back-to-stage": "返回阶段 {stage}"
     },
@@ -1635,7 +1657,8 @@
     "establish-database-baseline": "建立「{name}」基线",
     "export": "导出变更历史",
     "need-to-select-first": "需要先选择变更历史",
-    "rollback-tip": "选择要回滚到的某个 DDL 历史记录。"
+    "rollback-tip": "选择要回滚到的某个 DDL 历史记录。",
+    "task-at": "任务于 {time}"
   },
   "database": {
     "labels": "数据库标签",

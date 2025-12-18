@@ -75,67 +75,120 @@
               />
             </div>
 
-            <!-- Owner -->
+            <!-- Owner / Group -->
             <div class="flex flex-col gap-y-2">
               <label class="block text-sm font-medium leading-5 text-control">
-                {{ $t("settings.members.workload-identity-owner") }}
+                <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB">
+                  {{ $t("settings.members.workload-identity-group") }}
+                </template>
+                <template v-else>
+                  {{ $t("settings.members.workload-identity-owner") }}
+                </template>
                 <RequiredStar class="ml-0.5" />
               </label>
               <NInput
                 v-model:value="state.wif.owner"
                 :input-props="{ type: 'text', autocomplete: 'off' }"
-                placeholder="my-org"
+                :placeholder="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB ? 'my-group' : 'my-org'"
                 :maxlength="200"
               />
             </div>
 
-            <!-- Repository -->
+            <!-- Repository / Project -->
             <div class="flex flex-col gap-y-2">
               <label class="block text-sm font-medium leading-5 text-control">
-                {{ $t("settings.members.workload-identity-repo") }}
+                <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB">
+                  {{ $t("settings.members.workload-identity-project") }}
+                </template>
+                <template v-else>
+                  {{ $t("settings.members.workload-identity-repo") }}
+                </template>
               </label>
               <NInput
                 v-model:value="state.wif.repo"
                 :input-props="{ type: 'text', autocomplete: 'off' }"
-                placeholder="my-repo"
+                :placeholder="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB ? 'my-project' : 'my-repo'"
                 :maxlength="200"
               />
               <span class="text-xs text-gray-500">
-                {{ $t("settings.members.workload-identity-repo-hint") }}
+                <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB">
+                  {{ $t("settings.members.workload-identity-project-hint") }}
+                </template>
+                <template v-else>
+                  {{ $t("settings.members.workload-identity-repo-hint") }}
+                </template>
               </span>
             </div>
 
-            <!-- Branch -->
-            <div class="flex flex-col gap-y-2">
+            <!-- Allowed Branches/Tags (GitLab only) -->
+            <div
+              v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB"
+              class="flex flex-col gap-y-2"
+            >
               <label class="block text-sm font-medium leading-5 text-control">
-                {{ $t("settings.members.workload-identity-branch") }}
+                {{ $t("settings.members.workload-identity-allowed-branches-tags") }}
+              </label>
+              <NSelect
+                v-model:value="state.wif.refType"
+                :options="refTypeOptions"
+              />
+            </div>
+
+            <!-- Branch (GitHub) or Branch/Tag (GitLab when specific is selected) -->
+            <div
+              v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITHUB || state.wif.refType !== 'all'"
+              class="flex flex-col gap-y-2"
+            >
+              <label class="block text-sm font-medium leading-5 text-control">
+                <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB && state.wif.refType === 'tag'">
+                  {{ $t("settings.members.workload-identity-tag") }}
+                </template>
+                <template v-else>
+                  {{ $t("settings.members.workload-identity-branch") }}
+                </template>
               </label>
               <NInput
                 v-model:value="state.wif.branch"
                 :input-props="{ type: 'text', autocomplete: 'off' }"
-                placeholder="main"
+                :placeholder="state.wif.refType === 'tag' ? 'v1.0.0' : 'main'"
                 :maxlength="200"
               />
               <span class="text-xs text-gray-500">
-                {{ $t("settings.members.workload-identity-branch-hint") }}
+                <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB && state.wif.refType === 'tag'">
+                  {{ $t("settings.members.workload-identity-tag-hint") }}
+                </template>
+                <template v-else>
+                  {{ $t("settings.members.workload-identity-branch-hint") }}
+                </template>
               </span>
             </div>
 
             <!-- Advanced Settings -->
             <NCollapseTransition :show="state.wif.showAdvanced">
               <div class="flex flex-col gap-y-6 pt-6 border-t">
-                <!-- Issuer URL -->
+                <!-- Issuer URL / GitLab URL -->
                 <div class="flex flex-col gap-y-2">
                   <label
                     class="block text-sm font-medium leading-5 text-control"
                   >
-                    {{ $t("settings.members.workload-identity-issuer") }}
+                    <template v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB">
+                      {{ $t("settings.members.workload-identity-gitlab-url") }}
+                    </template>
+                    <template v-else>
+                      {{ $t("settings.members.workload-identity-issuer") }}
+                    </template>
                   </label>
                   <NInput
                     v-model:value="state.wif.issuerUrl"
                     :input-props="{ type: 'text', autocomplete: 'off' }"
                     :maxlength="500"
                   />
+                  <span
+                    v-if="state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB"
+                    class="text-xs text-gray-500"
+                  >
+                    {{ $t("settings.members.workload-identity-gitlab-url-hint") }}
+                  </span>
                 </div>
 
                 <!-- Audience -->
@@ -311,6 +364,7 @@ interface WifState {
   owner: string;
   repo: string;
   branch: string;
+  refType: "branch" | "tag" | "all";
   issuerUrl: string;
   audience: string;
   subjectPattern: string;
@@ -348,6 +402,7 @@ const state = reactive<LocalState>({
     owner: "",
     repo: "",
     branch: "",
+    refType: "all" as "branch" | "tag" | "all",
     issuerUrl: "https://token.actions.githubusercontent.com",
     audience: "",
     subjectPattern: "",
@@ -359,6 +414,10 @@ const platformOptions = [
   {
     label: "GitHub Actions",
     value: WorkloadIdentityConfig_ProviderType.GITHUB,
+  },
+  {
+    label: "GitLab CI",
+    value: WorkloadIdentityConfig_ProviderType.GITLAB,
   },
 ];
 
@@ -372,7 +431,31 @@ const platformPresets: Partial<
     issuerUrl: "https://token.actions.githubusercontent.com",
     audience: "",
   },
+  [WorkloadIdentityConfig_ProviderType.GITLAB]: {
+    issuerUrl: "https://gitlab.com",
+    audience: "",
+  },
 };
+
+const refTypeOptions = computed(() => {
+  if (state.wif.providerType === WorkloadIdentityConfig_ProviderType.GITLAB) {
+    return [
+      {
+        label: t("settings.members.workload-identity-all-branches-tags"),
+        value: "all",
+      },
+      {
+        label: t("settings.members.workload-identity-specific-branch"),
+        value: "branch",
+      },
+      {
+        label: t("settings.members.workload-identity-specific-tag"),
+        value: "tag",
+      },
+    ];
+  }
+  return [];
+});
 
 const onPlatformChange = (value: WorkloadIdentityConfig_ProviderType) => {
   const preset = platformPresets[value];
@@ -380,21 +463,107 @@ const onPlatformChange = (value: WorkloadIdentityConfig_ProviderType) => {
     state.wif.issuerUrl = preset.issuerUrl;
     state.wif.audience = preset.audience;
   }
+  state.wif.refType = "all";
+  state.wif.branch = "";
 };
 
 // Auto-build subject pattern based on platform and inputs
 const computedSubjectPattern = computed(() => {
-  const { owner, repo, branch } = state.wif;
+  const { owner, repo, branch, providerType, refType } = state.wif;
 
-  // GitHub Actions subject pattern
-  if (!repo) {
-    return `repo:${owner}/*`;
+  if (providerType === WorkloadIdentityConfig_ProviderType.GITHUB) {
+    if (!repo) {
+      return `repo:${owner}/*`;
+    }
+    if (!branch) {
+      return `repo:${owner}/${repo}:*`;
+    }
+    return `repo:${owner}/${repo}:ref:refs/heads/${branch}`;
   }
-  if (!branch) {
-    return `repo:${owner}/${repo}:*`;
+
+  if (providerType === WorkloadIdentityConfig_ProviderType.GITLAB) {
+    if (!repo) {
+      return `project_path:${owner}/*`;
+    }
+    if (refType === "all" || !branch) {
+      return `project_path:${owner}/${repo}:*`;
+    }
+    return `project_path:${owner}/${repo}:ref_type:${refType}:ref:${branch}`;
   }
-  return `repo:${owner}/${repo}:ref:refs/heads/${branch}`;
+
+  return "";
 });
+
+// Parse subject pattern and extract owner/repo/branch/refType
+const parseSubjectPattern = (pattern: string) => {
+  const { providerType } = state.wif;
+
+  if (providerType === WorkloadIdentityConfig_ProviderType.GITHUB) {
+    // GitHub patterns:
+    // repo:owner/*
+    // repo:owner/repo:*
+    // repo:owner/repo:ref:refs/heads/branch
+    const match = pattern.match(/^repo:([^/]+)\/(.*)$/);
+    if (match) {
+      const owner = match[1];
+      const rest = match[2];
+      if (rest === "*") {
+        return { owner, repo: "", branch: "" };
+      }
+      const repoMatch = rest.match(/^([^:]+):(.*)$/);
+      if (repoMatch) {
+        const repo = repoMatch[1];
+        const refPart = repoMatch[2];
+        if (refPart === "*") {
+          return { owner, repo, branch: "" };
+        }
+        const branchMatch = refPart.match(/^ref:refs\/heads\/(.+)$/);
+        if (branchMatch) {
+          return { owner, repo, branch: branchMatch[1] };
+        }
+      }
+    }
+  }
+
+  if (providerType === WorkloadIdentityConfig_ProviderType.GITLAB) {
+    // GitLab patterns:
+    // project_path:group/*
+    // project_path:group/project:*
+    // project_path:group/project:ref_type:branch:ref:main
+    // project_path:group/project:ref_type:tag:ref:v1.0.0
+    const match = pattern.match(/^project_path:([^/]+)\/(.*)$/);
+    if (match) {
+      const owner = match[1];
+      const rest = match[2];
+      if (rest === "*") {
+        return { owner, repo: "", branch: "", refType: "all" as const };
+      }
+      const projectMatch = rest.match(/^([^:]+):(.*)$/);
+      if (projectMatch) {
+        const repo = projectMatch[1];
+        const refPart = projectMatch[2];
+        if (refPart === "*") {
+          return { owner, repo, branch: "", refType: "all" as const };
+        }
+        const refTypeMatch = refPart.match(/^ref_type:(branch|tag):ref:(.+)$/);
+        if (refTypeMatch) {
+          return {
+            owner,
+            repo,
+            branch: refTypeMatch[2],
+            refType: refTypeMatch[1] as "branch" | "tag",
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
+// Flag to prevent circular updates
+let isUpdatingFromPattern = false;
+let isUpdatingFromFields = false;
 
 // Watch for owner/repo/branch changes and update subject pattern
 watch(
@@ -403,13 +572,34 @@ watch(
     state.wif.repo,
     state.wif.branch,
     state.wif.providerType,
+    state.wif.refType,
   ],
   () => {
-    if (!state.wif.showAdvanced) {
-      state.wif.subjectPattern = computedSubjectPattern.value;
-    }
+    if (isUpdatingFromPattern) return;
+    isUpdatingFromFields = true;
+    state.wif.subjectPattern = computedSubjectPattern.value;
+    isUpdatingFromFields = false;
   },
   { immediate: true }
+);
+
+// Watch for subject pattern changes and update fields (reverse binding)
+watch(
+  () => state.wif.subjectPattern,
+  (newPattern) => {
+    if (isUpdatingFromFields) return;
+    const parsed = parseSubjectPattern(newPattern);
+    if (parsed) {
+      isUpdatingFromPattern = true;
+      state.wif.owner = parsed.owner;
+      state.wif.repo = parsed.repo;
+      state.wif.branch = parsed.branch;
+      if ("refType" in parsed && parsed.refType) {
+        state.wif.refType = parsed.refType;
+      }
+      isUpdatingFromPattern = false;
+    }
+  }
 );
 
 const passwordRestrictionSetting = computed(

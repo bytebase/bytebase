@@ -32,7 +32,7 @@ import { provideTransactionModeSettingContext } from "./TransactionModeSection/c
 
 const { project } = useCurrentProjectV1();
 const { isCreating, plan, events, issue, rollout, readonly } = usePlanContext();
-const selectedSpec = useSelectedSpec();
+const { selectedSpec } = useSelectedSpec();
 
 const {
   shouldShow: shouldShowTransactionModeSection,

@@ -134,7 +134,6 @@ func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.Ch
 		SchemaSize:     0,
 		PrevSchema:     "",
 		PrevSchemaSize: 0,
-		Issue:          c.Payload.GetIssue(),
 		TaskRun:        c.Payload.GetTaskRun(),
 		Version:        c.Payload.GetVersion(),
 		Revision:       "",

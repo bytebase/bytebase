@@ -1,6 +1,5 @@
 <template>
   <template v-if="shouldShowSection">
-    <NDivider class="!my-0" />
     <!-- SQL Checks -->
     <div class="flex flex-col gap-y-1">
       <h3 class="textlabel">
@@ -46,7 +45,7 @@
             </div>
             <span
               v-if="index < rollout.stages.length - 1"
-              class="mx-1 text-control-placeholder"
+              class="mx-2 text-control-placeholder"
             >
               →
             </span>
@@ -57,6 +56,8 @@
         </span>
       </div>
     </div>
+
+    <NDivider class="!my-0" />
 
     <ChecksDrawer
       v-if="selectedResultStatus"

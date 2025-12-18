@@ -336,7 +336,7 @@
       },
       "advice-split-statement-to-single-online-migration-issue": "Đề nghị chia câu lệnh này thành một vấn đề di chuyển trực tuyến."
     },
-    "prior-backup-tips": "Sao lưu dữ liệu bị ảnh hưởng trước thời hạn",
+    "prior-backup-tips": "Sao lưu dữ liệu bị ảnh hưởng trước thời hạn. Chỉ áp dụng cho thay đổi dữ liệu (UPDATE, DELETE), không áp dụng cho thay đổi cấu trúc.",
     "database-create": {
       "created": "Đã tạo",
       "pending": "Đang chờ xử lý"
@@ -394,7 +394,10 @@
     },
     "log-viewer": {
       "multiple-deploys-notice": "Phát hiện khởi động lại máy chủ trong quá trình thực thi. Nhật ký được nhóm theo triển khai.",
-      "deployment-n": "Triển khai #{n}"
+      "deployment-n": "Triển khai #{n}",
+      "expand-all": "Mở rộng tất cả",
+      "collapse-all": "Thu gọn tất cả",
+      "summary": "{sections} phần · {entries} mục"
     }
   },
   "banner": {
@@ -492,6 +495,17 @@
       "workload-identity-subject": "Subject Pattern",
       "workload-identity-repo-hint": "Leave empty for all repositories in the organization",
       "workload-identity-branch-hint": "Leave empty for all branches",
+      "workload-identity-gitlab-url": "GitLab URL",
+      "workload-identity-gitlab-url-hint": "Your GitLab instance URL",
+      "workload-identity-group": "Group / Username",
+      "workload-identity-project": "Project",
+      "workload-identity-project-hint": "Leave empty to allow all projects",
+      "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
+      "workload-identity-all-branches-tags": "All branches and tags",
+      "workload-identity-specific-branch": "Specific branch",
+      "workload-identity-specific-tag": "Specific tag",
+      "workload-identity-tag": "Tag",
+      "workload-identity-tag-hint": "Leave empty to allow all tags",
       "copy-service-key": "Sao chép Khóa Dịch vụ",
       "reset-service-key": "Đặt lại Khóa Dịch vụ",
       "reset-service-key-alert": "Hành động này không thể hoàn tác. Khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này?",
@@ -501,15 +515,14 @@
       "add-member": "Thêm thành viên",
       "add-user": "Thêm người dùng",
       "entra-sync": {
-        "self": "Đồng bộ từ Entra ID (Azure AD)",
-        "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) sang phiên bản Bytebase của bạn.",
+        "self": "Đồng bộ từ SCIM",
+        "description": "Đồng bộ người dùng và nhóm từ Entra ID (trước đây là Azure AD) hoặc Okta sang phiên bản Bytebase của bạn.",
         "endpoint": "Điểm cuối",
-        "endpoint-tip": "Dán vào trường \"Tenant URL\" trong Entra. Entra sẽ đồng bộ người dùng và nhóm đến Bytebase qua điểm cuối này.",
+        "endpoint-tip": "Người dùng và nhóm sẽ được đồng bộ đến Bytebase qua điểm cuối này.",
         "secret-token": "Mã thông báo bí mật",
-        "secret-token-tip": "Dán vào trường \"Secret Token\" trong Entra.",
+        "secret-token-tip": "Mã xác thực cho điểm cuối. Vui lòng giữ bí mật.",
         "reset-token": "Đặt lại mã thông báo",
-        "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra.",
-        "goto-entra-dashboard": "Đi tới Bảng điều khiển Entra"
+        "reset-token-warning": "Bạn cần cập nhật cấu hình cung cấp ứng dụng Entra."
       },
       "all-users": "Tất cả người dùng",
       "search-member": "Tìm kiếm thành viên",
@@ -531,14 +544,23 @@
     "mcp": {
       "title": "Tích hợp MCP",
       "description": "Kết nối trợ lý AI với Bytebase bằng Model Context Protocol.",
+      "auth": {
+        "title": "Yêu cầu xác thực",
+        "description": "Xác thực OAuth được yêu cầu khi kết nối lần đầu. Đảm bảo bạn có quyền Bytebase phù hợp."
+      },
+      "general-config": {
+        "title": "Cách 1: Cấu hình JSON"
+      },
+      "quick-start": {
+        "title": "Cách 2: Lệnh CLI",
+        "description": "Hoặc sử dụng một trong các lệnh CLI sau."
+      },
       "setup": {
-        "add-to-config": "Thêm vào cấu hình MCP",
-        "run-command": "Chạy lệnh này",
-        "oauth-note": "Khi sử dụng lần đầu, bạn sẽ được yêu cầu cấp quyền truy cập."
+        "add-to-config": "Thêm JSON này vào tệp cấu hình MCP client của bạn."
       },
       "first-prompt": {
         "title": "Prompt đầu tiên của bạn",
-        "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn",
+        "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
         "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi"
       }
     },
@@ -1234,7 +1256,7 @@
     },
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
-      "run-stage": "Chạy sân khấu",
+      "run-stage": "Chạy tác vụ",
       "confirm-create": "Bạn có chắc chắn muốn tạo tác vụ cho giai đoạn này không?",
       "back-to-stage": "Trở lại sân khấu {stage}"
     },
@@ -1635,7 +1657,8 @@
     "establish-database-baseline": "Thiết lập đường cơ sở \"{name}\"",
     "export": "Xuất Nhật ký thay đổi",
     "need-to-select-first": "Cần chọn nhật ký thay đổi trước",
-    "rollback-tip": "Chọn một nhật ký thay đổi DDL cụ thể để hoàn tác."
+    "rollback-tip": "Chọn một nhật ký thay đổi DDL cụ thể để hoàn tác.",
+    "task-at": "Task at {time}"
   },
   "database": {
     "labels": "Nhãn cơ sở dữ liệu",
