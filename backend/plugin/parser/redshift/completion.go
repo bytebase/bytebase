@@ -385,6 +385,24 @@ func (m CompletionMap) insertViewsWithPrefix(c *Completer, schemas map[string]bo
 	}
 }
 
+func (m CompletionMap) insertSequencesWithPrefix(c *Completer, schemas map[string]bool, includeSchemaPrefix bool) {
+	for schema := range schemas {
+		if len(schema) == 0 {
+			continue
+		}
+		for _, seq := range c.listSequences(schema) {
+			text := c.quotedIdentifierIfNeeded(seq)
+			if includeSchemaPrefix && schema != c.defaultSchema {
+				text = c.quotedIdentifierIfNeeded(schema) + "." + text
+			}
+			m.Insert(base.Candidate{
+				Type: base.CandidateTypeSequence,
+				Text: text,
+			})
+		}
+	}
+}
+
 func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bool) {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
 		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
@@ -500,6 +518,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	tableEntries := make(CompletionMap)
 	columnEntries := make(CompletionMap)
 	viewEntries := make(CompletionMap)
+	sequenceEntries := make(CompletionMap)
 
 	for token, value := range candidates.Tokens {
 		if token < 0 {
@@ -582,6 +601,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				includeSchemaPrefix := len(qualifier) == 0 && c.schemaNotSelected
 				tableEntries.insertTablesWithPrefix(c, schemas, includeSchemaPrefix)
 				viewEntries.insertViewsWithPrefix(c, schemas, includeSchemaPrefix)
+				sequenceEntries.insertSequencesWithPrefix(c, schemas, includeSchemaPrefix)
 			}
 		case parser.RedshiftParserRULE_columnref:
 			schema, table, flags := c.determineColumnRef()
@@ -620,6 +640,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				includeSchemaPrefix := len(schema) == 0 && c.schemaNotSelected && len(c.references) == 0
 				tableEntries.insertTablesWithPrefix(c, schemas, includeSchemaPrefix)
 				viewEntries.insertViewsWithPrefix(c, schemas, includeSchemaPrefix)
+				sequenceEntries.insertSequencesWithPrefix(c, schemas, includeSchemaPrefix)
 
 				for _, reference := range c.references {
 					switch reference := reference.(type) {
@@ -725,6 +746,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	result = append(result, schemaEntries.toSlice()...)
 	result = append(result, tableEntries.toSlice()...)
 	result = append(result, viewEntries.toSlice()...)
+	result = append(result, sequenceEntries.toSlice()...)
 	result = append(result, columnEntries.toSlice()...)
 
 	return result, nil
@@ -1408,6 +1430,22 @@ func (c *Completer) listViews(schema string) []string {
 		return nil
 	}
 	return schemaMeta.ListViewNames()
+}
+
+func (c *Completer) listSequences(schema string) []string {
+	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
+		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
+		if err != nil || metadata == nil {
+			return nil
+		}
+		c.metadataCache[c.defaultDatabase] = metadata
+	}
+
+	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchemaMetadata(schema)
+	if schemaMeta == nil {
+		return nil
+	}
+	return schemaMeta.ListSequenceNames()
 }
 
 func (c *Completer) quotedIdentifierIfNeeded(s string) string {

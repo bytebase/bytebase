@@ -29,6 +29,7 @@ const (
 	CandidateTypeUser             CandidateType = "USER"
 	CandidateTypeCharset          CandidateType = "CHARSET"
 	CandidateTypeCollation        CandidateType = "COLLATION"
+	CandidateTypeSequence         CandidateType = "SEQUENCE"
 )
 
 // Candidate is the candidate for auto-completion.

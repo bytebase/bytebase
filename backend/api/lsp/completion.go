@@ -107,7 +107,7 @@ func generateSortText(_ lsp.CompletionParams, _ storepb.Engine, candidate parser
 		return "02" + candidate.TextWithPriority()
 	case parserbase.CandidateTypeTable, parserbase.CandidateTypeForeignTable:
 		return "03" + candidate.TextWithPriority()
-	case parserbase.CandidateTypeView, parserbase.CandidateTypeMaterializedView:
+	case parserbase.CandidateTypeView, parserbase.CandidateTypeMaterializedView, parserbase.CandidateTypeSequence:
 		return "04" + candidate.TextWithPriority()
 	case parserbase.CandidateTypeFunction:
 		return "05" + candidate.TextWithPriority()
@@ -137,6 +137,8 @@ func convertLSPCompletionItemKind(tp parserbase.CandidateType) lsp.CompletionIte
 		return lsp.FunctionCompletion
 	case parserbase.CandidateTypeView, parserbase.CandidateTypeMaterializedView:
 		return lsp.VariableCompletion
+	case parserbase.CandidateTypeSequence:
+		return lsp.ConstantCompletion
 	default:
 		return lsp.TextCompletion
 	}
