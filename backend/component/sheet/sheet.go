@@ -131,10 +131,7 @@ func getSheetCommandsFromByteOffset(engine storepb.Engine, statement string) []*
 
 	var sheetCommands []*storepb.Range
 	for _, s := range statements {
-		sheetCommands = append(sheetCommands, &storepb.Range{
-			Start: int32(s.ByteOffsetStart),
-			End:   int32(s.ByteOffsetEnd),
-		})
+		sheetCommands = append(sheetCommands, s.Range)
 	}
 	return sheetCommands
 }

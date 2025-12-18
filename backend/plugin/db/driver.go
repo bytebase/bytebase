@@ -285,6 +285,7 @@ func (o *ExecuteOptions) LogSchemaDumpEnd(derr string) {
 	}
 }
 
+// LogCommandExecute logs the execution of a command.
 func (o *ExecuteOptions) LogCommandExecute(commandIndexes []int32, commandText string) {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return

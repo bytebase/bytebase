@@ -23,12 +23,27 @@ func init() {
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 func SplitSQL(statement string) ([]base.Statement, error) {
 	var list []base.Statement
+	byteOffset := 0
 	err := applyMultiStatements(strings.NewReader(statement), func(sql string) error {
+		// Find the start position of this SQL in the original statement
+		startPos := strings.Index(statement[byteOffset:], strings.TrimLeft(sql, "\n\t "))
+		if startPos != -1 {
+			startPos += byteOffset
+		} else {
+			startPos = byteOffset
+		}
+		endPos := startPos + len(sql)
+
 		list = append(list, base.Statement{
-			Text:  sql,
+			Text: sql,
+			Range: &storepb.Range{
+				Start: int32(startPos),
+				End:   int32(endPos),
+			},
 			End:   &storepb.Position{Line: 0, Column: 0},
 			Empty: false,
 		})
+		byteOffset = endPos
 		return nil
 	})
 	return list, err

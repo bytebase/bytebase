@@ -71,6 +71,10 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		{
 			Text:     statement,
 			BaseLine: 0,
+			Range: &storepb.Range{
+				Start: 0,
+				End:   int32(len(statement)),
+			},
 			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(firstToken.GetLine()),
 				Column: int32(firstToken.GetColumn()),

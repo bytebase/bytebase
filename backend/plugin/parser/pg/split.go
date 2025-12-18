@@ -72,6 +72,10 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
+			Range: &storepb.Range{
+				Start: int32(tokens[start].GetStart()),
+				End:   int32(tokens[pos].GetStop() + 1),
+			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[pos].GetLine()),
 				Column: int32(tokens[pos].GetColumn()),
@@ -90,6 +94,10 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
 			BaseLine: tokens[start].GetLine() - 1,
+			Range: &storepb.Range{
+				Start: int32(tokens[start].GetStart()),
+				End:   int32(tokens[eofPos-1].GetStop() + 1),
+			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[eofPos-1].GetLine()),
 				Column: int32(tokens[eofPos-1].GetColumn()),
@@ -191,6 +199,10 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
 			BaseLine: tokens[start].GetLine() - 1,
+			Range: &storepb.Range{
+				Start: int32(tokens[start].GetStart()),
+				End:   int32(tokens[pos].GetStop() + 1),
+			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[pos].GetLine()),
 				Column: int32(tokens[pos].GetColumn()),
@@ -209,6 +221,10 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
 			BaseLine: tokens[start].GetLine() - 1,
+			Range: &storepb.Range{
+				Start: int32(tokens[start].GetStart()),
+				End:   int32(tokens[eofPos-1].GetStop() + 1),
+			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[eofPos-1].GetLine()),
 				Column: int32(tokens[eofPos-1].GetColumn()),

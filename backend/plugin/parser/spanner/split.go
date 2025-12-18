@@ -92,6 +92,10 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		result = append(result, base.Statement{
 			Text:     stream.GetTextFromTokens(tokens[start], tokens[endPos]),
 			BaseLine: tokens[start].GetLine() - 1,
+			Range: &storepb.Range{
+				Start: int32(tokens[start].GetStart()),
+				End:   int32(tokens[endPos].GetStop() + 1),
+			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[endPos].GetLine()),
 				Column: int32(tokens[endPos].GetColumn()),

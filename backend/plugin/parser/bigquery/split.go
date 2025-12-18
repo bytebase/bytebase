@@ -43,6 +43,10 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 			sqls = append(sqls, base.Statement{
 				Text:     bufStr.String(),
 				BaseLine: buf[0].GetLine() - 1,
+				Range: &storepb.Range{
+					Start: int32(buf[0].GetStart()),
+					End:   int32(buf[len(buf)-1].GetStop() + 1),
+				},
 				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 					Line:   int32(buf[len(buf)-1].GetLine()),
 					Column: int32(buf[len(buf)-1].GetColumn()),

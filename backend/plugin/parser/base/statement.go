@@ -20,14 +20,10 @@ type Statement struct {
 	// End is the inclusive end position of the SQL in the original SQL (1-based).
 	End *storepb.Position
 
-	// ByteOffsetStart is the start byte position of the sql.
+	// Range is the byte offset range of the SQL in the original SQL.
 	// This field may not be present for every engine.
-	// ByteOffsetStart is intended for sql execution log display. It may not represent the actual sql that is sent to the database.
-	ByteOffsetStart int
-	// ByteOffsetEnd is the end byte position of the sql.
-	// This field may not be present for every engine.
-	// ByteOffsetEnd is intended for sql execution log display. It may not represent the actual sql that is sent to the database.
-	ByteOffsetEnd int
+	// Range is intended for sql execution log display. It may not represent the actual sql that is sent to the database.
+	Range *storepb.Range
 }
 
 // ParsedStatement is the result of parsing SQL (Statement + AST).

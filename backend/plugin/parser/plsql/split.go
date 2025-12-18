@@ -85,9 +85,11 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 					},
 					statement,
 				),
-				Empty:           base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
-				ByteOffsetStart: byteOffsetStart,
-				ByteOffsetEnd:   byteOffsetEnd,
+				Empty: base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
+				Range: &storepb.Range{
+					Start: int32(byteOffsetStart),
+					End:   int32(byteOffsetEnd),
+				},
 			})
 			byteOffsetStart = byteOffsetEnd
 			prevStopTokenIndex = stmt.GetStop().GetTokenIndex()
