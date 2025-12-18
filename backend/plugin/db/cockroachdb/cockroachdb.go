@@ -467,9 +467,7 @@ func (d *Driver) executeInAutoCommitMode(
 	isPlsql bool,
 ) (int64, error) {
 	// For auto-commit mode, treat all statements as non-transactional
-	for _, command := range commands {
-		nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command)
-	}
+	nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, commands...)
 
 	conn, err := d.db.Conn(ctx)
 	if err != nil {
