@@ -14,6 +14,12 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
+// getANTLRTree extracts the ANTLR parse trees from the advisor context.
+// Returns all parse results for multi-statement SQL review.
+func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
+	return advisor.GetANTLRParseResults(checkCtx)
+}
+
 // isTopLevel checks if the context is at the top level of the parse tree.
 // Top level contexts are: RootContext, StmtblockContext, StmtmultiContext, or StmtContext.
 func isTopLevel(ctx antlr.Tree) bool {
@@ -29,31 +35,6 @@ func isTopLevel(ctx antlr.Tree) bool {
 	default:
 		return false
 	}
-}
-
-// getANTLRTree extracts the ANTLR parse trees from the advisor context.
-// Returns all parse results for multi-statement SQL review.
-func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
-	if checkCtx.ParsedStatements == nil {
-		return nil, errors.New("ParsedStatements is not provided in context")
-	}
-
-	var parseResults []*base.ParseResult
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
-		}
-		parseResults = append(parseResults, &base.ParseResult{
-			Tree:     antlrAST.Tree,
-			Tokens:   antlrAST.Tokens,
-			BaseLine: stmt.BaseLine,
-		})
-	}
-	return parseResults, nil
 }
 
 // ParsedStatementInfo contains all info needed for checking a single statement.

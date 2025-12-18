@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/bytebase/parser/mysql"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -96,24 +95,5 @@ func isCharsetDataType(dataType mysql.IDataTypeContext) bool {
 // getANTLRTree extracts the ANTLR parse trees from the advisor context.
 // Returns all parse results for multi-statement SQL review.
 func getANTLRTree(checkCtx advisor.Context) ([]*base.ParseResult, error) {
-	if checkCtx.ParsedStatements == nil {
-		return nil, errors.New("ParsedStatements is not provided in context")
-	}
-
-	var parseResults []*base.ParseResult
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
-		}
-		parseResults = append(parseResults, &base.ParseResult{
-			Tree:     antlrAST.Tree,
-			Tokens:   antlrAST.Tokens,
-			BaseLine: stmt.BaseLine,
-		})
-	}
-	return parseResults, nil
+	return advisor.GetANTLRParseResults(checkCtx)
 }
