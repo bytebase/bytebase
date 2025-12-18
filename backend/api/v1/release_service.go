@@ -426,7 +426,9 @@ func convertToReleases(ctx context.Context, s *store.Store, releases []*store.Re
 
 func convertToRelease(ctx context.Context, s *store.Store, release *store.ReleaseMessage) (*v1pb.Release, error) {
 	r := &v1pb.Release{
+		Name:       common.FormatReleaseName(release.ProjectID, release.UID),
 		Title:      release.Payload.Title,
+		Creator:    common.FormatUserEmail(release.Creator),
 		CreateTime: timestamppb.New(release.At),
 		VcsSource:  convertToReleaseVcsSource(release.Payload.VcsSource),
 		State:      convertDeletedToState(release.Deleted),
@@ -457,9 +459,6 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 			EnableGhost:   f.EnableGhost,
 		})
 	}
-	r.Name = common.FormatReleaseName(release.ProjectID, release.UID)
-	r.Creator = common.FormatUserEmail(release.Creator)
-
 	return r, nil
 }
 
