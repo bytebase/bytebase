@@ -108,19 +108,37 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		}
 	}
 
-	files, err := convertReleaseFiles(ctx, s.store, sanitizedFiles)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert files"))
-	}
-
 	releaseMessage := &store.ReleaseMessage{
 		ProjectID: project.ResourceID,
 		Digest:    req.Msg.Release.Digest,
 		Payload: &storepb.ReleasePayload{
 			Title:     req.Msg.Release.Title,
-			Files:     files,
 			VcsSource: convertReleaseVcsSource(req.Msg.Release.VcsSource),
 		},
+	}
+
+	for _, f := range sanitizedFiles {
+		projectID, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
+		}
+		sheet, err := s.store.GetSheetMetadata(ctx, sheetUID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
+		}
+		if sheet.ProjectID != projectID {
+			return nil, errors.Errorf("sheet %d not in project %s", sheetUID, projectID)
+		}
+
+		releaseMessage.Payload.Files = append(releaseMessage.Payload.Files, &storepb.ReleasePayload_File{
+			Id:          f.Id,
+			Path:        f.Path,
+			Sheet:       f.Sheet,
+			SheetSha256: sheet.GetSha256Hex(),
+			Type:        storepb.SchemaChangeType(f.Type),
+			Version:     f.Version,
+			EnableGhost: f.EnableGhost,
+		})
 	}
 
 	release, err := s.store.CreateRelease(ctx, releaseMessage, user.Email)
@@ -415,36 +433,7 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 		Digest:     release.Digest,
 	}
 
-	files, err := convertToReleaseFiles(ctx, s, release.Payload.Files)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert release files")
-	}
-	r.Files = files
-
-	project, err := s.GetProject(ctx, &store.FindProjectMessage{ResourceID: &release.ProjectID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find project")
-	}
-	if project == nil {
-		return nil, errors.Errorf("project %s not found", release.ProjectID)
-	}
-	r.Name = common.FormatReleaseName(project.ResourceID, release.UID)
-
-	creator, err := s.GetUserByEmail(ctx, release.Creator)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get release creator")
-	}
-	r.Creator = common.FormatUserEmail(creator.Email)
-
-	return r, nil
-}
-
-func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb.ReleasePayload_File) ([]*v1pb.Release_File, error) {
-	if files == nil {
-		return nil, nil
-	}
-	var v1Files []*v1pb.Release_File
-	for _, f := range files {
+	for _, f := range release.Payload.Files {
 		projectID, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
@@ -456,7 +445,7 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 		if sheet.ProjectID != projectID {
 			return nil, errors.Errorf("sheet %d not in project %s", sheetUID, projectID)
 		}
-		v1Files = append(v1Files, &v1pb.Release_File{
+		r.Files = append(r.Files, &v1pb.Release_File{
 			Id:            f.Id,
 			Path:          f.Path,
 			Sheet:         f.Sheet,
@@ -468,7 +457,10 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 			EnableGhost:   f.EnableGhost,
 		})
 	}
-	return v1Files, nil
+	r.Name = common.FormatReleaseName(release.ProjectID, release.UID)
+	r.Creator = common.FormatUserEmail(release.Creator)
+
+	return r, nil
 }
 
 func convertToReleaseVcsSource(vs *storepb.ReleasePayload_VCSSource) *v1pb.Release_VCSSource {
@@ -479,37 +471,6 @@ func convertToReleaseVcsSource(vs *storepb.ReleasePayload_VCSSource) *v1pb.Relea
 		VcsType: v1pb.VCSType(vs.VcsType),
 		Url:     vs.Url,
 	}
-}
-
-func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File) ([]*storepb.ReleasePayload_File, error) {
-	if files == nil {
-		return nil, nil
-	}
-	var rFiles []*storepb.ReleasePayload_File
-	for _, f := range files {
-		projectID, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
-		}
-		sheet, err := s.GetSheetMetadata(ctx, sheetUID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
-		}
-		if sheet.ProjectID != projectID {
-			return nil, errors.Errorf("sheet %d not in project %s", sheetUID, projectID)
-		}
-
-		rFiles = append(rFiles, &storepb.ReleasePayload_File{
-			Id:          f.Id,
-			Path:        f.Path,
-			Sheet:       f.Sheet,
-			SheetSha256: sheet.GetSha256Hex(),
-			Type:        storepb.SchemaChangeType(f.Type),
-			Version:     f.Version,
-			EnableGhost: f.EnableGhost,
-		})
-	}
-	return rFiles, nil
 }
 
 func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload_VCSSource {
