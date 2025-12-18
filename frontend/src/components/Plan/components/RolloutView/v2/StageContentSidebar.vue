@@ -2,7 +2,7 @@
   <!-- Desktop: Sticky sidebar -->
   <div
     v-if="isWideScreen"
-    class="shrink-0 pr-4 self-start sticky top-0 w-64"
+    class="shrink-0 pr-4 self-start sticky top-0 w-72 xl:w-80"
   >
     <!-- Rollback action at top -->
     <StageTaskRunsRollback class="px-3 pt-1 pb-2" :stage="stage" />
