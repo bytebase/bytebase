@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/antlr4-go/antlr/v4"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/parser/plsql"
 
@@ -13,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -80,25 +80,17 @@ type statementInfo struct {
 	table     *TableReference
 }
 
-func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
-	results, err := plsqlparser.ParsePLSQL(statement)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse PLSQL")
-	}
-	if len(results) == 0 {
-		return nil, errors.New("no parse results")
-	}
-
+func prepareTransformation(databaseName string, parseResults []*base.ParseResult) []statementInfo {
 	extractor := &dmlExtractor{
 		databaseName: databaseName,
 	}
 
 	// Walk each parse result tree to extract DML statements
-	for _, result := range results {
+	for _, result := range parseResults {
 		antlr.ParseTreeWalkerDefault.Walk(extractor, result.Tree)
 	}
 
-	return extractor.dmls, nil
+	return extractor.dmls
 }
 
 func IsTopLevelStatement(ctx antlr.Tree) bool {
@@ -249,7 +241,7 @@ func (r *StatementPriorBackupCheckRule) handleUnitStatement(ctx *plsql.Unit_stat
 func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 	var adviceList []*storepb.Advice
 
-	if len(r.checkCtx.FullStatement) > common.MaxSheetCheckSize {
+	if r.checkCtx.StatementsTotalSize > common.MaxSheetCheckSize {
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:        r.level,
 			Title:         r.title,
@@ -282,10 +274,11 @@ func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 		})
 	}
 
-	statementInfoList, err := prepareTransformation(r.checkCtx.DBSchema.Name, r.checkCtx.FullStatement)
+	parseResults, err := getANTLRTree(r.checkCtx)
 	if err != nil {
 		return
 	}
+	statementInfoList := prepareTransformation(r.checkCtx.DBSchema.Name, parseResults)
 
 	groupByTable := make(map[string][]statementInfo)
 	for _, item := range statementInfoList {

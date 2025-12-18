@@ -54,11 +54,9 @@ type Context struct {
 
 	// CurrentDatabase is the current database.
 	CurrentDatabase string
-	// Deprecated: FullStatement is deprecated. Use ParsedStatements instead, which
-	// provides per-statement text directly. Using FullStatement with ANTLR line
-	// numbers for text extraction is buggy because line numbers are relative to
-	// each statement, not the full text.
-	FullStatement string
+	// StatementsTotalSize is the total size of all statements in bytes.
+	// Used for size limit checks without needing the full statement text.
+	StatementsTotalSize int
 	// UsePostgresDatabaseOwner is true if the advisor should use the database owner as default role.
 	UsePostgresDatabaseOwner bool
 

@@ -15,6 +15,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -82,10 +83,11 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	// Check statement type consistency for each table
-	statementInfoList, err := prepareTransformation(checkCtx.FullStatement)
+	parseResults, err := getANTLRTree(checkCtx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to prepare transformation")
+		return nil, errors.Wrapf(err, "failed to get parse results")
 	}
+	statementInfoList := prepareTransformation(parseResults)
 
 	groupByTable := make(map[string][]statementInfo)
 	for _, item := range statementInfoList {
@@ -282,17 +284,12 @@ type statementInfo struct {
 	table     *TableReference
 }
 
-func prepareTransformation(statement string) ([]statementInfo, error) {
-	parseResults, err := pg.ParsePostgreSQL(statement)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse statement")
-	}
-
+func prepareTransformation(parseResults []*base.ParseResult) []statementInfo {
 	extractor := &dmlExtractor{}
 	for _, parseResult := range parseResults {
 		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
 	}
-	return extractor.dmls, nil
+	return extractor.dmls
 }
 
 type dmlExtractor struct {

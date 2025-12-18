@@ -131,7 +131,7 @@ func SQLReviewCheck(
 		ruleType := rule.Type
 
 		// Set per-rule fields
-		checkContext.FullStatement = statements
+		checkContext.StatementsTotalSize = len(statements)
 		checkContext.Rule = rule
 		checkContext.ParsedStatements = stmts
 
