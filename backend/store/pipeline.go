@@ -205,11 +205,6 @@ func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineM
 
 // GetPipeline gets the pipeline.
 func (s *Store) GetPipeline(ctx context.Context, find *PipelineFind) (*PipelineMessage, error) {
-	if find.ID != nil {
-		if v, ok := s.pipelineCache.Get(*find.ID); ok && s.enableCache {
-			return v, nil
-		}
-	}
 	pipelines, err := s.ListPipelines(ctx, find)
 	if err != nil {
 		return nil, err
@@ -309,10 +304,6 @@ func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*Pipel
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
-	}
-
-	for _, pipeline := range pipelines {
-		s.pipelineCache.Add(pipeline.ID, pipeline)
 	}
 	return pipelines, nil
 }

@@ -99,12 +99,6 @@ type FindIssueMessage struct {
 
 // GetIssue gets issue by issue UID.
 func (s *Store) GetIssue(ctx context.Context, find *FindIssueMessage) (*IssueMessage, error) {
-	if find.UID != nil {
-		if v, ok := s.issueCache.Get(*find.UID); ok && s.enableCache {
-			return v, nil
-		}
-	}
-
 	issues, err := s.ListIssues(ctx, find)
 	if err != nil {
 		return nil, err
@@ -115,10 +109,7 @@ func (s *Store) GetIssue(ctx context.Context, find *FindIssueMessage) (*IssueMes
 	if len(issues) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d issues with find %#v, expect 1", len(issues), find)}
 	}
-	issue := issues[0]
-
-	s.issueCache.Add(issue.UID, issue)
-	return issue, nil
+	return issues[0], nil
 }
 
 // CreateIssue creates a new issue.
@@ -243,8 +234,6 @@ func (s *Store) UpdateIssue(ctx context.Context, uid int, patch *UpdateIssueMess
 		return nil, err
 	}
 
-	// Invalid the cache and read the value again.
-	s.issueCache.Remove(uid)
 	return s.GetIssue(ctx, &FindIssueMessage{UID: &uid})
 }
 
@@ -454,8 +443,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			return nil, err
 		}
 		issue.Project = project
-
-		s.issueCache.Add(issue.UID, issue)
 	}
 
 	return issues, nil
@@ -517,12 +504,6 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, s
 	if err := tx.Commit(); err != nil {
 		return errors.Wrapf(err, "failed to commit")
 	}
-
-	// Invalidate caches
-	for _, info := range infos {
-		s.issueCache.Remove(info.id)
-	}
-
 	return nil
 }
 

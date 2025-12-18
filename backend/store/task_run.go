@@ -214,10 +214,6 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
-
-	// Invalidate pipeline cache since UpdatedAt depends on task run updates
-	s.pipelineCache.Remove(pipelineID)
-
 	return taskRun, nil
 }
 
@@ -239,10 +235,6 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&pipelineID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
-
-	// Invalidate pipeline cache since UpdatedAt depends on task run updates
-	s.pipelineCache.Remove(pipelineID)
-
 	return nil
 }
 
@@ -415,11 +407,5 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, taskRunIDs []int) error
 	if _, err := s.GetDB().ExecContext(ctx, query2, args2...); err != nil {
 		return err
 	}
-
-	// Invalidate pipeline caches since UpdatedAt depends on task run updates
-	for _, pipelineID := range pipelineIDs {
-		s.pipelineCache.Remove(pipelineID)
-	}
-
 	return nil
 }

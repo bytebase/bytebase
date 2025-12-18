@@ -24,8 +24,6 @@ type Store struct {
 	databaseCache      *lru.Cache[string, *DatabaseMessage]
 	projectCache       *lru.Cache[string, *ProjectMessage]
 	policyCache        *lru.Cache[string, *PolicyMessage]
-	issueCache         *lru.Cache[int, *IssueMessage]
-	pipelineCache      *lru.Cache[int, *PipelineMessage]
 	settingCache       *lru.Cache[storepb.SettingName, *SettingMessage]
 	rolesCache         *lru.Cache[string, *RoleMessage]
 	groupCache         *lru.Cache[string, *GroupMessage]
@@ -56,14 +54,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		return nil, err
 	}
 	policyCache, err := lru.New[string, *PolicyMessage](128)
-	if err != nil {
-		return nil, err
-	}
-	issueCache, err := lru.New[int, *IssueMessage](256)
-	if err != nil {
-		return nil, err
-	}
-	pipelineCache, err := lru.New[int, *PipelineMessage](256)
 	if err != nil {
 		return nil, err
 	}
@@ -108,8 +98,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		databaseCache:      databaseCache,
 		projectCache:       projectCache,
 		policyCache:        policyCache,
-		issueCache:         issueCache,
-		pipelineCache:      pipelineCache,
 		settingCache:       settingCache,
 		rolesCache:         rolesCache,
 		sheetMetadataCache: sheetMetadataCache,
