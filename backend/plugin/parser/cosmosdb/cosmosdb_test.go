@@ -60,7 +60,8 @@ func TestParseCosmosDBQuery(t *testing.T) {
 			for i, result := range results {
 				assert.NotNil(t, result.Tree, "Result %d should have a Tree", i)
 				assert.NotNil(t, result.Tokens, "Result %d should have Tokens", i)
-				assert.Equal(t, 0, result.BaseLine, "Result %d should have BaseLine 0", i)
+				assert.NotNil(t, result.StartPosition, "Result %d should have StartPosition", i)
+				assert.Equal(t, int32(1), result.StartPosition.Line, "Result %d should have StartPosition.Line 1", i)
 			}
 		})
 	}

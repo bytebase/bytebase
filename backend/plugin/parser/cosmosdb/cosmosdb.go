@@ -13,13 +13,13 @@ import (
 
 // ParseCosmosDBQuery parses the given CosmosDB SQL statement by using antlr4. Returns a list of AST and token stream if no error.
 // Note: CosmosDB only supports single SELECT statements, so this will typically return a list with one element.
-func ParseCosmosDBQuery(statement string) ([]*base.ParseResult, error) {
+func ParseCosmosDBQuery(statement string) ([]*base.ANTLRAST, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*base.ParseResult
+	var result []*base.ANTLRAST
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -35,7 +35,7 @@ func ParseCosmosDBQuery(statement string) ([]*base.ParseResult, error) {
 	return result, nil
 }
 
-func parseSingleCosmosDBQuery(statement string, baseLine int) (*base.ParseResult, error) {
+func parseSingleCosmosDBQuery(statement string, baseLine int) (*base.ANTLRAST, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon)
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewCosmosDBLexer(inputStream)
@@ -70,10 +70,10 @@ func parseSingleCosmosDBQuery(statement string, baseLine int) (*base.ParseResult
 		return nil, parserErrorListener.Err
 	}
 
-	result := &base.ParseResult{
-		Tree:     tree,
-		Tokens:   stream,
-		BaseLine: baseLine,
+	result := &base.ANTLRAST{
+		StartPosition: startPosition,
+		Tree:          tree,
+		Tokens:        stream,
 	}
 
 	return result, nil
