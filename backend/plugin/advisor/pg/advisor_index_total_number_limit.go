@@ -139,7 +139,10 @@ func (r *indexTotalNumberLimitRule) generateAdvice() {
 			continue
 		}
 		if len(tableInfo.GetProto().Indexes) > r.max {
-			r.AddAdvice(&storepb.Advice{
+			// Directly append to adviceList instead of using AddAdvice because
+			// table.line already stores absolute line numbers (baseLine + line at time of encounter).
+			// Using AddAdvice would incorrectly add the current baseLine again.
+			r.adviceList = append(r.adviceList, &storepb.Advice{
 				Status:  r.level,
 				Code:    code.IndexCountExceedsLimit.Int32(),
 				Title:   r.title,
@@ -178,14 +181,14 @@ func (r *indexTotalNumberLimitRule) handleCreatestmt(ctx *parser.CreatestmtConte
 			// Check column-level constraints
 			if elem.ColumnDef() != nil {
 				if hasIndexConstraint(elem.ColumnDef()) {
-					r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+					r.tableLine.set(schemaName, tableName, r.baseLine+ctx.GetStop().GetLine())
 					return
 				}
 			}
 
 			// Check table-level constraints
 			if elem.Tableconstraint() != nil && hasTableIndexConstraint(elem.Tableconstraint()) {
-				r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+				r.tableLine.set(schemaName, tableName, r.baseLine+ctx.GetStop().GetLine())
 				return
 			}
 		}
@@ -215,7 +218,7 @@ func (r *indexTotalNumberLimitRule) handleAltertablestmt(ctx *parser.Altertables
 			// ADD COLUMN with PRIMARY KEY or UNIQUE
 			if cmd.ADD_P() != nil && cmd.ColumnDef() != nil {
 				if hasIndexConstraint(cmd.ColumnDef()) {
-					r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+					r.tableLine.set(schemaName, tableName, r.baseLine+ctx.GetStop().GetLine())
 					return
 				}
 			}
@@ -223,7 +226,7 @@ func (r *indexTotalNumberLimitRule) handleAltertablestmt(ctx *parser.Altertables
 			// ADD CONSTRAINT (PRIMARY KEY or UNIQUE)
 			if cmd.ADD_P() != nil && cmd.Tableconstraint() != nil {
 				if hasTableIndexConstraint(cmd.Tableconstraint()) {
-					r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+					r.tableLine.set(schemaName, tableName, r.baseLine+ctx.GetStop().GetLine())
 					return
 				}
 			}
@@ -246,7 +249,7 @@ func (r *indexTotalNumberLimitRule) handleIndexstmt(ctx *parser.IndexstmtContext
 	}
 
 	schemaName := extractSchemaName(ctx.Relation_expr().Qualified_name())
-	r.tableLine.set(schemaName, tableName, ctx.GetStop().GetLine())
+	r.tableLine.set(schemaName, tableName, r.baseLine+ctx.GetStop().GetLine())
 }
 
 // hasIndexConstraint checks if a column definition has PRIMARY KEY or UNIQUE constraint

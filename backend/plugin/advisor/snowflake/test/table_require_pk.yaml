@@ -126,7 +126,7 @@
       title: TABLE_REQUIRE_PK
       content: Table CUSTOMER requires PRIMARY KEY.
       startposition:
-        line: 25
+        line: 24
         column: 0
       endposition: null
     - status: 2
@@ -135,5 +135,31 @@
       content: Table ORDERING requires PRIMARY KEY.
       startposition:
         line: 25
+        column: 0
+      endposition: null
+# Test case to verify correct line positions for multi-statement scenarios.
+# Each table should report the line where its PRIMARY KEY was dropped,
+# not the line of the last statement.
+- statement: |-
+    CREATE TABLE t1 (id INT PRIMARY KEY);
+    ALTER TABLE t1 DROP PRIMARY KEY(id);
+    CREATE TABLE t2 (id INT PRIMARY KEY);
+    ALTER TABLE t2 DROP PRIMARY KEY(id);
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table t1 requires PRIMARY KEY.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table t2 requires PRIMARY KEY.
+      startposition:
+        line: 4
         column: 0
       endposition: null
