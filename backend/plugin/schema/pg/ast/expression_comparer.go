@@ -654,8 +654,3 @@ func (*PostgreSQLExpressionComparer) normalizeCasePreservingStringLiterals(expr 
 
 	return strings.Join(singleQuoteParts, "'")
 }
-
-// CreatePostgreSQLExpressionComparer creates a PostgreSQL expression comparer with default settings
-func CreatePostgreSQLExpressionComparer() ExpressionComparer {
-	return NewPostgreSQLExpressionComparer()
-}

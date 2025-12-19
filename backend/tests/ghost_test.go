@@ -96,7 +96,6 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	sheet1Response, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "migration statement sheet 1",
 			Content: []byte(mysqlMigrationStatement),
 		},
 	}))
@@ -114,7 +113,6 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	sheet2Response, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "migration statement sheet 2",
 			Content: []byte(mysqlGhostMigrationStatement),
 		},
 	}))

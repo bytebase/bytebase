@@ -132,7 +132,6 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
       if (uid.startsWith("-")) {
         // The sheet is pending create.
         const sheetToCreate = getLocalSheetByName(spec.config.value.sheet);
-        sheetToCreate.title = plan.value.title;
         const createdSheet = await sheetStore.createSheet(
           project.value.name,
           sheetToCreate

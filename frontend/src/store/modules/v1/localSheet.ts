@@ -24,11 +24,8 @@ export const useLocalSheetStore = defineStore("local_sheet", () => {
   const createLocalSheet = (name: string, defaults: Partial<Sheet> = {}) => {
     const sheet = createProto(SheetSchema, {
       name,
-      title: defaults.title || "",
-      creator: defaults.creator || "",
       content: defaults.content || new Uint8Array(),
       contentSize: defaults.contentSize || BigInt(0),
-      createTime: defaults.createTime,
     });
     return reactive(sheet);
   };

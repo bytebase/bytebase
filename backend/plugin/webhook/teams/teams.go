@@ -16,7 +16,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -278,21 +277,4 @@ func getAdaptiveCard(context webhook.Context) *AdaptiveCard {
 		Body:    body,
 		Actions: actions,
 	}
-}
-
-// GetMarkdownText returns the markdown text for the webhook context.
-func GetMarkdownText(context webhook.Context) string {
-	var markdownBuf strings.Builder
-
-	if context.Description != "" {
-		_, _ = markdownBuf.WriteString(fmt.Sprintf("%s\n\n", context.Description))
-	}
-
-	for _, meta := range context.GetMetaList() {
-		_, _ = markdownBuf.WriteString(fmt.Sprintf("**%s**: %s\n", meta.Name, meta.Value))
-	}
-
-	_, _ = markdownBuf.WriteString(fmt.Sprintf("\n**Actor**: %s (%s)\n\n[View in Bytebase](%s)", context.ActorName, context.ActorEmail, context.Link))
-
-	return markdownBuf.String()
 }

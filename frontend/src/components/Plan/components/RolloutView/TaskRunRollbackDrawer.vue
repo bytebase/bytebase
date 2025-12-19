@@ -300,7 +300,6 @@ const handleConfirm = async () => {
         project.value.name,
         create(SheetSchema, {
           name: `${project.value.name}/sheets/${uuidv4()}`,
-          title: `Rollback for ${preview.task.target}`,
           content: new TextEncoder().encode(preview.statement),
         })
       );

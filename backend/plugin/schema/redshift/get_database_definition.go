@@ -31,51 +31,6 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 	return s, nil
 }
 
-func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
-	var buf strings.Builder
-	tableState := convertToTableState(0, table)
-
-	if _, err := buf.WriteString(getTableAnnouncement(table.Name)); err != nil {
-		return "", err
-	}
-	if err := tableState.toString(&buf); err != nil {
-		return "", err
-	}
-	// Generate comment for table and columns.
-	if tableState.comment != "" {
-		if _, err := buf.WriteString(fmt.Sprintf("COMMENT ON TABLE %s IS '%s';\n", tableState.name, tableState.comment)); err != nil {
-			return "", err
-		}
-	}
-	for _, column := range tableState.columns {
-		if column.comment != "" {
-			if _, err := buf.WriteString(fmt.Sprintf("COMMENT ON COLUMN %s.%s IS '%s';\n", tableState.name, column.name, column.comment)); err != nil {
-				return "", err
-			}
-		}
-	}
-	return buf.String(), nil
-}
-
-func GetViewDefinition(_ string, view *storepb.ViewMetadata) (string, error) {
-	var buf strings.Builder
-	viewState := convertToViewState(0, view)
-
-	if _, err := buf.WriteString(getViewAnnouncement(view.Name)); err != nil {
-		return "", err
-	}
-	if err := viewState.toString(&buf); err != nil {
-		return "", err
-	}
-	// Generate comment for view.
-	if viewState.comment != "" {
-		if _, err := buf.WriteString(fmt.Sprintf("COMMENT ON VIEW %s IS '%s';\n", viewState.name, viewState.comment)); err != nil {
-			return "", err
-		}
-	}
-	return buf.String(), nil
-}
-
 func writeTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *databaseState) error {
 	// Follow the order of the input schemas.
 	for _, schema := range to.Schemas {

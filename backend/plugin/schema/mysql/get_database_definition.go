@@ -45,7 +45,6 @@ const (
 	mysqlNoAction = "NO ACTION"
 
 	autoIncrementSymbol = "AUTO_INCREMENT"
-	autoRandSymbol      = "AUTO_RANDOM"
 )
 
 func init() {

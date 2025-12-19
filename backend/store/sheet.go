@@ -83,7 +83,6 @@ func (s *Store) getSheet(ctx context.Context, id int, loadFull bool) (*SheetMess
 			sheet.creator,
 			sheet.created_at,
 			sheet.project,
-			sheet.name,
 			%s,
 			sheet.sha256,
 			OCTET_LENGTH(sheet_blob.content)
@@ -116,7 +115,6 @@ func (s *Store) getSheet(ctx context.Context, id int, loadFull bool) (*SheetMess
 			&sheet.Creator,
 			&sheet.CreatedAt,
 			&sheet.ProjectID,
-			&sheet.Title,
 			&sheet.Statement,
 			&sheet.Sha256,
 			&sheet.Size,
@@ -142,15 +140,15 @@ func (s *Store) getSheet(ctx context.Context, id int, loadFull bool) (*SheetMess
 // CreateSheets creates new sheets.
 // You should not use this function directly to create sheets.
 // Use CreateSheets in component/sheet instead.
-func (s *Store) CreateSheets(ctx context.Context, projectID string, creator string, creates ...*SheetMessage) ([]*SheetMessage, error) {
+func (s *Store) CreateSheets(ctx context.Context, projectID string, _ string, creates ...*SheetMessage) ([]*SheetMessage, error) {
 	var names []string
 	var statements []string
 	var sha256s [][]byte
 
 	for _, c := range creates {
 		c.ProjectID = projectID
-		c.Creator = creator
-		names = append(names, c.Title)
+		c.Creator = SystemBotUser.Email
+		names = append(names, "")
 		statements = append(statements, c.Statement)
 		h := sha256.Sum256([]byte(c.Statement))
 		c.Sha256 = h[:]
@@ -173,7 +171,7 @@ func (s *Store) CreateSheets(ctx context.Context, projectID string, creator stri
 			unnest(CAST(? AS TEXT[])),
 			unnest(CAST(? AS BYTEA[]))
 		RETURNING id, created_at
-	`, creator, projectID, names, sha256s)
+	`, SystemBotUser.Email, projectID, names, sha256s)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

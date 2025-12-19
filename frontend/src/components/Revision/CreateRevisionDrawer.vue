@@ -800,7 +800,6 @@ const handleConfirm = async () => {
         try {
           // Create a sheet for each file
           const sheet = await sheetStore.createSheet(project.value.name, {
-            title: file.name,
             content: new TextEncoder().encode(file.content),
           });
 
