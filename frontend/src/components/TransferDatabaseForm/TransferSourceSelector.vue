@@ -29,7 +29,8 @@
         <InstanceSelect
           class="w-40!"
           :project-name="sourceProjectName"
-          :instance="instance?.name ?? ''"
+          :instance-name="instance?.name ?? ''"
+          :environment-name="environment?.name"
           @update:instance-name="changeInstanceFilter"
         />
         <SearchBox

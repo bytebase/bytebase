@@ -1,5 +1,5 @@
 <template>
-  <ResourceSelect
+  <LocalResourceSelector
     v-bind="$attrs"
     :placeholder="$t('database-group.select')"
     :value="selected"
@@ -12,7 +12,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useDBGroupListByProject } from "@/store";
-import ResourceSelect from "./ResourceSelect.vue";
+import LocalResourceSelector from "./LocalResourceSelector.vue";
 
 const props = withDefaults(
   defineProps<{

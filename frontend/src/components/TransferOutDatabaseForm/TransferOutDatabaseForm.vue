@@ -35,7 +35,6 @@
         <ProjectSelect
           v-if="transfer === 'project'"
           v-model:project-name="targetProjectName"
-          :default-select-first="true"
           :allowed-project-role-list="[PresetRoleType.PROJECT_OWNER]"
         />
       </div>

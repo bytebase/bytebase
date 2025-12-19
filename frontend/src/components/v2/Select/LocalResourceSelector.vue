@@ -3,21 +3,20 @@
     v-bind="$attrs"
     :filterable="true"
     :clearable="true"
+    :remote="false"
     :virtual-scroll="true"
     :multiple="multiple"
     :value="selected"
     :disabled="disabled"
     :options="options"
-    :fallback-option="fallbackOption"
+    :fallback-option="false"
     :filter="filterResource"
     :render-label="renderLabel"
     :render-tag="renderTag"
-    :placeholder="placeholder ?? $t('common.search-for-more')"
+    :placeholder="placeholder"
     :size="size"
     :consistent-menu-width="consistentMenuWidth"
     class="bb-user-select"
-    @search="handleSearch"
-    @click="() => handleSearch('')"
     @update:value="handleValueUpdated"
   >
     <template v-if="$slots.empty" #empty>
@@ -27,7 +26,7 @@
 </template>
 
 <script lang="tsx" setup generic="T extends { name: string }">
-import type { SelectOption, SelectProps } from "naive-ui";
+import type { SelectOption } from "naive-ui";
 import { NCheckbox, NSelect, NTag } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed, type VNodeChild } from "vue";
@@ -49,18 +48,13 @@ const props = withDefaults(
     consistentMenuWidth?: boolean;
     size?: "tiny" | "small" | "medium" | "large";
     options: ResourceSelectOption[];
-    fallbackOption?: SelectProps["fallbackOption"];
     showResourceName?: boolean;
     resourceNameClass?: string;
     customLabel?: (resource: T) => VNodeChild;
-    filter?: (pattern: string, resource: T) => boolean;
   }>(),
   {
     customLabel: undefined,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    filter: (pattern: string, resource: T) => false,
     size: "medium",
-    fallbackOption: false,
     disabled: false,
     multiple: false,
     showResourceName: true,
@@ -72,7 +66,6 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "update:value", value: string | undefined): void;
   (event: "update:values", value: string[]): void;
-  (event: "search", value: string): void;
 }>();
 
 const selected = computed(() => {
@@ -82,10 +75,6 @@ const selected = computed(() => {
     return props.value;
   }
 });
-
-const handleSearch = (search: string) => {
-  emit("search", search.trim().toLowerCase());
-};
 
 const renderLabel = (option: SelectOption, selected: boolean) => {
   const { resource, label } = option as ResourceSelectOption;
@@ -139,8 +128,7 @@ const filterResource = (pattern: string, option: SelectOption) => {
   const search = pattern.trim().toLowerCase();
   return (
     resource.name.toLowerCase().includes(search) ||
-    (label as string).toLowerCase().includes(search) ||
-    props.filter(search, resource)
+    (label as string).toLowerCase().includes(search)
   );
 };
 

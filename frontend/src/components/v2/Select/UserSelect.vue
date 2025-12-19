@@ -1,31 +1,29 @@
 <template>
-  <ResourceSelect
+  <RemoteResourceSelector
     v-bind="$attrs"
-    :remote="true"
-    :loading="state.loading"
     :multiple="multiple"
     :value="user"
     :values="users"
-    :size="size"
-    :options="options"
+    :additional-data="additionalData"
     :custom-label="renderLabel"
-    :filter="filterByEmail"
     :show-resource-name="false"
-    @search="handleSearch"
+    :search="handleSearch"
+    :get-option="getOption"
+    :filter="filter"
     @update:value="(val) => $emit('update:user', val)"
     @update:values="(val) => $emit('update:users', val)"
   />
 </template>
 
 <script lang="tsx" setup>
-import { useDebounceFn } from "@vueuse/core";
-import { computed, onMounted, reactive, watch } from "vue";
+import { computedAsync } from "@vueuse/core";
+import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import { type UserFilter, useUserStore } from "@/store";
-import { allUsersUser, DEBOUNCE_SEARCH_DELAY, isValidUserName } from "@/types";
+import { allUsersUser, isValidUserName } from "@/types";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
-import { ensureUserFullName, getDefaultPagination } from "@/utils";
-import ResourceSelect from "./ResourceSelect.vue";
+import { ensureUserFullName } from "@/utils";
+import RemoteResourceSelector from "./RemoteResourceSelector.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -38,9 +36,7 @@ const props = withDefaults(
     includeSystemBot?: boolean;
     includeServiceAccount?: boolean;
     includeWorkloadIdentity?: boolean;
-    autoReset?: boolean;
-    filter?: (user: User, index: number) => boolean;
-    size?: "tiny" | "small" | "medium" | "large";
+    filter?: (user: User) => boolean;
   }>(),
   {
     multiple: false,
@@ -51,30 +47,15 @@ const props = withDefaults(
     includeSystemBot: false,
     includeServiceAccount: false,
     includeWorkloadIdentity: false,
-    autoReset: true,
-    filter: (_1: User, _2: number) => true,
-    size: "medium",
   }
 );
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "update:user", value: string | undefined): void;
   (event: "update:users", value: string[]): void;
 }>();
 
-interface LocalState {
-  loading: boolean;
-  rawUserList: User[];
-  // Track if initial fetch has been done to avoid redundant API calls
-  initialized: boolean;
-}
-
 const userStore = useUserStore();
-const state = reactive<LocalState>({
-  loading: false,
-  rawUserList: [],
-  initialized: false,
-});
 
 const getFilter = (search: string): UserFilter => {
   const filter = [];
@@ -99,77 +80,62 @@ const getFilter = (search: string): UserFilter => {
   };
 };
 
-const initSelectedUsers = async (userEmails: string[]) => {
-  for (const email of userEmails) {
+const additionalData = computedAsync(async () => {
+  const data = [];
+  if (props.includeAllUsers) {
+    data.unshift(allUsersUser());
+  }
+
+  let userNames: string[] = [];
+  if (props.user) {
+    userNames = [props.user];
+  } else if (props.users) {
+    userNames = props.users;
+  }
+
+  for (const email of userNames) {
     if (!email) continue;
     const userName = ensureUserFullName(email);
     if (isValidUserName(userName)) {
       const user = await userStore.getOrFetchUserByIdentifier(userName);
-      if (!state.rawUserList.find((u) => u.name === user.name)) {
-        state.rawUserList.unshift(user);
-      }
+      data.push(user);
     }
   }
-};
 
-const searchUsers = async (search: string) => {
-  const { users } = await userStore.fetchUserList({
-    filter: getFilter(search),
-    pageSize: getDefaultPagination(),
+  return data;
+}, []);
+
+const handleSearch = async (params: {
+  search: string;
+  pageToken: string;
+  pageSize: number;
+}) => {
+  const { users, nextPageToken } = await userStore.fetchUserList({
+    filter: getFilter(params.search),
+    pageToken: params.pageToken,
+    pageSize: params.pageSize,
   });
-  return users.filter(props.filter);
+  return {
+    nextPageToken,
+    data: users,
+  };
 };
 
-const handleSearch = useDebounceFn(async (search: string) => {
-  // Skip if no search term and already initialized (lazy loading optimization)
-  if (!search && state.initialized) {
-    return;
-  }
-
-  state.loading = true;
-  try {
-    const users = await searchUsers(search);
-    state.rawUserList = users;
-    if (!search) {
-      state.initialized = true;
-      if (props.includeAllUsers) {
-        state.rawUserList.unshift(allUsersUser());
-      }
-      if (props.user) {
-        await initSelectedUsers([props.user]);
-      }
-      if (props.users) {
-        await initSelectedUsers(props.users);
-      }
-    }
-  } finally {
-    state.loading = false;
-  }
-}, DEBOUNCE_SEARCH_DELAY);
-
-// Only fetch the selected user(s) on mount, not the entire user list.
-// The full list will be fetched lazily when dropdown is opened.
-onMounted(async () => {
-  let users: string[] = [];
-  if (props.user) {
-    users = [props.user];
-  } else if (props.users) {
-    users = props.users;
-  }
-  await initSelectedUsers(users);
-});
-
-const renderLabel = (user: User) => {
+const renderLabel = (user: User, keyword: string) => {
   return (
     <UserNameCell
       user={user}
       allowEdit={false}
+      link={false}
       size="small"
+      keyword={keyword}
       onClickUser={() => {}}
     >
       {{
         suffix: () => (
-          <span class="textinfolabel truncate">{`(${user.email})`}</span>
+          <span class="textinfolabel truncate">
+            (<HighlightLabelText keyword={keyword} text={user.email} />)
+          </span>
         ),
         footer: () => <div />,
       }}
@@ -177,47 +143,8 @@ const renderLabel = (user: User) => {
   );
 };
 
-const options = computed(() => {
-  return state.rawUserList.map((user) => {
-    return {
-      resource: user,
-      value: user.email,
-      label: user.title,
-    };
-  });
+const getOption = (user: User) => ({
+  value: user.email,
+  label: user.title,
 });
-
-const filterByEmail = (pattern: string, user: User) => {
-  return user.email.includes(pattern);
-};
-
-// The user list might change if props change, and the previous selected id
-// might not exist in the new list. In such case, we need to invalidate the selection
-// and emit the event.
-const resetInvalidSelection = () => {
-  if (!props.autoReset || props.multiple) {
-    return;
-  }
-  if (state.loading) {
-    return;
-  }
-  // Don't reset selection before the full user list has been fetched
-  if (!state.initialized) {
-    return;
-  }
-  if (
-    props.user &&
-    !state.rawUserList.find((user) => user.email === props.user)
-  ) {
-    emit("update:user", undefined);
-  }
-};
-
-watch(
-  [() => state.loading, () => props.user, state.rawUserList],
-  resetInvalidSelection,
-  {
-    immediate: true,
-  }
-);
 </script>

@@ -65,7 +65,7 @@
         required
         :database-name="attachedResources[0]"
         :disabled="!allowChangeAttachedResource"
-        :filter="(db: Database, _: number) => filterResource(db.name)"
+        :filter="(db: Database) => filterResource(db.name)"
         @update:database-names="$emit('attached-resources-change', $event)"
       />
     </div>
@@ -86,7 +86,6 @@
         @update:value="emit('name-change', $event)"
       />
       <ResourceIdField
-        ref="resourceIdField"
         class="mt-1"
         editing-class="mt-6"
         resource-type="review-config"
@@ -116,7 +115,7 @@
 
 <script lang="ts" setup>
 import { NRadio, NRadioGroup } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, watch } from "vue";
 import { BBAttention, BBTextField } from "@/bbkit";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { useResourceByName } from "@/components/v2/ResourceOccupiedModal/useResourceByName";
@@ -169,6 +168,4 @@ const filterResource = (name: string): boolean => {
   }
   return !sqlReviewStore.getReviewPolicyByResouce(name);
 };
-
-const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 </script>

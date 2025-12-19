@@ -14,9 +14,9 @@
           v-if="state.transferSource == 'OTHER'"
           class="w-48!"
           :include-all="false"
+          :include-default-project="true"
           :project-name="state.fromProjectName"
           :filter="filterSourceProject"
-          :default-select-first="true"
           @update:project-name="changeProjectFilter"
         />
         <template
@@ -160,7 +160,6 @@ const filter = computed(() => ({
     ? formatEnvironmentName(state.environmentFilter.id)
     : undefined,
   query: state.searchText,
-  excludeUnassigned: state.transferSource !== "DEFAULT",
 }));
 
 const allowTransfer = computed(() => state.selectedDatabaseNameList.length > 0);

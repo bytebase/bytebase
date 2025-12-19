@@ -41,7 +41,7 @@ export const extractGroupEmail = (emailResource: string) => {
   return matches?.[1] ?? emailResource;
 };
 
-const ensureGroupIdentifier = (id: string) => {
+export const ensureGroupIdentifier = (id: string) => {
   const email = extractGroupEmail(id);
   return `${groupNamePrefix}${email}`;
 };
