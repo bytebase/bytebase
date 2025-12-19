@@ -19,7 +19,6 @@ import (
 const (
 	maxTableNameLengthAfter12_2  = 128
 	maxTableNameLengthBefore12_2 = 30
-	maxMixedDMLCount             = 5
 )
 
 func init() {

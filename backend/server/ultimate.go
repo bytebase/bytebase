@@ -39,6 +39,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/redis"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/spanner"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/trino"
@@ -50,9 +51,9 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oceanbase"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/oracle"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/redshift"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/tidb"
-	_ "github.com/bytebase/bytebase/backend/plugin/advisor/redshift"
 
 	// Schema designer.
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/clickhouse"
