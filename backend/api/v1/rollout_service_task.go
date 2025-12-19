@@ -46,10 +46,10 @@ func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, dep
 	return result
 }
 
-func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec) ([]*store.TaskMessage, error) {
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, dbFactory, spec, config.CreateDatabaseConfig, project)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, dbFactory, spec, config.CreateDatabaseConfig)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig)
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
@@ -59,7 +59,7 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, dbFactory *dbfa
 	return nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, _ *store.ProjectMessage) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig) ([]*store.TaskMessage, error) {
 	if c.Database == "" {
 		return nil, errors.Errorf("database name is required")
 	}

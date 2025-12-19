@@ -973,7 +973,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, dbFactory *dbfactory
 	// Step 2 - convert all task creates.
 	var taskCreates []*store.TaskMessage
 	for _, spec := range transformedSpecs {
-		tcs, err := getTaskCreatesFromSpec(ctx, s, dbFactory, spec, project)
+		tcs, err := getTaskCreatesFromSpec(ctx, s, dbFactory, spec)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get task creates from spec")
 		}
