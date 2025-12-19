@@ -173,7 +173,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		singleSQLs[i] = base.Statement{Text: stmt}
 	}
 
-	commands, _ := base.FilterEmptyStatementsWithIndexes(singleSQLs)
+	commands := base.FilterEmptyStatements(singleSQLs)
 	if len(commands) == 0 {
 		return 0, nil
 	}
