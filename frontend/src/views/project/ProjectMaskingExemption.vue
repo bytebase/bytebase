@@ -3,14 +3,13 @@
     <div
       class="flex flex-col lg:flex-row gap-y-4 justify-between items-end lg:items-center gap-x-2"
     >
-      <NInputGroup style="width: auto">
-        <DatabaseSelect
-          style="max-width: max-content"
-          :include-all="false"
-          :project-name="project.name"
-          v-model:database-name="state.selectedDatabaseName"
-        />
-      </NInputGroup>
+      <DatabaseSelect
+        style="max-width: max-content"
+        :placeholder="$t('database.select')"
+        :project-name="project.name"
+        :show-instance="false"
+        v-model:database-name="state.selectedDatabaseName"
+      />
 
       <div class="flex-1 flex flex-row items-center justify-end gap-x-2">
         <SearchBox
@@ -63,7 +62,7 @@
 
 <script lang="tsx" setup>
 import { ShieldCheckIcon } from "lucide-vue-next";
-import { NButton, NInputGroup } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";

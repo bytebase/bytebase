@@ -6,26 +6,31 @@
       <div class="flex flex-col">
         <div class="flex flex-row items-center gap-x-1">
           <div :class="isDeleted ? 'line-through' : ''">
-            <span
-              v-if="onClickUser"
-              class="normal-link truncate max-w-40"
-              @click="onClickUser(user, $event)"
-            >
-              {{ user.title }}
-            </span>
-            <span
-              v-else-if="permissionStore.onlyWorkspaceMember"
+            <HighlightLabelText
+              v-if="permissionStore.onlyWorkspaceMember"
               class="truncate max-w-[10em]"
-            >
-              {{ user.title }}
-            </span>
-            <router-link
-              v-else
-              :to="`/users/${user.email}`"
-              class="normal-link truncate max-w-[10em]"
-            >
-              {{ user.title }}
-            </router-link>
+              :keyword="keyword"
+              :text="user.title"
+            />
+            <template v-else>
+              <HighlightLabelText
+                v-if="onClickUser || !link"
+                :class="['truncate max-w-40', link ? 'normal-link' : '']"
+                :keyword="keyword"
+                :text="user.title"
+                @click="onClickUser ? onClickUser(user, $event) : null"
+              />
+              <router-link
+                v-else
+                :to="`/users/${user.email}`"
+                class="normal-link truncate max-w-[10em]"
+              >
+                <HighlightLabelText
+                :keyword="keyword"
+                  :text="user.title"
+                />
+              </router-link>
+            </template>
           </div>
           <slot name="suffix">
           </slot>
@@ -94,7 +99,7 @@ import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import WorkloadIdentityTag from "@/components/misc/WorkloadIdentityTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
-import { CopyButton } from "@/components/v2";
+import { CopyButton, HighlightLabelText } from "@/components/v2";
 import { useCurrentUserV1, usePermissionStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -105,10 +110,12 @@ const props = withDefaults(
   defineProps<{
     user: User;
     allowEdit?: boolean;
+    keyword?: string;
     size?: "small" | "medium";
+    link?: boolean;
     onClickUser?: (user: User, event: MouseEvent) => void;
   }>(),
-  { allowEdit: true, size: "medium" }
+  { allowEdit: true, size: "medium", link: true, keyword: "" }
 );
 
 defineEmits<{
