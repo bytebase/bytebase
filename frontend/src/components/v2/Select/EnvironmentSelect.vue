@@ -1,5 +1,5 @@
 <template>
-  <ResourceSelect
+  <LocalResourceSelector
     v-bind="$attrs"
     :placeholder="t('environment.select')"
     :multiple="multiple"
@@ -20,7 +20,7 @@ import { useEnvironmentV1Store } from "@/store";
 import { formatEnvironmentName } from "@/types";
 import type { Environment } from "@/types/v1/environment";
 import { EnvironmentV1Name } from "../Model";
-import ResourceSelect from "./ResourceSelect.vue";
+import LocalResourceSelector from "./LocalResourceSelector.vue";
 
 const { t } = useI18n();
 

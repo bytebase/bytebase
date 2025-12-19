@@ -15,11 +15,11 @@
         @update:environment-name="handleEnvironmentSelect"
       />
       <DatabaseSelect
+        :placeholder="$t('database.select')"
         :project-name="project.name"
         :database-name="state.databaseName"
         :environment-name="state.environmentName"
         :allowed-engine-type-list="ALLOWED_ENGINES"
-        :fallback-option="false"
         @update:database-name="handleDatabaseSelect"
       />
     </div>

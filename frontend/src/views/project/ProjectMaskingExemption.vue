@@ -6,7 +6,7 @@
       <NInputGroup style="width: auto">
         <DatabaseSelect
           style="max-width: max-content"
-          :include-all="false"
+          :placeholder="$t('database.select')"
           :project-name="project.name"
           v-model:database-name="state.selectedDatabaseName"
         />

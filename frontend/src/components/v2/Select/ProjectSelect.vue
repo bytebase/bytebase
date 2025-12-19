@@ -1,43 +1,41 @@
 <template>
-  <ResourceSelect
+  <RemoteResourceSelector
     v-bind="$attrs"
-    :remote="true"
-    :loading="state.loading"
     :multiple="multiple"
     :disabled="disabled"
     :value="projectName"
     :values="projectNames"
-    :options="options"
     :custom-label="renderLabel"
     class="bb-project-select"
-    @search="handleSearch"
+    :additional-data="additionalData"
+    :search="handleSearch"
+    :get-option="getOption"
+    :filter="filterProject"
     @update:value="(val) => $emit('update:project-name', val)"
     @update:values="(val) => $emit('update:project-names', val)"
   >
     <template v-if="$slots.empty" #empty>
       <slot name="empty" />
     </template>
-  </ResourceSelect>
+  </RemoteResourceSelector>
 </template>
 
 <script lang="tsx" setup>
-import { useDebounceFn } from "@vueuse/core";
+import { computedAsync } from "@vueuse/core";
 import { intersection } from "lodash-es";
-import { computed, reactive, watch, watchEffect } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/cells";
 import { usePermissionStore, useProjectV1Store } from "@/store";
 import {
-  DEBOUNCE_SEARCH_DELAY,
   DEFAULT_PROJECT_NAME,
-  defaultProject,
   isValidProjectName,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
 } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { getDefaultPagination, hasWorkspacePermissionV2 } from "@/utils";
-import ResourceSelect from "./ResourceSelect.vue";
+import { hasWorkspacePermissionV2 } from "@/utils";
+import RemoteResourceSelector from "./RemoteResourceSelector.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -49,8 +47,7 @@ const props = withDefaults(
     includeDefaultProject?: boolean;
     multiple?: boolean;
     renderSuffix?: (project: string) => string;
-    filter?: (project: Project, index: number) => boolean;
-    defaultSelectFirst?: boolean;
+    filter?: (project: Project) => boolean;
   }>(),
   {
     disabled: false,
@@ -62,7 +59,6 @@ const props = withDefaults(
     multiple: false,
     filter: () => true,
     renderSuffix: () => "",
-    defaultSelectFirst: false,
   }
 );
 
@@ -71,161 +67,88 @@ const emit = defineEmits<{
   (event: "update:project-names", names: string[]): void;
 }>();
 
-interface LocalState {
-  loading: boolean;
-  rawProjectList: Project[];
-  // Track if initial fetch has been done to avoid redundant API calls
-  initialized: boolean;
-}
-
 const { t } = useI18n();
 const permissionStore = usePermissionStore();
 const projectStore = useProjectV1Store();
-const state = reactive<LocalState>({
-  loading: false,
-  rawProjectList: [],
-  initialized: false,
-});
 
-const initSelectedProjects = async (projectNames: string[]) => {
-  for (const projectName of projectNames) {
-    if (isValidProjectName(projectName)) {
-      const project = await projectStore.getOrFetchProjectByName(projectName);
-      if (!state.rawProjectList.find((p) => p.name === project.name)) {
-        state.rawProjectList.unshift(project);
-      }
+const hasWorkspaceManageProjectPermission = computed(() =>
+  hasWorkspacePermissionV2("bb.projects.list")
+);
+
+const filterProject = (project: Project) => {
+  if (
+    !hasWorkspaceManageProjectPermission.value &&
+    props.allowedProjectRoleList.length > 0
+  ) {
+    const roles = permissionStore.currentRoleListInProjectV1(project);
+    if (intersection(props.allowedProjectRoleList, roles).length == 0) {
+      return false;
     }
   }
+
+  if (props.filter) {
+    return props.filter(project);
+  }
+
+  return true;
 };
 
-const initProjectList = async () => {
-  if (props.projectName) {
-    await initSelectedProjects([props.projectName]);
-  }
-  if (props.projectNames) {
-    await initSelectedProjects(props.projectNames);
-  }
-
-  if (
-    props.projectName === DEFAULT_PROJECT_NAME ||
-    props.includeDefaultProject
-  ) {
-    if (
-      !state.rawProjectList.find((proj) => proj.name === DEFAULT_PROJECT_NAME)
-    ) {
-      state.rawProjectList.unshift({ ...defaultProject() });
-    }
-  }
+const additionalData = computedAsync(async () => {
+  const data = [];
 
   if (props.projectName === UNKNOWN_PROJECT_NAME || props.includeAll) {
     const dummyAll = {
       ...unknownProject(),
       title: t("project.all"),
     };
-    state.rawProjectList.unshift(dummyAll);
+    data.unshift(dummyAll);
   }
+
+  let projectNames: string[] = [];
+  if (props.projectName) {
+    projectNames = [props.projectName];
+  } else if (props.projectNames) {
+    projectNames = props.projectNames;
+  }
+
+  for (const projectName of projectNames) {
+    if (isValidProjectName(projectName)) {
+      const project = await projectStore.getOrFetchProjectByName(projectName);
+      data.push(project);
+    }
+  }
+
+  return data;
+}, []);
+
+const handleSearch = async (params: {
+  search: string;
+  pageToken: string;
+  pageSize: number;
+}) => {
+  const { projects, nextPageToken } = await projectStore.fetchProjectList({
+    filter: {
+      query: params.search,
+      excludeDefault: !props.includeDefaultProject,
+    },
+    pageToken: params.pageToken,
+    pageSize: params.pageSize,
+  });
+
+  return {
+    nextPageToken,
+    data: projects,
+  };
 };
 
-const hasWorkspaceManageProjectPermission = computed(() =>
-  hasWorkspacePermissionV2("bb.projects.list")
-);
-
-const combinedProjectList = computed(() => {
-  let list = [...state.rawProjectList];
-
-  // If the current user is not workspace admin/DBA, filter the project list by the given role list.
-  if (
-    !hasWorkspaceManageProjectPermission.value &&
-    props.allowedProjectRoleList.length > 0
-  ) {
-    list = list.filter((project) => {
-      const roles = permissionStore.currentRoleListInProjectV1(project);
-      return intersection(props.allowedProjectRoleList, roles).length > 0;
-    });
-  }
-
-  if (props.filter) {
-    list = list.filter(props.filter);
-  }
-
-  return list;
-});
-
-const handleSearch = useDebounceFn(async (search: string) => {
-  // Skip if no search term and already initialized (lazy loading optimization)
-  if (!search && state.initialized) {
-    return;
-  }
-
-  state.loading = true;
-  try {
-    const { projects } = await projectStore.fetchProjectList({
-      filter: {
-        query: search,
-        excludeDefault: !props.includeDefaultProject,
-      },
-      pageSize: getDefaultPagination(),
-    });
-    state.rawProjectList = projects;
-    if (!search) {
-      state.initialized = true;
-      await initProjectList();
-    }
-  } finally {
-    state.loading = false;
-  }
-}, DEBOUNCE_SEARCH_DELAY);
-
-watch(
-  () => props.projectName,
-  async (newVal) => {
-    if (newVal) {
-      await initSelectedProjects([newVal]);
-    }
-  },
-  { immediate: true }
-);
-
-watch(
-  () => props.projectNames,
-  async (newVal) => {
-    if (newVal) {
-      await initSelectedProjects(newVal);
-    }
-  },
-  { immediate: true }
-);
-
-const options = computed(
-  (): {
-    resource: Project;
-    value: string;
-    label: string;
-  }[] => {
-    return combinedProjectList.value.map((project) => {
-      return {
-        resource: project,
-        value: project.name,
-        label:
-          project.name === DEFAULT_PROJECT_NAME
-            ? t("common.unassigned")
-            : project.name === UNKNOWN_PROJECT_NAME
-              ? t("project.all")
-              : project.title,
-      };
-    });
-  }
-);
-
-watchEffect(() => {
-  if (!props.defaultSelectFirst || props.projectName || props.multiple) {
-    return;
-  }
-  if (options.value.length === 0) {
-    return;
-  }
-
-  emit("update:project-name", options.value[0].value);
+const getOption = (project: Project) => ({
+  value: project.name,
+  label:
+    project.name === DEFAULT_PROJECT_NAME
+      ? t("common.unassigned")
+      : project.name === UNKNOWN_PROJECT_NAME
+        ? t("project.all")
+        : project.title,
 });
 
 const renderLabel = (project: Project) => {

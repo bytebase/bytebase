@@ -28,9 +28,9 @@
       </template>
     </i18n-t>
     <div
+      v-if="memberType === 'USERS'"
       :class="[
         'w-full flex flex-col gap-y-2',
-        memberType !== 'USERS' ? 'hidden' : '',
       ]"
     >
       <div class="flex text-main items-center gap-x-1">
@@ -50,12 +50,12 @@
       />
     </div>
     <div
+      v-else
       :class="[
         'w-full flex flex-col gap-y-2',
-        memberType !== 'GROUPS' ? 'hidden' : '',
       ]"
     >
-      <div class="flex font-medium text-main items-center gap-x-1">
+      <div class="flex text-main items-center gap-x-1">
         {{ $t("settings.members.select-group", 2 /* multiply*/) }}
         <RequiredStar v-if="required" />
       </div>
@@ -78,7 +78,11 @@ import { NRadio, NRadioGroup } from "naive-ui";
 import { computed, ref } from "vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { GroupSelect, UserSelect } from "@/components/v2";
-import { extractGroupEmail, extractUserId, useGroupStore } from "@/store";
+import {
+  ensureGroupIdentifier,
+  extractGroupEmail,
+  extractUserId,
+} from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import {
   getGroupEmailInBinding,
@@ -115,8 +119,17 @@ const emit = defineEmits<{
   (event: "update:value", memberList: string[]): void;
 }>();
 
-const memberType = ref<MemberType>("USERS");
-const groupStore = useGroupStore();
+const initMemberType = computed((): MemberType => {
+  for (const binding of props.value) {
+    if (binding.startsWith(groupBindingPrefix)) {
+      return "GROUPS";
+    }
+    return "USERS";
+  }
+  return "USERS";
+});
+
+const memberType = ref<MemberType>(initMemberType.value);
 
 const onTypeChange = (type: MemberType) => {
   emit("update:value", []);
@@ -128,11 +141,7 @@ const memberList = computed(() => {
 
   for (const binding of props.value) {
     if (binding.startsWith(groupBindingPrefix)) {
-      const group = groupStore.getGroupByIdentifier(binding);
-      if (!group) {
-        continue;
-      }
-      list.push(group.name);
+      list.push(ensureGroupIdentifier(binding));
     } else {
       // For users, extract email from binding format "user:{email}"
       const email = extractUserId(binding);

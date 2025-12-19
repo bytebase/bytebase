@@ -63,13 +63,7 @@
                   :size="'medium'"
                   :include-all="false"
                   :disabled="!allowEdit"
-                  :filter="
-                    (user, _) =>
-                      !state.group.members.find(
-                        (member) =>
-                          member.member === `${userNamePrefix}${user.email}`
-                      )
-                  "
+                  :filter="(user) => userFilter(user, member.member)"
                   @update:user="(email) => updateMemberEmail(i, email)"
                 />
                 <GroupMemberRoleSelect
@@ -169,6 +163,7 @@ import {
   GroupMemberSchema,
   GroupSchema,
 } from "@/types/proto-es/v1/group_service_pb";
+import { type User } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2, isValidEmail } from "@/utils";
 import RemoveGroupButton from "./RemoveGroupButton.vue";
 import GroupMemberRoleSelect from "./UserDataTableByGroup/cells/GroupMemberRoleSelect.vue";
@@ -213,6 +208,15 @@ const state = reactive<LocalState>({
     ),
   },
 });
+
+const userFilter = (user: User, member: string) => {
+  if (extractUserId(member) === user.email) {
+    return true;
+  }
+  return !state.group.members.find(
+    (member) => member.member === `${userNamePrefix}${user.email}`
+  );
+};
 
 const isCreating = computed(() => !props.group);
 
