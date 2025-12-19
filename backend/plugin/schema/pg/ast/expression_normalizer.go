@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"slices"
 	"strings"
 )
 
@@ -356,56 +355,6 @@ func (*normalizationVisitor) isQuotedIdentifier(identifier string) bool {
 	return len(identifier) >= 2 &&
 		((identifier[0] == '"' && identifier[len(identifier)-1] == '"') ||
 			(identifier[0] == '`' && identifier[len(identifier)-1] == '`'))
-}
-
-// ExpressionListNormalizer provides utilities for normalizing lists of expressions
-type ExpressionListNormalizer struct {
-	normalizer *ExpressionNormalizer
-}
-
-// NewExpressionListNormalizer creates a new expression list normalizer
-func NewExpressionListNormalizer() *ExpressionListNormalizer {
-	return &ExpressionListNormalizer{
-		normalizer: NewExpressionNormalizer(),
-	}
-}
-
-// NormalizeExpressionList normalizes a list of expression strings
-func (ln *ExpressionListNormalizer) NormalizeExpressionList(expressions []string) ([]string, error) {
-	var normalized []string
-
-	for _, expr := range expressions {
-		normalizedExpr, err := ln.normalizer.NormalizeExpressionString(expr)
-		if err != nil {
-			return nil, err
-		}
-		normalized = append(normalized, normalizedExpr)
-	}
-
-	return normalized, nil
-}
-
-// NormalizeAndSortExpressionList normalizes and sorts a list of expressions for unordered comparison
-func (ln *ExpressionListNormalizer) NormalizeAndSortExpressionList(expressions []string) ([]string, error) {
-	normalized, err := ln.NormalizeExpressionList(expressions)
-	if err != nil {
-		return nil, err
-	}
-
-	// Sort the normalized expressions
-	// This is useful for comparing lists where order doesn't matter
-	return SortStringList(normalized), nil
-}
-
-// SortStringList sorts a list of strings
-func SortStringList(strs []string) []string {
-	sorted := make([]string, len(strs))
-	copy(sorted, strs)
-
-	// Use Go's slices.Sort function (more efficient than sort.Strings)
-	slices.Sort(sorted)
-
-	return sorted
 }
 
 // isRedundantTypeCast checks if a type cast can be safely removed

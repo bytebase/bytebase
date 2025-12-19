@@ -403,10 +403,6 @@ func (c *MongoDBContainer) GetPassword() string {
 	return c.password
 }
 
-func (c *MongoDBContainer) GetConnectionURI() string {
-	return fmt.Sprintf("mongodb://%s:%s@%s:%s/?authSource=admin", c.username, c.password, c.host, c.port)
-}
-
 func (c *MongoDBContainer) Close(ctx context.Context) {
 	if c == nil {
 		return

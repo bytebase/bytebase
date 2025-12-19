@@ -43,14 +43,3 @@ func (v *Version) LessThan(other *Version) bool {
 func (v *Version) LessThanOrEqual(other *Version) bool {
 	return !other.LessThan(v)
 }
-
-func (v *Version) String() string {
-	var b strings.Builder
-	for i, p := range v.parts {
-		if i != 0 {
-			b.WriteString(".")
-		}
-		b.WriteString(strconv.FormatUint(p, 10))
-	}
-	return b.String()
-}

@@ -2,7 +2,6 @@ package ast
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 )
 
@@ -388,22 +387,4 @@ func isCommutativeOperator(op string) bool {
 		"OR":  true,
 	}
 	return commutativeOps[strings.ToUpper(op)]
-}
-
-// SortExpressions sorts expression list for unordered comparison
-func SortExpressions(exprs []ExpressionAST) []ExpressionAST {
-	sorted := make([]ExpressionAST, len(exprs))
-	copy(sorted, exprs)
-
-	slices.SortFunc(sorted, func(a, b ExpressionAST) int {
-		if a.String() < b.String() {
-			return -1
-		}
-		if a.String() > b.String() {
-			return 1
-		}
-		return 0
-	})
-
-	return sorted
 }
