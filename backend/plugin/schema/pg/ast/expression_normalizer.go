@@ -357,11 +357,6 @@ func (*normalizationVisitor) isQuotedIdentifier(identifier string) bool {
 			(identifier[0] == '`' && identifier[len(identifier)-1] == '`'))
 }
 
-// ExpressionListNormalizer provides utilities for normalizing lists of expressions
-type ExpressionListNormalizer struct {
-	normalizer *ExpressionNormalizer
-}
-
 // isRedundantTypeCast checks if a type cast can be safely removed
 // This handles cases where PostgreSQL implicit casting makes explicit casts unnecessary
 func (v *normalizationVisitor) isRedundantTypeCast(leftExpr, typeExpr ExpressionAST) bool {
