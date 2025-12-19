@@ -90,8 +90,8 @@ type Task struct {
 	SkippedReason string `protobuf:"bytes,2,opt,name=skipped_reason,json=skippedReason,proto3" json:"skipped_reason,omitempty"`
 	// UUID that identifies the spec this task implements.
 	SpecId string `protobuf:"bytes,3,opt,name=spec_id,json=specId,proto3" json:"spec_id,omitempty"`
-	// The sheet ID containing SQL statements for this task.
-	SheetId int32 `protobuf:"varint,4,opt,name=sheet_id,json=sheetId,proto3" json:"sheet_id,omitempty"`
+	// The SHA256 hash of the sheet content (hex-encoded).
+	SheetSha256 string `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// The environment where the database will be created.
 	EnvironmentId string `protobuf:"bytes,5,opt,name=environment_id,json=environmentId,proto3" json:"environment_id,omitempty"`
 	// Name of the database to create.
@@ -171,11 +171,11 @@ func (x *Task) GetSpecId() string {
 	return ""
 }
 
-func (x *Task) GetSheetId() int32 {
+func (x *Task) GetSheetSha256() string {
 	if x != nil {
-		return x.SheetId
+		return x.SheetSha256
 	}
-	return 0
+	return ""
 }
 
 func (x *Task) GetEnvironmentId() string {
@@ -313,12 +313,12 @@ var File_store_task_proto protoreflect.FileDescriptor
 
 const file_store_task_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xae\x06\n" +
+	"\x10store/task.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xb6\x06\n" +
 	"\x04Task\x12\x18\n" +
 	"\askipped\x18\x01 \x01(\bR\askipped\x12%\n" +
 	"\x0eskipped_reason\x18\x02 \x01(\tR\rskippedReason\x12\x17\n" +
-	"\aspec_id\x18\x03 \x01(\tR\x06specId\x12\x19\n" +
-	"\bsheet_id\x18\x04 \x01(\x05R\asheetId\x12%\n" +
+	"\aspec_id\x18\x03 \x01(\tR\x06specId\x12!\n" +
+	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x12%\n" +
 	"\x0eenvironment_id\x18\x05 \x01(\tR\renvironmentId\x12#\n" +
 	"\rdatabase_name\x18\x06 \x01(\tR\fdatabaseName\x12\x1d\n" +
 	"\n" +

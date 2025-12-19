@@ -4681,7 +4681,7 @@ Task is the metadata for database operation tasks.
 | skipped | [bool](#bool) |  | Whether the task was skipped during execution. |
 | skipped_reason | [string](#string) |  | Reason why the task was skipped. |
 | spec_id | [string](#string) |  | UUID that identifies the spec this task implements. |
-| sheet_id | [int32](#int32) |  | The sheet ID containing SQL statements for this task. |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | environment_id | [string](#string) |  | The environment where the database will be created. |
 | database_name | [string](#string) |  | Name of the database to create. |
 | table_name | [string](#string) |  | Optional table name to create (required for some databases like MongoDB). |
