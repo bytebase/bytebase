@@ -47,7 +47,7 @@ import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import { NButton } from "naive-ui";
-import { computed, reactive, ref } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import AddProjectMemberForm from "@/components/ProjectMember/AddProjectMember/AddProjectMemberForm.vue";
@@ -71,10 +71,6 @@ import {
   extractProjectResourceName,
   generateIssueTitle,
 } from "@/utils";
-
-interface LocalState {
-  binding: Binding;
-}
 
 const props = withDefaults(
   defineProps<{

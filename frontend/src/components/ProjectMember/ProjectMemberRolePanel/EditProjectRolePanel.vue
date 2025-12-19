@@ -187,7 +187,7 @@ const databaseResources = computed(() => {
     const conditionExpr = convertFromExpr(props.binding.parsedExpr);
     return conditionExpr.databaseResources;
   }
-  return;
+  return undefined;
 });
 
 onMounted(() => {
