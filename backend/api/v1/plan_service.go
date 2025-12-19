@@ -401,7 +401,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			}
 
 			// Compare specs directly
-			oldSpecs := convertToPlanSpecs(oldPlan.Config.Specs)
+			oldSpecs := convertToPlanSpecs(project.ResourceID, oldPlan.Config.Specs)
 			removed, added, updated := diffSpecs(oldSpecs, req.Plan.Specs)
 
 			// Check if there are any changes at all.
@@ -624,9 +624,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 									Payload: &storepb.IssueCommentPayload{
 										Event: &storepb.IssueCommentPayload_PlanSpecUpdate_{
 											PlanSpecUpdate: &storepb.IssueCommentPayload_PlanSpecUpdate{
-												Spec:             common.FormatSpec(issue.Project.ResourceID, oldPlan.UID, specID),
-												FromSheetSha256:  &oldSheetSha256,
-												ToSheetSha256:    &newSheetSha256,
+												Spec:            common.FormatSpec(issue.Project.ResourceID, oldPlan.UID, specID),
+												FromSheetSha256: &oldSheetSha256,
+												ToSheetSha256:   &newSheetSha256,
 											},
 										},
 									},

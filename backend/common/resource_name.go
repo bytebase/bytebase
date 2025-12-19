@@ -374,6 +374,7 @@ func GetRoleID(name string) (string, error) {
 }
 
 // GetProjectResourceIDSheetUID returns the project ID and sheet UID from a resource name.
+//
 // Deprecated: Use GetProjectResourceIDSheetSha256 instead.
 func GetProjectResourceIDSheetUID(name string) (string, int, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, SheetIDPrefix)

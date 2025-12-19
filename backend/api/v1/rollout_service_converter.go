@@ -55,8 +55,8 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 		t.RunTime = timestamppb.New(*taskRun.RunAt)
 	}
 
-	if taskRun.SheetUID != nil && *taskRun.SheetUID != 0 {
-		t.Sheet = common.FormatSheet(taskRun.ProjectID, *taskRun.SheetUID)
+	if taskRun.SheetSha256 != nil && *taskRun.SheetSha256 != "" {
+		t.Sheet = common.FormatSheet(taskRun.ProjectID, *taskRun.SheetSha256)
 	}
 
 	if v, ok := stateCfg.TaskRunSchedulerInfo.Load(taskRun.ID); ok {
@@ -323,7 +323,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 				Project:      "",
 				Database:     task.Payload.GetDatabaseName(),
 				Table:        task.Payload.GetTableName(),
-				Sheet:        common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
+				Sheet:        common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256()),
 				CharacterSet: task.Payload.GetCharacterSet(),
 				Collation:    task.Payload.GetCollation(),
 				Environment:  common.FormatEnvironment(task.Payload.GetEnvironmentId()),
@@ -372,7 +372,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseUpdate_{
 			DatabaseUpdate: &v1pb.Task_DatabaseUpdate{
-				Sheet:              common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId())),
+				Sheet:              common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256()),
 				SchemaVersion:      task.Payload.GetSchemaVersion(),
 				DatabaseChangeType: databaseChangeType,
 			},
@@ -399,7 +399,7 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 		return nil, errors.Errorf("database not found")
 	}
 	targetDatabaseName := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
-	sheet := common.FormatSheet(project.ResourceID, int(task.Payload.GetSheetId()))
+	sheet := common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256())
 	v1pbTaskPayload := v1pb.Task_DatabaseDataExport_{
 		DatabaseDataExport: &v1pb.Task_DatabaseDataExport{
 			Target:   targetDatabaseName,

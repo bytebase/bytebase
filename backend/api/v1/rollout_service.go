@@ -614,9 +614,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		create := &store.TaskRunMessage{
 			TaskUID: task.ID,
 		}
-		if task.Payload.GetSheetId() != 0 {
-			sheetUID := int(task.Payload.GetSheetId())
-			create.SheetUID = &sheetUID
+		if task.Payload.GetSheetSha256() != "" {
+			sheetSha256 := task.Payload.GetSheetSha256()
+			create.SheetSha256 = &sheetSha256
 		}
 		if request.GetRunTime() != nil {
 			t := request.GetRunTime().AsTime()
@@ -910,10 +910,10 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, req *connec
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance, error: %v", err))
 	}
 
-	if taskRun.SheetUID == nil {
+	if taskRun.SheetSha256 == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v has no sheet", taskRun.ID))
 	}
-	sheet, err := s.store.GetSheetFull(ctx, *taskRun.SheetUID)
+	sheet, err := s.store.GetSheetFull(ctx, *taskRun.SheetSha256)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet statements, error: %v", err))
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"slices"
 
 	"connectrpc.com/connect"
@@ -84,7 +83,6 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		if file.Sheet == "" {
 			// statement must be present due to validation in validateAndSanitizeReleaseFiles
 			sheet := &store.SheetMessage{
-				Title:     fmt.Sprintf("File %s", file.Path),
 				Statement: string(file.Statement),
 			}
 			sheetsToCreate = append(sheetsToCreate, sheet)
@@ -94,7 +92,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 
 	// Batch create sheets if needed.
 	if len(sheetsToCreate) > 0 {
-		createdSheets, err := s.store.CreateSheets(ctx, project.ResourceID, user.Email, sheetsToCreate...)
+		createdSheets, err := s.store.CreateSheets(ctx, sheetsToCreate...)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheets"))
 		}
@@ -104,7 +102,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 
 		// Map created sheets back to files.
 		for i, sheet := range createdSheets {
-			filesWithoutSheet[i].Sheet = common.FormatSheet(project.ResourceID, sheet.UID)
+			filesWithoutSheet[i].Sheet = common.FormatSheet(project.ResourceID, sheet.Sha256)
 		}
 	}
 
@@ -118,23 +116,20 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 	}
 
 	for _, f := range sanitizedFiles {
-		projectID, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
+		_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(f.Sheet)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
+			return nil, errors.Wrapf(err, "failed to get sheetSha256 from %q", f.Sheet)
 		}
-		sheet, err := s.store.GetSheetMetadata(ctx, sheetUID)
+		_, err = s.store.GetSheetMetadata(ctx, sheetSha256)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
 		}
-		if sheet.ProjectID != projectID {
-			return nil, errors.Errorf("sheet %d not in project %s", sheetUID, projectID)
-		}
+		// Sheets are now project-agnostic, no need to check projectID
 
 		releaseMessage.Payload.Files = append(releaseMessage.Payload.Files, &storepb.ReleasePayload_File{
 			Id:          f.Id,
 			Path:        f.Path,
-			Sheet:       f.Sheet,
-			SheetSha256: sheet.GetSha256Hex(),
+			SheetSha256: sheetSha256,
 			Type:        storepb.SchemaChangeType(f.Type),
 			Version:     f.Version,
 			EnableGhost: f.EnableGhost,
@@ -436,21 +431,15 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 	}
 
 	for _, f := range release.Payload.Files {
-		projectID, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
+		sheet, err := s.GetSheetMetadata(ctx, f.SheetSha256)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
+			return nil, errors.Wrapf(err, "failed to get sheet with sha256 %q", f.SheetSha256)
 		}
-		sheet, err := s.GetSheetMetadata(ctx, sheetUID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
-		}
-		if sheet.ProjectID != projectID {
-			return nil, errors.Errorf("sheet %d not in project %s", sheetUID, projectID)
-		}
+		// Sheets are now project-agnostic, no need to check projectID
 		r.Files = append(r.Files, &v1pb.Release_File{
 			Id:            f.Id,
 			Path:          f.Path,
-			Sheet:         f.Sheet,
+			Sheet:         common.FormatSheet(release.ProjectID, f.SheetSha256),
 			SheetSha256:   f.SheetSha256,
 			Type:          v1pb.Release_File_Type(f.Type),
 			Version:       f.Version,
@@ -510,19 +499,17 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 
 		// If sheet is provided but statement is not, populate statement from sheet
 		case f.Sheet != "":
-			projectID, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
+			_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(f.Sheet)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get sheet UID from %q", f.Sheet)
+				return nil, errors.Wrapf(err, "failed to get sheet SHA256 from %q", f.Sheet)
 			}
-			sheet, err := s.GetSheetFull(ctx, sheetUID)
+			sheet, err := s.GetSheetFull(ctx, sheetSha256)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
 			}
-			if sheet.ProjectID != projectID {
-				return nil, errors.Errorf("sheet %d not in project %s", sheetUID, projectID)
-			}
+			// Sheets are now project-agnostic, no need to check projectID
 			f.Statement = []byte(sheet.Statement)
-			f.SheetSha256 = sheet.GetSha256Hex()
+			f.SheetSha256 = sheet.Sha256
 		case len(f.Statement) > 0:
 			// populate sheetSha256 from statement
 			h := sha256.Sum256(f.Statement)

@@ -29,7 +29,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		Name:                    common.FormatPlan(plan.ProjectID, plan.UID),
 		Title:                   plan.Name,
 		Description:             plan.Description,
-		Specs:                   convertToPlanSpecs(plan.Config.Specs), // Use specs field for output
+		Specs:                   convertToPlanSpecs(plan.ProjectID, plan.Config.Specs), // Use specs field for output
 		Deployment:              convertToPlanDeployment(plan.Config.Deployment),
 		CreateTime:              timestamppb.New(plan.CreatedAt),
 		UpdateTime:              timestamppb.New(plan.UpdatedAt),
@@ -68,15 +68,15 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	return p, nil
 }
 
-func convertToPlanSpecs(specs []*storepb.PlanConfig_Spec) []*v1pb.Plan_Spec {
+func convertToPlanSpecs(projectID string, specs []*storepb.PlanConfig_Spec) []*v1pb.Plan_Spec {
 	v1Specs := make([]*v1pb.Plan_Spec, len(specs))
 	for i := range specs {
-		v1Specs[i] = convertToPlanSpec(specs[i])
+		v1Specs[i] = convertToPlanSpec(projectID, specs[i])
 	}
 	return v1Specs
 }
 
-func convertToPlanSpec(spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
+func convertToPlanSpec(projectID string, spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
 	v1Spec := &v1pb.Plan_Spec{
 		Id: spec.Id,
 	}
@@ -85,9 +85,9 @@ func convertToPlanSpec(spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
 		v1Spec.Config = convertToPlanSpecCreateDatabaseConfig(v)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
-		v1Spec.Config = convertToPlanSpecChangeDatabaseConfig(v)
+		v1Spec.Config = convertToPlanSpecChangeDatabaseConfig(projectID, v)
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
-		v1Spec.Config = convertToPlanSpecExportDataConfig(v)
+		v1Spec.Config = convertToPlanSpecExportDataConfig(projectID, v)
 	}
 
 	return v1Spec
@@ -109,12 +109,16 @@ func convertToPlanSpecCreateDatabaseConfig(config *storepb.PlanConfig_Spec_Creat
 	}
 }
 
-func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_ChangeDatabaseConfig) *v1pb.Plan_Spec_ChangeDatabaseConfig {
+func convertToPlanSpecChangeDatabaseConfig(projectID string, config *storepb.PlanConfig_Spec_ChangeDatabaseConfig) *v1pb.Plan_Spec_ChangeDatabaseConfig {
 	c := config.ChangeDatabaseConfig
+	var sheet string
+	if c.SheetSha256 != "" {
+		sheet = common.FormatSheet(projectID, c.SheetSha256)
+	}
 	return &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 			Targets:           c.Targets,
-			Sheet:             c.Sheet,
+			Sheet:             sheet,
 			Release:           c.Release,
 			Type:              convertToPlanSpecChangeDatabaseConfigType(c.Type),
 			GhostFlags:        c.GhostFlags,
@@ -137,12 +141,16 @@ func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDataba
 	}
 }
 
-func convertToPlanSpecExportDataConfig(config *storepb.PlanConfig_Spec_ExportDataConfig) *v1pb.Plan_Spec_ExportDataConfig {
+func convertToPlanSpecExportDataConfig(projectID string, config *storepb.PlanConfig_Spec_ExportDataConfig) *v1pb.Plan_Spec_ExportDataConfig {
 	c := config.ExportDataConfig
+	var sheet string
+	if c.SheetSha256 != "" {
+		sheet = common.FormatSheet(projectID, c.SheetSha256)
+	}
 	return &v1pb.Plan_Spec_ExportDataConfig{
 		ExportDataConfig: &v1pb.Plan_ExportDataConfig{
 			Targets:  c.Targets,
-			Sheet:    c.Sheet,
+			Sheet:    sheet,
 			Format:   convertExportFormat(c.Format),
 			Password: c.Password,
 		},
@@ -248,10 +256,18 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 		storeType = storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED
 	}
 
+	var sheetSha256 string
+	if c.Sheet != "" {
+		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
+		if err != nil {
+			return nil
+		}
+		sheetSha256 = sha256
+	}
 	return &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
 			Targets:           c.Targets,
-			Sheet:             c.Sheet,
+			SheetSha256:       sheetSha256,
 			Release:           c.Release,
 			Type:              storeType,
 			GhostFlags:        c.GhostFlags,
@@ -263,12 +279,20 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 
 func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *storepb.PlanConfig_Spec_ExportDataConfig {
 	c := config.ExportDataConfig
+	var sheetSha256 string
+	if c.Sheet != "" {
+		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
+		if err != nil {
+			return nil
+		}
+		sheetSha256 = sha256
+	}
 	return &storepb.PlanConfig_Spec_ExportDataConfig{
 		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
-			Targets:  c.Targets,
-			Sheet:    c.Sheet,
-			Format:   convertToExportFormat(c.Format),
-			Password: c.Password,
+			Targets:     c.Targets,
+			SheetSha256: sheetSha256,
+			Format:      convertToExportFormat(c.Format),
+			Password:    c.Password,
 		},
 	}
 }
@@ -297,15 +321,13 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string
 		Error:      run.Result.Error,
 	}
 
-	if sheetUID := int(run.Config.GetSheetUid()); sheetUID != 0 {
-		sheet, err := s.GetSheetMetadata(ctx, sheetUID)
+	if sheetSha256 := run.Config.GetSheetSha256(); sheetSha256 != "" {
+		_, err := s.GetSheetMetadata(ctx, sheetSha256)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet")
 		}
-		if sheet.ProjectID != projectID {
-			return nil, errors.Errorf("sheet %d not in project %s", sheetUID, projectID)
-		}
-		converted.Sheet = common.FormatSheet(projectID, sheet.UID)
+		// Sheets are now project-agnostic, no need to check projectID
+		converted.Sheet = common.FormatSheet(projectID, sheetSha256)
 	}
 
 	return converted, nil
