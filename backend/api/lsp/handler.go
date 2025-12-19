@@ -57,7 +57,6 @@ func NewHandlerWithAuth(s *store.Store, profile *config.Profile, iamManager *iam
 		iamManager:           iamManager,
 		diagnosticsDebouncer: NewDiagnosticsDebouncer(500 * time.Millisecond), // 500ms debounce
 		contentCache:         NewContentCache(100),                            // Cache up to 100 documents
-		perfMonitor:          NewPerformanceMonitor(),
 	}
 	return lspHandler{Handler: jsonrpc2.HandlerWithError(handler.handle)}
 }
@@ -94,7 +93,6 @@ type Handler struct {
 	// Performance optimizations
 	diagnosticsDebouncer *DiagnosticsDebouncer
 	contentCache         *ContentCache
-	perfMonitor          *PerformanceMonitor
 }
 
 // ShutDown shuts down the handler.
