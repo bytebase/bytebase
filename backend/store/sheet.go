@@ -27,56 +27,50 @@ type SheetMessage struct {
 // GetSheetMetadata gets a sheet with truncated statement (max 2MB).
 // Use this when you need to check sheet.Size or other metadata before processing.
 // Statement field will be truncated to MaxSheetSize (2MB).
-func (s *Store) GetSheetMetadata(ctx context.Context, id int) (*SheetMessage, error) {
-	if v, ok := s.sheetMetadataCache.Get(id); ok && s.enableCache {
+func (s *Store) GetSheetMetadata(ctx context.Context, sha256Hex string) (*SheetMessage, error) {
+	if v, ok := s.sheetMetadataCache.Get(sha256Hex); ok && s.enableCache {
 		return v, nil
 	}
 
-	sheet, err := s.getSheet(ctx, id, false)
+	sheet, err := s.getSheet(ctx, sha256Hex, false)
 	if err != nil {
 		return nil, err
 	}
 
-	s.sheetMetadataCache.Add(id, sheet)
+	s.sheetMetadataCache.Add(sha256Hex, sheet)
 	return sheet, nil
 }
 
 // GetSheetFull gets a sheet with the complete statement.
 // Use this when you need the full statement for execution or processing.
 // Statement field contains the complete content regardless of size.
-func (s *Store) GetSheetFull(ctx context.Context, id int) (*SheetMessage, error) {
-	if v, ok := s.sheetFullCache.Get(id); ok && s.enableCache {
+func (s *Store) GetSheetFull(ctx context.Context, sha256Hex string) (*SheetMessage, error) {
+	if v, ok := s.sheetFullCache.Get(sha256Hex); ok && s.enableCache {
 		return v, nil
 	}
 
-	sheet, err := s.getSheet(ctx, id, true)
+	sheet, err := s.getSheet(ctx, sha256Hex, true)
 	if err != nil {
 		return nil, err
 	}
 
-	s.sheetFullCache.Add(id, sheet)
+	s.sheetFullCache.Add(sha256Hex, sheet)
 	return sheet, nil
 }
 
-// getSheet is the internal helper for fetching a single sheet by ID.
-func (s *Store) getSheet(ctx context.Context, id int, loadFull bool) (*SheetMessage, error) {
-	statementField := fmt.Sprintf("LEFT(sheet_blob.content, %d)", common.MaxSheetSize)
+// getSheet is the internal helper for fetching a single sheet by SHA256.
+func (s *Store) getSheet(ctx context.Context, sha256Hex string, loadFull bool) (*SheetMessage, error) {
+	statementField := fmt.Sprintf("LEFT(content, %d)", common.MaxSheetSize)
 	if loadFull {
-		statementField = "sheet_blob.content"
+		statementField = "content"
 	}
 
 	q := qb.Q().Space(fmt.Sprintf(`
 		SELECT
-			sheet.id,
-			sheet.creator,
-			sheet.created_at,
-			sheet.project,
 			%s,
-			sheet.sha256,
-			OCTET_LENGTH(sheet_blob.content)
-		FROM sheet
-		LEFT JOIN sheet_blob ON sheet.sha256 = sheet_blob.sha256
-		WHERE sheet.id = ?`, statementField), id)
+			OCTET_LENGTH(content)
+		FROM sheet_blob
+		WHERE sha256 = decode(?, 'hex')`, statementField), sha256Hex)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -97,14 +91,11 @@ func (s *Store) getSheet(ctx context.Context, id int, loadFull bool) (*SheetMess
 
 	var sheet *SheetMessage
 	if rows.Next() {
-		sheet = &SheetMessage{}
+		sheet = &SheetMessage{
+			Sha256: sha256Hex,
+		}
 		if err := rows.Scan(
-			&sheet.UID,
-			&sheet.Creator,
-			&sheet.CreatedAt,
-			&sheet.ProjectID,
 			&sheet.Statement,
-			&sheet.Sha256,
 			&sheet.Size,
 		); err != nil {
 			return nil, err
@@ -119,7 +110,7 @@ func (s *Store) getSheet(ctx context.Context, id int, loadFull bool) (*SheetMess
 	}
 
 	if sheet == nil {
-		return nil, errors.Errorf("sheet not found with id %d", id)
+		return nil, errors.Errorf("sheet not found with sha256 %s", sha256Hex)
 	}
 
 	return sheet, nil
