@@ -3018,7 +3018,7 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet_uid | [int32](#int32) |  |  |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | instance_id | [string](#string) |  |  |
 | database_name | [string](#string) |  |  |
 | ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
