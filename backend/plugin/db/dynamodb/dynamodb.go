@@ -101,10 +101,10 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split multi statement")
 	}
-	nonEmptyStatements, idxMap := base.FilterEmptyStatementsWithIndexes(statements)
+	nonEmptyStatements := base.FilterEmptyStatements(statements)
 
-	for currentIndex, statement := range nonEmptyStatements {
-		opts.LogCommandExecute([]int32{int32(idxMap[currentIndex])}, statement.Text)
+	for _, statement := range nonEmptyStatements {
+		opts.LogCommandExecute(statement.Range, statement.Text)
 		_, err := d.client.ExecuteTransaction(ctx, &dynamodb.ExecuteTransactionInput{
 			TransactStatements: []types.ParameterizedStatement{
 				{

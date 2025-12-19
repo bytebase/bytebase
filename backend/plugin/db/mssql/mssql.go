@@ -215,8 +215,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 				// Try send the last batch to server.
 				v := batch.Batch()
 				if v != nil && len(v.Text) > 0 {
-					indexes := []int32{int32(idx)}
-					opts.LogCommandExecute(indexes, v.Text)
+					opts.LogCommandExecute(&storepb.Range{Start: int32(v.Start), End: int32(v.End)}, v.Text)
 					rowsAffected, err := execute(ctx, tx, v.Text)
 					if err != nil {
 						opts.LogCommandResponse(0, nil, err.Error())
@@ -236,10 +235,9 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 		case *tsqlbatch.GoCommand:
 			b := batch.Batch()
 			// Try send the batch to server.
-			indexes := []int32{int32(idx)}
 			idx++
 			for i := uint(0); i < v.Count; i++ {
-				opts.LogCommandExecute(indexes, b.Text)
+				opts.LogCommandExecute(&storepb.Range{Start: int32(b.Start), End: int32(b.End)}, b.Text)
 				rowsAffected, err := execute(ctx, tx, b.Text)
 				if err != nil {
 					opts.LogCommandResponse(0, nil, err.Error())
@@ -276,8 +274,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 				// Try send the last batch to server.
 				v := batch.Batch()
 				if v != nil && len(v.Text) > 0 {
-					indexes := []int32{int32(idx)}
-					opts.LogCommandExecute(indexes, v.Text)
+					opts.LogCommandExecute(&storepb.Range{Start: int32(v.Start), End: int32(v.End)}, v.Text)
 					rowsAffected, err := d.executeAutoCommit(ctx, v.Text)
 					if err != nil {
 						opts.LogCommandResponse(0, nil, err.Error())
@@ -297,10 +294,9 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 		case *tsqlbatch.GoCommand:
 			b := batch.Batch()
 			// Execute the batch in auto-commit mode
-			indexes := []int32{int32(idx)}
 			idx++
 			for i := uint(0); i < v.Count; i++ {
-				opts.LogCommandExecute(indexes, b.Text)
+				opts.LogCommandExecute(&storepb.Range{Start: int32(b.Start), End: int32(b.End)}, b.Text)
 				rowsAffected, err := d.executeAutoCommit(ctx, b.Text)
 				if err != nil {
 					opts.LogCommandResponse(0, nil, err.Error())

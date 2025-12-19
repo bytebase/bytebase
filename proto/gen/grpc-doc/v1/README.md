@@ -642,7 +642,6 @@
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
-    - [SheetPayload](#bytebase-v1-SheetPayload)
   
     - [SheetService](#bytebase-v1-SheetService)
   
@@ -10051,7 +10050,7 @@ Command execution details.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the command was logged. |
-| command_indexes | [int32](#int32) | repeated | Either `command_indexes` or `statement` is set. The indexes of the executed commands. |
+| range | [Range](#bytebase-v1-Range) |  | The byte offset range of the executed command in the sheet. |
 | statement | [string](#string) |  | The executed statement. |
 | response | [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse) |  | The response from executing the command. |
 
@@ -10479,23 +10478,7 @@ RolloutService manages the execution of deployment plans.
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the sheet. |
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
-| payload | [SheetPayload](#bytebase-v1-SheetPayload) |  | Parsed metadata about SQL commands in the sheet. |
 | engine | [Engine](#bytebase-v1-Engine) |  | The SQL dialect. |
-
-
-
-
-
-
-<a name="bytebase-v1-SheetPayload"></a>
-
-### SheetPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| commands | [Range](#bytebase-v1-Range) | repeated | The start and end position of each command in the sheet statement. |
 
 
 

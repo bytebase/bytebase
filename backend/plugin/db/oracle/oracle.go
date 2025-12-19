@@ -118,14 +118,13 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	var commands []base.Statement
-	var originalIndex []int32
 	if len(statement) <= common.MaxSheetCheckSize {
 		// Use Oracle sql parser.
 		singleSQLs, err := plsqlparser.SplitSQL(statement)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")
 		}
-		singleSQLs, originalIndex = base.FilterEmptyStatementsWithIndexes(singleSQLs)
+		singleSQLs = base.FilterEmptyStatements(singleSQLs)
 		if len(singleSQLs) == 0 {
 			return 0, nil
 		}
@@ -136,7 +135,6 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 				Text: statement,
 			},
 		}
-		originalIndex = []int32{0}
 	}
 
 	conn, err := d.db.Conn(ctx)
@@ -147,13 +145,13 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	// Execute based on transaction mode
 	if transactionMode == common.TransactionModeOff {
-		return d.executeInAutoCommitMode(ctx, conn, commands, originalIndex, opts)
+		return d.executeInAutoCommitMode(ctx, conn, commands, opts)
 	}
-	return d.executeInTransactionMode(ctx, conn, commands, originalIndex, opts)
+	return d.executeInTransactionMode(ctx, conn, commands, opts)
 }
 
 // executeInTransactionMode executes statements within a single transaction
-func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, originalIndex []int32, opts db.ExecuteOptions) (int64, error) {
+func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions) (int64, error) {
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
@@ -175,9 +173,8 @@ func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, com
 	}()
 
 	totalRowsAffected := int64(0)
-	for i, command := range commands {
-		indexes := []int32{originalIndex[i]}
-		opts.LogCommandExecute(indexes, command.Text)
+	for _, command := range commands {
+		opts.LogCommandExecute(command.Range, command.Text)
 
 		sqlResult, err := tx.ExecContext(ctx, command.Text)
 		if err != nil {
@@ -208,11 +205,10 @@ func (*Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, com
 }
 
 // executeInAutoCommitMode executes statements sequentially in auto-commit mode
-func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, originalIndex []int32, opts db.ExecuteOptions) (int64, error) {
+func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions) (int64, error) {
 	totalRowsAffected := int64(0)
 	for i, command := range commands {
-		indexes := []int32{originalIndex[i]}
-		opts.LogCommandExecute(indexes, command.Text)
+		opts.LogCommandExecute(command.Range, command.Text)
 
 		sqlResult, err := conn.ExecContext(ctx, command.Text)
 		if err != nil {

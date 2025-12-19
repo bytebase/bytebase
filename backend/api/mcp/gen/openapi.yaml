@@ -15654,26 +15654,11 @@ components:
           title: content_size
           format: int64
           description: content_size is the full size of the content, may not match the size of the `content` field.
-        payload:
-          title: payload
-          description: Parsed metadata about SQL commands in the sheet.
-          $ref: '#/components/schemas/bytebase.v1.SheetPayload'
         engine:
           title: engine
           description: The SQL dialect.
           $ref: '#/components/schemas/bytebase.v1.Engine'
       title: Sheet
-      additionalProperties: false
-    bytebase.v1.SheetPayload:
-      type: object
-      properties:
-        commands:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.Range'
-          title: commands
-          description: The start and end position of each command in the sheet statement.
-      title: SheetPayload
       additionalProperties: false
     bytebase.v1.SpatialIndexConfig:
       type: object
@@ -16683,15 +16668,10 @@ components:
           title: log_time
           description: When the command was logged.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
-        commandIndexes:
-          type: array
-          items:
-            type: integer
-            format: int32
-          title: command_indexes
-          description: |-
-            Either `command_indexes` or `statement` is set.
-             The indexes of the executed commands.
+        range:
+          title: range
+          description: The byte offset range of the executed command in the sheet.
+          $ref: '#/components/schemas/bytebase.v1.Range'
         statement:
           type: string
           title: statement

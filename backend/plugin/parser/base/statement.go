@@ -44,19 +44,6 @@ func FilterEmptyStatements(list []Statement) []Statement {
 	return result
 }
 
-// FilterEmptyStatementsWithIndexes removes empty statements and returns original indexes.
-func FilterEmptyStatementsWithIndexes(list []Statement) ([]Statement, []int32) {
-	var result []Statement
-	var originalIndex []int32
-	for i, stmt := range list {
-		if !stmt.Empty {
-			result = append(result, stmt)
-			originalIndex = append(originalIndex, int32(i))
-		}
-	}
-	return result, originalIndex
-}
-
 // FilterEmptyParsedStatements removes empty parsed statements from the list.
 func FilterEmptyParsedStatements(list []ParsedStatement) []ParsedStatement {
 	var result []ParsedStatement
@@ -66,19 +53,6 @@ func FilterEmptyParsedStatements(list []ParsedStatement) []ParsedStatement {
 		}
 	}
 	return result
-}
-
-// FilterEmptyParsedStatementsWithIndexes removes empty parsed statements and returns original indexes.
-func FilterEmptyParsedStatementsWithIndexes(list []ParsedStatement) ([]ParsedStatement, []int32) {
-	var result []ParsedStatement
-	var originalIndex []int32
-	for i, stmt := range list {
-		if !stmt.Empty {
-			result = append(result, stmt)
-			originalIndex = append(originalIndex, int32(i))
-		}
-	}
-	return result, originalIndex
 }
 
 // ExtractASTs extracts non-nil ASTs from a slice of ParsedStatements.

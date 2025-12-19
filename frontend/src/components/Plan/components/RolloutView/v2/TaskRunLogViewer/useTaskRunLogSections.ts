@@ -14,7 +14,6 @@ import {
   TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
-import { extractSheetCommandByIndex } from "@/utils";
 import { addToSet, deleteFromSet } from "../utils/reactivity";
 import type { DeployGroup, DisplayItem, Section, SectionStatus } from "./types";
 import {
@@ -97,13 +96,14 @@ export const useTaskRunLogSections = (
         let statement: string | undefined;
         if (cmd.statement) {
           statement = cmd.statement;
-        } else if (cmd.commandIndexes.length > 0) {
+        } else if (cmd.range) {
           const sheetValue = toValue(sheet);
           if (sheetValue) {
-            statement = extractSheetCommandByIndex(
-              sheetValue,
-              cmd.commandIndexes[0]
+            const subarray = sheetValue.content.subarray(
+              cmd.range.start,
+              cmd.range.end
             );
+            statement = new TextDecoder().decode(subarray);
           }
         }
         if (statement) {

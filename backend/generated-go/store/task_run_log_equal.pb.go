@@ -33,13 +33,8 @@ func (x *TaskRunLog_CommandExecute) Equal(y *TaskRunLog_CommandExecute) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if len(x.CommandIndexes) != len(y.CommandIndexes) {
+	if !x.Range.Equal(y.Range) {
 		return false
-	}
-	for i := 0; i < len(x.CommandIndexes); i++ {
-		if x.CommandIndexes[i] != y.CommandIndexes[i] {
-			return false
-		}
 	}
 	if x.Statement != y.Statement {
 		return false

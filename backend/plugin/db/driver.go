@@ -286,7 +286,7 @@ func (o *ExecuteOptions) LogSchemaDumpEnd(derr string) {
 }
 
 // LogCommandExecute logs the execution of a command.
-func (o *ExecuteOptions) LogCommandExecute(commandIndexes []int32, commandText string) {
+func (o *ExecuteOptions) LogCommandExecute(commandRange *storepb.Range, commandText string) {
 	if o == nil || o.CreateTaskRunLog == nil {
 		return
 	}
@@ -294,7 +294,7 @@ func (o *ExecuteOptions) LogCommandExecute(commandIndexes []int32, commandText s
 	if o.LogCommandStatement {
 		ce.Statement = commandText
 	} else {
-		ce.CommandIndexes = commandIndexes
+		ce.Range = commandRange
 	}
 	err := o.CreateTaskRunLog(time.Now(), &storepb.TaskRunLog{
 		Type:           storepb.TaskRunLog_COMMAND_EXECUTE,
