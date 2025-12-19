@@ -154,18 +154,6 @@ ruleList:
   - type: TABLE_DISALLOW_SET_CHARSET
     level: WARNING
     engine: MYSQL
-  - type: TABLE_DISALLOW_DDL
-    level: WARNING
-    engine: MSSQL
-  - type: TABLE_DISALLOW_DDL
-    level: WARNING
-    engine: MYSQL
-  - type: TABLE_DISALLOW_DML
-    level: WARNING
-    engine: MSSQL
-  - type: TABLE_DISALLOW_DML
-    level: WARNING
-    engine: MYSQL
   - type: TABLE_LIMIT_SIZE
     level: WARNING
     payload:
