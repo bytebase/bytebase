@@ -127,11 +127,13 @@ message Position {
   int32 column = 2;
 }
 
-// Range of positions in text or sequence.
+// Range represents a span within a text or sequence.
+// Whether the indices are byte offsets or character indices depends on the context.
+// Check the documentation of the field using Range for specific semantics.
 message Range {
-  // Start position (inclusive).
+  // Start index (inclusive).
   int32 start = 1;
-  // End position (exclusive).
+  // End index (exclusive).
   int32 end = 2;
 }
 

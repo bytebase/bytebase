@@ -67,18 +67,21 @@ func splitByParser(statement string) ([]base.Statement, error) {
 	var result []base.Statement
 	tokens := stream.GetAllTokens()
 	start := 0
+	byteOffset := 0
 
 	if len(tree.AllBatch_without_go()) == 0 {
 		// Go statement only.
 		for _, goStmt := range tree.AllGo_statement() {
 			pos := goStmt.GetStop().GetTokenIndex()
+			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
+			stmtByteLength := len(stmtText)
 			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.Statement{
-				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				Text:     stmtText,
 				BaseLine: tokens[start].GetLine() - 1,
 				Range: &storepb.Range{
-					Start: int32(tokens[start].GetStart()),
-					End:   int32(tokens[pos].GetStop() + 1),
+					Start: int32(byteOffset),
+					End:   int32(byteOffset + stmtByteLength),
 				},
 				End: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
@@ -90,6 +93,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: false,
 			})
+			byteOffset += stmtByteLength
 			start = pos + 1
 		}
 		return result, nil
@@ -98,7 +102,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 	// First batch_without_go.
 	b := tree.AllBatch_without_go()[0]
 	var r []base.Statement
-	r, start = splitBatchWithoutGo(b, tokens, stream, start, statement)
+	r, start, byteOffset = splitBatchWithoutGo(b, tokens, stream, start, byteOffset, statement)
 	result = append(result, r...)
 
 	goIdx := 0
@@ -118,13 +122,15 @@ func splitByParser(statement string) ([]base.Statement, error) {
 
 			for _, goStmt := range goStmts {
 				pos := goStmt.GetStop().GetTokenIndex()
+				stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
+				stmtByteLength := len(stmtText)
 				antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 				result = append(result, base.Statement{
-					Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+					Text:     stmtText,
 					BaseLine: tokens[start].GetLine() - 1,
 					Range: &storepb.Range{
-						Start: int32(tokens[start].GetStart()),
-						End:   int32(tokens[pos].GetStop() + 1),
+						Start: int32(byteOffset),
+						End:   int32(byteOffset + stmtByteLength),
 					},
 					End: common.ConvertANTLRPositionToPosition(
 						&common.ANTLRPosition{
@@ -136,10 +142,11 @@ func splitByParser(statement string) ([]base.Statement, error) {
 					Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 					Empty: false,
 				})
+				byteOffset += stmtByteLength
 				start = pos + 1
 			}
 
-			r, start = splitBatchWithoutGo(b, tokens, stream, start, statement)
+			r, start, byteOffset = splitBatchWithoutGo(b, tokens, stream, start, byteOffset, statement)
 			result = append(result, r...)
 		}
 	}
@@ -148,13 +155,15 @@ func splitByParser(statement string) ([]base.Statement, error) {
 		// Last go statement.
 		for _, goStmt := range tree.AllGo_statement()[goIdx:] {
 			pos := goStmt.GetStop().GetTokenIndex()
+			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
+			stmtByteLength := len(stmtText)
 			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.Statement{
-				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				Text:     stmtText,
 				BaseLine: tokens[start].GetLine() - 1,
 				Range: &storepb.Range{
-					Start: int32(tokens[start].GetStart()),
-					End:   int32(tokens[pos].GetStop() + 1),
+					Start: int32(byteOffset),
+					End:   int32(byteOffset + stmtByteLength),
 				},
 				End: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
@@ -166,6 +175,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: false,
 			})
+			byteOffset += stmtByteLength
 			start = pos + 1
 		}
 	}
@@ -173,20 +183,22 @@ func splitByParser(statement string) ([]base.Statement, error) {
 	return result, nil
 }
 
-func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token, stream *antlr.CommonTokenStream, start int, statement string) ([]base.Statement, int) {
+func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token, stream *antlr.CommonTokenStream, start int, byteOffset int, statement string) ([]base.Statement, int, int) {
 	var result []base.Statement
 	switch {
 	case b.Batch_level_statement() == nil && b.Execute_body_batch() == nil:
 		// All sql_clauses.
 		for _, sqlClause := range b.AllSql_clauses() {
 			pos := sqlClause.GetStop().GetTokenIndex()
+			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
+			stmtByteLength := len(stmtText)
 			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.Statement{
-				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				Text:     stmtText,
 				BaseLine: tokens[start].GetLine() - 1,
 				Range: &storepb.Range{
-					Start: int32(tokens[start].GetStart()),
-					End:   int32(tokens[pos].GetStop() + 1),
+					Start: int32(byteOffset),
+					End:   int32(byteOffset + stmtByteLength),
 				},
 				End: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
@@ -198,17 +210,20 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: false,
 			})
+			byteOffset += stmtByteLength
 			start = pos + 1
 		}
 	case b.Batch_level_statement() != nil:
 		pos := b.Batch_level_statement().GetStop().GetTokenIndex()
+		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
+		stmtByteLength := len(stmtText)
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		result = append(result, base.Statement{
-			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
 			Range: &storepb.Range{
-				Start: int32(tokens[start].GetStart()),
-				End:   int32(tokens[pos].GetStop() + 1),
+				Start: int32(byteOffset),
+				End:   int32(byteOffset + stmtByteLength),
 			},
 			End: common.ConvertANTLRPositionToPosition(
 				&common.ANTLRPosition{
@@ -220,16 +235,19 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: false,
 		})
+		byteOffset += stmtByteLength
 		start = pos + 1
 	case b.Execute_body_batch() != nil:
 		pos := b.Execute_body_batch().GetStop().GetTokenIndex()
+		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
+		stmtByteLength := len(stmtText)
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		result = append(result, base.Statement{
-			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
 			Range: &storepb.Range{
-				Start: int32(tokens[start].GetStart()),
-				End:   int32(tokens[pos].GetStop() + 1),
+				Start: int32(byteOffset),
+				End:   int32(byteOffset + stmtByteLength),
 			},
 			End: common.ConvertANTLRPositionToPosition(
 				&common.ANTLRPosition{
@@ -241,16 +259,19 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: false,
 		})
+		byteOffset += stmtByteLength
 		start = pos + 1
 		for _, sqlClause := range b.AllSql_clauses() {
 			pos := sqlClause.GetStop().GetTokenIndex()
+			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
+			stmtByteLength := len(stmtText)
 			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 			result = append(result, base.Statement{
-				Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+				Text:     stmtText,
 				BaseLine: tokens[start].GetLine() - 1,
 				Range: &storepb.Range{
-					Start: int32(tokens[start].GetStart()),
-					End:   int32(tokens[pos].GetStop() + 1),
+					Start: int32(byteOffset),
+					End:   int32(byteOffset + stmtByteLength),
 				},
 				End: common.ConvertANTLRPositionToPosition(
 					&common.ANTLRPosition{
@@ -262,10 +283,11 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: false,
 			})
+			byteOffset += stmtByteLength
 			start = pos + 1
 		}
 	default:
 		// No statements found in this batch
 	}
-	return result, start
+	return result, start, byteOffset
 }

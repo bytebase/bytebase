@@ -643,6 +643,25 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 				},
 			},
 		},
+		{
+			statement: "SELECT * FROM 表名; INSERT INTO 表 VALUES (1);",
+			want: resData{
+				res: []base.Statement{
+					{
+						Text:  "SELECT * FROM 表名;",
+						Range: &storepb.Range{Start: 0, End: 21}, // Byte offset 0-21 (not 0-17)
+						Start: &storepb.Position{Line: 1, Column: 1},
+						End:   &storepb.Position{Line: 1, Column: 17},
+					},
+					{
+						Text:  " INSERT INTO 表 VALUES (1);",
+						Range: &storepb.Range{Start: 21, End: 49}, // Byte offset 21-49 (not 17-43)
+						Start: &storepb.Position{Line: 1, Column: 19},
+						End:   &storepb.Position{Line: 1, Column: 43},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {

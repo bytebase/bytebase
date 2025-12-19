@@ -57,6 +57,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		return result, nil
 	}
 
+	byteOffset := 0
 	start := 0
 	for i, stmt := range allStatements {
 		// Find the semicolon after this statement
@@ -88,13 +89,16 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 			continue
 		}
 
+		stmtText := stream.GetTextFromTokens(tokens[start], tokens[endPos])
+		stmtByteLength := len(stmtText)
+
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : endPos+1])
 		result = append(result, base.Statement{
-			Text:     stream.GetTextFromTokens(tokens[start], tokens[endPos]),
+			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
 			Range: &storepb.Range{
-				Start: int32(tokens[start].GetStart()),
-				End:   int32(tokens[endPos].GetStop() + 1),
+				Start: int32(byteOffset),
+				End:   int32(byteOffset + stmtByteLength),
 			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[endPos].GetLine()),
@@ -103,6 +107,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:endPos+1], parser.GoogleSQLLexerSEMI_SYMBOL),
 		})
+		byteOffset += stmtByteLength
 		start = endPos + 1
 	}
 

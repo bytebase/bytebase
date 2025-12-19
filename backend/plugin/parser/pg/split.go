@@ -63,18 +63,22 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 	var result []base.Statement
 	tokens := stream.GetAllTokens()
 
+	byteOffset := 0
 	start := 0
 	for _, semi := range tree.Stmtblock().Stmtmulti().AllSEMI() {
 		pos := semi.GetSymbol().GetStart()
+		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
+		stmtByteLength := len(stmtText)
+
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
 			Range: &storepb.Range{
-				Start: int32(tokens[start].GetStart()),
-				End:   int32(tokens[pos].GetStop() + 1),
+				Start: int32(byteOffset),
+				End:   int32(byteOffset + stmtByteLength),
 			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[pos].GetLine()),
@@ -83,20 +87,24 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:pos+1], parser.PostgreSQLParserSEMI),
 		})
+		byteOffset += stmtByteLength
 		start = pos + 1
 	}
 	// For the last statement, it may not end with semicolon symbol, EOF symbol instead.
 	eofPos := len(tokens) - 1
 	if start < eofPos {
+		stmtText := stream.GetTextFromTokens(tokens[start], tokens[eofPos-1])
+		stmtByteLength := len(stmtText)
+
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
+			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
 			Range: &storepb.Range{
-				Start: int32(tokens[start].GetStart()),
-				End:   int32(tokens[eofPos-1].GetStop() + 1),
+				Start: int32(byteOffset),
+				End:   int32(byteOffset + stmtByteLength),
 			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[eofPos-1].GetLine()),
@@ -191,17 +199,21 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 		}
 	}
 
+	byteOffset := 0
 	start := 0
 	for _, pos := range semicolonStack {
+		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
+		stmtByteLength := len(stmtText)
+
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
 			Range: &storepb.Range{
-				Start: int32(tokens[start].GetStart()),
-				End:   int32(tokens[pos].GetStop() + 1),
+				Start: int32(byteOffset),
+				End:   int32(byteOffset + stmtByteLength),
 			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[pos].GetLine()),
@@ -210,20 +222,24 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:pos+1], parser.PostgreSQLParserSEMI),
 		})
+		byteOffset += stmtByteLength
 		start = pos + 1
 	}
 	// For the last statement, it may not end with semicolon symbol, EOF symbol instead.
 	eofPos := len(tokens) - 1
 	if start < eofPos {
+		stmtText := stream.GetTextFromTokens(tokens[start], tokens[eofPos-1])
+		stmtByteLength := len(stmtText)
+
 		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
+			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
 			Range: &storepb.Range{
-				Start: int32(tokens[start].GetStart()),
-				End:   int32(tokens[eofPos-1].GetStop() + 1),
+				Start: int32(byteOffset),
+				End:   int32(byteOffset + stmtByteLength),
 			},
 			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 				Line:   int32(tokens[eofPos-1].GetLine()),

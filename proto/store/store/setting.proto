@@ -189,11 +189,14 @@ message Algorithm {
 
   message RangeMask {
     message Slice {
-      // start is the start index of the original value, start from 0 and should be less than stop.
+      // start is the start character index (0-based) of the original value, should be less than end.
+      // Uses character indices (not byte offsets) for display-oriented masking.
+      // Example: For "你好world", character index 2 refers to 'w' (the 3rd character).
       int32 start = 1;
-      // stop is the stop index of the original value, should be less than the length of the original value.
+      // end is the end character index (exclusive) of the original value.
+      // Uses character indices (not byte offsets) for display-oriented masking.
       int32 end = 2;
-      // OriginalValue[start:end) would be replaced with replace_with.
+      // OriginalValue[start:end) would be replaced with substitution.
       string substitution = 3;
     }
     // We store it as a repeated field to face the fact that the original value may have multiple parts should be masked.

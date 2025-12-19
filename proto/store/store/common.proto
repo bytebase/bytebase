@@ -108,6 +108,8 @@ message Position {
 }
 
 // Range represents a span within a text or sequence.
+// Whether the indices are byte offsets or character indices depends on the context.
+// Check the documentation of the field using Range for specific semantics.
 message Range {
   // Start index (inclusive).
   int32 start = 1;
