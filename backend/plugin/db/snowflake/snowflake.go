@@ -277,7 +277,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 	}
 
 	// Log the entire multi-statement execution
-	opts.LogCommandExecute([]int32{0}, statement)
+	opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
 
 	result, err := tx.ExecContext(mctx, statement)
 	if err != nil {
@@ -313,7 +313,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 	}
 
 	// Log the entire multi-statement execution
-	opts.LogCommandExecute([]int32{0}, statement)
+	opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
 
 	result, err := d.db.ExecContext(mctx, statement)
 	if err != nil {

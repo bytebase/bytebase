@@ -173,7 +173,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		singleSQLs[i] = base.Statement{Text: stmt}
 	}
 
-	commands, originalIndex := base.FilterEmptyStatementsWithIndexes(singleSQLs)
+	commands := base.FilterEmptyStatements(singleSQLs)
 	if len(commands) == 0 {
 		return 0, nil
 	}
@@ -186,9 +186,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	// but we still parse and respect the transaction mode directive for consistency
 
 	var totalRowsAffected int64
-	for i, command := range commands {
-		indexes := []int32{originalIndex[i]}
-		opts.LogCommandExecute(indexes, command.Text)
+	for _, command := range commands {
+		opts.LogCommandExecute(command.Range, command.Text)
 
 		result, err := conn.ExecContext(ctx, command.Text)
 		if err != nil {

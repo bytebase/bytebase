@@ -265,18 +265,15 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	var commands []base.Statement
-	var originalIndex []int32
-	var nonTransactionAndSetRoleStmts []string
-	var nonTransactionAndSetRoleStmtsIndex []int32
+	var nonTransactionAndSetRoleStmts []base.Statement
 	var isPlsql bool
 
 	singleSQLs, err := crdbparser.SplitSQLStatement(statement)
 	if err != nil {
 		return 0, err
 	}
-	for i, singleSQL := range singleSQLs {
+	for _, singleSQL := range singleSQLs {
 		commands = append(commands, base.Statement{Text: singleSQL})
-		originalIndex = append(originalIndex, int32(i))
 	}
 
 	// If the statement is a single statement and is a PL/pgSQL block,
@@ -288,15 +285,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	var tmpCommands []base.Statement
-	var tmpOriginalIndex []int32
-	for i, command := range commands {
+	for _, command := range commands {
 		switch {
 		case isSetRoleStatement(command.Text):
-			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command)
 		case IsNonTransactionStatement(command.Text):
-			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-			nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
+			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command)
 			continue
 		case isSuperuserStatement(command.Text):
 			// Use superuser privilege to run privileged statements.
@@ -310,15 +304,14 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			// Regular statements, keep as is
 		}
 		tmpCommands = append(tmpCommands, command)
-		tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
 	}
-	commands, originalIndex = tmpCommands, tmpOriginalIndex
+	commands = tmpCommands
 
 	// Execute based on transaction mode
 	if transactionMode == common.TransactionModeOff {
-		return d.executeInAutoCommitMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+		return d.executeInAutoCommitMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
 	}
-	return d.executeInTransactionMode(ctx, owner, statement, commands, originalIndex, nonTransactionAndSetRoleStmts, nonTransactionAndSetRoleStmtsIndex, opts, isPlsql)
+	return d.executeInTransactionMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
 }
 
 func (d *Driver) executeInTransactionMode(
@@ -326,9 +319,7 @@ func (d *Driver) executeInTransactionMode(
 	owner string,
 	statement string,
 	commands []base.Statement,
-	originalIndex []int32,
-	nonTransactionAndSetRoleStmts []string,
-	nonTransactionAndSetRoleStmtsIndex []int32,
+	nonTransactionAndSetRoleStmts []base.Statement,
 	opts db.ExecuteOptions,
 	isPlsql bool,
 ) (int64, error) {
@@ -358,7 +349,7 @@ func (d *Driver) executeInTransactionMode(
 		}); err != nil {
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 		}
-		opts.LogCommandExecute([]int32{0}, statement)
+		opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
 		if err := crdb.Execute(func() error {
 			_, err := conn.ExecContext(ctx, statement)
 			return err
@@ -403,9 +394,8 @@ func (d *Driver) executeInTransactionMode(
 				return err
 			}
 
-			for i, command := range commands {
-				indexes := []int32{originalIndex[i]}
-				opts.LogCommandExecute(indexes, command.Text)
+			for _, command := range commands {
+				opts.LogCommandExecute(command.Range, command.Text)
 
 				rr := tx.Conn().PgConn().Exec(ctx, command.Text)
 				results, err := rr.ReadAll()
@@ -453,11 +443,10 @@ func (d *Driver) executeInTransactionMode(
 		return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 	}
 	// Run non-transaction statements at the end.
-	for i, stmt := range nonTransactionAndSetRoleStmts {
-		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
-		opts.LogCommandExecute(indexes, stmt)
+	for _, stmt := range nonTransactionAndSetRoleStmts {
+		opts.LogCommandExecute(stmt.Range, stmt.Text)
 		if err := crdb.Execute(func() error {
-			_, err := conn.ExecContext(ctx, stmt)
+			_, err := conn.ExecContext(ctx, stmt.Text)
 			return err
 		}); err != nil {
 			opts.LogCommandResponse(0, []int64{0}, err.Error())
@@ -473,17 +462,12 @@ func (d *Driver) executeInAutoCommitMode(
 	owner string,
 	statement string,
 	commands []base.Statement,
-	originalIndex []int32,
-	nonTransactionAndSetRoleStmts []string,
-	nonTransactionAndSetRoleStmtsIndex []int32,
+	nonTransactionAndSetRoleStmts []base.Statement,
 	opts db.ExecuteOptions,
 	isPlsql bool,
 ) (int64, error) {
 	// For auto-commit mode, treat all statements as non-transactional
-	for i, command := range commands {
-		nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command.Text)
-		nonTransactionAndSetRoleStmtsIndex = append(nonTransactionAndSetRoleStmtsIndex, originalIndex[i])
-	}
+	nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, commands...)
 
 	conn, err := d.db.Conn(ctx)
 	if err != nil {
@@ -511,7 +495,7 @@ func (d *Driver) executeInAutoCommitMode(
 		}); err != nil {
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 		}
-		opts.LogCommandExecute([]int32{0}, statement)
+		opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
 		if err := crdb.Execute(func() error {
 			_, err := conn.ExecContext(ctx, statement)
 			return err
@@ -532,12 +516,11 @@ func (d *Driver) executeInAutoCommitMode(
 
 	totalRowsAffected := int64(0)
 	// Execute all statements individually in auto-commit mode
-	for i, stmt := range nonTransactionAndSetRoleStmts {
-		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
-		opts.LogCommandExecute(indexes, stmt)
+	for _, stmt := range nonTransactionAndSetRoleStmts {
+		opts.LogCommandExecute(stmt.Range, stmt.Text)
 
 		if err := crdb.Execute(func() error {
-			sqlResult, err := conn.ExecContext(ctx, stmt)
+			sqlResult, err := conn.ExecContext(ctx, stmt.Text)
 			if err != nil {
 				opts.LogCommandResponse(0, []int64{0}, err.Error())
 				return err

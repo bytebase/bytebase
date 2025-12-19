@@ -23,19 +23,6 @@ func TestFilterEmptyStatements(t *testing.T) {
 	require.Equal(t, "SELECT 2", result[1].Text)
 }
 
-func TestFilterEmptyStatementsWithIndexes(t *testing.T) {
-	statements := []Statement{
-		{Text: "SELECT 1", Empty: false},
-		{Text: "", Empty: true},
-		{Text: "SELECT 2", Empty: false},
-	}
-
-	result, indexes := FilterEmptyStatementsWithIndexes(statements)
-
-	require.Len(t, result, 2)
-	require.Equal(t, []int32{0, 2}, indexes)
-}
-
 func TestFilterEmptyParsedStatements(t *testing.T) {
 	statements := []ParsedStatement{
 		{Statement: Statement{Text: "SELECT 1", Empty: false}, AST: &ANTLRAST{}},
@@ -48,19 +35,6 @@ func TestFilterEmptyParsedStatements(t *testing.T) {
 	require.Len(t, result, 2)
 	require.Equal(t, "SELECT 1", result[0].Text)
 	require.Equal(t, "SELECT 2", result[1].Text)
-}
-
-func TestFilterEmptyParsedStatementsWithIndexes(t *testing.T) {
-	statements := []ParsedStatement{
-		{Statement: Statement{Text: "SELECT 1", Empty: false}, AST: &ANTLRAST{}},
-		{Statement: Statement{Text: "", Empty: true}, AST: &ANTLRAST{}},
-		{Statement: Statement{Text: "SELECT 2", Empty: false}, AST: &ANTLRAST{}},
-	}
-
-	result, indexes := FilterEmptyParsedStatementsWithIndexes(statements)
-
-	require.Len(t, result, 2)
-	require.Equal(t, []int32{0, 2}, indexes)
 }
 
 func TestExtractASTs(t *testing.T) {

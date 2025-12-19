@@ -13481,11 +13481,10 @@ Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></t
             <tbody>
               
                 <tr>
-                  <td>command_indexes</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td>repeated</td>
-                  <td><p>Either `command_indexes` or `statement` is set.
-The indexes of the executed commands. </p></td>
+                  <td>range</td>
+                  <td><a href="#bytebase.store.Range">Range</a></td>
+                  <td></td>
+                  <td><p>The byte offset range of the executed command in the sheet. </p></td>
                 </tr>
               
                 <tr>

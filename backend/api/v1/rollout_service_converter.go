@@ -505,9 +505,9 @@ func convertToTaskRunLogEntries(logs []*store.TaskRunLog) []*v1pb.TaskRunLogEntr
 				LogTime:  timestamppb.New(l.T),
 				DeployId: l.Payload.DeployId,
 				CommandExecute: &v1pb.TaskRunLogEntry_CommandExecute{
-					LogTime:        timestamppb.New(l.T),
-					CommandIndexes: l.Payload.CommandExecute.CommandIndexes,
-					Statement:      l.Payload.CommandExecute.Statement,
+					LogTime:   timestamppb.New(l.T),
+					Range:     convertToRange(l.Payload.CommandExecute.Range),
+					Statement: l.Payload.CommandExecute.Statement,
 				},
 			}
 			entries = append(entries, e)
@@ -657,5 +657,15 @@ func convertTaskRunLogTransactionControlType(t storepb.TaskRunLog_TransactionCon
 		return v1pb.TaskRunLogEntry_TransactionControl_ROLLBACK
 	default:
 		return v1pb.TaskRunLogEntry_TransactionControl_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToRange(r *storepb.Range) *v1pb.Range {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.Range{
+		Start: r.Start,
+		End:   r.End,
 	}
 }

@@ -4980,7 +4980,7 @@ Status represents the current execution state of a task run.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| command_indexes | [int32](#int32) | repeated | Either `command_indexes` or `statement` is set. The indexes of the executed commands. |
+| range | [Range](#bytebase-store-Range) |  | The byte offset range of the executed command in the sheet. |
 | statement | [string](#string) |  | The statement to be executed. |
 
 

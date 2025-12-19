@@ -172,8 +172,8 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base
 	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
 
 	totalRowsAffected := int64(0)
-	for i, singleSQL := range singleSQLs {
-		opts.LogCommandExecute([]int32{int32(i)}, singleSQL.Text)
+	for _, singleSQL := range singleSQLs {
+		opts.LogCommandExecute(singleSQL.Range, singleSQL.Text)
 		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
 			opts.LogCommandResponse(0, nil, err.Error())
@@ -204,8 +204,8 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, singleSQLs []base
 
 func (d *Driver) executeInAutoCommitMode(ctx context.Context, singleSQLs []base.Statement, opts db.ExecuteOptions) (int64, error) {
 	totalRowsAffected := int64(0)
-	for i, singleSQL := range singleSQLs {
-		opts.LogCommandExecute([]int32{int32(i)}, singleSQL.Text)
+	for _, singleSQL := range singleSQLs {
+		opts.LogCommandExecute(singleSQL.Range, singleSQL.Text)
 		sqlResult, err := d.db.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
 			opts.LogCommandResponse(0, nil, err.Error())

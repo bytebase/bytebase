@@ -195,14 +195,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with id %s not found", sheet.ProjectID))
 	}
-	v1SheetPayload := &v1pb.SheetPayload{}
-	if len(sheet.Payload.GetCommands()) > 0 {
-		v1SheetPayload.Commands = convertToRanges(sheet.Payload.GetCommands())
-	} else {
-		v1SheetPayload.Commands = []*v1pb.Range{
-			{Start: 0, End: int32(sheet.Size)},
-		}
-	}
 
 	return &v1pb.Sheet{
 		Name:        common.FormatSheet(project.ResourceID, sheet.UID),
@@ -211,7 +203,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		CreateTime:  timestamppb.New(sheet.CreatedAt),
 		Content:     []byte(sheet.Statement),
 		ContentSize: sheet.Size,
-		Payload:     v1SheetPayload,
 		Engine:      convertToEngine(sheet.Payload.GetEngine()),
 	}, nil
 }
@@ -227,16 +218,4 @@ func convertToStoreSheetMessage(projectID string, creator string, sheet *v1pb.Sh
 	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
 
 	return sheetMessage
-}
-
-func convertToRanges(commands []*storepb.Range) []*v1pb.Range {
-	var cs []*v1pb.Range
-	for _, command := range commands {
-		c := &v1pb.Range{
-			Start: command.Start,
-			End:   command.End,
-		}
-		cs = append(cs, c)
-	}
-	return cs
 }
