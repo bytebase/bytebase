@@ -57,7 +57,6 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { getUserEmailInBinding } from "@/types";
-import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   CreateIssueRequestSchema,
