@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -103,38 +102,6 @@ func Register(dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, f Advi
 	}
 }
 
-// AntlrParseResult represents an ANTLR parse result for advisor use.
-// This is a simple structure containing the parse tree and base line information.
-type AntlrParseResult struct {
-	Tree     antlr.Tree
-	Tokens   *antlr.CommonTokenStream
-	BaseLine int
-}
-
-// GetANTLRParseResults extracts ANTLR parse results from the advisor context.
-// This is a unified helper for all ANTLR-based engines (MySQL, MSSQL, Oracle, Snowflake, PostgreSQL).
-func GetANTLRParseResults(checkCtx Context) ([]*AntlrParseResult, error) {
-	if checkCtx.ParsedStatements == nil {
-		return nil, errors.New("ParsedStatements is not provided in context")
-	}
-
-	var parseResults []*AntlrParseResult
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		antlrAST, ok := base.GetANTLRAST(stmt.AST)
-		if !ok {
-			return nil, errors.New("AST type mismatch: expected ANTLR-based parser result")
-		}
-		parseResults = append(parseResults, &AntlrParseResult{
-			Tree:     antlrAST.Tree,
-			Tokens:   antlrAST.Tokens,
-			BaseLine: stmt.BaseLine,
-		})
-	}
-	return parseResults, nil
-}
 
 // Check runs the advisor and returns the advices.
 func Check(ctx context.Context, dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, checkCtx Context) (adviceList []*storepb.Advice, err error) {

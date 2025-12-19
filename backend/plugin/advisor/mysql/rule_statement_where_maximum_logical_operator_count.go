@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -27,12 +27,6 @@ type StatementWhereMaximumLogicalOperatorCountAdvisor struct {
 }
 
 func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
-
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -43,7 +37,7 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context
 	}
 
 	var allAdvice []*storepb.Advice
-	for _, stmt := range stmtList {
+	for _, stmt := range checkCtx.ParsedStatements {
 		// Create the rule for each statement
 		rule := NewStatementWhereMaximumLogicalOperatorCountRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
 
@@ -53,7 +47,14 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context
 		rule.SetBaseLine(stmt.BaseLine)
 		checker.SetBaseLine(stmt.BaseLine)
 		rule.resetForStatement()
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 
 		// Check OR conditions after walking the tree
 		rule.checkOrConditions()

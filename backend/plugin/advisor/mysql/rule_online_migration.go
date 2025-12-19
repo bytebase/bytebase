@@ -35,11 +35,6 @@ type OnlineMigrationAdvisor struct {
 
 // Check checks for using gh-ost to migrate large tables.
 func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
-	if err != nil {
-		return nil, errors.Errorf("failed to convert to StmtNode")
-	}
-
 	numberPayload := checkCtx.Rule.GetNumberPayload()
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for this rule")
@@ -75,10 +70,17 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmt := range stmtList {
+	for _, stmt := range checkCtx.ParsedStatements {
 		rule.SetBaseLine(stmt.BaseLine)
 		checker.SetBaseLine(stmt.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 
 	adviceList := rule.GetAdviceList()
@@ -90,14 +92,14 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	}
 	// One statement needs online migration, others don't.
 	// Advise running the statement in another issue.
-	if len(adviceList) == 1 && len(stmtList) > 1 {
+	if len(adviceList) == 1 && len(checkCtx.ParsedStatements) > 1 {
 		return adviceList, nil
 	}
 
 	// We have only one statement, and the statement
 	// needs online migration.
 	// Advise to enable online migration for the issue, or return OK if it's already enabled.
-	if len(adviceList) == 1 && len(stmtList) == 1 {
+	if len(adviceList) == 1 && len(checkCtx.ParsedStatements) == 1 {
 		if checkCtx.EnableGhost {
 			return nil, nil
 		}

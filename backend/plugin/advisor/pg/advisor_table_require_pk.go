@@ -11,6 +11,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -29,11 +30,6 @@ type TableRequirePKAdvisor struct {
 
 // Check parses the given statement and checks for errors.
 func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -50,11 +46,18 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 
 	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmtInfo := range stmtInfos {
-		rule.SetBaseLine(stmtInfo.BaseLine)
-		rule.tokens = stmtInfo.Tokens
-		checker.SetBaseLine(stmtInfo.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		rule.SetBaseLine(stmt.BaseLine)
+		rule.tokens = antlrAST.Tokens
+		checker.SetBaseLine(stmt.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 
 	// Simple Solution: Validate final state after walking all statements

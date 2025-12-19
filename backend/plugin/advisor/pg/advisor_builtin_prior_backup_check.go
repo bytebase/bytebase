@@ -15,6 +15,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -40,11 +41,6 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, nil
 	}
 
-	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -54,18 +50,25 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	var adviceList []*storepb.Advice
 
 	// Check for DDL statements in DML context
-	for _, stmtInfo := range stmtInfos {
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
 		rule := &ddlRule{
 			BaseRule: BaseRule{
 				level: level,
 				title: title,
 			},
-			tokens: stmtInfo.Tokens,
+			tokens: antlrAST.Tokens,
 		}
-		rule.SetBaseLine(stmtInfo.BaseLine)
+		rule.SetBaseLine(stmt.BaseLine)
 
 		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
@@ -82,11 +85,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	// Check statement type consistency for each table
-	parseResults, err := advisor.GetANTLRParseResults(checkCtx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get parse results")
-	}
-	statementInfoList := prepareTransformation(parseResults)
+	statementInfoList := prepareTransformation(checkCtx.ParsedStatements)
 
 	groupByTable := make(map[string][]statementInfo)
 	for _, item := range statementInfoList {
@@ -283,10 +282,17 @@ type statementInfo struct {
 	table     *TableReference
 }
 
-func prepareTransformation(parseResults []*advisor.AntlrParseResult) []statementInfo {
+func prepareTransformation(parsedStatements []base.ParsedStatement) []statementInfo {
 	extractor := &dmlExtractor{}
-	for _, parseResult := range parseResults {
-		antlr.ParseTreeWalkerDefault.Walk(extractor, parseResult.Tree)
+	for _, stmt := range parsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		antlr.ParseTreeWalkerDefault.Walk(extractor, antlrAST.Tree)
 	}
 	return extractor.dmls
 }
