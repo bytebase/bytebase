@@ -16,24 +16,12 @@ import (
 
 // SheetMessage is the message for a sheet.
 type SheetMessage struct {
-	ProjectID string
-
-	Creator string
-
-	Title     string
+	// SHA256 hash of the statement (hex-encoded)
+	Sha256 string
+	// SQL statement content
 	Statement string
-
-	// Sha256 is the Sha256 hash of the statement.
-	Sha256 []byte
-
-	// Output only fields
-	UID       int
-	Size      int64
-	CreatedAt time.Time
-}
-
-func (s *SheetMessage) GetSha256Hex() string {
-	return hex.EncodeToString(s.Sha256)
+	// Size of the statement in bytes
+	Size int64
 }
 
 // GetSheetMetadata gets a sheet with truncated statement (max 2MB).
