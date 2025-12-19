@@ -228,20 +228,6 @@ func IsOracleKeyword(text string) bool {
 	return oracleKeywords[strings.ToUpper(text)] || oracleReservedWords[strings.ToUpper(text)]
 }
 
-// NormalizeConstraintName returns the normalized constraint name from the given context.
-func NormalizeConstraintName(constraintName parser.IConstraint_nameContext) (string, string) {
-	if constraintName == nil {
-		return "", ""
-	}
-
-	if constraintName.Id_expression(0) != nil {
-		return NormalizeIdentifierContext(constraintName.Identifier()),
-			NormalizeIDExpression(constraintName.Id_expression(0))
-	}
-
-	return "", NormalizeIdentifierContext(constraintName.Identifier())
-}
-
 // NormalizeIdentifierContext returns the normalized identifier from the given context.
 func NormalizeIdentifierContext(identifier parser.IIdentifierContext) string {
 	if identifier == nil {

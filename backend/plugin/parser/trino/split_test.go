@@ -19,12 +19,6 @@ type resData struct {
 	err string
 }
 
-// MockSplitSQL is a simplified implementation for testing
-func MockSplitSQL(_ string) ([]base.Statement, error) {
-	// This is just for testing and isn't used since the real implementation exists in split.go
-	return []base.Statement{}, nil
-}
-
 func TestTrinoSplitMultiSQL(t *testing.T) {
 	// Split SQL functionality is implemented
 	tests := []splitTestData{

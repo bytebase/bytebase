@@ -17,15 +17,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-type AuditLogMethod string
-
-// The methods other than v1 api.
-const AuditLogMethodProjectRepositoryPush AuditLogMethod = "bb.project.repository.push"
-
-func (m AuditLogMethod) String() string {
-	return string(m)
-}
-
 type AuditLog struct {
 	ID        int
 	CreatedAt time.Time

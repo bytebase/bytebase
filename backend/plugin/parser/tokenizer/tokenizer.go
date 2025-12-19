@@ -19,8 +19,6 @@ const (
 )
 
 var (
-	beginRuneList     = []rune{'B', 'E', 'G', 'I', 'N'}
-	atomicRuneList    = []rune{'A', 'T', 'O', 'M', 'I', 'C'}
 	delimiterRuneList = []rune{'D', 'E', 'L', 'I', 'M', 'I', 'T', 'E', 'R'}
 )
 
@@ -464,132 +462,6 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
 	}
 }
 
-// SplitPostgreSQLMultiSQL splits the statement to a string slice.
-// We mainly considered:
-//
-//	comments
-//	- style /* comments */
-//	- style -- comments
-//	string
-//	- style 'string'
-//	- style $$ string $$
-//	identifier
-//	- style "indentifier"
-//
-// Notice:
-//   - We support PostgreSQL CREATE PROCEDURE statement with $$ $$ style,
-//     but do not support BEGIN ATOMIC ... END; style.
-//     See https://www.postgresql.org/docs/14/sql-createprocedure.html.
-func (t *Tokenizer) SplitPostgreSQLMultiSQL() ([]base.Statement, error) {
-	var res []base.Statement
-
-	t.skipBlank()
-	t.emptyStatement = true
-	startPos := t.cursor
-	startLine := t.line // Track the starting line number (1-based)
-	for {
-		switch {
-		case t.char(0) == '/' && t.char(1) == '*':
-			if err := t.scanComment(); err != nil {
-				return nil, err
-			}
-			t.skipBlank()
-		case t.char(0) == '-' && t.char(1) == '-':
-			if err := t.scanComment(); err != nil {
-				return nil, err
-			}
-			t.skipBlank()
-		case t.char(0) == '\'':
-			if err := t.scanString('\''); err != nil {
-				return nil, err
-			}
-			t.emptyStatement = false
-		case t.char(0) == '$':
-			if err := t.scanDoubleDollarQuotedString(); err != nil {
-				return nil, err
-			}
-			t.emptyStatement = false
-		case t.char(0) == '"':
-			if err := t.scanIdentifier('"'); err != nil {
-				return nil, err
-			}
-			t.emptyStatement = false
-		case t.char(0) == ';':
-			t.skip(1)
-			text := t.getString(startPos, t.pos()-startPos)
-			if t.f == nil {
-				res = append(res, base.Statement{
-					Text: text,
-					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-					BaseLine: startLine - 1,
-					End:      &store.Position{Line: int32(t.line)},
-					Empty:    t.emptyStatement,
-					Range: &store.Range{
-						Start: int32(t.getByteOffset(int(startPos))),
-						End:   int32(t.getByteOffset(int(t.pos()))),
-					},
-				})
-			}
-			t.skipBlank()
-			if err := t.processStreaming(text); err != nil {
-				return nil, err
-			}
-			startPos = t.pos()
-			startLine = t.line // Update startLine for next statement
-			t.emptyStatement = true
-		case t.char(0) == eofRune:
-			s := t.getString(startPos, t.pos())
-			if !emptyString(s) {
-				if t.f == nil {
-					res = append(res, base.Statement{
-						Text: s,
-						// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-						BaseLine: startLine - 1,
-						// Consider this text:
-						// CREATE TABLE t(
-						//   a int
-						// )
-						//
-						// EOF line
-						//
-						// Our current location is the EOF line.
-						// The line t.line is the line after ')',
-						// but we want to get the line of last line of the SQL
-						// which means the line of ')'.
-						// So we need minus the aboveNonBlankLineDistance.
-						End: &store.Position{
-							Line: int32(t.line - t.aboveNonBlankLineDistance()),
-						},
-						Empty: t.emptyStatement,
-						Range: &store.Range{
-							Start: int32(t.getByteOffset(int(startPos))),
-							End:   int32(t.getByteOffset(int(t.pos()))),
-						},
-					})
-				}
-				if err := t.processStreaming(s); err != nil {
-					return nil, err
-				}
-			}
-			return res, t.readErr
-		// return error when meeting BEGIN ATOMIC.
-		case t.equalWordCaseInsensitive(beginRuneList):
-			t.skip(uint(len(beginRuneList)))
-			t.skipBlank()
-			if t.equalWordCaseInsensitive(atomicRuneList) {
-				return nil, errors.Errorf("not support BEGIN ATOMIC ... END in PostgreSQL CREATE PROCEDURE statement, please use double doller style($$ or $tag$) instead of it")
-			}
-			t.emptyStatement = false
-		case t.char(0) == '\n':
-			t.line++
-			t.skip(1)
-		default:
-			t.skip(1)
-			t.emptyStatement = false
-		}
-	}
-}
-
 // Assume that identifier only contains letters, underscores, digits (0-9), or dollar signs ($).
 // See https://www.postgresql.org/docs/current/sql-syntax-lexical.html.
 func (t *Tokenizer) scanIdentifier(delimiter rune) error {
@@ -638,22 +510,6 @@ func (t *Tokenizer) scanString(delimiter rune) error {
 			t.skip(1)
 		}
 	}
-}
-
-// Double dollar quoted string is a PostgreSQL-specific syntax.
-// There are two syntax styles, tag and no tag:
-// - $$ string $$
-// - $tag$ string $tag$
-// See https://www.postgresql.org/docs/current/sql-syntax-lexical.html.
-func (t *Tokenizer) scanDoubleDollarQuotedString() error {
-	startPos := t.pos()
-	// scan the tag string quoted by the dollar sign($)
-	if err := t.scanString('$'); err != nil {
-		return err
-	}
-	// here tag means $$ or $tag_string$ which means include the dollar sign($).
-	tag := t.runeList(startPos, t.pos()-startPos)
-	return t.scanTo(tag)
 }
 
 func (t *Tokenizer) scanComment() error {

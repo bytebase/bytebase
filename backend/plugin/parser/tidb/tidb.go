@@ -137,25 +137,6 @@ func ParseTiDB(sql string, charset string, collation string) ([]ast.StmtNode, er
 	return nodes, nil
 }
 
-// IsDelimiter returns true if the statement is a delimiter statement.
-func IsDelimiter(stmt string) bool {
-	delimiterRegex := `(?i)^\s*DELIMITER\s+`
-	re := regexp.MustCompile(delimiterRegex)
-	return re.MatchString(stmt)
-}
-
-// ExtractDelimiter extracts the delimiter from the delimiter statement.
-func ExtractDelimiter(stmt string) (string, error) {
-	delimiterRegex := `(?i)^\s*DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`
-	re := regexp.MustCompile(delimiterRegex)
-	matchList := re.FindStringSubmatch(stmt)
-	index := re.SubexpIndex("DELIMITER")
-	if index >= 0 && index < len(matchList) {
-		return matchList[index], nil
-	}
-	return "", errors.Errorf("cannot extract delimiter from %q", stmt)
-}
-
 var (
 	lineColumnRegex = regexp.MustCompile(`line (\d+) column (\d+)`)
 )
