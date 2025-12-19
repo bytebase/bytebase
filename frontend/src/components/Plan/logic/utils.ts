@@ -58,7 +58,6 @@ export const updateSpecSheetWithStatement = async (
 
   const newSheet = create(SheetSchema, {
     ...createEmptyLocalSheet(),
-    title: plan.title,
   });
   setSheetStatement(newSheet, statement);
 

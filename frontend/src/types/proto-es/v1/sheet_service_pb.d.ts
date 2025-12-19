@@ -4,7 +4,6 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { Timestamp } from "@bufbuild/protobuf/wkt";
 
 /**
  * Describes the file v1/sheet_service.proto.
@@ -118,25 +117,12 @@ export declare type Sheet = Message<"bytebase.v1.Sheet"> & {
 
   /**
    * The title of the sheet.
+   * Deprecated: this field is deprecated and will be removed in a future version.
    *
-   * @generated from field: string title = 2;
+   * @generated from field: string title = 2 [deprecated = true];
+   * @deprecated
    */
   title: string;
-
-  /**
-   * The creator of the Sheet.
-   * Format: users/{email}
-   *
-   * @generated from field: string creator = 3;
-   */
-  creator: string;
-
-  /**
-   * The create time of the sheet.
-   *
-   * @generated from field: google.protobuf.Timestamp create_time = 4;
-   */
-  createTime?: Timestamp;
 
   /**
    * The content of the sheet.

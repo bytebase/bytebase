@@ -33,11 +33,8 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
   const createSheet = async (parent: string, sheet: Partial<Sheet>) => {
     const fullSheet = create(SheetSchema, {
       name: sheet.name || "",
-      title: sheet.title || "",
-      creator: sheet.creator || "",
       content: sheet.content || new Uint8Array(),
       contentSize: sheet.contentSize || BigInt(0),
-      createTime: sheet.createTime,
     });
     const request = create(CreateSheetRequestSchema, {
       parent,

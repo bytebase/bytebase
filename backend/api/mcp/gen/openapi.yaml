@@ -15635,18 +15635,10 @@ components:
         title:
           type: string
           title: title
-          maxLength: 200
-          description: The title of the sheet.
-        creator:
-          type: string
-          title: creator
           description: |-
-            The creator of the Sheet.
-             Format: users/{email}
-        createTime:
-          title: create_time
-          description: The create time of the sheet.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
+            The title of the sheet.
+             Deprecated: this field is deprecated and will be removed in a future version.
+          deprecated: true
         content:
           type: string
           title: content

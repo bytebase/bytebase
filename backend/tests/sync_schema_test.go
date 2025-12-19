@@ -80,7 +80,6 @@ DROP SCHEMA IF EXISTS "schema_a";
 	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "create schema",
 			Content: []byte(createSchema),
 		},
 	}))
