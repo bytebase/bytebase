@@ -34,6 +34,8 @@ export const useRecentProjects = () => {
 
   const recentViewProjects = computedAsync(async () => {
     const projects = [];
+    const invalidProjects: string[] = [];
+
     for (const projectName of recentViewProjectNames.value) {
       try {
         const project = await projectV1Store.getOrFetchProjectByName(
@@ -45,9 +47,23 @@ export const useRecentProjects = () => {
           hasProjectPermissionV2(project, "bb.projects.get")
         ) {
           projects.push(project);
+        } else {
+          // Project exists but user lost access or it's invalid
+          invalidProjects.push(projectName);
         }
-      } catch {}
+      } catch {
+        // Project was deleted or fetch failed - mark for removal
+        invalidProjects.push(projectName);
+      }
     }
+
+    // Clean up invalid/deleted projects from localStorage
+    if (invalidProjects.length > 0) {
+      recentViewProjectNames.value = recentViewProjectNames.value.filter(
+        (name) => !invalidProjects.includes(name)
+      );
+    }
+
     return projects;
   }, []);
 
