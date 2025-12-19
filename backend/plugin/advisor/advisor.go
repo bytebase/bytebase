@@ -102,7 +102,6 @@ func Register(dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, f Advi
 	}
 }
 
-
 // Check runs the advisor and returns the advices.
 func Check(ctx context.Context, dbType storepb.Engine, ruleType storepb.SQLReviewRule_Type, checkCtx Context) (adviceList []*storepb.Advice, err error) {
 	defer func() {
