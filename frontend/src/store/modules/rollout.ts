@@ -44,12 +44,12 @@ export const buildRolloutFilter = (find: RolloutFind): string => {
   }
   if (find.updatedTsAfter) {
     filter.push(
-      `update_time >= "${dayjs(find.updatedTsAfter).utc().format()}"`
+      `update_time >= "${dayjs(find.updatedTsAfter).utc().toISOString()}"`
     );
   }
   if (find.updatedTsBefore) {
     filter.push(
-      `update_time <= "${dayjs(find.updatedTsBefore).utc().format()}"`
+      `update_time <= "${dayjs(find.updatedTsBefore).utc().toISOString()}"`
     );
   }
   return filter.join(" && ");
