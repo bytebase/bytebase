@@ -32,19 +32,12 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
 
   // CRUD
   const createSheet = async (parent: string, sheet: Partial<Sheet>) => {
-    if (!sheet.engine) {
-      console.warn(
-        `[SheetService.CreateSheet] sheet.engine unspecified: ${sheet.engine}`
-      );
-      sheet.engine = Engine.ENGINE_UNSPECIFIED;
-    }
     const fullSheet = create(SheetSchema, {
       name: sheet.name || "",
       title: sheet.title || "",
       creator: sheet.creator || "",
       content: sheet.content || new Uint8Array(),
       contentSize: sheet.contentSize || BigInt(0),
-      engine: sheet.engine || Engine.MYSQL,
       createTime: sheet.createTime,
     });
     const request = create(CreateSheetRequestSchema, {

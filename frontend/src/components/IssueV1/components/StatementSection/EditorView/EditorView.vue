@@ -452,7 +452,6 @@ const updateStatement = async (statement: string) => {
   const sheet = create(SheetSchema, {
     ...createEmptyLocalSheet(),
     title: issue.value.title,
-    engine: await databaseEngineForSpec(head(planPatch.specs)),
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(

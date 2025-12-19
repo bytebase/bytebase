@@ -512,11 +512,9 @@ const updateStatement = async (statement: string) => {
       `Unsupported spec type for plan update ${JSON.stringify(specToPatch)}`
     );
   }
-  const specEngine = await databaseEngineForSpec(specToPatch);
   const sheet = create(SheetSchema, {
     ...createEmptyLocalSheet(),
     title: plan.value.title,
-    engine: specEngine,
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(

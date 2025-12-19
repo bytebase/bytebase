@@ -56,11 +56,9 @@ export const updateSpecSheetWithStatement = async (
     );
   }
 
-  const specEngine = await databaseEngineForSpec(specToPatch);
   const newSheet = create(SheetSchema, {
     ...createEmptyLocalSheet(),
     title: plan.title,
-    engine: specEngine,
   });
   setSheetStatement(newSheet, statement);
 
