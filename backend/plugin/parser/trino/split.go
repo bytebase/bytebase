@@ -133,6 +133,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 	var result []base.Statement
 	tokens := stream.GetAllTokens()
 
+	byteOffset := 0
 	// Walk through all statements
 	for _, stmts := range tree.AllStatements() {
 		if stmts == nil {
@@ -182,6 +183,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 
 		// Get the text including any trailing semicolon
 		text := stream.GetTextFromInterval(antlr.NewInterval(startIdx, finalEndIdx))
+		stmtByteLength := len(text)
 
 		// Calculate proper end position
 		endToken := tokens[finalEndIdx]
@@ -192,8 +194,8 @@ func splitByParser(statement string) ([]base.Statement, error) {
 			Text:     text,
 			BaseLine: firstToken.GetLine() - 1,
 			Range: &storepb.Range{
-				Start: int32(tokens[startIdx].GetStart()),
-				End:   int32(endToken.GetStop() + 1),
+				Start: int32(byteOffset),
+				End:   int32(byteOffset + stmtByteLength),
 			},
 			Start: &storepb.Position{
 				Line:   int32(firstDefaultToken.GetLine() - 1),
@@ -205,6 +207,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 			},
 			Empty: false,
 		})
+		byteOffset += stmtByteLength
 	}
 
 	return result, nil

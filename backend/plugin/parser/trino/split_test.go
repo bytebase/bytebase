@@ -109,6 +109,25 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 				},
 			},
 		},
+		{
+			statement: "SELECT * FROM 表名; INSERT INTO 表 VALUES (1);",
+			want: resData{
+				res: []base.Statement{
+					{
+						Text:  "SELECT * FROM 表名;",
+						Range: &storepb.Range{Start: 0, End: 21}, // Byte offset 0-21 (not 0-17)
+						Start: &storepb.Position{Line: 0, Column: 0},
+						End:   &storepb.Position{Line: 0, Column: 17},
+					},
+					{
+						Text:  "INSERT INTO 表 VALUES (1);",
+						Range: &storepb.Range{Start: 21, End: 48}, // Byte offset 21-48 (not 17-42)
+						Start: &storepb.Position{Line: 0, Column: 18},
+						End:   &storepb.Position{Line: 0, Column: 42},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {

@@ -23,6 +23,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	tokens := stream.GetAllTokens()
 	var buf []antlr.Token
 	var sqls []base.Statement
+	byteOffset := 0
 	for i, token := range tokens {
 		if i < len(tokens)-1 {
 			buf = append(buf, token)
@@ -39,13 +40,15 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 					empty = false
 				}
 			}
+			stmtText := bufStr.String()
+			stmtByteLength := len(stmtText)
 			antlrPosition := base.FirstDefaultChannelTokenPosition(buf)
 			sqls = append(sqls, base.Statement{
-				Text:     bufStr.String(),
+				Text:     stmtText,
 				BaseLine: buf[0].GetLine() - 1,
 				Range: &storepb.Range{
-					Start: int32(buf[0].GetStart()),
-					End:   int32(buf[len(buf)-1].GetStop() + 1),
+					Start: int32(byteOffset),
+					End:   int32(byteOffset + stmtByteLength),
 				},
 				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
 					Line:   int32(buf[len(buf)-1].GetLine()),
@@ -54,6 +57,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: empty,
 			})
+			byteOffset += stmtByteLength
 			buf = nil
 			continue
 		}
