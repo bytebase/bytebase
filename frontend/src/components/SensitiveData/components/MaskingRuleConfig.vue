@@ -23,7 +23,7 @@
         </div>
         <ExprEditor
           :expr="state.expr"
-          :allow-admin="!readonly"
+          :readonly="readonly"
           :factor-list="factorList"
           :option-config-map="optionConfigMap"
           :factor-operator-override-map="factorOperatorOverrideMap"

@@ -1081,6 +1081,7 @@
       "all-databases": "Tất cả",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
       "manually-select": "Chọn thủ công",
+      "use-cel": "Sử dụng biểu thức CEL",
       "custom-date": "Ngày tùy chỉnh",
       "custom-date-placeholder": "Chọn ngày và giờ hết hạn"
     },

@@ -140,6 +140,26 @@ export const getProjectIdOptions = (projects: Project[]) => {
     });
 };
 
+export const getDatabasFullNameOptions = (databases: ComposedDatabase[]) => {
+  return databases.map<SelectOption>((database) => {
+    return {
+      label: database.name,
+      value: database.name,
+      render: getRenderOptionFunc({
+        name: database.name,
+        title: () =>
+          h(RichDatabaseName, {
+            database,
+            showEngineIcon: true,
+            showInstance: true,
+            showProject: false,
+            showArrow: true,
+          }),
+      }),
+    };
+  });
+};
+
 export const getDatabaseIdOptions = (databases: ComposedDatabase[]) => {
   return databases.map<SelectOption>((database) => {
     return {

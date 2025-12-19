@@ -34,7 +34,7 @@
           </p>
           <ExprEditor
             :expr="state.expr"
-            :allow-admin="!readonly"
+            :readonly="readonly"
             :factor-list="FactorList"
             :option-config-map="getDatabaseGroupOptionConfigMap(project.name)"
           />

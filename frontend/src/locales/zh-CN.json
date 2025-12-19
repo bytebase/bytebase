@@ -1081,6 +1081,7 @@
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "manually-select": "手动选择",
+      "use-cel": "使用 CEL 表达式",
       "custom-date": "自定义日期",
       "custom-date-placeholder": "选择到期日期和时间"
     },

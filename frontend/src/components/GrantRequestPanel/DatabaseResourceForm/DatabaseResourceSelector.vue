@@ -17,7 +17,7 @@
       :render-target-list="renderTargetList"
     />
     <div
-      v-if="initializing"
+      v-if="initializeStatus !== 'DONE'"
       class="z-1 absolute inset-0 bg-white bg-opacity-80 flex flex-row justify-center items-center"
     >
       <BBSpin size="large" />
@@ -30,7 +30,7 @@ import { useDebounceFn } from "@vueuse/core";
 import { orderBy, uniqBy } from "lodash-es";
 import type { TransferRenderSourceList, TreeOption } from "naive-ui";
 import { NButton, NTransfer, NTree } from "naive-ui";
-import { computed, h, onMounted, ref, watch } from "vue";
+import { computed, h, onMounted, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
@@ -149,7 +149,7 @@ watch(
 const selectedValueList = ref<string[]>([]);
 const expandedKeys = ref<string[]>([]);
 const indeterminateKeys = ref<string[]>([]);
-const initializing = ref(true);
+const initializeStatus = ref<"PENDING" | "PROCESSING" | "DONE">("PENDING");
 const databaseList = ref<ComposedDatabase[]>([]);
 const fetchDataState = ref<{
   nextPageToken?: string;
@@ -263,44 +263,99 @@ const fetchDatabaseList = useDebounceFn(async () => {
   }
 }, DEBOUNCE_SEARCH_DELAY);
 
+const refreshData = async () => {
+  fetchDataState.value.nextPageToken = "";
+  expandedKeys.value = [];
+  await fetchDatabaseList();
+
+  if (!params.value.query && params.value.scopes.length === 1) {
+    databaseList.value = uniqBy(
+      [
+        ...databaseList.value,
+        ...props.databaseResources.map((resource) =>
+          databaseStore.getDatabaseByName(resource.databaseFullName)
+        ),
+      ],
+      (db) => db.name
+    );
+  }
+
+  if (databaseFilter.value.table) {
+    // expand all
+    for (const database of databaseList.value) {
+      await collectExpandedKeys({
+        database: database.name,
+        table: databaseFilter.value.table,
+      });
+    }
+  }
+};
+
 watch(
   () => databaseFilter.value,
   async () => {
-    fetchDataState.value.nextPageToken = "";
-    expandedKeys.value = [];
-    await fetchDatabaseList();
-    if (!params.value.query && params.value.scopes.length === 1) {
-      databaseList.value = uniqBy(
-        [
-          ...databaseList.value,
-          ...props.databaseResources.map((resource) =>
-            databaseStore.getDatabaseByName(resource.databaseFullName)
-          ),
-        ],
-        (db) => db.name
-      );
-    }
-
-    if (databaseFilter.value.table) {
-      // expand all
-      for (const database of databaseList.value) {
-        await collectExpandedKeys({
-          database: database.name,
-          table: databaseFilter.value.table,
-        });
-      }
-    }
+    await refreshData();
   },
-  {
-    deep: true,
-    immediate: true,
-  }
+  { deep: true }
 );
 
 onMounted(async () => {
   await batchGetOrFetchDatabases(
     props.databaseResources.map((resource) => resource.databaseFullName)
   );
+  await refreshData();
+
+  if (databaseList.value.length === 0) {
+    initializeStatus.value = "DONE";
+  }
+});
+
+const parseKeyToPathes = (key: string): string[] => {
+  if (!key) {
+    return [];
+  }
+
+  const sections = key.split("/");
+  const nodePrefx = new Set(["schemas", "tables", "columns"]);
+  const resp: string[] = [];
+  const tmp: string[] = [];
+
+  for (const section of sections) {
+    if (nodePrefx.has(section)) {
+      resp.push(tmp.join("/"));
+    }
+    tmp.push(section);
+  }
+
+  if (tmp.length > 0) {
+    resp.push(tmp.join("/"));
+  }
+
+  return resp;
+};
+
+const sourceTreeOptions = computed(() => {
+  return mapTreeOptions({
+    databaseList: databaseList.value,
+    includeCloumn: props.includeCloumn,
+    filterValueList: filterTableList.value,
+  });
+});
+
+const sourceTransferOptions = computed((): DatabaseTreeOption[] => {
+  const options = flattenTreeOptions(sourceTreeOptions.value);
+  return options;
+});
+
+watchEffect(async () => {
+  if (initializeStatus.value !== "PENDING") {
+    return;
+  }
+  if (sourceTransferOptions.value.length === 0) {
+    return;
+  }
+
+  initializeStatus.value = "PROCESSING";
 
   const selectedKeys: string[] = [];
   const databaseNames = new Set<string>();
@@ -370,44 +425,7 @@ onMounted(async () => {
   expandedKeys.value = [...newExpandedKeys];
   indeterminateKeys.value = [...newIndeterminateKeys];
 
-  initializing.value = false;
-});
-
-const parseKeyToPathes = (key: string): string[] => {
-  if (!key) {
-    return [];
-  }
-
-  const sections = key.split("/");
-  const nodePrefx = new Set(["schemas", "tables", "columns"]);
-  const resp: string[] = [];
-  const tmp: string[] = [];
-
-  for (const section of sections) {
-    if (nodePrefx.has(section)) {
-      resp.push(tmp.join("/"));
-    }
-    tmp.push(section);
-  }
-
-  if (tmp.length > 0) {
-    resp.push(tmp.join("/"));
-  }
-
-  return resp;
-};
-
-const sourceTreeOptions = computed(() => {
-  return mapTreeOptions({
-    databaseList: databaseList.value,
-    includeCloumn: props.includeCloumn,
-    filterValueList: filterTableList.value,
-  });
-});
-
-const sourceTransferOptions = computed((): DatabaseTreeOption[] => {
-  const options = flattenTreeOptions(sourceTreeOptions.value);
-  return options;
+  initializeStatus.value = "DONE";
 });
 
 const onTreeNodeLoad = async (node: TreeOption) => {

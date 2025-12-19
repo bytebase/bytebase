@@ -11,10 +11,10 @@
     />
 
     <NButton
-      v-if="allowAdmin"
       size="small"
       type="default"
       :style="'shrink: 0;padding-left: 0;padding-right: 0;--n-width: 28px;--n-color: white;'"
+      :disabled="readonly"
       @click="$emit('remove')"
     >
       <heroicons:trash class="w-3.5 h-3.5" />
@@ -38,7 +38,7 @@ const emit = defineEmits<{
 }>();
 
 const context = useExprEditorContext();
-const { allowAdmin } = context;
+const { readonly } = context;
 
 watch(
   () => props.expr,

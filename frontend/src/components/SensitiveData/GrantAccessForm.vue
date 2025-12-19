@@ -10,7 +10,8 @@
             <RequiredStar />
           </div>
           <DatabaseResourceForm
-            v-model:database-resources="state.databaseResources"
+            ref="databaseResourceFormRef"
+            :database-resources="databaseResources"
             :project-name="projectName"
             :required-feature="PlanFeature.FEATURE_DATA_MASKING"
             :include-cloumn="true"
@@ -74,16 +75,14 @@
 
 <script lang="tsx" setup>
 import { create } from "@bufbuild/protobuf";
-import { isUndefined } from "lodash-es";
 import { NButton, NDatePicker, NInput } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import DatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import { pushNotification, usePolicyV1Store } from "@/store";
-import type { DatabaseResource } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type {
   MaskingExemptionPolicy_Exemption,
@@ -114,17 +113,19 @@ interface LocalState {
   memberList: string[];
   expirationTimestamp?: number;
   processing: boolean;
-  databaseResources?: DatabaseResource[];
   description: string;
 }
 
 const state = reactive<LocalState>({
   memberList: [],
   processing: false,
-  databaseResources: props.columnList.map(
-    convertSensitiveColumnToDatabaseResource
-  ),
   description: "",
+});
+const databaseResourceFormRef =
+  ref<InstanceType<typeof DatabaseResourceForm>>();
+
+const databaseResources = computed(() => {
+  return props.columnList.map(convertSensitiveColumnToDatabaseResource);
 });
 
 const policyStore = usePolicyV1Store();
@@ -133,7 +134,6 @@ const { t } = useI18n();
 const resetState = () => {
   state.expirationTimestamp = undefined;
   state.memberList = [];
-  state.databaseResources = undefined;
   state.processing = false;
 };
 
@@ -146,13 +146,7 @@ const submitDisabled = computed(() => {
   if (state.memberList.length === 0) {
     return true;
   }
-  if (
-    !isUndefined(state.databaseResources) &&
-    state.databaseResources?.length === 0
-  ) {
-    return true;
-  }
-  return false;
+  return !databaseResourceFormRef.value?.isValid;
 });
 
 const onSubmit = async () => {
@@ -189,7 +183,10 @@ const getPendingUpdatePolicy = async (
     );
   }
 
-  const resourceExpressions = state.databaseResources?.map(
+  const databaseResources =
+    await databaseResourceFormRef.value?.getDatabaseResources();
+
+  const resourceExpressions = databaseResources?.map(
     getExpressionsForDatabaseResource
   ) ?? [[""]];
   for (const expressionList of resourceExpressions) {

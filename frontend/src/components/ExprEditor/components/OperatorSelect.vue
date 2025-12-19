@@ -4,7 +4,7 @@
     v-model:value="operator"
     :options="options"
     :consistent-menu-width="false"
-    :disabled="!allowAdmin"
+    :disabled="readonly"
     size="small"
     style="width: auto; max-width: 7rem; min-width: 2.5rem; shrink: 0"
   />
@@ -27,7 +27,7 @@ const props = defineProps<{
 }>();
 
 const context = useExprEditorContext();
-const { allowAdmin, factorOperatorOverrideMap } = context;
+const { readonly, factorOperatorOverrideMap } = context;
 
 const operator = computed({
   get() {

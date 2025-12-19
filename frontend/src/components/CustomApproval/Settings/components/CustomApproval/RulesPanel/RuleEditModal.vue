@@ -84,7 +84,7 @@
           </div>
           <ExprEditor
             :expr="state.conditionExpr"
-            :allow-admin="allowAdmin"
+            :readonly="!allowAdmin"
             :factor-list="factorList"
             :option-config-map="optionConfigMap"
             @update="handleUpdate"

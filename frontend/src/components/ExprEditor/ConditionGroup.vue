@@ -25,12 +25,13 @@
           </i18n-t>
         </template>
       </div>
-      <div v-if="allowAdmin" class="flex items-center justify-end">
+      <div class="flex items-center justify-end">
         <NButton
           size="tiny"
           quaternary
           type="default"
           :style="`shrink: 0; padding-left: 0; padding-right: 0; --n-width: 22px;`"
+          :disabled="readonly"
           @click="emit('remove')"
         >
           <heroicons:trash class="w-3.5 h-3.5" />
@@ -50,10 +51,11 @@
       <div class="w-14 shrink-0">
         <div v-if="i === 0" class="pl-1.5 pt-1 text-control">Where</div>
         <NSelect
-          v-else-if="i === 1 && allowAdmin"
+          v-else-if="i === 1"
           v-model:value="operator"
           :options="OPERATORS"
           :consistent-menu-width="false"
+          :disabled="readonly"
           size="small"
           @update:value="$emit('update')"
         />
@@ -84,14 +86,14 @@
       </div>
     </div>
 
-    <div v-if="!root && allowAdmin" class="pl-1.5 pb-1">
-      <NButton size="small" quaternary @click="addCondition">
+    <div v-if="!root" class="pl-1.5 pb-1">
+      <NButton size="small" quaternary :disabled="readonly" @click="addCondition">
         <template #icon
           ><heroicons:plus class="w-4 h-4 text-gray-500"
         /></template>
         <span class="text-gray-500">{{ $t("cel.condition.add") }}</span>
       </NButton>
-      <NButton size="small" quaternary @click="addRawString">
+      <NButton size="small" quaternary :disabled="readonly" @click="addRawString">
         <template #icon
           ><heroicons:plus class="w-4 h-4 text-gray-500"
         /></template>
@@ -101,12 +103,12 @@
       </NButton>
     </div>
 
-    <div v-if="root && allowAdmin" class="flex gap-x-1">
-      <NButton size="small" quaternary @click="addCondition">
+    <div v-if="root" class="flex gap-x-1">
+      <NButton size="small" quaternary :disabled="readonly" @click="addCondition">
         <template #icon><heroicons:plus class="w-4 h-4" /></template>
         <span>{{ $t("cel.condition.add") }}</span>
       </NButton>
-      <NButton size="small" quaternary @click="addConditionGroup">
+      <NButton size="small" quaternary :disabled="readonly" @click="addConditionGroup">
         <template #icon><heroicons:plus class="w-4 h-4" /></template>
         <span>{{ $t("cel.condition.add-group") }}</span>
         <NTooltip>
@@ -122,6 +124,7 @@
         v-if="enableRawExpression"
         size="small"
         quaternary
+        :disabled="readonly"
         @click="addRawString"
       >
         <template #icon><heroicons:plus class="w-4 h-4" /></template>
@@ -165,12 +168,8 @@ const emit = defineEmits<{
   (event: "update"): void;
 }>();
 
-const {
-  allowAdmin,
-  enableRawExpression,
-  factorList,
-  factorOperatorOverrideMap,
-} = useExprEditorContext();
+const { readonly, enableRawExpression, factorList, factorOperatorOverrideMap } =
+  useExprEditorContext();
 
 const operator = computed({
   get() {

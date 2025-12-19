@@ -111,9 +111,10 @@ const handleRemove = (index: number) => {
   state.bindings.splice(index, 1);
 };
 
-const mergePolicyBinding = () => {
+const mergePolicyBinding = async () => {
   const bindingMap = new Map<string, Binding>();
-  for (const binding of state.bindings) {
+  for (const formRef of formRefs.value) {
+    const binding = await formRef.getBinding();
     const key = getBindingIdentifier(binding);
     if (!bindingMap.has(key)) {
       bindingMap.set(key, binding);
@@ -151,7 +152,7 @@ const addMembers = async () => {
     return;
   }
 
-  const policy = mergePolicyBinding();
+  const policy = await mergePolicyBinding();
   await useProjectIamPolicyStore().updateProjectIamPolicy(
     projectResourceName.value,
     policy

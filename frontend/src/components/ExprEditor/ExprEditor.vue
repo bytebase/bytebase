@@ -13,14 +13,14 @@ import { type OptionConfig, provideExprEditorContext } from "./context";
 const props = withDefaults(
   defineProps<{
     expr: ConditionGroupExpr;
-    allowAdmin?: boolean;
+    readonly?: boolean;
     enableRawExpression?: boolean;
     factorList: Factor[];
     optionConfigMap?: Map<Factor, OptionConfig>;
     factorOperatorOverrideMap?: Map<Factor, Operator[]>;
   }>(),
   {
-    allowAdmin: false,
+    readonly: false,
     enableRawExpression: true,
     factorOperatorOverrideMap: undefined,
     optionConfigMap: () => new Map(),
@@ -32,7 +32,7 @@ defineEmits<{
 }>();
 
 provideExprEditorContext({
-  allowAdmin: toRef(props, "allowAdmin"),
+  readonly: toRef(props, "readonly"),
   enableRawExpression: toRef(props, "enableRawExpression"),
   factorList: toRef(props, "factorList"),
   optionConfigMap: toRef(props, "optionConfigMap"),
