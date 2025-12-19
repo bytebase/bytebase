@@ -140,8 +140,8 @@ func (*DatabaseService) convertToChangelog(d *store.DatabaseMessage, c *store.Ch
 		Type:           changelogType,
 	}
 
-	if sheet := c.Payload.GetSheet(); sheet != "" {
-		cl.StatementSheet = sheet
+	if sheetSha256 := c.Payload.GetSheetSha256(); sheetSha256 != "" {
+		cl.StatementSheet = common.FormatSheet(d.ProjectID, sheetSha256)
 		cl.Statement = c.Statement
 		cl.StatementSize = c.StatementSize
 	}

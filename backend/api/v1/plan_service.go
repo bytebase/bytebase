@@ -600,35 +600,33 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 								}
 								oldSheetName = config.ChangeDatabaseConfig.Sheet
 							}
-							sheetProjectID, sheetUID, err := common.GetProjectResourceIDSheetUID(oldSheetName)
+							sheetProjectID, newSheetSha256, err := common.GetProjectResourceIDSheetSha256(oldSheetName)
 							if err != nil {
-								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet id from %q, error: %v", oldSheetName, err))
+								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet sha256 from %q, error: %v", oldSheetName, err))
 							}
-							if int(task.Payload.GetSheetId()) == sheetUID {
+							if task.Payload.GetSheetSha256() == newSheetSha256 {
 								return nil
 							}
 
-							sheet, err := s.store.GetSheetMetadata(ctx, sheetUID)
+							_, err = s.store.GetSheetMetadata(ctx, newSheetSha256)
 							if err != nil {
 								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet %q: %v", oldSheetName, err))
 							}
-							if sheet.ProjectID != sheetProjectID {
-								return connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %d not found in project %s", sheetUID, sheetProjectID))
-							}
+							// Sheets are now project-agnostic, so we don't check projectID
+							_ = sheetProjectID
 							doUpdate = true
-							taskPatch.SheetID = &sheet.UID
+							taskPatch.SheetSha256 = &newSheetSha256
 
 							if issue != nil {
-								oldSheet := common.FormatSheet(issue.Project.ResourceID, int(task.Payload.GetSheetId()))
-								newSheet := common.FormatSheet(issue.Project.ResourceID, sheet.UID)
+								oldSheetSha256 := task.Payload.GetSheetSha256()
 								issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
 									IssueUID: issue.UID,
 									Payload: &storepb.IssueCommentPayload{
 										Event: &storepb.IssueCommentPayload_PlanSpecUpdate_{
 											PlanSpecUpdate: &storepb.IssueCommentPayload_PlanSpecUpdate{
-												Spec:      common.FormatSpec(issue.Project.ResourceID, oldPlan.UID, specID),
-												FromSheet: &oldSheet,
-												ToSheet:   &newSheet,
+												Spec:             common.FormatSpec(issue.Project.ResourceID, oldPlan.UID, specID),
+												FromSheetSha256:  &oldSheetSha256,
+												ToSheetSha256:    &newSheetSha256,
 											},
 										},
 									},
@@ -688,7 +686,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			var doUpdateSheet bool
 			for _, taskPatch := range taskPatchList {
-				if taskPatch.SheetID != nil {
+				if taskPatch.SheetSha256 != nil {
 					doUpdateSheet = true
 				}
 			}

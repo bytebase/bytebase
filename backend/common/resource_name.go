@@ -374,6 +374,7 @@ func GetRoleID(name string) (string, error) {
 }
 
 // GetProjectResourceIDSheetUID returns the project ID and sheet UID from a resource name.
+// Deprecated: Use GetProjectResourceIDSheetSha256 instead.
 func GetProjectResourceIDSheetUID(name string) (string, int, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, SheetIDPrefix)
 	if err != nil {
@@ -384,6 +385,15 @@ func GetProjectResourceIDSheetUID(name string) (string, int, error) {
 		return "", 0, errors.Wrapf(err, "failed to convert sheet uid %q to int", tokens[1])
 	}
 	return tokens[0], sheetUID, nil
+}
+
+// GetProjectResourceIDSheetSha256 returns the project ID and sheet SHA256 from a resource name.
+func GetProjectResourceIDSheetSha256(name string) (string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, SheetIDPrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
 }
 
 // GetWorksheetUID returns the worksheet UID from a resource name.
@@ -507,8 +517,8 @@ func FormatRole(role string) string {
 	return fmt.Sprintf("%s%s", RolePrefix, role)
 }
 
-func FormatSheet(projectID string, sheetUID int) string {
-	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), SheetIDPrefix, sheetUID)
+func FormatSheet(projectID string, sheetSha256 string) string {
+	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), SheetIDPrefix, sheetSha256)
 }
 
 func FormatIssue(projectID string, issueUID int) string {

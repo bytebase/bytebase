@@ -156,9 +156,9 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 	create := &store.TaskRunMessage{
 		TaskUID: task.ID,
 	}
-	if task.Payload.GetSheetId() != 0 {
-		sheetUID := int(task.Payload.GetSheetId())
-		create.SheetUID = &sheetUID
+	if task.Payload.GetSheetSha256() != "" {
+		sheetSha256 := task.Payload.GetSheetSha256()
+		create.SheetSha256 = &sheetSha256
 	}
 
 	if err := s.store.CreatePendingTaskRuns(ctx, common.SystemBotEmail, create); err != nil {

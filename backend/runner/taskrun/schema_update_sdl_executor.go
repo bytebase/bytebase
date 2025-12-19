@@ -51,8 +51,7 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 		return true, nil, err
 	}
 
-	sheetID := int(task.Payload.GetSheetId())
-	sheet, err := exec.store.GetSheetFull(ctx, sheetID)
+	sheet, err := exec.store.GetSheetFull(ctx, task.Payload.GetSheetSha256())
 	if err != nil {
 		return true, nil, err
 	}

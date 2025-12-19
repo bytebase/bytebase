@@ -83,10 +83,9 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
 	}
 
-	sheetUID := int(config.SheetUid)
-	sheet, err := e.store.GetSheetFull(ctx, sheetUID)
+	sheet, err := e.store.GetSheetFull(ctx, config.SheetSha256)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
+		return nil, errors.Wrapf(err, "failed to get sheet %s", config.SheetSha256)
 	}
 	statement := sheet.Statement
 
