@@ -74,7 +74,7 @@ func (x *PlanConfig_ChangeDatabaseConfig) Equal(y *PlanConfig_ChangeDatabaseConf
 			return false
 		}
 	}
-	if x.Sheet != y.Sheet {
+	if x.SheetSha256 != y.SheetSha256 {
 		return false
 	}
 	if x.Release != y.Release {
@@ -119,7 +119,7 @@ func (x *PlanConfig_ExportDataConfig) Equal(y *PlanConfig_ExportDataConfig) bool
 			return false
 		}
 	}
-	if x.Sheet != y.Sheet {
+	if x.SheetSha256 != y.SheetSha256 {
 		return false
 	}
 	if x.Format != y.Format {

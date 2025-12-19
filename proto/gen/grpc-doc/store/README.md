@@ -762,7 +762,7 @@ Metadata about the request.
 | ----- | ---- | ----- | ----------- |
 | task_run | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun} |
 | revision | [int64](#int64) |  | The revision uid. optional |
-| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | version | [string](#string) |  |  |
 | type | [ChangelogPayload.Type](#bytebase-store-ChangelogPayload-Type) |  |  |
 | git_commit | [string](#string) |  |  |
@@ -2700,8 +2700,8 @@ Plan spec update event (tracks sheet changes to plan specs)
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | spec | [string](#string) |  | The spec that was updated Format: projects/{project}/plans/{plan}/specs/{spec} |
-| from_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
-| to_sheet | [string](#string) | optional | Format: projects/{project}/sheets/{sheet} |
+| from_sheet_sha256 | [string](#string) | optional | The SHA256 hash of the previous sheet content (hex-encoded). |
+| to_sheet_sha256 | [string](#string) | optional | The SHA256 hash of the new sheet content (hex-encoded). |
 
 
 
@@ -2800,7 +2800,7 @@ Plan spec update event (tracks sheet changes to plan specs)
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
-| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | release | [string](#string) |  | The resource name of the release. Format: projects/{project}/releases/{release} |
 | type | [PlanConfig.ChangeDatabaseConfig.Type](#bytebase-store-PlanConfig-ChangeDatabaseConfig-Type) |  |  |
 | ghost_flags | [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
@@ -2891,7 +2891,7 @@ Plan spec update event (tracks sheet changes to plan specs)
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | targets | [string](#string) | repeated | The list of targets. Multi-database format: [instances/{instance-id}/databases/{database-name}]. Single database group format: [projects/{project}/databaseGroups/{databaseGroup}]. |
-| sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | format | [ExportFormat](#bytebase-store-ExportFormat) |  | The format of the exported file. |
 | password | [string](#string) | optional | The zip password provided by users. Leave it empty if there is no need to encrypt the zip file. |
 
@@ -3638,8 +3638,7 @@ NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | The unique identifier for the file. |
 | path | [string](#string) |  | The path of the file, e.g., `2.2/V0001_create_table.sql`. |
-| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
-| sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  |  |
 | version | [string](#string) |  |  |
 | enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
@@ -3970,8 +3969,7 @@ The severity level for SQL review rules.
 | ----- | ---- | ----- | ----------- |
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} Can be empty. |
 | file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} Can be empty. |
-| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
-| sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | type | [SchemaChangeType](#bytebase-store-SchemaChangeType) |  | The type of the revision. |
 

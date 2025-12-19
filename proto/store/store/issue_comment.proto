@@ -36,9 +36,9 @@ message IssueCommentPayload {
     // The spec that was updated
     // Format: projects/{project}/plans/{plan}/specs/{spec}
     string spec = 1;
-    // Format: projects/{project}/sheets/{sheet}
-    optional string from_sheet = 2;
-    // Format: projects/{project}/sheets/{sheet}
-    optional string to_sheet = 3;
+    // The SHA256 hash of the previous sheet content (hex-encoded).
+    optional string from_sheet_sha256 = 2;
+    // The SHA256 hash of the new sheet content (hex-encoded).
+    optional string to_sheet_sha256 = 3;
   }
 }

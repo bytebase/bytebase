@@ -30,10 +30,7 @@ type RevisionPayload struct {
 	// Format: projects/{project}/releases/{release}/files/{id}
 	// Can be empty.
 	File string `protobuf:"bytes,2,opt,name=file,proto3" json:"file,omitempty"`
-	// The sheet that holds the content.
-	// Format: projects/{project}/sheets/{sheet}
-	Sheet string `protobuf:"bytes,3,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	// The SHA256 hash value of the sheet.
+	// The SHA256 hash of the sheet content (hex-encoded).
 	SheetSha256 string `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// The task run associated with the revision.
 	// Can be empty.
@@ -89,13 +86,6 @@ func (x *RevisionPayload) GetFile() string {
 	return ""
 }
 
-func (x *RevisionPayload) GetSheet() string {
-	if x != nil {
-		return x.Sheet
-	}
-	return ""
-}
-
 func (x *RevisionPayload) GetSheetSha256() string {
 	if x != nil {
 		return x.SheetSha256
@@ -121,17 +111,15 @@ var File_store_revision_proto protoreflect.FileDescriptor
 
 const file_store_revision_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/revision.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\x98\x02\n" +
+	"\x14store/revision.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\xef\x01\n" +
 	"\x0fRevisionPayload\x123\n" +
 	"\arelease\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ReleaseR\arelease\x12\x12\n" +
-	"\x04file\x18\x02 \x01(\tR\x04file\x12-\n" +
-	"\x05sheet\x18\x03 \x01(\tB\x17\xfaA\x14\n" +
-	"\x12bytebase.com/SheetR\x05sheet\x12!\n" +
+	"\x04file\x18\x02 \x01(\tR\x04file\x12!\n" +
 	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x124\n" +
 	"\btask_run\x18\x05 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\ataskRun\x124\n" +
-	"\x04type\x18\x06 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04typeB\x90\x01\n" +
+	"\x04type\x18\x06 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04typeJ\x04\b\x03\x10\x04B\x90\x01\n" +
 	"\x12com.bytebase.storeB\rRevisionProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

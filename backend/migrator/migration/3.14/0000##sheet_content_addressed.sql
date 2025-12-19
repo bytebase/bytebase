@@ -32,49 +32,41 @@ WHERE (pcr.config->>'sheetUid')::int = s.id
 AND pcr.config ? 'sheetUid';
 
 -- Backfill changelog.payload JSONB (ChangelogPayload proto)
--- Updates sheet resource name from projects/{project}/sheets/{id} to projects/{project}/sheets/{sha256}
+-- Converts sheet resource name to sheetSha256 field
 UPDATE changelog c
 SET payload = jsonb_set(
-    payload,
-    '{sheet}',
-    to_jsonb(regexp_replace(payload->>'sheet', '/sheets/\d+$', '/sheets/' || encode(s.sha256, 'hex')))
+    payload - 'sheet',
+    '{sheetSha256}',
+    to_jsonb(encode(s.sha256, 'hex'))
 )
 FROM sheet s
 WHERE s.id = (regexp_match(payload->>'sheet', '/sheets/(\d+)$'))[1]::int
 AND payload ? 'sheet';
 
 -- Backfill issue_comment.payload JSONB (IssueCommentPayload.PlanSpecUpdate proto)
--- Updates fromSheet and toSheet resource names
+-- Converts fromSheet and toSheet resource names to fromSheetSha256 and toSheetSha256 fields
 UPDATE issue_comment ic
-SET payload = CASE
-    WHEN payload #> '{planSpecUpdate,fromSheet}' IS NOT NULL THEN
-        jsonb_set(
-            payload,
-            '{planSpecUpdate,fromSheet}',
-            to_jsonb(regexp_replace(payload #>> '{planSpecUpdate,fromSheet}', '/sheets/\d+$', '/sheets/' || encode(s1.sha256, 'hex')))
-        )
-    ELSE payload
-END
+SET payload = jsonb_set(
+    payload #- '{planSpecUpdate,fromSheet}',
+    '{planSpecUpdate,fromSheetSha256}',
+    to_jsonb(encode(s1.sha256, 'hex'))
+)
 FROM sheet s1
 WHERE s1.id = (regexp_match(payload #>> '{planSpecUpdate,fromSheet}', '/sheets/(\d+)$'))[1]::int
 AND payload #> '{planSpecUpdate,fromSheet}' IS NOT NULL;
 
 UPDATE issue_comment ic
-SET payload = CASE
-    WHEN payload #> '{planSpecUpdate,toSheet}' IS NOT NULL THEN
-        jsonb_set(
-            payload,
-            '{planSpecUpdate,toSheet}',
-            to_jsonb(regexp_replace(payload #>> '{planSpecUpdate,toSheet}', '/sheets/\d+$', '/sheets/' || encode(s2.sha256, 'hex')))
-        )
-    ELSE payload
-END
+SET payload = jsonb_set(
+    payload #- '{planSpecUpdate,toSheet}',
+    '{planSpecUpdate,toSheetSha256}',
+    to_jsonb(encode(s2.sha256, 'hex'))
+)
 FROM sheet s2
 WHERE s2.id = (regexp_match(payload #>> '{planSpecUpdate,toSheet}', '/sheets/(\d+)$'))[1]::int
 AND payload #> '{planSpecUpdate,toSheet}' IS NOT NULL;
 
 -- Backfill plan.config JSONB (PlanConfig proto)
--- Updates sheet resource names in specs array for ChangeDatabaseConfig and ExportDataConfig
+-- Converts sheet resource names to sheetSha256 fields in specs array
 UPDATE plan p
 SET config = (
     SELECT jsonb_set(
@@ -84,15 +76,15 @@ SET config = (
             CASE
                 WHEN spec #> '{changeDatabaseConfig,sheet}' IS NOT NULL THEN
                     jsonb_set(
-                        spec,
-                        '{changeDatabaseConfig,sheet}',
-                        to_jsonb(regexp_replace(spec #>> '{changeDatabaseConfig,sheet}', '/sheets/\d+$', '/sheets/' || encode(s.sha256, 'hex')))
+                        spec #- '{changeDatabaseConfig,sheet}',
+                        '{changeDatabaseConfig,sheetSha256}',
+                        to_jsonb(encode(s.sha256, 'hex'))
                     )
                 WHEN spec #> '{exportDataConfig,sheet}' IS NOT NULL THEN
                     jsonb_set(
-                        spec,
-                        '{exportDataConfig,sheet}',
-                        to_jsonb(regexp_replace(spec #>> '{exportDataConfig,sheet}', '/sheets/\d+$', '/sheets/' || encode(s.sha256, 'hex')))
+                        spec #- '{exportDataConfig,sheet}',
+                        '{exportDataConfig,sheetSha256}',
+                        to_jsonb(encode(s.sha256, 'hex'))
                     )
                 ELSE spec
             END
@@ -107,19 +99,19 @@ SET config = (
 WHERE config->'specs' IS NOT NULL;
 
 -- Backfill revision.payload JSONB (RevisionPayload proto)
--- Updates sheet resource name
+-- Converts sheet resource name to sheetSha256 field
 UPDATE revision r
 SET payload = jsonb_set(
-    payload,
-    '{sheet}',
-    to_jsonb(regexp_replace(payload->>'sheet', '/sheets/\d+$', '/sheets/' || encode(s.sha256, 'hex')))
+    payload - 'sheet',
+    '{sheetSha256}',
+    to_jsonb(encode(s.sha256, 'hex'))
 )
 FROM sheet s
 WHERE s.id = (regexp_match(payload->>'sheet', '/sheets/(\d+)$'))[1]::int
 AND payload ? 'sheet';
 
 -- Backfill release.payload JSONB (ReleasePayload proto)
--- Updates sheet resource names in files array
+-- Converts sheet resource names to sheetSha256 fields in files array
 UPDATE release r
 SET payload = (
     SELECT jsonb_set(
@@ -127,9 +119,9 @@ SET payload = (
         '{files}',
         jsonb_agg(
             jsonb_set(
-                file,
-                '{sheet}',
-                to_jsonb(regexp_replace(file->>'sheet', '/sheets/\d+$', '/sheets/' || encode(s.sha256, 'hex')))
+                file - 'sheet',
+                '{sheetSha256}',
+                to_jsonb(encode(s.sha256, 'hex'))
             )
         )
     )
