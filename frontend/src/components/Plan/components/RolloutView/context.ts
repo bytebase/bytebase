@@ -1,16 +1,10 @@
 import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
 import type { InjectionKey } from "vue";
 import { computed, inject, nextTick, onUnmounted, provide, ref } from "vue";
-import { rolloutServiceClientConnect } from "@/grpcweb";
-import { silentContextKey } from "@/grpcweb/context-key";
 import { useCurrentProjectV1 } from "@/store";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  CreateRolloutRequestSchema,
-  RolloutSchema,
-} from "@/types/proto-es/v1/rollout_service_pb";
-import { usePlanContextWithRollout } from "../../logic";
+import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { generateRolloutPreview, usePlanContextWithRollout } from "../../logic";
 
 export const KEY = Symbol(
   "bb.plan.rollout-view"
@@ -21,7 +15,7 @@ export const useRolloutViewContext = () => {
 };
 
 export const provideRolloutViewContext = () => {
-  const { events, rollout } = usePlanContextWithRollout();
+  const { events, rollout, plan } = usePlanContextWithRollout();
   const { project } = useCurrentProjectV1();
 
   const ready = ref(false);
@@ -50,26 +44,20 @@ export const provideRolloutViewContext = () => {
 
   const fetchRolloutPreview = async () => {
     try {
-      // Validate that rollout has required fields before making the request
-      if (!rollout.value?.plan || !project.value?.name) {
+      // Validate that plan and project are available
+      if (!plan.value?.name || !project.value?.name) {
         rolloutPreview.value = create(RolloutSchema, {});
         return;
       }
 
-      const rolloutPreviewNew = await rolloutServiceClientConnect.createRollout(
-        create(CreateRolloutRequestSchema, {
-          parent: project.value.name,
-          rollout: rollout.value,
-          validateOnly: true,
-        }),
-        {
-          contextValues: createContextValues().set(silentContextKey, true),
-        }
+      // Generate rollout preview locally instead of calling backend
+      const preview = await generateRolloutPreview(
+        plan.value,
+        project.value.name
       );
-      rolloutPreview.value = rolloutPreviewNew;
+      rolloutPreview.value = preview;
     } catch (error) {
-      // Handle preview errors gracefully
-      console.error("Failed to fetch rollout preview:", error);
+      console.error("Failed to generate rollout preview:", error);
       rolloutPreview.value = create(RolloutSchema, {});
     } finally {
       nextTick(() => {
