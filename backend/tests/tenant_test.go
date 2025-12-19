@@ -143,7 +143,6 @@ func TestDatabaseGroup(t *testing.T) {
 	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "migration statement sheet",
 			Content: []byte(migrationStatement1),
 		},
 	}))

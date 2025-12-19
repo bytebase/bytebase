@@ -87,12 +87,6 @@ func (x *Sheet) Equal(y *Sheet) bool {
 	if x.Title != y.Title {
 		return false
 	}
-	if x.Creator != y.Creator {
-		return false
-	}
-	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
-	}
 	if string(x.Content) != string(y.Content) {
 		return false
 	}

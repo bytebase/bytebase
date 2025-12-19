@@ -2,11 +2,9 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -180,11 +178,6 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 }
 
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
-	creator, err := s.store.GetUserByEmail(ctx, sheet.Creator)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get creator"))
-	}
-
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &sheet.ProjectID,
 	})
@@ -197,9 +190,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 
 	return &v1pb.Sheet{
 		Name:        common.FormatSheet(project.ResourceID, sheet.UID),
-		Title:       sheet.Title,
-		Creator:     fmt.Sprintf("users/%s", creator.Email),
-		CreateTime:  timestamppb.New(sheet.CreatedAt),
 		Content:     []byte(sheet.Statement),
 		ContentSize: sheet.Size,
 	}, nil
@@ -209,7 +199,6 @@ func convertToStoreSheetMessage(projectID string, creator string, sheet *v1pb.Sh
 	sheetMessage := &store.SheetMessage{
 		ProjectID: projectID,
 		Creator:   creator,
-		Title:     sheet.Title,
 		Statement: string(sheet.Content),
 	}
 

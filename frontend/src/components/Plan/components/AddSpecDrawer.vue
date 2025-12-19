@@ -153,7 +153,6 @@ const handleConfirm = async () => {
     const localSheet = getLocalSheetByName(
       `${project.value.name}/sheets/${sheetUID}`
     );
-    localSheet.title = "Schema Migration";
 
     // Create spec
     const spec = createProto(Plan_SpecSchema, {

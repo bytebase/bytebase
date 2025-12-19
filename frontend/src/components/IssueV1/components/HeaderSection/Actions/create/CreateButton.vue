@@ -246,7 +246,6 @@ const createSheets = async () => {
   const sheetNameMap = new Map<string, string>();
   for (let i = 0; i < pendingCreateSheetList.length; i++) {
     const sheet = pendingCreateSheetList[i];
-    sheet.title = issue.value.title;
     const createdSheet = await sheetStore.createSheet(
       issue.value.project,
       sheet

@@ -85,7 +85,6 @@ func TestDirectApprovalRuleMatching(t *testing.T) {
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "Test DDL Sheet",
 			Content: []byte("CREATE TABLE approval_test (id INTEGER PRIMARY KEY);"),
 		},
 	}))
@@ -236,7 +235,6 @@ func TestApprovalRuleFirstMatchWins(t *testing.T) {
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "Test DDL Sheet",
 			Content: []byte("CREATE TABLE first_match_test (id INTEGER PRIMARY KEY);"),
 		},
 	}))
@@ -368,7 +366,6 @@ func TestApprovalRuleNoMatch(t *testing.T) {
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "Test DDL Sheet",
 			Content: []byte("CREATE TABLE no_match_test (id INTEGER PRIMARY KEY);"),
 		},
 	}))
@@ -585,7 +582,6 @@ func TestFallbackRuleMatchesWhenSourceSpecificDoesNot(t *testing.T) {
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "Test DDL Sheet",
 			Content: []byte("CREATE TABLE fallback_test (id INTEGER PRIMARY KEY);"),
 		},
 	}))
@@ -725,7 +721,6 @@ func TestSourceSpecificRuleTakesPriorityOverFallback(t *testing.T) {
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "Test DDL Sheet",
 			Content: []byte("CREATE TABLE priority_test (id INTEGER PRIMARY KEY);"),
 		},
 	}))

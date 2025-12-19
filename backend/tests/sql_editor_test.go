@@ -193,7 +193,6 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 		sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 			Parent: ctl.project.Name,
 			Sheet: &v1pb.Sheet{
-				Title:   "prepareStatements",
 				Content: []byte(tt.prepareStatements),
 			},
 		}))

@@ -118,7 +118,6 @@ func (stc *sdlTestContext) executeSDLRolloutWithResult(t *testing.T, database *v
 	sheetResp, err := stc.ctl.sheetServiceClient.CreateSheet(stc.ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: stc.ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "SDL Schema",
 			Content: []byte(sdlContent),
 		},
 	}))

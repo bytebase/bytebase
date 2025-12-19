@@ -426,13 +426,10 @@ const handleUpdateStatementAndOverwrite = async (
   await handleUpdateStatement(statement, filename);
 };
 
-const handleUpdateStatement = async (statement: string, filename: string) => {
+const handleUpdateStatement = async (statement: string, _filename: string) => {
   try {
     state.isUploadingFile = true;
     handleStatementChange(statement);
-    if (sheet.value) {
-      sheet.value.title = filename;
-    }
     resetTempEditState();
   } finally {
     state.isUploadingFile = false;
@@ -448,7 +445,6 @@ const updateStatement = async (statement: string) => {
 
   const sheet = create(SheetSchema, {
     ...createEmptyLocalSheet(),
-    title: issue.value.title,
   });
   setSheetStatement(sheet, statement);
   const createdSheet = await useSheetV1Store().createSheet(

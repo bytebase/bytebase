@@ -220,7 +220,6 @@ const createSheets = async () => {
     if (uid.startsWith("-")) {
       // The sheet is pending create.
       const sheetToCreate = getLocalSheetByName(config.sheet);
-      sheetToCreate.title = plan.value.title;
       const createdSheet = await sheetStore.createSheet(
         project.value.name,
         sheetToCreate

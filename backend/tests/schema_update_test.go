@@ -58,7 +58,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "migration statement sheet",
 			Content: []byte(migrationStatement1),
 		},
 	}))
@@ -78,7 +77,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	sheetResp, err = ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "dataUpdateStatement",
 			Content: []byte(dataUpdateStatement),
 		},
 	}))
@@ -313,7 +311,6 @@ CREATE TABLE "public"."book" (
 			ddlSheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 				Parent: ctl.project.Name,
 				Sheet: &v1pb.Sheet{
-					Title:   "test ddl",
 					Content: []byte(test.ddl),
 				},
 			}))
@@ -384,7 +381,6 @@ func TestMarkTaskAsDone(t *testing.T) {
 	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:   "migration statement sheet",
 			Content: []byte(migrationStatement1),
 		},
 	}))
