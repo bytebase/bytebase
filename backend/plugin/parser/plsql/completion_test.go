@@ -139,6 +139,14 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 							`,
 						},
 					},
+					Sequences: []*storepb.SequenceMetadata{
+						{
+							Name: "SEQ1",
+						},
+						{
+							Name: "USER_ID_SEQ",
+						},
+					},
 				},
 			},
 		}, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
