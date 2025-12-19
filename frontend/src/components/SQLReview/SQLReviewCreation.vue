@@ -5,7 +5,7 @@
       :current-index="state.currentStep"
       :step-list="STEP_LIST"
       :allow-next="allowNext"
-      :finish-title="$t(`common.confirm-and-${policy ? 'update' : 'add'}`)"
+      :finish-title="finishTitle"
       class="flex-1 overflow-hidden flex flex-col"
       pane-class="flex-1 overflow-y-auto"
       @update:current-index="changeStepIndex"
@@ -106,6 +106,13 @@ const dialog = useDialog();
 const { t } = useI18n();
 const router = useRouter();
 const store = useSQLReviewStore();
+
+const finishTitle = computed(() => {
+  if (props.policy) {
+    return t("common.confirm-and-update");
+  }
+  return t("common.confirm-and-add");
+});
 
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
