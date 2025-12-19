@@ -52,6 +52,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/tidb"
+	_ "github.com/bytebase/bytebase/backend/plugin/advisor/redshift"
 
 	// Schema designer.
 	_ "github.com/bytebase/bytebase/backend/plugin/schema/clickhouse"

@@ -277,32 +277,6 @@ func TestConvertCollationToCharset(t *testing.T) {
 	}
 }
 
-func TestUnquoteMySQLString(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"'simple'", "simple"},
-		{"'Has\\nNewline'", "Has\nNewline"},
-		{"'Has\\tTab'", "Has\tTab"},
-		{"'Path: C:\\\\Users\\\\File'", "Path: C:\\Users\\File"},
-		{"'Quote\\'s test'", "Quote's test"},
-		{"'Control\\Z'", "Control\x1a"},
-		{"'Null\\0byte'", "Null\x00byte"},
-		{"''", ""},
-		{"'single'", "single"},
-		{"no quotes", "no quotes"},
-		{"'Mixed\\nescapes\\tand\\\\backslashes'", "Mixed\nescapes\tand\\backslashes"},
-	}
-
-	for _, test := range tests {
-		t.Run(fmt.Sprintf("input: %s", test.input), func(t *testing.T) {
-			result := unquoteMySQLString(test.input)
-			require.Equal(t, test.expected, result, "Failed to unescape: %q", test.input)
-		})
-	}
-}
-
 func TestStripSingleQuote(t *testing.T) {
 	tests := []struct {
 		input    string

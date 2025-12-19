@@ -455,9 +455,6 @@ func TestParseMySQLStatements(t *testing.T) {
 	statements, err := base.ParseStatements(storepb.Engine_MYSQL, statement)
 	require.NoError(t, err)
 
-	// Filter empty statements for assertion
-	statements = base.FilterEmptyParsedStatements(statements)
-
 	require.Len(t, statements, 2)
 
 	// Check first statement

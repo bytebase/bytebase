@@ -44,17 +44,6 @@ func FilterEmptyStatements(list []Statement) []Statement {
 	return result
 }
 
-// FilterEmptyParsedStatements removes empty parsed statements from the list.
-func FilterEmptyParsedStatements(list []ParsedStatement) []ParsedStatement {
-	var result []ParsedStatement
-	for _, stmt := range list {
-		if !stmt.Empty {
-			result = append(result, stmt)
-		}
-	}
-	return result
-}
-
 // ExtractASTs extracts non-nil ASTs from a slice of ParsedStatements.
 // Empty statements (with nil AST) are skipped.
 // Returns nil if no ASTs are found (preserves nil-check compatibility).
@@ -67,14 +56,4 @@ func ExtractASTs(stmts []ParsedStatement) []AST {
 		}
 	}
 	return asts
-}
-
-// ExtractStatements extracts Statements from a slice of ParsedStatements.
-// This is useful when you only need the text/position information without AST.
-func ExtractStatements(stmts []ParsedStatement) []Statement {
-	result := make([]Statement, len(stmts))
-	for i, stmt := range stmts {
-		result[i] = stmt.Statement
-	}
-	return result
 }

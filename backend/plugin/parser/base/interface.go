@@ -1,7 +1,6 @@
 package base
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"regexp"
@@ -352,17 +351,6 @@ type ChangeSummary struct {
 	SampleDMLS       []string
 	DMLCount         int
 	InsertCount      int
-}
-
-// NewRange creates a new Range with index range of singleSQL in statement.
-func NewRange(statement, singleSQL string) *storepb.Range {
-	statementBytes := []byte(statement)
-	singleSQLBytes := []byte(singleSQL)
-	start := bytes.Index(statementBytes, singleSQLBytes)
-	return &storepb.Range{
-		Start: int32(start),
-		End:   int32(start + len(singleSQLBytes)),
-	}
 }
 
 // REFACTOR(zp): Put it here to avoid circular import for now.
