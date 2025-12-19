@@ -34,23 +34,23 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Errorf("no original SQL")
 	}
 
-	parseResults, err := ParseTSQL(statement)
+	antlrASTs, err := ParseTSQL(statement)
 	if err != nil {
 		return "", err
 	}
 
-	// Find the parse result that contains the statement at the backup position
-	var targetResult *base.ParseResult
-	for _, parseResult := range parseResults {
-		// Walk the tree to find if this parse result contains the target statement
+	// Find the AST that contains the statement at the backup position
+	var targetResult *base.ANTLRAST
+	for _, ast := range antlrASTs {
+		// Walk the tree to find if this AST contains the target statement
 		finder := &statementAtPositionFinder{
 			startPos: backupItem.StartPosition,
 			endPos:   backupItem.EndPosition,
-			baseLine: parseResult.BaseLine,
+			baseLine: base.GetLineOffset(ast.StartPosition),
 		}
-		antlr.ParseTreeWalkerDefault.Walk(finder, parseResult.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(finder, ast.Tree)
 		if finder.found {
-			targetResult = parseResult
+			targetResult = ast
 			break
 		}
 	}
@@ -68,7 +68,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	return doGenerate(ctx, rCtx, sqlForComment, targetResult, backupItem)
 }
 
-func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, tree *base.ParseResult, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, ast *base.ANTLRAST, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
@@ -117,7 +117,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		pk:               tableMetadata.GetPrimaryKey(),
 		table:            tableMetadata,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(g, tree.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(g, ast.Tree)
 	if g.err != nil {
 		return "", g.err
 	}
@@ -382,10 +382,10 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 		endPos:   backupItem.EndPosition,
 	}
 
-	// Walk all parse results to find statements within the specified position range
-	for _, parseResult := range parseResults {
-		l.baseLine = parseResult.BaseLine
-		antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	// Walk all ASTs to find statements within the specified position range
+	for _, ast := range parseResults {
+		l.baseLine = base.GetLineOffset(ast.StartPosition)
+		antlr.ParseTreeWalkerDefault.Walk(l, ast.Tree)
 	}
 
 	if len(l.originalSQL) == 0 {

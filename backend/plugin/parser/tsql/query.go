@@ -13,11 +13,11 @@ func init() {
 }
 
 func ValidateSQLForEditor(statement string) (bool, bool, error) {
-	parseResults, err := ParseTSQL(statement)
+	antlrASTs, err := ParseTSQL(statement)
 	if err != nil {
 		return false, false, err
 	}
-	if len(parseResults) == 0 {
+	if len(antlrASTs) == 0 {
 		return false, false, nil
 	}
 
@@ -25,8 +25,8 @@ func ValidateSQLForEditor(statement string) (bool, bool, error) {
 		valid: true,
 	}
 
-	for _, parseResult := range parseResults {
-		antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	for _, ast := range antlrASTs {
+		antlr.ParseTreeWalkerDefault.Walk(l, ast.Tree)
 		if !l.valid {
 			break
 		}

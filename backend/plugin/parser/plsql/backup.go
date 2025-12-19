@@ -258,9 +258,9 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 		databaseName: databaseName,
 	}
 
-	// Walk each parse result tree to extract DML statements
+	// Walk each ANTLRAST tree to extract DML statements
 	for _, result := range results {
-		extractor.baseLine = result.BaseLine
+		extractor.baseLine = base.GetLineOffset(result.StartPosition)
 		antlr.ParseTreeWalkerDefault.Walk(extractor, result.Tree)
 	}
 

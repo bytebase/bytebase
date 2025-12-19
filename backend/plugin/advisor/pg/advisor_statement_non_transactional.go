@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db/pg"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -27,29 +28,31 @@ type NonTransactionalAdvisor struct {
 
 // Check checks for non-transactional statements.
 func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	var adviceList []*storepb.Advice
-	for _, stmtInfo := range stmtInfos {
+	for _, stmtInfo := range checkCtx.ParsedStatements {
+		if stmtInfo.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
+		if !ok {
+			continue
+		}
 		rule := &nonTransactionalRule{
 			BaseRule: BaseRule{
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			tokens: stmtInfo.Tokens,
+			tokens: antlrAST.Tokens,
 		}
 		checker := NewGenericChecker([]Rule{rule})
 		rule.SetBaseLine(stmtInfo.BaseLine)
 		checker.SetBaseLine(stmtInfo.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 

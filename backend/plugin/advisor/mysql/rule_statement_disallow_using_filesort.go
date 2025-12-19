@@ -14,6 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -30,12 +31,6 @@ type StatementDisallowUsingFilesortAdvisor struct {
 }
 
 func (*StatementDisallowUsingFilesortAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
-
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -48,10 +43,17 @@ func (*StatementDisallowUsingFilesortAdvisor) Check(ctx context.Context, checkCt
 	checker := NewGenericChecker([]Rule{rule})
 
 	if rule.driver != nil {
-		for _, stmt := range stmtList {
+		for _, stmt := range checkCtx.ParsedStatements {
 			rule.SetBaseLine(stmt.BaseLine)
 			checker.SetBaseLine(stmt.BaseLine)
-			antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+			if stmt.AST == nil {
+				continue
+			}
+			antlrAST, ok := base.GetANTLRAST(stmt.AST)
+			if !ok {
+				continue
+			}
+			antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 			if rule.GetExplainCount() >= common.MaximumLintExplainSize {
 				break
 			}

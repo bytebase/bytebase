@@ -25,20 +25,11 @@ func parseRedshiftForRegistry(statement string) ([]base.AST, error) {
 	if err != nil {
 		return nil, err
 	}
-	return toAST(parseResults), nil
-}
-
-// toAST converts []*ParseResult to []base.AST.
-func toAST(results []*base.ParseResult) []base.AST {
-	var asts []base.AST
-	for _, r := range results {
-		asts = append(asts, &base.ANTLRAST{
-			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
-			Tree:          r.Tree,
-			Tokens:        r.Tokens,
-		})
+	asts := make([]base.AST, len(parseResults))
+	for i, r := range parseResults {
+		asts[i] = r
 	}
-	return asts
+	return asts, nil
 }
 
 // parseRedshiftStatements is the ParseStatementsFunc for Redshift.
@@ -56,7 +47,7 @@ func parseRedshiftStatements(statement string) ([]base.ParsedStatement, error) {
 		return nil, err
 	}
 
-	// Combine: Statement provides text/positions, ParseResult provides AST
+	// Combine: Statement provides text/positions, ANTLRAST provides AST
 	var result []base.ParsedStatement
 	astIndex := 0
 	for _, stmt := range stmts {
@@ -64,11 +55,7 @@ func parseRedshiftStatements(statement string) ([]base.ParsedStatement, error) {
 			Statement: stmt,
 		}
 		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = &base.ANTLRAST{
-				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
-				Tree:          parseResults[astIndex].Tree,
-				Tokens:        parseResults[astIndex].Tokens,
-			}
+			ps.AST = parseResults[astIndex]
 			astIndex++
 		}
 		result = append(result, ps)
@@ -77,15 +64,15 @@ func parseRedshiftStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// ParseRedshift parses the given SQL statement and returns a list of ParseResults.
-// Each ParseResult represents one statement with its AST, tokens, and base line offset.
-func ParseRedshift(sql string) ([]*base.ParseResult, error) {
+// ParseRedshift parses the given SQL and returns a list of ANTLRAST (one per statement).
+// Use the Redshift parser based on antlr4.
+func ParseRedshift(sql string) ([]*base.ANTLRAST, error) {
 	stmts, err := SplitSQL(sql)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to split SQL")
 	}
 
-	var results []*base.ParseResult
+	var results []*base.ANTLRAST
 	for _, stmt := range stmts {
 		if stmt.Empty {
 			continue
@@ -101,8 +88,8 @@ func ParseRedshift(sql string) ([]*base.ParseResult, error) {
 	return results, nil
 }
 
-// parseSingleRedshift parses a single Redshift statement by using antlr4. Returns the AST and token stream if no error.
-func parseSingleRedshift(statement string, baseLine int) (*base.ParseResult, error) {
+// parseSingleRedshift parses a single Redshift statement and returns the ANTLRAST.
+func parseSingleRedshift(statement string, baseLine int) (*base.ANTLRAST, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + ";"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewRedshiftLexer(inputStream)
@@ -139,10 +126,10 @@ func parseSingleRedshift(statement string, baseLine int) (*base.ParseResult, err
 		return nil, parserErrorListener.Err
 	}
 
-	result := &base.ParseResult{
-		Tree:     tree,
-		Tokens:   stream,
-		BaseLine: baseLine,
+	result := &base.ANTLRAST{
+		StartPosition: &storepb.Position{Line: int32(baseLine) + 1},
+		Tree:          tree,
+		Tokens:        stream,
 	}
 
 	return result, nil

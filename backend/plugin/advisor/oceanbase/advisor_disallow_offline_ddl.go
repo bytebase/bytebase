@@ -16,6 +16,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -33,12 +34,6 @@ type DisallowOfflineDdlAdvisor struct {
 
 // Check checks for disallow Offline DDL.
 func (*DisallowOfflineDdlAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
-
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -51,9 +46,16 @@ func (*DisallowOfflineDdlAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		currentDB: checkCtx.CurrentDatabase,
 	}
 
-	for _, stmtNode := range stmtList {
-		checker.baseLine = stmtNode.BaseLine
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		checker.baseLine = stmt.BaseLine
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 
 	return checker.adviceList, nil

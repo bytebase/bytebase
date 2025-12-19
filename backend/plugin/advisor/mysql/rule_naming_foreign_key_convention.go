@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/bytebase/parser/mysql"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -33,12 +33,6 @@ type NamingFKConventionAdvisor struct {
 
 // Check checks for foreign key naming convention.
 func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	root, err := advisor.GetANTLRParseResults(checkCtx)
-
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -69,10 +63,17 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	// Create the generic checker with the rule
 	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmtNode := range root {
-		rule.SetBaseLine(stmtNode.BaseLine)
-		checker.SetBaseLine(stmtNode.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	for _, stmt := range checkCtx.ParsedStatements {
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 
 	return checker.GetAdviceList(), nil

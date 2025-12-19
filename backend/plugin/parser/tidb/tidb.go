@@ -142,7 +142,7 @@ func ParseTiDB(sql string, charset string, collation string) ([]ast.StmtNode, er
 	return nodes, nil
 }
 
-func ANTLRParseTiDB(statement string) ([]*base.ParseResult, error) {
+func ANTLRParseTiDB(statement string) ([]*base.ANTLRAST, error) {
 	statement, err := DealWithDelimiter(statement)
 	if err != nil {
 		return nil, err
@@ -192,8 +192,8 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 	return tree, stream, nil
 }
 
-func parseInputStream(input *antlr.InputStream, statement string) ([]*base.ParseResult, error) {
-	var result []*base.ParseResult
+func parseInputStream(input *antlr.InputStream, statement string) ([]*base.ANTLRAST, error) {
+	var result []*base.ANTLRAST
 	lexer := parser.NewTiDBLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
@@ -217,10 +217,10 @@ func parseInputStream(input *antlr.InputStream, statement string) ([]*base.Parse
 			continue
 		}
 
-		result = append(result, &base.ParseResult{
-			Tree:     tree,
-			Tokens:   tokens,
-			BaseLine: s.BaseLine,
+		result = append(result, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(s.BaseLine) + 1},
+			Tree:          tree,
+			Tokens:        tokens,
 		})
 		baseLine = int(s.End.GetLine())
 	}

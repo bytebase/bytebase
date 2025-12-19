@@ -49,7 +49,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	return doGenerate(ctx, rCtx, sqlForComment, parseResult[0], backupItem)
 }
 
-func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, parseResult *base.ParseResult, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, ast *base.ANTLRAST, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
@@ -77,7 +77,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		normalColumns:    normalColumns,
 	}
 	var buf strings.Builder
-	antlr.ParseTreeWalkerDefault.Walk(g, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(g, ast.Tree)
 	if g.err != nil {
 		return "", g.err
 	}

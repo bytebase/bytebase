@@ -10,6 +10,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -26,29 +27,31 @@ type StatementWhereRequiredSelectAdvisor struct {
 
 // Check checks for WHERE clause requirement in SELECT statements.
 func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	var adviceList []*storepb.Advice
-	for _, stmtInfo := range stmtInfos {
+	for _, stmtInfo := range checkCtx.ParsedStatements {
+		if stmtInfo.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
+		if !ok {
+			continue
+		}
 		rule := &statementWhereRequiredSelectRule{
 			BaseRule: BaseRule{
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			tokens: stmtInfo.Tokens,
+			tokens: antlrAST.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
 		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 

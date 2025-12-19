@@ -11,6 +11,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
@@ -27,11 +28,6 @@ type TableCommentConventionAdvisor struct {
 }
 
 func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -51,10 +47,17 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 
 	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmtInfo := range stmtInfos {
-		rule.SetBaseLine(stmtInfo.BaseLine)
-		checker.SetBaseLine(stmtInfo.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 
 	// Check each created table for comment requirements

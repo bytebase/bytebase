@@ -27,20 +27,11 @@ func parsePLSQLForRegistry(statement string) ([]base.AST, error) {
 	if err != nil {
 		return nil, err
 	}
-	return toAST(parseResults), nil
-}
-
-// toAST converts []*ParseResult to []base.AST.
-func toAST(results []*base.ParseResult) []base.AST {
-	var asts []base.AST
-	for _, r := range results {
-		asts = append(asts, &base.ANTLRAST{
-			StartPosition: &storepb.Position{Line: int32(r.BaseLine) + 1},
-			Tree:          r.Tree,
-			Tokens:        r.Tokens,
-		})
+	asts := make([]base.AST, len(parseResults))
+	for i, r := range parseResults {
+		asts[i] = r
 	}
-	return asts
+	return asts, nil
 }
 
 // parsePLSQLStatements is the ParseStatementsFunc for Oracle (PL/SQL).
@@ -58,7 +49,7 @@ func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
 		return nil, err
 	}
 
-	// Combine: Statement provides text/positions, ParseResult provides AST
+	// Combine: Statement provides text/positions, ANTLRAST provides AST
 	var result []base.ParsedStatement
 	astIndex := 0
 	for _, stmt := range stmts {
@@ -66,11 +57,7 @@ func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
 			Statement: stmt,
 		}
 		if !stmt.Empty && astIndex < len(parseResults) {
-			ps.AST = &base.ANTLRAST{
-				StartPosition: &storepb.Position{Line: int32(parseResults[astIndex].BaseLine) + 1},
-				Tree:          parseResults[astIndex].Tree,
-				Tokens:        parseResults[astIndex].Tokens,
-			}
+			ps.AST = parseResults[astIndex]
 			astIndex++
 		}
 		result = append(result, ps)
@@ -112,10 +99,10 @@ func ParseVersion(banner string) (*Version, error) {
 	return nil, errors.Errorf("failed to parse version from banner: %s", banner)
 }
 
-// ParsePLSQL parses the given PLSQL and returns a list of parse results.
+// ParsePLSQL parses the given PLSQL and returns a list of ANTLR ASTs.
 // It first parses the whole statement to get the AST, then splits by unit_statement
 // and sql_plus_command nodes, and re-parses each individual statement.
-func ParsePLSQL(sql string) ([]*base.ParseResult, error) {
+func ParsePLSQL(sql string) ([]*base.ANTLRAST, error) {
 	sql = addSemicolonIfNeeded(sql)
 
 	// First pass: parse the whole statement to get the AST for splitting
@@ -131,7 +118,7 @@ func ParsePLSQL(sql string) ([]*base.ParseResult, error) {
 	}
 
 	// Iterate through children in order to preserve statement ordering and re-parse each one
-	var result []*base.ParseResult
+	var result []*base.ANTLRAST
 	for _, child := range sqlScript.GetChildren() {
 		var stmtText string
 		var stmtBaseLine int
@@ -159,10 +146,10 @@ func ParsePLSQL(sql string) ([]*base.ParseResult, error) {
 			return nil, err
 		}
 
-		result = append(result, &base.ParseResult{
-			Tree:     stmtTree,
-			Tokens:   stmtTokens,
-			BaseLine: stmtBaseLine,
+		result = append(result, &base.ANTLRAST{
+			StartPosition: &storepb.Position{Line: int32(stmtBaseLine) + 1},
+			Tree:          stmtTree,
+			Tokens:        stmtTokens,
 		})
 	}
 

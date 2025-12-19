@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 
 	"github.com/antlr4-go/antlr/v4"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/parser/mysql"
 
@@ -17,6 +16,7 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
@@ -37,12 +37,6 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
-
-	if err != nil {
-		return nil, err
-	}
-
 	// User defined rule level.
 	status, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
@@ -51,9 +45,17 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 
 	var adviceList []*storepb.Advice
 
-	for _, parsedResult := range stmtList {
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+
 		statTypeChecker := &mysqlparser.StatementTypeChecker{}
-		antlr.ParseTreeWalkerDefault.Walk(statTypeChecker, parsedResult.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(statTypeChecker, antlrAST.Tree)
 
 		if statTypeChecker.IsDDL {
 			// Create the rule
@@ -62,9 +64,9 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 			// Create the generic checker with the rule
 			checker := NewGenericChecker([]Rule{rule})
 
-			rule.SetBaseLine(parsedResult.BaseLine)
-			checker.SetBaseLine(parsedResult.BaseLine)
-			antlr.ParseTreeWalkerDefault.Walk(checker, parsedResult.Tree)
+			rule.SetBaseLine(stmt.BaseLine)
+			checker.SetBaseLine(stmt.BaseLine)
+			antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 
 			// Generate advice based on collected table information
 			rule.generateAdvice()

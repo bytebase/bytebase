@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -30,11 +31,6 @@ type NamingPKConventionAdvisor struct {
 
 // Check checks for primary key naming convention.
 func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -60,7 +56,14 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	var adviceList []*storepb.Advice
-	for _, stmtInfo := range stmtInfos {
+	for _, stmtInfo := range checkCtx.ParsedStatements {
+		if stmtInfo.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
+		if !ok {
+			continue
+		}
 		rule := &namingPKConventionRule{
 			BaseRule: BaseRule{
 				level: level,
@@ -75,7 +78,7 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		checker := NewGenericChecker([]Rule{rule})
 		rule.SetBaseLine(stmtInfo.BaseLine)
 		checker.SetBaseLine(stmtInfo.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 

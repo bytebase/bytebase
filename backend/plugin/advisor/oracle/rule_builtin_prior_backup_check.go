@@ -32,12 +32,6 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, nil
 	}
 
-	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
-
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -46,10 +40,17 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	rule := NewStatementPriorBackupCheckRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx)
 	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmtNode := range stmtList {
-		rule.SetBaseLine(stmtNode.BaseLine)
-		checker.SetBaseLine(stmtNode.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 
 	return checker.GetAdviceList()
@@ -80,14 +81,21 @@ type statementInfo struct {
 	table     *TableReference
 }
 
-func prepareTransformation(databaseName string, parseResults []*base.ParseResult) []statementInfo {
+func prepareTransformation(databaseName string, parsedStatements []base.ParsedStatement) []statementInfo {
 	extractor := &dmlExtractor{
 		databaseName: databaseName,
 	}
 
 	// Walk each parse result tree to extract DML statements
-	for _, result := range parseResults {
-		antlr.ParseTreeWalkerDefault.Walk(extractor, result.Tree)
+	for _, stmt := range parsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		antlr.ParseTreeWalkerDefault.Walk(extractor, antlrAST.Tree)
 	}
 
 	return extractor.dmls
@@ -274,11 +282,7 @@ func (r *StatementPriorBackupCheckRule) handleSQLScriptExit() {
 		})
 	}
 
-	parseResults, err := advisor.GetANTLRParseResults(r.checkCtx)
-	if err != nil {
-		return
-	}
-	statementInfoList := prepareTransformation(r.checkCtx.DBSchema.Name, parseResults)
+	statementInfoList := prepareTransformation(r.checkCtx.DBSchema.Name, r.checkCtx.ParsedStatements)
 
 	groupByTable := make(map[string][]statementInfo)
 	for _, item := range statementInfoList {

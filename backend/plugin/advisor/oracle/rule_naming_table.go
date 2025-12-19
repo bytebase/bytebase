@@ -14,6 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -30,12 +31,6 @@ type NamingTableAdvisor struct {
 
 // Check checks for table naming convention.
 func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
-
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -58,10 +53,17 @@ func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	rule := NewNamingTableRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, format, maxLength)
 	checker := NewGenericChecker([]Rule{rule})
 
-	for _, stmtNode := range stmtList {
-		rule.SetBaseLine(stmtNode.BaseLine)
-		checker.SetBaseLine(stmtNode.BaseLine)
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtNode.Tree)
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		rule.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.BaseLine)
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 
 	return checker.GetAdviceList()

@@ -30,30 +30,32 @@ type FullyQualifiedObjectNameAdvisor struct {
 
 // Check checks for fully qualified object names.
 func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
 	var adviceList []*storepb.Advice
-	for _, stmtInfo := range stmtInfos {
+	for _, stmtInfo := range checkCtx.ParsedStatements {
+		if stmtInfo.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
+		if !ok {
+			continue
+		}
 		rule := &fullyQualifiedObjectNameRule{
 			BaseRule: BaseRule{
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
 			dbMetadata: checkCtx.DBSchema,
-			tokens:     stmtInfo.Tokens,
+			tokens:     antlrAST.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
 		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 
@@ -336,7 +338,7 @@ func (*fullyQualifiedObjectNameRule) isFullyQualified(objName string) bool {
 // findAllTablesInSelect finds all table references in a SELECT statement
 func (r *fullyQualifiedObjectNameRule) findAllTablesInSelect(statement string) []base.ColumnResource {
 	// Parse the statement to extract table references
-	parseResults, err := pgparser.ParsePostgreSQL(statement)
+	parsedStatements, err := pgparser.ParsePostgreSQL(statement)
 	if err != nil {
 		return nil
 	}
@@ -346,9 +348,9 @@ func (r *fullyQualifiedObjectNameRule) findAllTablesInSelect(statement string) [
 		schemaNameMap: r.getSchemaNameMapFromPublic(),
 	}
 
-	for _, parseResult := range parseResults {
-		if parseResult.Tree != nil {
-			antlr.ParseTreeWalkerDefault.Walk(collector, parseResult.Tree)
+	for _, antlrAST := range parsedStatements {
+		if antlrAST != nil && antlrAST.Tree != nil {
+			antlr.ParseTreeWalkerDefault.Walk(collector, antlrAST.Tree)
 		}
 	}
 

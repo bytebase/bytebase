@@ -31,23 +31,23 @@ func newQuerySpanExtractor(database string, gCtx base.GetQuerySpanContext, ignor
 
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
-	parseResults, err := ParseDorisSQL(statement)
+	antlrASTs, err := ParseDorisSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(parseResults) == 0 {
+	if len(antlrASTs) == 0 {
 		return &base.QuerySpan{
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
-	if len(parseResults) != 1 {
-		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(parseResults))
+	if len(antlrASTs) != 1 {
+		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(antlrASTs))
 	}
 
-	parseResult := parseResults[0]
-	accessTables := getAccessTables(q.defaultDatabase, parseResult, q.ctes, q.gCtx, q.ignoreCaseSensitive)
+	antlrAST := antlrASTs[0]
+	accessTables := getAccessTables(q.defaultDatabase, antlrAST, q.ctes, q.gCtx, q.ignoreCaseSensitive)
 
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
@@ -62,7 +62,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		allSystems: allSystems,
 		result:     base.QueryTypeUnknown,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, antlrAST.Tree)
 
 	return &base.QuerySpan{
 		Type:          queryTypeListener.result,
@@ -71,10 +71,10 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	}, nil
 }
 
-func getAccessTables(database string, parseResult *base.ParseResult, ctes map[string]bool, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) base.SourceColumnSet {
+func getAccessTables(database string, antlrAST *base.ANTLRAST, ctes map[string]bool, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) base.SourceColumnSet {
 	// First, extract CTEs from the query
 	cteListener := newCTEListener()
-	antlr.ParseTreeWalkerDefault.Walk(cteListener, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(cteListener, antlrAST.Tree)
 
 	// Merge extracted CTEs with any existing ones
 	for cte := range cteListener.ctes {
@@ -82,7 +82,7 @@ func getAccessTables(database string, parseResult *base.ParseResult, ctes map[st
 	}
 
 	accessTableListener := newAccessTableListener(database, ctes, gCtx, ignoreCaseSensitive)
-	antlr.ParseTreeWalkerDefault.Walk(accessTableListener, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(accessTableListener, antlrAST.Tree)
 
 	return accessTableListener.sourceColumnSet
 }

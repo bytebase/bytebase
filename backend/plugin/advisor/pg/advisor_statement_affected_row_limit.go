@@ -15,6 +15,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -31,11 +32,6 @@ type StatementAffectedRowLimitAdvisor struct {
 
 // Check checks for UPDATE/DELETE affected row limit.
 func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmtInfos, err := advisor.GetANTLRParseResults(checkCtx)
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -51,7 +47,14 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	var adviceList []*storepb.Advice
-	for _, stmtInfo := range stmtInfos {
+	for _, stmtInfo := range checkCtx.ParsedStatements {
+		if stmtInfo.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmtInfo.AST)
+		if !ok {
+			continue
+		}
 		rule := &statementAffectedRowLimitRule{
 			BaseRule: BaseRule{
 				level: level,
@@ -61,12 +64,12 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			ctx:                      ctx,
 			driver:                   checkCtx.Driver,
 			usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
-			tokens:                   stmtInfo.Tokens,
+			tokens:                   antlrAST.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
 		checker := NewGenericChecker([]Rule{rule})
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmtInfo.Tree)
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}
 

@@ -5,6 +5,8 @@ import (
 
 	parser "github.com/bytebase/parser/plsql"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestPLSQLParser(t *testing.T) {
@@ -87,7 +89,7 @@ INSERT INTO t3 VALUES (1, 2);`,
 		require.Equal(t, test.expectedCount, len(results), "Statement: %s", test.statement)
 
 		for i, result := range results {
-			require.Equal(t, test.expectedLines[i], result.BaseLine, "Statement %d", i+1)
+			require.Equal(t, test.expectedLines[i], base.GetLineOffset(result.StartPosition), "Statement %d", i+1)
 		}
 	}
 }

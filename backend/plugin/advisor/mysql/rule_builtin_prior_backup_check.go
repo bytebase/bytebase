@@ -32,12 +32,6 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	var adviceList []*storepb.Advice
-	stmtList, err := advisor.GetANTLRParseResults(checkCtx)
-
-	if err != nil {
-		return nil, err
-	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -54,9 +48,16 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		})
 	}
 
-	for _, stmt := range stmtList {
+	for _, stmt := range checkCtx.ParsedStatements {
 		checker := &mysqlparser.StatementTypeChecker{}
-		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+		if stmt.AST == nil {
+			continue
+		}
+		antlrAST, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 
 		if checker.IsDDL {
 			adviceList = append(adviceList, &storepb.Advice{
@@ -80,7 +81,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		})
 	}
 
-	tableReferences, err := prepareTransformation(checkCtx.DBSchema.Name, stmtList)
+	tableReferences, err := prepareTransformation(checkCtx.DBSchema.Name, checkCtx.ParsedStatements)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
 	}
@@ -112,10 +113,17 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	return adviceList, nil
 }
 
-func prepareTransformation(databaseName string, parseResult []*base.ParseResult) ([]*mysqlparser.TableReference, error) {
+func prepareTransformation(databaseName string, parsedStatements []base.ParsedStatement) ([]*mysqlparser.TableReference, error) {
 	var result []*mysqlparser.TableReference
-	for i, sql := range parseResult {
-		tables, err := mysqlparser.ExtractTables(databaseName, sql, i)
+	for i, stmt := range parsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		ast, ok := base.GetANTLRAST(stmt.AST)
+		if !ok {
+			continue
+		}
+		tables, err := mysqlparser.ExtractTables(databaseName, ast, i)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to extract tables")
 		}

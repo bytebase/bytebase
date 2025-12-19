@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestParseCassandraSQL(t *testing.T) {
@@ -93,12 +95,12 @@ func TestParseCassandraSQLBaseLine(t *testing.T) {
 
 	// BaseLine follows the pattern from SplitSQL based on token positions
 	// First statement: line 0
-	assert.Equal(t, 0, results[0].BaseLine)
+	assert.Equal(t, 0, base.GetLineOffset(results[0].StartPosition))
 	// Second statement: includes newline+tab prefix, but first token is on line 2 (BaseLine = line - 1 = 1-1 = 0)
 	// Actually the newline is part of the previous statement's text, so first real token is on line 2
-	assert.Equal(t, 0, results[1].BaseLine) // First token after semicolon is still on line 1 (0-indexed)
+	assert.Equal(t, 0, base.GetLineOffset(results[1].StartPosition)) // First token after semicolon is still on line 1 (0-indexed)
 	// Third statement
-	assert.Equal(t, 1, results[2].BaseLine)
+	assert.Equal(t, 1, base.GetLineOffset(results[2].StartPosition))
 }
 
 func TestParseCassandraSQLErrors(t *testing.T) {
