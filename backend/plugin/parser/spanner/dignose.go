@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	base.RegisterDiagnoseFunc(storepb.Engine_BIGQUERY, Diagnose)
+	base.RegisterDiagnoseFunc(storepb.Engine_SPANNER, Diagnose)
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {

@@ -1,13 +1,10 @@
 package tidb
 
 import (
-	"fmt"
-	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/antlr4-go/antlr/v4"
 	tidbparser "github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
@@ -15,8 +12,6 @@ import (
 
 	// The packege parser_driver has to be imported.
 	_ "github.com/pingcap/tidb/pkg/types/parser_driver"
-
-	parser "github.com/bytebase/parser/tidb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -142,132 +137,6 @@ func ParseTiDB(sql string, charset string, collation string) ([]ast.StmtNode, er
 	return nodes, nil
 }
 
-func ANTLRParseTiDB(statement string) ([]*base.ANTLRAST, error) {
-	statement, err := DealWithDelimiter(statement)
-	if err != nil {
-		return nil, err
-	}
-	list, err := parseInputStream(antlr.NewInputStream(statement), statement)
-	// HACK(p0ny): the callee may end up in an infinite loop, we print the statement here to help debug.
-	if err != nil && strings.Contains(err.Error(), "split SQL statement timed out") {
-		slog.Info("split SQL statement timed out", "statement", statement)
-	}
-	return list, err
-}
-
-func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
-	input := antlr.NewInputStream(statement)
-	lexer := parser.NewTiDBLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-
-	p := parser.NewTiDBParser(stream)
-
-	startPosition := &storepb.Position{Line: int32(baseLine) + 1}
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	lexer.RemoveErrorListeners()
-	lexer.AddErrorListener(lexerErrorListener)
-
-	parserErrorListener := &base.ParseErrorListener{
-		Statement:     statement,
-		StartPosition: startPosition,
-	}
-	p.RemoveErrorListeners()
-	p.AddErrorListener(parserErrorListener)
-
-	p.BuildParseTrees = true
-
-	tree := p.Script()
-
-	if lexerErrorListener.Err != nil {
-		return nil, nil, lexerErrorListener.Err
-	}
-
-	if parserErrorListener.Err != nil {
-		return nil, nil, parserErrorListener.Err
-	}
-
-	return tree, stream, nil
-}
-
-func parseInputStream(input *antlr.InputStream, statement string) ([]*base.ANTLRAST, error) {
-	var result []*base.ANTLRAST
-	lexer := parser.NewTiDBLexer(input)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-
-	list, err := splitTiDBStatement(stream, statement)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(list) > 0 {
-		list[len(list)-1].Text = tidbAddSemicolonIfNeeded(list[len(list)-1].Text)
-	}
-
-	baseLine := 0
-	for _, s := range list {
-		tree, tokens, err := parseSingleStatement(baseLine, s.Text)
-		if err != nil {
-			return nil, err
-		}
-
-		if isEmptyStatement(tokens) {
-			continue
-		}
-
-		result = append(result, &base.ANTLRAST{
-			StartPosition: &storepb.Position{Line: int32(s.BaseLine) + 1},
-			Tree:          tree,
-			Tokens:        tokens,
-		})
-		baseLine = int(s.End.GetLine())
-	}
-
-	return result, nil
-}
-
-func isEmptyStatement(tokens *antlr.CommonTokenStream) bool {
-	for _, token := range tokens.GetAllTokens() {
-		if token.GetChannel() == antlr.TokenDefaultChannel && token.GetTokenType() != parser.TiDBParserSEMICOLON_SYMBOL && token.GetTokenType() != parser.TiDBParserEOF {
-			return false
-		}
-	}
-	return true
-}
-
-// DealWithDelimiter converts the delimiter statement to comment, also converts the following statement's delimiter to semicolon(`;`).
-func DealWithDelimiter(statement string) (string, error) {
-	has, list, err := hasDelimiter(statement)
-	if err != nil {
-		return "", err
-	}
-	if has {
-		var result []string
-		delimiter := `;`
-		for _, sql := range list {
-			if IsDelimiter(sql.Text) {
-				delimiter, err = ExtractDelimiter(sql.Text)
-				if err != nil {
-					return "", err
-				}
-				result = append(result, "-- "+sql.Text)
-				continue
-			}
-			// TODO(rebelice): after deal with delimiter, we may cannot get the right line number, fix it.
-			if delimiter != ";" && !sql.Empty {
-				result = append(result, fmt.Sprintf("%s;", strings.TrimSuffix(sql.Text, delimiter)))
-			} else {
-				result = append(result, sql.Text)
-			}
-		}
-
-		statement = strings.Join(result, "\n")
-	}
-	return statement, nil
-}
-
 // IsDelimiter returns true if the statement is a delimiter statement.
 func IsDelimiter(stmt string) bool {
 	delimiterRegex := `(?i)^\s*DELIMITER\s+`
@@ -285,23 +154,6 @@ func ExtractDelimiter(stmt string) (string, error) {
 		return matchList[index], nil
 	}
 	return "", errors.Errorf("cannot extract delimiter from %q", stmt)
-}
-
-func hasDelimiter(statement string) (bool, []base.Statement, error) {
-	// use splitTiDBMultiSQL to check if the statement has delimiter
-	t := tokenizer.NewTokenizer(statement)
-	list, err := t.SplitTiDBMultiSQL()
-	if err != nil {
-		return false, nil, errors.Errorf("failed to split multi sql: %v", err)
-	}
-
-	for _, sql := range list {
-		if IsDelimiter(sql.Text) {
-			return true, list, nil
-		}
-	}
-
-	return false, list, nil
 }
 
 var (
@@ -397,37 +249,4 @@ func TypeString(tp byte) string {
 	default:
 		return "unknown"
 	}
-}
-
-func tidbAddSemicolonIfNeeded(sql string) string {
-	lexer := parser.NewTiDBLexer(antlr.NewInputStream(sql))
-	lexerErrorListener := &base.ParseErrorListener{
-		Statement: sql,
-	}
-	lexer.RemoveErrorListeners()
-	lexer.AddErrorListener(lexerErrorListener)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	stream.Fill()
-	if lexerErrorListener.Err != nil {
-		// If the lexer fails, we cannot add semicolon.
-		return sql
-	}
-	tokens := stream.GetAllTokens()
-	for i := len(tokens) - 1; i >= 0; i-- {
-		if tokens[i].GetChannel() != antlr.TokenDefaultChannel || tokens[i].GetTokenType() == parser.TiDBParserEOF {
-			continue
-		}
-
-		// The last default channel token is a semicolon.
-		if tokens[i].GetTokenType() == parser.TiDBParserSEMICOLON_SYMBOL {
-			return sql
-		}
-
-		var result []string
-		result = append(result, stream.GetTextFromInterval(antlr.NewInterval(0, tokens[i].GetTokenIndex())))
-		result = append(result, ";")
-		result = append(result, stream.GetTextFromInterval(antlr.NewInterval(tokens[i].GetTokenIndex()+1, tokens[len(tokens)-1].GetTokenIndex())))
-		return strings.Join(result, "")
-	}
-	return sql
 }

@@ -15,7 +15,6 @@ import (
 func init() {
 	base.RegisterSplitterFunc(storepb.Engine_CLICKHOUSE, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_SQLITE, SplitSQL)
-	base.RegisterSplitterFunc(storepb.Engine_SPANNER, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_HIVE, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_DATABRICKS, SplitSQL)
 }
