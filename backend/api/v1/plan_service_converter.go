@@ -248,6 +248,8 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 		storeType = storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED
 	}
 
+	// Sheet can be empty when using Release-based workflow (SQL comes from release files).
+	// Plans can use either Sheet-based or Release-based approach, but not both.
 	var sheetSha256 string
 	if c.Sheet != "" {
 		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
@@ -271,6 +273,7 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 
 func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *storepb.PlanConfig_Spec_ExportDataConfig {
 	c := config.ExportDataConfig
+	// Sheet can be empty if not yet attached to the export data config.
 	var sheetSha256 string
 	if c.Sheet != "" {
 		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
