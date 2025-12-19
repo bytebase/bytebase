@@ -78,33 +78,3 @@ func ConvertTiDBParserErrorPositionToPosition(line, column int) *storepb.Positio
 		Column: int32(column),
 	}
 }
-
-func ConvertPGParserErrorCursorPosToPosition(cursorPos int, text string) *storepb.Position {
-	// PostgreSQL cursorPos is 1-based character (rune) position.
-	// Cursorpos points to the character WHERE the error is.
-	// We need to count characters BEFORE the error position.
-	if cursorPos >= 1 {
-		cursorPos--
-	}
-	line := 1 // Start at 1 for 1-based line numbering
-	column := 0
-	rText := []rune(text)
-	for i, r := range rText {
-		// Stop when we reach the error position
-		if i == cursorPos {
-			break
-		}
-		if r == '\n' {
-			line++
-			column = 0
-			continue
-		}
-		// Count characters (not bytes)
-		column++
-	}
-	// Convert from 0-based to 1-based column
-	return &storepb.Position{
-		Line:   int32(line),
-		Column: int32(column + 1),
-	}
-}

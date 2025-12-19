@@ -79,18 +79,6 @@ func GetProjectIDDatabaseGroupID(name string) (string, string, error) {
 	return tokens[0], tokens[1], nil
 }
 
-// GetSchemaTableName returns the schema and table names from a resource name.
-func GetSchemaTableName(name string) (string, string, error) {
-	tokens, err := GetNameParentTokens(name, SchemaNamePrefix, TableNamePrefix)
-	if err != nil {
-		return "", "", err
-	}
-	if tokens[0] == "-" {
-		tokens[0] = ""
-	}
-	return tokens[0], tokens[1], nil
-}
-
 // GetProjectIDWebhookID returns the project ID and webhook ID from a resource name.
 func GetProjectIDWebhookID(name string) (string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, WebhookIDPrefix)
@@ -98,19 +86,6 @@ func GetProjectIDWebhookID(name string) (string, string, error) {
 		return "", "", err
 	}
 	return tokens[0], tokens[1], nil
-}
-
-// GetUIDFromName returns the UID from a resource name.
-func GetUIDFromName(name, prefix string) (int, error) {
-	tokens, err := GetNameParentTokens(name, prefix)
-	if err != nil {
-		return 0, err
-	}
-	uid, err := strconv.Atoi(tokens[0])
-	if err != nil {
-		return 0, errors.Errorf("invalid ID %q", tokens[0])
-	}
-	return uid, nil
 }
 
 // TrimSuffixAndGetInstanceDatabaseID trims the suffix from the name and returns the instance ID and database ID.
@@ -178,11 +153,6 @@ func GetInstanceDatabaseChangelogUID(name string) (string, string, int64, error)
 	return tokens[0], tokens[1], changelogUID, nil
 }
 
-// GetUserID returns the user ID from a resource name.
-func GetUserID(name string) (int, error) {
-	return GetUIDFromName(name, UserNamePrefix)
-}
-
 // GetUserEmail returns the user email from a resource name.
 func GetUserEmail(name string) (string, error) {
 	tokens, err := GetNameParentTokens(name, UserNamePrefix)
@@ -238,19 +208,6 @@ func GetProjectIDIssueUIDIssueCommentUID(name string) (string, int, int, error) 
 		return "", 0, 0, errors.Errorf("invalid issue comment ID %q", tokens[2])
 	}
 	return tokens[0], issueUID, issueCommentUID, nil
-}
-
-// GetIssueID returns the issue ID from a resource name.
-func GetIssueID(name string) (int, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix)
-	if err != nil {
-		return 0, err
-	}
-	issueID, err := strconv.Atoi(tokens[1])
-	if err != nil {
-		return 0, errors.Errorf("invalid issue ID %q", tokens[1])
-	}
-	return issueID, nil
 }
 
 // GetProjectIDPlanID returns the project ID and plan ID from a resource name.

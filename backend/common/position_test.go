@@ -44,46 +44,6 @@ func TestConvertANTLRPositionToPosition(t *testing.T) {
 	}
 }
 
-func TestConvertPGParserErrorCursorPosToPosition(t *testing.T) {
-	testCases := []struct {
-		name           string
-		cursorPos      int
-		text           string
-		expectedLine   int32
-		expectedColumn int32
-	}{
-		{
-			name:           "ASCII single line",
-			cursorPos:      8,
-			text:           "SELECT * FROM t",
-			expectedLine:   1,
-			expectedColumn: 8,
-		},
-		{
-			name:           "multi-byte characters",
-			cursorPos:      8,
-			text:           "SELECT 你好 FROM t",
-			expectedLine:   1,
-			expectedColumn: 8, // Character-based (8th character is '你')
-		},
-		{
-			name:           "multi-line",
-			cursorPos:      20,
-			text:           "SELECT * FROM t\nWHERE x = 1",
-			expectedLine:   2,
-			expectedColumn: 4, // 4th character on line 2
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			pos := ConvertPGParserErrorCursorPosToPosition(tc.cursorPos, tc.text)
-			require.Equal(t, tc.expectedLine, pos.Line, "line mismatch")
-			require.Equal(t, tc.expectedColumn, pos.Column, "column mismatch")
-		})
-	}
-}
-
 func TestConvertTiDBParserErrorPositionToPosition(t *testing.T) {
 	testCases := []struct {
 		name         string

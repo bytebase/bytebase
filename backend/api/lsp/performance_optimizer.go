@@ -223,20 +223,6 @@ func (c *ContentCache) Get(uri string) (*CachedContent, bool) {
 	return content, exists
 }
 
-// Invalidate removes a specific entry from cache
-func (c *ContentCache) Invalidate(uri string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	delete(c.cache, uri)
-	for i, u := range c.order {
-		if u == uri {
-			c.order = append(c.order[:i], c.order[i+1:]...)
-			break
-		}
-	}
-}
-
 // Set stores content in cache with LRU eviction
 func (c *ContentCache) Set(uri string, content *CachedContent) {
 	c.mu.Lock()
@@ -266,75 +252,4 @@ func (c *ContentCache) Set(uri string, content *CachedContent) {
 	}
 
 	c.cache[uri] = content
-}
-
-// PerformanceMonitor tracks LSP performance metrics
-type PerformanceMonitor struct {
-	mu               sync.RWMutex
-	requestCounts    map[Method]int64
-	requestDurations map[Method]time.Duration
-	lastReset        time.Time
-}
-
-// NewPerformanceMonitor creates a new performance monitor
-func NewPerformanceMonitor() *PerformanceMonitor {
-	return &PerformanceMonitor{
-		requestCounts:    make(map[Method]int64),
-		requestDurations: make(map[Method]time.Duration),
-		lastReset:        time.Now(),
-	}
-}
-
-// RecordRequest records a request for performance monitoring
-func (p *PerformanceMonitor) RecordRequest(method Method, duration time.Duration) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	p.requestCounts[method]++
-	p.requestDurations[method] += duration
-}
-
-// GetStats returns current performance statistics
-func (p *PerformanceMonitor) GetStats() map[Method]struct {
-	Count       int64
-	TotalTime   time.Duration
-	AverageTime time.Duration
-} {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	stats := make(map[Method]struct {
-		Count       int64
-		TotalTime   time.Duration
-		AverageTime time.Duration
-	})
-
-	for method, count := range p.requestCounts {
-		totalTime := p.requestDurations[method]
-		avgTime := time.Duration(0)
-		if count > 0 {
-			avgTime = totalTime / time.Duration(count)
-		}
-		stats[method] = struct {
-			Count       int64
-			TotalTime   time.Duration
-			AverageTime time.Duration
-		}{
-			Count:       count,
-			TotalTime:   totalTime,
-			AverageTime: avgTime,
-		}
-	}
-
-	return stats
-}
-
-// Reset clears all performance statistics
-func (p *PerformanceMonitor) Reset() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	p.requestCounts = make(map[Method]int64)
-	p.requestDurations = make(map[Method]time.Duration)
-	p.lastReset = time.Now()
 }

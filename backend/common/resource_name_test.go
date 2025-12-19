@@ -15,20 +15,3 @@ func TestGetInstanceDatabaseID(t *testing.T) {
 	_, err = GetInstanceID("instances/i2/databases/d3")
 	require.Error(t, err)
 }
-
-func TestGetSchemaTableName(t *testing.T) {
-	schema, table, err := GetSchemaTableName("schemas/a/tables/b")
-	require.NoError(t, err)
-	require.Equal(t, "a", schema)
-	require.Equal(t, "b", table)
-
-	schema, table, err = GetSchemaTableName("schemas//tables/b")
-	require.NoError(t, err)
-	require.Equal(t, "", schema)
-	require.Equal(t, "b", table)
-
-	schema, table, err = GetSchemaTableName("schemas/-/tables/b")
-	require.NoError(t, err)
-	require.Equal(t, "", schema)
-	require.Equal(t, "b", table)
-}
