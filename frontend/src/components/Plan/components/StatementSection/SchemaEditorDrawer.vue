@@ -11,6 +11,7 @@
             {{ $t("schema-editor.template-database") }}:
           </span>
           <NSelect
+            v-model:show="showSelect"
             :value="state.selectedDatabaseName"
             :options="databaseOptions"
             :disabled="state.isPreparingMetadata"
@@ -19,6 +20,7 @@
           >
           <template #action>
             <NButton
+              v-if="DEFAULT_VISIBLE_TARGETS * (state.databaseSelectorPageIndex + 1) < databaseNames.length"
               class="w-full!"
               quaternary
               :loading="state.isLoadingNextPage"
@@ -60,7 +62,7 @@
 import { watchDebounced } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { NButton, NSelect } from "naive-ui";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import SchemaEditorLite, {
   type EditTarget,
   generateDiffDDL,
@@ -95,6 +97,7 @@ const show = computed({
 const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
 const dbSchemaStore = useDBSchemaV1Store();
 const databaseStore = useDatabaseV1Store();
+const showSelect = ref(false);
 
 const state = reactive({
   isPreparingMetadata: false,
@@ -107,6 +110,7 @@ const state = reactive({
 const onNextPage = () => {
   state.isLoadingNextPage = true;
   state.databaseSelectorPageIndex++;
+  nextTick(() => (showSelect.value = true));
 };
 
 watchDebounced(
@@ -119,9 +123,6 @@ watchDebounced(
           DEFAULT_VISIBLE_TARGETS * (index + 1)
         )
       );
-    } catch {
-      // fallback to previous page.
-      state.databaseSelectorPageIndex = Math.max(0, index - 1);
     } finally {
       state.isLoadingNextPage = false;
     }

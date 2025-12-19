@@ -116,7 +116,7 @@ const isPreparingSchemaVersionOptions = ref(false);
 
 const handleEnvironmentSelect = async (name: string | undefined) => {
   if (name !== state.environmentName) {
-    state.databaseName = undefined;
+    state.databaseName = "";
   }
   state.environmentName = name;
 };

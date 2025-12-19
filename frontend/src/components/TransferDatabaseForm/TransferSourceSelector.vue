@@ -29,7 +29,7 @@
         <InstanceSelect
           class="w-40!"
           :project-name="sourceProjectName"
-          :instance="instance?.name"
+          :instance="instance?.name ?? ''"
           @update:instance-name="changeInstanceFilter"
         />
         <SearchBox
@@ -91,6 +91,7 @@ const changeEnvironmentFilter = (name: string | undefined) => {
     "update:environment",
     useEnvironmentV1Store().getEnvironmentByName(name)
   );
+  emit("update:instance", undefined);
 };
 
 const changeInstanceFilter = (name: string | undefined) => {

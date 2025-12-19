@@ -9,6 +9,7 @@ import {
   isValidEnvironmentName,
   isValidInstanceName,
   isValidProjectName,
+  unknownEnvironment,
   unknownInstance,
 } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
@@ -58,7 +59,9 @@ const getListInstanceFilter = (params: InstanceFilter) => {
   if (isValidProjectName(params.project)) {
     list.push(`project == "${params.project}"`);
   }
-  if (isValidEnvironmentName(params.environment)) {
+  if (params.environment === unknownEnvironment().name) {
+    list.push(`environment == ""`);
+  } else if (isValidEnvironmentName(params.environment)) {
     list.push(`environment == "${params.environment}"`);
   }
   if (params.host) {
