@@ -111,14 +111,10 @@ func convertToPlanSpecCreateDatabaseConfig(config *storepb.PlanConfig_Spec_Creat
 
 func convertToPlanSpecChangeDatabaseConfig(projectID string, config *storepb.PlanConfig_Spec_ChangeDatabaseConfig) *v1pb.Plan_Spec_ChangeDatabaseConfig {
 	c := config.ChangeDatabaseConfig
-	var sheet string
-	if c.SheetSha256 != "" {
-		sheet = common.FormatSheet(projectID, c.SheetSha256)
-	}
 	return &v1pb.Plan_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 			Targets:           c.Targets,
-			Sheet:             sheet,
+			Sheet:             common.FormatSheet(projectID, c.SheetSha256),
 			Release:           c.Release,
 			Type:              convertToPlanSpecChangeDatabaseConfigType(c.Type),
 			GhostFlags:        c.GhostFlags,
@@ -143,14 +139,10 @@ func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDataba
 
 func convertToPlanSpecExportDataConfig(projectID string, config *storepb.PlanConfig_Spec_ExportDataConfig) *v1pb.Plan_Spec_ExportDataConfig {
 	c := config.ExportDataConfig
-	var sheet string
-	if c.SheetSha256 != "" {
-		sheet = common.FormatSheet(projectID, c.SheetSha256)
-	}
 	return &v1pb.Plan_Spec_ExportDataConfig{
 		ExportDataConfig: &v1pb.Plan_ExportDataConfig{
 			Targets:  c.Targets,
-			Sheet:    sheet,
+			Sheet:    common.FormatSheet(projectID, c.SheetSha256),
 			Format:   convertExportFormat(c.Format),
 			Password: c.Password,
 		},
@@ -256,13 +248,9 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 		storeType = storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED
 	}
 
-	var sheetSha256 string
-	if c.Sheet != "" {
-		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
-		if err != nil {
-			return nil
-		}
-		sheetSha256 = sha256
+	_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
+	if err != nil {
+		return nil
 	}
 	return &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
@@ -279,13 +267,9 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 
 func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *storepb.PlanConfig_Spec_ExportDataConfig {
 	c := config.ExportDataConfig
-	var sheetSha256 string
-	if c.Sheet != "" {
-		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
-		if err != nil {
-			return nil
-		}
-		sheetSha256 = sha256
+	_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
+	if err != nil {
+		return nil
 	}
 	return &storepb.PlanConfig_Spec_ExportDataConfig{
 		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{

@@ -373,21 +373,6 @@ func GetRoleID(name string) (string, error) {
 	return tokens[0], nil
 }
 
-// GetProjectResourceIDSheetUID returns the project ID and sheet UID from a resource name.
-//
-// Deprecated: Use GetProjectResourceIDSheetSha256 instead.
-func GetProjectResourceIDSheetUID(name string) (string, int, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, SheetIDPrefix)
-	if err != nil {
-		return "", 0, err
-	}
-	sheetUID, err := strconv.Atoi(tokens[1])
-	if err != nil {
-		return "", 0, errors.Wrapf(err, "failed to convert sheet uid %q to int", tokens[1])
-	}
-	return tokens[0], sheetUID, nil
-}
-
 // GetProjectResourceIDSheetSha256 returns the project ID and sheet SHA256 from a resource name.
 func GetProjectResourceIDSheetSha256(name string) (string, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, SheetIDPrefix)
