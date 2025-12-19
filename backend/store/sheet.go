@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -24,9 +23,9 @@ type SheetMessage struct {
 	Size int64
 }
 
-// GetSheetMetadata gets a sheet with truncated statement (max 2MB).
-// Use this when you need to check sheet.Size or other metadata before processing.
+// GetSheetMetadata gets a sheet by SHA256 hash with truncated statement (max 2MB).
 // Statement field will be truncated to MaxSheetSize (2MB).
+// Results are cached by SHA256 hex string.
 func (s *Store) GetSheetMetadata(ctx context.Context, sha256Hex string) (*SheetMessage, error) {
 	if v, ok := s.sheetMetadataCache.Get(sha256Hex); ok && s.enableCache {
 		return v, nil
@@ -41,9 +40,9 @@ func (s *Store) GetSheetMetadata(ctx context.Context, sha256Hex string) (*SheetM
 	return sheet, nil
 }
 
-// GetSheetFull gets a sheet with the complete statement.
-// Use this when you need the full statement for execution or processing.
+// GetSheetFull gets a sheet by SHA256 hash with the complete statement.
 // Statement field contains the complete content regardless of size.
+// Results are cached by SHA256 hex string.
 func (s *Store) GetSheetFull(ctx context.Context, sha256Hex string) (*SheetMessage, error) {
 	if v, ok := s.sheetFullCache.Get(sha256Hex); ok && s.enableCache {
 		return v, nil
@@ -116,82 +115,21 @@ func (s *Store) getSheet(ctx context.Context, sha256Hex string, loadFull bool) (
 	return sheet, nil
 }
 
-// CreateSheets creates new sheets.
-// You should not use this function directly to create sheets.
-// Use CreateSheets in component/sheet instead.
-func (s *Store) CreateSheets(ctx context.Context, projectID string, _ string, creates ...*SheetMessage) ([]*SheetMessage, error) {
-	var names []string
+// CreateSheets creates sheet blobs using content-addressed storage.
+// Each sheet is identified by the SHA256 hash of its statement.
+// Duplicate statements share the same blob (ON CONFLICT DO NOTHING).
+func (s *Store) CreateSheets(ctx context.Context, creates ...*SheetMessage) ([]*SheetMessage, error) {
 	var statements []string
 	var sha256s [][]byte
 
 	for _, c := range creates {
-		c.ProjectID = projectID
-		c.Creator = SystemBotUser.Email
-		names = append(names, "")
 		statements = append(statements, c.Statement)
 		h := sha256.Sum256([]byte(c.Statement))
-		c.Sha256 = h[:]
-		sha256s = append(sha256s, c.Sha256)
+		c.Sha256 = hex.EncodeToString(h[:])
+		sha256s = append(sha256s, h[:])
+		c.Size = int64(len(c.Statement))
 	}
 
-	if err := s.batchCreateSheetBlob(ctx, sha256s, statements); err != nil {
-		return nil, errors.Wrapf(err, "failed to create sheet blobs")
-	}
-
-	q := qb.Q().Space(`
-		INSERT INTO sheet (
-			creator,
-			project,
-			name,
-			sha256
-		) SELECT
-			?,
-			?,
-			unnest(CAST(? AS TEXT[])),
-			unnest(CAST(? AS BYTEA[]))
-		RETURNING id, created_at
-	`, SystemBotUser.Email, projectID, names, sha256s)
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query")
-	}
-	defer rows.Close()
-
-	for i := 0; rows.Next(); i++ {
-		if err := rows.Scan(
-			&creates[i].UID,
-			&creates[i].CreatedAt,
-		); err != nil {
-			return nil, errors.Wrapf(err, "failed to scan")
-		}
-
-		creates[i].Size = int64(len(creates[i].Statement))
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "rows err")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
-	}
-
-	return creates, nil
-}
-
-func (s *Store) batchCreateSheetBlob(ctx context.Context, sha256s [][]byte, contents []string) error {
 	q := qb.Q().Space(`
 		INSERT INTO sheet_blob (
 			sha256,
@@ -200,16 +138,16 @@ func (s *Store) batchCreateSheetBlob(ctx context.Context, sha256s [][]byte, cont
 		 	unnest(CAST(? AS BYTEA[])),
 			unnest(CAST(? AS TEXT[]))
 		ON CONFLICT DO NOTHING
-	`, sha256s, contents)
+	`, sha256s, statements)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrapf(err, "failed to exec")
+		return nil, errors.Wrapf(err, "failed to exec")
 	}
 
-	return nil
+	return creates, nil
 }
