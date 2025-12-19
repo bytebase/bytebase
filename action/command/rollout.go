@@ -61,6 +61,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to create client")
 		}
+		defer client.Close()
 
 		// Check version compatibility
 		CheckVersionCompatibility(w, client, args.Version)

@@ -57,6 +57,7 @@ func runCheck(w *world.World) func(*cobra.Command, []string) error {
 		if err != nil {
 			return err
 		}
+		defer client.Close()
 
 		// Check version compatibility
 		CheckVersionCompatibility(w, client, args.Version)
