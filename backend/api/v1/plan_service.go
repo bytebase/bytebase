@@ -600,7 +600,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 								}
 								oldSheetName = config.ChangeDatabaseConfig.Sheet
 							}
-							sheetProjectID, newSheetSha256, err := common.GetProjectResourceIDSheetSha256(oldSheetName)
+							_, newSheetSha256, err := common.GetProjectResourceIDSheetSha256(oldSheetName)
 							if err != nil {
 								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet sha256 from %q, error: %v", oldSheetName, err))
 							}
@@ -612,8 +612,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 							if err != nil {
 								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet %q: %v", oldSheetName, err))
 							}
-							// Sheets are now project-agnostic, so we don't check projectID
-							_ = sheetProjectID
 							doUpdate = true
 							taskPatch.SheetSha256 = &newSheetSha256
 
