@@ -8,9 +8,9 @@
           :link="false"
         />
 
-        <heroicons:chevron-right
+        <ChevronRightIcon
           v-if="showProject && showArrow"
-          class="text-control-light"
+          class="w-3"
         />
 
         <div
@@ -29,9 +29,9 @@
           />
         </div>
 
-        <heroicons:chevron-right
+        <ChevronRightIcon
           v-if="(showInstance || showEngineIcon) && showArrow"
-          class="text-control-light"
+          class="w-3"
         />
 
         <div class="flex flex-row items-center gap-x-1">
@@ -62,6 +62,7 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronRightIcon } from "lucide-vue-next";
 import { NPopover } from "naive-ui";
 import type { ComposedDatabase } from "@/types";
 import DatabaseV1Name from "./DatabaseV1Name.vue";

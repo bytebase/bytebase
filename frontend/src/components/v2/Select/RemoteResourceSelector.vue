@@ -48,6 +48,7 @@ import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed, nextTick, type Ref, ref, type VNodeChild, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import EllipsisText from "@/components/EllipsisText.vue";
+import { HighlightLabelText } from "@/components/v2";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import { getDefaultPagination } from "@/utils";
 
@@ -69,7 +70,7 @@ const props = withDefaults(
     showResourceName?: boolean;
     resourceNameClass?: string;
     additionalData?: T[];
-    customLabel?: (resource: T) => VNodeChild;
+    customLabel?: (resource: T, keyword: string) => VNodeChild;
     filter?: (resource: T) => boolean;
     search?: (params: {
       search: string;
@@ -179,13 +180,20 @@ const renderLabel = (option: SelectOption, selected: boolean) => {
   const { resource, label } = option as ResourceSelectOption;
   const node = (
     <div class="py-1">
-      {props.customLabel ? props.customLabel(resource) : label}
+      {props.customLabel ? (
+        props.customLabel(resource, searchText.value)
+      ) : (
+        <HighlightLabelText keyword={searchText.value} text={label} />
+      )}
       {props.showResourceName && (
         <div>
           <EllipsisText
             class={`opacity-60 textinfolabel ${props.resourceNameClass}`}
           >
-            {resource.name}
+            <HighlightLabelText
+              keyword={searchText.value}
+              text={resource.name}
+            />
           </EllipsisText>
         </div>
       )}
@@ -211,7 +219,7 @@ const renderTag = ({
   handleClose: () => void;
 }) => {
   const { resource, label } = option as ResourceSelectOption;
-  const node = props.customLabel ? props.customLabel(resource) : label;
+  const node = props.customLabel ? props.customLabel(resource, "") : label;
   if (props.multiple) {
     return (
       <NTag size={props.size} closable={!props.disabled} onClose={handleClose}>

@@ -1,6 +1,5 @@
 <template>
   <RemoteResourceSelector
-    ref="databaseSelectRef"
     v-bind="$attrs"
     class="bb-database-select"
     :multiple="multiple"
@@ -16,16 +15,14 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
-import { h } from "vue";
+import { RichDatabaseName } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { workspaceNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedDatabase } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import { type Engine } from "@/types/proto-es/v1/common_pb";
-import { instanceV1Name, supportedEngineV1List } from "@/utils";
-import { InstanceV1EngineIcon } from "../Model";
 import RemoteResourceSelector from "./RemoteResourceSelector.vue";
 
 const props = withDefaults(
@@ -38,16 +35,19 @@ const props = withDefaults(
     filter?: (database: ComposedDatabase) => boolean;
     multiple?: boolean;
     clearable?: boolean;
+    showInstance?: boolean;
   }>(),
   {
     databaseName: undefined,
     databaseNames: undefined,
     environmentName: undefined,
     projectName: undefined,
-    allowedEngineTypeList: () => supportedEngineV1List(),
+    // empty equals no limit.
+    allowedEngineTypeList: () => [],
     filter: undefined,
     multiple: false,
     clearable: false,
+    showInstance: true,
   }
 );
 
@@ -101,33 +101,15 @@ const getOption = (database: ComposedDatabase) => ({
   label: database.databaseName,
 });
 
-const renderLabel = (database: ComposedDatabase) => {
-  const children = [h("div", {}, [database.databaseName])];
-  if (isValidDatabaseName(database.name)) {
-    // prefix engine icon
-    children.unshift(
-      h(InstanceV1EngineIcon, {
-        class: "mr-1",
-        instance: database.instanceResource,
-      })
-    );
-    // suffix engine name
-    children.push(
-      h(
-        "div",
-        {
-          class: "text-xs opacity-60 ml-1",
-        },
-        [`(${instanceV1Name(database.instanceResource)})`]
-      )
-    );
-  }
-  return h(
-    "div",
-    {
-      class: "w-full flex flex-row justify-start items-center truncate",
-    },
-    children
+const renderLabel = (database: ComposedDatabase, keyword: string) => {
+  return (
+    <RichDatabaseName
+      database={database}
+      keyword={keyword}
+      showProject={false}
+      showInstance={props.showInstance}
+      showArrow={props.showInstance}
+    />
   );
 };
 </script>

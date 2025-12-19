@@ -17,6 +17,7 @@
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
+import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import { type UserFilter, useUserStore } from "@/store";
 import { allUsersUser, isValidUserName } from "@/types";
@@ -120,17 +121,21 @@ const handleSearch = async (params: {
   };
 };
 
-const renderLabel = (user: User) => {
+const renderLabel = (user: User, keyword: string) => {
   return (
     <UserNameCell
       user={user}
       allowEdit={false}
+      link={false}
       size="small"
+      keyword={keyword}
       onClickUser={() => {}}
     >
       {{
         suffix: () => (
-          <span class="textinfolabel truncate">{`(${user.email})`}</span>
+          <span class="textinfolabel truncate">
+            (<HighlightLabelText keyword={keyword} text={user.email} />)
+          </span>
         ),
         footer: () => <div />,
       }}

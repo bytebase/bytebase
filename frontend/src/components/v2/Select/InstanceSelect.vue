@@ -12,11 +12,12 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
-import { h } from "vue";
+import { ChevronRightIcon } from "lucide-vue-next";
 import { useI18n } from "vue-i18n";
-import { useInstanceV1Store } from "@/store";
+import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
+import { useEnvironmentV1Store, useInstanceV1Store } from "@/store";
 import {
   isValidInstanceName,
   UNKNOWN_INSTANCE_NAME,
@@ -25,7 +26,6 @@ import {
 import { type Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { supportedEngineV1List } from "@/utils";
-import { InstanceV1EngineIcon } from "../Model/Instance";
 import RemoteResourceSelector from "./RemoteResourceSelector.vue";
 
 const props = withDefaults(
@@ -48,6 +48,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const instanceStore = useInstanceV1Store();
+const environmentStore = useEnvironmentV1Store();
 
 const additionalData = computedAsync(async () => {
   const data = [];
@@ -90,21 +91,29 @@ const handleSearch = async (params: {
   };
 };
 
-const renderLabel = (instance: Instance) => {
-  if (instance.name === UNKNOWN_INSTANCE_NAME) {
-    return t("instance.all");
-  }
-  const icon = h(InstanceV1EngineIcon, {
-    instance,
-    class: "bb-instance-select--engine-icon shrink-0",
-  });
-  const text = h("span", {}, instance.title);
-  return h(
-    "div",
-    {
-      class: "flex items-center gap-x-2",
-    },
-    [icon, text]
+const renderLabel = (instance: Instance, keyword: string) => {
+  const isUnknown = instance.name === UNKNOWN_INSTANCE_NAME;
+  const environment = environmentStore.getEnvironmentByName(
+    instance.environment ?? ""
+  );
+
+  return (
+    <div class="flex items-center gap-x-1">
+      {isUnknown ? null : (
+        <EnvironmentV1Name
+          environment={environment}
+          plain={true}
+          link={false}
+        />
+      )}
+      {isUnknown ? null : <ChevronRightIcon class="w-3" />}
+      <InstanceV1Name
+        instance={instance}
+        keyword={keyword}
+        plain={true}
+        link={false}
+      />
+    </div>
   );
 };
 

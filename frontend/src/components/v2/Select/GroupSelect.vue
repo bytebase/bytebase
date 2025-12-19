@@ -87,13 +87,14 @@ const getOption = (group: Group) => ({
   label: group.title,
 });
 
-const renderLabel = (group: Group) => {
+const renderLabel = (group: Group, keyword: string) => {
   return (
     <GroupNameCell
       showEmail={false}
       group={group}
       showIcon={false}
       link={false}
+      keyword={keyword}
     />
   );
 };

@@ -14,9 +14,17 @@
             }"
             class="normal-link font-medium"
           >
-            {{ group.title }}
+            <HighlightLabelText
+              :text="group.title"
+              :keyword="keyword"
+            />
           </router-link>
-          <span v-else class="font-medium">{{ group.title }}</span>
+          <HighlightLabelText
+            v-else
+            class="font-medium"
+            :text="group.title"
+            :keyword="keyword"
+          />
         </div>
         <NTag v-if="deleted" size="small" round type="error">
           {{ $t("common.deleted") }}
@@ -31,9 +39,12 @@
         </span>
         <UserRolesCell v-if="role" :role="role" />
       </div>
-      <span v-if="showEmail && group.email" class="textinfolabel text-sm">
-        {{ group.email }}
-      </span>
+      <HighlightLabelText
+        v-if="showEmail && group.email"
+        class="textinfolabel text-sm"
+        :text="group.email"
+        :keyword="keyword"
+      />
     </div>
   </div>
 </template>
@@ -44,6 +55,7 @@ import { NTag } from "naive-ui";
 import { computed } from "vue";
 import UserRolesCell from "@/components/Member/MemberDataTable/cells/UserRolesCell.vue";
 import type { MemberRole } from "@/components/Member/types";
+import { HighlightLabelText } from "@/components/v2";
 import { WORKSPACE_ROUTE_USERS } from "@/router/dashboard/workspaceRoutes";
 import { extractUserId, useCurrentUserV1 } from "@/store";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
@@ -57,6 +69,7 @@ const props = withDefaults(
     showEmail?: boolean;
     link?: boolean;
     deleted?: boolean;
+    keyword?: string;
   }>(),
   {
     showIcon: true,
@@ -64,6 +77,7 @@ const props = withDefaults(
     role: undefined,
     link: true,
     deleted: false,
+    keyword: "",
   }
 );
 

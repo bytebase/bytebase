@@ -151,12 +151,13 @@ const getOption = (project: Project) => ({
         : project.title,
 });
 
-const renderLabel = (project: Project) => {
+const renderLabel = (project: Project, keyword: string) => {
   if (!project) return null;
   return (
     <ProjectNameCell
       project={project}
       mode="ALL_SHORT"
+      keyword={keyword}
       suffix={props.renderSuffix(project.name)}
     >
       {{
