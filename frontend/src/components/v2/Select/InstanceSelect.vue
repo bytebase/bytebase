@@ -42,7 +42,7 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "update:instance-name", value: string | undefined): void;
 }>();
 

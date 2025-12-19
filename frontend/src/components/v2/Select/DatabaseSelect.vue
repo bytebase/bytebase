@@ -51,7 +51,7 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "update:database-name", value: string | undefined): void;
   (event: "update:database-names", value: string[]): void;
 }>();

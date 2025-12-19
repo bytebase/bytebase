@@ -62,7 +62,7 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "update:project-name", name: string | undefined): void;
   (event: "update:project-names", names: string[]): void;
 }>();
