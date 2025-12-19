@@ -9,7 +9,7 @@ import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { extractProjectResourceName, setSheetStatement } from "@/utils";
-import { createEmptyLocalSheet, databaseEngineForSpec } from ".";
+import { createEmptyLocalSheet } from ".";
 
 export const projectOfPlan = (plan: Plan): Project => {
   const project = `projects/${extractProjectResourceName(plan.name)}`;

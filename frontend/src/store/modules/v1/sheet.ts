@@ -5,7 +5,6 @@ import { sheetServiceClientConnect } from "@/grpcweb";
 import { useCache } from "@/store/cache";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_ID } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   CreateSheetRequestSchema,

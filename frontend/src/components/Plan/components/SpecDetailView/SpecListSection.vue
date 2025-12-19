@@ -84,7 +84,7 @@ import {
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { extractSheetUID } from "@/utils";
-import { databaseEngineForSpec, getLocalSheetByName } from "../../logic";
+import { getLocalSheetByName } from "../../logic";
 import { usePlanContext } from "../../logic/context";
 import { useEditorState } from "../../logic/useEditorState";
 import { getSpecTitle } from "../../logic/utils";

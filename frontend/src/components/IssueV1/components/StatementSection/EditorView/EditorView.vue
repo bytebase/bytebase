@@ -176,7 +176,7 @@
 <script setup lang="ts">
 import { create } from "@bufbuild/protobuf";
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, head, isEmpty } from "lodash-es";
+import { cloneDeep, isEmpty } from "lodash-es";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { computed, reactive, ref, toRef, watch } from "vue";
@@ -191,10 +191,7 @@ import {
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { extensionNameOfLanguage } from "@/components/MonacoEditor/utils";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
-import {
-  createEmptyLocalSheet,
-  databaseEngineForSpec,
-} from "@/components/Plan";
+import { createEmptyLocalSheet } from "@/components/Plan";
 import RequiredStar from "@/components/RequiredStar.vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import { planServiceClientConnect } from "@/grpcweb";

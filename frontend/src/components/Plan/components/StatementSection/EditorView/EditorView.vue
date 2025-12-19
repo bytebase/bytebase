@@ -205,7 +205,6 @@ import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { ErrorList } from "@/components/Plan/components/common";
 import {
   createEmptyLocalSheet,
-  databaseEngineForSpec,
   databaseForSpec,
   planCheckRunListForSpec,
   usePlanContext,

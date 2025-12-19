@@ -30,7 +30,6 @@ import {
   useSpecsValidation,
 } from "@/components/Plan/components/common";
 import {
-  databaseEngineForSpec,
   getLocalSheetByName,
   usePlanContext,
 } from "@/components/Plan/logic";

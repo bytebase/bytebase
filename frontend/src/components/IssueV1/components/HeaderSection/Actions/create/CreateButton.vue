@@ -58,11 +58,7 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import {
-  databaseEngineForSpec,
-  getLocalSheetByName,
-  isValidSpec,
-} from "@/components/Plan";
+import { getLocalSheetByName, isValidSpec } from "@/components/Plan";
 import { getSpecChangeType } from "@/components/Plan/components/SQLCheckSection/common";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { SQLCheckPanel } from "@/components/SQLCheck";
