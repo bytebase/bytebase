@@ -29,10 +29,7 @@ import {
   ErrorList,
   useSpecsValidation,
 } from "@/components/Plan/components/common";
-import {
-  getLocalSheetByName,
-  usePlanContext,
-} from "@/components/Plan/logic";
+import { getLocalSheetByName, usePlanContext } from "@/components/Plan/logic";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,
