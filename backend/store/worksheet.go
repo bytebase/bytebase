@@ -190,11 +190,6 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 
 // CreateWorkSheet creates a new sheet.
 func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (*WorkSheetMessage, error) {
-	payload, err := protojson.Marshal(&storepb.SheetPayload{})
-	if err != nil {
-		return nil, err
-	}
-
 	q := qb.Q().Space(`
 		INSERT INTO worksheet (
 			creator,
@@ -206,9 +201,9 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 			visibility,
 			payload
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, '{}')
 		RETURNING id, created_at, updated_at, OCTET_LENGTH(statement)
-	`, create.Creator, create.ProjectID, create.InstanceID, create.DatabaseName, create.Title, create.Statement, create.Visibility, payload)
+	`, create.Creator, create.ProjectID, create.InstanceID, create.DatabaseName, create.Title, create.Statement, create.Visibility)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

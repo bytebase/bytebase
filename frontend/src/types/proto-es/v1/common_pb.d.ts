@@ -60,20 +60,22 @@ export declare type Position = Message<"bytebase.v1.Position"> & {
 export declare const PositionSchema: GenMessage<Position>;
 
 /**
- * Range of positions in text or sequence.
+ * Range represents a span within a text or sequence.
+ * Whether the indices are byte offsets or character indices depends on the context.
+ * Check the documentation of the field using Range for specific semantics.
  *
  * @generated from message bytebase.v1.Range
  */
 export declare type Range = Message<"bytebase.v1.Range"> & {
   /**
-   * Start position (inclusive).
+   * Start index (inclusive).
    *
    * @generated from field: int32 start = 1;
    */
   start: number;
 
   /**
-   * End position (exclusive).
+   * End index (exclusive).
    *
    * @generated from field: int32 end = 2;
    */

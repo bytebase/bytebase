@@ -9,11 +9,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // SheetMessage is the message for a sheet.
@@ -24,7 +22,6 @@ type SheetMessage struct {
 
 	Title     string
 	Statement string
-	Payload   *storepb.SheetPayload
 
 	// Sha256 is the Sha256 hash of the statement.
 	Sha256 []byte
@@ -89,7 +86,6 @@ func (s *Store) getSheet(ctx context.Context, id int, loadFull bool) (*SheetMess
 			sheet.name,
 			%s,
 			sheet.sha256,
-			sheet.payload,
 			OCTET_LENGTH(sheet_blob.content)
 		FROM sheet
 		LEFT JOIN sheet_blob ON sheet.sha256 = sheet_blob.sha256
@@ -115,7 +111,6 @@ func (s *Store) getSheet(ctx context.Context, id int, loadFull bool) (*SheetMess
 	var sheet *SheetMessage
 	if rows.Next() {
 		sheet = &SheetMessage{}
-		var payload []byte
 		if err := rows.Scan(
 			&sheet.UID,
 			&sheet.Creator,
@@ -124,16 +119,10 @@ func (s *Store) getSheet(ctx context.Context, id int, loadFull bool) (*SheetMess
 			&sheet.Title,
 			&sheet.Statement,
 			&sheet.Sha256,
-			&payload,
 			&sheet.Size,
 		); err != nil {
 			return nil, err
 		}
-		sheetPayload := &storepb.SheetPayload{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
-			return nil, err
-		}
-		sheet.Payload = sheetPayload
 	}
 
 	if err := rows.Err(); err != nil {
@@ -157,7 +146,6 @@ func (s *Store) CreateSheets(ctx context.Context, projectID string, creator stri
 	var names []string
 	var statements []string
 	var sha256s [][]byte
-	var payloads [][]byte
 
 	for _, c := range creates {
 		c.ProjectID = projectID
@@ -167,14 +155,6 @@ func (s *Store) CreateSheets(ctx context.Context, projectID string, creator stri
 		h := sha256.Sum256([]byte(c.Statement))
 		c.Sha256 = h[:]
 		sha256s = append(sha256s, c.Sha256)
-		if c.Payload == nil {
-			c.Payload = &storepb.SheetPayload{}
-		}
-		payload, err := protojson.Marshal(c.Payload)
-		if err != nil {
-			return nil, err
-		}
-		payloads = append(payloads, payload)
 	}
 
 	if err := s.batchCreateSheetBlob(ctx, sha256s, statements); err != nil {
@@ -186,16 +166,14 @@ func (s *Store) CreateSheets(ctx context.Context, projectID string, creator stri
 			creator,
 			project,
 			name,
-			sha256,
-			payload
+			sha256
 		) SELECT
 			?,
 			?,
 			unnest(CAST(? AS TEXT[])),
-			unnest(CAST(? AS BYTEA[])),
-			unnest(CAST(? AS JSONB[]))
+			unnest(CAST(? AS BYTEA[]))
 		RETURNING id, created_at
-	`, creator, projectID, names, sha256s, payloads)
+	`, creator, projectID, names, sha256s)
 
 	query, args, err := q.ToSQL()
 	if err != nil {

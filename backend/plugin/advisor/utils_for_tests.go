@@ -179,7 +179,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 	err = yaml.Unmarshal(byteValue, &tests)
 	require.NoError(t, err, rule.Type)
 
-	sm := sheet.NewManager(nil)
+	sm := sheet.NewManager()
 	for i, tc := range tests {
 		// Set metadata and database-specific settings based on engine type
 		var schemaMetadata *storepb.DatabaseSchemaMetadata

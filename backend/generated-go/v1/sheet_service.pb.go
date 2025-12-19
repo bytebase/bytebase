@@ -250,9 +250,7 @@ type Sheet struct {
 	// set the `raw` to true in GetSheet request to retrieve the full content.
 	Content []byte `protobuf:"bytes,5,opt,name=content,proto3" json:"content,omitempty"`
 	// content_size is the full size of the content, may not match the size of the `content` field.
-	ContentSize int64 `protobuf:"varint,6,opt,name=content_size,json=contentSize,proto3" json:"content_size,omitempty"`
-	// The SQL dialect.
-	Engine        Engine `protobuf:"varint,8,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	ContentSize   int64 `protobuf:"varint,6,opt,name=content_size,json=contentSize,proto3" json:"content_size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -329,18 +327,11 @@ func (x *Sheet) GetContentSize() int64 {
 	return 0
 }
 
-func (x *Sheet) GetEngine() Engine {
-	if x != nil {
-		return x.Engine
-	}
-	return Engine_ENGINE_UNSPECIFIED
-}
-
 var File_v1_sheet_service_proto protoreflect.FileDescriptor
 
 const file_v1_sheet_service_proto_rawDesc = "" +
 	"\n" +
-	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"y\n" +
+	"\x16v1/sheet_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"y\n" +
 	"\x12CreateSheetRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12-\n" +
@@ -354,7 +345,7 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\x0fGetSheetRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x04name\x12\x10\n" +
-	"\x03raw\x18\x02 \x01(\bR\x03raw\"\xdc\x02\n" +
+	"\x03raw\x18\x02 \x01(\bR\x03raw\"\xaa\x02\n" +
 	"\x05Sheet\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12!\n" +
 	"\x05title\x18\x02 \x01(\tB\v\xe0A\x02\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x1d\n" +
@@ -362,8 +353,7 @@ const file_v1_sheet_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12\x1d\n" +
 	"\acontent\x18\x05 \x01(\fB\x03\xe0A\x02R\acontent\x12&\n" +
-	"\fcontent_size\x18\x06 \x01(\x03B\x03\xe0A\x03R\vcontentSize\x120\n" +
-	"\x06engine\x18\b \x01(\x0e2\x13.bytebase.v1.EngineB\x03\xe0A\x02R\x06engine::\xeaA7\n" +
+	"\fcontent_size\x18\x06 \x01(\x03B\x03\xe0A\x03R\vcontentSize::\xeaA7\n" +
 	"\x12bytebase.com/Sheet\x12!projects/{project}/sheets/{sheet}2\xe0\x03\n" +
 	"\fSheetService\x12\x98\x01\n" +
 	"\vCreateSheet\x12\x1f.bytebase.v1.CreateSheetRequest\x1a\x12.bytebase.v1.Sheet\"T\xdaA\fparent,sheet\x8a\xea0\x10bb.sheets.create\x90\xea0\x01\x82\xd3\xe4\x93\x02':\x05sheet\"\x1e/v1/{parent=projects/*}/sheets\x12\xb1\x01\n" +
@@ -391,25 +381,23 @@ var file_v1_sheet_service_proto_goTypes = []any{
 	(*GetSheetRequest)(nil),           // 3: bytebase.v1.GetSheetRequest
 	(*Sheet)(nil),                     // 4: bytebase.v1.Sheet
 	(*timestamppb.Timestamp)(nil),     // 5: google.protobuf.Timestamp
-	(Engine)(0),                       // 6: bytebase.v1.Engine
 }
 var file_v1_sheet_service_proto_depIdxs = []int32{
 	4, // 0: bytebase.v1.CreateSheetRequest.sheet:type_name -> bytebase.v1.Sheet
 	0, // 1: bytebase.v1.BatchCreateSheetsRequest.requests:type_name -> bytebase.v1.CreateSheetRequest
 	4, // 2: bytebase.v1.BatchCreateSheetsResponse.sheets:type_name -> bytebase.v1.Sheet
 	5, // 3: bytebase.v1.Sheet.create_time:type_name -> google.protobuf.Timestamp
-	6, // 4: bytebase.v1.Sheet.engine:type_name -> bytebase.v1.Engine
-	0, // 5: bytebase.v1.SheetService.CreateSheet:input_type -> bytebase.v1.CreateSheetRequest
-	1, // 6: bytebase.v1.SheetService.BatchCreateSheets:input_type -> bytebase.v1.BatchCreateSheetsRequest
-	3, // 7: bytebase.v1.SheetService.GetSheet:input_type -> bytebase.v1.GetSheetRequest
-	4, // 8: bytebase.v1.SheetService.CreateSheet:output_type -> bytebase.v1.Sheet
-	2, // 9: bytebase.v1.SheetService.BatchCreateSheets:output_type -> bytebase.v1.BatchCreateSheetsResponse
-	4, // 10: bytebase.v1.SheetService.GetSheet:output_type -> bytebase.v1.Sheet
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	0, // 4: bytebase.v1.SheetService.CreateSheet:input_type -> bytebase.v1.CreateSheetRequest
+	1, // 5: bytebase.v1.SheetService.BatchCreateSheets:input_type -> bytebase.v1.BatchCreateSheetsRequest
+	3, // 6: bytebase.v1.SheetService.GetSheet:input_type -> bytebase.v1.GetSheetRequest
+	4, // 7: bytebase.v1.SheetService.CreateSheet:output_type -> bytebase.v1.Sheet
+	2, // 8: bytebase.v1.SheetService.BatchCreateSheets:output_type -> bytebase.v1.BatchCreateSheetsResponse
+	4, // 9: bytebase.v1.SheetService.GetSheet:output_type -> bytebase.v1.Sheet
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_v1_sheet_service_proto_init() }
@@ -418,7 +406,6 @@ func file_v1_sheet_service_proto_init() {
 		return
 	}
 	file_v1_annotation_proto_init()
-	file_v1_common_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

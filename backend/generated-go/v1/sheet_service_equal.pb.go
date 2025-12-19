@@ -99,8 +99,5 @@ func (x *Sheet) Equal(y *Sheet) bool {
 	if x.ContentSize != y.ContentSize {
 		return false
 	}
-	if x.Engine != y.Engine {
-		return false
-	}
 	return true
 }

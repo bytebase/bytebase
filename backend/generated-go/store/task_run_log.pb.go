@@ -445,6 +445,8 @@ func (x *TaskRunLog_SchemaDumpEnd) GetError() string {
 type TaskRunLog_CommandExecute struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The byte offset range of the executed command in the sheet.
+	// Uses byte offsets (not character indices) for efficient slicing of sheet content bytes.
+	// Example: For "SELECT 你好;" in a UTF-8 sheet, range [0, 13) represents all 13 bytes.
 	Range *Range `protobuf:"bytes,1,opt,name=range,proto3" json:"range,omitempty"`
 	// The statement to be executed.
 	Statement     string `protobuf:"bytes,2,opt,name=statement,proto3" json:"statement,omitempty"`

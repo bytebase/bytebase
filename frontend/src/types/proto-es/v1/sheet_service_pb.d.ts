@@ -5,7 +5,6 @@
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import type { Engine } from "./common_pb";
 
 /**
  * Describes the file v1/sheet_service.proto.
@@ -154,13 +153,6 @@ export declare type Sheet = Message<"bytebase.v1.Sheet"> & {
    * @generated from field: int64 content_size = 6;
    */
   contentSize: bigint;
-
-  /**
-   * The SQL dialect.
-   *
-   * @generated from field: bytebase.v1.Engine engine = 8;
-   */
-  engine: Engine;
 };
 
 /**

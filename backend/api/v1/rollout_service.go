@@ -80,7 +80,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, req *connect.Reques
 
 	specs := convertPlanSpecs(request.Plan.Specs)
 
-	rollout, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, specs, nil /* snapshot */, project)
+	rollout, err := GetPipelineCreate(ctx, s.store, s.dbFactory, specs, nil /* snapshot */, project)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
 	}
@@ -239,7 +239,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
 	}
 
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, plan.Config.GetSpecs(), plan.Config.GetDeployment(), project)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.dbFactory, plan.Config.GetSpecs(), plan.Config.GetDeployment(), project)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
 	}
@@ -965,7 +965,7 @@ func getPlanEnvironmentSnapshots(ctx context.Context, s *store.Store, deployment
 }
 
 // GetPipelineCreate gets a pipeline create message from a plan.
-func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Step 1 - transform database group specs.
 	// Others are untouched.
 	transformedSpecs := applyDatabaseGroupSpecTransformations(specs, deployment)
@@ -973,7 +973,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	// Step 2 - convert all task creates.
 	var taskCreates []*store.TaskMessage
 	for _, spec := range transformedSpecs {
-		tcs, err := getTaskCreatesFromSpec(ctx, s, sheetManager, dbFactory, spec, project)
+		tcs, err := getTaskCreatesFromSpec(ctx, s, dbFactory, spec, project)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get task creates from spec")
 		}

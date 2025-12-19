@@ -761,13 +761,15 @@ Examples: - &#34;SELECT * FROM t&#34; - column 8 is &#39;*&#39; - &#34;SELECT �
 <a name="bytebase-v1-Range"></a>
 
 ### Range
-Range of positions in text or sequence.
+Range represents a span within a text or sequence.
+Whether the indices are byte offsets or character indices depends on the context.
+Check the documentation of the field using Range for specific semantics.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| start | [int32](#int32) |  | Start position (inclusive). |
-| end | [int32](#int32) |  | End position (exclusive). |
+| start | [int32](#int32) |  | Start index (inclusive). |
+| end | [int32](#int32) |  | End index (exclusive). |
 
 
 
@@ -1599,8 +1601,8 @@ IssueService manages issues for tracking database changes and tasks.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| start | [int32](#int32) |  | start is the start index of the original value, start from 0 and should be less than stop. |
-| end | [int32](#int32) |  | stop is the stop index of the original value, should be less than the length of the original value. |
+| start | [int32](#int32) |  | start is the start character index (0-based) of the original value, should be less than end. Uses character indices (not byte offsets) for display-oriented masking. Example: For &#34;你好world&#34;, character index 2 refers to &#39;w&#39; (the 3rd character). |
+| end | [int32](#int32) |  | end is the end character index (exclusive) of the original value. Uses character indices (not byte offsets) for display-oriented masking. |
 | substitution | [string](#string) |  | substitution is the string used to replace the OriginalValue[start:end). |
 
 
@@ -10050,7 +10052,7 @@ Command execution details.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | log_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the command was logged. |
-| range | [Range](#bytebase-v1-Range) |  | The byte offset range of the executed command in the sheet. |
+| range | [Range](#bytebase-v1-Range) |  | The byte offset range of the executed command in the sheet. Uses byte offsets (not character indices) for efficient slicing of sheet content bytes. Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents all 13 bytes. |
 | statement | [string](#string) |  | The executed statement. |
 | response | [TaskRunLogEntry.CommandExecute.CommandResponse](#bytebase-v1-TaskRunLogEntry-CommandExecute-CommandResponse) |  | The response from executing the command. |
 
@@ -10478,7 +10480,6 @@ RolloutService manages the execution of deployment plans.
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the sheet. |
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
-| engine | [Engine](#bytebase-v1-Engine) |  | The SQL dialect. |
 
 
 

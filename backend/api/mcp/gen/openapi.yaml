@@ -6848,12 +6848,17 @@ components:
           type: integer
           title: start
           format: int32
-          description: start is the start index of the original value, start from 0 and should be less than stop.
+          description: |-
+            start is the start character index (0-based) of the original value, should be less than end.
+             Uses character indices (not byte offsets) for display-oriented masking.
+             Example: For "你好world", character index 2 refers to 'w' (the 3rd character).
         end:
           type: integer
           title: end
           format: int32
-          description: stop is the stop index of the original value, should be less than the length of the original value.
+          description: |-
+            end is the end character index (exclusive) of the original value.
+             Uses character indices (not byte offsets) for display-oriented masking.
         substitution:
           type: string
           title: substitution
@@ -14020,15 +14025,18 @@ components:
           type: integer
           title: start
           format: int32
-          description: Start position (inclusive).
+          description: Start index (inclusive).
         end:
           type: integer
           title: end
           format: int32
-          description: End position (exclusive).
+          description: End index (exclusive).
       title: Range
       additionalProperties: false
-      description: Range of positions in text or sequence.
+      description: |-
+        Range represents a span within a text or sequence.
+         Whether the indices are byte offsets or character indices depends on the context.
+         Check the documentation of the field using Range for specific semantics.
     bytebase.v1.RejectIssueRequest:
       type: object
       properties:
@@ -15654,10 +15662,6 @@ components:
           title: content_size
           format: int64
           description: content_size is the full size of the content, may not match the size of the `content` field.
-        engine:
-          title: engine
-          description: The SQL dialect.
-          $ref: '#/components/schemas/bytebase.v1.Engine'
       title: Sheet
       additionalProperties: false
     bytebase.v1.SpatialIndexConfig:
@@ -16670,7 +16674,10 @@ components:
           $ref: '#/components/schemas/google.protobuf.Timestamp'
         range:
           title: range
-          description: The byte offset range of the executed command in the sheet.
+          description: |-
+            The byte offset range of the executed command in the sheet.
+             Uses byte offsets (not character indices) for efficient slicing of sheet content bytes.
+             Example: For "SELECT 你好;" in a UTF-8 sheet, range [0, 13) represents all 13 bytes.
           $ref: '#/components/schemas/bytebase.v1.Range'
         statement:
           type: string

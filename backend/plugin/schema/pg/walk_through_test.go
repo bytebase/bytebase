@@ -84,7 +84,7 @@ func TestWalkThrough(t *testing.T) {
 	require.NoError(t, err)
 	err = yaml.Unmarshal(byteValue, &tests)
 	require.NoError(t, err)
-	sm := sheet.NewManager(nil)
+	sm := sheet.NewManager()
 
 	for _, test := range tests {
 		// Make a deep copy to avoid mutation across tests

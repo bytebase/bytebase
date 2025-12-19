@@ -599,12 +599,14 @@ func (x *Position) GetColumn() int32 {
 	return 0
 }
 
-// Range of positions in text or sequence.
+// Range represents a span within a text or sequence.
+// Whether the indices are byte offsets or character indices depends on the context.
+// Check the documentation of the field using Range for specific semantics.
 type Range struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Start position (inclusive).
+	// Start index (inclusive).
 	Start int32 `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
-	// End position (exclusive).
+	// End index (exclusive).
 	End           int32 `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

@@ -12714,23 +12714,31 @@ components:
             properties:
                 start:
                     type: integer
-                    description: Start position (inclusive).
+                    description: Start index (inclusive).
                     format: int32
                 end:
                     type: integer
-                    description: End position (exclusive).
+                    description: End index (exclusive).
                     format: int32
-            description: Range of positions in text or sequence.
+            description: |-
+                Range represents a span within a text or sequence.
+                 Whether the indices are byte offsets or character indices depends on the context.
+                 Check the documentation of the field using Range for specific semantics.
         RangeMask_Slice:
             type: object
             properties:
                 start:
                     type: integer
-                    description: start is the start index of the original value, start from 0 and should be less than stop.
+                    description: |-
+                        start is the start character index (0-based) of the original value, should be less than end.
+                         Uses character indices (not byte offsets) for display-oriented masking.
+                         Example: For "你好world", character index 2 refers to 'w' (the 3rd character).
                     format: int32
                 end:
                     type: integer
-                    description: stop is the stop index of the original value, should be less than the length of the original value.
+                    description: |-
+                        end is the end character index (exclusive) of the original value.
+                         Uses character indices (not byte offsets) for display-oriented masking.
                     format: int32
                 substitution:
                     type: string
@@ -13983,7 +13991,6 @@ components:
                 - name
                 - title
                 - content
-                - engine
             type: object
             properties:
                 name:
@@ -14017,37 +14024,6 @@ components:
                     readOnly: true
                     type: string
                     description: content_size is the full size of the content, may not match the size of the `content` field.
-                engine:
-                    enum:
-                        - ENGINE_UNSPECIFIED
-                        - CLICKHOUSE
-                        - MYSQL
-                        - POSTGRES
-                        - SNOWFLAKE
-                        - SQLITE
-                        - TIDB
-                        - MONGODB
-                        - REDIS
-                        - ORACLE
-                        - SPANNER
-                        - MSSQL
-                        - REDSHIFT
-                        - MARIADB
-                        - OCEANBASE
-                        - STARROCKS
-                        - DORIS
-                        - HIVE
-                        - ELASTICSEARCH
-                        - BIGQUERY
-                        - DYNAMODB
-                        - DATABRICKS
-                        - COCKROACHDB
-                        - COSMOSDB
-                        - TRINO
-                        - CASSANDRA
-                    type: string
-                    description: The SQL dialect.
-                    format: enum
         SpatialIndexConfig:
             type: object
             properties:
@@ -14699,7 +14675,10 @@ components:
                 range:
                     allOf:
                         - $ref: '#/components/schemas/Range'
-                    description: The byte offset range of the executed command in the sheet.
+                    description: |-
+                        The byte offset range of the executed command in the sheet.
+                         Uses byte offsets (not character indices) for efficient slicing of sheet content bytes.
+                         Example: For "SELECT 你好;" in a UTF-8 sheet, range [0, 13) represents all 13 bytes.
                 statement:
                     type: string
                     description: The executed statement.

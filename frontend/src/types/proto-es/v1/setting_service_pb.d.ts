@@ -1092,14 +1092,17 @@ export declare const Algorithm_RangeMaskSchema: GenMessage<Algorithm_RangeMask>;
  */
 export declare type Algorithm_RangeMask_Slice = Message<"bytebase.v1.Algorithm.RangeMask.Slice"> & {
   /**
-   * start is the start index of the original value, start from 0 and should be less than stop.
+   * start is the start character index (0-based) of the original value, should be less than end.
+   * Uses character indices (not byte offsets) for display-oriented masking.
+   * Example: For "你好world", character index 2 refers to 'w' (the 3rd character).
    *
    * @generated from field: int32 start = 1;
    */
   start: number;
 
   /**
-   * stop is the stop index of the original value, should be less than the length of the original value.
+   * end is the end character index (exclusive) of the original value.
+   * Uses character indices (not byte offsets) for display-oriented masking.
    *
    * @generated from field: int32 end = 2;
    */
