@@ -84,7 +84,7 @@ import {
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { UpdatePlanRequestSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { extractSheetUID } from "@/utils";
-import { databaseEngineForSpec, getLocalSheetByName } from "../../logic";
+import { getLocalSheetByName } from "../../logic";
 import { usePlanContext } from "../../logic/context";
 import { useEditorState } from "../../logic/useEditorState";
 import { getSpecTitle } from "../../logic/utils";
@@ -132,8 +132,6 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
       if (uid.startsWith("-")) {
         // The sheet is pending create.
         const sheetToCreate = getLocalSheetByName(spec.config.value.sheet);
-        const engine = await databaseEngineForSpec(spec);
-        sheetToCreate.engine = engine;
         sheetToCreate.title = plan.value.title;
         const createdSheet = await sheetStore.createSheet(
           project.value.name,

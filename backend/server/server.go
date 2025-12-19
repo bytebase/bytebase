@@ -141,7 +141,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to migrate schema")
 	}
 	s.store = stores
-	sheetManager := sheet.NewManager(stores)
+	sheetManager := sheet.NewManager()
 
 	// Initialize sample instance manager and start sample instances if they exist
 	s.sampleInstanceManager = sampleinstance.NewManager(stores, profile)

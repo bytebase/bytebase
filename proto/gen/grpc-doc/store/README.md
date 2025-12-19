@@ -279,9 +279,6 @@
     - [WorkspaceProfileSetting.Announcement.AlertLevel](#bytebase-store-WorkspaceProfileSetting-Announcement-AlertLevel)
     - [WorkspaceProfileSetting.DatabaseChangeMode](#bytebase-store-WorkspaceProfileSetting-DatabaseChangeMode)
   
-- [store/sheet.proto](#store_sheet-proto)
-    - [SheetPayload](#bytebase-store-SheetPayload)
-  
 - [store/task.proto](#store_task-proto)
     - [Task](#bytebase-store-Task)
     - [Task.FlagsEntry](#bytebase-store-Task-FlagsEntry)
@@ -392,6 +389,8 @@ Examples: - &#34;SELECT * FROM t&#34; - column 8 is &#39;*&#39; - &#34;SELECT �
 
 ### Range
 Range represents a span within a text or sequence.
+Whether the indices are byte offsets or character indices depends on the context.
+Check the documentation of the field using Range for specific semantics.
 
 
 | Field | Type | Label | Description |
@@ -4137,9 +4136,9 @@ The severity level for SQL review rules.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| start | [int32](#int32) |  | start is the start index of the original value, start from 0 and should be less than stop. |
-| end | [int32](#int32) |  | stop is the stop index of the original value, should be less than the length of the original value. |
-| substitution | [string](#string) |  | OriginalValue[start:end) would be replaced with replace_with. |
+| start | [int32](#int32) |  | start is the start character index (0-based) of the original value, should be less than end. Uses character indices (not byte offsets) for display-oriented masking. Example: For &#34;你好world&#34;, character index 2 refers to &#39;w&#39; (the 3rd character). |
+| end | [int32](#int32) |  | end is the end character index (exclusive) of the original value. Uses character indices (not byte offsets) for display-oriented masking. |
+| substitution | [string](#string) |  | OriginalValue[start:end) would be replaced with substitution. |
 
 
 
@@ -4664,38 +4663,6 @@ We support three levels of AlertLevel: INFO, WARNING, and ERROR.
 
 
 
-<a name="store_sheet-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/sheet.proto
-
-
-
-<a name="bytebase-store-SheetPayload"></a>
-
-### SheetPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-store-Engine) |  | The SQL dialect of the sheet. |
-| commands | [Range](#bytebase-store-Range) | repeated | The start and end position of each command in the sheet statement. |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
 <a name="store_task-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -4980,7 +4947,7 @@ Status represents the current execution state of a task run.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| range | [Range](#bytebase-store-Range) |  | The byte offset range of the executed command in the sheet. |
+| range | [Range](#bytebase-store-Range) |  | The byte offset range of the executed command in the sheet. Uses byte offsets (not character indices) for efficient slicing of sheet content bytes. Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents all 13 bytes. |
 | statement | [string](#string) |  | The statement to be executed. |
 
 

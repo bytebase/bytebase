@@ -562,6 +562,8 @@ func (x *Position) GetColumn() int32 {
 }
 
 // Range represents a span within a text or sequence.
+// Whether the indices are byte offsets or character indices depends on the context.
+// Check the documentation of the field using Range for specific semantics.
 type Range struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Start index (inclusive).

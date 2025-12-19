@@ -58,11 +58,7 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import {
-  databaseEngineForSpec,
-  getLocalSheetByName,
-  isValidSpec,
-} from "@/components/Plan";
+import { getLocalSheetByName, isValidSpec } from "@/components/Plan";
 import { getSpecChangeType } from "@/components/Plan/components/SQLCheckSection/common";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { SQLCheckPanel } from "@/components/SQLCheck";
@@ -243,8 +239,6 @@ const createSheets = async () => {
     if (uid.startsWith("-")) {
       // The sheet is pending create
       const sheet = getLocalSheetByName(config.sheet);
-      const engine = await databaseEngineForSpec(spec);
-      sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
     }
   }

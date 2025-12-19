@@ -29,11 +29,7 @@ import {
   ErrorList,
   useSpecsValidation,
 } from "@/components/Plan/components/common";
-import {
-  databaseEngineForSpec,
-  getLocalSheetByName,
-  usePlanContext,
-} from "@/components/Plan/logic";
+import { getLocalSheetByName, usePlanContext } from "@/components/Plan/logic";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,
@@ -224,8 +220,6 @@ const createSheets = async () => {
     if (uid.startsWith("-")) {
       // The sheet is pending create.
       const sheetToCreate = getLocalSheetByName(config.sheet);
-      const engine = await databaseEngineForSpec(spec);
-      sheetToCreate.engine = engine;
       sheetToCreate.title = plan.value.title;
       const createdSheet = await sheetStore.createSheet(
         project.value.name,

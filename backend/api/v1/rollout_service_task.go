@@ -14,7 +14,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
-	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -47,10 +46,10 @@ func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, dep
 	return result
 }
 
-func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, sheetManager, dbFactory, spec, config.CreateDatabaseConfig, project)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, dbFactory, spec, config.CreateDatabaseConfig, project)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig)
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
@@ -60,7 +59,7 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *s
 	return nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
 	if c.Database == "" {
 		return nil, errors.Errorf("database name is required")
 	}
@@ -142,12 +141,9 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, err
 		}
-		sheets, err := sheetManager.CreateSheets(ctx, project.ResourceID, common.SystemBotEmail, &store.SheetMessage{
+		sheets, err := s.CreateSheets(ctx, project.ResourceID, common.SystemBotEmail, &store.SheetMessage{
 			Title:     fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement: statement,
-			Payload: &storepb.SheetPayload{
-				Engine: instance.Metadata.GetEngine(),
-			},
 		})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create database creation sheet")

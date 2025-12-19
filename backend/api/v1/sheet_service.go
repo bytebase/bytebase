@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/enterprise"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
@@ -68,7 +67,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 	}
 
 	storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, user.Email, request.Msg.Sheet)
-	sheets, err := s.sheetManager.CreateSheets(ctx, project.ResourceID, user.Email, storeSheetCreate)
+	sheets, err := s.store.CreateSheets(ctx, project.ResourceID, user.Email, storeSheetCreate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}
@@ -117,7 +116,7 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 		sheetCreates = append(sheetCreates, storeSheetCreate)
 	}
 
-	sheets, err := s.sheetManager.CreateSheets(ctx, project.ResourceID, user.Email, sheetCreates...)
+	sheets, err := s.store.CreateSheets(ctx, project.ResourceID, user.Email, sheetCreates...)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}
@@ -203,7 +202,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		CreateTime:  timestamppb.New(sheet.CreatedAt),
 		Content:     []byte(sheet.Statement),
 		ContentSize: sheet.Size,
-		Engine:      convertToEngine(sheet.Payload.GetEngine()),
 	}, nil
 }
 
@@ -213,9 +211,7 @@ func convertToStoreSheetMessage(projectID string, creator string, sheet *v1pb.Sh
 		Creator:   creator,
 		Title:     sheet.Title,
 		Statement: string(sheet.Content),
-		Payload:   &storepb.SheetPayload{},
 	}
-	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
 
 	return sheetMessage
 }

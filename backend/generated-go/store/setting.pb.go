@@ -1659,11 +1659,14 @@ func (x *Algorithm_InnerOuterMask) GetSubstitution() string {
 
 type Algorithm_RangeMask_Slice struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// start is the start index of the original value, start from 0 and should be less than stop.
+	// start is the start character index (0-based) of the original value, should be less than end.
+	// Uses character indices (not byte offsets) for display-oriented masking.
+	// Example: For "你好world", character index 2 refers to 'w' (the 3rd character).
 	Start int32 `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
-	// stop is the stop index of the original value, should be less than the length of the original value.
+	// end is the end character index (exclusive) of the original value.
+	// Uses character indices (not byte offsets) for display-oriented masking.
 	End int32 `protobuf:"varint,2,opt,name=end,proto3" json:"end,omitempty"`
-	// OriginalValue[start:end) would be replaced with replace_with.
+	// OriginalValue[start:end) would be replaced with substitution.
 	Substitution  string `protobuf:"bytes,3,opt,name=substitution,proto3" json:"substitution,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

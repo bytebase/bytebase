@@ -2898,7 +2898,7 @@ Examples:
         
       
         <h3 id="bytebase.v1.Range">Range</h3>
-        <p>Range of positions in text or sequence.</p>
+        <p>Range represents a span within a text or sequence.</p><p>Whether the indices are byte offsets or character indices depends on the context.</p><p>Check the documentation of the field using Range for specific semantics.</p>
 
         
           <table class="field-table">
@@ -2911,14 +2911,14 @@ Examples:
                   <td>start</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>Start position (inclusive). </p></td>
+                  <td><p>Start index (inclusive). </p></td>
                 </tr>
               
                 <tr>
                   <td>end</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>End position (exclusive). </p></td>
+                  <td><p>End index (exclusive). </p></td>
                 </tr>
               
             </tbody>
@@ -5212,14 +5212,17 @@ But frontend can be started with a single rule easily. </p></td>
                   <td>start</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>start is the start index of the original value, start from 0 and should be less than stop. </p></td>
+                  <td><p>start is the start character index (0-based) of the original value, should be less than end.
+Uses character indices (not byte offsets) for display-oriented masking.
+Example: For &#34;你好world&#34;, character index 2 refers to &#39;w&#39; (the 3rd character). </p></td>
                 </tr>
               
                 <tr>
                   <td>end</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>stop is the stop index of the original value, should be less than the length of the original value. </p></td>
+                  <td><p>end is the end character index (exclusive) of the original value.
+Uses character indices (not byte offsets) for display-oriented masking. </p></td>
                 </tr>
               
                 <tr>
@@ -28207,7 +28210,9 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>range</td>
                   <td><a href="#bytebase.v1.Range">Range</a></td>
                   <td></td>
-                  <td><p>The byte offset range of the executed command in the sheet. </p></td>
+                  <td><p>The byte offset range of the executed command in the sheet.
+Uses byte offsets (not character indices) for efficient slicing of sheet content bytes.
+Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents all 13 bytes. </p></td>
                 </tr>
               
                 <tr>
@@ -29463,13 +29468,6 @@ set the `raw` to true in GetSheet request to retrieve the full content. </p></td
                   <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p>content_size is the full size of the content, may not match the size of the `content` field. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>engine</td>
-                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
-                  <td></td>
-                  <td><p>The SQL dialect. </p></td>
                 </tr>
               
             </tbody>

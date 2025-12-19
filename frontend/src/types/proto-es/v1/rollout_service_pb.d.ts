@@ -1399,6 +1399,8 @@ export declare type TaskRunLogEntry_CommandExecute = Message<"bytebase.v1.TaskRu
 
   /**
    * The byte offset range of the executed command in the sheet.
+   * Uses byte offsets (not character indices) for efficient slicing of sheet content bytes.
+   * Example: For "SELECT 你好;" in a UTF-8 sheet, range [0, 13) represents all 13 bytes.
    *
    * @generated from field: bytebase.v1.Range range = 2;
    */

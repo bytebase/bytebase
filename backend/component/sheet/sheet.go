@@ -1,22 +1,14 @@
 package sheet
 
 import (
-	"context"
-	"io"
-	"log/slog"
-	"strings"
 	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2/expirable"
-	"github.com/pkg/errors"
 	"github.com/zeebo/xxh3"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlbatch "github.com/bytebase/bytebase/backend/plugin/parser/tsql/batch"
-	"github.com/bytebase/bytebase/backend/store"
 
 	// Import parsers to register their parse functions.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb"
@@ -41,7 +33,6 @@ const (
 type Manager struct {
 	sync.Mutex
 
-	store          *store.Store
 	statementCache *lru.LRU[astHashKey, *StatementResult]
 }
 
@@ -51,127 +42,10 @@ type astHashKey struct {
 }
 
 // NewManager creates a new sheet manager.
-func NewManager(store *store.Store) *Manager {
+func NewManager() *Manager {
 	return &Manager{
-		store:          store,
 		statementCache: lru.NewLRU[astHashKey, *StatementResult](8, nil, 3*time.Minute),
 	}
-}
-
-func (sm *Manager) CreateSheets(ctx context.Context, projectID string, creator string, sheets ...*store.SheetMessage) ([]*store.SheetMessage, error) {
-	for _, sheet := range sheets {
-		if sheet.Payload == nil {
-			sheet.Payload = &storepb.SheetPayload{}
-		}
-		sheet.Payload.Commands = getSheetCommands(sheet.Payload.Engine, sheet.Statement)
-	}
-
-	result, err := sm.store.CreateSheets(ctx, projectID, creator, sheets...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create sheets")
-	}
-	return result, nil
-}
-
-func getSheetCommands(engine storepb.Engine, statement string) []*storepb.Range {
-	// Burnout for large SQL.
-	if len(statement) > common.MaxSheetCheckSize {
-		return nil
-	}
-
-	switch engine {
-	case
-		storepb.Engine_TIDB,
-		storepb.Engine_ORACLE:
-		return getSheetCommandsFromByteOffset(engine, statement)
-	case storepb.Engine_MSSQL:
-		return getSheetCommandsForMSSQL(statement)
-	default:
-		return getSheetCommandsGeneral(engine, statement)
-	}
-}
-
-func getSheetCommandsGeneral(engine storepb.Engine, statement string) []*storepb.Range {
-	statements, err := base.ParseStatements(engine, statement)
-	if err != nil {
-		if !strings.Contains(err.Error(), "not supported") {
-			slog.Warn("failed to parse statements", "engine", engine.String(), "statement", statement)
-		}
-		return nil
-	}
-	// HACK(p0ny): always split for pg
-	if len(statements) > common.MaximumCommands && engine != storepb.Engine_POSTGRES {
-		return nil
-	}
-
-	var sheetCommands []*storepb.Range
-	p := 0
-	for _, s := range statements {
-		np := p + len(s.Text)
-		sheetCommands = append(sheetCommands, &storepb.Range{
-			Start: int32(p),
-			End:   int32(np),
-		})
-		p = np
-	}
-	return sheetCommands
-}
-
-func getSheetCommandsFromByteOffset(engine storepb.Engine, statement string) []*storepb.Range {
-	statements, err := base.ParseStatements(engine, statement)
-	if err != nil {
-		if !strings.Contains(err.Error(), "not supported") {
-			slog.Warn("failed to parse statements", "engine", engine.String(), "statement", statement)
-		}
-		return nil
-	}
-	if len(statements) > common.MaximumCommands {
-		return nil
-	}
-
-	var sheetCommands []*storepb.Range
-	for _, s := range statements {
-		sheetCommands = append(sheetCommands, s.Range)
-	}
-	return sheetCommands
-}
-
-func getSheetCommandsForMSSQL(statement string) []*storepb.Range {
-	var sheetCommands []*storepb.Range
-
-	batch := tsqlbatch.NewBatcher(statement)
-	for {
-		command, err := batch.Next()
-		if err == io.EOF {
-			b := batch.Batch()
-			sheetCommands = append(sheetCommands, &storepb.Range{
-				Start: int32(b.Start),
-				End:   int32(b.End),
-			})
-			batch.Reset(nil)
-			break
-		}
-		if err != nil {
-			slog.Warn("failed to get sheet commands for mssql", "statement", statement)
-			return nil
-		}
-		if command == nil {
-			continue
-		}
-		switch command.(type) {
-		case *tsqlbatch.GoCommand:
-			b := batch.Batch()
-			sheetCommands = append(sheetCommands, &storepb.Range{
-				Start: int32(b.Start),
-				End:   int32(b.End),
-			})
-			batch.Reset(nil)
-		default:
-		}
-		// No command count limit for MSSQL to ensure consistency between sheet payload
-		// and actual execution in mssql.go which splits and executes all batches
-	}
-	return sheetCommands
 }
 
 // StatementResult holds the cached parsing results with the unified ParsedStatement type.

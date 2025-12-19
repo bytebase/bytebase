@@ -257,7 +257,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 	}
 	planMessage.Config.Deployment = deployment
 
-	if _, err := GetPipelineCreate(ctx, s.store, s.sheetManager, s.dbFactory, planMessage.Config.GetSpecs(), deployment, project); err != nil {
+	if _, err := GetPipelineCreate(ctx, s.store, s.dbFactory, planMessage.Config.GetSpecs(), deployment, project); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline from the plan, please check you request, error: %v", err))
 	}
 	plan, err := s.store.CreatePlan(ctx, planMessage, user.Email)
@@ -393,7 +393,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			if _, err := GetPipelineCreate(ctx,
 				s.store,
-				s.sheetManager,
 				s.dbFactory,
 				allSpecs,
 				oldPlan.Config.GetDeployment(),

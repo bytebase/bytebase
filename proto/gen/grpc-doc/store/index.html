@@ -1291,21 +1291,6 @@
         
           
           <li>
-            <a href="#store%2fsheet.proto">store/sheet.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.SheetPayload"><span class="badge">M</span>SheetPayload</a>
-                </li>
-              
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2ftask.proto">store/task.proto</a>
             <ul>
               
@@ -1584,7 +1569,7 @@ Examples:
         
       
         <h3 id="bytebase.store.Range">Range</h3>
-        <p>Range represents a span within a text or sequence.</p>
+        <p>Range represents a span within a text or sequence.</p><p>Whether the indices are byte offsets or character indices depends on the context.</p><p>Check the documentation of the field using Range for specific semantics.</p>
 
         
           <table class="field-table">
@@ -11457,21 +11442,24 @@ But frontend can be started with a single rule easily. </p></td>
                   <td>start</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>start is the start index of the original value, start from 0 and should be less than stop. </p></td>
+                  <td><p>start is the start character index (0-based) of the original value, should be less than end.
+Uses character indices (not byte offsets) for display-oriented masking.
+Example: For &#34;你好world&#34;, character index 2 refers to &#39;w&#39; (the 3rd character). </p></td>
                 </tr>
               
                 <tr>
                   <td>end</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>stop is the stop index of the original value, should be less than the length of the original value. </p></td>
+                  <td><p>end is the end character index (exclusive) of the original value.
+Uses character indices (not byte offsets) for display-oriented masking. </p></td>
                 </tr>
               
                 <tr>
                   <td>substitution</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>OriginalValue[start:end) would be replaced with replace_with. </p></td>
+                  <td><p>OriginalValue[start:end) would be replaced with substitution. </p></td>
                 </tr>
               
             </tbody>
@@ -12734,51 +12722,6 @@ Default to this mode.</p></td>
     
       
       <div class="file-heading">
-        <h2 id="store/sheet.proto">store/sheet.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.SheetPayload">SheetPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>engine</td>
-                  <td><a href="#bytebase.store.Engine">Engine</a></td>
-                  <td></td>
-                  <td><p>The SQL dialect of the sheet. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>commands</td>
-                  <td><a href="#bytebase.store.Range">Range</a></td>
-                  <td>repeated</td>
-                  <td><p>The start and end position of each command in the sheet statement. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="store/task.proto">store/task.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -13484,7 +13427,9 @@ Format: instances/{instance}/databases/{database}/changelogs/{changelog} </p></t
                   <td>range</td>
                   <td><a href="#bytebase.store.Range">Range</a></td>
                   <td></td>
-                  <td><p>The byte offset range of the executed command in the sheet. </p></td>
+                  <td><p>The byte offset range of the executed command in the sheet.
+Uses byte offsets (not character indices) for efficient slicing of sheet content bytes.
+Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents all 13 bytes. </p></td>
                 </tr>
               
                 <tr>

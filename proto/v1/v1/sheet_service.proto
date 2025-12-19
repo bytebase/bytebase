@@ -9,7 +9,6 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
-import "v1/common.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -121,7 +120,4 @@ message Sheet {
 
   // content_size is the full size of the content, may not match the size of the `content` field.
   int64 content_size = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The SQL dialect.
-  Engine engine = 8 [(google.api.field_behavior) = REQUIRED];
 }
