@@ -248,9 +248,13 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 		storeType = storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED
 	}
 
-	_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
-	if err != nil {
-		return nil
+	var sheetSha256 string
+	if c.Sheet != "" {
+		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
+		if err != nil {
+			return nil
+		}
+		sheetSha256 = sha256
 	}
 	return &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
@@ -267,9 +271,13 @@ func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseCo
 
 func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *storepb.PlanConfig_Spec_ExportDataConfig {
 	c := config.ExportDataConfig
-	_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
-	if err != nil {
-		return nil
+	var sheetSha256 string
+	if c.Sheet != "" {
+		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
+		if err != nil {
+			return nil
+		}
+		sheetSha256 = sha256
 	}
 	return &storepb.PlanConfig_Spec_ExportDataConfig{
 		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
