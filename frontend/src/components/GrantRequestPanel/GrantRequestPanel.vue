@@ -15,7 +15,7 @@
           ref="formRef"
           class="w-full"
           :project-name="projectName"
-          :binding="state.binding"
+          :binding="binding"
           :allow-remove="false"
           :disable-member-change="true"
           :require-reason="project.enforceIssueTitle"
@@ -47,7 +47,7 @@ import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { uniq } from "lodash-es";
 import { NButton } from "naive-ui";
-import { computed, reactive, ref } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import AddProjectMemberForm from "@/components/ProjectMember/AddProjectMember/AddProjectMemberForm.vue";
@@ -57,7 +57,6 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { getUserEmailInBinding } from "@/types";
-import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   CreateIssueRequestSchema,
@@ -71,10 +70,6 @@ import {
   extractProjectResourceName,
   generateIssueTitle,
 } from "@/utils";
-
-interface LocalState {
-  binding: Binding;
-}
 
 const props = withDefaults(
   defineProps<{
@@ -101,12 +96,13 @@ const currentUser = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const router = useRouter();
 
-const state = reactive<LocalState>({
-  binding: create(BindingSchema, {
+const binding = computed(() => {
+  return create(BindingSchema, {
     role: props.role,
     members: [getUserEmailInBinding(currentUser.value.email)],
-  }),
+  });
 });
+
 const formRef = ref<InstanceType<typeof AddProjectMemberForm>>();
 
 const project = computed(() =>
@@ -122,10 +118,15 @@ const doCreateIssue = async () => {
     return;
   }
 
+  const binding = await formRef.value?.getBinding();
+  if (!binding) {
+    return;
+  }
+
   const grantRequest = create(GrantRequestSchema, {
-    role: state.binding.role,
+    role: binding.role,
     user: `users/${currentUser.value.email}`,
-    condition: state.binding.condition,
+    condition: binding.condition,
     expiration: formRef.value?.expirationTimestampInMS
       ? create(DurationSchema, {
           seconds: BigInt(
@@ -135,21 +136,23 @@ const doCreateIssue = async () => {
       : undefined,
   });
 
+  const databaseResources = await formRef.value?.getDatabaseResources();
+
   const newIssue = create(IssueSchema, {
     title: project.value.enforceIssueTitle
       ? `[${t("issue.title.request-role")}] ${formRef.value?.reason}`
       : generateIssueTitle(
           "bb.issue.grant.request",
           uniq(
-            formRef.value?.databaseResources?.map(
+            databaseResources?.map(
               (databaseResource) => databaseResource.databaseFullName
             )
           ),
           t("issue.title.request-specific-role", {
-            role: displayRoleTitle(state.binding.role),
+            role: displayRoleTitle(binding.role),
           })
         ),
-    description: state.binding.condition?.description,
+    description: binding.condition?.description,
     type: NewIssue_Type.GRANT_REQUEST,
     grantRequest,
   });

@@ -2,7 +2,7 @@
   <NInput
     :value="value"
     :placeholder="$t('cel.condition.input-value')"
-    :disabled="!allowAdmin"
+    :disabled="readonly"
     size="small"
     style="min-width: 7rem; width: auto; overflow-x: hidden"
     @update:value="$emit('update:value', $event)"
@@ -22,5 +22,5 @@ defineEmits<{
 }>();
 
 const context = useExprEditorContext();
-const { allowAdmin } = context;
+const { readonly } = context;
 </script>

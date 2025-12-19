@@ -1081,6 +1081,7 @@
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "manually-select": "selección manual",
+      "use-cel": "Usar expresión CEL",
       "custom-date": "Fecha personalizada",
       "custom-date-placeholder": "Seleccione la fecha y hora de vencimiento"
     },

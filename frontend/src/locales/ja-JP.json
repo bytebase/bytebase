@@ -1081,6 +1081,7 @@
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
       "manually-select": "手動選択",
+      "use-cel": "CEL式を使用",
       "custom-date": "カスタム日付",
       "custom-date-placeholder": "有効期限と時刻を選択します"
     },

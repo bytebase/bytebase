@@ -8,7 +8,7 @@
     :show="false"
     :consistent-menu-width="false"
     :placeholder="$t('cel.condition.input-value-press-enter')"
-    :disabled="!allowAdmin"
+    :disabled="readonly"
     max-tag-count="responsive"
     size="small"
     style="min-width: 16rem; width: auto; overflow-x: hidden"
@@ -30,7 +30,7 @@ const emit = defineEmits<{
 }>();
 
 const context = useExprEditorContext();
-const { allowAdmin } = context;
+const { readonly } = context;
 
 const onUpdate = (values: string[]) => {
   emit(

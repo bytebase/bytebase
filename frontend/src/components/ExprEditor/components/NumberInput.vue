@@ -3,7 +3,7 @@
     :value="value"
     :show-button="false"
     :placeholder="$t('cel.condition.input-value')"
-    :disabled="!allowAdmin"
+    :disabled="readonly"
     size="small"
     style="width: auto; max-width: 5rem; overflow-x: hidden"
     @update:value="$emit('update:value', $event ?? 0)"
@@ -23,5 +23,5 @@ defineEmits<{
 }>();
 
 const context = useExprEditorContext();
-const { allowAdmin } = context;
+const { readonly } = context;
 </script>

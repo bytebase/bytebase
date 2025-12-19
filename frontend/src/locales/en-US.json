@@ -1081,6 +1081,7 @@
       "all-databases": "All",
       "all-databases-tip": "All current and future databases in this project.",
       "manually-select": "Manually select",
+      "use-cel": "Use CEL Expression",
       "custom-date": "Custom date",
       "custom-date-placeholder": "Select expiration date and time"
     },

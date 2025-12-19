@@ -41,10 +41,18 @@ interface TableLevelCondition {
   table: string[];
 }
 
+interface ColumnLevelCondition {
+  database: string;
+  schema: string;
+  table: string;
+  column: string[];
+}
+
 type DatabaseResourceCondition =
   | DatabaseLevelCondition
   | SchemaLevelCondition
-  | TableLevelCondition;
+  | TableLevelCondition
+  | ColumnLevelCondition;
 
 export interface ConditionExpression {
   databaseResources?: DatabaseResource[];
@@ -145,26 +153,28 @@ export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
   const conditionList: DatabaseResourceCondition[] = [];
 
   for (const resource of resources) {
-    if (resource.table === undefined && resource.schema === undefined) {
-      // Database level
+    if (resource.columns !== undefined) {
       conditionList.push({
-        database: [resource.databaseFullName],
+        database: resource.databaseFullName,
+        schema: resource.schema ?? "",
+        table: resource.table ?? "",
+        column: [...resource.columns],
       });
-    } else if (resource.schema !== undefined && resource.table === undefined) {
-      // Schema level
+    } else if (resource.table !== undefined) {
+      conditionList.push({
+        database: resource.databaseFullName,
+        schema: resource.schema ?? "",
+        table: [resource.table],
+      });
+    } else if (resource.schema !== undefined) {
       conditionList.push({
         database: resource.databaseFullName,
         schema: [resource.schema],
       });
-    } else if (resource.schema !== undefined && resource.table !== undefined) {
-      // Table level
-      conditionList.push({
-        database: resource.databaseFullName,
-        schema: resource.schema,
-        table: [resource.table],
-      });
     } else {
-      throw new Error("Invalid database resource");
+      conditionList.push({
+        database: [resource.databaseFullName],
+      });
     }
   }
 
@@ -179,7 +189,7 @@ export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
         typeof condition.database === "string" &&
         Array.isArray((condition as SchemaLevelCondition).schema)
     )
-  ).filter((condition) => condition.schema.length > 0);
+  );
   const tableLevelConditionList = mergeTableLevelConditions(
     conditionList.filter(
       (condition): condition is TableLevelCondition =>
@@ -187,17 +197,27 @@ export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
         typeof (condition as TableLevelCondition).schema === "string" &&
         Array.isArray((condition as TableLevelCondition).table)
     )
-  ).filter((condition) => condition.table.length > 0);
+  );
+  const columnLevelConditionList = mergeColumnLevelConditions(
+    conditionList.filter(
+      (condition): condition is ColumnLevelCondition =>
+        typeof condition.database === "string" &&
+        typeof (condition as ColumnLevelCondition).schema === "string" &&
+        typeof (condition as ColumnLevelCondition).table === "string" &&
+        Array.isArray((condition as ColumnLevelCondition).column)
+    )
+  );
 
   const cel = convertToCELString([
     ...databaseLevelConditionList,
     ...schemaLevelConditionList,
     ...tableLevelConditionList,
+    ...columnLevelConditionList,
   ]);
   return cel;
 };
 
-const stringifyConditionExpression = ({
+export const stringifyConditionExpression = ({
   expirationTimestampInMS,
   databaseResources,
 }: {
@@ -221,24 +241,77 @@ const convertToCELString = (
     | DatabaseLevelCondition
     | SchemaLevelCondition
     | TableLevelCondition
+    | ColumnLevelCondition
   )[]
 ): string => {
+  if (conditions.length === 0) {
+    return "";
+  }
+
+  const getArrayExpressionString = (resource: string, arr: string[]) => {
+    if (arr.length === 0) {
+      return "";
+    }
+    return `${resource} in ${JSON.stringify(arr)}`;
+  };
+
+  const getStringExpressionString = (resource: string, value: string) => {
+    if (!value) {
+      return "";
+    }
+    return `${resource} == "${value}"`;
+  };
+
   function buildCondition(
     condition:
       | DatabaseLevelCondition
       | SchemaLevelCondition
       | TableLevelCondition
+      | ColumnLevelCondition
   ): string {
-    if ("table" in condition) {
-      return `${CEL_ATTRIBUTE_RESOURCE_DATABASE} == "${
-        condition.database
-      }" && ${CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME} == "${
-        condition.schema
-      }" && ${CEL_ATTRIBUTE_RESOURCE_TABLE_NAME} in ${JSON.stringify(condition.table)}`;
+    const databaseExpression = `${CEL_ATTRIBUTE_RESOURCE_DATABASE} == "${condition.database}"`;
+    if ("column" in condition) {
+      return [
+        databaseExpression,
+        getStringExpressionString(
+          CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+          condition.schema
+        ),
+        getStringExpressionString(
+          CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+          condition.table
+        ),
+        getArrayExpressionString(
+          CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+          condition.column
+        ),
+      ]
+        .filter((str) => str)
+        .join(" && ");
+    } else if ("table" in condition) {
+      return [
+        databaseExpression,
+        getStringExpressionString(
+          CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+          condition.schema
+        ),
+        getArrayExpressionString(
+          CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+          condition.table
+        ),
+      ]
+        .filter((str) => str)
+        .join(" && ");
     } else if ("schema" in condition) {
-      return `${CEL_ATTRIBUTE_RESOURCE_DATABASE} == "${
-        condition.database
-      }" && ${CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME} in ${JSON.stringify(condition.schema)}`;
+      return [
+        databaseExpression,
+        getArrayExpressionString(
+          CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+          condition.schema
+        ),
+      ]
+        .filter((str) => str)
+        .join(" && ");
     } else {
       return `${CEL_ATTRIBUTE_RESOURCE_DATABASE} in ${JSON.stringify(condition.database)}`;
     }
@@ -249,6 +322,7 @@ const convertToCELString = (
       | DatabaseLevelCondition
       | SchemaLevelCondition
       | TableLevelCondition
+      | ColumnLevelCondition
     )[]
   ): string {
     if (conditions.length === 1) {
@@ -497,6 +571,38 @@ const mergeTableLevelConditions = (
       database,
       schema,
       table: groupedConditions[key],
+    };
+    mergedConditions.push(condition);
+  }
+
+  return mergedConditions;
+};
+
+const mergeColumnLevelConditions = (
+  conditions: ColumnLevelCondition[]
+): ColumnLevelCondition[] => {
+  const groupedConditions: Record<string, string[]> = {};
+
+  for (const condition of conditions) {
+    const { database, schema, table, column } = condition;
+    const key = `${database}:${schema}:${table}`;
+
+    if (groupedConditions[key]) {
+      groupedConditions[key] = [...groupedConditions[key], ...column];
+    } else {
+      groupedConditions[key] = [...column];
+    }
+  }
+
+  const mergedConditions: ColumnLevelCondition[] = [];
+
+  for (const key of Object.keys(groupedConditions)) {
+    const [database, schema, table] = key.split(":");
+    const condition: ColumnLevelCondition = {
+      database,
+      schema,
+      table,
+      column: groupedConditions[key],
     };
     mergedConditions.push(condition);
   }

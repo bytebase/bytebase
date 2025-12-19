@@ -9,7 +9,7 @@
     :consistent-menu-width="false"
     :clear-filter-after-select="false"
     :placeholder="$t('cel.condition.select-value')"
-    :disabled="!allowAdmin"
+    :disabled="readonly"
     max-tag-count="responsive"
     size="small"
     style="min-width: 12rem; width: auto; max-width: 20rem; overflow-x: hidden"
@@ -51,7 +51,7 @@ const emit = defineEmits<{
 }>();
 
 const context = useExprEditorContext();
-const { allowAdmin } = context;
+const { readonly } = context;
 const state = reactive<LocalState>({
   loading: false,
   rawOptionList: [],

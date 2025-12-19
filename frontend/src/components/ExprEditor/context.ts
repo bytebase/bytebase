@@ -9,7 +9,7 @@ export type OptionConfig = {
 };
 
 export type ExprEditorContext = {
-  allowAdmin: Ref<boolean>;
+  readonly: Ref<boolean>;
   enableRawExpression: Ref<boolean>;
   factorList: Ref<Factor[]>;
   optionConfigMap: Ref<Map<Factor, OptionConfig>>;
