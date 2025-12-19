@@ -93,6 +93,7 @@
     "new": "作成する",
     "add": "追加",
     "confirm-and-update": "確認して更新する",
+    "confirm-and-add": "確認して追加する",
     "query": "お問い合わせ",
     "transfer": "移行",
     "schema": "スキーマ",

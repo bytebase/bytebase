@@ -1,6 +1,16 @@
 <template>
   <div>
-    <div class="flex flex-wrap gap-4 mb-4">
+    <div v-if="!disabled" class="textinfolabel mb-1">
+      {{ $t('sql-review.input-then-press-enter') }}
+    </div>
+    <BBTextField
+      v-model:value="inputValue"
+      pattern="[a-z]+"
+      :disabled="disabled"
+      :placeholder="$t('sql-review.input-then-press-enter')"
+      @keyup.enter="push($event)"
+    />
+    <div v-if="value.length > 0" class="flex flex-wrap gap-4 mt-4">
       <BBBadge
         v-for="(val, i) in value"
         :key="i"
@@ -9,13 +19,6 @@
         @remove="remove(val)"
       />
     </div>
-    <BBTextField
-      v-if="!disabled"
-      v-model:value="inputValue"
-      pattern="[a-z]+"
-      :placeholder="$t('sql-review.input-then-press-enter')"
-      @keyup.enter="push($event)"
-    />
   </div>
 </template>
 
