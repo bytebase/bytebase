@@ -197,7 +197,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 
 	if sheetID != nil {
 		mc.sheetSha256 = *sheetID
-
 	}
 
 	if isChangeDatabaseTask(task) {

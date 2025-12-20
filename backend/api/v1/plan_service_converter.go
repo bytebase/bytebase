@@ -292,19 +292,16 @@ func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *s
 	}
 }
 
-func convertToPlanCheckRuns(projectID string, planUID int64, runs []*store.PlanCheckRunMessage) ([]*v1pb.PlanCheckRun, error) {
+func convertToPlanCheckRuns(projectID string, planUID int64, runs []*store.PlanCheckRunMessage) []*v1pb.PlanCheckRun {
 	var planCheckRuns []*v1pb.PlanCheckRun
 	for _, run := range runs {
-		converted, err := convertToPlanCheckRun(projectID, planUID, run)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert plan check run")
-		}
+		converted := convertToPlanCheckRun(projectID, planUID, run)
 		planCheckRuns = append(planCheckRuns, converted)
 	}
-	return planCheckRuns, nil
+	return planCheckRuns
 }
 
-func convertToPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
+func convertToPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRunMessage) *v1pb.PlanCheckRun {
 	converted := &v1pb.PlanCheckRun{
 		Name:       common.FormatPlanCheckRun(projectID, planUID, int64(run.UID)),
 		CreateTime: timestamppb.New(run.CreatedAt),
@@ -315,7 +312,7 @@ func convertToPlanCheckRun(projectID string, planUID int64, run *store.PlanCheck
 		Results:    convertToPlanCheckRunResults(run.Result.Results),
 		Error:      run.Result.Error,
 	}
-	return converted, nil
+	return converted
 }
 
 func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type {

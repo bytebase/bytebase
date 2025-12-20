@@ -800,10 +800,7 @@ func (s *PlanService) ListPlanCheckRuns(ctx context.Context, request *connect.Re
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list plan check runs, error: %v", err))
 	}
-	converted, err := convertToPlanCheckRuns(projectID, planUID, planCheckRuns)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert plan check runs, error: %v", err))
-	}
+	converted := convertToPlanCheckRuns(projectID, planUID, planCheckRuns)
 
 	return connect.NewResponse(&v1pb.ListPlanCheckRunsResponse{
 		PlanCheckRuns: converted,
