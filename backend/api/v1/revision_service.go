@@ -278,7 +278,7 @@ func convertToRevisions(ctx context.Context, s *store.Store, parent string, revi
 
 func convertToRevision(ctx context.Context, s *store.Store, parent string, revision *store.RevisionMessage) (*v1pb.Revision, error) {
 	sheetSha256 := revision.Payload.SheetSha256
-	sheet, err := s.GetSheetMetadata(ctx, sheetSha256)
+	sheet, err := s.GetSheetTruncated(ctx, sheetSha256)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %q", sheetSha256)
 	}
