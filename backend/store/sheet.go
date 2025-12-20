@@ -172,7 +172,7 @@ func (s *Store) HasSheets(ctx context.Context, sha256Hexes ...string) (bool, err
 	q := qb.Q().Space(`
 		SELECT COUNT(*)
 		FROM sheet_blob
-		WHERE sha256 IN (SELECT decode(unnest(?), 'hex'))`,
+		WHERE sha256 IN (SELECT decode(unnest(CAST(? AS TEXT[])), 'hex'))`,
 		sha256Hexes)
 
 	query, args, err := q.ToSQL()
