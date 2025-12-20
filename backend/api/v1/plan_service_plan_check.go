@@ -172,16 +172,8 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	sheet, err := s.GetSheetMetadata(ctx, sheetSha256)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %s", sheetSha256)
-	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %s not found", sheetSha256)
-	}
 
 	enableSDL := config.Type == storepb.PlanConfig_ChangeDatabaseConfig_SDL
-
 	var planCheckRuns []*store.PlanCheckRunMessage
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
 		PlanUID: plan.UID,

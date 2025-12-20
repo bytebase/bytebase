@@ -32,17 +32,6 @@ service RevisionService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Creates a new schema revision.
-  // Permissions required: bb.revisions.create
-  rpc CreateRevision(CreateRevisionRequest) returns (Revision) {
-    option (google.api.http) = {
-      post: "/v1/{parent=instances/*/databases/*}/revisions"
-      body: "revision"
-    };
-    option (bytebase.v1.permission) = "bb.revisions.create";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   // Creates multiple schema revisions in a single operation.
   // Permissions required: bb.revisions.create
   rpc BatchCreateRevisions(BatchCreateRevisionsRequest) returns (BatchCreateRevisionsResponse) {

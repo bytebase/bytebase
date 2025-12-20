@@ -40,9 +40,6 @@ const (
 	// RevisionServiceGetRevisionProcedure is the fully-qualified name of the RevisionService's
 	// GetRevision RPC.
 	RevisionServiceGetRevisionProcedure = "/bytebase.v1.RevisionService/GetRevision"
-	// RevisionServiceCreateRevisionProcedure is the fully-qualified name of the RevisionService's
-	// CreateRevision RPC.
-	RevisionServiceCreateRevisionProcedure = "/bytebase.v1.RevisionService/CreateRevision"
 	// RevisionServiceBatchCreateRevisionsProcedure is the fully-qualified name of the RevisionService's
 	// BatchCreateRevisions RPC.
 	RevisionServiceBatchCreateRevisionsProcedure = "/bytebase.v1.RevisionService/BatchCreateRevisions"
@@ -59,9 +56,6 @@ type RevisionServiceClient interface {
 	// Retrieves a schema revision by name.
 	// Permissions required: bb.revisions.get
 	GetRevision(context.Context, *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error)
-	// Creates a new schema revision.
-	// Permissions required: bb.revisions.create
-	CreateRevision(context.Context, *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error)
 	// Creates multiple schema revisions in a single operation.
 	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(context.Context, *connect.Request[v1.BatchCreateRevisionsRequest]) (*connect.Response[v1.BatchCreateRevisionsResponse], error)
@@ -93,12 +87,6 @@ func NewRevisionServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(revisionServiceMethods.ByName("GetRevision")),
 			connect.WithClientOptions(opts...),
 		),
-		createRevision: connect.NewClient[v1.CreateRevisionRequest, v1.Revision](
-			httpClient,
-			baseURL+RevisionServiceCreateRevisionProcedure,
-			connect.WithSchema(revisionServiceMethods.ByName("CreateRevision")),
-			connect.WithClientOptions(opts...),
-		),
 		batchCreateRevisions: connect.NewClient[v1.BatchCreateRevisionsRequest, v1.BatchCreateRevisionsResponse](
 			httpClient,
 			baseURL+RevisionServiceBatchCreateRevisionsProcedure,
@@ -118,7 +106,6 @@ func NewRevisionServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 type revisionServiceClient struct {
 	listRevisions        *connect.Client[v1.ListRevisionsRequest, v1.ListRevisionsResponse]
 	getRevision          *connect.Client[v1.GetRevisionRequest, v1.Revision]
-	createRevision       *connect.Client[v1.CreateRevisionRequest, v1.Revision]
 	batchCreateRevisions *connect.Client[v1.BatchCreateRevisionsRequest, v1.BatchCreateRevisionsResponse]
 	deleteRevision       *connect.Client[v1.DeleteRevisionRequest, emptypb.Empty]
 }
@@ -131,11 +118,6 @@ func (c *revisionServiceClient) ListRevisions(ctx context.Context, req *connect.
 // GetRevision calls bytebase.v1.RevisionService.GetRevision.
 func (c *revisionServiceClient) GetRevision(ctx context.Context, req *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error) {
 	return c.getRevision.CallUnary(ctx, req)
-}
-
-// CreateRevision calls bytebase.v1.RevisionService.CreateRevision.
-func (c *revisionServiceClient) CreateRevision(ctx context.Context, req *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error) {
-	return c.createRevision.CallUnary(ctx, req)
 }
 
 // BatchCreateRevisions calls bytebase.v1.RevisionService.BatchCreateRevisions.
@@ -156,9 +138,6 @@ type RevisionServiceHandler interface {
 	// Retrieves a schema revision by name.
 	// Permissions required: bb.revisions.get
 	GetRevision(context.Context, *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error)
-	// Creates a new schema revision.
-	// Permissions required: bb.revisions.create
-	CreateRevision(context.Context, *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error)
 	// Creates multiple schema revisions in a single operation.
 	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(context.Context, *connect.Request[v1.BatchCreateRevisionsRequest]) (*connect.Response[v1.BatchCreateRevisionsResponse], error)
@@ -186,12 +165,6 @@ func NewRevisionServiceHandler(svc RevisionServiceHandler, opts ...connect.Handl
 		connect.WithSchema(revisionServiceMethods.ByName("GetRevision")),
 		connect.WithHandlerOptions(opts...),
 	)
-	revisionServiceCreateRevisionHandler := connect.NewUnaryHandler(
-		RevisionServiceCreateRevisionProcedure,
-		svc.CreateRevision,
-		connect.WithSchema(revisionServiceMethods.ByName("CreateRevision")),
-		connect.WithHandlerOptions(opts...),
-	)
 	revisionServiceBatchCreateRevisionsHandler := connect.NewUnaryHandler(
 		RevisionServiceBatchCreateRevisionsProcedure,
 		svc.BatchCreateRevisions,
@@ -210,8 +183,6 @@ func NewRevisionServiceHandler(svc RevisionServiceHandler, opts ...connect.Handl
 			revisionServiceListRevisionsHandler.ServeHTTP(w, r)
 		case RevisionServiceGetRevisionProcedure:
 			revisionServiceGetRevisionHandler.ServeHTTP(w, r)
-		case RevisionServiceCreateRevisionProcedure:
-			revisionServiceCreateRevisionHandler.ServeHTTP(w, r)
 		case RevisionServiceBatchCreateRevisionsProcedure:
 			revisionServiceBatchCreateRevisionsHandler.ServeHTTP(w, r)
 		case RevisionServiceDeleteRevisionProcedure:
@@ -231,10 +202,6 @@ func (UnimplementedRevisionServiceHandler) ListRevisions(context.Context, *conne
 
 func (UnimplementedRevisionServiceHandler) GetRevision(context.Context, *connect.Request[v1.GetRevisionRequest]) (*connect.Response[v1.Revision], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.GetRevision is not implemented"))
-}
-
-func (UnimplementedRevisionServiceHandler) CreateRevision(context.Context, *connect.Request[v1.CreateRevisionRequest]) (*connect.Response[v1.Revision], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RevisionService.CreateRevision is not implemented"))
 }
 
 func (UnimplementedRevisionServiceHandler) BatchCreateRevisions(context.Context, *connect.Request[v1.BatchCreateRevisionsRequest]) (*connect.Response[v1.BatchCreateRevisionsResponse], error) {

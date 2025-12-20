@@ -244,6 +244,11 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
 	}
 
+	// Batch check sheets existence
+	if err := checkPlanSpecsSheetsExistence(ctx, s.store, req.Plan.Specs); err != nil {
+		return nil, err
+	}
+
 	planMessage := &store.PlanMessage{
 		ProjectID:   projectID,
 		PipelineUID: nil,
@@ -474,6 +479,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				updatedByID[spec.Id] = spec
 			}
 
+			// Batch check sheets existence
+			if err := checkPlanSpecsSheetsExistence(ctx, s.store, updated); err != nil {
+				return nil, err
+			}
+
 			// Handle task updates for specs
 			tasksMap := map[int]*store.TaskMessage{}
 			var taskPatchList []*store.TaskPatch
@@ -608,13 +618,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 								return nil
 							}
 
-							sheet, err := s.store.GetSheetMetadata(ctx, newSheetSha256)
-							if err != nil {
-								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet %q: %v", oldSheetName, err))
-							}
-							if sheet == nil {
-								return connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", oldSheetName))
-							}
 							doUpdate = true
 							taskPatch.SheetSha256 = &newSheetSha256
 
@@ -1321,4 +1324,33 @@ func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (storepb.Task_Type, error) {
 	default:
 		return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unknown spec config type")
 	}
+}
+
+func checkPlanSpecsSheetsExistence(ctx context.Context, s *store.Store, specs []*v1pb.Plan_Spec) error {
+	var sheetSha256s []string
+	for _, spec := range specs {
+		if config := spec.GetChangeDatabaseConfig(); config != nil {
+			if config.Sheet != "" {
+				_, sha, err := common.GetProjectResourceIDSheetSha256(config.Sheet)
+				if err == nil {
+					sheetSha256s = append(sheetSha256s, sha)
+				}
+			}
+		} else if config := spec.GetExportDataConfig(); config != nil {
+			if config.Sheet != "" {
+				_, sha, err := common.GetProjectResourceIDSheetSha256(config.Sheet)
+				if err == nil {
+					sheetSha256s = append(sheetSha256s, sha)
+				}
+			}
+		}
+	}
+	exist, err := s.HasSheets(ctx, sheetSha256s...)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check sheets: %v", err))
+	}
+	if !exist {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("some sheets are not found"))
+	}
+	return nil
 }

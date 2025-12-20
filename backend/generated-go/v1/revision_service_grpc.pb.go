@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	RevisionService_ListRevisions_FullMethodName        = "/bytebase.v1.RevisionService/ListRevisions"
 	RevisionService_GetRevision_FullMethodName          = "/bytebase.v1.RevisionService/GetRevision"
-	RevisionService_CreateRevision_FullMethodName       = "/bytebase.v1.RevisionService/CreateRevision"
 	RevisionService_BatchCreateRevisions_FullMethodName = "/bytebase.v1.RevisionService/BatchCreateRevisions"
 	RevisionService_DeleteRevision_FullMethodName       = "/bytebase.v1.RevisionService/DeleteRevision"
 )
@@ -39,9 +38,6 @@ type RevisionServiceClient interface {
 	// Retrieves a schema revision by name.
 	// Permissions required: bb.revisions.get
 	GetRevision(ctx context.Context, in *GetRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
-	// Creates a new schema revision.
-	// Permissions required: bb.revisions.create
-	CreateRevision(ctx context.Context, in *CreateRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
 	// Creates multiple schema revisions in a single operation.
 	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(ctx context.Context, in *BatchCreateRevisionsRequest, opts ...grpc.CallOption) (*BatchCreateRevisionsResponse, error)
@@ -72,16 +68,6 @@ func (c *revisionServiceClient) GetRevision(ctx context.Context, in *GetRevision
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Revision)
 	err := c.cc.Invoke(ctx, RevisionService_GetRevision_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *revisionServiceClient) CreateRevision(ctx context.Context, in *CreateRevisionRequest, opts ...grpc.CallOption) (*Revision, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Revision)
-	err := c.cc.Invoke(ctx, RevisionService_CreateRevision_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -120,9 +106,6 @@ type RevisionServiceServer interface {
 	// Retrieves a schema revision by name.
 	// Permissions required: bb.revisions.get
 	GetRevision(context.Context, *GetRevisionRequest) (*Revision, error)
-	// Creates a new schema revision.
-	// Permissions required: bb.revisions.create
-	CreateRevision(context.Context, *CreateRevisionRequest) (*Revision, error)
 	// Creates multiple schema revisions in a single operation.
 	// Permissions required: bb.revisions.create
 	BatchCreateRevisions(context.Context, *BatchCreateRevisionsRequest) (*BatchCreateRevisionsResponse, error)
@@ -144,9 +127,6 @@ func (UnimplementedRevisionServiceServer) ListRevisions(context.Context, *ListRe
 }
 func (UnimplementedRevisionServiceServer) GetRevision(context.Context, *GetRevisionRequest) (*Revision, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRevision not implemented")
-}
-func (UnimplementedRevisionServiceServer) CreateRevision(context.Context, *CreateRevisionRequest) (*Revision, error) {
-	return nil, status.Error(codes.Unimplemented, "method CreateRevision not implemented")
 }
 func (UnimplementedRevisionServiceServer) BatchCreateRevisions(context.Context, *BatchCreateRevisionsRequest) (*BatchCreateRevisionsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BatchCreateRevisions not implemented")
@@ -211,24 +191,6 @@ func _RevisionService_GetRevision_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RevisionService_CreateRevision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateRevisionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RevisionServiceServer).CreateRevision(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RevisionService_CreateRevision_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RevisionServiceServer).CreateRevision(ctx, req.(*CreateRevisionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RevisionService_BatchCreateRevisions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BatchCreateRevisionsRequest)
 	if err := dec(in); err != nil {
@@ -279,10 +241,6 @@ var RevisionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRevision",
 			Handler:    _RevisionService_GetRevision_Handler,
-		},
-		{
-			MethodName: "CreateRevision",
-			Handler:    _RevisionService_CreateRevision_Handler,
 		},
 		{
 			MethodName: "BatchCreateRevisions",

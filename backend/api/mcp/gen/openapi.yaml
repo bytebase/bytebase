@@ -4379,44 +4379,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchCreateRevisionsResponse'
-  /bytebase.v1.RevisionService/CreateRevision:
-    post:
-      tags:
-        - bytebase.v1.RevisionService
-      summary: 'Creates a new schema revision.  Permissions required: bb.revisions.create'
-      description: |-
-        Creates a new schema revision.
-         Permissions required: bb.revisions.create
-      operationId: bytebase.v1.RevisionService.CreateRevision
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.CreateRevisionRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.Revision'
   /bytebase.v1.RevisionService/DeleteRevision:
     post:
       tags:

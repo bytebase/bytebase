@@ -672,11 +672,10 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +
 	"\vDECLARATIVE\x10\x02:Z\xeaAW\n" +
-	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}2\x87\a\n" +
+	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}2\xdc\x05\n" +
 	"\x0fRevisionService\x12\xb0\x01\n" +
 	"\rListRevisions\x12!.bytebase.v1.ListRevisionsRequest\x1a\".bytebase.v1.ListRevisionsResponse\"X\xdaA\x06parent\x8a\xea0\x11bb.revisions.list\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{parent=instances/*/databases/*}/revisions\x12\x9c\x01\n" +
-	"\vGetRevision\x12\x1f.bytebase.v1.GetRevisionRequest\x1a\x15.bytebase.v1.Revision\"U\xdaA\x04name\x8a\xea0\x10bb.revisions.get\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{name=instances/*/databases/*/revisions/*}\x12\xa8\x01\n" +
-	"\x0eCreateRevision\x12\".bytebase.v1.CreateRevisionRequest\x1a\x15.bytebase.v1.Revision\"[\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x82\xd3\xe4\x93\x02::\brevision\"./v1/{parent=instances/*/databases/*}/revisions\x12\xcd\x01\n" +
+	"\vGetRevision\x12\x1f.bytebase.v1.GetRevisionRequest\x1a\x15.bytebase.v1.Revision\"U\xdaA\x04name\x8a\xea0\x10bb.revisions.get\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{name=instances/*/databases/*/revisions/*}\x12\xcd\x01\n" +
 	"\x14BatchCreateRevisions\x12(.bytebase.v1.BatchCreateRevisionsRequest\x1a).bytebase.v1.BatchCreateRevisionsResponse\"`\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x82\xd3\xe4\x93\x02?:\x01*\":/v1/{parent=instances/*/databases/*}/revisions:batchCreate\x12\xa6\x01\n" +
 	"\x0eDeleteRevision\x12\".bytebase.v1.DeleteRevisionRequest\x1a\x16.google.protobuf.Empty\"X\xdaA\x04name\x8a\xea0\x13bb.revisions.delete\x90\xea0\x01\x82\xd3\xe4\x93\x020*./v1/{name=instances/*/databases/*/revisions/*}B\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14RevisionServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
@@ -718,16 +717,14 @@ var file_v1_revision_service_proto_depIdxs = []int32{
 	0,  // 6: bytebase.v1.Revision.type:type_name -> bytebase.v1.Revision.Type
 	1,  // 7: bytebase.v1.RevisionService.ListRevisions:input_type -> bytebase.v1.ListRevisionsRequest
 	6,  // 8: bytebase.v1.RevisionService.GetRevision:input_type -> bytebase.v1.GetRevisionRequest
-	3,  // 9: bytebase.v1.RevisionService.CreateRevision:input_type -> bytebase.v1.CreateRevisionRequest
-	4,  // 10: bytebase.v1.RevisionService.BatchCreateRevisions:input_type -> bytebase.v1.BatchCreateRevisionsRequest
-	7,  // 11: bytebase.v1.RevisionService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
-	2,  // 12: bytebase.v1.RevisionService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
-	8,  // 13: bytebase.v1.RevisionService.GetRevision:output_type -> bytebase.v1.Revision
-	8,  // 14: bytebase.v1.RevisionService.CreateRevision:output_type -> bytebase.v1.Revision
-	5,  // 15: bytebase.v1.RevisionService.BatchCreateRevisions:output_type -> bytebase.v1.BatchCreateRevisionsResponse
-	10, // 16: bytebase.v1.RevisionService.DeleteRevision:output_type -> google.protobuf.Empty
-	12, // [12:17] is the sub-list for method output_type
-	7,  // [7:12] is the sub-list for method input_type
+	4,  // 9: bytebase.v1.RevisionService.BatchCreateRevisions:input_type -> bytebase.v1.BatchCreateRevisionsRequest
+	7,  // 10: bytebase.v1.RevisionService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
+	2,  // 11: bytebase.v1.RevisionService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
+	8,  // 12: bytebase.v1.RevisionService.GetRevision:output_type -> bytebase.v1.Revision
+	5,  // 13: bytebase.v1.RevisionService.BatchCreateRevisions:output_type -> bytebase.v1.BatchCreateRevisionsResponse
+	10, // 14: bytebase.v1.RevisionService.DeleteRevision:output_type -> google.protobuf.Empty
+	11, // [11:15] is the sub-list for method output_type
+	7,  // [7:11] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name
