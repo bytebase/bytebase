@@ -16,9 +16,6 @@ func (x *ReleasePayload_File) Equal(y *ReleasePayload_File) bool {
 	if x.Path != y.Path {
 		return false
 	}
-	if x.Sheet != y.Sheet {
-		return false
-	}
 	if x.SheetSha256 != y.SheetSha256 {
 		return false
 	}

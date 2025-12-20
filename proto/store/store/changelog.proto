@@ -12,9 +12,8 @@ message ChangelogPayload {
   // optional
   int64 revision = 2;
 
-  // The sheet that holds the content.
-  // Format: projects/{project}/sheets/{sheet}
-  string sheet = 3;
+  // The SHA256 hash of the sheet content (hex-encoded).
+  string sheet_sha256 = 3;
 
   string version = 4;
 

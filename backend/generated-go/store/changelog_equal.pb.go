@@ -16,7 +16,7 @@ func (x *ChangelogPayload) Equal(y *ChangelogPayload) bool {
 	if x.Revision != y.Revision {
 		return false
 	}
-	if x.Sheet != y.Sheet {
+	if x.SheetSha256 != y.SheetSha256 {
 		return false
 	}
 	if x.Version != y.Version {

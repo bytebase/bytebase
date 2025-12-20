@@ -51,8 +51,7 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 		return true, nil, err
 	}
 
-	sheetID := int(task.Payload.GetSheetId())
-	sheet, err := exec.store.GetSheetFull(ctx, sheetID)
+	sheet, err := exec.store.GetSheetFull(ctx, task.Payload.GetSheetSha256())
 	if err != nil {
 		return true, nil, err
 	}
@@ -75,7 +74,7 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 		return nil
 	}
 
-	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, sheetContent, task.Payload.GetSchemaVersion(), &sheetID, execFunc)
+	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, sheetContent, task.Payload.GetSchemaVersion(), &sheet.Sha256, execFunc)
 }
 
 func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, sheetContent string) (string, error) {
@@ -156,19 +155,13 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 
 	// Extract the sheet ID from the changelog payload
 	var previousUserSDLText string
-	if mostRecentChangelog.Payload != nil && mostRecentChangelog.Payload.Sheet != "" {
-		sheetResource := mostRecentChangelog.Payload.Sheet
-
-		// Extract sheet ID from resource string format: "projects/{project}/sheets/{sheet}"
-		_, sheetID, err := common.GetProjectResourceIDSheetUID(sheetResource)
-		if err != nil {
-			return "", nil, errors.Wrapf(err, "failed to extract sheet ID from resource %s", sheetResource)
-		}
+	if mostRecentChangelog.Payload != nil && mostRecentChangelog.Payload.SheetSha256 != "" {
+		sheetSha256 := mostRecentChangelog.Payload.SheetSha256
 
 		// Get the sheet content (original SDL text)
-		sheet, err := s.GetSheetFull(ctx, sheetID)
+		sheet, err := s.GetSheetFull(ctx, sheetSha256)
 		if err != nil {
-			return "", nil, errors.Wrapf(err, "failed to get sheet statement for previous SDL changelog sheet ID %d", sheetID)
+			return "", nil, errors.Wrapf(err, "failed to get sheet statement for previous SDL changelog sheet %s", sheetSha256)
 		}
 		previousUserSDLText = sheet.Statement
 	}

@@ -360,7 +360,8 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 	case *storepb.IssueCommentPayload_IssueUpdate_:
 		r.Event = convertToIssueCommentEventIssueUpdate(e)
 	case *storepb.IssueCommentPayload_PlanSpecUpdate_:
-		r.Event = convertToIssueCommentEventPlanSpecUpdate(e)
+		projectID, _, _ := common.GetProjectIDIssueUID(issueName)
+		r.Event = convertToIssueCommentEventPlanSpecUpdate(projectID, e)
 	}
 
 	return r
@@ -444,12 +445,19 @@ func convertToIssueCommentEventApprovalStatus(s storepb.IssuePayloadApproval_App
 	}
 }
 
-func convertToIssueCommentEventPlanSpecUpdate(u *storepb.IssueCommentPayload_PlanSpecUpdate_) *v1pb.IssueComment_PlanSpecUpdate_ {
-	return &v1pb.IssueComment_PlanSpecUpdate_{
+func convertToIssueCommentEventPlanSpecUpdate(projectID string, u *storepb.IssueCommentPayload_PlanSpecUpdate_) *v1pb.IssueComment_PlanSpecUpdate_ {
+	result := &v1pb.IssueComment_PlanSpecUpdate_{
 		PlanSpecUpdate: &v1pb.IssueComment_PlanSpecUpdate{
-			Spec:      u.PlanSpecUpdate.Spec,
-			FromSheet: u.PlanSpecUpdate.FromSheet,
-			ToSheet:   u.PlanSpecUpdate.ToSheet,
+			Spec: u.PlanSpecUpdate.Spec,
 		},
 	}
+	if fromSha256 := u.PlanSpecUpdate.GetFromSheetSha256(); fromSha256 != "" {
+		fromSheet := common.FormatSheet(projectID, fromSha256)
+		result.PlanSpecUpdate.FromSheet = &fromSheet
+	}
+	if toSha256 := u.PlanSpecUpdate.GetToSheetSha256(); toSha256 != "" {
+		toSheet := common.FormatSheet(projectID, toSha256)
+		result.PlanSpecUpdate.ToSheet = &toSheet
+	}
+	return result
 }

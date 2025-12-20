@@ -8,7 +8,8 @@ import "store/common.proto";
 option go_package = "generated-go/store";
 
 message PlanCheckRunConfig {
-  int32 sheet_uid = 1;
+  // The SHA256 hash of the sheet content (hex-encoded).
+  string sheet_sha256 = 1;
   string instance_id = 2;
   string database_name = 3;
 

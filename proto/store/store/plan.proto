@@ -49,9 +49,8 @@ message PlanConfig {
     // Multi-database format: [instances/{instance-id}/databases/{database-name}].
     // Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
     repeated string targets = 10;
-    // The resource name of the sheet.
-    // Format: projects/{project}/sheets/{sheet}
-    string sheet = 2;
+    // The SHA256 hash of the sheet content (hex-encoded).
+    string sheet_sha256 = 2;
     // The resource name of the release.
     // Format: projects/{project}/releases/{release}
     string release = 9;
@@ -80,9 +79,8 @@ message PlanConfig {
     // Multi-database format: [instances/{instance-id}/databases/{database-name}].
     // Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
     repeated string targets = 5;
-    // The resource name of the sheet.
-    // Format: projects/{project}/sheets/{sheet}
-    string sheet = 2;
+    // The SHA256 hash of the sheet content (hex-encoded).
+    string sheet_sha256 = 2;
     // The format of the exported file.
     ExportFormat format = 3;
     // The zip password provided by users.

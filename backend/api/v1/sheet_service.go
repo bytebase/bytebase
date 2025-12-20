@@ -42,10 +42,6 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 	if request.Msg.Sheet == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("sheet must be set"))
 	}
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
 
 	projectResourceID, err := common.GetProjectID(request.Msg.Parent)
 	if err != nil {
@@ -64,13 +60,13 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, user.Email, request.Msg.Sheet)
-	sheets, err := s.store.CreateSheets(ctx, project.ResourceID, user.Email, storeSheetCreate)
+	storeSheetCreate := convertToStoreSheetMessage(request.Msg.Sheet)
+	sheets, err := s.store.CreateSheets(ctx, storeSheetCreate)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}
 	sheet := sheets[0]
-	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
+	v1pbSheet, err := s.convertToAPISheetMessage(ctx, project.ResourceID, sheet)
 	if err != nil {
 		return nil, err
 	}
@@ -80,10 +76,6 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.Request[v1pb.BatchCreateSheetsRequest]) (*connect.Response[v1pb.BatchCreateSheetsResponse], error) {
 	if len(request.Msg.Requests) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("requests must be set"))
-	}
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
 	projectResourceID, err := common.GetProjectID(request.Msg.Parent)
@@ -109,18 +101,18 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("Sheet Parent %q does not match BatchCreateSheetsRequest.Parent %q", r.Parent, request.Msg.Parent))
 		}
 
-		storeSheetCreate := convertToStoreSheetMessage(project.ResourceID, user.Email, r.Sheet)
+		storeSheetCreate := convertToStoreSheetMessage(r.Sheet)
 
 		sheetCreates = append(sheetCreates, storeSheetCreate)
 	}
 
-	sheets, err := s.store.CreateSheets(ctx, project.ResourceID, user.Email, sheetCreates...)
+	sheets, err := s.store.CreateSheets(ctx, sheetCreates...)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}
 	response := &v1pb.BatchCreateSheetsResponse{}
 	for _, sheet := range sheets {
-		v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
+		v1pbSheet, err := s.convertToAPISheetMessage(ctx, project.ResourceID, sheet)
 		if err != nil {
 			return nil, err
 		}
@@ -131,12 +123,12 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 
 // GetSheet returns the requested sheet, cutoff the content if the content is too long and the `raw` flag in request is false.
 func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1pb.GetSheetRequest]) (*connect.Response[v1pb.Sheet], error) {
-	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Msg.Name)
+	projectResourceID, sheetSha256, err := common.GetProjectResourceIDSheetSha256(request.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if sheetUID <= 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid sheet id %d, must be positive integer", sheetUID))
+	if sheetSha256 == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid sheet sha256, must be non-empty"))
 	}
 
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
@@ -155,9 +147,9 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 	var sheet *store.SheetMessage
 	var sheetErr error
 	if request.Msg.Raw {
-		sheet, sheetErr = s.store.GetSheetFull(ctx, sheetUID)
+		sheet, sheetErr = s.store.GetSheetFull(ctx, sheetSha256)
 	} else {
-		sheet, sheetErr = s.store.GetSheetMetadata(ctx, sheetUID)
+		sheet, sheetErr = s.store.GetSheetMetadata(ctx, sheetSha256)
 	}
 	if sheetErr != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(sheetErr, "failed to get sheet"))
@@ -165,40 +157,34 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 	if sheet == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the sheet"))
 	}
-	// Verify project matches
-	if sheet.ProjectID != project.ResourceID {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet not found in project"))
-	}
 
-	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
+	v1pbSheet, err := s.convertToAPISheetMessage(ctx, project.ResourceID, sheet)
 	if err != nil {
 		return nil, err
 	}
 	return connect.NewResponse(v1pbSheet), nil
 }
 
-func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
+func (s *SheetService) convertToAPISheetMessage(ctx context.Context, projectID string, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		ResourceID: &sheet.ProjectID,
+		ResourceID: &projectID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
 	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with id %s not found", sheet.ProjectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with id %s not found", projectID))
 	}
 
 	return &v1pb.Sheet{
-		Name:        common.FormatSheet(project.ResourceID, sheet.UID),
+		Name:        common.FormatSheet(project.ResourceID, sheet.Sha256),
 		Content:     []byte(sheet.Statement),
 		ContentSize: sheet.Size,
 	}, nil
 }
 
-func convertToStoreSheetMessage(projectID string, creator string, sheet *v1pb.Sheet) *store.SheetMessage {
+func convertToStoreSheetMessage(sheet *v1pb.Sheet) *store.SheetMessage {
 	sheetMessage := &store.SheetMessage{
-		ProjectID: projectID,
-		Creator:   creator,
 		Statement: string(sheet.Content),
 	}
 

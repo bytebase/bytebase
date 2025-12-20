@@ -78,7 +78,7 @@ type TaskPatch struct {
 	DatabaseName *string
 	Type         *storepb.Task_Type
 
-	SheetID           *int
+	SheetSha256       *string
 	SchemaVersion     *string
 	ExportFormat      *storepb.ExportFormat
 	ExportPassword    *string
@@ -400,8 +400,8 @@ func (s *Store) UpdateTask(ctx context.Context, patch *TaskPatch) (*TaskMessage,
 	}
 
 	payloadParts := qb.Q()
-	if v := patch.SheetID; v != nil {
-		payloadParts.Join(" || ", "jsonb_build_object('sheetId', ?::INT)", *v)
+	if v := patch.SheetSha256; v != nil {
+		payloadParts.Join(" || ", "jsonb_build_object('sheetSha256', ?::TEXT)", *v)
 	}
 	if v := patch.SchemaVersion; v != nil {
 		payloadParts.Join(" || ", "jsonb_build_object('schemaVersion', ?::TEXT)", *v)

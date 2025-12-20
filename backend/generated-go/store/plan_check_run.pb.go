@@ -22,11 +22,12 @@ const (
 )
 
 type PlanCheckRunConfig struct {
-	state        protoimpl.MessageState `protogen:"open.v1"`
-	SheetUid     int32                  `protobuf:"varint,1,opt,name=sheet_uid,json=sheetUid,proto3" json:"sheet_uid,omitempty"`
-	InstanceId   string                 `protobuf:"bytes,2,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	DatabaseName string                 `protobuf:"bytes,3,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
-	GhostFlags   map[string]string      `protobuf:"bytes,4,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The SHA256 hash of the sheet content (hex-encoded).
+	SheetSha256  string            `protobuf:"bytes,1,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
+	InstanceId   string            `protobuf:"bytes,2,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	DatabaseName string            `protobuf:"bytes,3,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	GhostFlags   map[string]string `protobuf:"bytes,4,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// If set, a backup of the modified data will be created automatically before any changes are applied.
 	EnablePriorBackup bool `protobuf:"varint,5,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
 	// Whether to use gh-ost for online schema migration.
@@ -67,11 +68,11 @@ func (*PlanCheckRunConfig) Descriptor() ([]byte, []int) {
 	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PlanCheckRunConfig) GetSheetUid() int32 {
+func (x *PlanCheckRunConfig) GetSheetSha256() string {
 	if x != nil {
-		return x.SheetUid
+		return x.SheetSha256
 	}
-	return 0
+	return ""
 }
 
 func (x *PlanCheckRunConfig) GetInstanceId() string {
@@ -601,9 +602,9 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xfd\x02\n" +
-	"\x12PlanCheckRunConfig\x12\x1b\n" +
-	"\tsheet_uid\x18\x01 \x01(\x05R\bsheetUid\x12\x1f\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\x83\x03\n" +
+	"\x12PlanCheckRunConfig\x12!\n" +
+	"\fsheet_sha256\x18\x01 \x01(\tR\vsheetSha256\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
 	"instanceId\x12#\n" +
 	"\rdatabase_name\x18\x03 \x01(\tR\fdatabaseName\x12S\n" +

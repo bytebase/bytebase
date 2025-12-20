@@ -10,7 +10,7 @@ func (x *PlanCheckRunConfig) Equal(y *PlanCheckRunConfig) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.SheetUid != y.SheetUid {
+	if x.SheetSha256 != y.SheetSha256 {
 		return false
 	}
 	if x.InstanceId != y.InstanceId {

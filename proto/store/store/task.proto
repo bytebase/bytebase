@@ -27,8 +27,8 @@ message Task {
   string skipped_reason = 2;
   // UUID that identifies the spec this task implements.
   string spec_id = 3;
-  // The sheet ID containing SQL statements for this task.
-  int32 sheet_id = 4;
+  // The SHA256 hash of the sheet content (hex-encoded).
+  string sheet_sha256 = 4;
 
   // The environment where the database will be created.
   string environment_id = 5;

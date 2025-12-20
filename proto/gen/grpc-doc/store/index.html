@@ -2519,11 +2519,10 @@ optional </p></td>
                 </tr>
               
                 <tr>
-                  <td>sheet</td>
+                  <td>sheet_sha256</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The sheet that holds the content.
-Format: projects/{project}/sheets/{sheet} </p></td>
+                  <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
                 </tr>
               
                 <tr>
@@ -8018,17 +8017,17 @@ Format: projects/{project}/plans/{plan}/specs/{spec} </p></td>
                 </tr>
               
                 <tr>
-                  <td>from_sheet</td>
+                  <td>from_sheet_sha256</td>
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
-                  <td><p>Format: projects/{project}/sheets/{sheet} </p></td>
+                  <td><p>The SHA256 hash of the previous sheet content (hex-encoded). </p></td>
                 </tr>
               
                 <tr>
-                  <td>to_sheet</td>
+                  <td>to_sheet_sha256</td>
                   <td><a href="#string">string</a></td>
                   <td>optional</td>
-                  <td><p>Format: projects/{project}/sheets/{sheet} </p></td>
+                  <td><p>The SHA256 hash of the new sheet content (hex-encoded). </p></td>
                 </tr>
               
             </tbody>
@@ -8200,11 +8199,10 @@ Single database group format: [projects/{project}/databaseGroups/{databaseGroup}
                 </tr>
               
                 <tr>
-                  <td>sheet</td>
+                  <td>sheet_sha256</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The resource name of the sheet.
-Format: projects/{project}/sheets/{sheet} </p></td>
+                  <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
                 </tr>
               
                 <tr>
@@ -8439,11 +8437,10 @@ Single database group format: [projects/{project}/databaseGroups/{databaseGroup}
                 </tr>
               
                 <tr>
-                  <td>sheet</td>
+                  <td>sheet_sha256</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The resource name of the sheet.
-Format: projects/{project}/sheets/{sheet} </p></td>
+                  <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
                 </tr>
               
                 <tr>
@@ -8684,10 +8681,10 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
             <tbody>
               
                 <tr>
-                  <td>sheet_uid</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td>sheet_sha256</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
                 </tr>
               
                 <tr>
@@ -10026,18 +10023,10 @@ NOTIFY_ISSUE_APPROVED represents the issue approved notification.</p></td>
                 </tr>
               
                 <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The sheet that holds the content.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
                   <td>sheet_sha256</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The SHA256 hash value of the sheet. </p></td>
+                  <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
                 </tr>
               
                 <tr>
@@ -11116,18 +11105,10 @@ Can be empty. </p></td>
                 </tr>
               
                 <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The sheet that holds the content.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
                   <td>sheet_sha256</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The SHA256 hash value of the sheet. </p></td>
+                  <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
                 </tr>
               
                 <tr>
@@ -12759,10 +12740,10 @@ Default to this mode.</p></td>
                 </tr>
               
                 <tr>
-                  <td>sheet_id</td>
-                  <td><a href="#int32">int32</a></td>
+                  <td>sheet_sha256</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The sheet ID containing SQL statements for this task. </p></td>
+                  <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
                 </tr>
               
                 <tr>
