@@ -292,40 +292,27 @@ func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *s
 	}
 }
 
-func convertToPlanCheckRuns(ctx context.Context, s *store.Store, projectID string, planUID int64, runs []*store.PlanCheckRunMessage) ([]*v1pb.PlanCheckRun, error) {
+func convertToPlanCheckRuns(projectID string, planUID int64, runs []*store.PlanCheckRunMessage) []*v1pb.PlanCheckRun {
 	var planCheckRuns []*v1pb.PlanCheckRun
 	for _, run := range runs {
-		converted, err := convertToPlanCheckRun(ctx, s, projectID, planUID, run)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert plan check run")
-		}
+		converted := convertToPlanCheckRun(projectID, planUID, run)
 		planCheckRuns = append(planCheckRuns, converted)
 	}
-	return planCheckRuns, nil
+	return planCheckRuns
 }
 
-func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string, planUID int64, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
+func convertToPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRunMessage) *v1pb.PlanCheckRun {
 	converted := &v1pb.PlanCheckRun{
 		Name:       common.FormatPlanCheckRun(projectID, planUID, int64(run.UID)),
 		CreateTime: timestamppb.New(run.CreatedAt),
 		Type:       convertToPlanCheckRunType(run.Type),
 		Status:     convertToPlanCheckRunStatus(run.Status),
 		Target:     common.FormatDatabase(run.Config.InstanceId, run.Config.DatabaseName),
-		Sheet:      "",
+		Sheet:      common.FormatSheet(projectID, run.Config.GetSheetSha256()),
 		Results:    convertToPlanCheckRunResults(run.Result.Results),
 		Error:      run.Result.Error,
 	}
-
-	if sheetSha256 := run.Config.GetSheetSha256(); sheetSha256 != "" {
-		_, err := s.GetSheetMetadata(ctx, sheetSha256)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet")
-		}
-		// Sheets are now project-agnostic, no need to check projectID
-		converted.Sheet = common.FormatSheet(projectID, sheetSha256)
-	}
-
-	return converted, nil
+	return converted
 }
 
 func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type {

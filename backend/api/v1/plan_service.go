@@ -608,9 +608,12 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 								return nil
 							}
 
-							_, err = s.store.GetSheetMetadata(ctx, newSheetSha256)
+							sheet, err := s.store.GetSheetMetadata(ctx, newSheetSha256)
 							if err != nil {
 								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet %q: %v", oldSheetName, err))
+							}
+							if sheet == nil {
+								return connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", oldSheetName))
 							}
 							doUpdate = true
 							taskPatch.SheetSha256 = &newSheetSha256
@@ -797,10 +800,7 @@ func (s *PlanService) ListPlanCheckRuns(ctx context.Context, request *connect.Re
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list plan check runs, error: %v", err))
 	}
-	converted, err := convertToPlanCheckRuns(ctx, s.store, projectID, planUID, planCheckRuns)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert plan check runs, error: %v", err))
-	}
+	converted := convertToPlanCheckRuns(projectID, planUID, planCheckRuns)
 
 	return connect.NewResponse(&v1pb.ListPlanCheckRunsResponse{
 		PlanCheckRuns: converted,
