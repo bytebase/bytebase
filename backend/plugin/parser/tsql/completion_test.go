@@ -154,6 +154,14 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 						},
 					},
 				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name: "EmployeeIdSeq",
+					},
+					{
+						Name: "OrderSeq",
+					},
+				},
 			},
 			{
 				Name: "MySchema",

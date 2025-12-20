@@ -140,6 +140,14 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 						`,
 					},
 				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name: "seq1",
+					},
+					{
+						Name: "user_id_seq",
+					},
+				},
 			},
 			{
 				Name: "test",
@@ -169,6 +177,11 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 								Type: "varchar",
 							},
 						},
+					},
+				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name: "order_id_seq",
 					},
 				},
 			},
