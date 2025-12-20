@@ -7,7 +7,6 @@
 package store
 
 import (
-	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -88,10 +87,7 @@ type ReleasePayload_File struct {
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// The path of the file, e.g., `2.2/V0001_create_table.sql`.
 	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
-	// The sheet that holds the content.
-	// Format: projects/{project}/sheets/{sheet}
-	Sheet string `protobuf:"bytes,3,opt,name=sheet,proto3" json:"sheet,omitempty"`
-	// The SHA256 hash value of the sheet.
+	// The SHA256 hash of the sheet content (hex-encoded).
 	SheetSha256 string           `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	Type        SchemaChangeType `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.store.SchemaChangeType" json:"type,omitempty"`
 	Version     string           `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
@@ -141,13 +137,6 @@ func (x *ReleasePayload_File) GetId() string {
 func (x *ReleasePayload_File) GetPath() string {
 	if x != nil {
 		return x.Path
-	}
-	return ""
-}
-
-func (x *ReleasePayload_File) GetSheet() string {
-	if x != nil {
-		return x.Sheet
 	}
 	return ""
 }
@@ -236,21 +225,19 @@ var File_store_release_proto protoreflect.FileDescriptor
 
 const file_store_release_proto_rawDesc = "" +
 	"\n" +
-	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x19google/api/resource.proto\x1a\x12store/common.proto\"\xef\x03\n" +
+	"\x13store/release.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\xc6\x03\n" +
 	"\x0eReleasePayload\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x129\n" +
 	"\x05files\x18\x02 \x03(\v2#.bytebase.store.ReleasePayload.FileR\x05files\x12G\n" +
 	"\n" +
-	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x1a\xef\x01\n" +
+	"vcs_source\x18\x03 \x01(\v2(.bytebase.store.ReleasePayload.VCSSourceR\tvcsSource\x1a\xc6\x01\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04path\x18\x02 \x01(\tR\x04path\x12-\n" +
-	"\x05sheet\x18\x03 \x01(\tB\x17\xfaA\x14\n" +
-	"\x12bytebase.com/SheetR\x05sheet\x12!\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\x12!\n" +
 	"\fsheet_sha256\x18\x04 \x01(\tR\vsheetSha256\x124\n" +
 	"\x04type\x18\x05 \x01(\x0e2 .bytebase.store.SchemaChangeTypeR\x04type\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12!\n" +
-	"\fenable_ghost\x18\a \x01(\bR\venableGhost\x1aQ\n" +
+	"\fenable_ghost\x18\a \x01(\bR\venableGhostJ\x04\b\x03\x10\x04\x1aQ\n" +
 	"\tVCSSource\x122\n" +
 	"\bvcs_type\x18\x01 \x01(\x0e2\x17.bytebase.store.VCSTypeR\avcsType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03urlB\x8f\x01\n" +

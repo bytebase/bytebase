@@ -127,16 +127,13 @@ func (s *RevisionService) CreateRevision(
 	if database == nil || database.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
 	}
-	sheetProjectID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Revision.Sheet)
+	_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(request.Revision.Sheet)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get sheet from %v", request.Revision.Sheet))
 	}
-	sheet, err := s.store.GetSheetMetadata(ctx, sheetUID)
+	sheet, err := s.store.GetSheetMetadata(ctx, sheetSha256)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet"))
-	}
-	if sheet.ProjectID != sheetProjectID {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %d not found in project %s", sheetUID, sheetProjectID))
 	}
 
 	if request.Revision.TaskRun != "" {
@@ -185,8 +182,9 @@ func (s *RevisionService) CreateRevision(
 		for _, f := range release.Payload.Files {
 			if f.Id == fileID {
 				foundFile = true
-				if f.Sheet != request.Revision.Sheet {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("The sheet in file %q is %q which is different from revision.sheet %q", fileID, f.Sheet, request.Revision.Sheet))
+				fileSheet := common.FormatSheet(release.ProjectID, f.SheetSha256)
+				if fileSheet != request.Revision.Sheet {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("The sheet in file %q is %q which is different from revision.sheet %q", fileID, fileSheet, request.Revision.Sheet))
 				}
 				break
 			}
@@ -274,16 +272,24 @@ func convertToRevisions(ctx context.Context, s *store.Store, parent string, revi
 }
 
 func convertToRevision(ctx context.Context, s *store.Store, parent string, revision *store.RevisionMessage) (*v1pb.Revision, error) {
-	sheetProjectID, sheetUID, err := common.GetProjectResourceIDSheetUID(revision.Payload.Sheet)
+	sheetSha256 := revision.Payload.SheetSha256
+	sheet, err := s.GetSheetMetadata(ctx, sheetSha256)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheetUID from %q", revision.Payload.Sheet)
+		return nil, errors.Wrapf(err, "failed to get sheet %q", sheetSha256)
 	}
-	sheet, err := s.GetSheetMetadata(ctx, sheetUID)
+	if sheet == nil {
+		return nil, errors.Errorf("sheet %q not found", sheetSha256)
+	}
+
+	database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &revision.InstanceID,
+		DatabaseName: &revision.DatabaseName,
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %q", revision.Payload.Sheet)
+		return nil, errors.Wrapf(err, "failed to get database")
 	}
-	if sheet.ProjectID != sheetProjectID {
-		return nil, errors.Errorf("sheet %d not in project %s", sheetUID, sheetProjectID)
+	if database == nil {
+		return nil, errors.Errorf("database not found")
 	}
 
 	taskRunName := revision.Payload.TaskRun
@@ -291,7 +297,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		Name:          fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
 		Release:       revision.Payload.Release,
 		CreateTime:    timestamppb.New(revision.CreatedAt),
-		Sheet:         revision.Payload.Sheet,
+		Sheet:         common.FormatSheet(database.ProjectID, sheetSha256),
 		SheetSha256:   revision.Payload.SheetSha256,
 		Statement:     sheet.Statement,
 		StatementSize: sheet.Size,
@@ -333,8 +339,7 @@ func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, s
 		Payload: &storepb.RevisionPayload{
 			Release:     revision.Release,
 			File:        revision.File,
-			Sheet:       revision.Sheet,
-			SheetSha256: sheet.GetSha256Hex(),
+			SheetSha256: sheet.Sha256,
 			TaskRun:     revision.TaskRun,
 			Type:        convertRevisionType(revision.Type),
 		},

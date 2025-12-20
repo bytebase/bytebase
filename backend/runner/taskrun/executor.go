@@ -65,9 +65,7 @@ type migrateContext struct {
 	instance *store.InstanceMessage
 	database *store.DatabaseMessage
 	// nullable if type=baseline
-	sheet *store.SheetMessage
-	// empty if type=baseline
-	sheetName string
+	sheetSha256 string
 
 	task        *store.TaskMessage
 	taskRunUID  int
@@ -117,7 +115,7 @@ func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *sto
 	return project.Setting.PostgresDatabaseTenantMode, nil
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, statement string, schemaVersion string, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, statement string, schemaVersion string, sheetID *string) (terminated bool, result *storepb.TaskRunResult, err error) {
 	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, stateCfg, syncer, profile, task, taskRunUID, statement, schemaVersion, sheetID, nil /* default */)
 }
 
@@ -133,7 +131,7 @@ func runMigrationWithFunc(
 	taskRunUID int,
 	statement string,
 	schemaVersion string,
-	sheetID *int,
+	sheetID *string,
 	execFunc execFuncType,
 ) (terminated bool, result *storepb.TaskRunResult, err error) {
 	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheetID, taskRunUID, dbFactory)
@@ -152,7 +150,7 @@ func runMigrationWithFunc(
 	return postMigration(ctx, store, mc, skipped)
 }
 
-func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, schemaVersion string, sheetID *int, taskRunUID int, dbFactory *dbfactory.DBFactory) (*migrateContext, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, schemaVersion string, sheetID *string, taskRunUID int, dbFactory *dbfactory.DBFactory) (*migrateContext, error) {
 	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, err
@@ -198,12 +196,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	}
 
 	if sheetID != nil {
-		sheet, err := stores.GetSheetMetadata(ctx, *sheetID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet")
-		}
-		mc.sheet = sheet
-		mc.sheetName = common.FormatSheet(pipeline.ProjectID, sheet.UID)
+		mc.sheetSha256 = *sheetID
 	}
 
 	if isChangeDatabaseTask(task) {
@@ -441,7 +434,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:     mc.taskRunName,
 			Revision:    0,
-			Sheet:       mc.sheetName,
+			SheetSha256: mc.sheetSha256,
 			Version:     mc.version,
 			Type:        changelogType,
 			GitCommit:   mc.profile.GitCommit,
@@ -482,18 +475,13 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 				Payload: &storepb.RevisionPayload{
 					Release:     mc.release.release,
 					File:        mc.release.file,
-					Sheet:       "",
-					SheetSha256: "",
+					SheetSha256: mc.sheetSha256,
 					TaskRun:     mc.taskRunName,
 					Type:        storepb.SchemaChangeType_VERSIONED,
 				},
 			}
 			if mc.task.Type == storepb.Task_DATABASE_SDL {
 				r.Payload.Type = storepb.SchemaChangeType_DECLARATIVE
-			}
-			if mc.sheet != nil {
-				r.Payload.Sheet = mc.sheetName
-				r.Payload.SheetSha256 = mc.sheet.GetSha256Hex()
 			}
 
 			revision, err := storeInstance.CreateRevision(ctx, r)

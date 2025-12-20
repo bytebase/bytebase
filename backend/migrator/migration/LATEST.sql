@@ -224,7 +224,7 @@ CREATE TABLE task_run (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     task_id integer NOT NULL REFERENCES task(id),
-    sheet_id integer REFERENCES sheet(id),
+    sheet_sha256 bytea REFERENCES sheet_blob(sha256),
     attempt integer NOT NULL,
     status text NOT NULL CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     started_at timestamptz NULL,

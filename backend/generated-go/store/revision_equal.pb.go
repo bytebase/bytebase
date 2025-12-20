@@ -16,9 +16,6 @@ func (x *RevisionPayload) Equal(y *RevisionPayload) bool {
 	if x.File != y.File {
 		return false
 	}
-	if x.Sheet != y.Sheet {
-		return false
-	}
 	if x.SheetSha256 != y.SheetSha256 {
 		return false
 	}

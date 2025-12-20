@@ -54,7 +54,7 @@ func getPlanCheckRunsFromPlanSpecs(ctx context.Context, s *store.Store, plan *st
 		var updatedRuns []*store.PlanCheckRunMessage
 		countMap := make(map[string]int32)
 		for _, run := range planCheckRuns {
-			key := fmt.Sprintf("%s/%d", run.Type, run.Config.GetSheetUid())
+			key := fmt.Sprintf("%s/%s", run.Type, run.Config.GetSheetSha256())
 			if countMap[key] >= project.Setting.GetCiSamplingSize() {
 				continue
 			}
@@ -113,22 +113,19 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 		return nil, errors.Errorf("no matched databases found in database group %q", target)
 	}
 
-	sheetUIDs, err := getSheetUIDsFromChangeDatabaseConfig(config)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheets from change database config")
-	}
-	if len(sheetUIDs) == 0 {
+	sheetSha256s := getSheetSha256sFromChangeDatabaseConfig(config)
+	if len(sheetSha256s) == 0 {
 		return nil, errors.Errorf("change database config must have sheet specified, but got none")
 	}
 
 	var planCheckRuns []*store.PlanCheckRunMessage
 	for _, matchedDatabase := range databaseGroup.MatchedDatabases {
-		for _, sheetUID := range sheetUIDs {
+		for _, sheetSha256 := range sheetSha256s {
 			database, err := getDatabaseMessage(ctx, s, matchedDatabase.Name)
 			if err != nil {
 				return nil, err
 			}
-			runs, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
+			runs, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetSha256, database)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get plan check runs from spec with change database config for database %q", database.DatabaseName)
 			}
@@ -140,11 +137,8 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 }
 
 func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
-	sheetUIDs, err := getSheetUIDsFromChangeDatabaseConfig(config)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheets from change database config")
-	}
-	if len(sheetUIDs) == 0 {
+	sheetSha256s := getSheetSha256sFromChangeDatabaseConfig(config)
+	if len(sheetSha256s) == 0 {
 		return nil, errors.Errorf("change database config must have sheet specified, but got none")
 	}
 
@@ -157,8 +151,8 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context,
 		if database.Deleted {
 			return nil, errors.Errorf("database %q was deleted", target)
 		}
-		for _, sheetUID := range sheetUIDs {
-			v, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
+		for _, sheetSha256 := range sheetSha256s {
+			v, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetSha256, database)
 			if err != nil {
 				return nil, err
 			}
@@ -168,7 +162,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context,
 	return checks, nil
 }
 
-func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig, sheetUID int, database *store.DatabaseMessage) ([]*store.PlanCheckRunMessage, error) {
+func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig, sheetSha256 string, database *store.DatabaseMessage) ([]*store.PlanCheckRunMessage, error) {
 	instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{
 		ResourceID: &database.InstanceID,
 	})
@@ -178,12 +172,12 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	sheet, err := s.GetSheetMetadata(ctx, sheetUID)
+	sheet, err := s.GetSheetMetadata(ctx, sheetSha256)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
+		return nil, errors.Wrapf(err, "failed to get sheet %s", sheetSha256)
 	}
-	if sheet.ProjectID != plan.ProjectID {
-		return nil, errors.Errorf("sheet %d not in project %s", sheetUID, plan.ProjectID)
+	if sheet == nil {
+		return nil, errors.Errorf("sheet %s not found", sheetSha256)
 	}
 
 	enableSDL := config.Type == storepb.PlanConfig_ChangeDatabaseConfig_SDL
@@ -194,7 +188,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Status:  store.PlanCheckRunStatusRunning,
 		Type:    store.PlanCheckDatabaseConnect,
 		Config: &storepb.PlanCheckRunConfig{
-			SheetUid:     int32(sheetUID),
+			SheetSha256:  sheetSha256,
 			InstanceId:   instance.ResourceID,
 			DatabaseName: database.DatabaseName,
 			EnableGhost:  config.EnableGhost,
@@ -207,7 +201,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Status:  store.PlanCheckRunStatusRunning,
 		Type:    store.PlanCheckDatabaseStatementAdvise,
 		Config: &storepb.PlanCheckRunConfig{
-			SheetUid:          int32(sheetUID),
+			SheetSha256:       sheetSha256,
 			InstanceId:        instance.ResourceID,
 			DatabaseName:      database.DatabaseName,
 			EnablePriorBackup: config.EnablePriorBackup,
@@ -220,7 +214,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Status:  store.PlanCheckRunStatusRunning,
 		Type:    store.PlanCheckDatabaseStatementSummaryReport,
 		Config: &storepb.PlanCheckRunConfig{
-			SheetUid:     int32(sheetUID),
+			SheetSha256:  sheetSha256,
 			InstanceId:   instance.ResourceID,
 			DatabaseName: database.DatabaseName,
 			EnableGhost:  config.EnableGhost,
@@ -233,7 +227,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 			Status:  store.PlanCheckRunStatusRunning,
 			Type:    store.PlanCheckDatabaseGhostSync,
 			Config: &storepb.PlanCheckRunConfig{
-				SheetUid:     int32(sheetUID),
+				SheetSha256:  sheetSha256,
 				InstanceId:   instance.ResourceID,
 				DatabaseName: database.DatabaseName,
 				EnableGhost:  config.EnableGhost,
@@ -246,14 +240,10 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	return planCheckRuns, nil
 }
 
-func getSheetUIDsFromChangeDatabaseConfig(config *storepb.PlanConfig_ChangeDatabaseConfig) ([]int, error) {
-	var sheetUIDs []int
-	if config.Sheet != "" {
-		_, sheetUID, err := common.GetProjectResourceIDSheetUID(config.Sheet)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
-		}
-		sheetUIDs = append(sheetUIDs, sheetUID)
+func getSheetSha256sFromChangeDatabaseConfig(config *storepb.PlanConfig_ChangeDatabaseConfig) []string {
+	var sheetSha256s []string
+	if config.SheetSha256 != "" {
+		sheetSha256s = append(sheetSha256s, config.SheetSha256)
 	}
-	return sheetUIDs, nil
+	return sheetSha256s
 }

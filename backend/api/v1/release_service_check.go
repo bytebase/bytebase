@@ -444,9 +444,9 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 					var previousUserSDL string
 					if len(revisions) > 0 {
 						// Get sheet statement from revision
-						_, sheetUID, err := common.GetProjectResourceIDSheetUID(revisions[0].Payload.Sheet)
-						if err == nil {
-							if sheet, err := s.store.GetSheetFull(ctx, sheetUID); err == nil {
+						sheetSha256 := revisions[0].Payload.SheetSha256
+						if sheetSha256 != "" {
+							if sheet, err := s.store.GetSheetFull(ctx, sheetSha256); err == nil {
 								previousUserSDL = sheet.Statement
 							}
 						}

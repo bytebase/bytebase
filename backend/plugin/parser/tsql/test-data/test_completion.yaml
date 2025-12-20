@@ -23,6 +23,16 @@
       definition: ""
       comment: ""
       priority: 0
+    - text: EmployeeIdSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: OrderSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: Address
       type: TABLE
       definition: ""
@@ -88,6 +98,16 @@
       priority: 0
     - text: dbo
       type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: EmployeeIdSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: OrderSeq
+      type: SEQUENCE
       definition: ""
       comment: ""
       priority: 0
@@ -180,6 +200,16 @@
       definition: ""
       comment: ""
       priority: 0
+    - text: EmployeeIdSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: OrderSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: Address
       type: TABLE
       definition: ""
@@ -243,6 +273,16 @@
       definition: ""
       comment: ""
       priority: 0
+    - text: EmployeeIdSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: OrderSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: Address
       type: TABLE
       definition: ""
@@ -289,6 +329,16 @@
       definition: ""
       comment: ""
       priority: 0
+    - text: EmployeeIdSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: OrderSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: Address
       type: TABLE
       definition: ""
@@ -307,6 +357,16 @@
 - description: Completion table in specify schema
   input: SELECT * FROM dbo.|
   want:
+    - text: EmployeeIdSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: OrderSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: Address
       type: TABLE
       definition: ""
@@ -337,6 +397,16 @@
       priority: 0
     - text: dbo
       type: SCHEMA
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: EmployeeIdSeq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: OrderSeq
+      type: SEQUENCE
       definition: ""
       comment: ""
       priority: 0

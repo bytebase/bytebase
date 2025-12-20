@@ -350,9 +350,8 @@ type PlanConfig_ChangeDatabaseConfig struct {
 	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
 	// Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
 	Targets []string `protobuf:"bytes,10,rep,name=targets,proto3" json:"targets,omitempty"`
-	// The resource name of the sheet.
-	// Format: projects/{project}/sheets/{sheet}
-	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	// The SHA256 hash of the sheet content (hex-encoded).
+	SheetSha256 string `protobuf:"bytes,2,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// The resource name of the release.
 	// Format: projects/{project}/releases/{release}
 	Release    string                               `protobuf:"bytes,9,opt,name=release,proto3" json:"release,omitempty"`
@@ -403,9 +402,9 @@ func (x *PlanConfig_ChangeDatabaseConfig) GetTargets() []string {
 	return nil
 }
 
-func (x *PlanConfig_ChangeDatabaseConfig) GetSheet() string {
+func (x *PlanConfig_ChangeDatabaseConfig) GetSheetSha256() string {
 	if x != nil {
-		return x.Sheet
+		return x.SheetSha256
 	}
 	return ""
 }
@@ -451,9 +450,8 @@ type PlanConfig_ExportDataConfig struct {
 	// Multi-database format: [instances/{instance-id}/databases/{database-name}].
 	// Single database group format: [projects/{project}/databaseGroups/{databaseGroup}].
 	Targets []string `protobuf:"bytes,5,rep,name=targets,proto3" json:"targets,omitempty"`
-	// The resource name of the sheet.
-	// Format: projects/{project}/sheets/{sheet}
-	Sheet string `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	// The SHA256 hash of the sheet content (hex-encoded).
+	SheetSha256 string `protobuf:"bytes,2,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// The format of the exported file.
 	Format ExportFormat `protobuf:"varint,3,opt,name=format,proto3,enum=bytebase.store.ExportFormat" json:"format,omitempty"`
 	// The zip password provided by users.
@@ -500,9 +498,9 @@ func (x *PlanConfig_ExportDataConfig) GetTargets() []string {
 	return nil
 }
 
-func (x *PlanConfig_ExportDataConfig) GetSheet() string {
+func (x *PlanConfig_ExportDataConfig) GetSheetSha256() string {
 	if x != nil {
-		return x.Sheet
+		return x.SheetSha256
 	}
 	return ""
 }
@@ -633,7 +631,7 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\xfe\f\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\x98\r\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
 	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12E\n" +
@@ -654,11 +652,11 @@ const file_store_plan_proto_rawDesc = "" +
 	"\tcollation\x18\x05 \x01(\tB\x03\xe0A\x01R\tcollation\x12\x1d\n" +
 	"\acluster\x18\x06 \x01(\tB\x03\xe0A\x01R\acluster\x12\x19\n" +
 	"\x05owner\x18\a \x01(\tB\x03\xe0A\x01R\x05owner\x12%\n" +
-	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xd2\x03\n" +
+	"\venvironment\x18\t \x01(\tB\x03\xe0A\x01R\venvironment\x1a\xdf\x03\n" +
 	"\x14ChangeDatabaseConfig\x12\x18\n" +
 	"\atargets\x18\n" +
-	" \x03(\tR\atargets\x12\x14\n" +
-	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x12\x18\n" +
+	" \x03(\tR\atargets\x12!\n" +
+	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12\x18\n" +
 	"\arelease\x18\t \x01(\tR\arelease\x12H\n" +
 	"\x04type\x18\x03 \x01(\x0e24.bytebase.store.PlanConfig.ChangeDatabaseConfig.TypeR\x04type\x12`\n" +
 	"\vghost_flags\x18\a \x03(\v2?.bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntryR\n" +
@@ -671,10 +669,10 @@ const file_store_plan_proto_rawDesc = "" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aMIGRATE\x10\x01\x12\a\n" +
-	"\x03SDL\x10\x02\x1a\xa6\x01\n" +
+	"\x03SDL\x10\x02\x1a\xb3\x01\n" +
 	"\x10ExportDataConfig\x12\x18\n" +
-	"\atargets\x18\x05 \x03(\tR\atargets\x12\x14\n" +
-	"\x05sheet\x18\x02 \x01(\tR\x05sheet\x124\n" +
+	"\atargets\x18\x05 \x03(\tR\atargets\x12!\n" +
+	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x124\n" +
 	"\x06format\x18\x03 \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x12\x1f\n" +
 	"\bpassword\x18\x04 \x01(\tH\x00R\bpassword\x88\x01\x01B\v\n" +
 	"\t_password\x1a\x81\x02\n" +

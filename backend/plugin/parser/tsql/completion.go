@@ -477,6 +477,50 @@ func (m CompletionMap) insertMetadataViews(c *Completer, linkedServer string, da
 	}
 }
 
+func (m CompletionMap) insertMetadataSequences(c *Completer, linkedServer string, database string, schema string) {
+	if linkedServer != "" {
+		return
+	}
+
+	databaseName, schemaName := c.defaultDatabase, c.defaultSchema
+	if database != "" {
+		databaseName = database
+	}
+	if schema != "" {
+		schemaName = schema
+	}
+	if databaseName == "" || schemaName == "" {
+		return
+	}
+
+	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, databaseName)
+	if err != nil {
+		return
+	}
+	if databaseMetadata == nil {
+		return
+	}
+	for _, schema := range databaseMetadata.ListSchemaNames() {
+		if strings.EqualFold(schema, schemaName) {
+			schemaName = schema
+			break
+		}
+	}
+
+	schemaMetadata := databaseMetadata.GetSchemaMetadata(schemaName)
+	if schemaMetadata == nil {
+		return
+	}
+	for _, seq := range schemaMetadata.ListSequenceNames() {
+		if _, ok := m[seq]; !ok {
+			m[seq] = base.Candidate{
+				Type: base.CandidateTypeSequence,
+				Text: c.quotedIdentifierIfNeeded(seq),
+			}
+		}
+	}
+}
+
 // quptedType is the type of quoted token, SQL Server allows quoted identifiers by different characters.
 // https://learn.microsoft.com/en-us/sql/relational-databases/databases/database-identifiers?view=sql-server-ver16
 type quotedType int
@@ -695,6 +739,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	tableEntries := make(CompletionMap)
 	columnEntries := make(CompletionMap)
 	viewEntries := make(CompletionMap)
+	sequenceEntries := make(CompletionMap)
 
 	for tokenCandidate, continuous := range candidates.Tokens {
 		if tokenCandidate < 0 || tokenCandidate >= len(c.parser.SymbolicNames) {
@@ -738,6 +783,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				if context.flags&objectFlagShowObject != 0 {
 					tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
 					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
+					sequenceEntries.insertMetadataSequences(c, context.linkedServer, context.database, context.schema)
 				}
 				if context.linkedServer == "" && context.database == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
 					// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
@@ -756,6 +802,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				if context.flags&objectFlagShowObject != 0 {
 					tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
 					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
+					sequenceEntries.insertMetadataSequences(c, context.linkedServer, context.database, context.schema)
 				}
 				if context.linkedServer == "" && context.database == "" && context.schema == "" && context.flags&objectFlagShowObject != 0 {
 					// User do not specify the server, database and schema, and want us complete the objects, we should also insert the ctes.
@@ -774,6 +821,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				if context.flags&objectFlagShowObject != 0 {
 					tableEntries.insertMetadataTables(c, context.linkedServer, context.database, context.schema)
 					viewEntries.insertMetadataViews(c, context.linkedServer, context.database, context.schema)
+					sequenceEntries.insertMetadataSequences(c, context.linkedServer, context.database, context.schema)
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *base.PhysicalTableReference:
@@ -894,6 +942,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	result = append(result, tableEntries.toSlice()...)
 	result = append(result, columnEntries.toSlice()...)
 	result = append(result, viewEntries.toSlice()...)
+	result = append(result, sequenceEntries.toSlice()...)
 	return result, nil
 }
 

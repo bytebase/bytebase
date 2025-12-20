@@ -70,10 +70,10 @@ func (x *IssueCommentPayload_PlanSpecUpdate) Equal(y *IssueCommentPayload_PlanSp
 	if x.Spec != y.Spec {
 		return false
 	}
-	if p, q := x.FromSheet, y.FromSheet; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+	if p, q := x.FromSheetSha256, y.FromSheetSha256; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
-	if p, q := x.ToSheet, y.ToSheet; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+	if p, q := x.ToSheetSha256, y.ToSheetSha256; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
 	return true

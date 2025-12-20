@@ -19,7 +19,7 @@ func (x *Task) Equal(y *Task) bool {
 	if x.SpecId != y.SpecId {
 		return false
 	}
-	if x.SheetId != y.SheetId {
+	if x.SheetSha256 != y.SheetSha256 {
 		return false
 	}
 	if x.EnvironmentId != y.EnvironmentId {

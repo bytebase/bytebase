@@ -46,10 +46,10 @@ func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, dep
 	return result
 }
 
-func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec) ([]*store.TaskMessage, error) {
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, dbFactory, spec, config.CreateDatabaseConfig, project)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, dbFactory, spec, config.CreateDatabaseConfig)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig)
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
@@ -59,7 +59,7 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, dbFactory *dbfa
 	return nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig, project *store.ProjectMessage) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig) ([]*store.TaskMessage, error) {
 	if c.Database == "" {
 		return nil, errors.Errorf("database name is required")
 	}
@@ -141,8 +141,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		if err != nil {
 			return nil, err
 		}
-		sheets, err := s.CreateSheets(ctx, project.ResourceID, common.SystemBotEmail, &store.SheetMessage{
-			Title:     fmt.Sprintf("Sheet for creating database %v", databaseName),
+		sheets, err := s.CreateSheets(ctx, &store.SheetMessage{
 			Statement: statement,
 		})
 		if err != nil {
@@ -162,7 +161,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 				Collation:     c.Collation,
 				EnvironmentId: dbEnvironmentID,
 				DatabaseName:  databaseName,
-				SheetId:       int32(sheet.UID),
+				SheetSha256:   sheet.Sha256,
 			},
 		}
 		return []*store.TaskMessage{
@@ -250,14 +249,10 @@ func getTaskCreatesFromExportDataConfig(
 		return nil, err
 	}
 
-	_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
-	}
 	payload := &storepb.Task{
-		SpecId:  spec.Id,
-		SheetId: int32(sheetUID),
-		Format:  c.Format,
+		SpecId:      spec.Id,
+		SheetSha256: c.SheetSha256,
+		Format:      c.Format,
 	}
 	if c.Password != nil {
 		payload.Password = *c.Password
@@ -287,10 +282,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 ) ([]*store.TaskMessage, error) {
 	switch c.Type {
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
-		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
-		}
 		env := ""
 		if database.EffectiveEnvironmentID != nil {
 			env = *database.EffectiveEnvironmentID
@@ -312,7 +303,7 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 			Type:         storepb.Task_DATABASE_MIGRATE,
 			Payload: &storepb.Task{
 				SpecId:            spec.Id,
-				SheetId:           int32(sheetUID),
+				SheetSha256:       c.SheetSha256,
 				Flags:             flags,
 				EnablePriorBackup: c.EnablePriorBackup,
 				EnableGhost:       c.EnableGhost,
@@ -321,10 +312,6 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 		return []*store.TaskMessage{taskCreate}, nil
 
 	case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
-		_, sheetUID, err := common.GetProjectResourceIDSheetUID(c.Sheet)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
-		}
 		env := ""
 		if database.EffectiveEnvironmentID != nil {
 			env = *database.EffectiveEnvironmentID
@@ -335,8 +322,8 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(
 			Environment:  env,
 			Type:         storepb.Task_DATABASE_SDL,
 			Payload: &storepb.Task{
-				SpecId:  spec.Id,
-				SheetId: int32(sheetUID),
+				SpecId:      spec.Id,
+				SheetSha256: c.SheetSha256,
 			},
 		}
 		return []*store.TaskMessage{taskCreate}, nil
@@ -411,16 +398,10 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 					continue
 				}
 
-				// Parse sheet ID from the file's sheet reference
-				_, sheetUID, err := common.GetProjectResourceIDSheetUID(file.Sheet)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q in release file %q", file.Sheet, file.Id)
-				}
-
 				// Create task payload
 				payload := &storepb.Task{
 					SpecId:        spec.Id,
-					SheetId:       int32(sheetUID),
+					SheetSha256:   file.SheetSha256,
 					SchemaVersion: file.Version,
 					EnableGhost:   file.EnableGhost,
 					TaskReleaseSource: &storepb.TaskReleaseSource{
@@ -455,14 +436,9 @@ func getTaskCreatesFromChangeDatabaseConfigWithRelease(
 					continue
 				}
 
-				// Parse sheet ID from the file's sheet reference
-				_, sheetUID, err := common.GetProjectResourceIDSheetUID(file.Sheet)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get sheet id from sheet %q in release file %q", file.Sheet, file.Id)
-				}
 				payload := &storepb.Task{
 					SpecId:        spec.Id,
-					SheetId:       int32(sheetUID),
+					SheetSha256:   file.SheetSha256,
 					SchemaVersion: file.Version,
 					TaskReleaseSource: &storepb.TaskReleaseSource{
 						File: common.FormatReleaseFile(c.Release, file.Id),

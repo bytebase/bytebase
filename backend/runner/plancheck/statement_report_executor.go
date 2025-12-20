@@ -48,10 +48,12 @@ type StatementReportExecutor struct {
 
 // Run runs the statement report executor.
 func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
-	sheetUID := int(config.SheetUid)
-	sheet, err := e.store.GetSheetMetadata(ctx, sheetUID)
+	sheet, err := e.store.GetSheetMetadata(ctx, config.SheetSha256)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
+		return nil, errors.Wrapf(err, "failed to get sheet %s", config.SheetSha256)
+	}
+	if sheet == nil {
+		return nil, errors.Errorf("sheet %s not found", config.SheetSha256)
 	}
 	if sheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -63,9 +65,12 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 			},
 		}, nil
 	}
-	fullSheet, err := e.store.GetSheetFull(ctx, sheetUID)
+	fullSheet, err := e.store.GetSheetFull(ctx, config.SheetSha256)
 	if err != nil {
 		return nil, err
+	}
+	if fullSheet == nil {
+		return nil, errors.Errorf("sheet full %s not found", config.SheetSha256)
 	}
 	statement := fullSheet.Statement
 

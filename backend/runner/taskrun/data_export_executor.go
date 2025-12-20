@@ -74,9 +74,12 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Errorf("instance not found")
 	}
 
-	sheet, err := exec.store.GetSheetFull(ctx, int(task.Payload.GetSheetId()))
+	sheet, err := exec.store.GetSheetFull(ctx, task.Payload.GetSheetSha256())
 	if err != nil {
 		return true, nil, err
+	}
+	if sheet == nil {
+		return true, nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
 	}
 	statement := sheet.Statement
 

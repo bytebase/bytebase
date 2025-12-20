@@ -10,6 +10,18 @@
       type: SCHEMA
       definition: ""
       comment: ""
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+    - text: test.order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
     - text: t1
       type: TABLE
       definition: ""
@@ -270,6 +282,18 @@
       type: SCHEMA
       definition: ""
       comment: ""
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+    - text: test.order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
     - text: t1
       type: TABLE
       definition: ""
@@ -356,6 +380,18 @@
       type: SCHEMA
       definition: ""
       comment: ""
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+    - text: test.order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
     - text: t1
       type: TABLE
       definition: ""
@@ -378,6 +414,10 @@
       comment: ""
 - input: SELECT * FROM test.|
   want:
+    - text: order_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
     - text: auto
       type: TABLE
       definition: ""
@@ -417,6 +457,29 @@
       definition: ""
       comment: ""
     - text: users
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+# Sequence-specific tests
+- input: SELECT * FROM public.|
+  want:
+    - text: seq1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+    - text: user_id_seq
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: t2
       type: TABLE
       definition: ""
       comment: ""

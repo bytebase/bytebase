@@ -324,6 +324,17 @@ func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
 	}
 }
 
+func (m CompletionMap) insertSequences(c *Completer, schemas map[string]bool) {
+	for schema := range schemas {
+		for _, seq := range c.listSequences(schema) {
+			m.Insert(base.Candidate{
+				Type: base.CandidateTypeSequence,
+				Text: c.quotedIdentifierIfNeeded(seq),
+			})
+		}
+	}
+}
+
 func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 	for schema := range schemas {
 		if len(schema) == 0 {
@@ -462,6 +473,18 @@ func (c *Completer) listViews(schema string) []string {
 	return c.metadataCache[schema].GetSchemaMetadata("").ListViewNames()
 }
 
+func (c *Completer) listSequences(schema string) []string {
+	if _, exists := c.metadataCache[schema]; !exists {
+		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, schema)
+		if err != nil || metadata == nil {
+			return nil
+		}
+		c.metadataCache[schema] = metadata
+	}
+
+	return c.metadataCache[schema].GetSchemaMetadata("").ListSequenceNames()
+}
+
 func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
 	keywordEntries := make(CompletionMap)
 	runtimeFunctionEntries := make(CompletionMap)
@@ -469,6 +492,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	tableEntries := make(CompletionMap)
 	columnEntries := make(CompletionMap)
 	viewEntries := make(CompletionMap)
+	sequenceEntries := make(CompletionMap)
 
 	for token, value := range candidates.Tokens {
 		entry := c.parser.SymbolicNames[token]
@@ -527,6 +551,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 
 				tableEntries.insertTables(c, schemas)
 				viewEntries.insertViews(c, schemas)
+				sequenceEntries.insertSequences(c, schemas)
 			}
 		case plsql.PlSqlParserRULE_general_element:
 			schema, table, flags := c.determineGeneralElementPartCandidates()
@@ -556,6 +581,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			if flags&ObjectFlagsShowTables != 0 {
 				tableEntries.insertTables(c, schemas)
 				viewEntries.insertViews(c, schemas)
+				sequenceEntries.insertSequences(c, schemas)
 
 				for _, reference := range c.references {
 					switch reference := reference.(type) {
@@ -660,6 +686,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	result = append(result, tableEntries.toSlice()...)
 	result = append(result, columnEntries.toSlice()...)
 	result = append(result, viewEntries.toSlice()...)
+	result = append(result, sequenceEntries.toSlice()...)
 	return result, nil
 }
 

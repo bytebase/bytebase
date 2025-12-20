@@ -459,6 +459,17 @@ func (s *SchemaMetadata) ListMaterializedViewNames() []string {
 	return result
 }
 
+// ListSequenceNames lists the sequence names.
+func (s *SchemaMetadata) ListSequenceNames() []string {
+	var result []string
+	for _, sequence := range s.internalSequences {
+		result = append(result, sequence.GetName())
+	}
+
+	slices.Sort(result)
+	return result
+}
+
 // CreateTable creates a new table in the schema.
 // Returns the created TableMetadata or an error if the table already exists.
 func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {

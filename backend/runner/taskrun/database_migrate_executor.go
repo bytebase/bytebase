@@ -62,10 +62,12 @@ func (exec *DatabaseMigrateExecutor) RunOnce(ctx context.Context, driverCtx cont
 }
 
 func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
-	sheetID := int(task.Payload.GetSheetId())
-	sheet, err := exec.store.GetSheetFull(ctx, sheetID)
+	sheet, err := exec.store.GetSheetFull(ctx, task.Payload.GetSheetSha256())
 	if err != nil {
 		return true, nil, err
+	}
+	if sheet == nil {
+		return true, nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
 	}
 	statement := sheet.Statement
 
@@ -125,7 +127,7 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 		}
 	}
 
-	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, statement, task.Payload.GetSchemaVersion(), &sheetID)
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, statement, task.Payload.GetSchemaVersion(), &sheet.Sha256)
 	if result != nil {
 		// Save prior backup detail to task run result.
 		result.PriorBackupDetail = priorBackupDetail
@@ -134,10 +136,12 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 }
 
 func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
-	sheetID := int(task.Payload.GetSheetId())
-	sheet, err := exec.store.GetSheetFull(ctx, sheetID)
+	sheet, err := exec.store.GetSheetFull(ctx, task.Payload.GetSheetSha256())
 	if err != nil {
 		return true, nil, err
+	}
+	if sheet == nil {
+		return true, nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
 	}
 	statement := sheet.Statement
 	flags := task.Payload.GetFlags()
@@ -231,7 +235,7 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 		}
 	}
 
-	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, statement, task.Payload.GetSchemaVersion(), &sheetID, execFunc)
+	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, statement, task.Payload.GetSchemaVersion(), &sheet.Sha256, execFunc)
 }
 
 func (exec *DatabaseMigrateExecutor) shouldSkipBackupError(ctx context.Context, task *store.TaskMessage) (bool, error) {

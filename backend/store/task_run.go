@@ -21,7 +21,7 @@ type TaskRunMessage struct {
 	Code        common.Code
 	Result      string
 	ResultProto *storepb.TaskRunResult
-	SheetUID    *int
+	SheetSha256 *string
 
 	// Output only.
 	ID           int
@@ -70,7 +70,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			task_run.run_at,
 			task_run.code,
 			task_run.result,
-			task_run.sheet_id,
+			encode(task_run.sheet_sha256, 'hex'),
 			task.pipeline_id,
 			task.environment,
 			project.resource_id
@@ -122,6 +122,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 		var taskRun TaskRunMessage
 		var startedAt, runAt sql.NullTime
 		var statusString string
+		var sheetSha256 sql.NullString
 		if err := rows.Scan(
 			&taskRun.ID,
 			&taskRun.CreatorEmail,
@@ -133,12 +134,15 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			&runAt,
 			&taskRun.Code,
 			&taskRun.Result,
-			&taskRun.SheetUID,
+			&sheetSha256,
 			&taskRun.PipelineUID,
 			&taskRun.Environment,
 			&taskRun.ProjectID,
 		); err != nil {
 			return nil, err
+		}
+		if sheetSha256.Valid {
+			taskRun.SheetSha256 = &sheetSha256.String
 		}
 		if statusValue, ok := storepb.TaskRun_Status_value[statusString]; ok {
 			taskRun.Status = storepb.TaskRun_Status(statusValue)
@@ -249,11 +253,11 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 	}
 
 	var taskUIDs []int
-	var sheetUIDs []*int
+	var sheetSha256s []*string
 	var runAts []*time.Time
 	for _, create := range creates {
 		taskUIDs = append(taskUIDs, create.TaskUID)
-		sheetUIDs = append(sheetUIDs, create.SheetUID)
+		sheetSha256s = append(sheetSha256s, create.SheetSha256)
 		runAts = append(runAts, create.RunAt)
 	}
 
@@ -266,7 +270,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		INSERT INTO task_run (
 			creator,
 			task_id,
-			sheet_id,
+			sheet_sha256,
 			run_at,
 			attempt,
 			status
@@ -274,15 +278,21 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		SELECT
 			?,
 			tasks.task_id,
-			tasks.sheet_id,
+			tasks.sheet_sha256,
 			tasks.run_at,
 			COALESCE((SELECT MAX(attempt) + 1 FROM task_run WHERE task_run.task_id = tasks.task_id), 0) as attempt,
 			?
 		FROM (
 			SELECT
 				unnest(CAST(? AS INTEGER[])) AS task_id,
-				unnest(CAST(? AS INTEGER[])) AS sheet_id,
+				unnest(CAST(? AS TEXT[])) AS sheet_sha256_hex,
 				unnest(CAST(? AS TIMESTAMPTZ[])) AS run_at
+		) tasks_raw
+		CROSS JOIN LATERAL (
+			SELECT
+				tasks_raw.task_id,
+				CASE WHEN tasks_raw.sheet_sha256_hex IS NOT NULL THEN decode(tasks_raw.sheet_sha256_hex, 'hex') ELSE NULL END AS sheet_sha256,
+				tasks_raw.run_at
 		) tasks
 		WHERE NOT EXISTS (
 			SELECT 1 FROM task_run
@@ -290,7 +300,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 			AND task_run.status IN (?, ?, ?)
 		)
 		ON CONFLICT (task_id, attempt) DO NOTHING
-	`, creator, storepb.TaskRun_PENDING.String(), taskUIDs, sheetUIDs, runAts,
+	`, creator, storepb.TaskRun_PENDING.String(), taskUIDs, sheetSha256s, runAts,
 		storepb.TaskRun_PENDING.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
 
 	query, args, err := q.ToSQL()

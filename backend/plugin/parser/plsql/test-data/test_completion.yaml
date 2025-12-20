@@ -6,212 +6,311 @@
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA2
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA3
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
+    - text: SEQ1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: USER_ID_SEQ
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: T1
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: T2
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
+      priority: 0
 - input: SELECT x.| FROM (SELECT * FROM t2) x
   want:
     - text: C1
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: C2
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
 - input: WITH x AS (SELECT * FROM t2) SELECT x.| FROM x;
   want:
     - text: C1
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: C2
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
 - input: WITH x(x1, x2) AS (SELECT * FROM t2) SELECT x.| FROM x;
   want:
     - text: X1
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: X2
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
 - input: WITH x(x1, x2) AS (SELECT * FROM t2) SELECT | FROM x
   want:
     - text: X1
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: X2
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA2
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA3
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
+    - text: SEQ1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: USER_ID_SEQ
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: T1
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: T2
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: X
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
+      priority: 0
 - input: SELECT c1 as eid, c2 as xid FROM t2 GROUP BY |
   want:
     - text: C1
       type: COLUMN
       definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: C2
       type: COLUMN
       definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: EID
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: XID
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA2
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA3
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
+    - text: SEQ1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: USER_ID_SEQ
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: T1
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: T2
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
+      priority: 0
 - input: SELECT c1 as eid, c2 as xid FROM t2 ORDER BY |
   want:
     - text: C1
       type: COLUMN
       definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: C2
       type: COLUMN
       definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: EID
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: XID
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA2
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA3
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
+    - text: SEQ1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: USER_ID_SEQ
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: T1
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: T2
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
+      priority: 0
 - input: SELECT c1 as eid FROM t1 ORDER BY |
   want:
     - text: C1
       type: COLUMN
       definition: SCHEMA1.T1 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: EID
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA2
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA3
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
+    - text: SEQ1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: USER_ID_SEQ
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: T1
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: T2
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
+      priority: 0
 - input: |-
     SELECT FROM basdkfjasldf;
     SELECT | FROM t1
@@ -220,197 +319,292 @@
       type: COLUMN
       definition: SCHEMA1.T1 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA2
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA3
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
+    - text: SEQ1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: USER_ID_SEQ
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: T1
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: T2
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
+      priority: 0
 - input: SELECT | FROM (SELECT c1 FROM t1) cc1
   want:
     - text: C1
       type: COLUMN
       definition: ""
       comment: ""
+      priority: 0
     - text: C1
       type: COLUMN
       definition: SCHEMA1.T1 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA2
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA3
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
+    - text: SEQ1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: USER_ID_SEQ
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: CC1
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: T1
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: T2
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
+      priority: 0
 - input: SELECT cc1.| FROM t1 cc1 JOIN t2 on NOT cc1.c1 = t2.c1
   want:
     - text: C1
       type: COLUMN
       definition: SCHEMA1.T1 | int, NOT NULL
       comment: ""
+      priority: 0
 - input: SELECT * from t1 cc1 JOIN t2 on cc1.c1 = t2.|
   want:
     - text: C1
       type: COLUMN
       definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: C2
       type: COLUMN
       definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
+      priority: 0
 - input: SELECT * from t1 cc1 JOIN t2 on cc1.|
   want:
     - text: C1
       type: COLUMN
       definition: SCHEMA1.T1 | int, NOT NULL
       comment: ""
+      priority: 0
 - input: SELECT MAX(cc1.|) FROM t2 cc1
   want:
     - text: C1
       type: COLUMN
       definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: C2
       type: COLUMN
       definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
+      priority: 0
 - input: SELECT cc1.| FROM t2 cc1
   want:
     - text: C1
       type: COLUMN
       definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: C2
       type: COLUMN
       definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
+      priority: 0
 - input: SELECT * FROM |
   want:
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA2
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA3
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
+    - text: SEQ1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: USER_ID_SEQ
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: T1
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: T2
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
+      priority: 0
 - input: SELECT | FROM t1 x
   want:
     - text: C1
       type: COLUMN
       definition: SCHEMA1.T1 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA2
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA3
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
+    - text: SEQ1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: USER_ID_SEQ
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: T1
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: T2
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: X
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
+      priority: 0
 - input: SELECT | FROM schema1.t1
   want:
     - text: C1
       type: COLUMN
       definition: SCHEMA1.T1 | int, NOT NULL
       comment: ""
+      priority: 0
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA2
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
     - text: SCHEMA3
       type: SCHEMA
       definition: ""
       comment: ""
+      priority: 0
+    - text: SEQ1
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
+    - text: USER_ID_SEQ
+      type: SEQUENCE
+      definition: ""
+      comment: ""
+      priority: 0
     - text: T1
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: T2
       type: TABLE
       definition: ""
       comment: ""
+      priority: 0
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
+      priority: 0

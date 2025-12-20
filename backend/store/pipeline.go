@@ -80,14 +80,14 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 	type taskKey struct {
 		instance string
 		database string
-		sheet    int
+		sheet    string
 	}
 
 	createdTasks := map[taskKey]struct{}{}
 	for _, task := range existingTasks {
 		k := taskKey{
 			instance: task.InstanceID,
-			sheet:    int(task.Payload.GetSheetId()),
+			sheet:    task.Payload.GetSheetSha256(),
 		}
 		if task.DatabaseName != nil {
 			k.database = *task.DatabaseName
@@ -100,7 +100,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 	for _, taskCreate := range pipeline.Tasks {
 		k := taskKey{
 			instance: taskCreate.InstanceID,
-			sheet:    int(taskCreate.Payload.GetSheetId()),
+			sheet:    taskCreate.Payload.GetSheetSha256(),
 		}
 		if taskCreate.DatabaseName != nil {
 			k.database = *taskCreate.DatabaseName

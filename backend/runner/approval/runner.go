@@ -500,11 +500,14 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 		}
 
 		taskStatement := ""
-		sheetUID := int(task.Payload.GetSheetId())
-		if sheetUID != 0 {
-			sheet, err := r.store.GetSheetFull(ctx, sheetUID)
+		sheetSha256 := task.Payload.GetSheetSha256()
+		if sheetSha256 != "" {
+			sheet, err := r.store.GetSheetFull(ctx, sheetSha256)
 			if err != nil {
-				return nil, true, errors.Wrapf(err, "failed to get statement in sheet %v", sheetUID)
+				return nil, true, errors.Wrapf(err, "failed to get statement in sheet %v", sheetSha256)
+			}
+			if sheet == nil {
+				return nil, true, errors.Errorf("sheet %v not found", sheetSha256)
 			}
 			taskStatement = sheet.Statement
 		}
