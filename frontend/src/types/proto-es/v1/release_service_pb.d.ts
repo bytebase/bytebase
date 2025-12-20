@@ -529,13 +529,6 @@ export declare type Release_File = Message<"bytebase.v1.Release.File"> & {
    * @generated from field: string sheet_sha256 = 4;
    */
   sheetSha256: string;
-
-  /**
-   * The size of the statement in bytes.
-   *
-   * @generated from field: int64 statement_size = 8;
-   */
-  statementSize: bigint;
 };
 
 /**

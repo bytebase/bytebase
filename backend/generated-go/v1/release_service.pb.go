@@ -957,9 +957,7 @@ type Release_File struct {
 	// The raw SQL statement content.
 	Statement []byte `protobuf:"bytes,7,opt,name=statement,proto3" json:"statement,omitempty"`
 	// The SHA256 hash value of the sheet content or the statement.
-	SheetSha256 string `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
-	// The size of the statement in bytes.
-	StatementSize int64 `protobuf:"varint,8,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
+	SheetSha256   string `protobuf:"bytes,4,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1048,13 +1046,6 @@ func (x *Release_File) GetSheetSha256() string {
 		return x.SheetSha256
 	}
 	return ""
-}
-
-func (x *Release_File) GetStatementSize() int64 {
-	if x != nil {
-		return x.StatementSize
-	}
-	return 0
 }
 
 // Version control system source information.
@@ -1173,7 +1164,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\aadvices\x18\x03 \x03(\v2\x13.bytebase.v1.AdviceR\aadvices\x12#\n" +
 	"\raffected_rows\x18\x04 \x01(\x03R\faffectedRows\x125\n" +
 	"\n" +
-	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"\xe9\x06\n" +
+	"risk_level\x18\x05 \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\"\xc2\x06\n" +
 	"\aRelease\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12/\n" +
@@ -1184,7 +1175,7 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12-\n" +
 	"\x05state\x18\a \x01(\x0e2\x12.bytebase.v1.StateB\x03\xe0A\x03R\x05state\x12\x16\n" +
-	"\x06digest\x18\b \x01(\tR\x06digest\x1a\xfa\x02\n" +
+	"\x06digest\x18\b \x01(\tR\x06digest\x1a\xd3\x02\n" +
 	"\x04File\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x122\n" +
@@ -1192,10 +1183,9 @@ const file_v1_release_service_proto_rawDesc = "" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12!\n" +
 	"\fenable_ghost\x18\t \x01(\bR\venableGhost\x12-\n" +
 	"\x05sheet\x18\x03 \x01(\tB\x17\xfaA\x14\n" +
-	"\x12bytebase.com/SheetR\x05sheet\x12\x1c\n" +
-	"\tstatement\x18\a \x01(\fR\tstatement\x12&\n" +
-	"\fsheet_sha256\x18\x04 \x01(\tB\x03\xe0A\x03R\vsheetSha256\x12*\n" +
-	"\x0estatement_size\x18\b \x01(\x03B\x03\xe0A\x03R\rstatementSize\"<\n" +
+	"\x12bytebase.com/SheetR\x05sheet\x12!\n" +
+	"\tstatement\x18\a \x01(\fB\x03\xe0A\x04R\tstatement\x12&\n" +
+	"\fsheet_sha256\x18\x04 \x01(\tB\x03\xe0A\x03R\vsheetSha256\"<\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +

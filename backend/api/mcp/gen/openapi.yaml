@@ -14098,13 +14098,6 @@ components:
           type: string
           title: sheet_sha256
           description: The SHA256 hash value of the sheet content or the statement.
-        statementSize:
-          type:
-            - integer
-            - string
-          title: statement_size
-          format: int64
-          description: The size of the statement in bytes.
       title: File
       additionalProperties: false
       description: A SQL file in a release.
@@ -14278,17 +14271,6 @@ components:
           type: string
           title: sheet_sha256
           description: The SHA256 hash value of the sheet.
-        statement:
-          type: string
-          title: statement
-          description: The statement is used for preview purpose.
-        statementSize:
-          type:
-            - integer
-            - string
-          title: statement_size
-          format: int64
-          description: The size of the statement in bytes.
         taskRun:
           type: string
           title: task_run

@@ -147,11 +147,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create release"))
 	}
 
-	converted, err := convertToRelease(release)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert release"))
-	}
-
+	converted := convertToRelease(release)
 	return connect.NewResponse(converted), nil
 }
 
@@ -170,10 +166,7 @@ func (s *ReleaseService) GetRelease(ctx context.Context, req *connect.Request[v1
 	if releaseMessage == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found in project %s", releaseUID, projectID))
 	}
-	release, err := convertToRelease(releaseMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to release"))
-	}
+	release := convertToRelease(releaseMessage)
 	return connect.NewResponse(release), nil
 }
 
@@ -224,11 +217,7 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 		releaseMessages = releaseMessages[:offset.limit]
 	}
 
-	releases, err := convertToReleases(releaseMessages)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to release"))
-	}
-
+	releases := convertToReleases(releaseMessages)
 	return connect.NewResponse(&v1pb.ListReleasesResponse{
 		Releases:      releases,
 		NextPageToken: nextPageToken,
@@ -285,11 +274,7 @@ func (s *ReleaseService) SearchReleases(ctx context.Context, req *connect.Reques
 		releaseMessages = releaseMessages[:offset.limit]
 	}
 
-	releases, err := convertToReleases(releaseMessages)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to release"))
-	}
-
+	releases := convertToReleases(releaseMessages)
 	return connect.NewResponse(&v1pb.SearchReleasesResponse{
 		Releases:      releases,
 		NextPageToken: nextPageToken,
@@ -350,10 +335,7 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update release"))
 	}
-	converted, err := convertToRelease(releaseMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert release"))
-	}
+	converted := convertToRelease(releaseMessage)
 	return connect.NewResponse(converted), nil
 }
 
@@ -406,26 +388,19 @@ func (s *ReleaseService) UndeleteRelease(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete release"))
 	}
-	releaseConverted, err := convertToRelease(releaseMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert release"))
-	}
+	releaseConverted := convertToRelease(releaseMessage)
 	return connect.NewResponse(releaseConverted), nil
 }
 
-func convertToReleases(releases []*store.ReleaseMessage) ([]*v1pb.Release, error) {
+func convertToReleases(releases []*store.ReleaseMessage) []*v1pb.Release {
 	var rs []*v1pb.Release
 	for _, release := range releases {
-		r, err := convertToRelease(release)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert to release")
-		}
-		rs = append(rs, r)
+		rs = append(rs, convertToRelease(release))
 	}
-	return rs, nil
+	return rs
 }
 
-func convertToRelease(release *store.ReleaseMessage) (*v1pb.Release, error) {
+func convertToRelease(release *store.ReleaseMessage) *v1pb.Release {
 	r := &v1pb.Release{
 		Name:       common.FormatReleaseName(release.ProjectID, release.UID),
 		Title:      release.Payload.Title,
@@ -448,7 +423,7 @@ func convertToRelease(release *store.ReleaseMessage) (*v1pb.Release, error) {
 			EnableGhost: f.EnableGhost,
 		})
 	}
-	return r, nil
+	return r
 }
 
 func convertToReleaseVcsSource(vs *storepb.ReleasePayload_VCSSource) *v1pb.Release_VCSSource {

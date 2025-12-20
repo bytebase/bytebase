@@ -284,9 +284,6 @@ func (x *Release_File) Equal(y *Release_File) bool {
 	if x.SheetSha256 != y.SheetSha256 {
 		return false
 	}
-	if x.StatementSize != y.StatementSize {
-		return false
-	}
 	return true
 }
 
