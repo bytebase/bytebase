@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"slices"
 
 	"github.com/pkg/errors"
 
@@ -156,4 +157,33 @@ func (s *Store) CreateSheets(ctx context.Context, creates ...*SheetMessage) ([]*
 	}
 
 	return creates, nil
+}
+
+// HasSheets checks if all sheets exist by SHA256 hashes.
+func (s *Store) HasSheets(ctx context.Context, sha256Hexes ...string) (bool, error) {
+	if len(sha256Hexes) == 0 {
+		return true, nil
+	}
+
+	// Remove duplicates
+	slices.Sort(sha256Hexes)
+	sha256Hexes = slices.Compact(sha256Hexes)
+
+	q := qb.Q().Space(`
+		SELECT COUNT(*)
+		FROM sheet_blob
+		WHERE sha256 IN (SELECT decode(unnest(?), 'hex'))`,
+		sha256Hexes)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to build sql")
+	}
+
+	var count int
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
+		return false, err
+	}
+
+	return count == len(sha256Hexes), nil
 }

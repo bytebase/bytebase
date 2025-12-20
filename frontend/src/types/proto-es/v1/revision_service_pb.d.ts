@@ -360,17 +360,6 @@ export declare const RevisionService: GenService<{
     output: typeof RevisionSchema;
   },
   /**
-   * Creates a new schema revision.
-   * Permissions required: bb.revisions.create
-   *
-   * @generated from rpc bytebase.v1.RevisionService.CreateRevision
-   */
-  createRevision: {
-    methodKind: "unary";
-    input: typeof CreateRevisionRequestSchema;
-    output: typeof RevisionSchema;
-  },
-  /**
    * Creates multiple schema revisions in a single operation.
    * Permissions required: bb.revisions.create
    *

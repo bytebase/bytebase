@@ -115,23 +115,27 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		},
 	}
 
+	var sheetSha256s []string
 	for _, f := range sanitizedFiles {
 		_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(f.Sheet)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheetSha256 from %q", f.Sheet)
 		}
-		sheet, err := s.store.GetSheetMetadata(ctx, sheetSha256)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
-		}
-		if sheet == nil {
-			return nil, errors.Errorf("sheet %q not found", f.Sheet)
-		}
+		sheetSha256s = append(sheetSha256s, sheetSha256)
+	}
+	exist, err := s.store.HasSheets(ctx, sheetSha256s...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to check sheets")
+	}
+	if !exist {
+		return nil, errors.Errorf("some sheets are not found")
+	}
 
+	for i, f := range sanitizedFiles {
 		releaseMessage.Payload.Files = append(releaseMessage.Payload.Files, &storepb.ReleasePayload_File{
 			Id:          f.Id,
 			Path:        f.Path,
-			SheetSha256: sheetSha256,
+			SheetSha256: sheetSha256s[i],
 			Type:        storepb.SchemaChangeType(f.Type),
 			Version:     f.Version,
 			EnableGhost: f.EnableGhost,
@@ -435,7 +439,7 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 	for _, f := range release.Payload.Files {
 		sheet, err := s.GetSheetMetadata(ctx, f.SheetSha256)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet with sha256 %q", f.SheetSha256)
+			return nil, errors.Wrapf(err, "failed to get sheet %q", f.SheetSha256)
 		}
 		if sheet == nil {
 			return nil, errors.Errorf("sheet %q not found", f.SheetSha256)
