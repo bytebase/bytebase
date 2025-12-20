@@ -88,7 +88,6 @@ watch(
     fetchedStatement.value = "";
     fetchedSheet.value = undefined;
 
-
     try {
       const revision =
         await revisionStore.getOrFetchRevisionByName(revisionName);
