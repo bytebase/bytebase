@@ -65,9 +65,7 @@ type migrateContext struct {
 	instance *store.InstanceMessage
 	database *store.DatabaseMessage
 	// nullable if type=baseline
-	sheet *store.SheetMessage
-	// empty if type=baseline
-	sheetName string
+	sheetSha256 string
 
 	task        *store.TaskMessage
 	taskRunUID  int
@@ -198,12 +196,8 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	}
 
 	if sheetID != nil {
-		sheet, err := stores.GetSheetMetadata(ctx, *sheetID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet")
-		}
-		mc.sheet = sheet
-		mc.sheetName = common.FormatSheet(pipeline.ProjectID, sheet.Sha256)
+		mc.sheetSha256 = *sheetID
+
 	}
 
 	if isChangeDatabaseTask(task) {
@@ -441,7 +435,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:     mc.taskRunName,
 			Revision:    0,
-			SheetSha256: mc.sheet.Sha256,
+			SheetSha256: mc.sheetSha256,
 			Version:     mc.version,
 			Type:        changelogType,
 			GitCommit:   mc.profile.GitCommit,
@@ -482,16 +476,13 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 				Payload: &storepb.RevisionPayload{
 					Release:     mc.release.release,
 					File:        mc.release.file,
-					SheetSha256: "",
+					SheetSha256: mc.sheetSha256,
 					TaskRun:     mc.taskRunName,
 					Type:        storepb.SchemaChangeType_VERSIONED,
 				},
 			}
 			if mc.task.Type == storepb.Task_DATABASE_SDL {
 				r.Payload.Type = storepb.SchemaChangeType_DECLARATIVE
-			}
-			if mc.sheet != nil {
-				r.Payload.SheetSha256 = mc.sheet.Sha256
 			}
 
 			revision, err := storeInstance.CreateRevision(ctx, r)

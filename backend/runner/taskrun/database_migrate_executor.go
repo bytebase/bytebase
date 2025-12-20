@@ -66,6 +66,9 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 	if err != nil {
 		return true, nil, err
 	}
+	if sheet == nil {
+		return true, nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
+	}
 	statement := sheet.Statement
 
 	// Handle prior backup if enabled.
@@ -136,6 +139,9 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 	sheet, err := exec.store.GetSheetFull(ctx, task.Payload.GetSheetSha256())
 	if err != nil {
 		return true, nil, err
+	}
+	if sheet == nil {
+		return true, nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
 	}
 	statement := sheet.Statement
 	flags := task.Payload.GetFlags()

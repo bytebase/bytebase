@@ -277,6 +277,9 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %q", sheetSha256)
 	}
+	if sheet == nil {
+		return nil, errors.Errorf("sheet %q not found", sheetSha256)
+	}
 
 	database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &revision.InstanceID,

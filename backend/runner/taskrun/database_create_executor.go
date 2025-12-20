@@ -45,6 +45,9 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get sheet: %s", task.Payload.GetSheetSha256())
 	}
+	if sheet == nil {
+		return true, nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
+	}
 	statement := sheet.Statement
 
 	statement = strings.TrimSpace(statement)

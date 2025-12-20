@@ -55,6 +55,9 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 	if err != nil {
 		return true, nil, err
 	}
+	if sheet == nil {
+		return true, nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
+	}
 	sheetContent := sheet.Statement
 
 	execFunc := func(ctx context.Context, execStatement string, driver db.Driver, opts db.ExecuteOptions) error {
@@ -162,6 +165,9 @@ func getPreviousSuccessfulSDLAndSchema(ctx context.Context, s *store.Store, inst
 		sheet, err := s.GetSheetFull(ctx, sheetSha256)
 		if err != nil {
 			return "", nil, errors.Wrapf(err, "failed to get sheet statement for previous SDL changelog sheet %s", sheetSha256)
+		}
+		if sheet == nil {
+			return "", nil, errors.Errorf("sheet %s not found", sheetSha256)
 		}
 		previousUserSDLText = sheet.Statement
 	}

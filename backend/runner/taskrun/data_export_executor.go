@@ -78,6 +78,9 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	if err != nil {
 		return true, nil, err
 	}
+	if sheet == nil {
+		return true, nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
+	}
 	statement := sheet.Statement
 
 	dataSource := apiv1.GetQueriableDataSource(instance)

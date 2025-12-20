@@ -172,11 +172,13 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	_, err = s.GetSheetMetadata(ctx, sheetSha256)
+	sheet, err := s.GetSheetMetadata(ctx, sheetSha256)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %s", sheetSha256)
 	}
-	// Sheets are now project-agnostic, no need to check projectID
+	if sheet == nil {
+		return nil, errors.Errorf("sheet %s not found", sheetSha256)
+	}
 
 	enableSDL := config.Type == storepb.PlanConfig_ChangeDatabaseConfig_SDL
 

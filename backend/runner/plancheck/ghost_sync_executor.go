@@ -87,6 +87,9 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %s", config.SheetSha256)
 	}
+	if sheet == nil {
+		return nil, errors.Errorf("sheet %s not found", config.SheetSha256)
+	}
 	statement := sheet.Statement
 
 	// Database secrets feature has been removed

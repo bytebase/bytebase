@@ -506,6 +506,9 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 			if err != nil {
 				return nil, true, errors.Wrapf(err, "failed to get statement in sheet %v", sheetSha256)
 			}
+			if sheet == nil {
+				return nil, true, errors.Errorf("sheet %v not found", sheetSha256)
+			}
 			taskStatement = sheet.Statement
 		}
 

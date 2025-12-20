@@ -120,11 +120,13 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheetSha256 from %q", f.Sheet)
 		}
-		_, err = s.store.GetSheetMetadata(ctx, sheetSha256)
+		sheet, err := s.store.GetSheetMetadata(ctx, sheetSha256)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
 		}
-		// Sheets are now project-agnostic, no need to check projectID
+		if sheet == nil {
+			return nil, errors.Errorf("sheet %q not found", f.Sheet)
+		}
 
 		releaseMessage.Payload.Files = append(releaseMessage.Payload.Files, &storepb.ReleasePayload_File{
 			Id:          f.Id,
@@ -435,6 +437,9 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet with sha256 %q", f.SheetSha256)
 		}
+		if sheet == nil {
+			return nil, errors.Errorf("sheet %q not found", f.SheetSha256)
+		}
 		// Sheets are now project-agnostic, no need to check projectID
 		r.Files = append(r.Files, &v1pb.Release_File{
 			Id:            f.Id,
@@ -506,6 +511,9 @@ func validateAndSanitizeReleaseFiles(ctx context.Context, s *store.Store, files 
 			sheet, err := s.GetSheetFull(ctx, sheetSha256)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
+			}
+			if sheet == nil {
+				return nil, errors.Errorf("sheet %q not found", f.Sheet)
 			}
 			// Sheets are now project-agnostic, no need to check projectID
 			f.Statement = []byte(sheet.Statement)

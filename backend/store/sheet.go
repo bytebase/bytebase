@@ -35,6 +35,9 @@ func (s *Store) GetSheetMetadata(ctx context.Context, sha256Hex string) (*SheetM
 	if err != nil {
 		return nil, err
 	}
+	if sheet == nil {
+		return nil, nil
+	}
 
 	s.sheetMetadataCache.Add(sha256Hex, sheet)
 	return sheet, nil
@@ -51,6 +54,9 @@ func (s *Store) GetSheetFull(ctx context.Context, sha256Hex string) (*SheetMessa
 	sheet, err := s.getSheet(ctx, sha256Hex, true)
 	if err != nil {
 		return nil, err
+	}
+	if sheet == nil {
+		return nil, nil
 	}
 
 	s.sheetFullCache.Add(sha256Hex, sheet)
@@ -109,7 +115,7 @@ func (s *Store) getSheet(ctx context.Context, sha256Hex string, loadFull bool) (
 	}
 
 	if sheet == nil {
-		return nil, errors.Errorf("sheet not found with sha256 %s", sha256Hex)
+		return nil, nil
 	}
 
 	return sheet, nil
