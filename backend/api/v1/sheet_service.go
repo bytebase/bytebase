@@ -149,7 +149,7 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 	if request.Msg.Raw {
 		sheet, sheetErr = s.store.GetSheetFull(ctx, sheetSha256)
 	} else {
-		sheet, sheetErr = s.store.GetSheetMetadata(ctx, sheetSha256)
+		sheet, sheetErr = s.store.GetSheetTruncated(ctx, sheetSha256)
 	}
 	if sheetErr != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(sheetErr, "failed to get sheet"))

@@ -24,10 +24,10 @@ type SheetMessage struct {
 	Size int64
 }
 
-// GetSheetMetadata gets a sheet by SHA256 hash with truncated statement (max 2MB).
+// GetSheetTruncated gets a sheet by SHA256 hash with truncated statement (max 2MB).
 // Statement field will be truncated to MaxSheetSize (2MB).
 // Results are cached by SHA256 hex string.
-func (s *Store) GetSheetMetadata(ctx context.Context, sha256Hex string) (*SheetMessage, error) {
+func (s *Store) GetSheetTruncated(ctx context.Context, sha256Hex string) (*SheetMessage, error) {
 	if v, ok := s.sheetMetadataCache.Get(sha256Hex); ok && s.enableCache {
 		return v, nil
 	}

@@ -437,7 +437,7 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 	}
 
 	for _, f := range release.Payload.Files {
-		sheet, err := s.GetSheetMetadata(ctx, f.SheetSha256)
+		sheet, err := s.GetSheetTruncated(ctx, f.SheetSha256)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet %q", f.SheetSha256)
 		}
