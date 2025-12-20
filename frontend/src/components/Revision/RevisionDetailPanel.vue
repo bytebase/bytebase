@@ -21,57 +21,60 @@
   <div class="flex flex-col my-4">
     <p class="w-auto flex items-center text-base text-main mb-2 gap-x-2">
       <span>{{ $t("common.statement") }}</span>
-      <CopyButton :content="statement" />
+      <CopyButton :content="fetchedStatement" />
     </p>
-    <MonacoEditor
-      class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
-      :content="statement"
-      :readonly="true"
-      :auto-height="{ min: 120, max: 480 }"
-    />
+    <div class="relative">
+      <NSpin v-if="loading" :show="loading" class="absolute inset-0 z-10" />
+      <MonacoEditor
+        class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
+        :content="fetchedStatement"
+        :readonly="true"
+        :auto-height="{ min: 120, max: 480 }"
+      />
+    </div>
   </div>
 
   <div v-if="logEntries.length > 0" class="my-4">
     <p class="w-auto flex items-center text-base text-main mb-2">
       {{ $t("issue.task-run.logs") }}
     </p>
-    <TaskRunLogViewer :entries="logEntries" :sheet="sheet" />
+    <TaskRunLogViewer :entries="logEntries" :sheet="fetchedSheet" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
-import { computed, reactive, ref, watch } from "vue";
+import { NSpin } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
-import { rolloutServiceClientConnect } from "@/grpcweb";
-import { useRevisionStore, useSheetV1Store } from "@/store";
+import {
+  rolloutServiceClientConnect,
+  sheetServiceClientConnect,
+} from "@/grpcweb";
+import { useRevisionStore } from "@/store";
 import { type ComposedDatabase, getDateForPbTimestampProtoEs } from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   GetTaskRunLogRequestSchema,
   GetTaskRunRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { getSheetStatement } from "@/utils";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import { TaskRunLogViewer } from "../Plan/components/RolloutView/v2/TaskRunLogViewer";
-
-interface LocalState {
-  loading: boolean;
-}
 
 const props = defineProps<{
   database: ComposedDatabase;
   revisionName: string;
 }>();
 
-const state = reactive<LocalState>({
-  loading: false,
-});
+import { type Sheet } from "@/types/proto-es/v1/sheet_service_pb";
+
+const loading = ref(false);
+const fetchedStatement = ref("");
+const fetchedSheet = ref<Sheet | undefined>(undefined);
 
 const revisionStore = useRevisionStore();
-const sheetStore = useSheetV1Store();
 const taskRun = ref<TaskRun | undefined>(undefined);
 
 watch(
@@ -81,23 +84,46 @@ watch(
       return;
     }
 
-    state.loading = true;
-    const revision = await revisionStore.getOrFetchRevisionByName(revisionName);
-    if (revision) {
-      if (revision.taskRun) {
-        // Fetch the task run details.
-        const request = create(GetTaskRunRequestSchema, {
-          name: revision.taskRun,
-        });
-        const response = await rolloutServiceClientConnect.getTaskRun(request);
-        taskRun.value = response;
+    loading.value = true;
+    fetchedStatement.value = "";
+    fetchedSheet.value = undefined;
+
+
+    try {
+      const revision =
+        await revisionStore.getOrFetchRevisionByName(revisionName);
+      if (revision) {
+        if (revision.taskRun) {
+          // Fetch the task run details.
+          const request = create(GetTaskRunRequestSchema, {
+            name: revision.taskRun,
+          });
+          const response =
+            await rolloutServiceClientConnect.getTaskRun(request);
+          taskRun.value = response;
+        }
+        // Prepare the sheet data from task run.
+        // We fetch raw content directly.
+        if (revision.sheet) {
+          try {
+            const sheet = await sheetServiceClientConnect.getSheet({
+              name: revision.sheet,
+              raw: true,
+            });
+            fetchedSheet.value = sheet;
+            if (sheet.content) {
+              fetchedStatement.value = new TextDecoder().decode(sheet.content);
+            }
+          } catch (error) {
+            console.error("Failed to fetch sheet content", error);
+          }
+        }
       }
-      // Prepare the sheet data from task run.
-      if (revision.sheet) {
-        await sheetStore.getOrFetchSheetByName(revision.sheet);
-      }
+    } catch (error) {
+      console.error("Failed to fetch revision details", error);
+    } finally {
+      loading.value = false;
     }
-    state.loading = false;
   },
   { immediate: true }
 );
@@ -115,15 +141,5 @@ const logEntries = computed(() => taskRunLog.value?.entries ?? []);
 
 const revision = computed(() =>
   revisionStore.getRevisionByName(props.revisionName)
-);
-
-const sheet = computed(() =>
-  revision.value?.sheet
-    ? sheetStore.getSheetByName(revision.value.sheet)
-    : undefined
-);
-
-const statement = computed(() =>
-  sheet.value ? getSheetStatement(sheet.value) : ""
 );
 </script>

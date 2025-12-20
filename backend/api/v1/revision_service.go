@@ -277,15 +277,6 @@ func convertToRevisions(ctx context.Context, s *store.Store, parent string, revi
 }
 
 func convertToRevision(ctx context.Context, s *store.Store, parent string, revision *store.RevisionMessage) (*v1pb.Revision, error) {
-	sheetSha256 := revision.Payload.SheetSha256
-	sheet, err := s.GetSheetTruncated(ctx, sheetSha256)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %q", sheetSha256)
-	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %q not found", sheetSha256)
-	}
-
 	database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &revision.InstanceID,
 		DatabaseName: &revision.DatabaseName,
@@ -299,17 +290,15 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 
 	taskRunName := revision.Payload.TaskRun
 	r := &v1pb.Revision{
-		Name:          fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
-		Release:       revision.Payload.Release,
-		CreateTime:    timestamppb.New(revision.CreatedAt),
-		Sheet:         common.FormatSheet(database.ProjectID, sheetSha256),
-		SheetSha256:   revision.Payload.SheetSha256,
-		Statement:     sheet.Statement,
-		StatementSize: sheet.Size,
-		Version:       revision.Version,
-		File:          revision.Payload.File,
-		TaskRun:       taskRunName,
-		Type:          convertToRevisionType(revision.Payload.Type),
+		Name:        fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
+		Release:     revision.Payload.Release,
+		CreateTime:  timestamppb.New(revision.CreatedAt),
+		Sheet:       common.FormatSheet(database.ProjectID, revision.Payload.SheetSha256),
+		SheetSha256: revision.Payload.SheetSha256,
+		Version:     revision.Version,
+		File:        revision.Payload.File,
+		TaskRun:     taskRunName,
+		Type:        convertToRevisionType(revision.Payload.Type),
 	}
 
 	if revision.Deleter != nil {
