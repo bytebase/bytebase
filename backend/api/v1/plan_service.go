@@ -1122,9 +1122,7 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 				if err != nil {
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance name %q: %v", target, err))
 				}
-				if !slices.Contains(instanceIDs, instanceID) {
-					instanceIDs = append(instanceIDs, instanceID)
-				}
+				instanceIDs = append(instanceIDs, instanceID)
 			}
 		case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 			configTypeCount["change_database"]++
