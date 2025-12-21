@@ -29,6 +29,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		Name:                    common.FormatPlan(plan.ProjectID, plan.UID),
 		Title:                   plan.Name,
 		Description:             plan.Description,
+		Creator:                 common.FormatUserEmail(plan.Creator),
 		Specs:                   convertToPlanSpecs(plan.ProjectID, plan.Config.Specs), // Use specs field for output
 		Deployment:              convertToPlanDeployment(plan.Config.Deployment),
 		CreateTime:              timestamppb.New(plan.CreatedAt),
@@ -36,12 +37,6 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		State:                   convertDeletedToState(plan.Deleted),
 		PlanCheckRunStatusCount: map[string]int32{},
 	}
-
-	creator, err := s.GetUserByEmail(ctx, plan.Creator)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get plan creator")
-	}
-	p.Creator = common.FormatUserEmail(creator.Email)
 
 	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})
 	if err != nil {
