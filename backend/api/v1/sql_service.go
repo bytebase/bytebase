@@ -1594,9 +1594,19 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 	}
 
-	database, err := getDatabaseMessage(ctx, s.store, requestName)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(requestName)
 	if err != nil {
-		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.New(err.Error()))
+		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to parse %q", requestName))
+	}
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, nil, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if database == nil {
+		return nil, nil, nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", requestName))
 	}
 
 	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{

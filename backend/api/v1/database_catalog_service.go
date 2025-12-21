@@ -37,9 +37,19 @@ func (s *DatabaseCatalogService) GetDatabaseCatalog(ctx context.Context, req *co
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	database, err := getDatabaseMessage(ctx, s.store, databaseResourceName)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(databaseResourceName)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", databaseResourceName))
+	}
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if database == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseResourceName))
 	}
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
@@ -64,9 +74,19 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	database, err := getDatabaseMessage(ctx, s.store, databaseResourceName)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(databaseResourceName)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", databaseResourceName))
+	}
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if database == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseResourceName))
 	}
 
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{

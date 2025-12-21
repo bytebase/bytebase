@@ -124,15 +124,16 @@ func (s *IssueService) getIssueFind(
 					}
 					issueFind.InstanceResourceID = &instanceResourceID
 				case "database":
-					database, err := getDatabaseMessage(ctx, s.store, value.(string))
+					databaseResourceName, ok := value.(string)
+					if !ok {
+						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse database value %v to string", value))
+					}
+					instanceID, databaseName, err := common.GetInstanceDatabaseID(databaseResourceName)
 					if err != nil {
-						return "", connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
+						return "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to parse %q", databaseResourceName))
 					}
-					if database == nil || database.Deleted {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`database "%q" not found`, value))
-					}
-					issueFind.InstanceID = &database.InstanceID
-					issueFind.DatabaseName = &database.DatabaseName
+					issueFind.InstanceID = &instanceID
+					issueFind.DatabaseName = &databaseName
 				case "environment":
 					environment, ok := value.(string)
 					if !ok {

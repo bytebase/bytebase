@@ -37,11 +37,18 @@ func (s *RevisionService) ListRevisions(
 	req *connect.Request[v1pb.ListRevisionsRequest],
 ) (*connect.Response[v1pb.ListRevisionsResponse], error) {
 	request := req.Msg
-	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Parent))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", request.Parent))
 	}
-	if database == nil || database.Deleted {
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if database == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
 	}
 
@@ -113,11 +120,18 @@ func (s *RevisionService) BatchCreateRevisions(
 	req *connect.Request[v1pb.BatchCreateRevisionsRequest],
 ) (*connect.Response[v1pb.BatchCreateRevisionsResponse], error) {
 	request := req.Msg
-	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Parent))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", request.Parent))
 	}
-	if database == nil || database.Deleted {
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if database == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
 	}
 

@@ -50,12 +50,19 @@ func NewDatabaseService(store *store.Store, schemaSyncer *schemasync.Syncer, lic
 
 // GetDatabase gets a database.
 func (s *DatabaseService) GetDatabase(ctx context.Context, req *connect.Request[v1pb.GetDatabaseRequest]) (*connect.Response[v1pb.Database], error) {
-	databaseMessage, err := getDatabaseMessage(ctx, s.store, req.Msg.Name)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Name)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.Name))
 	}
-	if databaseMessage.Deleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q was deleted", req.Msg.Name))
+	databaseMessage, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if databaseMessage == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Name))
 	}
 	database, err := s.convertToDatabase(ctx, databaseMessage)
 	if err != nil {
@@ -83,11 +90,19 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 
 	databases := make([]*v1pb.Database, 0, len(req.Msg.Names))
 	for _, name := range req.Msg.Names {
-		databaseMessage, err := getDatabaseMessage(ctx, s.store, name)
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(name)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database %q with error: %v", name, err.Error()))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", name))
 		}
-		if databaseMessage.Deleted {
+		find := &store.FindDatabaseMessage{
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
+		}
+		databaseMessage, err := s.store.GetDatabase(ctx, find)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+		}
+		if databaseMessage == nil {
 			// Ignore deleted database.
 			continue
 		}
@@ -259,16 +274,19 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 	}
 
 	// Use the helper function to get the database
-	databaseMessage, err := getDatabaseMessage(ctx, s.store, req.Msg.Database.Name)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Database.Name)
 	if err != nil {
-		// Check if it's a not found error and allow_missing is true
-		if strings.Contains(err.Error(), "not found") && req.Msg.AllowMissing {
-			// Database creation is not supported through UpdateDatabase API.
-			// Databases must be created through the plan and rollout system.
-			return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("database creation is not supported through UpdateDatabase, use plan and rollout instead"))
-		}
-		// For other errors or when allow_missing is false, return the error
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.Database.Name))
+	}
+	databaseMessage, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if databaseMessage == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Database.Name))
 	}
 	if databaseMessage.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q was deleted", req.Msg.Database.Name))
@@ -370,9 +388,19 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 
 // SyncDatabase syncs the schema of a database.
 func (s *DatabaseService) SyncDatabase(ctx context.Context, req *connect.Request[v1pb.SyncDatabaseRequest]) (*connect.Response[v1pb.SyncDatabaseResponse], error) {
-	databaseMessage, err := getDatabaseMessage(ctx, s.store, req.Msg.Name)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Name)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.Name))
+	}
+	databaseMessage, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if databaseMessage == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Name))
 	}
 	if databaseMessage.Deleted {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q was deleted", req.Msg.Name))
@@ -386,11 +414,18 @@ func (s *DatabaseService) SyncDatabase(ctx context.Context, req *connect.Request
 // BatchSyncDatabases sync multiply database asynchronously.
 func (s *DatabaseService) BatchSyncDatabases(ctx context.Context, req *connect.Request[v1pb.BatchSyncDatabasesRequest]) (*connect.Response[v1pb.BatchSyncDatabasesResponse], error) {
 	for _, name := range req.Msg.Names {
-		databaseMessage, err := getDatabaseMessage(ctx, s.store, name)
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(name)
 		if err != nil {
-			return nil, err
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", name))
 		}
-		if databaseMessage.Deleted {
+		databaseMessage, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+		}
+		if databaseMessage == nil {
 			continue
 		}
 		s.schemaSyncer.SyncDatabaseAsync(databaseMessage)
@@ -498,12 +533,19 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, req *connect.
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
-	database, err := getDatabaseMessage(ctx, s.store, name)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(name)
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", name))
 	}
-	if database.Deleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q was deleted", name))
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if database == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
 	}
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   database.InstanceID,
@@ -949,9 +991,19 @@ type metadataFilter struct {
 }
 
 func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Request[v1pb.GetSchemaStringRequest]) (*connect.Response[v1pb.GetSchemaStringResponse], error) {
-	database, err := getDatabaseMessage(ctx, s.store, req.Msg.Name)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Name)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.Name))
+	}
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database %q", req.Msg.Name))
+	}
+	if database == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Name))
 	}
 
 	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
@@ -963,8 +1015,8 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 	}
 
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get database schema: %v", err))

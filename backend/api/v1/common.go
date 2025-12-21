@@ -444,37 +444,6 @@ func convertToExportFormat(format v1pb.ExportFormat) storepb.ExportFormat {
 	return storepb.ExportFormat_FORMAT_UNSPECIFIED
 }
 
-// getDatabaseMessage retrieves a database by parsing the database resource name.
-// This is a common utility function to avoid code duplication across services.
-func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceName string) (*store.DatabaseMessage, error) {
-	instanceID, databaseName, err := common.GetInstanceDatabaseID(databaseResourceName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse %q", databaseResourceName)
-	}
-
-	instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance not found")
-	}
-
-	find := &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
-		ShowDeleted:  true,
-	}
-	database, err := s.GetDatabase(ctx, find)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	if database == nil {
-		return nil, errors.Errorf("database %q not found", databaseResourceName)
-	}
-	return database, nil
-}
-
 func GetUserFromContext(ctx context.Context) (*store.UserMessage, bool) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	return user, ok

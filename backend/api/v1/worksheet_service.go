@@ -67,16 +67,23 @@ func (s *WorksheetService) CreateWorksheet(
 
 	var database *store.DatabaseMessage
 	if request.Worksheet.Database != "" {
-		db, err := getDatabaseMessage(ctx, s.store, request.Worksheet.Database)
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Worksheet.Database)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", request.Worksheet.Database))
+		}
+		db, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+		}
+		if db == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", request.Worksheet.Database))
 		}
 		// Verify the database belongs to the specified project
 		if db.ProjectID != projectResourceID {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found in project %q", request.Worksheet.Database, projectResourceID))
-		}
-		if db == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", request.Worksheet.Database))
 		}
 		database = db
 	}
@@ -255,11 +262,18 @@ func (s *WorksheetService) UpdateWorksheet(
 			worksheetPatch.Visibility = &stringVisibility
 		case "database":
 			if request.Worksheet.Database != "" {
-				database, err := getDatabaseMessage(ctx, s.store, request.Worksheet.Database)
+				instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Worksheet.Database)
 				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Worksheet.Database))
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", request.Worksheet.Database))
 				}
-				if database == nil || database.Deleted {
+				database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+					InstanceID:   &instanceID,
+					DatabaseName: &databaseName,
+				})
+				if err != nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+				}
+				if database == nil {
 					return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Worksheet.Database))
 				}
 				worksheetPatch.InstanceID, worksheetPatch.DatabaseName = &database.InstanceID, &database.DatabaseName
