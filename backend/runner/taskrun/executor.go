@@ -62,9 +62,8 @@ type migrateContext struct {
 	profile   *config.Profile
 	dbFactory *dbfactory.DBFactory
 
-	instance *store.InstanceMessage
-	database *store.DatabaseMessage
-	// nullable if type=baseline
+	instance    *store.InstanceMessage
+	database    *store.DatabaseMessage
 	sheetSha256 string
 
 	task        *store.TaskMessage
@@ -141,7 +140,7 @@ func runMigrationWithFunc(
 
 	// Pre-compute whether schema dump is needed.
 	// Skip dump for pure DML statements (INSERT, UPDATE, DELETE) as they don't change schema.
-	mc.needDump = computeNeedDump(task.Type, mc.instance.Metadata.GetEngine(), statement)
+	mc.needDump = computeNeedDump(task.Type, mc.database.Engine, statement)
 
 	skipped, err := doMigrationWithFunc(ctx, driverCtx, store, stateCfg, profile, statement, mc, execFunc)
 	if err != nil {
@@ -240,7 +239,7 @@ func doMigrationWithFunc(
 
 	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
 	slog.Debug("Start migration...",
-		slog.String("instance", instance.ResourceID),
+		slog.String("instance", database.InstanceID),
 		slog.String("database", database.DatabaseName),
 		slog.String("type", string(mc.task.Type.String())),
 		slog.String("statement", statementRecord),

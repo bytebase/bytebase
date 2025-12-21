@@ -629,14 +629,6 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
 
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
-	}
-	if instance == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
-	}
-
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,
@@ -647,10 +639,9 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 	if database == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", databaseName))
 	}
-
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
@@ -684,9 +675,9 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 
 	switch format {
 	case v1pb.GetDatabaseSDLSchemaRequest_SINGLE_FILE:
-		return s.getSingleFileSDL(ctx, instance.Metadata.Engine, metadata)
+		return s.getSingleFileSDL(ctx, database.Engine, metadata)
 	case v1pb.GetDatabaseSDLSchemaRequest_MULTI_FILE:
-		return s.getMultiFileSDL(ctx, instance.Metadata.Engine, metadata, databaseName)
+		return s.getMultiFileSDL(ctx, database.Engine, metadata, databaseName)
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported SDL format: %v", format))
 	}
@@ -996,15 +987,6 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 	if database == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Name))
 	}
-
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
-	}
-	if instance == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", database.InstanceID))
-	}
-
 	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		InstanceID:   instanceID,
 		DatabaseName: databaseName,
@@ -1019,7 +1001,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("metadata is required"))
 		}
 		storeSchema := convertV1DatabaseMetadata(req.Msg.Metadata)
-		s, err := schema.GetDatabaseDefinition(instance.Metadata.Engine, schema.GetDefinitionContext{
+		s, err := schema.GetDatabaseDefinition(database.Engine, schema.GetDefinitionContext{
 			SkipBackupSchema: false,
 			PrintHeader:      false,
 		}, storeSchema)
@@ -1029,7 +1011,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		return connect.NewResponse(&v1pb.GetSchemaStringResponse{SchemaString: s}), nil
 	case v1pb.GetSchemaStringRequest_DATABASE:
 		metadata := dbMetadata.GetProto()
-		s, err := schema.GetDatabaseDefinition(instance.Metadata.Engine, schema.GetDefinitionContext{
+		s, err := schema.GetDatabaseDefinition(database.Engine, schema.GetDefinitionContext{
 			SkipBackupSchema: false,
 			PrintHeader:      false,
 		}, metadata)
@@ -1043,7 +1025,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema %q not found", req.Msg.Schema))
 		}
 
-		s, err := schema.GetSchemaDefinition(instance.Metadata.Engine, schemaMetadata.GetProto())
+		s, err := schema.GetSchemaDefinition(database.Engine, schemaMetadata.GetProto())
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get schema schema: %v", err))
 		}
@@ -1058,7 +1040,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("table %q not found", req.Msg.Object))
 		}
 		sequences := schemaMetadata.GetSequencesByOwnerTable(req.Msg.Object)
-		s, err := schema.GetTableDefinition(instance.Metadata.Engine, req.Msg.Schema, tableMetadata.GetProto(), sequences)
+		s, err := schema.GetTableDefinition(database.Engine, req.Msg.Schema, tableMetadata.GetProto(), sequences)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get table schema: %v", err))
 		}
@@ -1072,7 +1054,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if viewMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("view %q not found", req.Msg.Object))
 		}
-		s, err := schema.GetViewDefinition(instance.Metadata.Engine, req.Msg.Schema, viewMetadata)
+		s, err := schema.GetViewDefinition(database.Engine, req.Msg.Schema, viewMetadata)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get view schema: %v", err))
 		}
@@ -1086,7 +1068,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if materializedViewMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("materialized view %q not found", req.Msg.Object))
 		}
-		s, err := schema.GetMaterializedViewDefinition(instance.Metadata.Engine, req.Msg.Schema, materializedViewMetadata)
+		s, err := schema.GetMaterializedViewDefinition(database.Engine, req.Msg.Schema, materializedViewMetadata)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get materialized view schema: %v", err))
 		}
@@ -1106,7 +1088,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if functionMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("function %q not found", req.Msg.Object))
 		}
-		s, err := schema.GetFunctionDefinition(instance.Metadata.Engine, req.Msg.Schema, functionMetadata)
+		s, err := schema.GetFunctionDefinition(database.Engine, req.Msg.Schema, functionMetadata)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get function schema: %v", err))
 		}
@@ -1120,7 +1102,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if procedureMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("procedure %q not found", req.Msg.Object))
 		}
-		s, err := schema.GetProcedureDefinition(instance.Metadata.Engine, req.Msg.Schema, procedureMetadata)
+		s, err := schema.GetProcedureDefinition(database.Engine, req.Msg.Schema, procedureMetadata)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get procedure schema: %v", err))
 		}
@@ -1134,7 +1116,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if sequenceMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("sequence %q not found", req.Msg.Object))
 		}
-		s, err := schema.GetSequenceDefinition(instance.Metadata.Engine, req.Msg.Schema, sequenceMetadata)
+		s, err := schema.GetSequenceDefinition(database.Engine, req.Msg.Schema, sequenceMetadata)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("Failed to get sequence schema: %v", err))
 		}
