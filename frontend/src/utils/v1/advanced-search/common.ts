@@ -53,7 +53,7 @@ export interface SearchParams {
 }
 
 export const isValidSearchScopeId = (id: string): id is SearchScopeId => {
-  return AllSearchScopeIdList.includes(id as any);
+  return (AllSearchScopeIdList as readonly string[]).includes(id);
 };
 
 export const buildSearchTextBySearchParams = (

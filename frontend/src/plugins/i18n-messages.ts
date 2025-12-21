@@ -1,6 +1,7 @@
 import { merge } from "lodash-es";
 
 const localPathPrefix = "../locales/";
+type LocaleModule = { default: Record<string, unknown> };
 
 // import i18n resources
 // https://vitejs.dev/guide/features.html#glob-import
@@ -11,7 +12,7 @@ export const mergedLocalMessage = Object.entries(
     const name = key.slice(localPathPrefix.length, -5);
     const sections = name.split("/");
     if (sections.length === 1) {
-      map[name] = merge((value as any).default, map[name] || {});
+      map[name] = merge((value as LocaleModule).default, map[name] || {});
     } else {
       const file = sections.slice(-1)[0];
       const sectionsName = sections[0];
@@ -19,7 +20,7 @@ export const mergedLocalMessage = Object.entries(
       map[file] = {
         ...existed,
         [sectionsName]: merge(
-          (value as any).default,
+          (value as LocaleModule).default,
           existed[sectionsName] || {}
         ),
       };

@@ -252,7 +252,7 @@ const defaultExpandedKeys = () => {
   return keys;
 };
 const nodeProps = ({ option }: { option: TreeOption }) => {
-  const node = option as any as TreeNode;
+  const node = option as TreeNode;
   return {
     onclick(e: MouseEvent) {
       if (node.disabled) return;
@@ -318,7 +318,7 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
 
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
-  const node = option as any as TreeNode;
+  const node = option as TreeNode;
   const keyword = searchPattern.value;
   return h(Label, { node, keyword });
 };

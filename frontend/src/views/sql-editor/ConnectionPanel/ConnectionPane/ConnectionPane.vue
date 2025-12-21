@@ -662,7 +662,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 };
 
 const nodeProps = ({ option }: { option: TreeOption }) => {
-  const node = option as any as SQLEditorTreeNode;
+  const node = option as SQLEditorTreeNode;
   return {
     onClick(e: MouseEvent) {
       if (node.disabled) return;

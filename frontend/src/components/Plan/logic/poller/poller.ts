@@ -91,7 +91,7 @@ export const provideResourcePoller = () => {
     },
     issue: {
       canRefresh: () => !!issue?.value,
-      refresh: () => refreshIssue(issue as any),
+      refresh: () => refreshIssue(issue),
       canInitialize: () =>
         !!(plan.value?.issue && isValidIssueName(plan.value.issue)),
       initialize: async () => {

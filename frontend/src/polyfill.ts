@@ -1,8 +1,10 @@
 (() => {
   if (typeof WeakRef === "undefined") {
-    class WeakRefPolyfill<T> {
+    class WeakRefPolyfill<T extends WeakKey> {
       private targetMap = new Map<WeakRefPolyfill<T>, T | undefined>();
       private target: T;
+
+      readonly [Symbol.toStringTag] = "WeakRef";
 
       constructor(target: T) {
         if (typeof target !== "object" || target === null) {
@@ -18,6 +20,9 @@
       }
     }
 
-    (globalThis as any).WeakRef = WeakRefPolyfill;
+    // Use a specific type instead of any
+    (
+      globalThis as typeof globalThis & { WeakRef: typeof WeakRefPolyfill }
+    ).WeakRef = WeakRefPolyfill;
   }
 })();

@@ -1,4 +1,5 @@
 import type * as monaco from "monaco-editor";
+import type { Language } from "@/types";
 
 export type MonacoModule = typeof monaco;
 
@@ -49,3 +50,14 @@ export const SupportedLanguages: monaco.languages.ILanguageExtensionPoint[] = [
 ];
 
 export type Selection = monaco.Selection;
+
+export type MonacoEditorProps = {
+  content: string;
+  filename?: string;
+  language?: Language;
+};
+
+export type MonacoEditorEmits = {
+  (event: "update:content", content: string): void;
+  (event: "update:selection", selection: Selection | null): void;
+};

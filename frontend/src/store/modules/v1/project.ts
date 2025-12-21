@@ -187,8 +187,12 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 
   const batchGetProjects = async (names: string[], silent = true) => {
+    const validNames = names.filter(isValidProjectName);
+    if (validNames.length === 0) {
+      return [];
+    }
     const request = create(BatchGetProjectsRequestSchema, {
-      names,
+      names: validNames,
     });
     const response = await projectServiceClientConnect.batchGetProjects(
       request,

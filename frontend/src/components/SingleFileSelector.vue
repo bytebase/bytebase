@@ -76,11 +76,10 @@ const onUploaderClick = () => {
 };
 
 const onFileChange = () => {
-  const files: File[] = (uploader.value as any).files;
-  selectFile(files);
+  selectFile(uploader.value?.files);
 };
 
-const onFileDrop = (e: any) => {
+const onFileDrop = (e: DragEvent) => {
   e.preventDefault();
   state.dropAreaActive = false;
 
@@ -88,17 +87,17 @@ const onFileDrop = (e: any) => {
     return;
   }
 
-  const files: File[] = e.dataTransfer.files;
+  const files = e.dataTransfer?.files;
   selectFile(files);
 };
 
-const selectFile = (files: File[]) => {
-  if (!files.length) {
+const selectFile = (files: FileList | null | undefined) => {
+  if (!files || !files.length) {
     return;
   }
 
-  const file = files[0];
-  if (!validFile(file)) {
+  const file = files.item(0);
+  if (!file || !validFile(file)) {
     return;
   }
   emit("on-select", file);

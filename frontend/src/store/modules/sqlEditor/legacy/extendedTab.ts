@@ -4,6 +4,10 @@ import PouchDB from "pouchdb";
 import PouchDBFind from "pouchdb-find";
 import type { SQLEditorTab } from "@/types";
 
+interface PouchDBError extends Error {
+  status?: number;
+}
+
 export const EXTENDED_TAB_FIELDS = [
   "statement",
   "batchQueryContext",
@@ -54,7 +58,7 @@ export const useExtendedTabStore = defineStore("sqlEditorExtendedTab", () => {
         fallback();
       }
 
-      if ((err as any)?.status === 404) return;
+      if ((err as PouchDBError)?.status === 404) return;
       console.debug("[SQLEditorExtendedTabStore] fetchExtendedTab", err);
     }
   };

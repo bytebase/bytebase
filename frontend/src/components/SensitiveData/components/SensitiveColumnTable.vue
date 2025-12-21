@@ -19,7 +19,10 @@ import { useI18n } from "vue-i18n";
 import { RouterLink, useRouter } from "vue-router";
 import ClassificationCell from "@/components/ColumnDataTable/ClassificationCell.vue";
 import SemanticTypeCell from "@/components/ColumnDataTable/SemanticTypeCell.vue";
-import type { MaskData } from "@/components/SensitiveData/types";
+import type {
+  MaskData,
+  MaskDataTarget,
+} from "@/components/SensitiveData/types";
 import { MiniActionButton } from "@/components/v2";
 import {
   pushNotification,
@@ -28,6 +31,11 @@ import {
   useSettingV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
+import type {
+  ColumnCatalog,
+  ObjectSchema,
+  TableCatalog,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
 import { DataClassificationSetting_DataClassificationConfigSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { autoDatabaseRoute } from "@/utils";
 
@@ -221,9 +229,23 @@ const dataTableColumns = computed(() => {
   return columns;
 });
 
+const hasSemanticType = (
+  target: MaskDataTarget
+): target is ColumnCatalog | ObjectSchema => {
+  return "semanticType" in target;
+};
+
+const hasClassificationType = (
+  target: MaskDataTarget
+): target is ColumnCatalog | TableCatalog => {
+  return "classification" in target;
+};
+
 const onSemanticTypeApply = async (item: MaskData, semanticType: string) => {
-  // TODO(ed): dirty but works.
-  (item.target as any).semanticType = semanticType;
+  if (!hasSemanticType(item.target)) {
+    return;
+  }
+  item.target.semanticType = semanticType;
   await dbCatalogStore.updateDatabaseCatalog(databaseCatalog.value);
 
   pushNotification({
@@ -237,7 +259,10 @@ const onClassificationIdApply = async (
   item: MaskData,
   classification: string
 ) => {
-  (item.target as any).classification = classification;
+  if (!hasClassificationType(item.target)) {
+    return;
+  }
+  item.target.classification = classification;
   await dbCatalogStore.updateDatabaseCatalog(databaseCatalog.value);
   pushNotification({
     module: "bytebase",
@@ -247,8 +272,12 @@ const onClassificationIdApply = async (
 };
 
 const onMaskingClear = async (item: MaskData) => {
-  (item.target as any).classification = "";
-  (item.target as any).semanticType = "";
+  if (hasSemanticType(item.target)) {
+    item.target.semanticType = "";
+  }
+  if (hasClassificationType(item.target)) {
+    item.target.classification = "";
+  }
   await dbCatalogStore.updateDatabaseCatalog(databaseCatalog.value);
   pushNotification({
     module: "bytebase",

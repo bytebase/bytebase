@@ -62,7 +62,12 @@ export const refreshRollout = async (
   rollout.value = newRollout;
 };
 
-export const refreshIssue = async (issue: Ref<Issue>): Promise<void> => {
+export const refreshIssue = async (
+  issue: Ref<Issue | undefined>
+): Promise<void> => {
+  if (!issue.value) {
+    return;
+  }
   const request = create(GetIssueRequestSchema, {
     name: issue.value.name,
   });
