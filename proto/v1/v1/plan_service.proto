@@ -432,14 +432,10 @@ message PlanCheckRun {
   enum Type {
     // Unspecified check type.
     TYPE_UNSPECIFIED = 0;
-    // Fake advise check for testing purposes without executing against database.
-    DATABASE_STATEMENT_FAKE_ADVISE = 1;
     // SQL review check that analyzes statements against configured SQL review rules.
     DATABASE_STATEMENT_ADVISE = 2;
     // Summary report check that generates impact analysis for the statements.
     DATABASE_STATEMENT_SUMMARY_REPORT = 3;
-    // Connection check that verifies database connectivity.
-    DATABASE_CONNECT = 4;
     // Ghost sync check that validates gh-ost online schema change compatibility.
     DATABASE_GHOST_SYNC = 5;
   }

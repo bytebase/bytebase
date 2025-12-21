@@ -194,8 +194,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.taskScheduler.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg)
-	databaseConnectExecutor := plancheck.NewDatabaseConnectExecutor(stores, s.dbFactory)
-	s.planCheckScheduler.Register(store.PlanCheckDatabaseConnect, databaseConnectExecutor)
 	statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(stores, sheetManager, s.dbFactory, s.licenseService)
 	s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
 	ghostSyncExecutor := plancheck.NewGhostSyncExecutor(stores, s.dbFactory)

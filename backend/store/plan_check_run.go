@@ -16,16 +16,10 @@ import (
 type PlanCheckRunType string
 
 const (
-	// PlanCheckDatabaseStatementFakeAdvise is the plan check type for fake advise.
-	PlanCheckDatabaseStatementFakeAdvise PlanCheckRunType = "bb.plan-check.database.statement.fake-advise"
-	// PlanCheckDatabaseStatementCompatibility is the plan check type for statement compatibility.
-	PlanCheckDatabaseStatementCompatibility PlanCheckRunType = "bb.plan-check.database.statement.compatibility"
 	// PlanCheckDatabaseStatementAdvise is the plan check type for schema system review policy.
 	PlanCheckDatabaseStatementAdvise PlanCheckRunType = "bb.plan-check.database.statement.advise"
 	// PlanCheckDatabaseStatementSummaryReport is the plan check type for statement summary report.
 	PlanCheckDatabaseStatementSummaryReport PlanCheckRunType = "bb.plan-check.database.statement.summary.report"
-	// PlanCheckDatabaseConnect is the plan check type for database connection.
-	PlanCheckDatabaseConnect PlanCheckRunType = "bb.plan-check.database.connect"
 	// PlanCheckDatabaseGhostSync is the plan check type for the gh-ost sync task.
 	PlanCheckDatabaseGhostSync PlanCheckRunType = "bb.plan-check.database.ghost.sync"
 )

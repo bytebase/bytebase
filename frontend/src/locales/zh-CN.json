@@ -263,8 +263,6 @@
       "title-general": "检查结果"
     },
     "check-type": {
-      "fake": "Fake",
-      "connection": "连接",
       "sql-review": {
         "self": "SQL 审核",
         "description": "分析 SQL 语句中的潜在问题并提供建议。包括内置规则以及您的自定义规则。"

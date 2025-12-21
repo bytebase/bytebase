@@ -195,19 +195,6 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
 		PlanUID: plan.UID,
 		Status:  store.PlanCheckRunStatusRunning,
-		Type:    store.PlanCheckDatabaseConnect,
-		Config: &storepb.PlanCheckRunConfig{
-			SheetSha256:  sheetSha256,
-			InstanceId:   instance.ResourceID,
-			DatabaseName: database.DatabaseName,
-			EnableGhost:  config.EnableGhost,
-			EnableSdl:    enableSDL,
-		},
-	})
-
-	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-		PlanUID: plan.UID,
-		Status:  store.PlanCheckRunStatusRunning,
 		Type:    store.PlanCheckDatabaseStatementAdvise,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetSha256:       sheetSha256,

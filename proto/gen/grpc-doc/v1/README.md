@@ -7898,10 +7898,8 @@ The plan&#39;s `name` field is used to identify the plan to update. Format: proj
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified check type. |
-| DATABASE_STATEMENT_FAKE_ADVISE | 1 | Fake advise check for testing purposes without executing against database. |
 | DATABASE_STATEMENT_ADVISE | 2 | SQL review check that analyzes statements against configured SQL review rules. |
 | DATABASE_STATEMENT_SUMMARY_REPORT | 3 | Summary report check that generates impact analysis for the statements. |
-| DATABASE_CONNECT | 4 | Connection check that verifies database connectivity. |
 | DATABASE_GHOST_SYNC | 5 | Ghost sync check that validates gh-ost online schema change compatibility. |
 
 

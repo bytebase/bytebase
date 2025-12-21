@@ -87,18 +87,16 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 		projectIDFilter = &projectID
 	}
 	// For instances/{instance} or "-" (wildcard), no project filter is applied.
-
 	databases := make([]*v1pb.Database, 0, len(req.Msg.Names))
 	for _, name := range req.Msg.Names {
 		instanceID, databaseName, err := common.GetInstanceDatabaseID(name)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", name))
 		}
-		find := &store.FindDatabaseMessage{
+		databaseMessage, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instanceID,
 			DatabaseName: &databaseName,
-		}
-		databaseMessage, err := s.store.GetDatabase(ctx, find)
+		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
 		}
@@ -586,13 +584,6 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, req *connect.Re
 	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(req.Msg.Name, common.SchemaSuffix)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-	}
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
-	}
-	if instance == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 	}
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,

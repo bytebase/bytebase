@@ -263,8 +263,6 @@
       "title-general": "Check result"
     },
     "check-type": {
-      "fake": "Fake",
-      "connection": "Connection",
       "sql-review": {
         "self": "SQL review",
         "description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules."

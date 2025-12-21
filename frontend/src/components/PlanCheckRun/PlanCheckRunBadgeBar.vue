@@ -48,7 +48,6 @@ const planCheckRunsGroupByType = computed(() => {
 
 const PlanCheckTypeOrderList: PlanCheckRun_Type[] = [
   PlanCheckRun_Type.DATABASE_GHOST_SYNC,
-  PlanCheckRun_Type.DATABASE_CONNECT,
   PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
 ];
 const PlanCheckTypeOrderDict = new Map<PlanCheckRun_Type, number>(
