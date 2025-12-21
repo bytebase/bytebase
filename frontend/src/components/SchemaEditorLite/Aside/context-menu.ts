@@ -231,7 +231,10 @@ export const useContextMenu = (): ContextMenuContext => {
   const handleSelect = async (key: string) => {
     const node = menu.node;
     if (!node) return;
-    const emit = events.emit.bind(events) as (event: string, data: TreeNode) => Promise<void>;
+    const emit = events.emit.bind(events) as (
+      event: string,
+      data: TreeNode
+    ) => Promise<void>;
     emit(key, node);
     menu.show = false;
   };

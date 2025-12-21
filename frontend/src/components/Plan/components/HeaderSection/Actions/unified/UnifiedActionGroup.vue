@@ -66,7 +66,7 @@ type DropdownActionOption = DropdownOption & {
   key: UnifiedAction;
   label: string;
   description?: string;
-}
+};
 
 const props = defineProps<{
   primaryAction?: ActionConfig;

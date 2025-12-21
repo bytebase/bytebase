@@ -13,9 +13,11 @@
 import { useParentElement } from "@vueuse/core";
 import { computed, defineAsyncComponent, ref, useAttrs } from "vue";
 import { BBSpin } from "@/bbkit";
-import type { MonacoEditorProps, MonacoEditorEmits } from "./types";
+import type { MonacoEditorEmits, MonacoEditorProps } from "./types";
 
-type MonacoEditorAttrs = MonacoEditorProps & MonacoEditorEmits & Record<string, unknown>
+type MonacoEditorAttrs = MonacoEditorProps &
+  MonacoEditorEmits &
+  Record<string, unknown>;
 
 const MonacoEditor = defineAsyncComponent(() => import("./MonacoEditor.vue"));
 

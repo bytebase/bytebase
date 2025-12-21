@@ -21,6 +21,8 @@
     }
 
     // Use a specific type instead of any
-    (globalThis as typeof globalThis & { WeakRef: typeof WeakRefPolyfill }).WeakRef = WeakRefPolyfill;
+    (
+      globalThis as typeof globalThis & { WeakRef: typeof WeakRefPolyfill }
+    ).WeakRef = WeakRefPolyfill;
   }
 })();

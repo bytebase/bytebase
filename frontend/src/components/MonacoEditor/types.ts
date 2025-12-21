@@ -55,9 +55,9 @@ export type MonacoEditorProps = {
   content: string;
   filename?: string;
   language?: Language;
-}
+};
 
 export type MonacoEditorEmits = {
   (event: "update:content", content: string): void;
   (event: "update:selection", selection: Selection | null): void;
-}
+};

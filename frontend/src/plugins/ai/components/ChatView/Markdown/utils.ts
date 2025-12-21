@@ -56,7 +56,10 @@ export type State = {
 
 type GenericNodeHandler = (node: RootContent, state?: State) => VNode | string;
 
-function defaultMdNodeToVNode(node: RootContent, state?: State): VNode | string {
+function defaultMdNodeToVNode(
+  node: RootContent,
+  state?: State
+): VNode | string {
   const { type } = node;
 
   const customSlot = state?.slots[type as keyof CustomRender] as
@@ -67,9 +70,8 @@ function defaultMdNodeToVNode(node: RootContent, state?: State): VNode | string 
     return customSlot(node, state);
   }
 
-  const handler = (
-    mdastToVNode[type as keyof typeof mdastToVNode] ?? mdastToVNode.unknown
-  ) as GenericNodeHandler;
+  const handler = (mdastToVNode[type as keyof typeof mdastToVNode] ??
+    mdastToVNode.unknown) as GenericNodeHandler;
 
   return handler(node, state);
 }
@@ -539,30 +541,30 @@ function thematicBreakToVNode(): VNode | string {
 }
 
 function defaultUnknownHandler(
-    node: RootContent,
-    state?: State
-  ): VNode | string {
-    if ("children" in node) {
-      const properties: Record<string, unknown> =
-        "properties" in node ? (node.properties as Record<string, unknown>) : {};
+  node: RootContent,
+  state?: State
+): VNode | string {
+  if ("children" in node) {
+    const properties: Record<string, unknown> =
+      "properties" in node ? (node.properties as Record<string, unknown>) : {};
 
-      if ("className" in properties && Array.isArray(properties.className)) {
-        properties.className = properties.className.join(" ");
-      }
-
-      return h(
-        "div",
-        properties,
-        node.children.map((child) => defaultMdNodeToVNode(child, state))
-      );
+    if ("className" in properties && Array.isArray(properties.className)) {
+      properties.className = properties.className.join(" ");
     }
 
-    if ("value" in node) {
-      return node.value;
-    }
-
-    return "";
+    return h(
+      "div",
+      properties,
+      node.children.map((child) => defaultMdNodeToVNode(child, state))
+    );
   }
+
+  if ("value" in node) {
+    return node.value;
+  }
+
+  return "";
+}
 
 export const mdastToVNode = {
   root: rootToVNode,

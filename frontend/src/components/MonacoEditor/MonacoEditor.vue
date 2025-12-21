@@ -27,13 +27,10 @@ import { extensionNameOfLanguage } from "./utils";
 
 const textModelEditorRef = ref<InstanceType<typeof MonacoTextModelEditor>>();
 
-const props = withDefaults(
-  defineProps<MonacoEditorProps>(),
-  {
-    filename: undefined,
-    language: "sql",
-  }
-);
+const props = withDefaults(defineProps<MonacoEditorProps>(), {
+  filename: undefined,
+  language: "sql",
+});
 const emit = defineEmits<MonacoEditorEmits>();
 
 const content = computed({
