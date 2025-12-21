@@ -727,9 +727,8 @@ func (r *Runner) getDatabaseMap(ctx context.Context, databases []string) (map[st
 			continue
 		}
 		db, err := r.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-			InstanceID:      &instanceID,
-			DatabaseName:    &databaseName,
-			IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
 		})
 		if err != nil {
 			return nil, err

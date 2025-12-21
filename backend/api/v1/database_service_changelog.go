@@ -96,9 +96,8 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 	}
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

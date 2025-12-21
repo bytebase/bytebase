@@ -280,9 +280,8 @@ func (m *Manager) generateInstance(
 	}
 
 	testDatabase, err := m.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instance.ResourceID,
-		DatabaseName:    &dbName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+		InstanceID:   &instance.ResourceID,
+		DatabaseName: &dbName,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to find onboarding database %v", dbName)

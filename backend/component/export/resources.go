@@ -81,9 +81,8 @@ func getResourcesForMySQL(
 	}
 
 	database, err := storeInstance.GetDatabase(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instance.ResourceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+		InstanceID:   &instance.ResourceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		if httpErr, ok := err.(*echo.HTTPError); ok && httpErr.Code == echo.ErrNotFound.Code {
@@ -114,9 +113,8 @@ func getResourcesForMySQL(
 			}
 			if sourceColumn.Database != dbMetadata.GetProto().Name {
 				resourceDB, err := storeInstance.GetDatabase(ctx, &store.FindDatabaseMessage{
-					InstanceID:      &instance.ResourceID,
-					DatabaseName:    &sourceColumn.Database,
-					IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+					InstanceID:   &instance.ResourceID,
+					DatabaseName: &sourceColumn.Database,
 				})
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database %v in instance %v", sourceColumn.Database, instance.ResourceID))
@@ -169,9 +167,8 @@ func getResourcesForPostgres(
 	}
 
 	database, err := storeInstance.GetDatabase(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instance.ResourceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+		InstanceID:   &instance.ResourceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to fetch database"))
