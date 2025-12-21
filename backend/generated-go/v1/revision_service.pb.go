@@ -481,10 +481,6 @@ type Revision struct {
 	Sheet string `protobuf:"bytes,8,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The SHA256 hash value of the sheet.
 	SheetSha256 string `protobuf:"bytes,9,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
-	// The statement is used for preview purpose.
-	Statement string `protobuf:"bytes,10,opt,name=statement,proto3" json:"statement,omitempty"`
-	// The size of the statement in bytes.
-	StatementSize int64 `protobuf:"varint,11,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
 	// The task run associated with the revision.
 	// Can be empty.
 	// Format:
@@ -589,20 +585,6 @@ func (x *Revision) GetSheetSha256() string {
 	return ""
 }
 
-func (x *Revision) GetStatement() string {
-	if x != nil {
-		return x.Statement
-	}
-	return ""
-}
-
-func (x *Revision) GetStatementSize() int64 {
-	if x != nil {
-		return x.StatementSize
-	}
-	return 0
-}
-
 func (x *Revision) GetTaskRun() string {
 	if x != nil {
 		return x.TaskRun
@@ -647,7 +629,7 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x15bytebase.com/RevisionR\x04name\"J\n" +
 	"\x15DeleteRevisionRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/RevisionR\x04name\"\xca\x05\n" +
+	"\x15bytebase.com/RevisionR\x04name\"\xfb\x04\n" +
 	"\bRevision\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x123\n" +
 	"\arelease\x18\x02 \x01(\tB\x19\xfaA\x16\n" +
@@ -661,10 +643,7 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\aversion\x18\a \x01(\tR\aversion\x12-\n" +
 	"\x05sheet\x18\b \x01(\tB\x17\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x05sheet\x12&\n" +
-	"\fsheet_sha256\x18\t \x01(\tB\x03\xe0A\x03R\vsheetSha256\x12!\n" +
-	"\tstatement\x18\n" +
-	" \x01(\tB\x03\xe0A\x03R\tstatement\x12*\n" +
-	"\x0estatement_size\x18\v \x01(\x03B\x03\xe0A\x03R\rstatementSize\x124\n" +
+	"\fsheet_sha256\x18\t \x01(\tB\x03\xe0A\x03R\vsheetSha256\x124\n" +
 	"\btask_run\x18\r \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\ataskRun\x12.\n" +
 	"\x04type\x18\x0e \x01(\x0e2\x1a.bytebase.v1.Revision.TypeR\x04type\"<\n" +

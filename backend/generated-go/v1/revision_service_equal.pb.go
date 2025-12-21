@@ -161,12 +161,6 @@ func (x *Revision) Equal(y *Revision) bool {
 	if x.SheetSha256 != y.SheetSha256 {
 		return false
 	}
-	if x.Statement != y.Statement {
-		return false
-	}
-	if x.StatementSize != y.StatementSize {
-		return false
-	}
 	if x.TaskRun != y.TaskRun {
 		return false
 	}

@@ -167,10 +167,6 @@ message Revision {
   string sheet = 8 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
   // The SHA256 hash value of the sheet.
   string sheet_sha256 = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // The statement is used for preview purpose.
-  string statement = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
-  // The size of the statement in bytes.
-  int64 statement_size = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The task run associated with the revision.
   // Can be empty.

@@ -12792,6 +12792,7 @@ components:
                          The sheet that holds the content.
                          Format: projects/{project}/sheets/{sheet}
                 statement:
+                    writeOnly: true
                     type: string
                     description: The raw SQL statement content.
                     format: bytes
@@ -12799,10 +12800,6 @@ components:
                     readOnly: true
                     type: string
                     description: The SHA256 hash value of the sheet content or the statement.
-                statementSize:
-                    readOnly: true
-                    type: string
-                    description: The size of the statement in bytes.
             description: A SQL file in a release.
         Release_VCSSource:
             type: object
@@ -12969,14 +12966,6 @@ components:
                     readOnly: true
                     type: string
                     description: The SHA256 hash value of the sheet.
-                statement:
-                    readOnly: true
-                    type: string
-                    description: The statement is used for preview purpose.
-                statementSize:
-                    readOnly: true
-                    type: string
-                    description: The size of the statement in bytes.
                 taskRun:
                     type: string
                     description: |-

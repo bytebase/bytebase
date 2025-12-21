@@ -94,16 +94,6 @@ const columnList = computed(() => {
       render: (revision) => Revision_Type[revision.type],
     },
     {
-      key: "statement",
-      title: t("common.statement"),
-      resizable: true,
-      minWidth: "13rem",
-      ellipsis: true,
-      render: (revision) => {
-        return <p class="truncate whitespace-nowrap">{revision.statement}</p>;
-      },
-    },
-    {
       key: "created-at",
       title: t("common.created-at"),
       width: 128,

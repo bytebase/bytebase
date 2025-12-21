@@ -19,7 +19,6 @@ import {
   type Release_File,
   Release_File_Type,
 } from "@/types/proto-es/v1/release_service_pb";
-import { bytesToString, getReleaseFileStatement } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -81,19 +80,6 @@ const columnList = computed(() => {
       width: 128,
       ellipsis: true,
       render: (file) => file.path || "-",
-    },
-    {
-      key: "statement-size",
-      title: t("common.statement-size"),
-      width: 128,
-      ellipsis: true,
-      render: (file) => bytesToString(Number(file.statementSize)),
-    },
-    {
-      key: "statement",
-      title: t("common.statement"),
-      ellipsis: true,
-      render: (file) => getReleaseFileStatement(file),
     },
   ];
   return columns.filter((column) => !column.hide);

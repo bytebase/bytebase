@@ -8623,7 +8623,6 @@ A SQL file in a release.
 The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | statement | [bytes](#bytes) |  | The raw SQL statement content. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet content or the statement. |
-| statement_size | [int64](#int64) |  | The size of the statement in bytes. |
 
 
 
@@ -9276,8 +9275,6 @@ When paginating, all other parameters provided to `ListRevisions` must match the
 | version | [string](#string) |  | The schema version string for this revision. |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
-| statement | [string](#string) |  | The statement is used for preview purpose. |
-| statement_size | [int64](#int64) |  | The size of the statement in bytes. |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | type | [Revision.Type](#bytebase-v1-Revision-Type) |  | The type of the revision. |
 

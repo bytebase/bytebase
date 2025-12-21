@@ -19,32 +19,61 @@
   <div class="flex flex-col gap-y-2">
     <p class="w-auto flex items-center text-base text-main mb-2 gap-x-2">
       {{ $t("common.statement") }}
-      <CopyButton :content="statement" />
+      <CopyButton :content="fetchedStatement" />
     </p>
-    <MonacoEditor
-      class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
-      :content="statement"
-      :readonly="true"
-      :auto-height="{ min: 120, max: 480 }"
-    />
+    <NSpin :show="fetching">
+      <MonacoEditor
+        class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
+        :content="fetchedStatement"
+        :readonly="true"
+        :auto-height="{ min: 120, max: 480 }"
+      />
+    </NSpin>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NDivider } from "naive-ui";
-import { computed } from "vue";
+import { NDivider, NSpin } from "naive-ui";
+import { onMounted, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { CopyButton } from "@/components/v2";
+import { sheetServiceClientConnect } from "@/grpcweb";
 import type {
   Release,
   Release_File,
 } from "@/types/proto-es/v1/release_service_pb";
-import { getReleaseFileStatement } from "@/utils";
 
 const props = defineProps<{
   release: Release;
   releaseFile: Release_File;
 }>();
 
-const statement = computed(() => getReleaseFileStatement(props.releaseFile));
+const fetchedStatement = ref("");
+const fetching = ref(false);
+
+const fetchStatement = async () => {
+  fetching.value = true;
+  try {
+    const sheet = await sheetServiceClientConnect.getSheet({
+      name: props.releaseFile.sheet,
+      raw: true,
+    });
+    if (sheet?.content) {
+      fetchedStatement.value = new TextDecoder().decode(sheet.content);
+    }
+  } catch (error) {
+    console.error("Failed to fetch statement", error);
+  } finally {
+    fetching.value = false;
+  }
+};
+
+onMounted(fetchStatement);
+
+watch(
+  () => props.releaseFile,
+  () => {
+    fetchStatement();
+  }
+);
 </script>

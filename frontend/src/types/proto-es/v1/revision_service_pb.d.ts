@@ -261,20 +261,6 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
   sheetSha256: string;
 
   /**
-   * The statement is used for preview purpose.
-   *
-   * @generated from field: string statement = 10;
-   */
-  statement: string;
-
-  /**
-   * The size of the statement in bytes.
-   *
-   * @generated from field: int64 statement_size = 11;
-   */
-  statementSize: bigint;
-
-  /**
    * The task run associated with the revision.
    * Can be empty.
    * Format:
