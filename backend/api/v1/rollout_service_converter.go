@@ -291,11 +291,11 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
 	case storepb.Task_DATABASE_MIGRATE:
 		// All DATABASE_MIGRATE tasks are treated as schema updates (DDL or GHOST)
-		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
+		return convertToTaskFromSchemaUpdate(project, task)
 	case storepb.Task_DATABASE_SDL:
-		return convertToTaskFromSchemaUpdate(ctx, s, project, task)
+		return convertToTaskFromSchemaUpdate(project, task)
 	case storepb.Task_DATABASE_EXPORT:
-		return convertToTaskFromDatabaseDataExport(ctx, s, project, task)
+		return convertToTaskFromDatabaseDataExport(project, task)
 	case storepb.Task_TASK_TYPE_UNSPECIFIED:
 		return nil, errors.Errorf("task type %v is not supported", task.Type)
 	default:
@@ -339,16 +339,9 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	return v1pbTask, nil
 }
 
-func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseName == nil {
 		return nil, errors.Errorf("schema update task database is nil")
-	}
-	database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found")
 	}
 
 	// Determine DatabaseChangeType based on task type
@@ -369,7 +362,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Type:          convertToTaskType(task),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
 		SkippedReason: task.Payload.GetSkippedReason(),
-		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
+		Target:        fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, task.InstanceID, common.DatabaseIDPrefix, *(task.DatabaseName)),
 		Payload: &v1pb.Task_DatabaseUpdate_{
 			DatabaseUpdate: &v1pb.Task_DatabaseUpdate{
 				Sheet:              common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256()),
@@ -387,18 +380,12 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 	return v1pbTask, nil
 }
 
-func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+func convertToTaskFromDatabaseDataExport(project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	if task.DatabaseName == nil {
 		return nil, errors.Errorf("data export task database is nil")
 	}
-	database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &task.InstanceID, DatabaseName: task.DatabaseName, ShowDeleted: true})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found")
-	}
-	targetDatabaseName := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
+
+	targetDatabaseName := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, task.InstanceID, common.DatabaseIDPrefix, *(task.DatabaseName))
 	sheet := common.FormatSheet(project.ResourceID, task.Payload.GetSheetSha256())
 	v1pbTaskPayload := v1pb.Task_DatabaseDataExport_{
 		DatabaseDataExport: &v1pb.Task_DatabaseDataExport{

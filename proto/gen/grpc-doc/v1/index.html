@@ -22196,12 +22196,6 @@ In this situation, `update_mask` is ignored. </p></td>
               </tr>
             
               <tr>
-                <td>DATABASE_STATEMENT_FAKE_ADVISE</td>
-                <td>1</td>
-                <td><p>Fake advise check for testing purposes without executing against database.</p></td>
-              </tr>
-            
-              <tr>
                 <td>DATABASE_STATEMENT_ADVISE</td>
                 <td>2</td>
                 <td><p>SQL review check that analyzes statements against configured SQL review rules.</p></td>
@@ -22211,12 +22205,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DATABASE_STATEMENT_SUMMARY_REPORT</td>
                 <td>3</td>
                 <td><p>Summary report check that generates impact analysis for the statements.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_CONNECT</td>
-                <td>4</td>
-                <td><p>Connection check that verifies database connectivity.</p></td>
               </tr>
             
               <tr>
@@ -24304,13 +24292,6 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><p>The SHA256 hash value of the sheet content or the statement. </p></td>
                 </tr>
               
-                <tr>
-                  <td>statement_size</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The size of the statement in bytes. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -26287,20 +26268,6 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
-                  <td>statement</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The statement is used for preview purpose. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>statement_size</td>
-                  <td><a href="#int64">int64</a></td>
-                  <td></td>
-                  <td><p>The size of the statement in bytes. </p></td>
-                </tr>
-              
-                <tr>
                   <td>task_run</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -26384,14 +26351,6 @@ Permissions required: bb.revisions.get</p></td>
               </tr>
             
               <tr>
-                <td>CreateRevision</td>
-                <td><a href="#bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</a></td>
-                <td><a href="#bytebase.v1.Revision">Revision</a></td>
-                <td><p>Creates a new schema revision.
-Permissions required: bb.revisions.create</p></td>
-              </tr>
-            
-              <tr>
                 <td>BatchCreateRevisions</td>
                 <td><a href="#bytebase.v1.BatchCreateRevisionsRequest">BatchCreateRevisionsRequest</a></td>
                 <td><a href="#bytebase.v1.BatchCreateRevisionsResponse">BatchCreateRevisionsResponse</a></td>
@@ -26442,16 +26401,6 @@ Permissions required: bb.revisions.delete</p></td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/revisions/*}</td>
                 <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>CreateRevision</td>
-                <td>POST</td>
-                <td>/v1/{parent=instances/*/databases/*}/revisions</td>
-                <td>revision</td>
               </tr>
               
             

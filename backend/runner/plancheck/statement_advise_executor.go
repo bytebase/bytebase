@@ -45,14 +45,14 @@ type StatementAdviseExecutor struct {
 
 // Run will run the plan check statement advise executor once, and run its sub-advisors one-by-one.
 func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
-	sheet, err := e.store.GetSheetMetadata(ctx, config.SheetSha256)
+	fullSheet, err := e.store.GetSheetFull(ctx, config.SheetSha256)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %s", config.SheetSha256)
+		return nil, err
 	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %s not found", config.SheetSha256)
+	if fullSheet == nil {
+		return nil, errors.Errorf("sheet full %s not found", config.SheetSha256)
 	}
-	if sheet.Size > common.MaxSheetCheckSize {
+	if fullSheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.Advice_WARNING,
@@ -62,14 +62,6 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 			},
 		}, nil
 	}
-	fullSheet, err := e.store.GetSheetFull(ctx, config.SheetSha256)
-	if err != nil {
-		return nil, err
-	}
-	if fullSheet == nil {
-		return nil, errors.Errorf("sheet full %s not found", config.SheetSha256)
-	}
-	statement := fullSheet.Statement
 	enablePriorBackup := config.EnablePriorBackup
 	enableGhost := config.EnableGhost
 	enableSDL := config.EnableSdl
@@ -100,7 +92,7 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
-	results, err := e.runReview(ctx, instance, database, statement, enablePriorBackup, enableGhost, enableSDL)
+	results, err := e.runReview(ctx, instance, database, fullSheet.Statement, enablePriorBackup, enableGhost, enableSDL)
 	if err != nil {
 		return nil, err
 	}

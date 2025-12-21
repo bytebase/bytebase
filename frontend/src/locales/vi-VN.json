@@ -82,7 +82,6 @@
     "created-at": "Thời gian tạo",
     "updated-at": "Thời gian cập nhật",
     "statement": "Câu lệnh",
-    "statement-size": "Kích thước câu lệnh",
     "snapshot": "Ảnh chụp nhanh",
     "status": "Trạng thái",
     "stage": "Giai đoạn",
@@ -264,8 +263,6 @@
       "title-general": "Kết quả kiểm tra"
     },
     "check-type": {
-      "fake": "Giả",
-      "connection": "Kết nối",
       "sql-review": {
         "self": "Đánh giá SQL",
         "description": "Phân tích câu lệnh SQL để tìm ra các vấn đề tiềm ẩn và đưa ra khuyến nghị. Bao gồm các quy tắc tích hợp sẵn và quy tắc tùy chỉnh của bạn."

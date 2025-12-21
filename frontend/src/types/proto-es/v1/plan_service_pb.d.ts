@@ -926,13 +926,6 @@ export enum PlanCheckRun_Type {
   TYPE_UNSPECIFIED = 0,
 
   /**
-   * Fake advise check for testing purposes without executing against database.
-   *
-   * @generated from enum value: DATABASE_STATEMENT_FAKE_ADVISE = 1;
-   */
-  DATABASE_STATEMENT_FAKE_ADVISE = 1,
-
-  /**
    * SQL review check that analyzes statements against configured SQL review rules.
    *
    * @generated from enum value: DATABASE_STATEMENT_ADVISE = 2;
@@ -945,13 +938,6 @@ export enum PlanCheckRun_Type {
    * @generated from enum value: DATABASE_STATEMENT_SUMMARY_REPORT = 3;
    */
   DATABASE_STATEMENT_SUMMARY_REPORT = 3,
-
-  /**
-   * Connection check that verifies database connectivity.
-   *
-   * @generated from enum value: DATABASE_CONNECT = 4;
-   */
-  DATABASE_CONNECT = 4,
 
   /**
    * Ghost sync check that validates gh-ost online schema change compatibility.

@@ -1849,7 +1849,7 @@ func TestActionErrorScenarios(t *testing.T) {
 		)
 
 		a.Error(err, "Command should fail with non-existent database")
-		a.Contains(result.Stderr, "failed to found database", "Expected not found error in stderr")
+		a.Contains(result.Stderr, "database instances/fake/databases/nonexistent not found", "Expected not found error in stderr")
 	})
 
 	t.Run("EmptyFilePattern", func(t *testing.T) {

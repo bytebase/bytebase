@@ -115,23 +115,27 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		},
 	}
 
+	var sheetSha256s []string
 	for _, f := range sanitizedFiles {
 		_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(f.Sheet)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheetSha256 from %q", f.Sheet)
 		}
-		sheet, err := s.store.GetSheetMetadata(ctx, sheetSha256)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
-		}
-		if sheet == nil {
-			return nil, errors.Errorf("sheet %q not found", f.Sheet)
-		}
+		sheetSha256s = append(sheetSha256s, sheetSha256)
+	}
+	exist, err := s.store.HasSheets(ctx, sheetSha256s...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to check sheets")
+	}
+	if !exist {
+		return nil, errors.Errorf("some sheets are not found")
+	}
 
+	for i, f := range sanitizedFiles {
 		releaseMessage.Payload.Files = append(releaseMessage.Payload.Files, &storepb.ReleasePayload_File{
 			Id:          f.Id,
 			Path:        f.Path,
-			SheetSha256: sheetSha256,
+			SheetSha256: sheetSha256s[i],
 			Type:        storepb.SchemaChangeType(f.Type),
 			Version:     f.Version,
 			EnableGhost: f.EnableGhost,
@@ -143,11 +147,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create release"))
 	}
 
-	converted, err := convertToRelease(ctx, s.store, release)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert release"))
-	}
-
+	converted := convertToRelease(release)
 	return connect.NewResponse(converted), nil
 }
 
@@ -166,10 +166,7 @@ func (s *ReleaseService) GetRelease(ctx context.Context, req *connect.Request[v1
 	if releaseMessage == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found in project %s", releaseUID, projectID))
 	}
-	release, err := convertToRelease(ctx, s.store, releaseMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to release"))
-	}
+	release := convertToRelease(releaseMessage)
 	return connect.NewResponse(release), nil
 }
 
@@ -220,11 +217,7 @@ func (s *ReleaseService) ListReleases(ctx context.Context, req *connect.Request[
 		releaseMessages = releaseMessages[:offset.limit]
 	}
 
-	releases, err := convertToReleases(ctx, s.store, releaseMessages)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to release"))
-	}
-
+	releases := convertToReleases(releaseMessages)
 	return connect.NewResponse(&v1pb.ListReleasesResponse{
 		Releases:      releases,
 		NextPageToken: nextPageToken,
@@ -281,11 +274,7 @@ func (s *ReleaseService) SearchReleases(ctx context.Context, req *connect.Reques
 		releaseMessages = releaseMessages[:offset.limit]
 	}
 
-	releases, err := convertToReleases(ctx, s.store, releaseMessages)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to release"))
-	}
-
+	releases := convertToReleases(releaseMessages)
 	return connect.NewResponse(&v1pb.SearchReleasesResponse{
 		Releases:      releases,
 		NextPageToken: nextPageToken,
@@ -346,10 +335,7 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, req *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update release"))
 	}
-	converted, err := convertToRelease(ctx, s.store, releaseMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert release"))
-	}
+	converted := convertToRelease(releaseMessage)
 	return connect.NewResponse(converted), nil
 }
 
@@ -402,26 +388,19 @@ func (s *ReleaseService) UndeleteRelease(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete release"))
 	}
-	releaseConverted, err := convertToRelease(ctx, s.store, releaseMessage)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert release"))
-	}
+	releaseConverted := convertToRelease(releaseMessage)
 	return connect.NewResponse(releaseConverted), nil
 }
 
-func convertToReleases(ctx context.Context, s *store.Store, releases []*store.ReleaseMessage) ([]*v1pb.Release, error) {
+func convertToReleases(releases []*store.ReleaseMessage) []*v1pb.Release {
 	var rs []*v1pb.Release
 	for _, release := range releases {
-		r, err := convertToRelease(ctx, s, release)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert to release")
-		}
-		rs = append(rs, r)
+		rs = append(rs, convertToRelease(release))
 	}
-	return rs, nil
+	return rs
 }
 
-func convertToRelease(ctx context.Context, s *store.Store, release *store.ReleaseMessage) (*v1pb.Release, error) {
+func convertToRelease(release *store.ReleaseMessage) *v1pb.Release {
 	r := &v1pb.Release{
 		Name:       common.FormatReleaseName(release.ProjectID, release.UID),
 		Title:      release.Payload.Title,
@@ -433,27 +412,18 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 	}
 
 	for _, f := range release.Payload.Files {
-		sheet, err := s.GetSheetMetadata(ctx, f.SheetSha256)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get sheet with sha256 %q", f.SheetSha256)
-		}
-		if sheet == nil {
-			return nil, errors.Errorf("sheet %q not found", f.SheetSha256)
-		}
 		// Sheets are now project-agnostic, no need to check projectID
 		r.Files = append(r.Files, &v1pb.Release_File{
-			Id:            f.Id,
-			Path:          f.Path,
-			Sheet:         common.FormatSheet(release.ProjectID, f.SheetSha256),
-			SheetSha256:   f.SheetSha256,
-			Type:          v1pb.Release_File_Type(f.Type),
-			Version:       f.Version,
-			Statement:     []byte(sheet.Statement),
-			StatementSize: sheet.Size,
-			EnableGhost:   f.EnableGhost,
+			Id:          f.Id,
+			Path:        f.Path,
+			Sheet:       common.FormatSheet(release.ProjectID, f.SheetSha256),
+			SheetSha256: f.SheetSha256,
+			Type:        v1pb.Release_File_Type(f.Type),
+			Version:     f.Version,
+			EnableGhost: f.EnableGhost,
 		})
 	}
-	return r, nil
+	return r
 }
 
 func convertToReleaseVcsSource(vs *storepb.ReleasePayload_VCSSource) *v1pb.Release_VCSSource {

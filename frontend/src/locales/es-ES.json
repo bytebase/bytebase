@@ -82,7 +82,6 @@
     "created-at": "Creado",
     "updated-at": "Actualizado",
     "statement": "Declaración",
-    "statement-size": "Tamaño de la declaración",
     "snapshot": "Instantánea",
     "status": "Estado",
     "stage": "Etapa",
@@ -264,8 +263,6 @@
       "title-general": "Comprobar resultado"
     },
     "check-type": {
-      "fake": "Falso",
-      "connection": "Conexión",
       "sql-review": {
         "self": "Revisión de SQL",
         "description": "Analice la sentencia SQL para detectar posibles problemas y proporcione recomendaciones. Incluye reglas integradas y sus reglas personalizadas."

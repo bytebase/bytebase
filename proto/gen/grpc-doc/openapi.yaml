@@ -1987,45 +1987,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-        post:
-            tags:
-                - RevisionService
-            description: |-
-                Creates a new schema revision.
-                 Permissions required: bb.revisions.create
-            operationId: RevisionService_CreateRevision
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: database
-                  in: path
-                  description: The database id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Revision'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Revision'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}/revisions/{revision}:
         get:
             tags:
@@ -11937,10 +11898,8 @@ components:
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
-                        - DATABASE_STATEMENT_FAKE_ADVISE
                         - DATABASE_STATEMENT_ADVISE
                         - DATABASE_STATEMENT_SUMMARY_REPORT
-                        - DATABASE_CONNECT
                         - DATABASE_GHOST_SYNC
                     type: string
                     format: enum
@@ -12831,6 +12790,7 @@ components:
                          The sheet that holds the content.
                          Format: projects/{project}/sheets/{sheet}
                 statement:
+                    writeOnly: true
                     type: string
                     description: The raw SQL statement content.
                     format: bytes
@@ -12838,10 +12798,6 @@ components:
                     readOnly: true
                     type: string
                     description: The SHA256 hash value of the sheet content or the statement.
-                statementSize:
-                    readOnly: true
-                    type: string
-                    description: The size of the statement in bytes.
             description: A SQL file in a release.
         Release_VCSSource:
             type: object
@@ -13008,14 +12964,6 @@ components:
                     readOnly: true
                     type: string
                     description: The SHA256 hash value of the sheet.
-                statement:
-                    readOnly: true
-                    type: string
-                    description: The statement is used for preview purpose.
-                statementSize:
-                    readOnly: true
-                    type: string
-                    description: The size of the statement in bytes.
                 taskRun:
                     type: string
                     description: |-

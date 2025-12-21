@@ -82,7 +82,6 @@
     "created-at": "Created",
     "updated-at": "Updated",
     "statement": "Statement",
-    "statement-size": "Statement size",
     "snapshot": "Snapshot",
     "status": "Status",
     "stage": "Stage",
@@ -264,8 +263,6 @@
       "title-general": "Check result"
     },
     "check-type": {
-      "fake": "Fake",
-      "connection": "Connection",
       "sql-review": {
         "self": "SQL review",
         "description": "Analyze the SQL statement for potential issues and provide recommendations. Includes built-in rules and your custom rules."

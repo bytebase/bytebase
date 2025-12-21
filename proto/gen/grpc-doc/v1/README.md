@@ -7898,10 +7898,8 @@ The plan&#39;s `name` field is used to identify the plan to update. Format: proj
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified check type. |
-| DATABASE_STATEMENT_FAKE_ADVISE | 1 | Fake advise check for testing purposes without executing against database. |
 | DATABASE_STATEMENT_ADVISE | 2 | SQL review check that analyzes statements against configured SQL review rules. |
 | DATABASE_STATEMENT_SUMMARY_REPORT | 3 | Summary report check that generates impact analysis for the statements. |
-| DATABASE_CONNECT | 4 | Connection check that verifies database connectivity. |
 | DATABASE_GHOST_SYNC | 5 | Ghost sync check that validates gh-ost online schema change compatibility. |
 
 
@@ -8623,7 +8621,6 @@ A SQL file in a release.
 The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | statement | [bytes](#bytes) |  | The raw SQL statement content. |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet content or the statement. |
-| statement_size | [int64](#int64) |  | The size of the statement in bytes. |
 
 
 
@@ -9276,8 +9273,6 @@ When paginating, all other parameters provided to `ListRevisions` must match the
 | version | [string](#string) |  | The schema version string for this revision. |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
-| statement | [string](#string) |  | The statement is used for preview purpose. |
-| statement_size | [int64](#int64) |  | The size of the statement in bytes. |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | type | [Revision.Type](#bytebase-v1-Revision-Type) |  | The type of the revision. |
 
@@ -9314,7 +9309,6 @@ RevisionService manages schema revision history.
 | ----------- | ------------ | ------------- | ------------|
 | ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) | Lists schema revisions for a database. Permissions required: bb.revisions.list |
 | GetRevision | [GetRevisionRequest](#bytebase-v1-GetRevisionRequest) | [Revision](#bytebase-v1-Revision) | Retrieves a schema revision by name. Permissions required: bb.revisions.get |
-| CreateRevision | [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest) | [Revision](#bytebase-v1-Revision) | Creates a new schema revision. Permissions required: bb.revisions.create |
 | BatchCreateRevisions | [BatchCreateRevisionsRequest](#bytebase-v1-BatchCreateRevisionsRequest) | [BatchCreateRevisionsResponse](#bytebase-v1-BatchCreateRevisionsResponse) | Creates multiple schema revisions in a single operation. Permissions required: bb.revisions.create |
 | DeleteRevision | [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a schema revision. Permissions required: bb.revisions.delete |
 

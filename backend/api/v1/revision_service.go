@@ -37,11 +37,18 @@ func (s *RevisionService) ListRevisions(
 	req *connect.Request[v1pb.ListRevisionsRequest],
 ) (*connect.Response[v1pb.ListRevisionsResponse], error) {
 	request := req.Msg
-	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Parent))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", request.Parent))
 	}
-	if database == nil || database.Deleted {
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if database == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
 	}
 
@@ -76,10 +83,7 @@ func (s *RevisionService) ListRevisions(
 		revisions = revisions[:offset.limit]
 	}
 
-	converted, err := convertToRevisions(ctx, s.store, request.Parent, revisions)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revisions"))
-	}
+	converted := convertToRevisions(request.Parent, database.ProjectID, revisions)
 
 	return connect.NewResponse(&v1pb.ListRevisionsResponse{
 		Revisions:     converted,
@@ -96,114 +100,23 @@ func (s *RevisionService) GetRevision(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get revision UID from %v", request.Name))
 	}
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if database == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database not found"))
+	}
+
 	revision, err := s.store.GetRevision(ctx, revisionUID, instanceID, databaseName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get revision %v", request.Name))
 	}
 	parent := common.FormatDatabase(instanceID, databaseName)
-	converted, err := convertToRevision(ctx, s.store, parent, revision)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revision"))
-	}
-	return connect.NewResponse(converted), nil
-}
-
-func (s *RevisionService) CreateRevision(
-	ctx context.Context,
-	req *connect.Request[v1pb.CreateRevisionRequest],
-) (*connect.Response[v1pb.Revision], error) {
-	request := req.Msg
-	if request.Revision == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("request.Revision is not set"))
-	}
-	// Validate the version format.
-	if _, err := model.NewVersion(request.Revision.Version); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse version %q", request.Revision.Version))
-	}
-	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Parent))
-	}
-	if database == nil || database.Deleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
-	}
-	_, sheetSha256, err := common.GetProjectResourceIDSheetSha256(request.Revision.Sheet)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get sheet from %v", request.Revision.Sheet))
-	}
-	sheet, err := s.store.GetSheetMetadata(ctx, sheetSha256)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get sheet"))
-	}
-
-	if request.Revision.TaskRun != "" {
-		projectID, rolloutID, stageID, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Revision.TaskRun)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get taskRun from %q", request.Revision.TaskRun))
-		}
-		taskRun, err := s.store.GetTaskRunByUID(ctx, taskRunID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get taskRun"))
-		}
-		if taskRun == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", request.Revision.TaskRun))
-		}
-		if taskRun.ProjectID != projectID ||
-			taskRun.PipelineUID != rolloutID ||
-			taskRun.Environment != formatEnvironmentFromStageID(stageID) ||
-			taskRun.TaskUID != taskID {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", request.Revision.TaskRun))
-		}
-	}
-
-	if request.Revision.Type == v1pb.Revision_TYPE_UNSPECIFIED {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("revision.type cannot be TYPE_UNSPECIFIED"))
-	}
-
-	if (request.Revision.Release == "") != (request.Revision.File == "") {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("revision.release and revision.file must be set or unset"))
-	}
-	if request.Revision.Release != "" && request.Revision.File != "" {
-		if !strings.HasPrefix(request.Revision.File, request.Revision.Release) {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("file %q is not in release %q", request.Revision.File, request.Revision.Release))
-		}
-		_, releaseUID, fileID, err := common.GetProjectReleaseUIDFile(request.Revision.File)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get release and file from %q", request.Revision.File))
-		}
-		release, err := s.store.GetReleaseByUID(ctx, releaseUID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
-		}
-		if release == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %q not found", request.Revision.Release))
-		}
-		foundFile := false
-		for _, f := range release.Payload.Files {
-			if f.Id == fileID {
-				foundFile = true
-				fileSheet := common.FormatSheet(release.ProjectID, f.SheetSha256)
-				if fileSheet != request.Revision.Sheet {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("The sheet in file %q is %q which is different from revision.sheet %q", fileID, fileSheet, request.Revision.Sheet))
-				}
-				break
-			}
-		}
-		if !foundFile {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("file %q not found in release %q", fileID, request.Revision.Release))
-		}
-	}
-
-	revisionCreate := convertRevision(request.Revision, database, sheet)
-	revisionM, err := s.store.CreateRevision(ctx, revisionCreate)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision"))
-	}
-	converted, err := convertToRevision(ctx, s.store, request.Parent, revisionM)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revision"))
-	}
-
+	converted := convertToRevision(parent, database.ProjectID, revision)
 	return connect.NewResponse(converted), nil
 }
 
@@ -212,32 +125,140 @@ func (s *RevisionService) BatchCreateRevisions(
 	req *connect.Request[v1pb.BatchCreateRevisionsRequest],
 ) (*connect.Response[v1pb.BatchCreateRevisionsResponse], error) {
 	request := req.Msg
-	database, err := getDatabaseMessage(ctx, s.store, request.Parent)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", request.Parent))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", request.Parent))
 	}
-	if database == nil || database.Deleted {
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if database == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Parent))
 	}
 
 	var revisions []*v1pb.Revision
-	for _, req := range request.Requests {
+	for _, r := range request.Requests {
 		// Validate parent matches
-		if req.Parent != request.Parent {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("request parent %q does not match batch parent %q", req.Parent, request.Parent))
+		if r.Parent != request.Parent {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("request parent %q does not match batch parent %q", r.Parent, request.Parent))
 		}
+		revisions = append(revisions, r.Revision)
+	}
 
-		// Reuse the CreateRevision logic by calling it directly
-		revisionResp, err := s.CreateRevision(ctx, connect.NewRequest(req))
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision for request"))
-		}
-		revisions = append(revisions, revisionResp.Msg)
+	createdRevisions, err := s.createRevisions(ctx, request.Parent, revisions, database)
+	if err != nil {
+		return nil, err
 	}
 
 	return connect.NewResponse(&v1pb.BatchCreateRevisionsResponse{
-		Revisions: revisions,
+		Revisions: createdRevisions,
 	}), nil
+}
+
+func (s *RevisionService) createRevisions(
+	ctx context.Context,
+	parent string,
+	revisions []*v1pb.Revision,
+	database *store.DatabaseMessage,
+) ([]*v1pb.Revision, error) {
+	var sheetSha256s []string
+	for _, revisionReq := range revisions {
+		if revisionReq == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("request.Revision is not set"))
+		}
+		// Validate the version format.
+		if _, err := model.NewVersion(revisionReq.Version); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse version %q", revisionReq.Version))
+		}
+
+		_, sha, err := common.GetProjectResourceIDSheetSha256(revisionReq.Sheet)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get sheet from %v", revisionReq.Sheet))
+		}
+		sheetSha256s = append(sheetSha256s, sha)
+	}
+
+	exist, err := s.store.HasSheets(ctx, sheetSha256s...)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check sheets: %v", err))
+	}
+	if !exist {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("some sheets are not found"))
+	}
+
+	var createdRevisions []*v1pb.Revision
+	for i, revision := range revisions {
+		if revision.TaskRun != "" {
+			projectID, rolloutID, stageID, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(revision.TaskRun)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get taskRun from %q", revision.TaskRun))
+			}
+			taskRun, err := s.store.GetTaskRunByUID(ctx, taskRunID)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get taskRun"))
+			}
+			if taskRun == nil {
+				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", revision.TaskRun))
+			}
+			if taskRun.ProjectID != projectID ||
+				taskRun.PipelineUID != rolloutID ||
+				taskRun.Environment != formatEnvironmentFromStageID(stageID) ||
+				taskRun.TaskUID != taskID {
+				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", revision.TaskRun))
+			}
+		}
+
+		if revision.Type == v1pb.Revision_TYPE_UNSPECIFIED {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("revision.type cannot be TYPE_UNSPECIFIED"))
+		}
+
+		if (revision.Release == "") != (revision.File == "") {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("revision.release and revision.file must be set or unset"))
+		}
+		if revision.Release != "" && revision.File != "" {
+			if !strings.HasPrefix(revision.File, revision.Release) {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("file %q is not in release %q", revision.File, revision.Release))
+			}
+			_, releaseUID, fileID, err := common.GetProjectReleaseUIDFile(revision.File)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get release and file from %q", revision.File))
+			}
+			release, err := s.store.GetReleaseByUID(ctx, releaseUID)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get release"))
+			}
+			if release == nil {
+				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %q not found", revision.Release))
+			}
+			foundFile := false
+			for _, f := range release.Payload.Files {
+				if f.Id == fileID {
+					foundFile = true
+					fileSheet := common.FormatSheet(release.ProjectID, f.SheetSha256)
+					if fileSheet != revision.Sheet {
+						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("The sheet in file %q is %q which is different from revision.sheet %q", fileID, fileSheet, revision.Sheet))
+					}
+					break
+				}
+			}
+			if !foundFile {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("file %q not found in release %q", fileID, revision.Release))
+			}
+		}
+
+		revisionCreate := convertRevision(revision, database, sheetSha256s[i])
+		revisionM, err := s.store.CreateRevision(ctx, revisionCreate)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision"))
+		}
+		converted := convertToRevision(parent, database.ProjectID, revisionM)
+		createdRevisions = append(createdRevisions, converted)
+	}
+	return createdRevisions, nil
 }
 
 func (s *RevisionService) DeleteRevision(
@@ -259,52 +280,27 @@ func (s *RevisionService) DeleteRevision(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-func convertToRevisions(ctx context.Context, s *store.Store, parent string, revisions []*store.RevisionMessage) ([]*v1pb.Revision, error) {
+func convertToRevisions(parent string, projectID string, revisions []*store.RevisionMessage) []*v1pb.Revision {
 	var rs []*v1pb.Revision
 	for _, revision := range revisions {
-		r, err := convertToRevision(ctx, s, parent, revision)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert to revisions")
-		}
+		r := convertToRevision(parent, projectID, revision)
 		rs = append(rs, r)
 	}
-	return rs, nil
+	return rs
 }
 
-func convertToRevision(ctx context.Context, s *store.Store, parent string, revision *store.RevisionMessage) (*v1pb.Revision, error) {
-	sheetSha256 := revision.Payload.SheetSha256
-	sheet, err := s.GetSheetMetadata(ctx, sheetSha256)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %q", sheetSha256)
-	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %q not found", sheetSha256)
-	}
-
-	database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &revision.InstanceID,
-		DatabaseName: &revision.DatabaseName,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database")
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found")
-	}
-
+func convertToRevision(parent string, projectID string, revision *store.RevisionMessage) *v1pb.Revision {
 	taskRunName := revision.Payload.TaskRun
 	r := &v1pb.Revision{
-		Name:          fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
-		Release:       revision.Payload.Release,
-		CreateTime:    timestamppb.New(revision.CreatedAt),
-		Sheet:         common.FormatSheet(database.ProjectID, sheetSha256),
-		SheetSha256:   revision.Payload.SheetSha256,
-		Statement:     sheet.Statement,
-		StatementSize: sheet.Size,
-		Version:       revision.Version,
-		File:          revision.Payload.File,
-		TaskRun:       taskRunName,
-		Type:          convertToRevisionType(revision.Payload.Type),
+		Name:        fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
+		Release:     revision.Payload.Release,
+		CreateTime:  timestamppb.New(revision.CreatedAt),
+		Sheet:       common.FormatSheet(projectID, revision.Payload.SheetSha256),
+		SheetSha256: revision.Payload.SheetSha256,
+		Version:     revision.Version,
+		File:        revision.Payload.File,
+		TaskRun:     taskRunName,
+		Type:        convertToRevisionType(revision.Payload.Type),
 	}
 
 	if revision.Deleter != nil {
@@ -314,7 +310,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		r.DeleteTime = timestamppb.New(*revision.DeletedAt)
 	}
 
-	return r, nil
+	return r
 }
 
 func convertToRevisionType(t storepb.SchemaChangeType) v1pb.Revision_Type {
@@ -331,7 +327,7 @@ func convertToRevisionType(t storepb.SchemaChangeType) v1pb.Revision_Type {
 	}
 }
 
-func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, sheet *store.SheetMessage) *store.RevisionMessage {
+func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, sheetSha256 string) *store.RevisionMessage {
 	r := &store.RevisionMessage{
 		InstanceID:   database.InstanceID,
 		DatabaseName: database.DatabaseName,
@@ -339,7 +335,7 @@ func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, s
 		Payload: &storepb.RevisionPayload{
 			Release:     revision.Release,
 			File:        revision.File,
-			SheetSha256: sheet.Sha256,
+			SheetSha256: sheetSha256,
 			TaskRun:     revision.TaskRun,
 			Type:        convertRevisionType(revision.Type),
 		},

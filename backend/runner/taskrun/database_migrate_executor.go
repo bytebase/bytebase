@@ -97,7 +97,7 @@ func (exec *DatabaseMigrateExecutor) runMigrationWithPriorBackup(ctx context.Con
 		})
 
 		// Check if we should skip backup or not.
-		if common.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
+		if common.EngineSupportPriorBackup(database.Engine) {
 			var backupErr error
 			priorBackupDetail, backupErr = exec.backupData(ctx, driverCtx, statement, task.Payload, task, instance, database)
 			if backupErr != nil {
@@ -271,7 +271,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 
 	sourceDatabaseName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
 	// Format: instances/{instance}/databases/{database}
-	backupDBName := common.BackupDatabaseNameOfEngine(instance.Metadata.GetEngine())
+	backupDBName := common.BackupDatabaseNameOfEngine(database.Engine)
 	targetDatabaseName := common.FormatDatabase(database.InstanceID, backupDBName)
 	var backupDatabase *store.DatabaseMessage
 	var backupDriver db.Driver
@@ -281,7 +281,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 		return nil, errors.Wrap(err, "failed to parse backup database")
 	}
 
-	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
+	if database.Engine != storepb.Engine_POSTGRES {
 		backupDatabase, err = exec.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &backupInstanceID, DatabaseName: &backupDatabaseName})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get backup database")
@@ -315,7 +315,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 		IsCaseSensitive:         store.IsObjectCaseSensitive(instance),
 		DatabaseName:            database.DatabaseName,
 	}
-	if instance.Metadata.GetEngine() == storepb.Engine_ORACLE {
+	if database.Engine == storepb.Engine_ORACLE {
 		oracleDriver, ok := driver.(*oracle.Driver)
 		if ok {
 			if version, err := oracleDriver.GetVersion(); err == nil {
@@ -329,12 +329,12 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	}
 
 	prefix := "_" + time.Now().Format("20060102150405")
-	statements, err := parserbase.TransformDMLToSelect(ctx, instance.Metadata.GetEngine(), tc, originStatement, database.DatabaseName, backupDatabaseName, prefix)
+	statements, err := parserbase.TransformDMLToSelect(ctx, database.Engine, tc, originStatement, database.DatabaseName, backupDatabaseName, prefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to transform DML to select")
 	}
 
-	prependStatements, err := getPrependStatements(instance.Metadata.GetEngine(), originStatement)
+	prependStatements, err := getPrependStatements(database.Engine, originStatement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get prepend statements")
 	}
@@ -396,7 +396,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 			StartPosition: statement.StartPosition,
 			EndPosition:   statement.EndPosition,
 		}
-		if instance.Metadata.GetEngine() == storepb.Engine_POSTGRES {
+		if database.Engine == storepb.Engine_POSTGRES {
 			item.TargetTable = &storepb.PriorBackupDetail_Item_Table{
 				Database: sourceDatabaseName,
 				// postgres uses schema as the backup database name currently.
@@ -407,7 +407,7 @@ func (exec *DatabaseMigrateExecutor) backupData(
 		priorBackupDetail.Items = append(priorBackupDetail.Items, item)
 	}
 
-	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
+	if database.Engine != storepb.Engine_POSTGRES {
 		if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase); err != nil {
 			slog.Error("failed to sync backup database schema",
 				slog.String("database", targetDatabaseName),

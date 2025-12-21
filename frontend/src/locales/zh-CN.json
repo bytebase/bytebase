@@ -82,7 +82,6 @@
     "created-at": "创建于",
     "updated-at": "更新于",
     "statement": "语句",
-    "statement-size": "语句大小",
     "snapshot": "快照",
     "status": "状态",
     "stage": "阶段",
@@ -264,8 +263,6 @@
       "title-general": "检查结果"
     },
     "check-type": {
-      "fake": "Fake",
-      "connection": "连接",
       "sql-review": {
         "self": "SQL 审核",
         "description": "分析 SQL 语句中的潜在问题并提供建议。包括内置规则以及您的自定义规则。"

@@ -144,7 +144,6 @@ import {
   AlertCircleIcon,
   CheckCircleIcon,
   CircleQuestionMarkIcon,
-  DatabaseIcon,
   FileCodeIcon,
   SearchCodeIcon,
   ShieldIcon,
@@ -314,10 +313,6 @@ const checkTypeConfig: Partial<
   [PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT]: {
     icon: FileCodeIcon,
     labelKey: "task.check-type.summary-report",
-  },
-  [PlanCheckRun_Type.DATABASE_CONNECT]: {
-    icon: DatabaseIcon,
-    labelKey: "task.check-type.connection",
   },
   [PlanCheckRun_Type.DATABASE_GHOST_SYNC]: {
     icon: ShieldIcon,

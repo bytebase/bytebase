@@ -121,9 +121,19 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 	var planCheckRuns []*store.PlanCheckRunMessage
 	for _, matchedDatabase := range databaseGroup.MatchedDatabases {
 		for _, sheetSha256 := range sheetSha256s {
-			database, err := getDatabaseMessage(ctx, s, matchedDatabase.Name)
+			instanceID, databaseName, err := common.GetInstanceDatabaseID(matchedDatabase.Name)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "failed to parse %q", matchedDatabase.Name)
+			}
+			database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get database")
+			}
+			if database == nil {
+				return nil, errors.Errorf("database %q not found", matchedDatabase.Name)
 			}
 			runs, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetSha256, database)
 			if err != nil {
@@ -144,12 +154,19 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context,
 
 	var checks []*store.PlanCheckRunMessage
 	for _, target := range config.Targets {
-		database, err := getDatabaseMessage(ctx, s, target)
+		instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to parse %q", target)
 		}
-		if database.Deleted {
-			return nil, errors.Errorf("database %q was deleted", target)
+		database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database")
+		}
+		if database == nil {
+			return nil, errors.Errorf("database %q not found", target)
 		}
 		for _, sheetSha256 := range sheetSha256s {
 			v, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetSha256, database)
@@ -172,30 +189,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 	if instance == nil {
 		return nil, errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	sheet, err := s.GetSheetMetadata(ctx, sheetSha256)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %s", sheetSha256)
-	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %s not found", sheetSha256)
-	}
 
 	enableSDL := config.Type == storepb.PlanConfig_ChangeDatabaseConfig_SDL
-
 	var planCheckRuns []*store.PlanCheckRunMessage
-	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
-		PlanUID: plan.UID,
-		Status:  store.PlanCheckRunStatusRunning,
-		Type:    store.PlanCheckDatabaseConnect,
-		Config: &storepb.PlanCheckRunConfig{
-			SheetSha256:  sheetSha256,
-			InstanceId:   instance.ResourceID,
-			DatabaseName: database.DatabaseName,
-			EnableGhost:  config.EnableGhost,
-			EnableSdl:    enableSDL,
-		},
-	})
-
 	planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
 		PlanUID: plan.UID,
 		Status:  store.PlanCheckRunStatusRunning,

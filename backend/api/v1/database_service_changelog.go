@@ -15,11 +15,18 @@ import (
 )
 
 func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Request[v1pb.ListChangelogsRequest]) (*connect.Response[v1pb.ListChangelogsResponse], error) {
-	database, err := getDatabaseMessage(ctx, s.store, req.Msg.Parent)
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Parent)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", req.Msg.Parent))
 	}
-	if database == nil || database.Deleted {
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
+	}
+	if database == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", req.Msg.Parent))
 	}
 
@@ -85,20 +92,9 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelog %q not found", changelogUID))
 	}
 
-	// Get related database to convert changelog from store.
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if instance == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
-	}
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-		InstanceID:      &instanceID,
-		DatabaseName:    &databaseName,
-		IsCaseSensitive: store.IsObjectCaseSensitive(instance),
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

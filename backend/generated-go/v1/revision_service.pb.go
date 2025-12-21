@@ -481,10 +481,6 @@ type Revision struct {
 	Sheet string `protobuf:"bytes,8,opt,name=sheet,proto3" json:"sheet,omitempty"`
 	// The SHA256 hash value of the sheet.
 	SheetSha256 string `protobuf:"bytes,9,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
-	// The statement is used for preview purpose.
-	Statement string `protobuf:"bytes,10,opt,name=statement,proto3" json:"statement,omitempty"`
-	// The size of the statement in bytes.
-	StatementSize int64 `protobuf:"varint,11,opt,name=statement_size,json=statementSize,proto3" json:"statement_size,omitempty"`
 	// The task run associated with the revision.
 	// Can be empty.
 	// Format:
@@ -589,20 +585,6 @@ func (x *Revision) GetSheetSha256() string {
 	return ""
 }
 
-func (x *Revision) GetStatement() string {
-	if x != nil {
-		return x.Statement
-	}
-	return ""
-}
-
-func (x *Revision) GetStatementSize() int64 {
-	if x != nil {
-		return x.StatementSize
-	}
-	return 0
-}
-
 func (x *Revision) GetTaskRun() string {
 	if x != nil {
 		return x.TaskRun
@@ -647,7 +629,7 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x15bytebase.com/RevisionR\x04name\"J\n" +
 	"\x15DeleteRevisionRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/RevisionR\x04name\"\xca\x05\n" +
+	"\x15bytebase.com/RevisionR\x04name\"\xfb\x04\n" +
 	"\bRevision\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x123\n" +
 	"\arelease\x18\x02 \x01(\tB\x19\xfaA\x16\n" +
@@ -661,10 +643,7 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\aversion\x18\a \x01(\tR\aversion\x12-\n" +
 	"\x05sheet\x18\b \x01(\tB\x17\xfaA\x14\n" +
 	"\x12bytebase.com/SheetR\x05sheet\x12&\n" +
-	"\fsheet_sha256\x18\t \x01(\tB\x03\xe0A\x03R\vsheetSha256\x12!\n" +
-	"\tstatement\x18\n" +
-	" \x01(\tB\x03\xe0A\x03R\tstatement\x12*\n" +
-	"\x0estatement_size\x18\v \x01(\x03B\x03\xe0A\x03R\rstatementSize\x124\n" +
+	"\fsheet_sha256\x18\t \x01(\tB\x03\xe0A\x03R\vsheetSha256\x124\n" +
 	"\btask_run\x18\r \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\ataskRun\x12.\n" +
 	"\x04type\x18\x0e \x01(\x0e2\x1a.bytebase.v1.Revision.TypeR\x04type\"<\n" +
@@ -672,11 +651,10 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +
 	"\vDECLARATIVE\x10\x02:Z\xeaAW\n" +
-	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}2\x87\a\n" +
+	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}2\xdc\x05\n" +
 	"\x0fRevisionService\x12\xb0\x01\n" +
 	"\rListRevisions\x12!.bytebase.v1.ListRevisionsRequest\x1a\".bytebase.v1.ListRevisionsResponse\"X\xdaA\x06parent\x8a\xea0\x11bb.revisions.list\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{parent=instances/*/databases/*}/revisions\x12\x9c\x01\n" +
-	"\vGetRevision\x12\x1f.bytebase.v1.GetRevisionRequest\x1a\x15.bytebase.v1.Revision\"U\xdaA\x04name\x8a\xea0\x10bb.revisions.get\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{name=instances/*/databases/*/revisions/*}\x12\xa8\x01\n" +
-	"\x0eCreateRevision\x12\".bytebase.v1.CreateRevisionRequest\x1a\x15.bytebase.v1.Revision\"[\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x82\xd3\xe4\x93\x02::\brevision\"./v1/{parent=instances/*/databases/*}/revisions\x12\xcd\x01\n" +
+	"\vGetRevision\x12\x1f.bytebase.v1.GetRevisionRequest\x1a\x15.bytebase.v1.Revision\"U\xdaA\x04name\x8a\xea0\x10bb.revisions.get\x90\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{name=instances/*/databases/*/revisions/*}\x12\xcd\x01\n" +
 	"\x14BatchCreateRevisions\x12(.bytebase.v1.BatchCreateRevisionsRequest\x1a).bytebase.v1.BatchCreateRevisionsResponse\"`\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x82\xd3\xe4\x93\x02?:\x01*\":/v1/{parent=instances/*/databases/*}/revisions:batchCreate\x12\xa6\x01\n" +
 	"\x0eDeleteRevision\x12\".bytebase.v1.DeleteRevisionRequest\x1a\x16.google.protobuf.Empty\"X\xdaA\x04name\x8a\xea0\x13bb.revisions.delete\x90\xea0\x01\x82\xd3\xe4\x93\x020*./v1/{name=instances/*/databases/*/revisions/*}B\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14RevisionServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
@@ -718,16 +696,14 @@ var file_v1_revision_service_proto_depIdxs = []int32{
 	0,  // 6: bytebase.v1.Revision.type:type_name -> bytebase.v1.Revision.Type
 	1,  // 7: bytebase.v1.RevisionService.ListRevisions:input_type -> bytebase.v1.ListRevisionsRequest
 	6,  // 8: bytebase.v1.RevisionService.GetRevision:input_type -> bytebase.v1.GetRevisionRequest
-	3,  // 9: bytebase.v1.RevisionService.CreateRevision:input_type -> bytebase.v1.CreateRevisionRequest
-	4,  // 10: bytebase.v1.RevisionService.BatchCreateRevisions:input_type -> bytebase.v1.BatchCreateRevisionsRequest
-	7,  // 11: bytebase.v1.RevisionService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
-	2,  // 12: bytebase.v1.RevisionService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
-	8,  // 13: bytebase.v1.RevisionService.GetRevision:output_type -> bytebase.v1.Revision
-	8,  // 14: bytebase.v1.RevisionService.CreateRevision:output_type -> bytebase.v1.Revision
-	5,  // 15: bytebase.v1.RevisionService.BatchCreateRevisions:output_type -> bytebase.v1.BatchCreateRevisionsResponse
-	10, // 16: bytebase.v1.RevisionService.DeleteRevision:output_type -> google.protobuf.Empty
-	12, // [12:17] is the sub-list for method output_type
-	7,  // [7:12] is the sub-list for method input_type
+	4,  // 9: bytebase.v1.RevisionService.BatchCreateRevisions:input_type -> bytebase.v1.BatchCreateRevisionsRequest
+	7,  // 10: bytebase.v1.RevisionService.DeleteRevision:input_type -> bytebase.v1.DeleteRevisionRequest
+	2,  // 11: bytebase.v1.RevisionService.ListRevisions:output_type -> bytebase.v1.ListRevisionsResponse
+	8,  // 12: bytebase.v1.RevisionService.GetRevision:output_type -> bytebase.v1.Revision
+	5,  // 13: bytebase.v1.RevisionService.BatchCreateRevisions:output_type -> bytebase.v1.BatchCreateRevisionsResponse
+	10, // 14: bytebase.v1.RevisionService.DeleteRevision:output_type -> google.protobuf.Empty
+	11, // [11:15] is the sub-list for method output_type
+	7,  // [7:11] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name

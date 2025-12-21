@@ -48,14 +48,14 @@ type StatementReportExecutor struct {
 
 // Run runs the statement report executor.
 func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
-	sheet, err := e.store.GetSheetMetadata(ctx, config.SheetSha256)
+	fullSheet, err := e.store.GetSheetFull(ctx, config.SheetSha256)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %s", config.SheetSha256)
+		return nil, err
 	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %s not found", config.SheetSha256)
+	if fullSheet == nil {
+		return nil, errors.Errorf("sheet full %s not found", config.SheetSha256)
 	}
-	if sheet.Size > common.MaxSheetCheckSize {
+	if fullSheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.Advice_WARNING,
@@ -65,14 +65,6 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 			},
 		}, nil
 	}
-	fullSheet, err := e.store.GetSheetFull(ctx, config.SheetSha256)
-	if err != nil {
-		return nil, err
-	}
-	if fullSheet == nil {
-		return nil, errors.Errorf("sheet full %s not found", config.SheetSha256)
-	}
-	statement := fullSheet.Statement
 
 	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
 	if err != nil {
@@ -101,7 +93,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 	}
 
 	// Check statement syntax error.
-	_, syntaxAdvices := e.sheetManager.GetStatementsForChecks(instance.Metadata.GetEngine(), statement)
+	_, syntaxAdvices := e.sheetManager.GetStatementsForChecks(instance.Metadata.GetEngine(), fullSheet.Statement)
 	if len(syntaxAdvices) > 0 {
 		advice := syntaxAdvices[0]
 		return []*storepb.PlanCheckRunResult_Result{
@@ -125,7 +117,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 		Code:   common.Ok.Int32(),
 		Title:  "OK",
 	}
-	summaryReport, err := GetSQLSummaryReport(ctx, e.store, e.sheetManager, e.dbFactory, database, statement)
+	summaryReport, err := GetSQLSummaryReport(ctx, e.store, e.sheetManager, e.dbFactory, database, fullSheet.Statement)
 	if err != nil {
 		return nil, err
 	}

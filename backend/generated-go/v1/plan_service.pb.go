@@ -30,14 +30,10 @@ type PlanCheckRun_Type int32
 const (
 	// Unspecified check type.
 	PlanCheckRun_TYPE_UNSPECIFIED PlanCheckRun_Type = 0
-	// Fake advise check for testing purposes without executing against database.
-	PlanCheckRun_DATABASE_STATEMENT_FAKE_ADVISE PlanCheckRun_Type = 1
 	// SQL review check that analyzes statements against configured SQL review rules.
 	PlanCheckRun_DATABASE_STATEMENT_ADVISE PlanCheckRun_Type = 2
 	// Summary report check that generates impact analysis for the statements.
 	PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT PlanCheckRun_Type = 3
-	// Connection check that verifies database connectivity.
-	PlanCheckRun_DATABASE_CONNECT PlanCheckRun_Type = 4
 	// Ghost sync check that validates gh-ost online schema change compatibility.
 	PlanCheckRun_DATABASE_GHOST_SYNC PlanCheckRun_Type = 5
 )
@@ -46,18 +42,14 @@ const (
 var (
 	PlanCheckRun_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
-		1: "DATABASE_STATEMENT_FAKE_ADVISE",
 		2: "DATABASE_STATEMENT_ADVISE",
 		3: "DATABASE_STATEMENT_SUMMARY_REPORT",
-		4: "DATABASE_CONNECT",
 		5: "DATABASE_GHOST_SYNC",
 	}
 	PlanCheckRun_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED":                  0,
-		"DATABASE_STATEMENT_FAKE_ADVISE":    1,
 		"DATABASE_STATEMENT_ADVISE":         2,
 		"DATABASE_STATEMENT_SUMMARY_REPORT": 3,
-		"DATABASE_CONNECT":                  4,
 		"DATABASE_GHOST_SYNC":               5,
 	}
 )
@@ -1996,7 +1988,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x06parent\x12&\n" +
 	"\x0fplan_check_runs\x18\x02 \x03(\tR\rplanCheckRuns\"\"\n" +
-	" BatchCancelPlanCheckRunsResponse\"\x9a\t\n" +
+	" BatchCancelPlanCheckRunsResponse\"\xdf\b\n" +
 	"\fPlanCheckRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x122\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1e.bytebase.v1.PlanCheckRun.TypeR\x04type\x128\n" +
@@ -2020,13 +2012,11 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x0fSqlReviewReport\x12<\n" +
 	"\x0estart_position\x18\x05 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
 	"\fend_position\x18\x06 \x01(\v2\x15.bytebase.v1.PositionR\vendPositionB\b\n" +
-	"\x06report\"\xb5\x01\n" +
+	"\x06report\"{\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\"\n" +
-	"\x1eDATABASE_STATEMENT_FAKE_ADVISE\x10\x01\x12\x1d\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19DATABASE_STATEMENT_ADVISE\x10\x02\x12%\n" +
-	"!DATABASE_STATEMENT_SUMMARY_REPORT\x10\x03\x12\x14\n" +
-	"\x10DATABASE_CONNECT\x10\x04\x12\x17\n" +
+	"!DATABASE_STATEMENT_SUMMARY_REPORT\x10\x03\x12\x17\n" +
 	"\x13DATABASE_GHOST_SYNC\x10\x05\"Q\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +

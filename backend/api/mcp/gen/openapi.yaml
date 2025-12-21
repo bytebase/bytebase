@@ -4379,44 +4379,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchCreateRevisionsResponse'
-  /bytebase.v1.RevisionService/CreateRevision:
-    post:
-      tags:
-        - bytebase.v1.RevisionService
-      summary: 'Creates a new schema revision.  Permissions required: bb.revisions.create'
-      description: |-
-        Creates a new schema revision.
-         Permissions required: bb.revisions.create
-      operationId: bytebase.v1.RevisionService.CreateRevision
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.CreateRevisionRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.Revision'
   /bytebase.v1.RevisionService/DeleteRevision:
     post:
       tags:
@@ -13168,10 +13130,8 @@ components:
       title: Type
       enum:
         - TYPE_UNSPECIFIED
-        - DATABASE_STATEMENT_FAKE_ADVISE
         - DATABASE_STATEMENT_ADVISE
         - DATABASE_STATEMENT_SUMMARY_REPORT
-        - DATABASE_CONNECT
         - DATABASE_GHOST_SYNC
     bytebase.v1.PlanConfig:
       type: object
@@ -14136,13 +14096,6 @@ components:
           type: string
           title: sheet_sha256
           description: The SHA256 hash value of the sheet content or the statement.
-        statementSize:
-          type:
-            - integer
-            - string
-          title: statement_size
-          format: int64
-          description: The size of the statement in bytes.
       title: File
       additionalProperties: false
       description: A SQL file in a release.
@@ -14316,17 +14269,6 @@ components:
           type: string
           title: sheet_sha256
           description: The SHA256 hash value of the sheet.
-        statement:
-          type: string
-          title: statement
-          description: The statement is used for preview purpose.
-        statementSize:
-          type:
-            - integer
-            - string
-          title: statement_size
-          format: int64
-          description: The size of the statement in bytes.
         taskRun:
           type: string
           title: task_run

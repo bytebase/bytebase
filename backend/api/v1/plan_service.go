@@ -240,7 +240,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	// Validate plan specs
-	if err := validateSpecs(req.Plan.Specs); err != nil {
+	if err := validateSpecs(ctx, s.store, projectID, req.Plan.Specs); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
 	}
 
@@ -425,59 +425,24 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			}
 
 			// Validate the new specs
-			if err := validateSpecs(req.Plan.Specs); err != nil {
+			if err := validateSpecs(ctx, s.store, oldPlan.ProjectID, req.Plan.Specs); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
-			}
-
-			// Trigger plan checks if there are any spec additions.
-			if len(added) > 0 {
-				planCheckRunsTrigger = true
-			}
-
-			oldSpecsByID := make(map[string]*v1pb.Plan_Spec)
-			for _, spec := range oldSpecs {
-				oldSpecsByID[spec.Id] = spec
-			}
-
-			// Check for spec option and sheet changes that require plan check re-runs.
-			if !planCheckRunsTrigger && len(updated) > 0 {
-				for _, specPatch := range updated {
-					oldSpec := oldSpecsByID[specPatch.Id]
-					if specPatch.GetChangeDatabaseConfig() != nil && oldSpec.GetChangeDatabaseConfig() != nil {
-						oldConfig, newConfig := oldSpec.GetChangeDatabaseConfig(), specPatch.GetChangeDatabaseConfig()
-						if oldConfig.Sheet != newConfig.Sheet {
-							// Sheet changed.
-							planCheckRunsTrigger = true
-							break
-						}
-						if oldConfig.Type != newConfig.Type {
-							// Spec type changed.
-							planCheckRunsTrigger = true
-							break
-						}
-						if oldConfig.EnablePriorBackup != newConfig.EnablePriorBackup {
-							// Prior backup setting changed.
-							planCheckRunsTrigger = true
-							break
-						}
-						if !oldConfig.Equal(newConfig) {
-							// gh-ost flags changed.
-							planCheckRunsTrigger = true
-							break
-						}
-					}
-				}
-			}
-
-			updatedByID := make(map[string]*v1pb.Plan_Spec)
-			for _, spec := range updated {
-				updatedByID[spec.Id] = spec
 			}
 
 			// Handle task updates for specs
 			tasksMap := map[int]*store.TaskMessage{}
 			var taskPatchList []*store.TaskPatch
 			var issueCommentCreates []*store.IssueCommentMessage
+
+			oldSpecsByID := make(map[string]*v1pb.Plan_Spec)
+			for _, spec := range oldSpecs {
+				oldSpecsByID[spec.Id] = spec
+			}
+
+			updatedByID := make(map[string]*v1pb.Plan_Spec)
+			for _, spec := range updated {
+				updatedByID[spec.Id] = spec
+			}
 
 			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
 			if err != nil {
@@ -608,13 +573,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 								return nil
 							}
 
-							sheet, err := s.store.GetSheetMetadata(ctx, newSheetSha256)
-							if err != nil {
-								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet %q: %v", oldSheetName, err))
-							}
-							if sheet == nil {
-								return connect.NewError(connect.CodeNotFound, errors.Errorf("sheet %q not found", oldSheetName))
-							}
 							doUpdate = true
 							taskPatch.SheetSha256 = &newSheetSha256
 
@@ -1132,7 +1090,7 @@ func diffSpecs(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) ([]*v1pb.
 	return removed, added, updated
 }
 
-func validateSpecs(specs []*v1pb.Plan_Spec) error {
+func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs []*v1pb.Plan_Spec) error {
 	if len(specs) == 0 {
 		return errors.Errorf("the plan has zero spec")
 	}
@@ -1140,6 +1098,12 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 	seenID := map[string]bool{}
 
 	var releaseCount, sheetCount int
+	var sheetSha256s []string
+	var releaseString string
+	var instanceIDs []string
+	var databaseGroups []string
+	var databaseNames []string
+
 	for _, spec := range specs {
 		id := spec.GetId()
 		if id == "" {
@@ -1153,14 +1117,23 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 		switch config := spec.Config.(type) {
 		case *v1pb.Plan_Spec_CreateDatabaseConfig:
 			configTypeCount["create_database"]++
+			if target := config.CreateDatabaseConfig.Target; target != "" {
+				instanceID, err := common.GetInstanceID(target)
+				if err != nil {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance name %q: %v", target, err))
+				}
+				instanceIDs = append(instanceIDs, instanceID)
+			}
 		case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 			configTypeCount["change_database"]++
 			var databaseTarget, databaseGroupTarget int
 			for _, target := range config.ChangeDatabaseConfig.Targets {
 				if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
 					databaseTarget++
+					databaseNames = append(databaseNames, target)
 				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 					databaseGroupTarget++
+					databaseGroups = append(databaseGroups, target)
 				} else {
 					return errors.Errorf("invalid target %v", target)
 				}
@@ -1172,12 +1145,22 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 			// Track if this spec uses release or sheet.
 			if config.ChangeDatabaseConfig.Release != "" {
 				releaseCount++
+				releaseString = config.ChangeDatabaseConfig.Release
 			}
 			if config.ChangeDatabaseConfig.Sheet != "" {
 				sheetCount++
+				if _, sha, err := common.GetProjectResourceIDSheetSha256(config.ChangeDatabaseConfig.Sheet); err == nil {
+					sheetSha256s = append(sheetSha256s, sha)
+				}
 			}
 		case *v1pb.Plan_Spec_ExportDataConfig:
 			configTypeCount["export_data"]++
+			databaseNames = append(databaseNames, config.ExportDataConfig.Targets...)
+			if config.ExportDataConfig.Sheet != "" {
+				if _, sha, err := common.GetProjectResourceIDSheetSha256(config.ExportDataConfig.Sheet); err == nil {
+					sheetSha256s = append(sheetSha256s, sha)
+				}
+			}
 		default:
 			return errors.Errorf("invalid spec type")
 		}
@@ -1192,6 +1175,99 @@ func validateSpecs(specs []*v1pb.Plan_Spec) error {
 	// Allow at most one ChangeDatabaseConfig with release.
 	if releaseCount > 1 {
 		return errors.Errorf("plan contains multiple change database configs with release, but only one is allowed")
+	}
+
+	// Allow at most one instance.
+	if len(instanceIDs) > 1 {
+		return errors.Errorf("plan contains targets on multiple instances, but only one instance is allowed")
+	}
+
+	// Allow at most one database group.
+	if len(databaseGroups) > 1 {
+		return errors.Errorf("plan contains multiple database groups, but only one is allowed")
+	}
+
+	// Validate resources existence.
+	if len(instanceIDs) == 1 {
+		instanceID := instanceIDs[0]
+		instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{
+			ResourceID: &instanceID,
+		})
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance %q: %v", instanceID, err))
+		}
+		if instance == nil {
+			return connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+		}
+	}
+
+	if len(databaseGroups) == 1 {
+		name := databaseGroups[0]
+		groupProjectID, _, err := common.GetProjectIDDatabaseGroupID(name)
+		if err != nil {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid database group name %q", name))
+		}
+		if groupProjectID != projectID {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database group %q (project %q) does not belong to plan project %q", name, groupProjectID, projectID))
+		}
+
+		group, err := getDatabaseGroupByName(ctx, s, name, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database group %q: %v", name, err))
+		}
+		if group == nil {
+			return connect.NewError(connect.CodeNotFound, errors.Errorf("database group %q not found", name))
+		}
+	}
+
+	for _, name := range databaseNames {
+		instanceID, dbName, err := common.GetInstanceDatabaseID(name)
+		if err != nil {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid database name %q", name))
+		}
+		db, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instanceID,
+			DatabaseName: &dbName,
+		})
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database %q: %v", name, err))
+		}
+		if db == nil {
+			return connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
+		}
+
+		if db.ProjectID != projectID {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database %q (project %q) does not belong to plan project %q", name, db.ProjectID, projectID))
+		}
+	}
+
+	// Validate sheets existence.
+	if len(sheetSha256s) > 0 {
+		exist, err := s.HasSheets(ctx, sheetSha256s...)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check sheets: %v", err))
+		}
+		if !exist {
+			return connect.NewError(connect.CodeNotFound, errors.Errorf("some sheets are not found"))
+		}
+	}
+
+	// Validate release existence.
+	if releaseString != "" {
+		releaseProjectID, releaseUID, err := common.GetProjectReleaseUID(releaseString)
+		if err != nil {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid release name %q", releaseString))
+		}
+		if releaseProjectID != projectID {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("release %q (project %q) does not belong to plan project %q", releaseString, releaseProjectID, projectID))
+		}
+		release, err := s.GetReleaseByUID(ctx, releaseUID)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get release %d: %v", releaseUID, err))
+		}
+		if release == nil {
+			return connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found", releaseUID))
+		}
 	}
 	return nil
 }

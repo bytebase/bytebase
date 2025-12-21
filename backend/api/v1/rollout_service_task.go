@@ -213,21 +213,35 @@ func getDatabaseMessagesByTargets(ctx context.Context, s *store.Store, targets [
 				return nil, errors.Wrapf(err, "failed to get database group %q", target)
 			}
 			for _, matched := range databaseGroup.MatchedDatabases {
-				database, err := getDatabaseMessage(ctx, s, matched.Name)
+				instanceID, databaseName, err := common.GetInstanceDatabaseID(matched.Name)
 				if err != nil {
-					return nil, err
+					return nil, errors.Wrapf(err, "failed to parse %q", matched.Name)
 				}
-				if database == nil || database.Deleted {
-					return nil, errors.Errorf("database %q not found", target)
+				database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
+					InstanceID:   &instanceID,
+					DatabaseName: &databaseName,
+				})
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get database")
+				}
+				if database == nil {
+					return nil, errors.Errorf("database %q not found", matched.Name)
 				}
 				databases = append(databases, database)
 			}
 		} else if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
-			database, err := getDatabaseMessage(ctx, s, target)
+			instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "failed to parse %q", target)
 			}
-			if database == nil || database.Deleted {
+			database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get database")
+			}
+			if database == nil {
 				return nil, errors.Errorf("database %q not found", target)
 			}
 			databases = append(databases, database)

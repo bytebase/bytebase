@@ -896,13 +896,6 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	instance, err = s.store.GetInstance(ctx, &store.FindInstanceMessage{
-		ResourceID: &instance.ResourceID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
 	result := convertInstanceMessage(instance)
 	return connect.NewResponse(result), nil
 }

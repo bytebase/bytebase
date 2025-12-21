@@ -22,7 +22,7 @@ import { useRouter } from "vue-router";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
-import { getReleaseFileStatement, humanizeTs } from "@/utils";
+import { humanizeTs } from "@/utils";
 
 interface LocalState {
   selectedReleaseNameList: Set<string>;
@@ -107,7 +107,7 @@ const columnList = computed(
                       {file.version}
                     </NTag>
                   )}
-                  {getReleaseFileStatement(file)}
+                  {file.path}
                 </p>
               ))}
               {release.files.length > MAX_SHOW_FILES_COUNT && (

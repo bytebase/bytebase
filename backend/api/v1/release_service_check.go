@@ -51,12 +51,15 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	var targetDatabases []*store.DatabaseMessage
 	for _, target := range request.Targets {
 		// Handle database target.
-		if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
-			database, err := getDatabaseMessage(ctx, s.store, target)
+		if instanceID, databaseName, err := common.GetInstanceDatabaseID(target); err == nil {
+			database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instanceID,
+				DatabaseName: &databaseName,
+			})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", target))
 			}
-			if database == nil || database.Deleted {
+			if database == nil {
 				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
 			}
 			targetDatabases = append(targetDatabases, database)
