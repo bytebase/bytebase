@@ -266,25 +266,14 @@ func (s *WorksheetService) UpdateWorksheet(
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", request.Worksheet.Database))
 				}
-
-				instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get instance %s", instanceID))
-				}
-				if instance == nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("instance not found"))
-				}
-
-				findDB := &store.FindDatabaseMessage{
+				database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 					InstanceID:   &instanceID,
 					DatabaseName: &databaseName,
-					ShowDeleted:  true,
-				}
-				database, err := s.store.GetDatabase(ctx, findDB)
+				})
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database"))
 				}
-				if database == nil || database.Deleted {
+				if database == nil {
 					return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", request.Worksheet.Database))
 				}
 				worksheetPatch.InstanceID, worksheetPatch.DatabaseName = &database.InstanceID, &database.DatabaseName
