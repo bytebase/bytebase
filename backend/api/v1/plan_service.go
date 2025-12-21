@@ -1117,7 +1117,15 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 		switch config := spec.Config.(type) {
 		case *v1pb.Plan_Spec_CreateDatabaseConfig:
 			configTypeCount["create_database"]++
-			instanceIDs = append(instanceIDs, config.CreateDatabaseConfig.Target)
+			if target := config.CreateDatabaseConfig.Target; target != "" {
+				instanceID, err := common.GetInstanceID(target)
+				if err != nil {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance name %q: %v", target, err))
+				}
+				if !slices.Contains(instanceIDs, instanceID) {
+					instanceIDs = append(instanceIDs, instanceID)
+				}
+			}
 		case *v1pb.Plan_Spec_ChangeDatabaseConfig:
 			configTypeCount["change_database"]++
 			var databaseTarget, databaseGroupTarget int
@@ -1171,9 +1179,9 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 		return errors.Errorf("plan contains multiple change database configs with release, but only one is allowed")
 	}
 
-	// Allow at most one CreateDatabaseConfig.
+	// Allow at most one instance.
 	if len(instanceIDs) > 1 {
-		return errors.Errorf("plan contains multiple create database configs, but only one is allowed")
+		return errors.Errorf("plan contains targets on multiple instances, but only one instance is allowed")
 	}
 
 	// Allow at most one database group.
