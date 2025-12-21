@@ -246,9 +246,19 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 		case strings.HasPrefix(resource.Name, "instances/") && strings.Contains(resource.Name, "/databases/") && !strings.HasPrefix(resource.Name, "instances/-/databases/"):
 			match := databaseRegex.FindString(resource.Name)
 			if match != "" {
-				database, err := getDatabaseMessage(ctx, stores, match)
+				instanceID, databaseName, err := common.GetInstanceDatabaseID(match)
 				if err != nil {
-					return errors.Wrapf(err, "failed to get database %q", match)
+					return errors.Wrapf(err, "failed to parse %q", match)
+				}
+				database, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
+					InstanceID:   &instanceID,
+					DatabaseName: &databaseName,
+				})
+				if err != nil {
+					return errors.Wrapf(err, "failed to get database")
+				}
+				if database == nil {
+					return errors.Errorf("database %q not found", match)
 				}
 				resource.ProjectID = database.ProjectID
 			}
