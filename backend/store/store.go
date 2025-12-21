@@ -18,16 +18,15 @@ type Store struct {
 	enableCache   bool
 
 	// Cache.
-	Secret             string
-	userEmailCache     *lru.Cache[string, *UserMessage]
-	instanceCache      *lru.Cache[string, *InstanceMessage]
-	databaseCache      *lru.Cache[string, *DatabaseMessage]
-	projectCache       *lru.Cache[string, *ProjectMessage]
-	policyCache        *lru.Cache[string, *PolicyMessage]
-	settingCache       *lru.Cache[storepb.SettingName, *SettingMessage]
-	rolesCache         *lru.Cache[string, *RoleMessage]
-	groupCache         *lru.Cache[string, *GroupMessage]
-	sheetMetadataCache *lru.Cache[string, *SheetMessage]
+	Secret         string
+	userEmailCache *lru.Cache[string, *UserMessage]
+	instanceCache  *lru.Cache[string, *InstanceMessage]
+	databaseCache  *lru.Cache[string, *DatabaseMessage]
+	projectCache   *lru.Cache[string, *ProjectMessage]
+	policyCache    *lru.Cache[string, *PolicyMessage]
+	settingCache   *lru.Cache[storepb.SettingName, *SettingMessage]
+	rolesCache     *lru.Cache[string, *RoleMessage]
+	groupCache     *lru.Cache[string, *GroupMessage]
 
 	// Large objects.
 	sheetFullCache  *lru.Cache[string, *SheetMessage]
@@ -65,10 +64,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	sheetMetadataCache, err := lru.New[string, *SheetMessage](64)
-	if err != nil {
-		return nil, err
-	}
 	sheetFullCache, err := lru.New[string, *SheetMessage](10)
 	if err != nil {
 		return nil, err
@@ -93,17 +88,16 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		enableCache:   enableCache,
 
 		// Cache.
-		userEmailCache:     userEmailCache,
-		instanceCache:      instanceCache,
-		databaseCache:      databaseCache,
-		projectCache:       projectCache,
-		policyCache:        policyCache,
-		settingCache:       settingCache,
-		rolesCache:         rolesCache,
-		sheetMetadataCache: sheetMetadataCache,
-		sheetFullCache:     sheetFullCache,
-		dbMetadataCache:    dbMetadataCache,
-		groupCache:         groupCache,
+		userEmailCache:  userEmailCache,
+		instanceCache:   instanceCache,
+		databaseCache:   databaseCache,
+		projectCache:    projectCache,
+		policyCache:     policyCache,
+		settingCache:    settingCache,
+		rolesCache:      rolesCache,
+		sheetFullCache:  sheetFullCache,
+		dbMetadataCache: dbMetadataCache,
+		groupCache:      groupCache,
 	}
 
 	return s, nil

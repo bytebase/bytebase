@@ -28,10 +28,6 @@ type SheetMessage struct {
 // Statement field will be truncated to MaxSheetSize (2MB).
 // Results are cached by SHA256 hex string.
 func (s *Store) GetSheetTruncated(ctx context.Context, sha256Hex string) (*SheetMessage, error) {
-	if v, ok := s.sheetMetadataCache.Get(sha256Hex); ok && s.enableCache {
-		return v, nil
-	}
-
 	sheet, err := s.getSheet(ctx, sha256Hex, false)
 	if err != nil {
 		return nil, err
@@ -39,8 +35,6 @@ func (s *Store) GetSheetTruncated(ctx context.Context, sha256Hex string) (*Sheet
 	if sheet == nil {
 		return nil, nil
 	}
-
-	s.sheetMetadataCache.Add(sha256Hex, sheet)
 	return sheet, nil
 }
 
