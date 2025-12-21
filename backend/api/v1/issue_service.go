@@ -1118,25 +1118,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			patch.PayloadUpsert.Approval = &storepb.IssuePayloadApproval{
 				ApprovalFindingDone: false,
 			}
-
-			if issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
-				plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
-				}
-				if plan == nil {
-					return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %q not found", *issue.PlanUID))
-				}
-
-				planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
-				}
-				if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check runs, error: %v", err))
-				}
-			}
-
 		case "title":
 			// Prevent updating title if plan exists.
 			if issue.PlanUID != nil {

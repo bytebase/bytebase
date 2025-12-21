@@ -74,7 +74,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, req *connect.Reques
 	}
 
 	// Validate plan specs
-	if err := validateSpecs(request.Plan.Specs); err != nil {
+	if err := validateSpecs(ctx, s.store, projectID, request.Plan.Specs); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
 	}
 
