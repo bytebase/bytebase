@@ -240,7 +240,8 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	// Validate plan specs
-	if err := validateSpecs(ctx, s.store, projectID, req.Plan.Specs); err != nil {
+	databaseGroup, err := validateSpecs(ctx, s.store, projectID, req.Plan.Specs)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
 	}
 
@@ -257,25 +258,19 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 	}
 	planMessage.Config.Deployment = deployment
 
-	if _, err := GetPipelineCreate(ctx, s.store, s.dbFactory, planMessage.Config.GetSpecs(), deployment, project); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline from the plan, please check you request, error: %v", err))
-	}
 	plan, err := s.store.CreatePlan(ctx, planMessage, user.Email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan, error: %v", err))
 	}
 
 	// Don't create plan checks if the plan comes from releases.
-	if !planHasRelease(req.Plan) {
-		planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
-		}
-		if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check runs, error: %v", err))
-		}
+	planCheckRuns, err := getPlanCheckRunsFromPlan(project, plan, databaseGroup)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
 	}
-
+	if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check runs, error: %v", err))
+	}
 	// Tickle plan check scheduler.
 	s.stateCfg.PlanCheckTickleChan <- 0
 
@@ -365,6 +360,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		}
 		return strings.Compare(a, b)
 	})
+	var databaseGroup *v1pb.DatabaseGroup
 	for _, path := range paths {
 		switch path {
 		case "title":
@@ -387,18 +383,10 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			}
 			planUpdate.Deployment = &deployment
 		case "specs":
+			planCheckRunsTrigger = true
 			// Use specs directly for internal storage
 			allSpecs := convertPlanSpecs(req.GetPlan().GetSpecs())
 			planUpdate.Specs = &allSpecs
-
-			if _, err := GetPipelineCreate(ctx,
-				s.store,
-				s.dbFactory,
-				allSpecs,
-				oldPlan.Config.GetDeployment(),
-				project); err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline from the plan, please check you request, error: %v", err))
-			}
 
 			// Compare specs directly
 			oldSpecs := convertToPlanSpecs(project.ResourceID, oldPlan.Config.Specs)
@@ -425,9 +413,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			}
 
 			// Validate the new specs
-			if err := validateSpecs(ctx, s.store, oldPlan.ProjectID, req.Plan.Specs); err != nil {
+			dg, err := validateSpecs(ctx, s.store, oldPlan.ProjectID, req.Plan.Specs)
+			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
 			}
+			databaseGroup = dg
 
 			// Handle task updates for specs
 			tasksMap := map[int]*store.TaskMessage{}
@@ -721,13 +711,15 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	if planCheckRunsTrigger {
-		planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, updatedPlan)
+		planCheckRuns, err := getPlanCheckRunsFromPlan(project, updatedPlan, databaseGroup)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
 		}
 		if err := s.store.CreatePlanCheckRuns(ctx, updatedPlan, planCheckRuns...); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check runs, error: %v", err))
 		}
+		// Tickle plan check scheduler.
+		s.stateCfg.PlanCheckTickleChan <- 0
 	}
 
 	convertedPlan, err := convertToPlan(ctx, s.store, updatedPlan)
@@ -954,29 +946,27 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 	if storePlanConfigHasRelease(plan.Config) {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot run plan checks because plan %q has release", plan.Name))
 	}
-
-	var planCheckRuns []*store.PlanCheckRunMessage
-	if req.SpecId != nil {
-		var foundSpec *storepb.PlanConfig_Spec
-		for _, spec := range plan.Config.GetSpecs() {
-			if spec.Id == *req.SpecId {
-				foundSpec = spec
-				break
+	var databaseGroup *v1pb.DatabaseGroup
+	for _, spec := range plan.Config.GetSpecs() {
+		if c, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); ok {
+			if len(c.ChangeDatabaseConfig.Targets) == 1 {
+				if _, _, err := common.GetProjectIDDatabaseGroupID(c.ChangeDatabaseConfig.Targets[0]); err == nil {
+					dg, err := getDatabaseGroupByName(ctx, s.store, c.ChangeDatabaseConfig.Targets[0], v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC)
+					if err != nil {
+						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database group %q: %v", c.ChangeDatabaseConfig.Targets[0], err))
+					}
+					if dg == nil {
+						return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database group %q not found", c.ChangeDatabaseConfig.Targets[0]))
+					}
+					databaseGroup = dg
+					break
+				}
 			}
 		}
-		if foundSpec == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("spec with id %q not found in plan", *req.SpecId))
-		}
-		planCheckRuns, err = getPlanCheckRunsFromSpec(ctx, s.store, plan, foundSpec)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for spec, error: %v", err))
-		}
-	} else {
-		// If spec ID is not provided, run plan check runs for all specs in the plan.
-		planCheckRuns, err = getPlanCheckRunsFromPlan(ctx, s.store, plan)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
-		}
+	}
+	planCheckRuns, err := getPlanCheckRunsFromPlan(project, plan, databaseGroup)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
 	}
 	if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check runs, error: %v", err))
@@ -1090,9 +1080,9 @@ func diffSpecs(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) ([]*v1pb.
 	return removed, added, updated
 }
 
-func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs []*v1pb.Plan_Spec) error {
+func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs []*v1pb.Plan_Spec) (*v1pb.DatabaseGroup, error) {
 	if len(specs) == 0 {
-		return errors.Errorf("the plan has zero spec")
+		return nil, errors.Errorf("the plan has zero spec")
 	}
 	configTypeCount := map[string]int{}
 	seenID := map[string]bool{}
@@ -1103,14 +1093,15 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	var instanceIDs []string
 	var databaseGroups []string
 	var databaseNames []string
+	var databaseGroup *v1pb.DatabaseGroup
 
 	for _, spec := range specs {
 		id := spec.GetId()
 		if id == "" {
-			return errors.Errorf("spec id cannot be empty")
+			return nil, errors.Errorf("spec id cannot be empty")
 		}
 		if seenID[id] {
-			return errors.Errorf("found duplicate spec id %v", id)
+			return nil, errors.Errorf("found duplicate spec id %v", id)
 		}
 		seenID[id] = true
 
@@ -1120,7 +1111,7 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 			if target := config.CreateDatabaseConfig.Target; target != "" {
 				instanceID, err := common.GetInstanceID(target)
 				if err != nil {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance name %q: %v", target, err))
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid instance name %q: %v", target, err))
 				}
 				instanceIDs = append(instanceIDs, instanceID)
 			}
@@ -1135,12 +1126,12 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 					databaseGroupTarget++
 					databaseGroups = append(databaseGroups, target)
 				} else {
-					return errors.Errorf("invalid target %v", target)
+					return nil, errors.Errorf("invalid target %v", target)
 				}
 			}
 			// Disallow mixing database and database group targets in the same spec.
 			if databaseTarget > 0 && databaseGroupTarget > 0 {
-				return errors.Errorf("found databaseTarget and databaseGroupTarget, expect only one kind")
+				return nil, errors.Errorf("found databaseTarget and databaseGroupTarget, expect only one kind")
 			}
 			// Track if this spec uses release or sheet.
 			if config.ChangeDatabaseConfig.Release != "" {
@@ -1162,29 +1153,34 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 				}
 			}
 		default:
-			return errors.Errorf("invalid spec type")
+			return nil, errors.Errorf("invalid spec type")
 		}
 	}
 	if len(configTypeCount) > 1 {
-		return errors.Errorf("plan contains multiple types of spec configurations (%v), but each plan must contain only one type", len(configTypeCount))
+		return nil, errors.Errorf("plan contains multiple types of spec configurations (%v), but each plan must contain only one type", len(configTypeCount))
 	}
 	// Disallow mixing ChangeDatabaseConfig specs with release and sheet.
 	if releaseCount > 0 && sheetCount > 0 {
-		return errors.Errorf("plan contains both release and sheet based change database configs, but each plan must use only one approach")
+		return nil, errors.Errorf("plan contains both release and sheet based change database configs, but each plan must use only one approach")
 	}
 	// Allow at most one ChangeDatabaseConfig with release.
 	if releaseCount > 1 {
-		return errors.Errorf("plan contains multiple change database configs with release, but only one is allowed")
+		return nil, errors.Errorf("plan contains multiple change database configs with release, but only one is allowed")
 	}
 
 	// Allow at most one instance.
 	if len(instanceIDs) > 1 {
-		return errors.Errorf("plan contains targets on multiple instances, but only one instance is allowed")
+		return nil, errors.Errorf("plan contains targets on multiple instances, but only one instance is allowed")
 	}
 
 	// Allow at most one database group.
 	if len(databaseGroups) > 1 {
-		return errors.Errorf("plan contains multiple database groups, but only one is allowed")
+		return nil, errors.Errorf("plan contains multiple database groups, but only one is allowed")
+	}
+
+	// Don't allow mixing database group and databases.
+	if len(databaseGroups) > 0 && len(databaseNames) > 0 {
+		return nil, errors.Errorf("plan contains both database group and databases, but only one is allowed")
 	}
 
 	// Validate resources existence.
@@ -1194,10 +1190,10 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 			ResourceID: &instanceID,
 		})
 		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance %q: %v", instanceID, err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get instance %q: %v", instanceID, err))
 		}
 		if instance == nil {
-			return connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
 		}
 	}
 
@@ -1205,39 +1201,40 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 		name := databaseGroups[0]
 		groupProjectID, _, err := common.GetProjectIDDatabaseGroupID(name)
 		if err != nil {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid database group name %q", name))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid database group name %q", name))
 		}
 		if groupProjectID != projectID {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database group %q (project %q) does not belong to plan project %q", name, groupProjectID, projectID))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database group %q (project %q) does not belong to plan project %q", name, groupProjectID, projectID))
 		}
 
-		group, err := getDatabaseGroupByName(ctx, s, name, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC)
+		dg, err := getDatabaseGroupByName(ctx, s, name, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_BASIC)
 		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database group %q: %v", name, err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database group %q: %v", name, err))
 		}
-		if group == nil {
-			return connect.NewError(connect.CodeNotFound, errors.Errorf("database group %q not found", name))
+		if dg == nil {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database group %q not found", name))
 		}
+		databaseGroup = dg
 	}
 
 	for _, name := range databaseNames {
 		instanceID, dbName, err := common.GetInstanceDatabaseID(name)
 		if err != nil {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid database name %q", name))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid database name %q", name))
 		}
 		db, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instanceID,
 			DatabaseName: &dbName,
 		})
 		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database %q: %v", name, err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database %q: %v", name, err))
 		}
 		if db == nil {
-			return connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
 		}
 
 		if db.ProjectID != projectID {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database %q (project %q) does not belong to plan project %q", name, db.ProjectID, projectID))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database %q (project %q) does not belong to plan project %q", name, db.ProjectID, projectID))
 		}
 	}
 
@@ -1245,10 +1242,10 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	if len(sheetSha256s) > 0 {
 		exist, err := s.HasSheets(ctx, sheetSha256s...)
 		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check sheets: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check sheets: %v", err))
 		}
 		if !exist {
-			return connect.NewError(connect.CodeNotFound, errors.Errorf("some sheets are not found"))
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("some sheets are not found"))
 		}
 	}
 
@@ -1256,20 +1253,20 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	if releaseString != "" {
 		releaseProjectID, releaseUID, err := common.GetProjectReleaseUID(releaseString)
 		if err != nil {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid release name %q", releaseString))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid release name %q", releaseString))
 		}
 		if releaseProjectID != projectID {
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("release %q (project %q) does not belong to plan project %q", releaseString, releaseProjectID, projectID))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("release %q (project %q) does not belong to plan project %q", releaseString, releaseProjectID, projectID))
 		}
 		release, err := s.GetReleaseByUID(ctx, releaseUID)
 		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get release %d: %v", releaseUID, err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get release %d: %v", releaseUID, err))
 		}
 		if release == nil {
-			return connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found", releaseUID))
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("release %d not found", releaseUID))
 		}
 	}
-	return nil
+	return databaseGroup, nil
 }
 
 func getPlanSpecDatabaseGroups(specs []*storepb.PlanConfig_Spec) []string {
@@ -1352,17 +1349,6 @@ func getPlanDeployment(ctx context.Context, s *store.Store, specs []*storepb.Pla
 	}
 
 	return snapshot, nil
-}
-
-func planHasRelease(plan *v1pb.Plan) bool {
-	for _, spec := range plan.GetSpecs() {
-		if c, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig); ok {
-			if c.ChangeDatabaseConfig.Release != "" {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func storePlanConfigHasRelease(plan *storepb.PlanConfig) bool {
