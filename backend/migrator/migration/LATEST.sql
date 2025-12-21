@@ -130,6 +130,8 @@ CREATE TABLE instance (
 
 CREATE UNIQUE INDEX idx_instance_unique_resource_id ON instance(resource_id);
 
+CREATE INDEX idx_instance_metadata_engine ON instance((metadata->>'engine'));
+
 ALTER SEQUENCE instance_id_seq RESTART WITH 101;
 
 -- db stores the databases for a particular instance

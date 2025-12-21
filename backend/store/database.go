@@ -30,6 +30,7 @@ type DatabaseMessage struct {
 
 	Deleted  bool
 	Metadata *storepb.DatabaseMetadata
+	Engine   storepb.Engine
 }
 
 func (d *DatabaseMessage) String() string {
@@ -144,7 +145,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		where.And("db.name = ?", *v)
 	}
 	if v := find.Engine; v != nil {
-		where.And("instance.metadata->>'engine' = ?", *v)
+		where.And("instance.metadata->>'engine' = ?", v.String())
 	}
 	if !find.ShowDeleted {
 		where.And("instance.deleted = ?", false)
@@ -162,7 +163,8 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 			db.instance,
 			db.name,
 			db.deleted,
-			db.metadata
+			db.metadata,
+			instance.metadata->>'engine'
 		FROM ?
 		WHERE ?
 		ORDER BY db.project, db.instance, db.name
@@ -189,7 +191,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	for rows.Next() {
 		databaseMessage := &DatabaseMessage{}
 		var metadataString string
-		var effectiveEnvironment, environment sql.NullString
+		var effectiveEnvironment, environment, engine sql.NullString
 		if err := rows.Scan(
 			&databaseMessage.ProjectID,
 			&effectiveEnvironment,
@@ -198,6 +200,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 			&databaseMessage.DatabaseName,
 			&databaseMessage.Deleted,
 			&metadataString,
+			&engine,
 		); err != nil {
 			return nil, err
 		}
@@ -206,6 +209,11 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		}
 		if environment.Valid {
 			databaseMessage.EnvironmentID = &environment.String
+		}
+		if engine.Valid {
+			if v, ok := storepb.Engine_value[engine.String]; ok {
+				databaseMessage.Engine = storepb.Engine(v)
+			}
 		}
 
 		var metadata storepb.DatabaseMetadata
@@ -586,7 +594,7 @@ func GetListDatabaseFilter(filter string) (*qb.Query, error) {
 				return nil, errors.Errorf("invalid engine filter %q", value)
 			}
 			engine := storepb.Engine(engineValue)
-			return qb.Q().Space("instance.metadata->>'engine' = ?", engine), nil
+			return qb.Q().Space("instance.metadata->>'engine' = ?", engine.String()), nil
 		case "name":
 			return qb.Q().Space("db.name = ?", value), nil
 		case "drifted":

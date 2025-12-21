@@ -92,16 +92,6 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("changelog %q not found", changelogUID))
 	}
 
-	// Get related database to convert changelog from store.
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if instance == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
-	}
 	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instanceID,
 		DatabaseName: &databaseName,

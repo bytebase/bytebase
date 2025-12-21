@@ -1385,16 +1385,6 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 
 func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) parserbase.GetDatabaseMetadataFunc {
 	return func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
-		database, err := storeInstance.GetDatabase(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instanceID,
-			DatabaseName: &databaseName,
-		})
-		if err != nil {
-			return "", nil, err
-		}
-		if database == nil {
-			return "", nil, nil
-		}
 		databaseMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 			InstanceID:   instanceID,
 			DatabaseName: databaseName,
