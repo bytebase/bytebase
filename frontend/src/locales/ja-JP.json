@@ -263,8 +263,6 @@
       "title-general": "テスト結果"
     },
     "check-type": {
-      "fake": "偽物",
-      "connection": "接続する",
       "sql-review": {
         "self": "SQLレビュー",
         "description": "SQL文を分析し、潜在的な問題点を特定し、推奨事項を提示します。組み込みルールとカスタムルールが含まれます。"

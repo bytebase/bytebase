@@ -317,14 +317,10 @@ func convertToPlanCheckRun(projectID string, planUID int64, run *store.PlanCheck
 
 func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type {
 	switch t {
-	case store.PlanCheckDatabaseStatementFakeAdvise:
-		return v1pb.PlanCheckRun_DATABASE_STATEMENT_FAKE_ADVISE
 	case store.PlanCheckDatabaseStatementAdvise:
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE
 	case store.PlanCheckDatabaseStatementSummaryReport:
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT
-	case store.PlanCheckDatabaseConnect:
-		return v1pb.PlanCheckRun_DATABASE_CONNECT
 	case store.PlanCheckDatabaseGhostSync:
 		return v1pb.PlanCheckRun_DATABASE_GHOST_SYNC
 	default:

@@ -11898,10 +11898,8 @@ components:
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
-                        - DATABASE_STATEMENT_FAKE_ADVISE
                         - DATABASE_STATEMENT_ADVISE
                         - DATABASE_STATEMENT_SUMMARY_REPORT
-                        - DATABASE_CONNECT
                         - DATABASE_GHOST_SYNC
                     type: string
                     format: enum

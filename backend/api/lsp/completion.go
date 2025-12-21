@@ -145,24 +145,9 @@ func convertLSPCompletionItemKind(tp parserbase.CandidateType) lsp.CompletionIte
 }
 
 func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
-	// TODO: do ACL check here.
-	if instanceID == "" {
-		return "", nil, errors.Errorf("instance is not specified")
-	}
-
-	database, err := h.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-		InstanceID:   &instanceID,
-		DatabaseName: &databaseName,
-	})
-	if err != nil {
-		return "", nil, errors.Wrap(err, "failed to get database")
-	}
-	if database == nil {
-		return "", nil, errors.Errorf("database %s for instance %s not found", databaseName, instanceID)
-	}
 	metadata, err := h.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
 	})
 	if err != nil {
 		return "", nil, errors.Wrap(err, "failed to get database schema")
