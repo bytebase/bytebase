@@ -21,8 +21,9 @@ const emptyTimerEntry = (tag: string): TimerEntry => {
 };
 
 export class TinyTimer<T extends string = string> {
-  private entires: Record<T, TimerEntry> = {} as any;
-  private begins: Record<T, number> = {} as any;
+  private entires: Partial<Record<T, TimerEntry>> = {};
+  private begins: Partial<Record<T, number>> = {};
+
   title: string;
   constructor(title: string = "") {
     this.title = title;

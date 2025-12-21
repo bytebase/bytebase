@@ -1,6 +1,6 @@
 <template>
   <Suspense>
-    <MonacoEditor ref="monacoEditorRef" v-bind="$attrs as any" />
+    <MonacoEditor ref="monacoEditorRef" v-bind="typedAttrs" />
     <template #fallback>
       <div ref="spinnerWrapperElRef" :class="classes">
         <BBSpin />
@@ -11,14 +11,20 @@
 
 <script setup lang="ts">
 import { useParentElement } from "@vueuse/core";
-import { computed, defineAsyncComponent, ref } from "vue";
+import { computed, defineAsyncComponent, ref, useAttrs } from "vue";
 import { BBSpin } from "@/bbkit";
+import type { MonacoEditorProps, MonacoEditorEmits } from "./types";
+
+type MonacoEditorAttrs = MonacoEditorProps & MonacoEditorEmits & Record<string, unknown>
 
 const MonacoEditor = defineAsyncComponent(() => import("./MonacoEditor.vue"));
 
 const spinnerWrapperElRef = ref<HTMLElement>();
 const parentElRef = useParentElement(spinnerWrapperElRef);
 const monacoEditorRef = ref<InstanceType<typeof MonacoEditor>>();
+
+const attrs = useAttrs();
+const typedAttrs = computed(() => attrs as MonacoEditorAttrs);
 
 const classes = computed(() => {
   const classes: string[] = [

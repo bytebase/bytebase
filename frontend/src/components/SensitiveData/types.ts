@@ -7,6 +7,8 @@ import type {
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 
+export type MaskDataTarget = TableCatalog | ColumnCatalog | ObjectSchema;
+
 export interface MaskData {
   schema: string;
   table: string;
@@ -15,7 +17,7 @@ export interface MaskData {
   semanticTypeId: string;
   disableClassification?: boolean;
   classificationId: string;
-  target: TableCatalog | ColumnCatalog | ObjectSchema;
+  target: MaskDataTarget;
 }
 
 export interface SensitiveColumn {

@@ -73,19 +73,19 @@ const treeData = computed(() => {
 
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
-  const node = option as any as TreeNode;
+  const node = option as TreeNode;
   return h(Label, { node, keyword: props.keyword });
 };
 
 // Render icons before nodes.
 const renderPrefix = ({ option }: { option: TreeOption }) => {
-  const node = option as any as TreeNode;
+  const node = option as TreeNode;
   return h(Prefix, { node });
 };
 
 // Render icons after nodes.
 const renderSuffix = ({ option }: { option: TreeOption }) => {
-  const node = option as any as TreeNode;
+  const node = option as TreeNode;
   return h(Suffix, { node });
 };
 

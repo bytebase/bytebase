@@ -145,7 +145,7 @@ const getTreeNodeList = (classificationMap: ClassificationMap): TreeNode[] => {
 };
 
 const renderSuffix = ({ option }: { option: TreeOption }) => {
-  const node = option as any as TreeNode;
+  const node = option as TreeNode;
   if (!node.levelId) {
     return null;
   }
@@ -158,7 +158,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
 };
 
 const renderLabel = ({ option }: { option: TreeOption }) => {
-  const node = option as any as TreeNode;
+  const node = option as TreeNode;
   return h("span", {
     innerHTML: getHighlightHTMLByKeyWords(node.label, state.searchText),
   });

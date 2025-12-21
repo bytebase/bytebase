@@ -192,6 +192,13 @@ const OPERATORS: SelectOption[] = [
   { label: operatorLabel("_||_"), value: "_||_" },
 ];
 
+const getDefaultValue = (factor: Factor): string | number | Date => {
+  if (isNumberFactor(factor)) return 0;
+  if (isStringFactor(factor)) return "";
+  if (isTimestampFactor(factor)) return new Date();
+  return "";
+};
+
 const addCondition = () => {
   const factor = factorList.value[0];
   const operators = getOperatorListByFactor(
@@ -199,11 +206,16 @@ const addCondition = () => {
     factorOperatorOverrideMap.value
   );
 
+  const operator = operators[0];
+  if (!operator) {
+    return;
+  }
+
   args.value.push({
     type: ExprType.Condition,
-    operator: operators[0] ?? "",
+    operator,
     args: [factor, getDefaultValue(factor)],
-  } as any);
+  } as ConditionExpr);
   emit("update");
 };
 
@@ -246,13 +258,5 @@ const removeRawString = (rawString: RawStringExpr) => {
     args.value.splice(index, 1);
     emit("update");
   }
-};
-
-const getDefaultValue = (factor: Factor): any => {
-  if (isNumberFactor(factor)) return 0;
-  if (isStringFactor(factor)) return "";
-  if (isTimestampFactor(factor)) return new Date();
-  // Fall back to empty string.
-  return "";
 };
 </script>

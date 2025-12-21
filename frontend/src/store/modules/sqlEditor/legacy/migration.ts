@@ -24,6 +24,8 @@ type PersistentTab = Pick<
   "id" | "title" | "connection" | "mode" | "worksheet" | "status"
 >;
 
+type LegacyStoredTab = PersistentTab & { statement?: string };
+
 export const migrateLegacyCache = async () => {
   const me = useCurrentUserV1();
   const userUID = computed(() => extractUserId(me.value.name));
@@ -72,7 +74,7 @@ export const migrateLegacyCache = async () => {
       // This might happen only once to each user, since the second time when a
       // tab is saved, extended fields will be migrated, and won't be saved to
       // LocalStorage, so the fallback routine won't be hit.
-      const { statement } = stored as any;
+      const { statement } = stored as LegacyStoredTab;
       if (statement) {
         tab.statement = statement;
       }

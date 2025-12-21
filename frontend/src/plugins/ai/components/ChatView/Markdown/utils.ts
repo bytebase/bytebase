@@ -54,23 +54,24 @@ export type State = {
   definitionById: Map<string, Definition>;
 };
 
-type NodeKey = keyof CustomRender;
+type GenericNodeHandler = (node: RootContent, state?: State) => VNode | string;
 
-type NodeToVNodeKey = keyof typeof mdastToVNode;
+function defaultMdNodeToVNode(node: RootContent, state?: State): VNode | string {
+  const { type } = node;
 
-function defaultMdNodeToVNode(node: RootContent, state?: State) {
-  const type = node.type as NodeKey;
+  const customSlot = state?.slots[type as keyof CustomRender] as
+    | GenericNodeHandler
+    | undefined;
 
-  if (state?.slots[type]) {
-    return state.slots[type](node as any);
+  if (customSlot) {
+    return customSlot(node, state);
   }
 
-  const handler: (typeof mdastToVNode)[NodeToVNodeKey] =
-    type in mdastToVNode
-      ? mdastToVNode[type as NodeToVNodeKey]
-      : mdastToVNode.unknown;
+  const handler = (
+    mdastToVNode[type as keyof typeof mdastToVNode] ?? mdastToVNode.unknown
+  ) as GenericNodeHandler;
 
-  return handler(node as any, state);
+  return handler(node, state);
 }
 
 function rootToVNode(node: Root, state?: State): VNode | string {
@@ -538,33 +539,30 @@ function thematicBreakToVNode(): VNode | string {
 }
 
 function defaultUnknownHandler(
-  node: RootContent,
-  state?: State
-): VNode | string {
-  if ("children" in node) {
-    const properties = ("properties" in node ? node.properties : {}) as Record<
-      string,
-      any
-    >;
-    if ("className" in properties && Array.isArray(properties.className)) {
-      // hast和vnode的结构不同导致的，JSX上的区别
-      properties.className = properties.className.join(" ");
+    node: RootContent,
+    state?: State
+  ): VNode | string {
+    if ("children" in node) {
+      const properties: Record<string, unknown> =
+        "properties" in node ? (node.properties as Record<string, unknown>) : {};
+
+      if ("className" in properties && Array.isArray(properties.className)) {
+        properties.className = properties.className.join(" ");
+      }
+
+      return h(
+        "div",
+        properties,
+        node.children.map((child) => defaultMdNodeToVNode(child, state))
+      );
     }
 
-    return h(
-      "div",
-      properties,
-      node.children.map((node) => defaultMdNodeToVNode(node, state))
-    );
-  }
+    if ("value" in node) {
+      return node.value;
+    }
 
-  if ("value" in node) {
-    return node.value;
+    return "";
   }
-
-  // empty node……？？？
-  return "";
-}
 
 export const mdastToVNode = {
   root: rootToVNode,

@@ -33,7 +33,10 @@ import {
   SyncDatabaseRequestSchema,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  type Instance,
+  InstanceResourceSchema,
+} from "@/types/proto-es/v1/instance_service_pb";
 import { extractDatabaseResourceName, isNullOrUndefined } from "@/utils";
 import {
   instanceNamePrefix,
@@ -230,22 +233,14 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       if (database.instance !== instance.name) {
         continue;
       }
-      // Conversion boundary: Extract InstanceResource fields from Instance
-      database.instanceResource = {
+      database.instanceResource = create(InstanceResourceSchema, {
         name: instance.name,
-        uid: "",
-        state: instance.state,
         title: instance.title,
         engine: instance.engine,
-        externalLink: "",
-        maximumConnections: 0,
         environment: instance.environment,
-        activation: true,
+        activation: instance.activation,
         dataSources: [],
-        lastSyncTime: undefined,
-        syncInterval: undefined,
-        options: undefined,
-      } as any; // Cross-service boundary conversion
+      });
     }
   };
   const batchSyncDatabases = async (databases: string[]) => {
@@ -294,11 +289,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     return request;
   };
   const batchGetDatabases = async (names: string[], silent = true) => {
-    if (names.length === 0) {
+    const validNames = names.filter(isValidDatabaseName);
+    if (validNames.length === 0) {
       return [];
     }
     const request = create(BatchGetDatabasesRequestSchema, {
-      names,
+      names: validNames,
     });
     const response = await databaseServiceClientConnect.batchGetDatabases(
       request,

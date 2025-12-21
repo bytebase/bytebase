@@ -228,11 +228,14 @@ const onUpload = () => {
 };
 
 const onFileChange = () => {
-  const files: File[] = (uploader.value as any).files;
-  if (files.length !== 1) {
+  const files = uploader.value?.files;
+  if (!files || files.length !== 1) {
     return;
   }
-  const file = files[0];
+  const file = files.item(0);
+  if (!file) {
+    return;
+  }
   if (file.size > maxFileSizeInMiB * 1024 * 1024) {
     pushNotification({
       module: "bytebase",

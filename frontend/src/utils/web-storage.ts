@@ -167,7 +167,8 @@ export const useDynamicLocalStorage = <
         dispatchWriteEvent(oldValue, null);
         storage.removeItem(key.value);
       } else {
-        const serialized = serializer.write(v as any);
+        // v is known to be T at this point since it comes from data.value
+        const serialized = serializer.write(v as T);
         if (oldValue !== serialized) {
           storage.setItem(key.value, serialized);
           dispatchWriteEvent(oldValue, serialized);
@@ -187,10 +188,12 @@ export const useDynamicLocalStorage = <
       return rawInit;
     } else if (!event && mergeDefaults) {
       const value = serializer.read(rawValue);
-      if (typeof mergeDefaults === "function")
+      if (typeof mergeDefaults === "function") {
         return mergeDefaults(value, rawInit);
-      else if (type === "object" && !Array.isArray(value))
-        return { ...(rawInit as any), ...value };
+      } else if (type === "object" && !Array.isArray(value)) {
+        // We know T extends object here since type === "object"
+        return { ...(rawInit as Record<string, unknown>), ...value } as T;
+      }
       return value;
     } else if (typeof rawValue !== "string") {
       return rawValue;

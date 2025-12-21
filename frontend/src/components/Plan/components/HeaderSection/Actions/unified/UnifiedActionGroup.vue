@@ -62,6 +62,12 @@ import RolloutReadyLink from "../RolloutReadyLink.vue";
 import type { ActionConfig, UnifiedAction } from "./types";
 import UnifiedActionButton from "./UnifiedActionButton.vue";
 
+type DropdownActionOption = DropdownOption & {
+  key: UnifiedAction;
+  label: string;
+  description?: string;
+}
+
 const props = defineProps<{
   primaryAction?: ActionConfig;
   secondaryActions: ActionConfig[];
@@ -177,11 +183,10 @@ const actionDisplayName = (action: UnifiedAction): string => {
   }
 };
 
-const dropdownOptions = computed(() => {
+const dropdownOptions = computed((): DropdownActionOption[] => {
   return props.secondaryActions.map((config) => ({
     key: config.action,
     label: actionDisplayName(config.action),
-    action: config.action,
     disabled: props.disabled || config.disabled,
     description: props.disabled ? props.disabledTooltip : config.description,
   }));
@@ -195,7 +200,7 @@ const renderDropdownOption = ({
   option: DropdownOption;
 }) => {
   const actionOption = props.secondaryActions.find(
-    (config) => config.action === (option as any).key
+    (config) => config.action === (option as DropdownActionOption).key
   );
   const disabled = props.disabled || actionOption?.disabled;
   const description = props.disabled
@@ -226,7 +231,7 @@ const handleAction = (action: UnifiedAction) => {
 const handleDropdownSelect = (key: string) => {
   const option = dropdownOptions.value.find((opt) => opt.key === key);
   if (option && !option.disabled) {
-    handleAction(option.action);
+    handleAction(option.key);
   }
 };
 </script>
