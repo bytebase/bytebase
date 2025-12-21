@@ -83,10 +83,7 @@ func (s *RevisionService) ListRevisions(
 		revisions = revisions[:offset.limit]
 	}
 
-	converted, err := convertToRevisions(request.Parent, database.ProjectID, revisions)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revisions"))
-	}
+	converted := convertToRevisions(request.Parent, database.ProjectID, revisions)
 
 	return connect.NewResponse(&v1pb.ListRevisionsResponse{
 		Revisions:     converted,
@@ -119,10 +116,7 @@ func (s *RevisionService) GetRevision(
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get revision %v", request.Name))
 	}
 	parent := common.FormatDatabase(instanceID, databaseName)
-	converted, err := convertToRevision(parent, database.ProjectID, revision)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revision"))
-	}
+	converted := convertToRevision(parent, database.ProjectID, revision)
 	return connect.NewResponse(converted), nil
 }
 
@@ -261,10 +255,7 @@ func (s *RevisionService) createRevisions(
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision"))
 		}
-		converted, err := convertToRevision(parent, database.ProjectID, revisionM)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to revision"))
-		}
+		converted := convertToRevision(parent, database.ProjectID, revisionM)
 		createdRevisions = append(createdRevisions, converted)
 	}
 	return createdRevisions, nil
@@ -289,19 +280,16 @@ func (s *RevisionService) DeleteRevision(
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
-func convertToRevisions(parent string, projectID string, revisions []*store.RevisionMessage) ([]*v1pb.Revision, error) {
+func convertToRevisions(parent string, projectID string, revisions []*store.RevisionMessage) []*v1pb.Revision {
 	var rs []*v1pb.Revision
 	for _, revision := range revisions {
-		r, err := convertToRevision(parent, projectID, revision)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert to revisions")
-		}
+		r := convertToRevision(parent, projectID, revision)
 		rs = append(rs, r)
 	}
-	return rs, nil
+	return rs
 }
 
-func convertToRevision(parent string, projectID string, revision *store.RevisionMessage) (*v1pb.Revision, error) {
+func convertToRevision(parent string, projectID string, revision *store.RevisionMessage) *v1pb.Revision {
 	taskRunName := revision.Payload.TaskRun
 	r := &v1pb.Revision{
 		Name:        fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
@@ -322,7 +310,7 @@ func convertToRevision(parent string, projectID string, revision *store.Revision
 		r.DeleteTime = timestamppb.New(*revision.DeletedAt)
 	}
 
-	return r, nil
+	return r
 }
 
 func convertToRevisionType(t storepb.SchemaChangeType) v1pb.Revision_Type {
