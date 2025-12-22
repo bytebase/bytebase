@@ -3,16 +3,15 @@
     v-bind="$attrs"
     :multiple="multiple"
     :disabled="disabled"
-    :value="projectName"
-    :values="projectNames"
-    :custom-label="renderLabel"
+    :size="size"
+    :value="value"
+    :render-label="renderLabel"
+    :render-tag="renderTag"
     class="bb-project-select"
-    :additional-data="additionalData"
+    :additional-options="additionalOptions"
     :search="handleSearch"
-    :get-option="getOption"
     :filter="filterProject"
-    @update:value="(val) => $emit('update:project-name', val)"
-    @update:values="(val) => $emit('update:project-names', val)"
+    @update:value="(val) => $emit('update:value', val)"
   >
     <template v-if="$slots.empty" #empty>
       <slot name="empty" />
@@ -29,42 +28,41 @@ import { ProjectNameCell } from "@/components/v2/Model/cells";
 import { usePermissionStore, useProjectV1Store } from "@/store";
 import {
   DEFAULT_PROJECT_NAME,
-  isValidProjectName,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
 } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import RemoteResourceSelector from "./RemoteResourceSelector.vue";
+import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
+import type {
+  ResourceSelectOption,
+  SelectSize,
+} from "./RemoteResourceSelector/types";
+import {
+  getRenderLabelFunc,
+  getRenderTagFunc,
+} from "./RemoteResourceSelector/utils";
 
 const props = withDefaults(
   defineProps<{
     disabled?: boolean;
-    projectName?: string | undefined | null; // UNKNOWN_PROJECT_NAME to "ALL"
-    projectNames?: string[] | undefined | null;
+    value?: string[] | string | undefined; // UNKNOWN_PROJECT_NAME to "ALL"
     allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     multiple?: boolean;
+    size?: SelectSize;
     renderSuffix?: (project: string) => string;
     filter?: (project: Project) => boolean;
   }>(),
   {
-    disabled: false,
-    projectName: undefined,
-    projectNames: undefined,
     allowedProjectRoleList: () => [],
-    includeAll: false,
-    includeDefaultProject: false,
-    multiple: false,
-    filter: () => true,
     renderSuffix: () => "",
   }
 );
 
 defineEmits<{
-  (event: "update:project-name", name: string | undefined): void;
-  (event: "update:project-names", names: string[]): void;
+  (event: "update:value", name: string[] | string | undefined): void;
 }>();
 
 const { t } = useI18n();
@@ -93,32 +91,37 @@ const filterProject = (project: Project) => {
   return true;
 };
 
-const additionalData = computedAsync(async () => {
-  const data = [];
+const getOption = (project: Project): ResourceSelectOption<Project> => ({
+  resource: project,
+  value: project.name,
+  label:
+    project.name === DEFAULT_PROJECT_NAME
+      ? t("common.unassigned")
+      : project.title,
+});
 
-  if (props.projectName === UNKNOWN_PROJECT_NAME || props.includeAll) {
+const additionalOptions = computedAsync(async () => {
+  const options: ResourceSelectOption<Project>[] = [];
+
+  let projectNames: string[] = [];
+  if (Array.isArray(props.value)) {
+    projectNames = props.value;
+  } else if (props.value) {
+    projectNames = [props.value];
+  }
+
+  if (projectNames.includes(UNKNOWN_PROJECT_NAME) || props.includeAll) {
     const dummyAll = {
       ...unknownProject(),
       title: t("project.all"),
     };
-    data.unshift(dummyAll);
+    options.unshift(getOption(dummyAll));
   }
 
-  let projectNames: string[] = [];
-  if (props.projectName) {
-    projectNames = [props.projectName];
-  } else if (props.projectNames) {
-    projectNames = props.projectNames;
-  }
+  const projects = await projectStore.batchGetProjects(projectNames);
+  options.push(...projects.map(getOption));
 
-  for (const projectName of projectNames) {
-    if (isValidProjectName(projectName)) {
-      const project = await projectStore.getOrFetchProjectByName(projectName);
-      data.push(project);
-    }
-  }
-
-  return data;
+  return options;
 }, []);
 
 const handleSearch = async (params: {
@@ -137,21 +140,11 @@ const handleSearch = async (params: {
 
   return {
     nextPageToken,
-    data: projects,
+    options: projects.map(getOption),
   };
 };
 
-const getOption = (project: Project) => ({
-  value: project.name,
-  label:
-    project.name === DEFAULT_PROJECT_NAME
-      ? t("common.unassigned")
-      : project.name === UNKNOWN_PROJECT_NAME
-        ? t("project.all")
-        : project.title,
-});
-
-const renderLabel = (project: Project, keyword: string) => {
+const customLabel = (project: Project, keyword: string) => {
   if (!project) return null;
   return (
     <ProjectNameCell
@@ -168,4 +161,21 @@ const renderLabel = (project: Project, keyword: string) => {
     </ProjectNameCell>
   );
 };
+
+const renderLabel = computed(() => {
+  return getRenderLabelFunc({
+    multiple: props.multiple,
+    customLabel,
+    showResourceName: true,
+  });
+});
+
+const renderTag = computed(() => {
+  return getRenderTagFunc({
+    multiple: props.multiple,
+    disabled: props.disabled,
+    size: props.size,
+    customLabel,
+  });
+});
 </script>

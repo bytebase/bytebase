@@ -1,5 +1,4 @@
 import AnnouncementLevelSelect from "./AnnouncementLevelSelect.vue";
-import DatabaseGroupSelect from "./DatabaseGroupSelect.vue";
 import DatabaseSelect from "./DatabaseSelect.vue";
 import EnvironmentSelect from "./EnvironmentSelect.vue";
 import GroupSelect from "./GroupSelect.vue";
@@ -12,7 +11,6 @@ export {
   AnnouncementLevelSelect,
   InstanceSelect,
   DatabaseSelect,
-  DatabaseGroupSelect,
   EnvironmentSelect,
   ProjectSelect,
   UserSelect,

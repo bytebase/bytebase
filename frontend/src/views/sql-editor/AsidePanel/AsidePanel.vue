@@ -19,12 +19,12 @@
           style="width: 100%"
           class="project-select"
           :menu-props="{ class: 'project-select-menu' }"
-          :project-name="project"
+          :value="project"
           :include-all="false"
           :clearable="false"
           :include-default-project="allowAccessDefaultProject"
           :loading="!projectContextReady"
-          @update:project-name="handleSwitchProject"
+          @update:value="handleSwitchProject($event as (string | undefined))"
         >
           <template #empty>
             <div class="text-sm text-control-placeholder flex flex-col gap-1">

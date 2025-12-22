@@ -19,11 +19,11 @@
             <EnvironmentSelect
               class="mt-3"
               required
-              :environment-names="environmentNames"
+              :value="environmentNames"
               :multiple="true"
               :render-suffix="getResourceAttachedConfigName"
-              @update:environment-names="
-                onResourcesChange($event, projectNames)
+              @update:value="
+                onResourcesChange($event as string[], projectNames)
               "
             />
           </div>
@@ -42,11 +42,11 @@
               class="mt-3"
               style="width: 100%"
               required
-              :project-names="projectNames"
+              :value="projectNames"
               :multiple="true"
               :render-suffix="getResourceAttachedConfigName"
-              @update:project-names="
-                onResourcesChange($event, environmentNames)
+              @update:value="
+                onResourcesChange($event as string[], environmentNames)
               "
             />
           </div>

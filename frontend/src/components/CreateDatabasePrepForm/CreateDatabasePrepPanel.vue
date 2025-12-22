@@ -4,7 +4,7 @@
     class="w-[40rem] max-w-[100vw]"
   >
     <div class="mx-auto flex flex-col gap-y-4">
-      <div v-if="!isValidProjectName(currentProject.name)" class="w-full">
+      <div class="w-full">
         <label for="project" class="textlabel">
           {{ $t("common.project") }}
           <RequiredStar />
@@ -12,7 +12,8 @@
         <ProjectSelect
           class="mt-1 w-full!"
           required
-          v-model:project-name="state.projectName"
+          :disabled="isValidProjectName(currentProject.name)"
+          v-model:value="state.projectName"
         />
       </div>
 
@@ -25,9 +26,9 @@
           name="instance"
           required
           :disabled="!allowEditInstance"
-          :instance-name="state.instanceName"
+          :value="state.instanceName"
           :allowed-engine-list="supportedEngines"
-          @update:instance-name="selectInstance"
+          @update:value="selectInstance"
         />
       </div>
 
@@ -84,7 +85,7 @@
           {{ $t("common.environment") }}
         </label>
         <EnvironmentSelect
-          v-model:environment-name="state.environmentName"
+          v-model:value="state.environmentName"
           class="mt-1"
           required
           name="environment"

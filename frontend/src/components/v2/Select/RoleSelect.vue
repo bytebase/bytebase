@@ -1,7 +1,7 @@
 <template>
   <NSelect
     v-bind="$attrs"
-    :value="value ? value : undefined"
+    :value="value"
     :multiple="multiple"
     :disabled="disabled"
     :clearable="clearable"
@@ -44,19 +44,15 @@ const props = withDefaults(
     multiple?: boolean;
     suffix?: string;
     includeWorkspaceRoles?: boolean;
-    size?: "tiny" | "small" | "medium" | "large";
     supportRoles?: string[];
   }>(),
   {
     clearable: true,
-    value: undefined,
-    multiple: false,
     includeWorkspaceRoles: true,
     suffix: () =>
       ` (${t("common.optional")}, ${t(
         "role.project-roles.apply-to-all-projects"
       ).toLocaleLowerCase()})`,
-    size: "medium",
     supportRoles: () => [],
   }
 );

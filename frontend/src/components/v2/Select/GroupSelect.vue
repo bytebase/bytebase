@@ -1,65 +1,70 @@
 <template>
   <RemoteResourceSelector
     v-bind="$attrs"
-    :value="group"
-    :values="groups"
+    :value="value"
     :disabled="disabled"
     :multiple="multiple"
-    :custom-label="renderLabel"
-    :additional-data="additionalData"
+    :size="size"
+    :render-label="renderLabel"
+    :render-tag="renderTag"
+    :additional-options="additionalOptions"
     :search="handleSearch"
-    :get-option="getOption"
-    @update:value="(val) => $emit('update:group', val)"
-    @update:values="(val) => $emit('update:groups', val)"
+    @update:value="(val) => $emit('update:value', val)"
   />
 </template>
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
+import { computed } from "vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { useGroupStore } from "@/store";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
-import RemoteResourceSelector from "./RemoteResourceSelector.vue";
+import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
+import type {
+  ResourceSelectOption,
+  SelectSize,
+} from "./RemoteResourceSelector/types";
+import {
+  getRenderLabelFunc,
+  getRenderTagFunc,
+} from "./RemoteResourceSelector/utils";
 
-const props = withDefaults(
-  defineProps<{
-    group?: string | undefined;
-    groups?: string[] | undefined;
-    disabled?: boolean;
-    multiple?: boolean;
-    projectName?: string;
-  }>(),
-  {
-    group: undefined,
-    groups: undefined,
-    multiple: false,
-    projectName: undefined,
-  }
-);
+const props = defineProps<{
+  value?: string[] | string | undefined;
+  disabled?: boolean;
+  multiple?: boolean;
+  projectName?: string;
+  size?: SelectSize;
+}>();
 
 defineEmits<{
-  (event: "update:group", val: string | undefined): void;
-  (event: "update:groups", val: string[]): void;
+  (event: "update:value", val: string[] | string | undefined): void;
 }>();
 
 const groupStore = useGroupStore();
 
-const additionalData = computedAsync(async () => {
-  const data = [];
+const getOption = (group: Group): ResourceSelectOption<Group> => ({
+  resource: group,
+  value: group.name,
+  label: group.title,
+});
+
+const additionalOptions = computedAsync(async () => {
+  const options: ResourceSelectOption<Group>[] = [];
 
   let groupNames: string[] = [];
-  if (props.group) {
-    groupNames = [props.group];
-  } else if (props.groups) {
-    groupNames = props.groups;
+  if (Array.isArray(props.value)) {
+    groupNames = props.value;
+  } else if (props.value) {
+    groupNames = [props.value];
   }
 
   const groups = await groupStore.batchFetchGroups(groupNames);
   for (const group of groups) {
-    data.push(group);
+    options.push(getOption(group));
   }
 
-  return data;
+  return options;
 }, []);
 
 const handleSearch = async (params: {
@@ -78,16 +83,11 @@ const handleSearch = async (params: {
 
   return {
     nextPageToken,
-    data: groups,
+    options: groups.map(getOption),
   };
 };
 
-const getOption = (group: Group) => ({
-  value: group.name,
-  label: group.title,
-});
-
-const renderLabel = (group: Group, keyword: string) => {
+const customLabel = (group: Group, keyword: string) => {
   return (
     <GroupNameCell
       showEmail={false}
@@ -98,4 +98,21 @@ const renderLabel = (group: Group, keyword: string) => {
     />
   );
 };
+
+const renderLabel = computed(() => {
+  return getRenderLabelFunc({
+    multiple: props.multiple,
+    customLabel,
+    showResourceName: true,
+  });
+});
+
+const renderTag = computed(() => {
+  return getRenderTagFunc({
+    multiple: props.multiple,
+    disabled: props.disabled,
+    size: props.size,
+    customLabel,
+  });
+});
 </script>
