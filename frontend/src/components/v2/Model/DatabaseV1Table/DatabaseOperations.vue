@@ -119,9 +119,11 @@ import { preCreateIssue } from "@/components/Plan/logic/issue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
@@ -304,6 +306,7 @@ const generateMultiDb = async (
     }
   }
 
+  const { enabledNewLayout } = useIssueLayoutVersion();
   const query: LocationQueryRaw = {
     template: type,
     name: generateIssueTitle(
@@ -312,18 +315,32 @@ const generateMultiDb = async (
     ),
     databaseList: props.databases.map((db) => db.name).join(","),
   };
-  // Use CI/CD UI for data export issues, legacy UI for others
+
   const isDataExport = type === "bb.issue.database.data.export";
-  router.push({
-    name: isDataExport
-      ? PROJECT_V1_ROUTE_PLAN_DETAIL
-      : PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(selectedProjectName.value),
-      [isDataExport ? "planId" : "issueSlug"]: "create",
-    },
-    query,
-  });
+  if (isDataExport || enabledNewLayout.value) {
+    // Use CI/CD UI for data export issues or when new layout is enabled
+    router.push({
+      name: isDataExport
+        ? PROJECT_V1_ROUTE_PLAN_DETAIL
+        : PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(selectedProjectName.value),
+        planId: "create",
+        ...(isDataExport ? {} : { specId: "placeholder" }),
+      },
+      query,
+    });
+  } else {
+    // Legacy UI for database update when new layout is disabled
+    router.push({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(selectedProjectName.value),
+        issueSlug: "create",
+      },
+      query,
+    });
+  }
 };
 
 const syncSchema = async () => {

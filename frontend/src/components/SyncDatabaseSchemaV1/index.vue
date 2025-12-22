@@ -85,8 +85,12 @@ import { useI18n } from "vue-i18n";
 import { type LocationQueryRaw, useRoute, useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { StepTab } from "@/components/v2";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useRouteChangeGuard } from "@/composables/useRouteChangeGuard";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+} from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import {
   useChangelogStore,
@@ -305,6 +309,7 @@ const tryFinishSetup = async () => {
     return;
   }
 
+  const { enabledNewLayout } = useIssueLayoutVersion();
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
   const query: LocationQueryRaw = {
     template: "bb.issue.database.update",
@@ -327,15 +332,26 @@ const tryFinishSetup = async () => {
     targetDatabaseList.map((db) => db.databaseName)
   );
 
-  const routeInfo = {
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(props.project.name),
-      issueSlug: "create",
-    },
-    query,
-  };
-  router.push(routeInfo);
+  if (enabledNewLayout.value) {
+    router.push({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(props.project.name),
+        planId: "create",
+        specId: "placeholder",
+      },
+      query,
+    });
+  } else {
+    router.push({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(props.project.name),
+        issueSlug: "create",
+      },
+      query,
+    });
+  }
 };
 
 const cancelSetup = () => {
