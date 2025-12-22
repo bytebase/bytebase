@@ -7,7 +7,7 @@
         </p>
         <EnvironmentSelect
           class="mt-1 max-w-md"
-          :environment-name="`${environmentNamePrefix}${environment.id}`"
+          :value="`${environmentNamePrefix}${environment.id}`"
           :disabled="!allowUpdateDatabase"
           :clearable="!database.instanceResource.environment"
           :render-suffix="
@@ -16,7 +16,7 @@
                 ? `(${$t('common.default')})`
                 : ''
           "
-          @update:environment-name="handleSelectEnvironment"
+          @update:value="handleSelectEnvironment($event as (string | undefined))"
         />
       </div>
     </div>

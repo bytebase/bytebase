@@ -1,20 +1,24 @@
 <template>
   <RemoteResourceSelector
     v-bind="$attrs"
-    :value="instanceName"
-    :custom-label="renderLabel"
+    :multiple="false"
+    :disabled="disabled"
+    :size="size"
+    :value="value"
+    :render-label="renderLabel"
+    :render-tag="renderTag"
     :consistent-menu-width="false"
     class="bb-instance-select"
-    :additional-data="additionalData"
+    :additional-options="additionalOptions"
     :search="handleSearch"
-    :get-option="getOption"
-    @update:value="(val) => $emit('update:instance-name', val)"
+    @update:value="(val) => $emit('update:value', val as (string | undefined))"
   />
 </template>
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
 import { ChevronRightIcon } from "lucide-vue-next";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import { useEnvironmentV1Store, useInstanceV1Store } from "@/store";
@@ -26,47 +30,59 @@ import {
 import { type Engine } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { supportedEngineV1List } from "@/utils";
-import RemoteResourceSelector from "./RemoteResourceSelector.vue";
+import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
+import type {
+  ResourceSelectOption,
+  SelectSize,
+} from "./RemoteResourceSelector/types";
+import {
+  getRenderLabelFunc,
+  getRenderTagFunc,
+} from "./RemoteResourceSelector/utils";
 
 const props = withDefaults(
   defineProps<{
-    instanceName?: string | undefined;
+    value?: string | undefined;
     environmentName?: string;
     projectName?: string;
     allowedEngineList?: Engine[];
+    disabled?: boolean;
+    size?: SelectSize;
   }>(),
   {
-    instanceName: undefined,
-    environmentName: undefined,
     allowedEngineList: () => supportedEngineV1List(),
   }
 );
 
 defineEmits<{
-  (event: "update:instance-name", value: string | undefined): void;
+  (event: "update:value", value: string | undefined): void;
 }>();
 
 const { t } = useI18n();
 const instanceStore = useInstanceV1Store();
 const environmentStore = useEnvironmentV1Store();
 
-const additionalData = computedAsync(async () => {
-  const data = [];
-  if (props.instanceName === UNKNOWN_INSTANCE_NAME) {
+const getOption = (instance: Instance): ResourceSelectOption<Instance> => ({
+  resource: instance,
+  value: instance.name,
+  label: instance.title,
+});
+
+const additionalOptions = computedAsync(async () => {
+  const options: ResourceSelectOption<Instance>[] = [];
+  if (props.value === UNKNOWN_INSTANCE_NAME) {
     const dummyAll = {
       ...unknownInstance(),
       title: t("instance.all"),
     };
-    data.push(dummyAll);
+    options.push(getOption(dummyAll));
   }
 
-  if (isValidInstanceName(props.instanceName)) {
-    const instance = await instanceStore.getOrFetchInstanceByName(
-      props.instanceName
-    );
-    data.push(instance);
+  if (isValidInstanceName(props.value)) {
+    const instance = await instanceStore.getOrFetchInstanceByName(props.value);
+    options.push(getOption(instance));
   }
-  return data;
+  return options;
 }, []);
 
 const handleSearch = async (params: {
@@ -87,11 +103,11 @@ const handleSearch = async (params: {
 
   return {
     nextPageToken,
-    data: instances,
+    options: instances.map(getOption),
   };
 };
 
-const renderLabel = (instance: Instance, keyword: string) => {
+const customLabel = (instance: Instance, keyword: string) => {
   const isUnknown = instance.name === UNKNOWN_INSTANCE_NAME;
   const environment = environmentStore.getEnvironmentByName(
     instance.environment ?? ""
@@ -117,9 +133,21 @@ const renderLabel = (instance: Instance, keyword: string) => {
   );
 };
 
-const getOption = (instance: Instance) => ({
-  value: instance.name,
-  label: instance.title,
+const renderLabel = computed(() => {
+  return getRenderLabelFunc({
+    multiple: false,
+    customLabel,
+    showResourceName: true,
+  });
+});
+
+const renderTag = computed(() => {
+  return getRenderTagFunc({
+    multiple: false,
+    disabled: props.disabled,
+    size: props.size,
+    customLabel,
+  });
 });
 </script>
 

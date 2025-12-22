@@ -58,13 +58,13 @@
                 class="w-full flex items-center gap-x-3"
               >
                 <UserSelect
-                  :user="extractUserId(member.member)"
+                  :value="extractUserId(member.member)"
                   :multiple="false"
                   :size="'medium'"
                   :include-all="false"
                   :disabled="!allowEdit"
                   :filter="(user) => userFilter(user, member.member)"
-                  @update:user="(email) => updateMemberEmail(i, email)"
+                  @update:value="($event) => updateMemberEmail(i, $event as (string | undefined))"
                 />
                 <GroupMemberRoleSelect
                   :value="member.role"

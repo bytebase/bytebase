@@ -1,54 +1,61 @@
 <template>
-  <LocalResourceSelector
+  <NSelect
     v-bind="$attrs"
+    :filterable="true"
+    :virtual-scroll="true"
     :placeholder="t('environment.select')"
     :multiple="multiple"
-    :value="environmentName"
-    :values="environmentNames"
+    :disabled="disabled"
+    :size="size"
+    :value="value"
     :options="options"
-    :custom-label="renderLabel"
+    :render-label="renderLabel"
+    :render-tag="renderTag"
+    :filter="filterEnvironment"
+    :consistent-menu-width="true"
     class="bb-environment-select"
-    @update:value="(val) => $emit('update:environment-name', val)"
-    @update:values="(val) => $emit('update:environment-names', val)"
+    @update:value="(val) => $emit('update:value', val)"
   />
 </template>
 
 <script lang="tsx" setup>
+import type { SelectOption } from "naive-ui";
+import { NSelect } from "naive-ui";
 import { computed, type VNodeChild } from "vue";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentV1Store } from "@/store";
 import { formatEnvironmentName } from "@/types";
 import type { Environment } from "@/types/v1/environment";
 import { EnvironmentV1Name } from "../Model";
-import LocalResourceSelector from "./LocalResourceSelector.vue";
+import type { SelectSize } from "./RemoteResourceSelector/types";
+import {
+  getRenderLabelFunc,
+  getRenderTagFunc,
+} from "./RemoteResourceSelector/utils";
 
 const { t } = useI18n();
 
 const props = withDefaults(
   defineProps<{
-    environmentName?: string | undefined;
-    environmentNames?: string[] | undefined;
+    value?: string[] | string | undefined;
     includeArchived?: boolean;
     showProductionIcon?: boolean;
     multiple?: boolean;
-    filter?: (environment: Environment, index: number) => boolean;
+    disabled?: boolean;
+    size?: SelectSize;
+    filter?: (environment: Environment) => boolean;
     renderSuffix?: (environment: string) => VNodeChild;
   }>(),
   {
-    environmentName: undefined,
-    environmentNames: undefined,
-    includeArchived: false,
     showProductionIcon: true,
-    multiple: false,
-    filter: () => true,
     renderSuffix: () => null,
   }
 );
 
 defineEmits<{
-  (event: "update:environment-name", name: string | undefined): void;
-  (event: "update:environment-names", names: string[]): void;
+  (event: "update:value", name: string[] | string | undefined): void;
 }>();
+
 const environmentV1Store = useEnvironmentV1Store();
 
 const rawEnvironmentList = computed(() => {
@@ -68,17 +75,13 @@ const combinedEnvironmentList = computed(() => {
 const options = computed(() => {
   return combinedEnvironmentList.value.map((environment) => {
     return {
-      resource: {
-        ...environment,
-        name: formatEnvironmentName(environment.id),
-      },
       value: formatEnvironmentName(environment.id),
       label: environment.title,
     };
   });
 });
 
-const renderLabel = (environment: Environment) => {
+const customLabel = (environment: Environment) => {
   return (
     <div class="flex items-center gap-x-2">
       <EnvironmentV1Name
@@ -88,6 +91,31 @@ const renderLabel = (environment: Environment) => {
       />
       {props.renderSuffix(environment.name)}
     </div>
+  );
+};
+
+const renderLabel = (option: SelectOption, selected: boolean) =>
+  getRenderLabelFunc({
+    multiple: props.multiple,
+    customLabel,
+    showResourceName: true,
+  })(option, selected, "");
+
+const renderTag = computed(() => {
+  return getRenderTagFunc({
+    multiple: props.multiple,
+    disabled: props.disabled,
+    size: props.size,
+    customLabel,
+  });
+});
+
+const filterEnvironment = (pattern: string, option: SelectOption) => {
+  const { value, label } = option;
+  const search = pattern.trim().toLowerCase();
+  return (
+    (value as string).toLowerCase().includes(search) ||
+    (label as string).toLowerCase().includes(search)
   );
 };
 </script>

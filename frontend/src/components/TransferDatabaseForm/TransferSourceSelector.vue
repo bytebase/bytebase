@@ -21,17 +21,17 @@
       <NInputGroup style="width: auto">
         <EnvironmentSelect
           class="w-40!"
-          :environment-name="
+          :value="
             environment ? formatEnvironmentName(environment.id) : undefined
           "
-          @update:environment-name="changeEnvironmentFilter"
+          @update:value="changeEnvironmentFilter($event as (string | undefined))"
         />
         <InstanceSelect
           class="w-40!"
           :project-name="sourceProjectName"
-          :instance-name="instance?.name ?? ''"
+          :value="instance?.name ?? ''"
           :environment-name="environment?.name"
-          @update:instance-name="changeInstanceFilter"
+          @update:value="changeInstanceFilter"
         />
         <SearchBox
           class="w-40!"
@@ -85,6 +85,7 @@ const emit = defineEmits<{
 }>();
 
 const changeEnvironmentFilter = (name: string | undefined) => {
+  emit("update:instance", undefined);
   if (!isValidEnvironmentName(name)) {
     return emit("update:environment", undefined);
   }
@@ -92,7 +93,6 @@ const changeEnvironmentFilter = (name: string | undefined) => {
     "update:environment",
     useEnvironmentV1Store().getEnvironmentByName(name)
   );
-  emit("update:instance", undefined);
 };
 
 const changeInstanceFilter = (name: string | undefined) => {

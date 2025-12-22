@@ -93,7 +93,7 @@
           <EnvironmentSelect
             class="mt-1 w-full"
             required="true"
-            :environment-name="
+            :value="
               isValidEnvironmentName(
                 `${environmentNamePrefix}${environment.id}`
               )
@@ -101,7 +101,7 @@
                 : undefined
             "
             :disabled="!allowEdit"
-            @update:environment-name="handleSelectEnvironment"
+            @update:value="handleSelectEnvironment($event as (string | undefined))"
           />
         </div>
 
