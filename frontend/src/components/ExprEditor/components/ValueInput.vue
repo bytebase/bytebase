@@ -14,9 +14,9 @@
   <template v-if="inputType === 'SINGLE-SELECT'">
     <SingleSelect
       v-if="isNumberValue"
-      :value="getNumberValue()"
+      :value="`${getNumberValue()}`"
       :expr="expr"
-      @update:value="setNumberValue($event as number)"
+      @update:value="setNumberValue(Number($event))"
     />
     <SingleSelect
       v-if="isStringValue"
@@ -27,7 +27,7 @@
   </template>
   <template v-if="inputType === 'MULTI-SELECT'">
     <MultiSelect
-      :value="getArrayValue()"
+      :value="getStringArrayValue()"
       :expr="expr"
       @update:value="setArrayValue($event)"
     />
@@ -97,7 +97,7 @@ const isArrayValue = computed(() => {
 const inputType = computed((): InputType => {
   const optionConfig = optionConfigMap.value.get(factor.value);
   const hasOption =
-    (optionConfig?.options.length ?? 0 > 0) || optionConfig?.remote;
+    (optionConfig?.options.length ?? 0 > 0) || optionConfig?.search;
 
   if (isArrayValue.value) {
     return hasOption ? "MULTI-SELECT" : "MULTI-INPUT";

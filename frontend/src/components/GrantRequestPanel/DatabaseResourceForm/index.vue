@@ -59,7 +59,6 @@
 import { cloneDeep, head } from "lodash-es";
 import { NRadio, NRadioGroup, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { getDatabasFullNameOptions } from "@/components/CustomApproval/Settings/components/common";
 import ExprEditor from "@/components/ExprEditor";
 import { type OptionConfig } from "@/components/ExprEditor/context";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
@@ -71,12 +70,12 @@ import {
   validateSimpleExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
-import { hasFeature, useDatabaseV1Store, useProjectByName } from "@/store";
-import type { DatabaseResource } from "@/types";
+import { hasFeature, useProjectByName } from "@/store";
+import { type DatabaseResource } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   batchConvertCELStringToParsedExpr,
-  getDefaultPagination,
+  getDatabaseNameOptionConfig,
 } from "@/utils";
 import {
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
@@ -205,7 +204,6 @@ watch(
 
 const { project } = useProjectByName(computed(() => props.projectName));
 const hasRequiredFeature = computed(() => hasFeature(props.requiredFeature));
-const dbStore = useDatabaseV1Store();
 
 const factorList = computed((): Factor[] => {
   const list: Factor[] = [
@@ -230,25 +228,10 @@ const factorOptionConfigMap = computed((): Map<Factor, OptionConfig> => {
   return factorList.value.reduce((map, factor) => {
     if (factor !== CEL_ATTRIBUTE_RESOURCE_DATABASE) {
       map.set(factor, {
-        remote: false,
         options: [],
       });
     } else {
-      map.set(factor, {
-        remote: true,
-        options: [],
-        search: async (keyword: string) => {
-          return dbStore
-            .fetchDatabases({
-              pageSize: getDefaultPagination(),
-              parent: props.projectName,
-              filter: {
-                query: keyword,
-              },
-            })
-            .then((resp) => getDatabasFullNameOptions(resp.databases));
-        },
-      });
+      map.set(factor, getDatabaseNameOptionConfig(props.projectName));
     }
     return map;
   }, new Map<Factor, OptionConfig>());
