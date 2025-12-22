@@ -20,9 +20,8 @@ import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import { type UserFilter, useUserStore } from "@/store";
-import { allUsersUser, isValidUserName } from "@/types";
+import { allUsersUser } from "@/types";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
-import { ensureUserFullName } from "@/utils";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
 import type {
   ResourceSelectOption,
