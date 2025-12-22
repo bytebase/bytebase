@@ -1,4 +1,5 @@
 import { useLocalStorage } from "@vueuse/core";
+import type { WritableComputedRef } from "vue";
 import { type Composer, createI18n } from "vue-i18n";
 import { mergedLocalMessage } from "./i18n-messages";
 
@@ -58,7 +59,7 @@ const i18n = createI18n({
   legacy: false,
   locale: getValidLocale(),
   globalInjection: true,
-  messages: mergedLocalMessage,
+  messages: mergedLocalMessage as Record<string, Record<string, string>>,
   fallbackLocale: "en-US",
 });
 
@@ -66,6 +67,6 @@ export const t = i18n.global.t as Composer["t"];
 
 export const te = i18n.global.te as Composer["te"];
 
-export const locale = i18n.global.locale;
+export const locale = i18n.global.locale as WritableComputedRef<string>;
 
 export default i18n;

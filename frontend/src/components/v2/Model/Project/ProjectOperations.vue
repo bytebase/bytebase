@@ -175,11 +175,12 @@ const handleBatchArchive = async () => {
     state.force = false;
     emit("update");
   } catch (error: unknown) {
+    const err = error as { message?: string };
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: t("project.batch.archive.error"),
-      description: error.message,
+      description: err.message,
     });
   } finally {
     state.loading = false;

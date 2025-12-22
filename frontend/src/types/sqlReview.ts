@@ -164,7 +164,7 @@ const convertRuleTemplateV2Raw = (
 };
 
 export const ruleTemplateMapV2 = getRuleMapByEngine(
-  convertRuleTemplateV2Raw(sqlReviewSchema as RuleTemplateV2Raw[])
+  convertRuleTemplateV2Raw(sqlReviewSchema as unknown as RuleTemplateV2Raw[])
 );
 
 // Build the frontend template list based on schema and template.
@@ -223,14 +223,15 @@ export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
         level,
         // Using template rule payload to override the component list.
         componentList: ruleTemplate.componentList.map((component) => {
-          if (rule.payload && rule.payload[component.key]) {
+          if (rule.payload && rule.payload[component.key] !== undefined) {
+            const payloadValue = rule.payload[component.key];
             return {
               ...component,
               payload: {
                 ...component.payload,
-                default: rule.payload[component.key],
+                default: payloadValue,
               },
-            };
+            } as RuleConfigComponent;
           }
           return component;
         }),

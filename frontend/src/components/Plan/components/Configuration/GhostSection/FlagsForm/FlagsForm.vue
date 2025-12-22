@@ -62,21 +62,21 @@ const emit = defineEmits<{
   (event: "update:flags", flags: Record<string, string>): void;
 }>();
 
-const getBoolValue = (param: GhostParameter<"bool">) => {
+const getBoolValue = (param: GhostParameter) => {
   const { key, defaults: value } = param;
   if (props.flags[key] === "true") return true;
   if (props.flags[key] === "false") return false;
   return value === "true";
 };
-const getStringValue = (param: GhostParameter<"string">) => {
+const getStringValue = (param: GhostParameter) => {
   return props.flags[param.key] ?? "";
 };
-const getIntValue = (param: GhostParameter<"int">) => {
+const getIntValue = (param: GhostParameter) => {
   const intVal = parseInt(props.flags[param.key], 10);
   if (Number.isNaN(intVal)) return undefined;
   return String(intVal);
 };
-const getFloatValue = (param: GhostParameter<"float">) => {
+const getFloatValue = (param: GhostParameter) => {
   return props.flags[param.key];
 };
 
@@ -89,7 +89,7 @@ const setBoolValue = (param: GhostParameter, value: boolean) => {
   }
   emit("update:flags", updated);
 };
-const setStringValue = (param: GhostParameter<"string">, value: string) => {
+const setStringValue = (param: GhostParameter, value: string) => {
   const updated = { ...props.flags };
   const { key } = param;
   value = value.trim();
@@ -100,7 +100,7 @@ const setStringValue = (param: GhostParameter<"string">, value: string) => {
   }
   emit("update:flags", updated);
 };
-const setIntValue = (param: GhostParameter<"int">, value: number) => {
+const setIntValue = (param: GhostParameter, value: number) => {
   const updated = { ...props.flags };
   const { key } = param;
   if (!Number.isNaN(value)) {
@@ -110,7 +110,7 @@ const setIntValue = (param: GhostParameter<"int">, value: number) => {
   }
   emit("update:flags", updated);
 };
-const setFloatValue = (param: GhostParameter<"float">, value: string) => {
+const setFloatValue = (param: GhostParameter, value: string) => {
   const updated = { ...props.flags };
   const { key } = param;
   value = value.trim();

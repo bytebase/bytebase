@@ -21,7 +21,7 @@
               class="grid-cols-3 gap-2"
               @update:value="onMaskingTypeChange($event as MaskingType)"
             >
-              <template #item="{ option }: RadioGridItem<MaskingType>">
+              <template #item="{ option }">
                 {{ option.label }}
               </template>
             </RadioGrid>
@@ -308,7 +308,7 @@ import {
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import RequiredStar from "@/components/RequiredStar.vue";
-import type { RadioGridItem, RadioGridOption } from "@/components/v2";
+import type { RadioGridOption } from "@/components/v2";
 import {
   Drawer,
   DrawerContent,

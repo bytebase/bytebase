@@ -1,6 +1,8 @@
+import { create } from "@bufbuild/protobuf";
 import {
   PlanFeature,
   type PlanLimitConfig,
+  PlanLimitConfigSchema,
   PlanType,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import planData from "./plan.yaml";
@@ -13,12 +15,20 @@ interface PlanYamlData {
   features: (keyof typeof PlanFeature)[];
 }
 
+interface PlanDataYaml {
+  plans: PlanYamlData[];
+  instanceFeatures: string[];
+}
+
+const typedPlanData = planData as unknown as PlanDataYaml;
+
 // Convert YAML data to proper types
-export const PLANS: PlanLimitConfig[] = (planData.plans as PlanYamlData[]).map(
-  (plan) => ({
-    ...plan,
+export const PLANS: PlanLimitConfig[] = typedPlanData.plans.map((plan) =>
+  create(PlanLimitConfigSchema, {
     type: PlanType[plan.type],
     features: plan.features.map((f) => PlanFeature[f]),
+    maximumInstanceCount: plan.maximumInstanceCount,
+    maximumSeatCount: plan.maximumSeatCount,
   })
 );
 
@@ -31,7 +41,7 @@ export const instanceLimitFeature = new Set<PlanFeature>();
 PLANS.forEach((plan) => {
   planFeatureMatrix.set(plan.type, new Set(plan.features));
 });
-planData.instanceFeatures.forEach((feature: string) => {
+typedPlanData.instanceFeatures.forEach((feature) => {
   instanceLimitFeature.add(PlanFeature[feature as keyof typeof PlanFeature]);
 });
 

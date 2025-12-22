@@ -17,7 +17,7 @@ export const extractInitialSQLFromQuery = async (
   }
   const sqlStorageKey = query.sqlStorageKey;
   if (sqlStorageKey && typeof sqlStorageKey === "string") {
-    const sql = (await storageStore.get(sqlStorageKey)) || "";
+    const sql = (await storageStore.get<string>(sqlStorageKey)) || "";
     return {
       sql,
     };

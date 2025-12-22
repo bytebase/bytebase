@@ -40,7 +40,7 @@
               {{ column.name }}
               <MaskingReasonPopover
                 v-if="getMaskingReason && getMaskingReason(columnIndex)"
-                :reason="getMaskingReason(columnIndex)"
+                :reason="getMaskingReason(columnIndex)!"
                 class="ml-0.5 shrink-0"
               />
               <SensitiveDataIcon

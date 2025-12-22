@@ -22,11 +22,20 @@ interface SchemaRule {
   componentList?: unknown[];
 }
 
+// Type for template data loaded from YAML
+interface TemplateData {
+  id: string;
+  ruleList: TemplateRule[];
+}
+
 describe("SQL Review YAML Templates Validation", () => {
-  const templates = [
-    { name: "sample", data: sqlReviewSampleTemplate },
-    { name: "dev", data: sqlReviewDevTemplate },
-    { name: "prod", data: sqlReviewProdTemplate },
+  const templates: { name: string; data: TemplateData }[] = [
+    {
+      name: "sample",
+      data: sqlReviewSampleTemplate as unknown as TemplateData,
+    },
+    { name: "dev", data: sqlReviewDevTemplate as unknown as TemplateData },
+    { name: "prod", data: sqlReviewProdTemplate as unknown as TemplateData },
   ];
 
   templates.forEach(({ name, data }) => {
@@ -107,13 +116,15 @@ describe("SQL Review YAML Templates Validation", () => {
   });
 
   describe("Schema validation", () => {
+    const schemaRules = sqlReviewSchema as unknown as SchemaRule[];
+
     test("should be an array", () => {
-      expect(Array.isArray(sqlReviewSchema)).toBe(true);
-      expect(sqlReviewSchema.length).toBeGreaterThan(0);
+      expect(Array.isArray(schemaRules)).toBe(true);
+      expect(schemaRules.length).toBeGreaterThan(0);
     });
 
     test("schema rules should NOT have level field", () => {
-      (sqlReviewSchema as SchemaRule[]).forEach((rule, index) => {
+      schemaRules.forEach((rule, index) => {
         const ruleDesc = `schema rule[${index}] (${rule.type || "unknown"})`;
 
         // Schema rules are just definitions, they should not have a level
@@ -125,7 +136,7 @@ describe("SQL Review YAML Templates Validation", () => {
     });
 
     test("schema rules must have required fields", () => {
-      (sqlReviewSchema as SchemaRule[]).forEach((rule, index) => {
+      schemaRules.forEach((rule, index) => {
         const ruleDesc = `schema rule[${index}] (${rule.type || "unknown"})`;
 
         // Type is required
@@ -153,14 +164,14 @@ describe("SQL Review YAML Templates Validation", () => {
   describe("Cross-template consistency", () => {
     test("report template rules that don't exist in schema", () => {
       const schemaRuleTypes = new Set(
-        (sqlReviewSchema as SchemaRule[]).map(
+        (sqlReviewSchema as unknown as SchemaRule[]).map(
           (rule) => `${rule.engine}:${rule.type}`
         )
       );
 
       const missingRules: string[] = [];
       templates.forEach(({ name, data }) => {
-        (data.ruleList as TemplateRule[]).forEach((rule) => {
+        data.ruleList.forEach((rule) => {
           const ruleKey = `${rule.engine}:${rule.type}`;
           if (!schemaRuleTypes.has(ruleKey)) {
             missingRules.push(`${name}: ${ruleKey}`);
