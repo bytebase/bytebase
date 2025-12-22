@@ -1105,6 +1105,7 @@
     "task-summary-tooltip": "{failed} tác vụ thất bại | {failed} tác vụ thất bại",
     "data-export": {
       "options": "Tùy chọn",
+      "limits": "Giới hạn",
       "format": "Định dạng",
       "download-tooltip": "Có sẵn trong 24 giờ",
       "file-expired": "Tệp đã hết hạn"

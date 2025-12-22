@@ -1105,6 +1105,7 @@
     "task-summary-tooltip": "{failed} 個のタスクが失敗しました",
     "data-export": {
       "options": "設定項目",
+      "limits": "制限",
       "format": "エクスポート形式",
       "download-tooltip": "24 時間利用可能",
       "file-expired": "ファイルの有効期限が切れました"
