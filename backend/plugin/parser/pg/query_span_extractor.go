@@ -2610,6 +2610,8 @@ func (q *querySpanExtractor) handleTargetLabel(labelCtx *postgresql.Target_label
 		targetAlias := labelCtx.Target_alias()
 		if targetAlias.Collabel() != nil {
 			columnName = normalizePostgreSQLCollabel(targetAlias.Collabel())
+		} else if targetAlias.Identifier() != nil {
+			columnName = normalizePostgreSQLIdentifier(targetAlias.Identifier())
 		}
 	}
 
