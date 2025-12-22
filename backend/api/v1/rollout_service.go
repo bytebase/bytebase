@@ -73,11 +73,6 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
 	}
 
-	// Validate plan specs
-	if _, err := validateSpecs(ctx, s.store, projectID, request.Plan.Specs); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
-	}
-
 	specs := convertPlanSpecs(request.Plan.Specs)
 
 	rollout, err := GetPipelineCreate(ctx, s.store, s.dbFactory, specs, nil /* snapshot */, project)
