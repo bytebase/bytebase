@@ -296,6 +296,16 @@ func normalizePostgreSQLCollabel(ctx parser.ICollabelContext) string {
 	return strings.ToLower(ctx.GetText())
 }
 
+func normalizePostgreSQLBareColLabel(ctx parser.IBare_col_labelContext) string {
+	if ctx == nil {
+		return ""
+	}
+	if ctx.Identifier() != nil {
+		return normalizePostgreSQLIdentifier(ctx.Identifier())
+	}
+	return strings.ToLower(ctx.GetText())
+}
+
 // NormalizePostgreSQLColid normalizes the given colid.
 func NormalizePostgreSQLColid(ctx parser.IColidContext) string {
 	if ctx == nil {

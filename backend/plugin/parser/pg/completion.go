@@ -873,8 +873,8 @@ type TargetAliasListener struct {
 }
 
 func (l *TargetAliasListener) EnterTarget_alias(ctx *pg.Target_aliasContext) {
-	if ctx.Identifier() != nil {
-		l.result = normalizePostgreSQLIdentifier(ctx.Identifier())
+	if ctx.Bare_col_label() != nil {
+		l.result = normalizePostgreSQLBareColLabel(ctx.Bare_col_label())
 	} else if ctx.Collabel() != nil {
 		l.result = normalizePostgreSQLCollabel(ctx.Collabel())
 	}
