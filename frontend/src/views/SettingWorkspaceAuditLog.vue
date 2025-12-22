@@ -152,7 +152,7 @@ const handleExport = async ({
   reject,
 }: {
   options: ExportOption;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
   resolve: (content: DownloadContent[]) => void;
 }) => {
   let pageToken = "";

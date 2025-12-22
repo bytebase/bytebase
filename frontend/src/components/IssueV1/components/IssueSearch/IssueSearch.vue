@@ -59,7 +59,7 @@ const props = withDefaults(
     overrideScopeIdList?: SearchScopeId[];
     autofocus?: boolean;
     components?: SearchComponent[];
-    componentProps?: Partial<Record<SearchComponent, any>>;
+    componentProps?: Partial<Record<SearchComponent, Record<string, unknown>>>;
     defaultParams?: SearchParams;
   }>(),
   {

@@ -347,7 +347,7 @@ const doUpdate = async () => {
   // 2. Update the admin datasource.
   // 3. Create OR update read-only data source(s).
 
-  const pendingRequestRunners: (() => Promise<any>)[] = [];
+  const pendingRequestRunners: (() => Promise<unknown>)[] = [];
 
   const maybeQueueUpdateInstanceBasicInfo = () => {
     const currentLabels = convertKVListToLabels(labelKVList.value, false);

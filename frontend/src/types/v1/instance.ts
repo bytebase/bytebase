@@ -34,7 +34,7 @@ export const unknownInstanceResource = (): InstanceResource => {
   });
 };
 
-export const isValidInstanceName = (name: any): name is string => {
+export const isValidInstanceName = (name: unknown): name is string => {
   return (
     typeof name === "string" &&
     name.startsWith("instances/") &&

@@ -276,7 +276,7 @@ const handleExportBtnClick = async ({
   resolve,
 }: {
   options: ExportOption;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
   resolve: (content: DownloadContent[]) => void;
 }) => {
   const contents: DownloadContent[] = [];

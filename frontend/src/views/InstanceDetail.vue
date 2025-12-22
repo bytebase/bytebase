@@ -145,8 +145,8 @@ import {
 
 const instanceHashList = ["overview", "databases", "users"] as const;
 export type InstanceHash = (typeof instanceHashList)[number];
-const isInstanceHash = (x: any): x is InstanceHash =>
-  instanceHashList.includes(x);
+const isInstanceHash = (x: unknown): x is InstanceHash =>
+  instanceHashList.includes(x as InstanceHash);
 
 interface LocalState {
   showCreateDatabaseModal: boolean;

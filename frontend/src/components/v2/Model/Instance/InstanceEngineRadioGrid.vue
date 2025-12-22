@@ -4,10 +4,10 @@
     :options="options"
     @update:value="$emit('update:engine', $event as Engine)"
   >
-    <template #item="{ option }: RadioGridItem<Engine>">
+    <template #item="{ option }">
       <div class="flex flex-row items-center gap-x-1">
         <RichEngineName
-          :engine="option.value"
+          :engine="option.value as Engine"
           tag="p"
           class="text-center text-sm text-main!"
         />
@@ -19,11 +19,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import {
-  RadioGrid,
-  type RadioGridItem,
-  type RadioGridOption,
-} from "@/components/v2";
+import { RadioGrid, type RadioGridOption } from "@/components/v2";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 import { engineNameV1 } from "@/utils";
 import RichEngineName from "./RichEngineName.vue";

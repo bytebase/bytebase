@@ -306,7 +306,7 @@ defineEmits<{
     event: "export",
     option: {
       resolve: (content: DownloadContent[]) => void;
-      reject: (reason?: any) => void;
+      reject: (reason?: unknown) => void;
       options: ExportOption;
       statement: string;
     }

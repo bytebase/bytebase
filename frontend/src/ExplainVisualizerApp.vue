@@ -45,7 +45,11 @@ import { readExplainFromToken } from "@/utils/pev2";
 declare global {
   interface Window {
     QP: {
-      showPlan: (container: Element, planXml: string, options?: any) => void;
+      showPlan: (
+        container: Element,
+        planXml: string,
+        options?: Record<string, unknown>
+      ) => void;
     };
   }
 }

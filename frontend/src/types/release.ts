@@ -13,7 +13,7 @@ export const unknownRelease = (): Release => {
   });
 };
 
-export const isValidReleaseName = (name: any): name is string => {
+export const isValidReleaseName = (name: unknown): name is string => {
   if (typeof name !== "string") return false;
   const [projectName, releaseName] = getProjectNameReleaseId(name);
   return Boolean(

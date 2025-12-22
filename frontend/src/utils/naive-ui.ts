@@ -57,12 +57,14 @@ export const useAutoHeightDataTable = (
   const layoutReady = computed(() => tableHeaderHeight.value > 0);
 
   const virtualListRef = computed(() => {
-    return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
+    // biome-ignore lint/suspicious/noExplicitAny: accessing internal naive-ui refs
+    return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef // eslint-disable-line @typescript-eslint/no-explicit-any
       ?.virtualListRef as VirtualListInst | undefined;
   });
 
   const scrollerRef = computed(() => {
-    const getter = (dataTableRef.value as any)?.$refs.mainTableInstRef.$refs
+    // biome-ignore lint/suspicious/noExplicitAny: accessing internal naive-ui refs
+    const getter = (dataTableRef.value as any)?.$refs.mainTableInstRef.$refs // eslint-disable-line @typescript-eslint/no-explicit-any
       .bodyInstRef.virtualListContainer;
     if (typeof getter === "function") {
       return getter() as HTMLElement | undefined;

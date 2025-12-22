@@ -55,103 +55,99 @@ export const useDropdown = () => {
       return [];
     }
     const { type, target } = node.meta;
-    if (type === "project") {
+    // Don't show any context menu actions for disabled
+    // instances/databases
+    if (node.disabled) {
       return [];
-    } else {
-      // Don't show any context menu actions for disabled
-      // instances/databases
-      if (node.disabled) {
-        return [];
-      }
+    }
 
-      const items: DropdownOptionWithTreeNode[] = [];
+    const items: DropdownOptionWithTreeNode[] = [];
 
-      if (isConnectableSQLEditorTreeNode(node)) {
-        const database = node.meta.target as ComposedDatabase;
-        const instance = instanceOfSQLEditorTreeNode(node);
-        if (instance && instanceV1HasReadonlyMode(instance)) {
-          items.push({
-            key: "connect",
-            label: t("sql-editor.connect"),
-            icon: () => <LinkIcon class="w-4 h-4" />,
-            onSelect: () => {
-              setConnection({
-                database,
-                context: editorContext,
-                newTab: false,
-              });
-              showConnectionPanel.value = false;
-            },
-          });
-          items.push({
-            key: "connect-in-new-tab",
-            label: t("sql-editor.connect-in-new-tab"),
-            icon: () => <LinkIcon class="w-4 h-4" />,
-            onSelect: () => {
-              setConnection({
-                database,
-                newTab: true,
-                context: editorContext,
-              });
-              showConnectionPanel.value = false;
-            },
-          });
-        }
-        if (allowAdmin.value) {
-          items.push({
-            key: "connect-in-admin-mode",
-            label: t("sql-editor.connect-in-admin-mode"),
-            icon: () => <WrenchIcon class="w-4 h-4" />,
-            onSelect: () => {
-              setConnection({
-                database,
-                mode: "ADMIN",
-                context: editorContext,
-                newTab: false,
-              });
-              showConnectionPanel.value = false;
-            },
-          });
-        }
-      }
-      if (type === "database") {
-        const database = target as ComposedDatabase;
+    if (isConnectableSQLEditorTreeNode(node)) {
+      const database = node.meta.target as ComposedDatabase;
+      const instance = instanceOfSQLEditorTreeNode(node);
+      if (instance && instanceV1HasReadonlyMode(instance)) {
         items.push({
-          key: "view-database-detail",
-          label: t("sql-editor.view-database-detail"),
-          icon: () => <ExternalLinkIcon class="w-4 h-4" />,
+          key: "connect",
+          label: t("sql-editor.connect"),
+          icon: () => <LinkIcon class="w-4 h-4" />,
           onSelect: () => {
-            const route = router.resolve({
-              name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-              params: {
-                projectId: extractProjectResourceName(database.project),
-                instanceId: extractInstanceResourceName(database.instance),
-                databaseName: database.databaseName,
-              },
+            setConnection({
+              database,
+              context: editorContext,
+              newTab: false,
             });
-            const url = route.href;
-            window.open(url, "_blank");
+            showConnectionPanel.value = false;
           },
         });
-        if (instanceV1HasAlterSchema(database.instanceResource)) {
-          items.push({
-            key: "alter-schema",
-            label: t("database.edit-schema"),
-            icon: () => <SquarePenIcon class="w-4 h-4" />,
-            onSelect: () => {
-              const db = node.meta.target as ComposedDatabase;
-              editorEvents.emit("alter-schema", {
-                databaseName: db.name,
-                schema: "",
-                table: "",
-              });
-              showConnectionPanel.value = false;
+        items.push({
+          key: "connect-in-new-tab",
+          label: t("sql-editor.connect-in-new-tab"),
+          icon: () => <LinkIcon class="w-4 h-4" />,
+          onSelect: () => {
+            setConnection({
+              database,
+              newTab: true,
+              context: editorContext,
+            });
+            showConnectionPanel.value = false;
+          },
+        });
+      }
+      if (allowAdmin.value) {
+        items.push({
+          key: "connect-in-admin-mode",
+          label: t("sql-editor.connect-in-admin-mode"),
+          icon: () => <WrenchIcon class="w-4 h-4" />,
+          onSelect: () => {
+            setConnection({
+              database,
+              mode: "ADMIN",
+              context: editorContext,
+              newTab: false,
+            });
+            showConnectionPanel.value = false;
+          },
+        });
+      }
+    }
+    if (type === "database") {
+      const database = target as ComposedDatabase;
+      items.push({
+        key: "view-database-detail",
+        label: t("sql-editor.view-database-detail"),
+        icon: () => <ExternalLinkIcon class="w-4 h-4" />,
+        onSelect: () => {
+          const route = router.resolve({
+            name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+            params: {
+              projectId: extractProjectResourceName(database.project),
+              instanceId: extractInstanceResourceName(database.instance),
+              databaseName: database.databaseName,
             },
           });
-        }
+          const url = route.href;
+          window.open(url, "_blank");
+        },
+      });
+      if (instanceV1HasAlterSchema(database.instanceResource)) {
+        items.push({
+          key: "alter-schema",
+          label: t("database.edit-schema"),
+          icon: () => <SquarePenIcon class="w-4 h-4" />,
+          onSelect: () => {
+            const db = node.meta.target as ComposedDatabase;
+            editorEvents.emit("alter-schema", {
+              databaseName: db.name,
+              schema: "",
+              table: "",
+            });
+            showConnectionPanel.value = false;
+          },
+        });
       }
-      return items;
     }
+    return items;
   });
 
   const handleSelect = (key: string) => {

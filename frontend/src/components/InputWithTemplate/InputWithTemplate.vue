@@ -22,7 +22,7 @@
         <div
           v-for="(data, i) in state.templateInputs"
           :key="i"
-          :ref="(el: any) => (itemRefs[i] = el)"
+          :ref="(el) => (itemRefs[i] = el as HTMLElement)"
         >
           <BBBadge
             v-if="data.type == 'template'"

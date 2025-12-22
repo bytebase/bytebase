@@ -16,6 +16,7 @@
 </template>
 
 <script lang="tsx" setup>
+import type { Timestamp as TimestampProto } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { last } from "lodash-es";
 import { CalendarClockIcon } from "lucide-vue-next";
@@ -165,7 +166,7 @@ const getLatestTaskRun = (task: Task) => {
 };
 
 // Format full datetime for display
-const formatFullDateTime = (timestamp: any) => {
+const formatFullDateTime = (timestamp?: TimestampProto) => {
   const timestampInMilliseconds = getTimeForPbTimestampProtoEs(timestamp, 0);
   return dayjs(timestampInMilliseconds).local().format();
 };

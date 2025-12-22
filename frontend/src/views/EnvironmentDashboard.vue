@@ -13,7 +13,7 @@
         v-for="(item, index) in tabItemList"
         :key="item.id"
         :name="item.id"
-        :tab="() => renderTab(item.data, index)"
+        :tab="() => renderTab(item.data!, index)"
       >
         <EnvironmentDetail
           ref="environmentDetailRefs"
@@ -80,16 +80,14 @@
           item-key="id"
           animation="300"
         >
-          <template
-            #item="{ element, index }: { element: Environment; index: number }"
-          >
+          <template #item="{ element, index }">
             <div
-              :key="element.id"
+              :key="(element as Environment).id"
               class="flex items-center justify-between p-2 hover:bg-gray-100 rounded-xs cursor-grab"
             >
               <div class="flex items-center gap-x-2">
                 <span class="textinfo"> {{ index + 1 }}.</span>
-                <EnvironmentV1Name :environment="element" :link="false" />
+                <EnvironmentV1Name :environment="(element as Environment)" :link="false" />
               </div>
               <GripVerticalIcon class="w-5 h-5 text-gray-500" />
             </div>
@@ -227,12 +225,14 @@ watch(
   { immediate: true }
 );
 
-const tabItemList = computed((): BBTabItem[] => {
-  return environmentList.value.map((item, index: number): BBTabItem => {
-    const title = `${index + 1}. ${item.title}`;
-    const id = item.id;
-    return { title, id, data: item };
-  });
+const tabItemList = computed((): BBTabItem<Environment>[] => {
+  return environmentList.value.map(
+    (item, index: number): BBTabItem<Environment> => {
+      const title = `${index + 1}. ${item.title}`;
+      const id = item.id;
+      return { title, id, data: item };
+    }
+  );
 });
 
 const getEnvironmentCreate = () => {

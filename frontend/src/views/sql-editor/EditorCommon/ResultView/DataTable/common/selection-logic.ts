@@ -260,9 +260,9 @@ export const provideSelectionContext = ({
     }
     copying.value = true;
     copyTextToClipboard(values)
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         const errors = [t("common.failed")];
-        if (err && err instanceof Error) {
+        if (err instanceof Error) {
           errors.push(err.message);
         }
         pushNotification({

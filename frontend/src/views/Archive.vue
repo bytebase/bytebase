@@ -53,7 +53,7 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 
 const hashList = ["PROJECT", "INSTANCE"] as const;
 export type TabHash = (typeof hashList)[number];
-const isTabHash = (x: any): x is TabHash => hashList.includes(x);
+const isTabHash = (x: unknown): x is TabHash => hashList.includes(x as TabHash);
 
 type LocalTabType = "PROJECT" | "INSTANCE";
 

@@ -1,7 +1,11 @@
 import { isEqual, snakeCase } from "lodash-es";
 import { humanizeTs } from "../util";
 
-export const calcUpdateMask = (a: any, b: any, toSnakeCase = false) => {
+export const calcUpdateMask = (
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+  toSnakeCase = false
+) => {
   const updateMask = new Set<string>();
   const aKeys = new Set(Object.keys(a));
   const bKeys = new Set(Object.keys(b));

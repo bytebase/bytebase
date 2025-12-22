@@ -1,10 +1,11 @@
 export type GhostParameterType = "bool" | "int" | "float" | "string";
 
-export type GhostParameter<T extends GhostParameterType = any> = {
-  key: string;
-  type: T;
-  defaults: string;
-};
+export type GhostParameter<T extends GhostParameterType = GhostParameterType> =
+  {
+    key: string;
+    type: T;
+    defaults: string;
+  };
 
 export const SupportedGhostParameters: GhostParameter[] = [
   { key: "attempt-instant-ddl", type: "bool", defaults: "true" },

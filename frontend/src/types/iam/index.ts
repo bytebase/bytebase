@@ -1,7 +1,13 @@
 import type { Permission } from "./permission";
 import PERMISSION_DATA from "./permission.yaml";
 
-export const PERMISSIONS: Permission[] = PERMISSION_DATA.permissions;
+interface PermissionYamlData {
+  permissions: Permission[];
+}
+
+export const PERMISSIONS: Permission[] = (
+  PERMISSION_DATA as unknown as PermissionYamlData
+).permissions;
 
 export * from "./permission";
 

@@ -64,6 +64,7 @@
 </template>
 
 <script lang="ts" setup>
+import { create } from "@bufbuild/protobuf";
 import { SmartphoneIcon } from "lucide-vue-next";
 import { NButton, NCard, NInputOtp } from "naive-ui";
 import { computed, reactive } from "vue";
@@ -71,6 +72,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import { useAuthStore } from "@/store";
+import { LoginRequestSchema } from "@/types/proto-es/v1/auth_service_pb";
 
 type MFAType = "OTP" | "RECOVERY_CODE";
 
@@ -109,17 +111,16 @@ const onOtpCodeFinish = async (value: string[]) => {
 };
 
 const challenge = async () => {
-  const mfaContext: any = {};
+  const request = create(LoginRequestSchema, {
+    mfaTempToken: mfaTempToken.value,
+  });
   if (state.selectedMFAType === "OTP") {
-    mfaContext.otpCode = state.otpCodes.join("");
+    request.otpCode = state.otpCodes.join("");
   } else if (state.selectedMFAType === "RECOVERY_CODE") {
-    mfaContext.recoveryCode = state.recoveryCode;
+    request.recoveryCode = state.recoveryCode;
   }
   await authStore.login({
-    request: {
-      mfaTempToken: mfaTempToken.value,
-      ...mfaContext,
-    },
+    request,
     redirect: true,
   });
 };

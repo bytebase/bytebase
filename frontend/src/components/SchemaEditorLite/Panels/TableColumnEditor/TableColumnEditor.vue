@@ -507,7 +507,8 @@ const getColumnKey = (column: ColumnMetadata) => {
 };
 
 const vlRef = computed(() => {
-  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
+  // biome-ignore lint/suspicious/noExplicitAny: accessing internal naive-ui refs
+  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef // eslint-disable-line @typescript-eslint/no-explicit-any
     ?.virtualListRef;
 });
 

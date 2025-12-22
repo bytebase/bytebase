@@ -1,5 +1,5 @@
 import { computed } from "vue";
-import i18n from "./plugins/i18n";
+import { locale } from "./plugins/i18n";
 import { useActuatorV1Store, useSettingByName } from "./store";
 import { defaultAppProfile } from "./types";
 import {
@@ -23,7 +23,7 @@ export const overrideAppProfile = () => {
   const query = new URLSearchParams(window.location.search);
   const lang = query.get("lang");
   if (lang) {
-    i18n.global.locale.value = lang;
+    locale.value = lang;
   }
 };
 

@@ -76,7 +76,7 @@ const popoverPaneDimensions = ref({
 });
 
 const overridePopoverPaneStyle = computed(() => {
-  const style: Record<string, any> = {};
+  const style: Record<string, string> = {};
   const { maxHeight, minWidth } = popoverPaneDimensions.value;
   if (maxHeight > 0) {
     style["--n-height"] = `${maxHeight}px`;

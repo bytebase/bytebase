@@ -7,7 +7,7 @@ import { NSwitch, type SwitchProps } from "naive-ui";
 import { ref } from "vue";
 
 export interface SpinnerSwitchProps extends /* @vue-ignore */ SwitchProps {
-  onToggle: (on: boolean) => Promise<any>;
+  onToggle: (on: boolean) => Promise<void>;
 }
 const props = defineProps<SpinnerSwitchProps>();
 

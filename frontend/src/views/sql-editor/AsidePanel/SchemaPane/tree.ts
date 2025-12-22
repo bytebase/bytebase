@@ -93,7 +93,10 @@ export type RichFunctionMetadata = RichSchemaMetadata & {
   function: string;
   position: number;
 };
-export type TextTarget<E extends boolean = any, S extends boolean = any> = {
+export type TextTarget<
+  E extends boolean = boolean,
+  S extends boolean = boolean,
+> = {
   expandable: E;
   id: string;
   mockType?: NodeType; // mock as a node type if needed
@@ -138,7 +141,7 @@ export type NodeTarget<T extends NodeType = NodeType> = T extends "database"
                               : T extends "trigger"
                                 ? RichTriggerMetadata
                                 : T extends "expandable-text"
-                                  ? TextTarget<true, any>
+                                  ? TextTarget<true>
                                   : T extends "error"
                                     ? ErrorTarget
                                     : never;

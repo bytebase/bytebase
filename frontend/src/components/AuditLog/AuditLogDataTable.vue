@@ -32,21 +32,14 @@ import {
   AuditDataSchema,
   AuditLog_Severity,
 } from "@/types/proto-es/v1/audit_log_service_pb";
-import { type Issue, IssueService } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueService } from "@/types/proto-es/v1/issue_service_pb";
 import {
   file_v1_plan_service,
-  type Plan,
   PlanService,
 } from "@/types/proto-es/v1/plan_service_pb";
-import {
-  type Rollout,
-  RolloutService,
-} from "@/types/proto-es/v1/rollout_service_pb";
+import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
 import { SettingSchema } from "@/types/proto-es/v1/setting_service_pb";
-import {
-  type ExportRequest,
-  SQLService,
-} from "@/types/proto-es/v1/sql_service_pb";
+import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { extractProjectResourceName, humanizeDurationV1 } from "@/utils";
 import JSONStringView from "./JSONStringView.vue";
 
@@ -230,11 +223,17 @@ const columnList = computed((): AuditDataTableColumn[] => {
 });
 
 const getViewLink = (auditLog: AuditLog): string | null => {
-  let parsedRequest: any;
-  let parsedResponse: any;
+  let parsedRequest: Record<string, unknown>;
+  let parsedResponse: Record<string, unknown>;
   try {
-    parsedRequest = JSON.parse(auditLog.request || "{}");
-    parsedResponse = JSON.parse(auditLog.response || "{}");
+    parsedRequest = JSON.parse(auditLog.request || "{}") as Record<
+      string,
+      unknown
+    >;
+    parsedResponse = JSON.parse(auditLog.response || "{}") as Record<
+      string,
+      unknown
+    >;
   } catch {
     return null;
   }
@@ -245,16 +244,16 @@ const getViewLink = (auditLog: AuditLog): string | null => {
   const sections = auditLog.method.split("/").filter((i) => i);
   switch (sections[0]) {
     case RolloutService.typeName:
-      return (parsedResponse as Rollout).name;
+      return (parsedResponse["name"] as string) || null;
     case PlanService.typeName:
-      return (parsedResponse as Plan).name;
+      return (parsedResponse["name"] as string) || null;
     case IssueService.typeName:
-      return (parsedResponse as Issue).name;
-    case SQLService.typeName:
+      return (parsedResponse["name"] as string) || null;
+    case SQLService.typeName: {
       if (sections[1] !== "Export") {
         return null;
       }
-      const name = (parsedRequest as ExportRequest).name;
+      const name = parsedRequest["name"] as string | undefined;
       if (!name) {
         return null;
       }
@@ -263,6 +262,7 @@ const getViewLink = (auditLog: AuditLog): string | null => {
         return null;
       }
       return `${projectNamePrefix}${projectId}/${rolloutNamePrefix}${rolloutId}`;
+    }
   }
   return null;
 };

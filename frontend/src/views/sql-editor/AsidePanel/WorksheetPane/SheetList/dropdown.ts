@@ -108,12 +108,7 @@ export const useDropdown = (
     }
 
     const items: {
-      icon: FunctionalComponent<
-        LucideProps,
-        Record<string, any>,
-        any,
-        Record<string, any>
-      >;
+      icon: FunctionalComponent<LucideProps>;
       key: DropdownOptionType;
       label: string;
     }[] = [];

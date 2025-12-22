@@ -59,7 +59,7 @@ watchEffect(async () => {
   overrideAppProfile();
 });
 
-onErrorCaptured((error: any /* , _, info */) => {
+onErrorCaptured((error: unknown /* , _, info */) => {
   if (
     error instanceof ConnectError &&
     Object.values(Code).includes(error.code)
@@ -67,12 +67,13 @@ onErrorCaptured((error: any /* , _, info */) => {
     return;
   }
 
-  if (!error.response) {
+  const err = error as { response?: unknown; stack?: string };
+  if (!err.response) {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
       title: `Internal error captured`,
-      description: isDev() ? error.stack : undefined,
+      description: isDev() ? err.stack : undefined,
     });
   }
   return true;

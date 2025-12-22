@@ -40,7 +40,7 @@
               {{ column.name }}
               <MaskingReasonPopover
                 v-if="getMaskingReason && getMaskingReason(columnIndex)"
-                :reason="getMaskingReason(columnIndex)"
+                :reason="getMaskingReason(columnIndex)!"
                 class="ml-0.5 shrink-0"
               />
               <SensitiveDataIcon
@@ -74,7 +74,10 @@ import { NVirtualList } from "naive-ui";
 import { computed, ref } from "vue";
 import { CopyButton } from "@/components/v2";
 import { type ComposedDatabase } from "@/types";
-import type { QueryRow } from "@/types/proto-es/v1/sql_service_pb";
+import type {
+  MaskingReason,
+  QueryRow,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { type SearchParams } from "@/utils";
 import { useBinaryFormatContext } from "./DataTable/common/binary-format-store";
 import MaskingReasonPopover from "./DataTable/common/MaskingReasonPopover.vue";
@@ -92,7 +95,7 @@ const props = defineProps<{
   setIndex: number;
   activeRowIndex: number;
   isSensitiveColumn: (index: number) => boolean;
-  getMaskingReason?: (index: number) => any;
+  getMaskingReason?: (index: number) => MaskingReason | undefined;
   database: ComposedDatabase;
   search: SearchParams;
 }>();
@@ -126,7 +129,7 @@ const getContent = (rowIndex: number): string => {
       );
       return obj;
     },
-    {} as Record<string, any>
+    {} as Record<string, unknown>
   );
 
   return JSON.stringify(object, null, 4);

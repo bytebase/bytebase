@@ -41,7 +41,7 @@ export type QueryEvents = Emittery<{
 export type StreamingQueryController = {
   status: Ref<"CONNECTED" | "DISCONNECTED">;
   events: QueryEvents;
-  abort(reason?: any): void;
+  abort(reason?: unknown): void;
 };
 
 export type WebTerminalQueryState = {

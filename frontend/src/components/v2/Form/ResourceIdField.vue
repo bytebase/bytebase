@@ -113,7 +113,7 @@ const props = withDefaults(
     editingClass?: string;
     validate?: (resourceId: ResourceId) => Promise<ValidatedMessage[]>;
     // fetchResource will be used to check if the resource id is duplicate.
-    fetchResource?: (resourceId: ResourceId) => Promise<any>;
+    fetchResource?: (resourceId: ResourceId) => Promise<unknown>;
   }>(),
   {
     value: "",

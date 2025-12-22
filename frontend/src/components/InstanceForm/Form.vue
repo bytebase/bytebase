@@ -8,9 +8,9 @@
         class="w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2"
         @update:engine="(newEngine: Engine) => changeInstanceEngine(newEngine)"
       >
-        <template #suffix="{ engine }: { engine: Engine }">
+        <template #suffix="{ engine }">
           <BBBetaBadge
-            v-if="isEngineBeta(engine)"
+            v-if="isEngineBeta(engine as Engine)"
             class="absolute -top-1.5 -right-1 rounded-sm text-xs bg-gray-500! px-1 py-0! z-10"
           />
         </template>

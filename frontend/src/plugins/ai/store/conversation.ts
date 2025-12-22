@@ -115,7 +115,7 @@ export const useConversationStore = defineStore("ai-conversation", () => {
     "bb.plugin.ai.conversations"
   );
   const messages = new PouchDB<MessageEntity>("bb.plugin.ai.messages");
-  const ready: Promise<any>[] = [];
+  const ready: Promise<unknown>[] = [];
   ready.push(
     messages.createIndex({
       index: { name: FK_MESSAGE_CONVERSATION_ID, fields: ["conversation_id"] },

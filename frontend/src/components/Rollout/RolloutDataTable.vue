@@ -24,6 +24,7 @@ import { EnvironmentV1Name } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";
 import type {
   Rollout,
+  Stage,
   Task_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -50,8 +51,8 @@ const { t } = useI18n();
 const router = useRouter();
 const environmentStore = useEnvironmentV1Store();
 
-const getStageTaskCount = (stage: any, status: Task_Status) => {
-  return stage.tasks.filter((task: any) => task.status === status).length;
+const getStageTaskCount = (stage: Stage, status: Task_Status) => {
+  return stage.tasks.filter((task) => task.status === status).length;
 };
 
 const columnList = computed(

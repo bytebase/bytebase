@@ -349,7 +349,7 @@ const handleExportBtnClick = async ({
 }: {
   statement: string;
   options: ExportOption;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
   resolve: (content: DownloadContent[]) => void;
 }) => {
   const admin = tabStore.currentTab?.mode === "ADMIN";

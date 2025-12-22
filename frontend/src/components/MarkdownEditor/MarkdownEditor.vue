@@ -45,7 +45,7 @@
         :placeholder="placeholder || $t('issue.leave-a-comment')"
         :maxlength="maxlength"
         @mousedown="clearIssuePanel"
-        @input="(e: any) => sizeToFit(e.target)"
+        @input="(e: Event) => sizeToFit(e.target as HTMLTextAreaElement)"
         @keyup="(e: KeyboardEvent) => adjustIssuePanelWithPosition(e)"
         @keydown.enter="keyboardHandler"
         @keydown.down="handleArrowDown"
@@ -617,7 +617,7 @@ const createDivCopyForTextarea = (textArea: HTMLTextAreaElement) => {
   copy.textContent = textArea.value;
   const style = getComputedStyle(textArea);
 
-  [
+  const styleKeys = [
     "fontFamily",
     "fontSize",
     "fontWeight",
@@ -627,7 +627,8 @@ const createDivCopyForTextarea = (textArea: HTMLTextAreaElement) => {
     "borderTopWidth",
     "borderRightWidth",
     "borderBottomWidth",
-  ].forEach(function (key: any) {
+  ] as const;
+  styleKeys.forEach((key) => {
     copy.style[key] = style[key];
   });
 

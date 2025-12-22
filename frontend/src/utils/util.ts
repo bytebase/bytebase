@@ -136,7 +136,7 @@ export function isUrl(str: string): boolean {
 // Performs inline swap, also handles negative index (counting from the end)
 // arraySwap([1, 2, 3, 4], 1, 2) => [1, 3, 2, 4]
 // arraySwap([1, 2, 3, 4], -1, -2) => [1, 2, 4, 3]
-export function arraySwap(arr: any[], oldIndex: number, newIndex: number) {
+export function arraySwap(arr: unknown[], oldIndex: number, newIndex: number) {
   while (oldIndex < 0) {
     oldIndex += arr.length;
   }
@@ -267,9 +267,9 @@ export function getHighlightHTMLByRegExp(
 export type Defer<T> = {
   promise: Promise<T>;
   resolve: (value: T | PromiseLike<T>) => void;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
 };
-export function defer<T = any>() {
+export function defer<T = unknown>() {
   const d = {} as Defer<T>;
   d.promise = new Promise<T>((resolve, reject) => {
     d.resolve = resolve;
@@ -329,7 +329,7 @@ export function semverCompare(
   return semver[method](formattedV1, formattedV2);
 }
 
-export function clearObject(obj: any) {
+export function clearObject(obj: Record<string, unknown>) {
   const keys = Object.keys(obj);
   keys.forEach((key) => delete obj[key]);
   return obj;
@@ -384,7 +384,7 @@ export const keyboardShortcutStr = (str: string) => {
     .join("+");
 };
 
-export const isNullOrUndefined = (value: any) => {
+export const isNullOrUndefined = (value: unknown) => {
   return value === null || value === undefined;
 };
 
