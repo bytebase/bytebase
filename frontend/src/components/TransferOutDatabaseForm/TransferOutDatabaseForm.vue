@@ -34,7 +34,7 @@
         </NRadioGroup>
         <ProjectSelect
           v-if="transfer === 'project'"
-          v-model:project-name="targetProjectName"
+          v-model:value="targetProjectName"
           :allowed-project-role-list="[PresetRoleType.PROJECT_OWNER]"
         />
       </div>

@@ -39,14 +39,14 @@
       </div>
       <UserSelect
         key="user-select"
-        :users="memberList"
+        :value="memberList"
         :multiple="true"
         :disabled="disabled"
         :project-name="projectName"
         :include-all-users="includeAllUsers"
         :include-service-account="includeServiceAccount"
         :include-workload-identity="includeWorkloadIdentity"
-        @update:users="onMemberListUpdate"
+        @update:value="onMemberListUpdate($event as string[])"
       />
     </div>
     <div
@@ -62,11 +62,11 @@
 
       <GroupSelect
         key="group-select"
-        :groups="memberList"
+        :value="memberList"
         :disabled="disabled"
         :multiple="true"
         :project-name="projectName"
-        @update:groups="onMemberListUpdate"
+        @update:value="onMemberListUpdate($event as string[])"
       />
     </div>
   </div>

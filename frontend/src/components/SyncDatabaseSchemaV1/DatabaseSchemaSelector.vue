@@ -11,16 +11,16 @@
       <EnvironmentSelect
         class="mr-3"
         name="environment"
-        :environment-name="state.environmentName"
-        @update:environment-name="handleEnvironmentSelect"
+        :value="state.environmentName"
+        @update:value="handleEnvironmentSelect($event as (string | undefined))"
       />
       <DatabaseSelect
         :placeholder="$t('database.select')"
         :project-name="project.name"
-        :database-name="state.databaseName"
+        :value="state.databaseName"
         :environment-name="state.environmentName"
         :allowed-engine-type-list="ALLOWED_ENGINES"
-        @update:database-name="handleDatabaseSelect"
+        @update:value="(val) => handleDatabaseSelect(val as (string | undefined))"
       />
     </div>
     <div

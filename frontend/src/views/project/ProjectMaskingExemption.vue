@@ -8,7 +8,7 @@
         :placeholder="$t('database.select')"
         :project-name="project.name"
         :show-instance="false"
-        v-model:database-name="state.selectedDatabaseName"
+        v-model:value="state.selectedDatabaseName"
       />
 
       <div class="flex-1 flex flex-row items-center justify-end gap-x-2">

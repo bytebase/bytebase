@@ -5,7 +5,7 @@
       class="w-96 max-w-[100vw]"
     >
       <EnvironmentSelect
-        v-model:environment-name="environment"
+        v-model:value="environment"
         class="mt-1"
         required
         name="environment"

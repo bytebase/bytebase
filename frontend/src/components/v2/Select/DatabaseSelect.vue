@@ -3,79 +3,83 @@
     v-bind="$attrs"
     class="bb-database-select"
     :multiple="multiple"
-    :value="databaseName"
-    :values="databaseNames"
-    :custom-label="renderLabel"
-    :additional-data="additionalData"
+    :disabled="disabled"
+    :size="size"
+    :value="value"
+    :render-label="renderLabel"
+    :render-tag="renderTag"
+    :additional-options="additionalOptions"
     :search="handleSearch"
-    :get-option="getOption"
     :filter="filter"
-    @update:value="(val) => $emit('update:database-name', val)"
-    @update:values="(val) => $emit('update:database-names', val)"
+    @update:value="(val) => $emit('update:value', val)"
   />
 </template>
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
+import { computed } from "vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { workspaceNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedDatabase } from "@/types";
-import { isValidDatabaseName } from "@/types";
 import { type Engine } from "@/types/proto-es/v1/common_pb";
-import RemoteResourceSelector from "./RemoteResourceSelector.vue";
+import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
+import type {
+  ResourceSelectOption,
+  SelectSize,
+} from "./RemoteResourceSelector/types";
+import {
+  getRenderLabelFunc,
+  getRenderTagFunc,
+} from "./RemoteResourceSelector/utils";
 
 const props = withDefaults(
   defineProps<{
-    databaseName?: string; // UNKNOWN_DATABASE_NAME stands for "ALL"
-    databaseNames?: string[];
+    value?: string | string[] | undefined;
     environmentName?: string;
     projectName?: string;
     allowedEngineTypeList?: Engine[];
     filter?: (database: ComposedDatabase) => boolean;
     multiple?: boolean;
-    clearable?: boolean;
+    disabled?: boolean;
+    size?: SelectSize;
     showInstance?: boolean;
   }>(),
   {
-    databaseName: undefined,
-    databaseNames: undefined,
-    environmentName: undefined,
-    projectName: undefined,
     // empty equals no limit.
     allowedEngineTypeList: () => [],
-    filter: undefined,
-    multiple: false,
-    clearable: false,
     showInstance: true,
   }
 );
 
 defineEmits<{
-  (event: "update:database-name", value: string | undefined): void;
-  (event: "update:database-names", value: string[]): void;
+  (event: "update:value", value: string[] | string | undefined): void;
 }>();
 
 const databaseStore = useDatabaseV1Store();
 
-const additionalData = computedAsync(async () => {
-  const data = [];
+const getOption = (db: ComposedDatabase) => {
+  return {
+    resource: db,
+    value: db.name,
+    label: db.databaseName,
+  };
+};
+
+const additionalOptions = computedAsync(async () => {
+  const options: ResourceSelectOption<ComposedDatabase>[] = [];
 
   let databaseNames: string[] = [];
-  if (props.databaseName) {
-    databaseNames = [props.databaseName];
-  } else if (props.databaseNames) {
-    databaseNames = props.databaseNames;
+  if (Array.isArray(props.value)) {
+    databaseNames = props.value;
+  } else if (props.value) {
+    databaseNames = [props.value];
   }
 
-  for (const databaseName of databaseNames) {
-    if (isValidDatabaseName(databaseName)) {
-      const db = await databaseStore.getOrFetchDatabaseByName(databaseName);
-      data.push(db);
-    }
-  }
+  const databases = await databaseStore.batchGetDatabases(databaseNames);
+  options.push(...databases.map(getOption));
 
-  return data;
+  return options;
 }, []);
 
 const handleSearch = async (params: {
@@ -93,15 +97,13 @@ const handleSearch = async (params: {
     pageToken: params.pageToken,
     pageSize: params.pageSize,
   });
-  return { nextPageToken, data: databases };
+  return {
+    nextPageToken,
+    options: databases.map(getOption),
+  };
 };
 
-const getOption = (database: ComposedDatabase) => ({
-  value: database.name,
-  label: database.databaseName,
-});
-
-const renderLabel = (database: ComposedDatabase, keyword: string) => {
+const customLabel = (database: ComposedDatabase, keyword: string) => {
   return (
     <RichDatabaseName
       database={database}
@@ -112,4 +114,21 @@ const renderLabel = (database: ComposedDatabase, keyword: string) => {
     />
   );
 };
+
+const renderLabel = computed(() => {
+  return getRenderLabelFunc({
+    multiple: props.multiple,
+    customLabel,
+    showResourceName: true,
+  });
+});
+
+const renderTag = computed(() => {
+  return getRenderTagFunc({
+    multiple: props.multiple,
+    disabled: props.disabled,
+    size: props.size,
+    customLabel,
+  });
+});
 </script>

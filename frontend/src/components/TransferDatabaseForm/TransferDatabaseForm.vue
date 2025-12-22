@@ -15,9 +15,9 @@
           class="w-48!"
           :include-all="false"
           :include-default-project="true"
-          :project-name="state.fromProjectName"
+          :value="state.fromProjectName"
           :filter="filterSourceProject"
-          @update:project-name="changeProjectFilter"
+          @update:value="changeProjectFilter($event as (string | undefined))"
         />
         <template
           v-if="state.transferSource === 'OTHER' && !state.fromProjectName"

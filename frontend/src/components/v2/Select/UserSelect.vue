@@ -2,57 +2,52 @@
   <RemoteResourceSelector
     v-bind="$attrs"
     :multiple="multiple"
-    :value="user"
-    :values="users"
-    :additional-data="additionalData"
-    :custom-label="renderLabel"
-    :show-resource-name="false"
+    :disabled="disabled"
+    :size="size"
+    :value="value"
+    :additional-options="additionalOptions"
+    :render-label="renderLabel"
+    :render-tag="renderTag"
     :search="handleSearch"
-    :get-option="getOption"
     :filter="filter"
-    @update:value="(val) => $emit('update:user', val)"
-    @update:values="(val) => $emit('update:users', val)"
+    @update:value="(val) => $emit('update:value', val)"
   />
 </template>
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
+import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
 import { type UserFilter, useUserStore } from "@/store";
-import { allUsersUser, isValidUserName } from "@/types";
+import { allUsersUser } from "@/types";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
-import { ensureUserFullName } from "@/utils";
-import RemoteResourceSelector from "./RemoteResourceSelector.vue";
+import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
+import type {
+  ResourceSelectOption,
+  SelectSize,
+} from "./RemoteResourceSelector/types";
+import {
+  getRenderLabelFunc,
+  getRenderTagFunc,
+} from "./RemoteResourceSelector/utils";
 
-const props = withDefaults(
-  defineProps<{
-    multiple?: boolean;
-    user?: string;
-    users?: string[];
-    projectName?: string;
-    // allUsers is a special user that represents all users in the project.
-    includeAllUsers?: boolean;
-    includeSystemBot?: boolean;
-    includeServiceAccount?: boolean;
-    includeWorkloadIdentity?: boolean;
-    filter?: (user: User) => boolean;
-  }>(),
-  {
-    multiple: false,
-    user: undefined,
-    users: undefined,
-    projectName: undefined,
-    includeAllUsers: false,
-    includeSystemBot: false,
-    includeServiceAccount: false,
-    includeWorkloadIdentity: false,
-  }
-);
+const props = defineProps<{
+  multiple?: boolean;
+  disabled?: boolean;
+  size?: SelectSize;
+  value?: string | string[] | undefined;
+  projectName?: string;
+  // allUsers is a special user that represents all users in the project.
+  includeAllUsers?: boolean;
+  includeSystemBot?: boolean;
+  includeServiceAccount?: boolean;
+  includeWorkloadIdentity?: boolean;
+  filter?: (user: User) => boolean;
+}>();
 
 defineEmits<{
-  (event: "update:user", value: string | undefined): void;
-  (event: "update:users", value: string[]): void;
+  (event: "update:value", value: string[] | string | undefined): void;
 }>();
 
 const userStore = useUserStore();
@@ -80,29 +75,29 @@ const getFilter = (search: string): UserFilter => {
   };
 };
 
-const additionalData = computedAsync(async () => {
-  const data = [];
+const getOption = (user: User): ResourceSelectOption<User> => ({
+  resource: user,
+  value: user.email,
+  label: user.title,
+});
+
+const additionalOptions = computedAsync(async () => {
+  const options: ResourceSelectOption<User>[] = [];
   if (props.includeAllUsers) {
-    data.unshift(allUsersUser());
+    options.unshift(getOption(allUsersUser()));
   }
 
   let userNames: string[] = [];
-  if (props.user) {
-    userNames = [props.user];
-  } else if (props.users) {
-    userNames = props.users;
+  if (Array.isArray(props.value)) {
+    userNames = props.value;
+  } else if (props.value) {
+    userNames = [props.value];
   }
 
-  for (const email of userNames) {
-    if (!email) continue;
-    const userName = ensureUserFullName(email);
-    if (isValidUserName(userName)) {
-      const user = await userStore.getOrFetchUserByIdentifier(userName);
-      data.push(user);
-    }
-  }
+  const users = await userStore.batchGetUsers(userNames);
+  options.push(...users.map(getOption));
 
-  return data;
+  return options;
 }, []);
 
 const handleSearch = async (params: {
@@ -117,11 +112,11 @@ const handleSearch = async (params: {
   });
   return {
     nextPageToken,
-    data: users,
+    options: users.map(getOption),
   };
 };
 
-const renderLabel = (user: User, keyword: string) => {
+const customLabel = (user: User, keyword: string) => {
   return (
     <UserNameCell
       user={user}
@@ -143,8 +138,20 @@ const renderLabel = (user: User, keyword: string) => {
   );
 };
 
-const getOption = (user: User) => ({
-  value: user.email,
-  label: user.title,
+const renderLabel = computed(() => {
+  return getRenderLabelFunc({
+    multiple: props.multiple,
+    customLabel,
+    showResourceName: false,
+  });
+});
+
+const renderTag = computed(() => {
+  return getRenderTagFunc({
+    multiple: props.multiple,
+    disabled: props.disabled,
+    size: props.size,
+    customLabel,
+  });
 });
 </script>

@@ -24,18 +24,19 @@
         class="mt-2"
         required
         name="environment"
-        :environment-name="attachedResources[0]"
+        :value="attachedResources[0]"
         :disabled="!allowChangeAttachedResource"
         :filter="
-          (env: Environment, _: number) =>
+          (env: Environment) =>
             filterResource(formatEnvironmentName(env.id))
         "
-        @update:environment-name="
-          (val: string | undefined) => {
-            if (!val) {
+        @update:value="
+          (val) => {
+            const name = val as string
+            if (!name) {
               $emit('attached-resources-change', []);
             } else {
-              $emit('attached-resources-change', [val]);
+              $emit('attached-resources-change', [name]);
             }
           }
         "
@@ -45,15 +46,16 @@
         class="mt-2"
         style="width: 100%"
         required
-        :project-name="attachedResources[0]"
+        :value="attachedResources[0]"
         :disabled="!allowChangeAttachedResource"
         :filter="(proj) => filterResource(proj.name)"
-        @update:project-name="
-          (val: string | undefined) => {
+        @update:value="
+          (val) => {
+            const name = val as string
             if (!val) {
               $emit('attached-resources-change', []);
             } else {
-              $emit('attached-resources-change', [val]);
+              $emit('attached-resources-change', [name]);
             }
           }
         "
@@ -63,10 +65,17 @@
         class="mt-2"
         style="width: 100%"
         required
-        :database-name="attachedResources[0]"
+        :value="attachedResources[0]"
         :disabled="!allowChangeAttachedResource"
         :filter="(db: Database) => filterResource(db.name)"
-        @update:database-names="$emit('attached-resources-change', $event)"
+        @update:value="(val) => {
+          const name = val as string
+          if (!name) {
+            $emit('attached-resources-change', []);
+          } else {
+            $emit('attached-resources-change', [name]);
+          }
+        }"
       />
     </div>
     <div>
