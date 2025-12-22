@@ -1,32 +1,17 @@
-import { CheckIcon } from "lucide-vue-next";
-import type { SelectOption } from "naive-ui";
-import type { VNode } from "vue";
-import { h } from "vue";
 import { type OptionConfig } from "@/components/ExprEditor/context";
-import { getInstanceIdOptions } from "@/components/SensitiveData/components/utils";
-import { EnvironmentV1Name, RichDatabaseName } from "@/components/v2";
+import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import { type Factor, SQLTypeList } from "@/plugins/cel";
 import { t } from "@/plugins/i18n";
-import {
-  useEnvironmentV1Store,
-  useInstanceV1Store,
-  useProjectV1Store,
-  useRoleStore,
-} from "@/store";
-import {
-  type ComposedDatabase,
-  DEFAULT_PROJECT_NAME,
-  PRESET_WORKSPACE_ROLES,
-  PresetRiskLevelList,
-} from "@/types";
+import { useRoleStore } from "@/store";
+import { PRESET_WORKSPACE_ROLES, PresetRiskLevelList } from "@/types";
 import { Engine, RiskLevel } from "@/types/proto-es/v1/common_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { WorkspaceApprovalSetting_Rule_Source } from "@/types/proto-es/v1/setting_service_pb";
 import {
   displayRoleTitle,
   engineNameV1,
-  extractProjectResourceName,
-  getDefaultPagination,
+  getEnvironmentIdOptions,
+  getInstanceIdOptionConfig,
+  getProjectIdOptionConfig,
   supportedEngineV1List,
 } from "@/utils";
 import {
@@ -82,115 +67,17 @@ const migrationFactorList: Factor[] = [
   CEL_ATTRIBUTE_STATEMENT_TEXT,
 ] as const;
 
-export const getRenderOptionFunc = (resource: {
-  title: string | (() => VNode);
-  name: string;
-}): ((info: { node: VNode; selected: boolean }) => VNode) => {
-  return (info: { node: VNode; selected: boolean }) => {
-    return h(
-      info.node,
-      { class: "flex items-center justify-between gap-x-4" },
-      [
-        h("div", { class: "flex flex-col px-1 py-1 z-10" }, [
-          typeof resource.title === "string"
-            ? h(
-                "div",
-                { class: `textlabel ${info.selected ? "text-accent!" : ""}` },
-                resource.title
-              )
-            : resource.title(),
-          h("div", { class: "opacity-60 textinfolabel" }, resource.name),
-        ]),
-        info.selected ? h(CheckIcon, { class: "w-4 z-10" }) : undefined,
-      ]
-    );
-  };
-};
-
-export const getEnvironmentIdOptions = () => {
-  const environmentList = useEnvironmentV1Store().getEnvironmentList();
-  return environmentList.map<SelectOption>((env) => {
-    const environmentId = env.id;
-    return {
-      label: `${env.title} (${environmentId})`,
-      value: environmentId,
-      render: getRenderOptionFunc({
-        name: env.name,
-        title: () =>
-          h(EnvironmentV1Name, {
-            environment: env,
-            link: false,
-            showColor: true,
-          }),
-      }),
-    };
-  });
-};
-
-export const getProjectIdOptions = (projects: Project[]) => {
-  return projects
-    .filter((proj) => proj.name != DEFAULT_PROJECT_NAME)
-    .map<SelectOption>((proj) => {
-      const projectId = extractProjectResourceName(proj.name);
-      return {
-        label: `${proj.title} (${projectId})`,
-        value: projectId,
-        render: getRenderOptionFunc(proj),
-      };
-    });
-};
-
-export const getDatabasFullNameOptions = (databases: ComposedDatabase[]) => {
-  return databases.map<SelectOption>((database) => {
-    return {
-      label: database.name,
-      value: database.name,
-      render: getRenderOptionFunc({
-        name: database.name,
-        title: () =>
-          h(RichDatabaseName, {
-            database,
-            showEngineIcon: true,
-            showInstance: true,
-            showProject: false,
-            showArrow: true,
-          }),
-      }),
-    };
-  });
-};
-
-export const getDatabaseIdOptions = (databases: ComposedDatabase[]) => {
-  return databases.map<SelectOption>((database) => {
-    return {
-      label: database.databaseName,
-      value: database.databaseName,
-      render: getRenderOptionFunc({
-        name: database.name,
-        title: () =>
-          h(RichDatabaseName, {
-            database,
-            showEngineIcon: true,
-            showInstance: false,
-            showProject: false,
-            showArrow: false,
-          }),
-      }),
-    };
-  });
-};
-
 const getDBEndingOptions = () => {
-  return supportedEngineV1List().map<SelectOption>((type) => ({
+  return supportedEngineV1List().map<ResourceSelectOption<unknown>>((type) => ({
     label: engineNameV1(type),
     value: Engine[type],
   }));
 };
 
 const getLevelOptions = () => {
-  return PresetRiskLevelList.map<SelectOption>(({ level }) => ({
+  return PresetRiskLevelList.map<ResourceSelectOption<unknown>>(({ level }) => ({
     label: levelText(level),
-    value: level,
+    value: RiskLevel[level],
   }));
 };
 
@@ -207,7 +94,7 @@ const getRiskLevelOptions = () => {
       value: "HIGH",
     },
   ];
-  return levels.map<SelectOption>(({ label, value }) => ({
+  return levels.map<ResourceSelectOption<unknown>>(({ label, value }) => ({
     label,
     value,
   }));
@@ -215,7 +102,7 @@ const getRiskLevelOptions = () => {
 
 const getSQLTypeOptions = (source: WorkspaceApprovalSetting_Rule_Source) => {
   const mapOptions = (values: readonly string[]) => {
-    return values.map<SelectOption>((v) => ({
+    return values.map<ResourceSelectOption<unknown>>((v) => ({
       label: v,
       value: v,
     }));
@@ -305,44 +192,16 @@ export const getApprovalOptionConfigMap = (
 ) => {
   const factorList = getApprovalFactorList(source);
   return factorList.reduce((map, factor) => {
-    let options: SelectOption[] = [];
+    let options: ResourceSelectOption<unknown>[] = [];
     switch (factor) {
       case CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID:
         options = getEnvironmentIdOptions();
         break;
       case CEL_ATTRIBUTE_RESOURCE_PROJECT_ID:
-        const projectStore = useProjectV1Store();
-        map.set(factor, {
-          remote: true,
-          options: [],
-          search: async (keyword: string) => {
-            return projectStore
-              .fetchProjectList({
-                pageSize: getDefaultPagination(),
-                filter: {
-                  query: keyword,
-                },
-              })
-              .then((resp) => getProjectIdOptions(resp.projects));
-          },
-        });
+        map.set(factor, getProjectIdOptionConfig());
         return map;
       case CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID:
-        const store = useInstanceV1Store();
-        map.set(factor, {
-          remote: true,
-          options: [],
-          search: async (keyword: string) => {
-            return store
-              .fetchInstanceList({
-                pageSize: getDefaultPagination(),
-                filter: {
-                  query: keyword,
-                },
-              })
-              .then((resp) => getInstanceIdOptions(resp.instances));
-          },
-        });
+        map.set(factor, getInstanceIdOptionConfig());
         return map;
       case CEL_ATTRIBUTE_RESOURCE_DB_ENGINE:
         options = getDBEndingOptions();
@@ -363,7 +222,7 @@ export const getApprovalOptionConfigMap = (
         break;
     }
 
-    map.set(factor, { options, remote: false });
+    map.set(factor, { options });
 
     return map;
   }, new Map<Factor, OptionConfig>());
