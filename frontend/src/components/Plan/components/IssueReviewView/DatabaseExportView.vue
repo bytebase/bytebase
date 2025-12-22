@@ -6,6 +6,7 @@
     <!-- Execution History Section -->
     <ExecutionHistorySection v-if="taskRuns.length > 0" />
 
+    <LimitsSection />
     <!-- Export Options Section -->
     <OptionsSection />
 
@@ -23,6 +24,7 @@ import { useSelectedSpec } from "../SpecDetailView/context";
 import StatementSection from "../StatementSection";
 import {
   ExecutionHistorySection,
+  LimitsSection,
   OptionsSection,
   TasksSection,
 } from "./DatabaseExportView";

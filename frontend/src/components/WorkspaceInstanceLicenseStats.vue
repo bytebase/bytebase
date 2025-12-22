@@ -60,7 +60,7 @@ const { instanceLicenseCount } = storeToRefs(subscriptionStore);
 
 const totalLicenseCount = computed((): string => {
   if (instanceLicenseCount.value === Number.MAX_VALUE) {
-    return t("subscription.unlimited");
+    return t("common.unlimited");
   }
   return `${instanceLicenseCount.value}`;
 });

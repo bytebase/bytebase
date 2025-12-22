@@ -247,7 +247,8 @@
     "remaining": "còn lại",
     "line": "Dòng",
     "column": "Cột",
-    "apply-to-database": "Áp dụng cho cơ sở dữ liệu"
+    "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
+    "unlimited": "Không giới hạn"
   },
   "error-page": {
     "go-back-home": "Về trang chủ"
@@ -730,7 +731,7 @@
         "query-data-policy": {
           "timeout": {
             "self": "Thời gian truy vấn tối đa",
-            "description": "Thời gian tối đa được phép chạy truy vấn trong SQL Editor."
+            "description": "Thời gian tối đa cho phép để thực hiện một truy vấn."
           },
           "seconds": "Giây",
           "project-scope": "dự án",
@@ -1104,6 +1105,7 @@
     "task-summary-tooltip": "{failed} tác vụ thất bại | {failed} tác vụ thất bại",
     "data-export": {
       "options": "Tùy chọn",
+      "limits": "Giới hạn",
       "format": "Định dạng",
       "download-tooltip": "Có sẵn trong 24 giờ",
       "file-expired": "Tệp đã hết hạn"
@@ -2384,7 +2386,6 @@
     "expires-at": "Hết hạn vào",
     "plan-compare": "So sánh các gói",
     "trialing": "Đang dùng thử",
-    "unlimited": "Không giới hạn",
     "max-instance-count": "Số lượng phiên bản tối đa",
     "plan": {
       "free": {

@@ -615,7 +615,7 @@ const availableLicenseCount = computed(() => {
 
 const availableLicenseCountText = computed((): string => {
   if (subscriptionStore.instanceLicenseCount === Number.MAX_VALUE) {
-    return t("subscription.unlimited");
+    return t("common.unlimited");
   }
   return `${availableLicenseCount.value}`;
 });

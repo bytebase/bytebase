@@ -247,7 +247,8 @@
     "remaining": "remaining",
     "line": "Line",
     "column": "Column",
-    "apply-to-database": "Apply to database"
+    "apply-to-database": "Apply to database",
+    "unlimited": "Unlimited"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -730,7 +731,7 @@
         "query-data-policy": {
           "timeout": {
             "self": "Maximum query time",
-            "description": "The maximum time allowed for a query to run in SQL Editor."
+            "description": "The maximum time allowed for a query to run."
           },
           "seconds": "Seconds",
           "project-scope": "project",
@@ -1104,6 +1105,7 @@
     "task-summary-tooltip": "{failed} task failed | {failed} tasks failed",
     "data-export": {
       "options": "Options",
+      "limits": "Limits",
       "format": "Format",
       "download-tooltip": "Available for 24 hours",
       "file-expired": "File Expired"
@@ -2384,7 +2386,6 @@
     "expires-at": "Expires at",
     "plan-compare": "Compare plans",
     "trialing": "Trialing",
-    "unlimited": "Unlimited",
     "max-instance-count": "Max Instance Count",
     "plan": {
       "free": {

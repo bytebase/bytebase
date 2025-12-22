@@ -247,7 +247,8 @@
     "remaining": "restante",
     "line": "Línea",
     "column": "Columna",
-    "apply-to-database": "Aplicar a la base de datos"
+    "apply-to-database": "Aplicar a la base de datos",
+    "unlimited": "Ilimitado"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -730,7 +731,7 @@
         "query-data-policy": {
           "timeout": {
             "self": "Tiempo máximo de consulta",
-            "description": "El tiempo máximo permitido para ejecutar una consulta en el Editor SQL."
+            "description": "El tiempo máximo permitido para la ejecución de una consulta."
           },
           "seconds": "Artículos de segunda clase",
           "project-scope": "proyecto",
@@ -1104,6 +1105,7 @@
     "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas",
     "data-export": {
       "options": "Opciones de exportación",
+      "limits": "Límites",
       "format": "Formato",
       "download-tooltip": "Disponible por 24 horas",
       "file-expired": "Archivo expirado"
@@ -2384,7 +2386,6 @@
     "expires-at": "Expira el",
     "plan-compare": "Comparar planes",
     "trialing": "En período de prueba",
-    "unlimited": "Ilimitado",
     "max-instance-count": "Cantidad máxima de instancias",
     "plan": {
       "free": {
