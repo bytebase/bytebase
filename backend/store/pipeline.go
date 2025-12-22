@@ -412,10 +412,12 @@ func (s *Store) GetListRolloutFilter(ctx context.Context, filter string) (*qb.Qu
 				if err != nil {
 					return nil, errors.Errorf("failed to parse time %v, error: %v", value, err)
 				}
+				// Use the same subquery as in ListPipelines SELECT to compute updated_at
+				updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.task_id = task.id WHERE task.pipeline_id = pipeline.id), pipeline.created_at)`
 				if functionName == celoperators.GreaterEquals {
-					return qb.Q().Space("updated_at >= ?", t), nil
+					return qb.Q().Space(updatedAtSubquery+" >= ?", t), nil
 				}
-				return qb.Q().Space("updated_at <= ?", t), nil
+				return qb.Q().Space(updatedAtSubquery+" <= ?", t), nil
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}
