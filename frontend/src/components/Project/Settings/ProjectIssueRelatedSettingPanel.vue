@@ -389,7 +389,7 @@ const getInitialLocalState = (): LocalState => {
     };
   }
   return {
-    issueLabels: props.project.issueLabels,
+    issueLabels: cloneDeep(props.project.issueLabels),
     forceIssueLabels: props.project.forceIssueLabels,
     allowModifyStatement: props.project.allowModifyStatement,
     autoResolveIssue: props.project.autoResolveIssue,
