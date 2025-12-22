@@ -19,8 +19,12 @@ import {
   latestTaskRunForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { rolloutServiceClientConnect } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+} from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useCurrentProjectV1,
@@ -77,6 +81,7 @@ const createRestoreIssue = async () => {
   const { statement } = response;
   isLoading.value = false;
 
+  const { enabledNewLayout } = useIssueLayoutVersion();
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   useStorageStore().put(sqlStorageKey, statement);
   const query: LocationQueryRaw = {
@@ -86,13 +91,26 @@ const createRestoreIssue = async () => {
     description: `This issue is created to rollback the data of ${selectedTask.value.target} in issue #${extractIssueUID(issue.value.name)}`,
     sqlStorageKey,
   };
-  router.push({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(issue.value.name),
-      issueSlug: "create",
-    },
-    query,
-  });
+
+  if (enabledNewLayout.value) {
+    router.push({
+      name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(issue.value.name),
+        planId: "create",
+        specId: "placeholder",
+      },
+      query,
+    });
+  } else {
+    router.push({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(issue.value.name),
+        issueSlug: "create",
+      },
+      query,
+    });
+  }
 };
 </script>

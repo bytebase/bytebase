@@ -46,7 +46,11 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { EnvironmentV1Name } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+} from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -127,22 +131,36 @@ const gotoCreateIssue = async () => {
 
   emit("close");
 
+  const { enabledNewLayout } = useIssueLayoutVersion();
   const db = await useDatabaseV1Store().getOrFetchDatabaseByName(database);
   const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   useStorageStore().put(sqlStorageKey, statement.value);
-  const route = router.resolve({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(db.project),
-      issueSlug: "create",
-    },
-    query: {
-      template: "bb.issue.database.update",
-      name: `[${db.databaseName}] Change from SQL Editor`,
-      databaseList: db.name,
-      sqlStorageKey,
-    },
-  });
+
+  const query = {
+    template: "bb.issue.database.update",
+    name: `[${db.databaseName}] Change from SQL Editor`,
+    databaseList: db.name,
+    sqlStorageKey,
+  };
+
+  const route = enabledNewLayout.value
+    ? router.resolve({
+        name: PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+        params: {
+          projectId: extractProjectResourceName(db.project),
+          planId: "create",
+          specId: "placeholder",
+        },
+        query,
+      })
+    : router.resolve({
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+        params: {
+          projectId: extractProjectResourceName(db.project),
+          issueSlug: "create",
+        },
+        query,
+      });
   window.open(route.fullPath, "_blank");
 };
 
