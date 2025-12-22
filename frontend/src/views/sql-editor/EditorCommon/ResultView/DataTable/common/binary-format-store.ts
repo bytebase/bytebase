@@ -185,8 +185,11 @@ export const formatBinaryValue = ({
 
 // Determine the suitable format for a column based on column type and content
 export const getBinaryFormatByColumnType = (
-  rawType: string
+  rawType: string | undefined
 ): BinaryFormat | undefined => {
+  if (!rawType) {
+    return;
+  }
   // Get column type name from direct columnTypeNames prop
   const columnType = rawType.toLowerCase();
   if (!columnType) {
