@@ -75,10 +75,12 @@ const getDBEndingOptions = () => {
 };
 
 const getLevelOptions = () => {
-  return PresetRiskLevelList.map<ResourceSelectOption<unknown>>(({ level }) => ({
-    label: levelText(level),
-    value: RiskLevel[level],
-  }));
+  return PresetRiskLevelList.map<ResourceSelectOption<unknown>>(
+    ({ level }) => ({
+      label: levelText(level),
+      value: RiskLevel[level],
+    })
+  );
 };
 
 const getRiskLevelOptions = () => {
