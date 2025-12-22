@@ -189,7 +189,7 @@ const state = reactive<LocalState>({
 });
 
 // biome-ignore format: ESLint requires trailing comma for generic type parameter
-const loadMoreDatabase = async <T>(item: DatabaseMatchList<T>) => {
+const loadMoreDatabase = async <T,>(item: DatabaseMatchList<T>) => {
   item.loading = true;
   try {
     const { databases, token } = await item.loadMore(item.token);
