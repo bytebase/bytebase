@@ -20,6 +20,81 @@ type UserResult struct {
 	Roles []string `json:"roles"`
 }
 
+// xpackInfoResponse represents the response from GET /_xpack API.
+type xpackInfoResponse struct {
+	Features struct {
+		Security struct {
+			Available bool `json:"available"`
+			Enabled   bool `json:"enabled"`
+		} `json:"security"`
+	} `json:"features"`
+}
+
+// isSecurityEnabled checks if Elasticsearch security features are available and enabled
+// by calling the /_xpack info API. Returns (enabled, error).
+// If the /_xpack endpoint is not available (OSS build), returns (false, nil).
+func (d *Driver) isSecurityEnabled(ctx context.Context) (bool, error) {
+	if d.typedClient != nil {
+		resp, err := esapi.XPackInfoRequest{}.Do(ctx, d.typedClient)
+		if err != nil {
+			return false, err
+		}
+		defer resp.Body.Close()
+
+		// OSS builds don't have /_xpack endpoint
+		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusBadRequest {
+			slog.Info("X-Pack not available (likely OSS build), security features disabled")
+			return false, nil
+		}
+
+		if resp.IsError() {
+			body, _ := io.ReadAll(resp.Body)
+			return false, errors.Errorf("failed to get X-Pack info: %d: %s", resp.StatusCode, string(body))
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to read X-Pack info response")
+		}
+
+		var info xpackInfoResponse
+		if err := json.Unmarshal(body, &info); err != nil {
+			return false, errors.Wrap(err, "failed to parse X-Pack info response")
+		}
+
+		return info.Features.Security.Available && info.Features.Security.Enabled, nil
+	}
+
+	// For basicAuthClient, call /_xpack directly
+	resp, err := d.basicAuthClient.Do("GET", []byte("/_xpack"), nil)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	// OSS builds don't have /_xpack endpoint
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusBadRequest {
+		slog.Info("X-Pack not available (likely OSS build), security features disabled")
+		return false, nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to read X-Pack info response")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return false, errors.Errorf("failed to get X-Pack info: %d: %s", resp.StatusCode, string(body))
+	}
+
+	var info xpackInfoResponse
+	if err := json.Unmarshal(body, &info); err != nil {
+		return false, errors.Wrap(err, "failed to parse X-Pack info response")
+	}
+
+	return info.Features.Security.Available && info.Features.Security.Enabled, nil
+}
+
 func (d *Driver) getInstanceRoles() ([]*storepb.InstanceRole, error) {
 	// AWS IAM authentication doesn't use internal users - skip role fetching
 	if d.config.DataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM {
@@ -27,8 +102,11 @@ func (d *Driver) getInstanceRoles() ([]*storepb.InstanceRole, error) {
 	}
 
 	var bytes []byte
+	ctx := context.Background()
 
 	if d.isOpenSearch && d.opensearchClient != nil {
+		// OpenSearch uses a different security plugin architecture.
+		// Check if security plugin is available by calling the API and handling errors gracefully.
 		resp, err := d.basicAuthClient.Do("GET", []byte("/_plugins/_security/api/internalusers"), nil)
 		if err != nil {
 			return nil, err
@@ -40,37 +118,52 @@ func (d *Driver) getInstanceRoles() ([]*storepb.InstanceRole, error) {
 			return nil, errors.Wrap(err, "failed to read OpenSearch users response body")
 		}
 
-		// Check HTTP status code
+		// OpenSearch without security plugin returns 400 or 404
+		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusBadRequest {
+			slog.Info("OpenSearch security plugin not available, skipping role discovery")
+			return nil, nil
+		}
+
 		if resp.StatusCode != http.StatusOK {
-			// Include response body for debugging
 			return nil, errors.Errorf("failed to get OpenSearch users: unexpected status code %d: %s", resp.StatusCode, string(bytes))
 		}
-	} else if d.typedClient != nil {
-		resp, err := esapi.SecurityGetUserRequest{Pretty: true}.Do(context.Background(), d.typedClient)
-		if err != nil {
-			return nil, err
-		}
-
-		bytes, err = readBytesAndClose(resp)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get Elasticsearch users")
-		}
 	} else {
-		resp, err := d.basicAuthClient.Do("GET", []byte("/_security/user"), nil)
+		// Elasticsearch: check X-Pack security availability first
+		securityEnabled, err := d.isSecurityEnabled(ctx)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to check X-Pack security status")
 		}
-		defer resp.Body.Close()
-
-		bytes, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to read Elasticsearch users response body")
+		if !securityEnabled {
+			slog.Info("Elasticsearch security is not enabled, skipping role discovery")
+			return nil, nil
 		}
 
-		// Check HTTP status code
-		if resp.StatusCode != http.StatusOK {
-			// Include response body for debugging
-			return nil, errors.Errorf("failed to get Elasticsearch users: unexpected status code %d: %s", resp.StatusCode, string(bytes))
+		// Security is enabled, proceed to fetch users
+		if d.typedClient != nil {
+			resp, err := esapi.SecurityGetUserRequest{Pretty: true}.Do(ctx, d.typedClient)
+			if err != nil {
+				return nil, err
+			}
+
+			bytes, err = readBytesAndClose(resp)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get Elasticsearch users")
+			}
+		} else {
+			resp, err := d.basicAuthClient.Do("GET", []byte("/_security/user"), nil)
+			if err != nil {
+				return nil, err
+			}
+			defer resp.Body.Close()
+
+			bytes, err = io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to read Elasticsearch users response body")
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				return nil, errors.Errorf("failed to get Elasticsearch users: unexpected status code %d: %s", resp.StatusCode, string(bytes))
+			}
 		}
 	}
 
