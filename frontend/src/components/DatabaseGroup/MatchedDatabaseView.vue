@@ -188,7 +188,7 @@ const state = reactive<LocalState>({
   collapseExpandedNames: [],
 });
 
-const loadMoreDatabase = async <T>(item: DatabaseMatchList<T>) => {
+const loadMoreDatabase = async <T,>(item: DatabaseMatchList<T>) => {
   item.loading = true;
   try {
     const { databases, token } = await item.loadMore(item.token);
