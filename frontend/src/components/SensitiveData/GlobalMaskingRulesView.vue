@@ -120,26 +120,15 @@ import {
   PencilIcon,
   PlusIcon,
 } from "lucide-vue-next";
-import { NButton, NEmpty, type SelectOption } from "naive-ui";
+import { NButton, NEmpty } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, nextTick, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  getEnvironmentIdOptions,
-  getProjectIdOptions,
-} from "@/components/CustomApproval/Settings/components/common";
-import { getDatabaseIdOptions } from "@/components/CustomApproval/Settings/components/common/utils";
 import { type OptionConfig } from "@/components/ExprEditor/context";
+import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import { useBodyLayoutContext } from "@/layouts/common";
 import type { Factor } from "@/plugins/cel";
-import {
-  featureToRef,
-  pushNotification,
-  useDatabaseV1Store,
-  useInstanceV1Store,
-  usePolicyV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { featureToRef, pushNotification, usePolicyV1Store } from "@/store";
 import type {
   MaskingRulePolicy_MaskingRule,
   Policy,
@@ -153,7 +142,10 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   arraySwap,
-  getDefaultPagination,
+  getDatabaseIdOptionConfig,
+  getEnvironmentIdOptions,
+  getInstanceIdOptionConfig,
+  getProjectIdOptionConfig,
   hasWorkspacePermissionV2,
 } from "@/utils";
 import {
@@ -168,10 +160,7 @@ import {
 import LearnMoreLink from "../LearnMoreLink.vue";
 import { MiniActionButton } from "../v2";
 import MaskingRuleConfig from "./components/MaskingRuleConfig.vue";
-import {
-  getClassificationLevelOptions,
-  getInstanceIdOptions,
-} from "./components/utils";
+import { getClassificationLevelOptions } from "./components/utils";
 
 type MaskingRuleMode = "NORMAL" | "EDIT" | "CREATE";
 
@@ -361,70 +350,26 @@ const factorList = computed((): Factor[] => {
 
 const factorOptionsMap = computed((): Map<Factor, OptionConfig> => {
   return factorList.value.reduce((map, factor) => {
-    let options: SelectOption[] = [];
+    let options: ResourceSelectOption<unknown>[] = [];
     switch (factor) {
       case CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID:
         options = getEnvironmentIdOptions();
         break;
       case CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID:
-        const store = useInstanceV1Store();
-        map.set(factor, {
-          remote: true,
-          options: [],
-          search: async (keyword: string) => {
-            return store
-              .fetchInstanceList({
-                pageSize: getDefaultPagination(),
-                filter: {
-                  query: keyword,
-                },
-              })
-              .then((resp) => getInstanceIdOptions(resp.instances));
-          },
-        });
+        map.set(factor, getInstanceIdOptionConfig());
         return map;
       case CEL_ATTRIBUTE_RESOURCE_PROJECT_ID:
-        const projectStore = useProjectV1Store();
-        map.set(factor, {
-          remote: true,
-          options: [],
-          search: async (keyword: string) => {
-            return projectStore
-              .fetchProjectList({
-                pageSize: getDefaultPagination(),
-                filter: {
-                  query: keyword,
-                },
-              })
-              .then((resp) => getProjectIdOptions(resp.projects));
-          },
-        });
+        map.set(factor, getProjectIdOptionConfig());
         return map;
       case CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL:
         options = getClassificationLevelOptions();
         break;
       case CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME: {
-        const dbStore = useDatabaseV1Store();
-        map.set(factor, {
-          remote: true,
-          options: [],
-          search: async (keyword: string) => {
-            return dbStore
-              .fetchDatabases({
-                pageSize: getDefaultPagination(),
-                parent: "workspaces/-",
-                filter: {
-                  query: keyword,
-                },
-              })
-              .then((resp) => getDatabaseIdOptions(resp.databases));
-          },
-        });
+        map.set(factor, getDatabaseIdOptionConfig("workspaces/-"));
         return map;
       }
     }
     map.set(factor, {
-      remote: false,
       options,
     });
     return map;

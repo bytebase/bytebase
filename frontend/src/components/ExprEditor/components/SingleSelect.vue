@@ -1,97 +1,65 @@
 <template>
-  <NSelect
+  <RemoteResourceSelector
+    v-if="optionConfig.search"
+    size="small"
+    style="min-width: 7rem; width: auto; overflow-x: hidden"
+    :multiple="false"
+    :disabled="readonly"
     :value="value"
-    :remote="optionConfig.remote"
-    :options="state.rawOptionList"
-    :loading="state.loading"
+    :search="optionConfig.search"
+    :consistent-menu-width="false"
+    :additional-options="additionalOptions"
+    :fallback-option="optionConfig.fallback"
+    @update:value="$emit('update:value', $event as string)"
+    @open="initial"
+  />
+  <NSelect
+    v-else
+    size="small"
+    style="min-width: 7rem; width: auto; overflow-x: hidden"
+    :value="value"
+    :options="optionConfig.options"
     :consistent-menu-width="false"
     :filterable="true"
     :placeholder="$t('cel.condition.select-value')"
     :disabled="readonly"
-    size="small"
-    style="min-width: 7rem; width: auto; overflow-x: hidden"
-    @search="handleSearch"
     @update:value="$emit('update:value', $event)"
   />
 </template>
 
 <script lang="ts" setup>
-import { useDebounceFn } from "@vueuse/core";
-import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { reactive, toRef, watch } from "vue";
+import { onMounted, ref, toRef } from "vue";
+import RemoteResourceSelector from "@/components/v2/Select/RemoteResourceSelector/index.vue";
+import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import { type ConditionExpr } from "@/plugins/cel";
-import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import { useExprEditorContext } from "../context";
-import { useSelectOptionConfig } from "./common";
-
-interface LocalState {
-  loading: boolean;
-  rawOptionList: SelectOption[];
-}
+import { initOptions, useSelectOptionConfig } from "./common";
 
 const props = defineProps<{
-  value: string | number;
+  value: string;
   expr: ConditionExpr;
 }>();
 
 defineEmits<{
-  (event: "update:value", value: string | number): void;
+  (event: "update:value", value: string): void;
 }>();
 
 const context = useExprEditorContext();
 const { readonly } = context;
-const state = reactive<LocalState>({
-  loading: false,
-  rawOptionList: [],
-});
 
-const { optionConfig, factor } = useSelectOptionConfig(toRef(props, "expr"));
+const { optionConfig } = useSelectOptionConfig(toRef(props, "expr"));
+const additionalOptions = ref<ResourceSelectOption<unknown>[]>([]);
 
-// Non-debounced function for initial load
-const loadOptions = async (search: string) => {
-  if (!optionConfig.value.search) {
-    state.rawOptionList = [...optionConfig.value.options];
+const initial = async () => {
+  if (!props.value || additionalOptions.value[0]?.value === props.value) {
     return;
   }
-
-  state.loading = true;
-  try {
-    const options = await optionConfig.value.search(search);
-    state.rawOptionList = [...options];
-  } finally {
-    state.loading = false;
-  }
+  const options = await initOptions([props.value], optionConfig.value);
+  additionalOptions.value = options;
 };
 
-// Debounced version for user-typed searches
-const handleSearch = useDebounceFn(loadOptions, DEBOUNCE_SEARCH_DELAY);
-
-watch(
-  () => factor.value,
-  async () => {
-    // Use non-debounced loadOptions for initial load to ensure options
-    // are available immediately when the component renders
-    await loadOptions("");
-    const search = optionConfig.value.search;
-    if (!search) {
-      return;
-    }
-
-    if (
-      props.value &&
-      !state.rawOptionList.find((opt) => opt.value === props.value)
-    ) {
-      const existed = new Set(state.rawOptionList.map((opt) => opt.value));
-      const options = await search(props.value as string);
-      for (const option of options) {
-        if (!existed.has(option.value)) {
-          state.rawOptionList.push(option);
-          existed.add(option.value);
-        }
-      }
-    }
-  },
-  { immediate: true }
-);
+onMounted(async () => {
+  await initial();
+});
 </script>

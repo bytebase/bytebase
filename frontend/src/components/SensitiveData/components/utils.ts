@@ -1,19 +1,14 @@
 import { create } from "@bufbuild/protobuf";
 import { uniq } from "lodash-es";
-import type { SelectOption } from "naive-ui";
-import { h } from "vue";
-import { getRenderOptionFunc } from "@/components/CustomApproval/Settings/components/common";
-import { InstanceV1Name } from "@/components/v2";
+import type { ResourceSelectOption } from "@/components/v2/Select/RemoteResourceSelector/types";
 import type { Factor, Operator } from "@/plugins/cel";
 import { CollectionOperatorList, EqualityOperatorList } from "@/plugins/cel";
 import { useSettingV1Store } from "@/store";
-import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
 import {
   AlgorithmSchema,
   Setting_SettingName,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { extractInstanceResourceName } from "@/utils";
 import { CEL_ATTRIBUTE_RESOURCE_PROJECT_ID } from "@/utils/cel-attributes";
 
 export const getClassificationLevelOptions = () => {
@@ -33,28 +28,10 @@ export const getClassificationLevelOptions = () => {
     return [];
   }
 
-  return config[0].levels.map<SelectOption>((level) => ({
+  return config[0].levels.map<ResourceSelectOption<unknown>>((level) => ({
     label: level.title,
     value: level.id,
   }));
-};
-
-export const getInstanceIdOptions = (instanceList: Instance[]) => {
-  return instanceList.map<SelectOption>((ins) => {
-    const instanceId = extractInstanceResourceName(ins.name);
-    return {
-      label: `${ins.title} (${instanceId})`,
-      value: instanceId,
-      render: getRenderOptionFunc({
-        name: ins.name,
-        title: () =>
-          h(InstanceV1Name, {
-            instance: ins,
-            link: false,
-          }),
-      }),
-    };
-  });
 };
 
 export const factorOperatorOverrideMap = new Map<Factor, Operator[]>([
