@@ -196,7 +196,7 @@ const activeUserCountWithoutBot = computed(() =>
 
 const userLimit = computed((): string => {
   if (subscriptionStore.userCountLimit === Number.MAX_VALUE) {
-    return t("subscription.unlimited");
+    return t("common.unlimited");
   }
   return `${subscriptionStore.userCountLimit}`;
 });

@@ -247,7 +247,8 @@
     "remaining": "剩余",
     "line": "行",
     "column": "列",
-    "apply-to-database": "应用到数据库"
+    "apply-to-database": "应用到数据库",
+    "unlimited": "无限制"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -730,7 +731,7 @@
         "query-data-policy": {
           "timeout": {
             "self": "最大查询时间",
-            "description": "SQL 编辑器中允许运行查询的最长时间。"
+            "description": "允许运行查询的最长时间。"
           },
           "seconds": "秒",
           "project-scope": "项目",
@@ -2384,7 +2385,6 @@
     "expires-at": "过期时间",
     "plan-compare": "比较方案",
     "trialing": "试用中",
-    "unlimited": "无限制",
     "max-instance-count": "最大实例数量",
     "plan": {
       "free": {

@@ -247,7 +247,8 @@
     "remaining": "残り",
     "line": "行",
     "column": "列",
-    "apply-to-database": "データベースに適用"
+    "apply-to-database": "データベースに適用",
+    "unlimited": "無制限"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -730,7 +731,7 @@
         "query-data-policy": {
           "timeout": {
             "self": "最大クエリ時間",
-            "description": "SQL エディターでクエリを実行するために許可される最大時間。"
+            "description": "クエリの実行に許容される最大時間。"
           },
           "seconds": "秒",
           "project-scope": "プロジェクト",
@@ -2384,7 +2385,6 @@
     "expires-at": "有効期限",
     "plan-compare": "プランを比較する",
     "trialing": "トライアル中",
-    "unlimited": "無制限",
     "max-instance-count": "最大インスタンス数",
     "plan": {
       "free": {
