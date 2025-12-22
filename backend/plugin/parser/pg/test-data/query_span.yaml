@@ -1,3 +1,35 @@
+- description:
+  statement: |-
+    SELECT
+      MIN(bb) AS aa
+    FROM
+      (
+        SELECT
+        1 bb
+      ) AS r
+    WHERE
+      1 = 1
+    ;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+      - name: aa
+        sourcecolumns: []
+        isplainfield: false
+        sourcefieldpaths: []
+        selectasterisk: false
+    sourcecolumns: []
+    predicatecolumns: []
 - description: unnest as table source with alias
   statement: SELECT * FROM unnest(ARRAY[1,2,3], ARRAY[0,0,0]) as t(a, b);
   defaultDatabase: db
