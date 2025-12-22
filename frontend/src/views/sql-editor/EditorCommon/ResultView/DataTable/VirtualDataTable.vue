@@ -214,6 +214,7 @@ import { useWindowSize, watchDebounced } from "@vueuse/core";
 import { NPerformantEllipsis, NVirtualList } from "naive-ui";
 import { nextTick, ref } from "vue";
 import { type ComposedDatabase, DEBOUNCE_SEARCH_DELAY } from "@/types";
+import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
 import { type QueryRow } from "@/types/proto-es/v1/sql_service_pb";
 import { type SearchParams } from "@/utils";
 import BinaryFormatButton from "./common/BinaryFormatButton.vue";
@@ -242,7 +243,7 @@ const props = defineProps<{
   setIndex: number;
   activeRowIndex: number;
   isSensitiveColumn: (index: number) => boolean;
-  getMaskingReason?: (index: number) => any;
+  getMaskingReason?: (index: number) => MaskingReason | undefined;
   database: ComposedDatabase;
   sortState?: SortState;
   search: SearchParams;

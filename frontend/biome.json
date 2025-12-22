@@ -57,7 +57,7 @@
           "options": { "allow": ["warn", "error", "debug", "assert", "log"] }
         },
         "noDebugger": "error",
-        "noExplicitAny": "off",
+        "noExplicitAny": "error",
         "noExtraNonNullAssertion": "error",
         "noMisleadingInstantiator": "error",
         "noNonNullAssertedOptionalChain": "error",

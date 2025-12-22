@@ -1,3 +1,4 @@
+import { unknown } from './src/types/common';
 /* eslint-disable no-console */
 import { config } from "dotenv";
 import { promises as fs } from "fs";
@@ -122,13 +123,13 @@ async function translateJsonValue(
   }
 }
 
-async function loadJsonFile(filePath: string): Promise<any> {
+async function loadJsonFile(filePath: string): Promise<JsonObject> {
   try {
     const data = await fs.readFile(filePath, "utf8");
     return JSON.parse(data);
   } catch (error) {
     console.error(`Error reading file ${filePath}:`, error);
-    return null;
+    return {};
   }
 }
 

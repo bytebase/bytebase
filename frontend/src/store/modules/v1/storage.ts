@@ -8,7 +8,7 @@ PouchDB.plugin(PouchDBFind);
 export const useStorageStore = defineStore("storageStore", () => {
   const db = new PouchDB<{
     _id: string;
-    value: any;
+    value: unknown;
   }>("bb.storage", {
     // Remove unused and old data automatically.
     auto_compaction: true,
@@ -16,7 +16,7 @@ export const useStorageStore = defineStore("storageStore", () => {
     revs_limit: 1,
   });
 
-  const put = async <T = any>(key: string, value: T) => {
+  const put = async <T = unknown>(key: string, value: T) => {
     await db.put(
       {
         _id: key,
@@ -25,7 +25,7 @@ export const useStorageStore = defineStore("storageStore", () => {
       { force: true }
     );
   };
-  const get = async <T = any>(key: string) => {
+  const get = async <T = unknown>(key: string) => {
     try {
       const doc = await db.get(key);
       return doc.value as T;

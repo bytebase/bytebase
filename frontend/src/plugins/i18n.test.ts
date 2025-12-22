@@ -1,3 +1,4 @@
+import { isEqual } from "lodash-es";
 import { describe, expect, test } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
@@ -6,7 +7,19 @@ import {
   ruleTypeToString,
   TEMPLATE_LIST_V2,
 } from "../types/sqlReview";
-import { mergedLocalMessage } from "./i18n-messages";
+import { type LocaleMessageObject, mergedLocalMessage } from "./i18n-messages";
+
+// Helper to safely access nested locale objects
+const getNestedObject = (
+  obj: LocaleMessageObject,
+  key: string
+): LocaleMessageObject => {
+  const value = obj[key];
+  if (typeof value === "string") {
+    throw new Error(`Expected object at key "${key}", got string`);
+  }
+  return value;
+};
 
 describe("Test i18n messages", () => {
   for (const keyA of Object.keys(mergedLocalMessage)) {
@@ -14,11 +27,20 @@ describe("Test i18n messages", () => {
       if (keyA === keyB) {
         continue;
       }
+      if (
+        typeof mergedLocalMessage[keyA] === "string" ||
+        typeof mergedLocalMessage[keyB] === "string"
+      ) {
+        if (!isEqual(mergedLocalMessage[keyA], mergedLocalMessage[keyB])) {
+          throw Error(`${keyA} and ${keyB} not match`);
+        }
+        continue;
+      }
 
       test(`i18n message for ${keyA} and ${keyB}`, () => {
         const missMatchKey = compareMessages(
-          mergedLocalMessage[keyA],
-          mergedLocalMessage[keyB]
+          mergedLocalMessage[keyA] as LocaleMessageObject,
+          mergedLocalMessage[keyB] as LocaleMessageObject
         );
         let message = "";
         if (missMatchKey !== "") {
@@ -33,56 +55,59 @@ describe("Test i18n messages", () => {
 
 describe("Test i18n for SQL review", () => {
   expect(Object.keys(mergedLocalMessage).length).greaterThan(0);
-  const i18nMessage = Object.values(mergedLocalMessage)[0];
+  const i18nMessage = Object.values(
+    mergedLocalMessage
+  )[0] as LocaleMessageObject;
   expect(!!i18nMessage["sql-review"]).toBe(true);
 
-  const i18nForSQLReview = i18nMessage["sql-review"];
-  expect(!!i18nForSQLReview["template"]).toBe(true);
-  expect(!!i18nForSQLReview["rule"]).toBe(true);
-  expect(!!i18nForSQLReview["engine"]).toBe(true);
-  expect(!!i18nForSQLReview["category"]).toBe(true);
+  const i18nForSQLReview = getNestedObject(i18nMessage, "sql-review");
+  const templateMessages = getNestedObject(i18nForSQLReview, "template");
+  const ruleMessages = getNestedObject(i18nForSQLReview, "rule");
+  const categoryMessages = getNestedObject(i18nForSQLReview, "category");
+  const levelMessages = getNestedObject(i18nForSQLReview, "level");
+  const engineMessages = getNestedObject(i18nForSQLReview, "engine");
+
+  expect(!!templateMessages).toBe(true);
+  expect(!!ruleMessages).toBe(true);
+  expect(!!engineMessages).toBe(true);
+  expect(!!categoryMessages).toBe(true);
 
   for (const template of TEMPLATE_LIST_V2) {
     describe(`check i18n for template ${template.id}`, () => {
       const key = `${template.id.split(".").join("-")}`;
-      expect(!!i18nForSQLReview["template"][key]).toBe(true);
-      expect(!!i18nForSQLReview["template"][`${key}-desc`]).toBe(true);
+      expect(!!templateMessages[key]).toBe(true);
+      expect(!!templateMessages[`${key}-desc`]).toBe(true);
 
       for (const rule of template.ruleList) {
         test(`check i18n for rule ${ruleTypeToString(rule.type)}`, () => {
           const key = getRuleLocalizationKey(ruleTypeToString(rule.type));
-          expect(!!i18nForSQLReview["rule"][key], "rule-key").toBe(true);
+          const ruleMessage = getNestedObject(ruleMessages, key);
+          expect(!!ruleMessage, "rule-key").toBe(true);
+          expect(!!ruleMessage["title"], "rule-key-title").toBe(true);
+          expect(!!ruleMessage["description"], "rule-key-description").toBe(
+            true
+          );
           expect(
-            !!i18nForSQLReview["rule"][key]["title"],
-            "rule-key-title"
-          ).toBe(true);
-          expect(
-            !!i18nForSQLReview["rule"][key]["description"],
-            "rule-key-description"
-          ).toBe(true);
-          expect(
-            !!i18nForSQLReview["category"][rule.category.toLowerCase()],
+            !!categoryMessages[rule.category.toLowerCase()],
             "category-rule.category"
           ).toBe(true);
           expect(
-            !!i18nForSQLReview["level"][
+            !!levelMessages[
               sqlReviewRuleLevelToString(rule.level).toLowerCase()
             ],
             "level-rule.level"
           ).toBe(true);
 
           expect(
-            !!i18nForSQLReview["engine"][Engine[rule.engine].toLowerCase()],
+            !!engineMessages[Engine[rule.engine].toLowerCase()],
             "engine.rule-engine"
           ).toBe(true);
 
           for (const component of rule.componentList) {
+            const componentMessages = getNestedObject(ruleMessage, "component");
+            expect(!!componentMessages, "rule-key-component").toBe(true);
             expect(
-              !!i18nForSQLReview["rule"][key]["component"],
-              "rule-key-component"
-            ).toBe(true);
-            expect(
-              !!i18nForSQLReview["rule"][key]["component"][component.key],
+              !!componentMessages[component.key],
               "rule-key-component-component.key"
             ).toBe(true);
           }
@@ -107,8 +132,8 @@ const sqlReviewRuleLevelToString = (level: SQLReviewRule_Level): string => {
 };
 
 const compareMessages = (
-  localA: { [k: string]: any },
-  localB: { [k: string]: any }
+  localA: LocaleMessageObject,
+  localB: LocaleMessageObject
 ): string => {
   for (const [key, valA] of Object.entries(localA)) {
     const valB = localB[key];

@@ -143,6 +143,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { last } from "lodash-es";
 import { CalendarClockIcon, LinkIcon } from "lucide-vue-next";
@@ -256,7 +257,7 @@ const relatedSpec = computed(() => {
   return plan.value.specs.find((spec) => spec.id === task.value.specId);
 });
 
-const formatFullDateTime = (timestamp: any) => {
+const formatFullDateTime = (timestamp?: Timestamp) => {
   const timestampInMilliseconds = getTimeForPbTimestampProtoEs(timestamp, 0);
   return dayjs(timestampInMilliseconds).local().format();
 };

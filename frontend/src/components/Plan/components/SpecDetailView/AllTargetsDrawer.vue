@@ -126,7 +126,7 @@ const loadAllTargets = async () => {
     );
 
     // Batch fetch all targets
-    const fetchPromises: Promise<any>[] = [];
+    const fetchPromises: Promise<unknown>[] = [];
 
     if (databaseTargets.length > 0) {
       fetchPromises.push(batchGetOrFetchDatabases(databaseTargets));

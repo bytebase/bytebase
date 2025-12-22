@@ -52,7 +52,7 @@ const connectWebSocket = () => {
 
   const connect = (
     resolve: (value: WebSocket | PromiseLike<WebSocket>) => void,
-    reject: (reason?: any) => void
+    reject: (reason?: unknown) => void
   ) => {
     const ws = new WebSocket(conn.url);
     const retries = conn.retries++;
@@ -255,7 +255,7 @@ export const initializeLSPClient = () => {
 export const executeCommand = async (
   client: MonacoLanguageClient,
   command: string,
-  args: any[] | undefined
+  args: unknown[] | undefined
 ) => {
   const executeCommandParams: ExecuteCommandParams = {
     command,

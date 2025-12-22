@@ -174,7 +174,7 @@ const handleBatchArchive = async () => {
     state.showArchiveConfirm = false;
     state.force = false;
     emit("update");
-  } catch (error: any) {
+  } catch (error: unknown) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",

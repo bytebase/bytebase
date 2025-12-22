@@ -35,6 +35,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { head } from "lodash-es";
 import type { ButtonGroupProps, SelectOption } from "naive-ui";
 import { NButton, NButtonGroup, NPopselect } from "naive-ui";
+import type { CSSProperties } from "vue";
 import { computed, ref } from "vue";
 import type { ContextMenuButtonAction } from "./types";
 
@@ -111,7 +112,7 @@ const changeActionKey = (key: string) => {
 };
 
 const dropdownButtonStyle = (action: ContextMenuButtonAction) => {
-  const style: Record<string, any> = {
+  const style: CSSProperties = {
     "--n-padding": "0 6px",
   };
   if (action.props?.type === "primary") {

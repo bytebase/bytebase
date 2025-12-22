@@ -170,7 +170,7 @@ export const ruleTemplateMapV2 = getRuleMapByEngine(
 // Build the frontend template list based on schema and template.
 export const TEMPLATE_LIST_V2: SQLReviewPolicyTemplateV2[] = (function () {
   interface PayloadObject {
-    [key: string]: any;
+    [key: string]: unknown;
   }
   const templateList = [
     sqlReviewSampleTemplate,
@@ -288,9 +288,9 @@ export const convertPolicyRuleToRuleTemplate = (
   }
 
   // Extract payload value from proto oneof
-  let payload: any = {};
+  let payload: Record<string, unknown> = {};
   if (policyRule?.payload?.case) {
-    payload = policyRule.payload.value;
+    payload = policyRule.payload.value as Record<string, unknown>;
   }
 
   const stringComponent = componentList.find(

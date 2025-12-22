@@ -168,7 +168,7 @@ export const getColumnCatalog = (
       ? tableCatalog.kind.value.columns
       : [];
   return (
-    columns.find((c: any) => c.name === column) ??
+    columns.find((c) => c.name === column) ??
     create(ColumnCatalogSchema, {
       name: column,
     })

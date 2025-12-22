@@ -9,7 +9,9 @@ export type SQLEditorTreeFactor =
   | "environment"
   | `label:${string}`; // "label:xxxxx" to group by certain label key
 
-export type StatefulSQLEditorTreeFactor<F extends SQLEditorTreeFactor = any> = {
+export type StatefulSQLEditorTreeFactor<
+  F extends SQLEditorTreeFactor = SQLEditorTreeFactor,
+> = {
   factor: F;
   disabled: boolean;
 };
@@ -25,30 +27,34 @@ export type LabelTarget = {
   value: string;
 };
 
-export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
-  T extends "instance"
-    ? Omit<InstanceResource, "$typeName">
-    : T extends "environment"
-      ? Environment
-      : T extends "database"
-        ? ComposedDatabase
-        : T extends "label"
-          ? LabelTarget
-          : never;
+export type SQLEditorTreeNodeTarget<
+  T extends SQLEditorTreeNodeType = SQLEditorTreeNodeType,
+> = T extends "instance"
+  ? Omit<InstanceResource, "$typeName">
+  : T extends "environment"
+    ? Environment
+    : T extends "database"
+      ? ComposedDatabase
+      : T extends "label"
+        ? LabelTarget
+        : never;
 
 export type SQLEditorTreeState = "UNSET" | "LOADING" | "READY";
 
-export type SQLEditorTreeNodeMeta<T extends SQLEditorTreeNodeType = any> = {
+export type SQLEditorTreeNodeMeta<
+  T extends SQLEditorTreeNodeType = SQLEditorTreeNodeType,
+> = {
   type: T;
   target: SQLEditorTreeNodeTarget<T>;
 };
 
-export type SQLEditorTreeNode<T extends SQLEditorTreeNodeType = any> =
-  TreeOption & {
-    meta: SQLEditorTreeNodeMeta<T>;
-    key: string;
-    children?: SQLEditorTreeNode[];
-  };
+export type SQLEditorTreeNode<
+  T extends SQLEditorTreeNodeType = SQLEditorTreeNodeType,
+> = TreeOption & {
+  meta: SQLEditorTreeNodeMeta<T>;
+  key: string;
+  children?: SQLEditorTreeNode[];
+};
 
 export const isValidSQLEditorTreeFactor = (
   str: string

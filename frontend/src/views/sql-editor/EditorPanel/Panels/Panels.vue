@@ -118,10 +118,7 @@ watch(
     ) {
       return;
     }
-    if (
-      !schema ||
-      database.schemas.findIndex((s: any) => s.name === schema) < 0
-    ) {
+    if (!schema || database.schemas.findIndex((s) => s.name === schema) < 0) {
       selectedSchemaName.value = first(database.schemas)?.name;
     }
   },

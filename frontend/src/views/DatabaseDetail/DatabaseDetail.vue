@@ -241,8 +241,8 @@ const databaseHashList = [
   "catalog",
 ] as const;
 export type DatabaseHash = (typeof databaseHashList)[number];
-const isDatabaseHash = (x: any): x is DatabaseHash =>
-  databaseHashList.includes(x);
+const isDatabaseHash = (x: unknown): x is DatabaseHash =>
+  databaseHashList.includes(x as DatabaseHash);
 
 interface LocalState {
   showTransferDatabaseModal: boolean;

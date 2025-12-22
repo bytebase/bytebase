@@ -7,7 +7,7 @@ export type BBButtonType =
 
 export type BBButtonConfirmType = "NORMAL" | "DELETE" | "ARCHIVE" | "RESTORE";
 
-export type BBTabItem<T = any> = {
+export type BBTabItem<T = unknown> = {
   title: string;
   // Used as the anchor
   id: string;

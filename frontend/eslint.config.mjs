@@ -39,7 +39,7 @@ export default [
       ],
       "@intlify/vue-i18n/no-missing-keys": "error",
       "@intlify/vue-i18n/no-raw-text": "off",
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "error",
       "vue/no-mutating-props": "error",
       "vue/no-unused-components": "error",
       "vue/no-useless-template-attributes": "error",

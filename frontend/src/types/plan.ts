@@ -5,14 +5,22 @@ import {
 } from "@/types/proto-es/v1/subscription_service_pb";
 import planData from "./plan.yaml";
 
+// Type for plan data loaded from YAML
+interface PlanYamlData {
+  type: keyof typeof PlanType;
+  maximumInstanceCount: number;
+  maximumSeatCount: number;
+  features: (keyof typeof PlanFeature)[];
+}
+
 // Convert YAML data to proper types
-export const PLANS: PlanLimitConfig[] = planData.plans.map((plan: any) => ({
-  ...plan,
-  type: PlanType[plan.type as keyof typeof PlanType],
-  features: plan.features.map(
-    (f: string) => PlanFeature[f as keyof typeof PlanFeature]
-  ),
-}));
+export const PLANS: PlanLimitConfig[] = (planData.plans as PlanYamlData[]).map(
+  (plan) => ({
+    ...plan,
+    type: PlanType[plan.type],
+    features: plan.features.map((f) => PlanFeature[f]),
+  })
+);
 
 // Create a plan feature matrix from the YAML data
 const planFeatureMatrix = new Map<PlanType, Set<PlanFeature>>();

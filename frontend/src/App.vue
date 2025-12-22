@@ -59,7 +59,7 @@ watchEffect(async () => {
   overrideAppProfile();
 });
 
-onErrorCaptured((error: any /* , _, info */) => {
+onErrorCaptured((error: unknown /* , _, info */) => {
   if (
     error instanceof ConnectError &&
     Object.values(Code).includes(error.code)

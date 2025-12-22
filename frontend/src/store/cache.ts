@@ -13,15 +13,18 @@ type EntityCacheEntry<K extends KeyType[], T> = {
 };
 const REQUEST_CACHE = new Map<
   string,
-  Map<string, RequestCacheEntry<any, any>>
+  Map<string, RequestCacheEntry<KeyType[], unknown>>
 >();
-const ENTITY_CACHE = new Map<string, Map<string, EntityCacheEntry<any, any>>>();
+const ENTITY_CACHE = new Map<
+  string,
+  Map<string, EntityCacheEntry<KeyType[], unknown>>
+>();
 
 export const useCache = <K extends KeyType[], T>(namespace: string) => {
   const requestCacheMap = getRequestCacheMap<K, T>(namespace);
   const entityCacheMap = getEntityCacheMap<K, T>(namespace);
 
-  const trace = (title: string, keys: KeyType[], ...args: any[]) => {
+  const trace = (title: string, keys: KeyType[], ...args: unknown[]) => {
     console.debug("cache", namespace, title, JSON.stringify(keys), ...args);
   };
 

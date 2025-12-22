@@ -89,17 +89,14 @@ const flattenNoSQLColumn = (value: unknown): unknown => {
     }
   }
 
-  return Object.keys(dict).reduce(
-    (d, key) => {
-      d[key] = flattenNoSQLColumn(dict[key]);
-      return d;
-    },
-    {} as { [key: string]: any }
-  );
+  return Object.keys(dict).reduce<Record<string, unknown>>((d, key) => {
+    d[key] = flattenNoSQLColumn(dict[key]);
+    return d;
+  }, {});
 };
 
 const convertAnyToRowValue = (
-  value: any,
+  value: unknown,
   nested: boolean
 ): { value: RowValue; type: string } => {
   switch (typeof value) {
@@ -329,7 +326,7 @@ const getNoSQLRows = (row: QueryRow): NoSQLRowData[] | undefined => {
     return;
   }
   const parsedRow = JSON.parse(row.values[0].kind.value) as {
-    [key: string]: any;
+    [key: string]: Record<string, unknown>;
   };
   const results: NoSQLRowData[] = [];
 

@@ -1,6 +1,6 @@
-import { Tag } from "@markdoc/markdoc";
+import { type Config, type Node, type Schema, Tag } from "@markdoc/markdoc";
 
-export const markdocConfig = {
+export const markdocConfig: { nodes: Record<string, Schema> } = {
   nodes: {
     link: {
       render: "a",
@@ -8,7 +8,7 @@ export const markdocConfig = {
         href: { type: String, required: true },
         target: { type: String, default: "_blank" },
       },
-      transform(node: any, config: any) {
+      transform(node: Node, config: Config) {
         const attributes = node.transformAttributes(config);
         const children = node.transformChildren(config);
         Object.assign(attributes, { target: "_blank" });

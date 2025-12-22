@@ -5,6 +5,23 @@ import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 import sqlReviewSchema from "./sql-review-schema.yaml";
 
+// Type for template rule data loaded from YAML
+interface TemplateRule {
+  type: string;
+  engine: string;
+  level: string;
+  payload?: Record<string, unknown>;
+}
+
+// Type for schema rule data loaded from YAML
+interface SchemaRule {
+  type: string;
+  engine: string;
+  category: string;
+  level?: string;
+  componentList?: unknown[];
+}
+
 describe("SQL Review YAML Templates Validation", () => {
   const templates = [
     { name: "sample", data: sqlReviewSampleTemplate },
@@ -27,7 +44,7 @@ describe("SQL Review YAML Templates Validation", () => {
       });
 
       test("all rules must have required fields", () => {
-        data.ruleList.forEach((rule: any, index: number) => {
+        (data.ruleList as TemplateRule[]).forEach((rule, index) => {
           const ruleDesc = `rule[${index}] (${rule.type || "unknown"})`;
 
           // Type is required
@@ -52,7 +69,7 @@ describe("SQL Review YAML Templates Validation", () => {
 
       test("all rules must have valid level (ERROR or WARNING, not LEVEL_UNSPECIFIED)", () => {
         const validLevels = ["ERROR", "WARNING"];
-        data.ruleList.forEach((rule: any, index: number) => {
+        (data.ruleList as TemplateRule[]).forEach((rule, index) => {
           const ruleDesc = `rule[${index}] (${rule.type})`;
           expect(
             validLevels.includes(rule.level),
@@ -71,7 +88,7 @@ describe("SQL Review YAML Templates Validation", () => {
       });
 
       test("all rules must be convertible to SQLReviewRule_Level enum", () => {
-        data.ruleList.forEach((rule: any, index: number) => {
+        (data.ruleList as TemplateRule[]).forEach((rule, index) => {
           const ruleDesc = `rule[${index}] (${rule.type})`;
           const levelKey = rule.level as keyof typeof SQLReviewRule_Level;
           const levelValue = SQLReviewRule_Level[levelKey];
@@ -96,7 +113,7 @@ describe("SQL Review YAML Templates Validation", () => {
     });
 
     test("schema rules should NOT have level field", () => {
-      sqlReviewSchema.forEach((rule: any, index: number) => {
+      (sqlReviewSchema as SchemaRule[]).forEach((rule, index) => {
         const ruleDesc = `schema rule[${index}] (${rule.type || "unknown"})`;
 
         // Schema rules are just definitions, they should not have a level
@@ -108,7 +125,7 @@ describe("SQL Review YAML Templates Validation", () => {
     });
 
     test("schema rules must have required fields", () => {
-      sqlReviewSchema.forEach((rule: any, index: number) => {
+      (sqlReviewSchema as SchemaRule[]).forEach((rule, index) => {
         const ruleDesc = `schema rule[${index}] (${rule.type || "unknown"})`;
 
         // Type is required
@@ -136,12 +153,14 @@ describe("SQL Review YAML Templates Validation", () => {
   describe("Cross-template consistency", () => {
     test("report template rules that don't exist in schema", () => {
       const schemaRuleTypes = new Set(
-        sqlReviewSchema.map((rule: any) => `${rule.engine}:${rule.type}`)
+        (sqlReviewSchema as SchemaRule[]).map(
+          (rule) => `${rule.engine}:${rule.type}`
+        )
       );
 
       const missingRules: string[] = [];
       templates.forEach(({ name, data }) => {
-        data.ruleList.forEach((rule: any) => {
+        (data.ruleList as TemplateRule[]).forEach((rule) => {
           const ruleKey = `${rule.engine}:${rule.type}`;
           if (!schemaRuleTypes.has(ruleKey)) {
             missingRules.push(`${name}: ${ruleKey}`);

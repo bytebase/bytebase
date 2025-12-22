@@ -484,7 +484,7 @@ watch(
 );
 
 // Handlers for flat list events
-const handleFlatListSelect = (table: any) => {
+const handleFlatListSelect = (table: { schema?: string }) => {
   // Update connection schema if needed
   const tab = currentTab.value;
   if (tab && table.schema) {

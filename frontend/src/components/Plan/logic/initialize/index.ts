@@ -208,7 +208,7 @@ export function useInitializePlan(
         issue.value = result.issue;
         rollout.value = result.rollout;
         isInitializing.value = false;
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Check Connect error type and handle accordingly
         if (error instanceof ConnectError) {
           if (error.code === Code.NotFound) {

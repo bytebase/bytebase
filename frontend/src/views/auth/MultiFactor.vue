@@ -109,7 +109,7 @@ const onOtpCodeFinish = async (value: string[]) => {
 };
 
 const challenge = async () => {
-  const mfaContext: any = {};
+  const mfaContext: { otpCode?: string; recoveryCode?: string } = {};
   if (state.selectedMFAType === "OTP") {
     mfaContext.otpCode = state.otpCodes.join("");
   } else if (state.selectedMFAType === "RECOVERY_CODE") {

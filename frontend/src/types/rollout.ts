@@ -20,7 +20,7 @@ export const unknownRollout = (): Rollout => {
   });
 };
 
-export const isValidRolloutName = (name: any): name is string => {
+export const isValidRolloutName = (name: unknown): name is string => {
   if (typeof name !== "string") return false;
   const [projectName, rolloutName] = getProjectNameRolloutId(name);
   return Boolean(

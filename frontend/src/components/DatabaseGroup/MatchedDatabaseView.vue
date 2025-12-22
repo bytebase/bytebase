@@ -45,11 +45,11 @@
           </div>
         </div>
         <NButton
-          v-if="item.hasNext(item.token)"
+          v-if="checkHasNext(item)"
           size="small"
           quaternary
           :loading="item.loading"
-          @click="() => loadMoreDatabase(item)"
+          @click="loadMore(item)"
         >
           {{ $t("common.load-more") }}
         </NButton>
@@ -95,10 +95,18 @@ interface DatabaseMatchList<T> {
   loadMore: (token: T) => Promise<{ databases: ComposedDatabase[]; token: T }>;
 }
 
+type AnyDatabaseMatchList =
+  | DatabaseMatchList<number>
+  | DatabaseMatchList<string>;
+
+const checkHasNext = (item: AnyDatabaseMatchList): boolean => {
+  return (item.hasNext as (token: number | string) => boolean)(item.token);
+};
+
 interface LocalState {
   loading: boolean;
   matchingError?: string;
-  databaseMatchLists: DatabaseMatchList<any>[];
+  databaseMatchLists: AnyDatabaseMatchList[];
   collapseExpandedNames: string[];
 }
 
@@ -180,18 +188,24 @@ const state = reactive<LocalState>({
   collapseExpandedNames: [],
 });
 
-// biome-ignore format: ESLint requires trailing comma for generic type parameter
-const loadMoreDatabase = async <T,>(state: DatabaseMatchList<T>) => {
-  state.loading = true;
+const loadMoreDatabase = async <T>(item: DatabaseMatchList<T>) => {
+  item.loading = true;
   try {
-    const { databases, token } = await state.loadMore(state.token);
-    state.token = token;
-    state.databaseList.push(
+    const { databases, token } = await item.loadMore(item.token);
+    item.token = token;
+    item.databaseList.push(
       ...databases.filter((database) => isValidDatabaseName(database.name))
     );
   } finally {
-    state.loading = false;
+    item.loading = false;
   }
+};
+
+const loadMore = (item: AnyDatabaseMatchList) => {
+  if (item.name === "matched") {
+    return loadMoreDatabase(item as DatabaseMatchList<number>);
+  }
+  return loadMoreDatabase(item as DatabaseMatchList<string>);
 };
 
 watch(
@@ -230,9 +244,7 @@ const updateDatabaseMatchingState = useDebounceFn(async () => {
     state.matchingError = undefined;
     state.databaseMatchLists = getInitialState();
     matchedDatabaseNameList.value = matchedDatabaseList;
-    await Promise.all(
-      state.databaseMatchLists.map((item) => loadMoreDatabase(item))
-    );
+    await Promise.all(state.databaseMatchLists.map((item) => loadMore(item)));
   } catch (error) {
     state.matchingError = (error as ConnectError).message;
   } finally {

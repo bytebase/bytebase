@@ -4,7 +4,7 @@ import { computed, ref, watchEffect } from "vue";
 
 interface WebSocketMessage {
   method: string;
-  params: any;
+  params: unknown;
 }
 
 interface StatementRangeMessage {

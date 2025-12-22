@@ -232,7 +232,8 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 
 const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
-const isMemberTab = (tab: any): tab is MemberTab => tabList.includes(tab);
+const isMemberTab = (tab: unknown): tab is MemberTab =>
+  tabList.includes(tab as MemberTab);
 const defaultTab: MemberTab = "USERS";
 
 type LocalState = {
