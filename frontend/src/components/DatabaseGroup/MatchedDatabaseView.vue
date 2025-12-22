@@ -188,6 +188,7 @@ const state = reactive<LocalState>({
   collapseExpandedNames: [],
 });
 
+// biome-ignore format: ESLint requires trailing comma for generic type parameter
 const loadMoreDatabase = async <T>(item: DatabaseMatchList<T>) => {
   item.loading = true;
   try {
