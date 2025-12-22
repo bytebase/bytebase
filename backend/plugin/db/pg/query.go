@@ -37,6 +37,8 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 		return new(pgtype.Timestamptz)
 	case "BIT", "VARBIT", "BYTEA":
 		return new([]byte)
+	case "GEOMETRY", "GEOGRAPHY":
+		return new([]byte)
 	default:
 		return new(sql.NullString)
 	}

@@ -58,6 +58,8 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 		return new([]byte)
 	case "SQL_VARIANT":
 		return new([]byte)
+	case "GEOMETRY", "GEOGRAPHY":
+		return new([]byte)
 	default:
 		// For unknown types, default to sql.NullString which can handle most values
 		return new(sql.NullString)

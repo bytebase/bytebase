@@ -227,7 +227,17 @@ export const getBinaryFormatByColumnType = (
     columnType === "varbinary(max)" ||
     // Oracle binary types
     columnType === "raw" ||
-    columnType === "long raw";
+    columnType === "long raw" ||
+    // Spatial types (SQL Server, PostgreSQL/PostGIS, MySQL)
+    columnType === "geometry" ||
+    columnType === "geography" ||
+    columnType === "point" ||
+    columnType === "linestring" ||
+    columnType === "polygon" ||
+    columnType === "multipoint" ||
+    columnType === "multilinestring" ||
+    columnType === "multipolygon" ||
+    columnType === "geometrycollection";
 
   // BINARY/VARBINARY/BLOB columns default to HEX format
   if (isBinaryColumn) {
