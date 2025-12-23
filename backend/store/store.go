@@ -9,7 +9,6 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // Store provides database access to all raw objects.
@@ -29,8 +28,7 @@ type Store struct {
 	groupCache     *lru.Cache[string, *GroupMessage]
 
 	// Large objects.
-	sheetFullCache  *lru.Cache[string, *SheetMessage]
-	dbMetadataCache *lru.Cache[string, *model.DatabaseMetadata]
+	sheetFullCache *lru.Cache[string, *SheetMessage]
 }
 
 // New creates a new instance of Store.
@@ -68,10 +66,6 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	dbMetadataCache, err := lru.New[string, *model.DatabaseMetadata](128)
-	if err != nil {
-		return nil, err
-	}
 	groupCache, err := lru.New[string, *GroupMessage](1024)
 	if err != nil {
 		return nil, err
@@ -88,16 +82,15 @@ func New(ctx context.Context, pgURL string, enableCache bool) (*Store, error) {
 		enableCache:   enableCache,
 
 		// Cache.
-		userEmailCache:  userEmailCache,
-		instanceCache:   instanceCache,
-		databaseCache:   databaseCache,
-		projectCache:    projectCache,
-		policyCache:     policyCache,
-		settingCache:    settingCache,
-		rolesCache:      rolesCache,
-		sheetFullCache:  sheetFullCache,
-		dbMetadataCache: dbMetadataCache,
-		groupCache:      groupCache,
+		userEmailCache: userEmailCache,
+		instanceCache:  instanceCache,
+		databaseCache:  databaseCache,
+		projectCache:   projectCache,
+		policyCache:    policyCache,
+		settingCache:   settingCache,
+		rolesCache:     rolesCache,
+		sheetFullCache: sheetFullCache,
+		groupCache:     groupCache,
 	}
 
 	return s, nil
