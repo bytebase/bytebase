@@ -13,7 +13,8 @@ ORDER BY plan_id, type, config->>'instanceId', config->>'databaseName', created_
 DELETE FROM plan_check_run;
 
 -- Step 3: Insert consolidated records (one per plan)
-INSERT INTO plan_check_run (plan_id, status, config, result, created_at, updated_at)
+-- Include type column with dummy value to satisfy NOT NULL constraint before dropping
+INSERT INTO plan_check_run (plan_id, status, type, config, result, created_at, updated_at)
 SELECT
     plan_id,
     -- Status aggregation
@@ -22,6 +23,8 @@ SELECT
         WHEN bool_or(status = 'FAILED') THEN 'FAILED'
         ELSE 'DONE'
     END,
+    -- Type is deprecated but keep a value for compatibility (will be dropped)
+    'bb.plan-check.database.statement.advise',
     -- Config: if any RUNNING, empty (will be re-run); otherwise aggregate
     CASE
         WHEN bool_or(status = 'RUNNING') THEN '{"targets": []}'::jsonb
