@@ -348,7 +348,7 @@ import {
   useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
-import { emptyUser, PresetRoleType } from "@/types";
+import { emptyUser } from "@/types";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import {
   UserSchema,
