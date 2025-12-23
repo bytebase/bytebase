@@ -940,7 +940,7 @@ func buildEnvironmentName(environmentID *string) *string {
 func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
 	instanceLimit := s.licenseService.GetInstanceLimit(ctx)
 
-	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
+	count, err := s.store.CountActiveInstances(ctx)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}
