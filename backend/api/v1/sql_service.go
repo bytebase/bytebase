@@ -1714,10 +1714,6 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	storeSourceMetadata := convertV1DatabaseMetadata(request.SourceMetadata)
 	storeTargetMetadata := convertV1DatabaseMetadata(request.TargetMetadata)
 
-	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid target metadata"))
-	}
-
 	// Convert metadata to model.DatabaseMetadata for diffing
 	isObjectCaseSensitive := true
 	sourceDBSchema := model.NewDatabaseMetadata(storeSourceMetadata, nil, nil, storepb.Engine(request.Engine), isObjectCaseSensitive)

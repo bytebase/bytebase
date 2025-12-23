@@ -10,6 +10,7 @@ import (
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -591,36 +592,6 @@ func (*PlanService) parsePlanCheckRunFilter(filter string, find *store.FindPlanC
 	return parseFilter(ast.NativeRep().Expr())
 }
 
-// convertToStorePlanCheckRunStatus converts v1pb.PlanCheckRun_Status to store.PlanCheckRunStatus.
-func convertToStorePlanCheckRunStatus(status v1pb.PlanCheckRun_Status) store.PlanCheckRunStatus {
-	switch status {
-	case v1pb.PlanCheckRun_CANCELED:
-		return store.PlanCheckRunStatusCanceled
-	case v1pb.PlanCheckRun_DONE:
-		return store.PlanCheckRunStatusDone
-	case v1pb.PlanCheckRun_FAILED:
-		return store.PlanCheckRunStatusFailed
-	case v1pb.PlanCheckRun_RUNNING:
-		return store.PlanCheckRunStatusRunning
-	default:
-		return store.PlanCheckRunStatusRunning
-	}
-}
-
-// convertToStoreResultStatus converts v1pb.Advice_Status to storepb.Advice_Status.
-func convertToStoreResultStatus(status v1pb.Advice_Level) storepb.Advice_Status {
-	switch status {
-	case v1pb.Advice_ERROR:
-		return storepb.Advice_ERROR
-	case v1pb.Advice_WARNING:
-		return storepb.Advice_WARNING
-	case v1pb.Advice_SUCCESS:
-		return storepb.Advice_SUCCESS
-	default:
-		return storepb.Advice_STATUS_UNSPECIFIED
-	}
-}
-
 // RunPlanChecks runs plan checks for a plan.
 func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Request[v1pb.RunPlanChecksRequest]) (*connect.Response[v1pb.RunPlanChecksResponse], error) {
 	req := request.Msg
@@ -948,4 +919,486 @@ func storePlanConfigHasRelease(plan *storepb.PlanConfig) bool {
 		}
 	}
 	return false
+}
+
+// Converters section - ordered with callers before callees.
+
+// getPlanCheckRunFromPlan returns a single consolidated plan check run for a plan.
+func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) (*store.PlanCheckRunMessage, error) {
+	var targets []*storepb.PlanCheckRunConfig_CheckTarget
+
+	for _, spec := range plan.Config.Specs {
+		switch config := spec.Config.(type) {
+		case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
+			// No checks for create database.
+		case *storepb.PlanConfig_Spec_ExportDataConfig:
+			// No checks for export data.
+		case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
+			// Skip plan checks for releases.
+			if config.ChangeDatabaseConfig.Release != "" {
+				continue
+			}
+
+			var databases []string
+			if len(config.ChangeDatabaseConfig.Targets) == 1 && databaseGroup != nil && config.ChangeDatabaseConfig.Targets[0] == databaseGroup.Name {
+				for _, m := range databaseGroup.MatchedDatabases {
+					databases = append(databases, m.Name)
+				}
+			} else {
+				databases = config.ChangeDatabaseConfig.Targets
+			}
+
+			// Apply sampling upfront
+			if samplingSize := project.Setting.GetCiSamplingSize(); samplingSize > 0 {
+				if len(databases) > int(samplingSize) {
+					databases = databases[:samplingSize]
+				}
+			}
+
+			enableSDL := config.ChangeDatabaseConfig.Type == storepb.PlanConfig_ChangeDatabaseConfig_SDL
+			enableGhost := config.ChangeDatabaseConfig.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE && config.ChangeDatabaseConfig.EnableGhost
+
+			for _, target := range databases {
+				types := []storepb.PlanCheckType{
+					storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE,
+					storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
+				}
+				if enableGhost {
+					types = append(types, storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC)
+				}
+
+				targets = append(targets, &storepb.PlanCheckRunConfig_CheckTarget{
+					Target:            target,
+					SheetSha256:       config.ChangeDatabaseConfig.SheetSha256,
+					EnablePriorBackup: config.ChangeDatabaseConfig.EnablePriorBackup,
+					EnableGhost:       config.ChangeDatabaseConfig.EnableGhost,
+					EnableSdl:         enableSDL,
+					GhostFlags:        config.ChangeDatabaseConfig.GhostFlags,
+					Types:             types,
+				})
+			}
+		default:
+			return nil, errors.Errorf("unknown spec config type %T", config)
+		}
+	}
+
+	if len(targets) == 0 {
+		return nil, nil
+	}
+
+	return &store.PlanCheckRunMessage{
+		PlanUID: plan.UID,
+		Status:  store.PlanCheckRunStatusRunning,
+		Config:  &storepb.PlanCheckRunConfig{Targets: targets},
+	}, nil
+}
+
+func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMessage) ([]*v1pb.Plan, error) {
+	v1Plans := make([]*v1pb.Plan, len(plans))
+	for i := range plans {
+		p, err := convertToPlan(ctx, s, plans[i])
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert plan")
+		}
+		v1Plans[i] = p
+	}
+	return v1Plans, nil
+}
+
+func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
+	p := &v1pb.Plan{
+		Name:                    common.FormatPlan(plan.ProjectID, plan.UID),
+		Title:                   plan.Name,
+		Description:             plan.Description,
+		Creator:                 common.FormatUserEmail(plan.Creator),
+		Specs:                   convertToPlanSpecs(plan.ProjectID, plan.Config.Specs), // Use specs field for output
+		CreateTime:              timestamppb.New(plan.CreatedAt),
+		UpdateTime:              timestamppb.New(plan.UpdatedAt),
+		State:                   convertDeletedToState(plan.Deleted),
+		PlanCheckRunStatusCount: map[string]int32{},
+	}
+
+	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
+	}
+	if issue != nil {
+		p.Issue = common.FormatIssue(issue.Project.ResourceID, issue.UID)
+	}
+	if plan.PipelineUID != nil {
+		p.Rollout = common.FormatRollout(plan.ProjectID, *plan.PipelineUID)
+	}
+	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+		PlanUID: &plan.UID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list plan check runs for plan uid %d", plan.UID)
+	}
+	for _, run := range planCheckRuns {
+		p.PlanCheckRunStatusCount[string(run.Status)]++
+		for _, result := range run.Result.Results {
+			p.PlanCheckRunStatusCount[storepb.Advice_Status_name[int32(result.Status)]]++
+		}
+	}
+	return p, nil
+}
+
+func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
+	if plan == nil {
+		return nil
+	}
+
+	// At this point, plan.Specs should always be populated
+	// (either originally or converted from steps at API entry point)
+	return &storepb.PlanConfig{
+		Specs: convertPlanSpecs(plan.Specs),
+	}
+}
+
+func convertToPlanCheckRuns(projectID string, planUID int64, runs []*store.PlanCheckRunMessage) []*v1pb.PlanCheckRun {
+	var planCheckRuns []*v1pb.PlanCheckRun
+	for _, run := range runs {
+		// Expand consolidated run into virtual records for backward compatibility
+		expanded := expandPlanCheckRun(projectID, planUID, run)
+		planCheckRuns = append(planCheckRuns, expanded...)
+	}
+	return planCheckRuns
+}
+
+func convertToPlanSpecs(projectID string, specs []*storepb.PlanConfig_Spec) []*v1pb.Plan_Spec {
+	v1Specs := make([]*v1pb.Plan_Spec, len(specs))
+	for i := range specs {
+		v1Specs[i] = convertToPlanSpec(projectID, specs[i])
+	}
+	return v1Specs
+}
+
+func convertToPlanSpec(projectID string, spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
+	v1Spec := &v1pb.Plan_Spec{
+		Id: spec.Id,
+	}
+
+	switch v := spec.Config.(type) {
+	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
+		v1Spec.Config = convertToPlanSpecCreateDatabaseConfig(v)
+	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
+		v1Spec.Config = convertToPlanSpecChangeDatabaseConfig(projectID, v)
+	case *storepb.PlanConfig_Spec_ExportDataConfig:
+		v1Spec.Config = convertToPlanSpecExportDataConfig(projectID, v)
+	}
+
+	return v1Spec
+}
+
+func convertToPlanSpecCreateDatabaseConfig(config *storepb.PlanConfig_Spec_CreateDatabaseConfig) *v1pb.Plan_Spec_CreateDatabaseConfig {
+	c := config.CreateDatabaseConfig
+	return &v1pb.Plan_Spec_CreateDatabaseConfig{
+		CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
+			Target:       c.Target,
+			Database:     c.Database,
+			Table:        c.Table,
+			CharacterSet: c.CharacterSet,
+			Collation:    c.Collation,
+			Cluster:      c.Cluster,
+			Owner:        c.Owner,
+			Environment:  c.Environment,
+		},
+	}
+}
+
+func convertToPlanSpecChangeDatabaseConfig(projectID string, config *storepb.PlanConfig_Spec_ChangeDatabaseConfig) *v1pb.Plan_Spec_ChangeDatabaseConfig {
+	c := config.ChangeDatabaseConfig
+	return &v1pb.Plan_Spec_ChangeDatabaseConfig{
+		ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+			Targets:           c.Targets,
+			Sheet:             common.FormatSheet(projectID, c.SheetSha256),
+			Release:           c.Release,
+			Type:              convertToPlanSpecChangeDatabaseConfigType(c.Type),
+			GhostFlags:        c.GhostFlags,
+			EnablePriorBackup: c.EnablePriorBackup,
+			EnableGhost:       c.EnableGhost,
+		},
+	}
+}
+
+func convertToPlanSpecChangeDatabaseConfigType(t storepb.PlanConfig_ChangeDatabaseConfig_Type) v1pb.DatabaseChangeType {
+	switch t {
+	case storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED:
+		return v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
+		return v1pb.DatabaseChangeType_MIGRATE
+	case storepb.PlanConfig_ChangeDatabaseConfig_SDL:
+		return v1pb.DatabaseChangeType_SDL
+	default:
+		return v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToPlanSpecExportDataConfig(projectID string, config *storepb.PlanConfig_Spec_ExportDataConfig) *v1pb.Plan_Spec_ExportDataConfig {
+	c := config.ExportDataConfig
+	return &v1pb.Plan_Spec_ExportDataConfig{
+		ExportDataConfig: &v1pb.Plan_ExportDataConfig{
+			Targets:  c.Targets,
+			Sheet:    common.FormatSheet(projectID, c.SheetSha256),
+			Format:   convertExportFormat(c.Format),
+			Password: c.Password,
+		},
+	}
+}
+
+func convertPlanSpecs(specs []*v1pb.Plan_Spec) []*storepb.PlanConfig_Spec {
+	storeSpecs := make([]*storepb.PlanConfig_Spec, len(specs))
+	for i := range specs {
+		storeSpecs[i] = convertPlanSpec(specs[i])
+	}
+	return storeSpecs
+}
+
+func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
+	storeSpec := &storepb.PlanConfig_Spec{
+		Id: spec.Id,
+	}
+
+	switch v := spec.Config.(type) {
+	case *v1pb.Plan_Spec_CreateDatabaseConfig:
+		storeSpec.Config = convertPlanSpecCreateDatabaseConfig(v)
+	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
+		storeSpec.Config = convertPlanSpecChangeDatabaseConfig(v)
+	case *v1pb.Plan_Spec_ExportDataConfig:
+		storeSpec.Config = convertPlanSpecExportDataConfig(v)
+	}
+	return storeSpec
+}
+
+func convertPlanSpecCreateDatabaseConfig(config *v1pb.Plan_Spec_CreateDatabaseConfig) *storepb.PlanConfig_Spec_CreateDatabaseConfig {
+	c := config.CreateDatabaseConfig
+	return &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+		CreateDatabaseConfig: convertPlanConfigCreateDatabaseConfig(c),
+	}
+}
+
+func convertPlanConfigCreateDatabaseConfig(c *v1pb.Plan_CreateDatabaseConfig) *storepb.PlanConfig_CreateDatabaseConfig {
+	return &storepb.PlanConfig_CreateDatabaseConfig{
+		Target:       c.Target,
+		Database:     c.Database,
+		Table:        c.Table,
+		CharacterSet: c.CharacterSet,
+		Collation:    c.Collation,
+		Cluster:      c.Cluster,
+		Owner:        c.Owner,
+		Environment:  c.Environment,
+	}
+}
+
+func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseConfig) *storepb.PlanConfig_Spec_ChangeDatabaseConfig {
+	c := config.ChangeDatabaseConfig
+
+	// Convert v1 DatabaseChangeType to store Type
+	var storeType storepb.PlanConfig_ChangeDatabaseConfig_Type
+	switch c.Type {
+	case v1pb.DatabaseChangeType_MIGRATE:
+		storeType = storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE
+	case v1pb.DatabaseChangeType_SDL:
+		storeType = storepb.PlanConfig_ChangeDatabaseConfig_SDL
+	default:
+		storeType = storepb.PlanConfig_ChangeDatabaseConfig_TYPE_UNSPECIFIED
+	}
+
+	// Sheet can be empty when using Release-based workflow (SQL comes from release files).
+	// Plans can use either Sheet-based or Release-based approach, but not both.
+	var sheetSha256 string
+	if c.Sheet != "" {
+		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
+		if err != nil {
+			return nil
+		}
+		sheetSha256 = sha256
+	}
+	return &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+		ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+			Targets:           c.Targets,
+			SheetSha256:       sheetSha256,
+			Release:           c.Release,
+			Type:              storeType,
+			GhostFlags:        c.GhostFlags,
+			EnablePriorBackup: c.EnablePriorBackup,
+			EnableGhost:       c.EnableGhost,
+		},
+	}
+}
+
+func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *storepb.PlanConfig_Spec_ExportDataConfig {
+	c := config.ExportDataConfig
+	// Sheet can be empty if not yet attached to the export data config.
+	var sheetSha256 string
+	if c.Sheet != "" {
+		_, sha256, err := common.GetProjectResourceIDSheetSha256(c.Sheet)
+		if err != nil {
+			return nil
+		}
+		sheetSha256 = sha256
+	}
+	return &storepb.PlanConfig_Spec_ExportDataConfig{
+		ExportDataConfig: &storepb.PlanConfig_ExportDataConfig{
+			Targets:     c.Targets,
+			SheetSha256: sheetSha256,
+			Format:      convertToExportFormat(c.Format),
+			Password:    c.Password,
+		},
+	}
+}
+
+// expandPlanCheckRun expands a consolidated plan check run into multiple virtual
+// records for API backward compatibility. Each target/type combination becomes
+// a separate API response record.
+func expandPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRunMessage) []*v1pb.PlanCheckRun {
+	var runs []*v1pb.PlanCheckRun
+
+	// Group results by target and type
+	type key struct {
+		target    string
+		checkType storepb.PlanCheckType
+	}
+	resultsByKey := make(map[key][]*storepb.PlanCheckRunResult_Result)
+	for _, result := range run.Result.GetResults() {
+		k := key{
+			target:    result.Target,
+			checkType: result.Type,
+		}
+		resultsByKey[k] = append(resultsByKey[k], result)
+	}
+
+	// Build virtual records from targets
+	virtualID := 0
+	for _, target := range run.Config.GetTargets() {
+		for _, checkType := range target.Types {
+			virtualID++
+			k := key{
+				target:    target.Target,
+				checkType: checkType,
+			}
+			results := resultsByKey[k]
+
+			runs = append(runs, &v1pb.PlanCheckRun{
+				Name:       common.FormatPlanCheckRun(projectID, planUID, int64(run.UID)*1000+int64(virtualID)),
+				CreateTime: timestamppb.New(run.CreatedAt),
+				Type:       convertPlanCheckType(checkType),
+				Status:     convertToPlanCheckRunStatus(run.Status),
+				Target:     target.Target,
+				Sheet:      common.FormatSheet(projectID, target.SheetSha256),
+				Results:    convertToPlanCheckRunResults(results),
+				Error:      run.Result.Error,
+			})
+		}
+	}
+
+	return runs
+}
+
+func convertPlanCheckType(t storepb.PlanCheckType) v1pb.PlanCheckRun_Type {
+	switch t {
+	case storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE
+	case storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT:
+		return v1pb.PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT
+	case storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC:
+		return v1pb.PlanCheckRun_DATABASE_GHOST_SYNC
+	default:
+		return v1pb.PlanCheckRun_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToPlanCheckRunStatus(status store.PlanCheckRunStatus) v1pb.PlanCheckRun_Status {
+	switch status {
+	case store.PlanCheckRunStatusCanceled:
+		return v1pb.PlanCheckRun_CANCELED
+	case store.PlanCheckRunStatusDone:
+		return v1pb.PlanCheckRun_DONE
+	case store.PlanCheckRunStatusFailed:
+		return v1pb.PlanCheckRun_FAILED
+	case store.PlanCheckRunStatusRunning:
+		return v1pb.PlanCheckRun_RUNNING
+	default:
+		return v1pb.PlanCheckRun_STATUS_UNSPECIFIED
+	}
+}
+
+func convertToPlanCheckRunResults(results []*storepb.PlanCheckRunResult_Result) []*v1pb.PlanCheckRun_Result {
+	var resultsV1 []*v1pb.PlanCheckRun_Result
+	for _, result := range results {
+		resultsV1 = append(resultsV1, convertToPlanCheckRunResult(result))
+	}
+	return resultsV1
+}
+
+func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1pb.PlanCheckRun_Result {
+	resultV1 := &v1pb.PlanCheckRun_Result{
+		Status:  convertToPlanCheckRunResultStatus(result.Status),
+		Title:   result.Title,
+		Content: result.Content,
+		Code:    result.Code,
+		Report:  nil,
+	}
+	switch report := result.Report.(type) {
+	case *storepb.PlanCheckRunResult_Result_SqlSummaryReport_:
+		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlSummaryReport_{
+			SqlSummaryReport: &v1pb.PlanCheckRun_Result_SqlSummaryReport{
+				StatementTypes: report.SqlSummaryReport.StatementTypes,
+				AffectedRows:   report.SqlSummaryReport.AffectedRows,
+			},
+		}
+	case *storepb.PlanCheckRunResult_Result_SqlReviewReport_:
+		resultV1.Report = &v1pb.PlanCheckRun_Result_SqlReviewReport_{
+			SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
+				StartPosition: convertToPosition(report.SqlReviewReport.StartPosition),
+				EndPosition:   convertToPosition(report.SqlReviewReport.EndPosition),
+			},
+		}
+	}
+	return resultV1
+}
+
+func convertToPlanCheckRunResultStatus(status storepb.Advice_Status) v1pb.Advice_Level {
+	switch status {
+	case storepb.Advice_STATUS_UNSPECIFIED:
+		return v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED
+	case storepb.Advice_SUCCESS:
+		return v1pb.Advice_SUCCESS
+	case storepb.Advice_WARNING:
+		return v1pb.Advice_WARNING
+	case storepb.Advice_ERROR:
+		return v1pb.Advice_ERROR
+	default:
+		return v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED
+	}
+}
+
+// convertToStorePlanCheckRunStatus converts v1pb.PlanCheckRun_Status to store.PlanCheckRunStatus.
+func convertToStorePlanCheckRunStatus(status v1pb.PlanCheckRun_Status) store.PlanCheckRunStatus {
+	switch status {
+	case v1pb.PlanCheckRun_CANCELED:
+		return store.PlanCheckRunStatusCanceled
+	case v1pb.PlanCheckRun_DONE:
+		return store.PlanCheckRunStatusDone
+	case v1pb.PlanCheckRun_FAILED:
+		return store.PlanCheckRunStatusFailed
+	case v1pb.PlanCheckRun_RUNNING:
+		return store.PlanCheckRunStatusRunning
+	default:
+		return store.PlanCheckRunStatusRunning
+	}
+}
+
+// convertToStoreResultStatus converts v1pb.Advice_Status to storepb.Advice_Status.
+func convertToStoreResultStatus(status v1pb.Advice_Level) storepb.Advice_Status {
+	switch status {
+	case v1pb.Advice_ERROR:
+		return storepb.Advice_ERROR
+	case v1pb.Advice_WARNING:
+		return storepb.Advice_WARNING
+	case v1pb.Advice_SUCCESS:
+		return storepb.Advice_SUCCESS
+	default:
+		return storepb.Advice_STATUS_UNSPECIFIED
+	}
 }
