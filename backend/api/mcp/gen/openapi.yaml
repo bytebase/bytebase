@@ -12801,9 +12801,6 @@ components:
              - WARNING
              - ERROR
              - RUNNING
-        deployment:
-          title: deployment
-          $ref: '#/components/schemas/bytebase.v1.Plan.Deployment'
       title: Plan
       additionalProperties: false
     bytebase.v1.Plan.ChangeDatabaseConfig:
@@ -12903,38 +12900,6 @@ components:
             The environment resource.
              Format: environments/prod where prod is the environment resource ID.
       title: CreateDatabaseConfig
-      additionalProperties: false
-    bytebase.v1.Plan.Deployment:
-      type: object
-      properties:
-        environments:
-          type: array
-          items:
-            type: string
-          title: environments
-          description: The environments deploy order.
-        databaseGroupMappings:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.Plan.Deployment.DatabaseGroupMapping'
-          title: database_group_mappings
-          description: The database group mapping.
-      title: Deployment
-      additionalProperties: false
-    bytebase.v1.Plan.Deployment.DatabaseGroupMapping:
-      type: object
-      properties:
-        databaseGroup:
-          type: string
-          title: database_group
-          description: 'Format: projects/{project}/databaseGroups/{databaseGroup}.'
-        databases:
-          type: array
-          items:
-            type: string
-          title: databases
-          description: 'Format: instances/{instance-id}/databases/{database-name}.'
-      title: DatabaseGroupMapping
       additionalProperties: false
     bytebase.v1.Plan.ExportDataConfig:
       type: object

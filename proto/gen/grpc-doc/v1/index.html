@@ -1928,14 +1928,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Plan.Deployment"><span class="badge">M</span>Plan.Deployment</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.Deployment.DatabaseGroupMapping"><span class="badge">M</span>Plan.Deployment.DatabaseGroupMapping</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Plan.ExportDataConfig"><span class="badge">M</span>Plan.ExportDataConfig</a>
                 </li>
               
@@ -21371,13 +21363,6 @@ Keys are:
 - RUNNING </p></td>
                 </tr>
               
-                <tr>
-                  <td>deployment</td>
-                  <td><a href="#bytebase.v1.Plan.Deployment">Plan.Deployment</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -21553,68 +21538,6 @@ For example, in MongoDB, it only creates the database when we first store data i
                   <td></td>
                   <td><p>The environment resource.
 Format: environments/prod where prod is the environment resource ID. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.Deployment">Plan.Deployment</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>environments</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The environments deploy order. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_group_mappings</td>
-                  <td><a href="#bytebase.v1.Plan.Deployment.DatabaseGroupMapping">Plan.Deployment.DatabaseGroupMapping</a></td>
-                  <td>repeated</td>
-                  <td><p>The database group mapping. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.Deployment.DatabaseGroupMapping">Plan.Deployment.DatabaseGroupMapping</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database_group</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/databaseGroups/{databaseGroup}. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>databases</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>Format: instances/{instance-id}/databases/{database-name}. </p></td>
                 </tr>
               
             </tbody>

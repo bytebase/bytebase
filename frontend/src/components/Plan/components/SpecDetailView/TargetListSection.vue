@@ -168,7 +168,7 @@ const loadTargetData = async () => {
 
   try {
     // Fetch data for visible targets only
-    const { databaseTargets, dbGroupTargets } = getDatabaseTargets(
+    const { databaseTargets, dbGroupTargets } = await getDatabaseTargets(
       visibleTargets.value
     );
 

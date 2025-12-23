@@ -31,7 +31,6 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		Description:             plan.Description,
 		Creator:                 common.FormatUserEmail(plan.Creator),
 		Specs:                   convertToPlanSpecs(plan.ProjectID, plan.Config.Specs), // Use specs field for output
-		Deployment:              convertToPlanDeployment(plan.Config.Deployment),
 		CreateTime:              timestamppb.New(plan.CreatedAt),
 		UpdateTime:              timestamppb.New(plan.UpdatedAt),
 		State:                   convertDeletedToState(plan.Deleted),
@@ -144,34 +143,6 @@ func convertToPlanSpecExportDataConfig(projectID string, config *storepb.PlanCon
 	}
 }
 
-func convertToPlanDeployment(deployment *storepb.PlanConfig_Deployment) *v1pb.Plan_Deployment {
-	if deployment == nil {
-		return nil
-	}
-	return &v1pb.Plan_Deployment{
-		Environments:          deployment.Environments,
-		DatabaseGroupMappings: convertToDatabaseGroupMappings(deployment.DatabaseGroupMappings),
-	}
-}
-
-func convertToDatabaseGroupMappings(mappings []*storepb.PlanConfig_Deployment_DatabaseGroupMapping) []*v1pb.Plan_Deployment_DatabaseGroupMapping {
-	v1Mappings := make([]*v1pb.Plan_Deployment_DatabaseGroupMapping, len(mappings))
-	for i := range mappings {
-		v1Mappings[i] = convertToDatabaseGroupMapping(mappings[i])
-	}
-	return v1Mappings
-}
-
-func convertToDatabaseGroupMapping(mapping *storepb.PlanConfig_Deployment_DatabaseGroupMapping) *v1pb.Plan_Deployment_DatabaseGroupMapping {
-	if mapping == nil {
-		return nil
-	}
-	return &v1pb.Plan_Deployment_DatabaseGroupMapping{
-		DatabaseGroup: mapping.DatabaseGroup,
-		Databases:     mapping.Databases,
-	}
-}
-
 func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	if plan == nil {
 		return nil
@@ -180,8 +151,7 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	// At this point, plan.Specs should always be populated
 	// (either originally or converted from steps at API entry point)
 	return &storepb.PlanConfig{
-		Specs:      convertPlanSpecs(plan.Specs),
-		Deployment: nil,
+		Specs: convertPlanSpecs(plan.Specs),
 	}
 }
 
