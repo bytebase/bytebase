@@ -76,9 +76,9 @@ func CheckIssueApproved(issue *store.IssueMessage) (bool, error) {
 
 // UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.
 func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
-	policyMessage, err := stores.GetProjectIamPolicy(ctx, issue.Project.ResourceID)
+	policyMessage, err := stores.GetProjectIamPolicy(ctx, issue.ProjectID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get project policy for project %s", issue.Project.ResourceID)
+		return errors.Wrapf(err, "failed to get project policy for project %s", issue.ProjectID)
 	}
 
 	var newConditionExpr string
@@ -132,7 +132,7 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 		return err
 	}
 	if _, err := stores.CreatePolicy(ctx, &store.PolicyMessage{
-		Resource:          common.FormatProject(issue.Project.ResourceID),
+		Resource:          common.FormatProject(issue.ProjectID),
 		ResourceType:      storepb.Policy_PROJECT,
 		Payload:           string(policyPayload),
 		Type:              storepb.Policy_IAM,

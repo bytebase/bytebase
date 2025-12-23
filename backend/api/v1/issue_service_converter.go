@@ -89,7 +89,7 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 	}
 
 	issueV1 := &v1pb.Issue{
-		Name:            common.FormatIssue(issue.Project.ResourceID, issue.UID),
+		Name:            common.FormatIssue(issue.ProjectID, issue.UID),
 		Title:           issue.Title,
 		Description:     issue.Description,
 		Type:            convertToIssueType(issue.Type),
@@ -104,10 +104,10 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 	}
 
 	if issue.PlanUID != nil {
-		issueV1.Plan = common.FormatPlan(issue.Project.ResourceID, *issue.PlanUID)
+		issueV1.Plan = common.FormatPlan(issue.ProjectID, *issue.PlanUID)
 	}
 	if issue.PipelineUID != nil {
-		issueV1.Rollout = common.FormatRollout(issue.Project.ResourceID, *issue.PipelineUID)
+		issueV1.Rollout = common.FormatRollout(issue.ProjectID, *issue.PipelineUID)
 	}
 
 	approval := issuePayload.GetApproval()
