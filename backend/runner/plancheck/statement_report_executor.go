@@ -130,6 +130,7 @@ func (e *StatementReportExecutor) RunForTarget(ctx context.Context, target *stor
 }
 
 // Run runs the statement report executor.
+//
 // Deprecated: Use RunForTarget instead. This method is kept for backward compatibility.
 func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
 	if len(config.Targets) == 0 {

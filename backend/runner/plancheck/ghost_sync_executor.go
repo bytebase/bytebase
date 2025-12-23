@@ -197,6 +197,7 @@ func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *storepb.Pl
 }
 
 // Run runs the gh-ost sync check executor.
+//
 // Deprecated: Use RunForTarget instead. This method is kept for backward compatibility.
 func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) (results []*storepb.PlanCheckRunResult_Result, err error) {
 	if len(config.Targets) == 0 {

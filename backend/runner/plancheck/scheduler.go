@@ -22,12 +22,12 @@ const (
 )
 
 // NewScheduler creates a new plan check scheduler.
-func NewScheduler(s *store.Store, licenseService *enterprise.LicenseService, stateCfg *state.State) *Scheduler {
+func NewScheduler(s *store.Store, licenseService *enterprise.LicenseService, stateCfg *state.State, executor *CombinedExecutor) *Scheduler {
 	return &Scheduler{
 		store:          s,
 		licenseService: licenseService,
 		stateCfg:       stateCfg,
-		executors:      make(map[store.PlanCheckRunType]Executor),
+		executor:       executor,
 	}
 }
 
@@ -36,7 +36,7 @@ type Scheduler struct {
 	store          *store.Store
 	licenseService *enterprise.LicenseService
 	stateCfg       *state.State
-	executors      map[store.PlanCheckRunType]Executor
+	executor       *CombinedExecutor
 }
 
 // Run runs the scheduler.
@@ -55,17 +55,6 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 			return
 		}
 	}
-}
-
-// Register registers a plan check executor.
-func (s *Scheduler) Register(planCheckRunType store.PlanCheckRunType, executor Executor) {
-	if executor == nil {
-		panic("plan check scheduler: Register executor is nil for plan check run type: " + planCheckRunType)
-	}
-	if _, dup := s.executors[planCheckRunType]; dup {
-		panic("plan check scheduler: Register called twice for plan check run type: " + planCheckRunType)
-	}
-	s.executors[planCheckRunType] = executor
 }
 
 func (s *Scheduler) runOnce(ctx context.Context) {
@@ -95,11 +84,6 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 }
 
 func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) {
-	executor, ok := s.executors[planCheckRun.Type]
-	if !ok {
-		slog.Error("Skip running plan check for unknown type", slog.Int("uid", planCheckRun.UID), slog.Int64("plan_uid", planCheckRun.PlanUID), slog.String("type", string(planCheckRun.Type)))
-		return
-	}
 	// Skip the plan check run if it is already running.
 	if _, ok := s.stateCfg.RunningPlanChecks.Load(planCheckRun.UID); ok {
 		return
@@ -116,7 +100,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 		defer cancel()
 		s.stateCfg.RunningPlanCheckRunsCancelFunc.Store(planCheckRun.UID, cancel)
 
-		results, err := runExecutorOnce(ctxWithCancel, executor, planCheckRun.Config)
+		results, err := s.executor.Run(ctxWithCancel, planCheckRun.Config)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				s.markPlanCheckRunCanceled(ctx, planCheckRun, err.Error())

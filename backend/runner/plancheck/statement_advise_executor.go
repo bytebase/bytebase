@@ -112,6 +112,7 @@ func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *stor
 }
 
 // Run will run the plan check statement advise executor once, and run its sub-advisors one-by-one.
+//
 // Deprecated: Use RunForTarget instead. This method is kept for backward compatibility.
 func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
 	if len(config.Targets) == 0 {
