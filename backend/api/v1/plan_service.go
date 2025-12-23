@@ -254,13 +254,15 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan, error: %v", err))
 	}
 
-	// Don't create plan checks if the plan comes from releases.
-	planCheckRuns, err := getPlanCheckRunsFromPlan(project, plan, databaseGroup)
+	// Create consolidated plan check run if applicable.
+	planCheckRun, err := getPlanCheckRunFromPlan(project, plan, databaseGroup)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run for plan, error: %v", err))
 	}
-	if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check runs, error: %v", err))
+	if planCheckRun != nil {
+		if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRun); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check run, error: %v", err))
+		}
 	}
 	// Tickle plan check scheduler.
 	s.stateCfg.PlanCheckTickleChan <- 0
@@ -411,12 +413,14 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	if planCheckRunsTrigger {
-		planCheckRuns, err := getPlanCheckRunsFromPlan(project, updatedPlan, databaseGroup)
+		planCheckRun, err := getPlanCheckRunFromPlan(project, updatedPlan, databaseGroup)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run for plan, error: %v", err))
 		}
-		if err := s.store.CreatePlanCheckRuns(ctx, updatedPlan, planCheckRuns...); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check runs, error: %v", err))
+		if planCheckRun != nil {
+			if err := s.store.CreatePlanCheckRuns(ctx, updatedPlan, planCheckRun); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check run, error: %v", err))
+			}
 		}
 		// Tickle plan check scheduler.
 		s.stateCfg.PlanCheckTickleChan <- 0
@@ -664,12 +668,14 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 			}
 		}
 	}
-	planCheckRuns, err := getPlanCheckRunsFromPlan(project, plan, databaseGroup)
+	planCheckRun, err := getPlanCheckRunFromPlan(project, plan, databaseGroup)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check runs for plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run for plan, error: %v", err))
 	}
-	if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRuns...); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check runs, error: %v", err))
+	if planCheckRun != nil {
+		if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRun); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check run, error: %v", err))
+		}
 	}
 
 	// Tickle plan check scheduler.
@@ -727,7 +733,7 @@ func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *con
 		switch planCheckRun.Status {
 		case store.PlanCheckRunStatusRunning:
 		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("planCheckRun %v(%v) is not running", planCheckRun.UID, planCheckRun.Type))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("planCheckRun %v is not running", planCheckRun.UID))
 		}
 	}
 	// Cancel the plan check runs.

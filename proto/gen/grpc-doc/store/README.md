@@ -172,11 +172,14 @@
     - [ChangedResourceTable](#bytebase-store-ChangedResourceTable)
     - [ChangedResources](#bytebase-store-ChangedResources)
     - [PlanCheckRunConfig](#bytebase-store-PlanCheckRunConfig)
-    - [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry)
+    - [PlanCheckRunConfig.CheckTarget](#bytebase-store-PlanCheckRunConfig-CheckTarget)
+    - [PlanCheckRunConfig.CheckTarget.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-CheckTarget-GhostFlagsEntry)
     - [PlanCheckRunResult](#bytebase-store-PlanCheckRunResult)
     - [PlanCheckRunResult.Result](#bytebase-store-PlanCheckRunResult-Result)
     - [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport)
     - [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport)
+  
+    - [PlanCheckType](#bytebase-store-PlanCheckType)
   
 - [store/policy.proto](#store_policy-proto)
     - [Binding](#bytebase-store-Binding)
@@ -2982,22 +2985,37 @@ Type is the database change type.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| sheet_sha256 | [string](#string) |  | The SHA256 hash of the sheet content (hex-encoded). |
-| instance_id | [string](#string) |  |  |
-| database_name | [string](#string) |  |  |
-| ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
-| enable_prior_backup | [bool](#bool) |  | If set, a backup of the modified data will be created automatically before any changes are applied. |
-| enable_ghost | [bool](#bool) |  | Whether to use gh-ost for online schema migration. |
-| enable_sdl | [bool](#bool) |  | Whether this is a Schema Definition Language (SDL) change. |
+| targets | [PlanCheckRunConfig.CheckTarget](#bytebase-store-PlanCheckRunConfig-CheckTarget) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-store-PlanCheckRunConfig-GhostFlagsEntry"></a>
+<a name="bytebase-store-PlanCheckRunConfig-CheckTarget"></a>
 
-### PlanCheckRunConfig.GhostFlagsEntry
+### PlanCheckRunConfig.CheckTarget
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
+| sheet_sha256 | [string](#string) |  |  |
+| enable_prior_backup | [bool](#bool) |  |  |
+| enable_ghost | [bool](#bool) |  |  |
+| enable_sdl | [bool](#bool) |  |  |
+| ghost_flags | [PlanCheckRunConfig.CheckTarget.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-CheckTarget-GhostFlagsEntry) | repeated |  |
+| types | [PlanCheckType](#bytebase-store-PlanCheckType) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-PlanCheckRunConfig-CheckTarget-GhostFlagsEntry"></a>
+
+### PlanCheckRunConfig.CheckTarget.GhostFlagsEntry
 
 
 
@@ -3039,6 +3057,8 @@ Type is the database change type.
 | title | [string](#string) |  |  |
 | content | [string](#string) |  |  |
 | code | [int32](#int32) |  |  |
+| target | [string](#string) |  | Target identification for consolidated results Format: instances/{instance}/databases/{database} |
+| type | [PlanCheckType](#bytebase-store-PlanCheckType) |  |  |
 | sql_summary_report | [PlanCheckRunResult.Result.SqlSummaryReport](#bytebase-store-PlanCheckRunResult-Result-SqlSummaryReport) |  |  |
 | sql_review_report | [PlanCheckRunResult.Result.SqlReviewReport](#bytebase-store-PlanCheckRunResult-Result-SqlReviewReport) |  |  |
 
@@ -3080,6 +3100,20 @@ Type is the database change type.
 
 
  
+
+
+<a name="bytebase-store-PlanCheckType"></a>
+
+### PlanCheckType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PLAN_CHECK_TYPE_UNSPECIFIED | 0 |  |
+| PLAN_CHECK_TYPE_STATEMENT_ADVISE | 1 |  |
+| PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT | 2 |  |
+| PLAN_CHECK_TYPE_GHOST_SYNC | 3 |  |
+
 
  
 

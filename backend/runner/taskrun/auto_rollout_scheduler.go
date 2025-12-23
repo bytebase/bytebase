@@ -127,20 +127,19 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 			if plan == nil {
 				return true, nil
 			}
-			latestRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-				PlanUID: &plan.UID,
-			})
+			planCheckRun, err := s.store.GetPlanCheckRun(ctx, plan.UID)
 			if err != nil {
-				return false, errors.Wrapf(err, "failed to list latest plan check runs")
+				return false, errors.Wrapf(err, "failed to get plan check run")
 			}
-			for _, run := range latestRuns {
-				if run.Status != store.PlanCheckRunStatusDone {
+			if planCheckRun == nil {
+				return true, nil // No checks configured
+			}
+			if planCheckRun.Status != store.PlanCheckRunStatusDone {
+				return false, nil
+			}
+			for _, result := range planCheckRun.Result.Results {
+				if result.Status == storepb.Advice_ERROR {
 					return false, nil
-				}
-				for _, result := range run.Result.Results {
-					if result.Status == storepb.Advice_ERROR {
-						return false, nil
-					}
 				}
 			}
 			return true, nil

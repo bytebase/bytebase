@@ -46,14 +46,14 @@ type StatementReportExecutor struct {
 	dbFactory    *dbfactory.DBFactory
 }
 
-// Run runs the statement report executor.
-func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
-	fullSheet, err := e.store.GetSheetFull(ctx, config.SheetSha256)
+// RunForTarget runs the statement report check for a single target.
+func (e *StatementReportExecutor) RunForTarget(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+	fullSheet, err := e.store.GetSheetFull(ctx, target.SheetSha256)
 	if err != nil {
 		return nil, err
 	}
 	if fullSheet == nil {
-		return nil, errors.Errorf("sheet full %s not found", config.SheetSha256)
+		return nil, errors.Errorf("sheet full %s not found", target.SheetSha256)
 	}
 	if fullSheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -66,12 +66,17 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 		}, nil
 	}
 
-	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(target.Target)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %v", config.InstanceId)
+		return nil, errors.Wrapf(err, "failed to parse target %s", target.Target)
+	}
+
+	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance %v", instanceID)
 	}
 	if instance == nil {
-		return nil, errors.Errorf("instance %s not found", config.InstanceId)
+		return nil, errors.Errorf("instance %s not found", instanceID)
 	}
 	if !common.EngineSupportStatementReport(instance.Metadata.GetEngine()) {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -84,12 +89,12 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 		}, nil
 	}
 
-	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
+	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
+		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
 	}
 	if database == nil {
-		return nil, errors.Errorf("database not found %q", config.DatabaseName)
+		return nil, errors.Errorf("database not found %q", databaseName)
 	}
 
 	// Check statement syntax error.
@@ -127,6 +132,16 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 		}
 	}
 	return []*storepb.PlanCheckRunResult_Result{planCheckRunResult}, nil
+}
+
+// Run runs the statement report executor.
+//
+// Deprecated: Use RunForTarget instead. This method is kept for backward compatibility.
+func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
+	if len(config.Targets) == 0 {
+		return nil, nil
+	}
+	return e.RunForTarget(ctx, config.Targets[0])
 }
 
 // GetSQLSummaryReport gets the SQL summary report for the given statement and database.

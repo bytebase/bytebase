@@ -260,33 +260,67 @@ func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *s
 func convertToPlanCheckRuns(projectID string, planUID int64, runs []*store.PlanCheckRunMessage) []*v1pb.PlanCheckRun {
 	var planCheckRuns []*v1pb.PlanCheckRun
 	for _, run := range runs {
-		converted := convertToPlanCheckRun(projectID, planUID, run)
-		planCheckRuns = append(planCheckRuns, converted)
+		// Expand consolidated run into virtual records for backward compatibility
+		expanded := expandPlanCheckRun(projectID, planUID, run)
+		planCheckRuns = append(planCheckRuns, expanded...)
 	}
 	return planCheckRuns
 }
 
-func convertToPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRunMessage) *v1pb.PlanCheckRun {
-	converted := &v1pb.PlanCheckRun{
-		Name:       common.FormatPlanCheckRun(projectID, planUID, int64(run.UID)),
-		CreateTime: timestamppb.New(run.CreatedAt),
-		Type:       convertToPlanCheckRunType(run.Type),
-		Status:     convertToPlanCheckRunStatus(run.Status),
-		Target:     common.FormatDatabase(run.Config.InstanceId, run.Config.DatabaseName),
-		Sheet:      common.FormatSheet(projectID, run.Config.GetSheetSha256()),
-		Results:    convertToPlanCheckRunResults(run.Result.Results),
-		Error:      run.Result.Error,
+// expandPlanCheckRun expands a consolidated plan check run into multiple virtual
+// records for API backward compatibility. Each target/type combination becomes
+// a separate API response record.
+func expandPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRunMessage) []*v1pb.PlanCheckRun {
+	var runs []*v1pb.PlanCheckRun
+
+	// Group results by target and type
+	type key struct {
+		target    string
+		checkType storepb.PlanCheckType
 	}
-	return converted
+	resultsByKey := make(map[key][]*storepb.PlanCheckRunResult_Result)
+	for _, result := range run.Result.GetResults() {
+		k := key{
+			target:    result.Target,
+			checkType: result.Type,
+		}
+		resultsByKey[k] = append(resultsByKey[k], result)
+	}
+
+	// Build virtual records from targets
+	virtualID := 0
+	for _, target := range run.Config.GetTargets() {
+		for _, checkType := range target.Types {
+			virtualID++
+			k := key{
+				target:    target.Target,
+				checkType: checkType,
+			}
+			results := resultsByKey[k]
+
+			runs = append(runs, &v1pb.PlanCheckRun{
+				Name:       common.FormatPlanCheckRun(projectID, planUID, int64(run.UID)*1000+int64(virtualID)),
+				CreateTime: timestamppb.New(run.CreatedAt),
+				Type:       convertPlanCheckType(checkType),
+				Status:     convertToPlanCheckRunStatus(run.Status),
+				Target:     target.Target,
+				Sheet:      common.FormatSheet(projectID, target.SheetSha256),
+				Results:    convertToPlanCheckRunResults(results),
+				Error:      run.Result.Error,
+			})
+		}
+	}
+
+	return runs
 }
 
-func convertToPlanCheckRunType(t store.PlanCheckRunType) v1pb.PlanCheckRun_Type {
+func convertPlanCheckType(t storepb.PlanCheckType) v1pb.PlanCheckRun_Type {
 	switch t {
-	case store.PlanCheckDatabaseStatementAdvise:
+	case storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE:
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE
-	case store.PlanCheckDatabaseStatementSummaryReport:
+	case storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT:
 		return v1pb.PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT
-	case store.PlanCheckDatabaseGhostSync:
+	case storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC:
 		return v1pb.PlanCheckRun_DATABASE_GHOST_SYNC
 	default:
 		return v1pb.PlanCheckRun_TYPE_UNSPECIFIED

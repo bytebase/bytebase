@@ -289,7 +289,6 @@ CREATE TABLE plan_check_run (
     updated_at timestamptz NOT NULL DEFAULT now(),
     plan_id bigint NOT NULL REFERENCES plan(id),
     status text NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
-    type text NOT NULL CHECK (type LIKE 'bb.plan-check.%'),
     -- Stored as PlanCheckRunConfig (proto/store/store/plan_check_run.proto)
     config jsonb NOT NULL DEFAULT '{}',
     -- Stored as PlanCheckRunResult (proto/store/store/plan_check_run.proto)
