@@ -205,7 +205,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		}
 	}
 
-	count, err := s.store.CountUsers(ctx, storepb.PrincipalType_END_USER)
+	count, err := s.store.CountActiveEndUsers(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to count users, error: %v", err))
 	}
@@ -909,7 +909,7 @@ func generateRecoveryCodes(n int) ([]string, error) {
 func (s *UserService) userCountGuard(ctx context.Context) error {
 	userLimit := s.licenseService.GetUserLimit(ctx)
 
-	count, err := s.store.CountActiveUsers(ctx)
+	count, err := s.store.CountActiveEndUsers(ctx)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}

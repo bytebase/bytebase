@@ -16,7 +16,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/enterprise"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -132,7 +131,7 @@ func (s *ActuatorService) SetupSample(
 }
 
 func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {
-	count, err := s.store.CountUsers(ctx, storepb.PrincipalType_END_USER)
+	activeEndUserCount, err := s.store.CountActiveEndUsers(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -174,7 +173,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		GitCommit:              s.profile.GitCommit,
 		Saas:                   s.profile.SaaS,
 		Demo:                   s.profile.Demo,
-		NeedAdminSetup:         count == 0,
+		NeedAdminSetup:         activeEndUserCount == 0,
 		ExternalUrl:            externalURL,
 		DisallowSignup:         setting.DisallowSignup || s.profile.SaaS,
 		Require_2Fa:            setting.Require_2Fa,
@@ -207,11 +206,11 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 	}
 	serverInfo.ActivatedInstanceCount = int32(activatedInstanceCount)
 
-	totalInstanceCount, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
+	activeInstanceCount, err := s.store.CountActiveInstances(ctx)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count total instance"))
 	}
-	serverInfo.TotalInstanceCount = int32(totalInstanceCount)
+	serverInfo.TotalInstanceCount = int32(activeInstanceCount)
 
 	return &serverInfo, nil
 }
