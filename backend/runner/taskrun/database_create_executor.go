@@ -71,13 +71,6 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	if pipeline == nil {
 		return true, nil, errors.Errorf("pipeline %v not found", task.PipelineID)
 	}
-	project, err := exec.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
-	if err != nil {
-		return true, nil, errors.Errorf("failed to find project %s", pipeline.ProjectID)
-	}
-	if project == nil {
-		return true, nil, errors.Errorf("project %s not found", pipeline.ProjectID)
-	}
 
 	// Create database.
 	slog.Debug("Start creating database...",

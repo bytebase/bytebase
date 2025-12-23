@@ -128,6 +128,14 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return true, nil
 	}
 
+	project, err := r.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get project")
+	}
+	if project == nil {
+		return false, errors.Errorf("project %s not found", issue.ProjectID)
+	}
+
 	approvalTemplate, celVarsList, done, err := func() (*storepb.ApprovalTemplate, []map[string]any, bool, error) {
 		// no need to find if feature is not enabled
 		if r.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_APPROVAL_WORKFLOW) != nil {
@@ -238,7 +246,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			Type:    storepb.Activity_NOTIFY_PIPELINE_ROLLOUT,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(issue.Project),
+			Project: webhook.NewProject(project),
 			IssueRolloutReady: &webhook.EventIssueRolloutReady{
 				RolloutPolicy: policy,
 				StageName:     firstEnvironment,
@@ -262,7 +270,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(issue.Project),
+			Project: webhook.NewProject(project),
 			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
 				Role: role,
 			},
@@ -480,7 +488,7 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 	}
 
 	// Build CEL variables for each task
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.dbFactory, plan.Config.GetSpecs(), issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.dbFactory, plan.Config.GetSpecs(), issue.ProjectID)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to get pipeline create")
 	}
@@ -532,7 +540,7 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 		// Base CEL variables
 		celVars := map[string]any{
 			common.CELAttributeResourceEnvironmentID: environmentID,
-			common.CELAttributeResourceProjectID:     issue.Project.ResourceID,
+			common.CELAttributeResourceProjectID:     issue.ProjectID,
 			common.CELAttributeResourceInstanceID:    instance.ResourceID,
 			common.CELAttributeResourceDatabaseName:  databaseName,
 			common.CELAttributeResourceDBEngine:      instance.Metadata.GetEngine().String(),
@@ -594,7 +602,7 @@ func (r *Runner) buildCELVariablesForDataExport(ctx context.Context, issue *stor
 		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.dbFactory, plan.Config.GetSpecs(), issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.dbFactory, plan.Config.GetSpecs(), issue.ProjectID)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to get pipeline create")
 	}
@@ -629,7 +637,7 @@ func (r *Runner) buildCELVariablesForDataExport(ctx context.Context, issue *stor
 
 		celVars := map[string]any{
 			common.CELAttributeResourceEnvironmentID: envID,
-			common.CELAttributeResourceProjectID:     issue.Project.ResourceID,
+			common.CELAttributeResourceProjectID:     issue.ProjectID,
 			common.CELAttributeResourceInstanceID:    instance.ResourceID,
 			common.CELAttributeResourceDatabaseName:  database.DatabaseName,
 			common.CELAttributeResourceDBEngine:      instance.Metadata.GetEngine().String(),
@@ -663,7 +671,7 @@ func (r *Runner) buildCELVariablesForGrantRequest(ctx context.Context, issue *st
 	}
 
 	baseVars := map[string]any{
-		common.CELAttributeResourceProjectID:     issue.Project.ResourceID,
+		common.CELAttributeResourceProjectID:     issue.ProjectID,
 		common.CELAttributeRequestExpirationDays: expirationDays,
 		common.CELAttributeRequestRole:           payload.GrantRequest.Role,
 	}

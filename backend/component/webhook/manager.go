@@ -381,12 +381,20 @@ func ChangeIssueStatus(ctx context.Context, stores *store.Store, webhookManager 
 		return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 	}
 
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &updatedIssue.ProjectID})
+	if err != nil {
+		return errors.Wrapf(err, "failed to get project")
+	}
+	if project == nil {
+		return errors.Errorf("project %s not found", updatedIssue.ProjectID)
+	}
+
 	webhookManager.CreateEvent(ctx, &Event{
 		Actor:   updater,
 		Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
 		Comment: comment,
 		Issue:   NewIssue(updatedIssue),
-		Project: NewProject(updatedIssue.Project),
+		Project: NewProject(project),
 	})
 	return nil
 }
