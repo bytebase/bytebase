@@ -377,14 +377,6 @@
           @update:sync-databases="handleChangeSyncDatabases"
         />
 
-        <MaximumConnectionsInput
-          v-if="!isCreating"
-          ref="maximumConnectionsInputRef"
-          :maximum-connections="basicInfo.maximumConnections ?? 0"
-          :allow-edit="allowEdit"
-          @update:maximum-connections="changeMaximumConnections"
-        />
-
         <!--Do not show external link on create to reduce cognitive load-->
         <div v-if="!isCreating" class="sm:col-span-3 sm:col-start-1">
           <label for="external-link" class="textlabel inline-flex">
@@ -571,7 +563,6 @@ import {
 } from "./constants";
 import { useInstanceFormContext } from "./context";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
-import MaximumConnectionsInput from "./MaximumConnectionsInput.vue";
 import ScanIntervalInput from "./ScanIntervalInput.vue";
 import SpannerHostInput from "./SpannerHostInput.vue";
 import SyncDatabases from "./SyncDatabases.vue";
@@ -718,10 +709,6 @@ const handleChangeSyncDatabases = (databases: string[]) => {
 
 const changeScanInterval = (duration: Duration | undefined) => {
   basicInfo.value.syncInterval = duration;
-};
-
-const changeMaximumConnections = (maximumConnections: number) => {
-  basicInfo.value.maximumConnections = maximumConnections;
 };
 
 const handleRedisConnectionTypeChange = (type: string) => {

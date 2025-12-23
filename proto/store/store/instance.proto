@@ -21,10 +21,6 @@ message Instance {
   // The interval between automatic instance synchronizations.
   google.protobuf.Duration sync_interval = 7;
 
-  // The maximum number of connections.
-  // The default is 10 if the value is unset or zero.
-  int32 maximum_connections = 8;
-
   // Enable sync for the following databases.
   // Default empty, means sync all schemas & databases.
   repeated string sync_databases = 9;

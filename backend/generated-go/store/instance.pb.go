@@ -349,9 +349,6 @@ type Instance struct {
 	DataSources  []*DataSource          `protobuf:"bytes,6,rep,name=data_sources,json=dataSources,proto3" json:"data_sources,omitempty"`
 	// The interval between automatic instance synchronizations.
 	SyncInterval *durationpb.Duration `protobuf:"bytes,7,opt,name=sync_interval,json=syncInterval,proto3" json:"sync_interval,omitempty"`
-	// The maximum number of connections.
-	// The default is 10 if the value is unset or zero.
-	MaximumConnections int32 `protobuf:"varint,8,opt,name=maximum_connections,json=maximumConnections,proto3" json:"maximum_connections,omitempty"`
 	// Enable sync for the following databases.
 	// Default empty, means sync all schemas & databases.
 	SyncDatabases []string `protobuf:"bytes,9,rep,name=sync_databases,json=syncDatabases,proto3" json:"sync_databases,omitempty"`
@@ -444,13 +441,6 @@ func (x *Instance) GetSyncInterval() *durationpb.Duration {
 		return x.SyncInterval
 	}
 	return nil
-}
-
-func (x *Instance) GetMaximumConnections() int32 {
-	if x != nil {
-		return x.MaximumConnections
-	}
-	return 0
 }
 
 func (x *Instance) GetSyncDatabases() []string {
@@ -1763,7 +1753,7 @@ var File_store_instance_proto protoreflect.FileDescriptor
 
 const file_store_instance_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/instance.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\xb5\x05\n" +
+	"\x14store/instance.proto\x12\x0ebytebase.store\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\x84\x05\n" +
 	"\bInstance\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12.\n" +
 	"\x06engine\x18\x02 \x01(\x0e2\x16.bytebase.store.EngineR\x06engine\x12\x1e\n" +
@@ -1773,8 +1763,7 @@ const file_store_instance_proto_rawDesc = "" +
 	"\aversion\x18\x04 \x01(\tR\aversion\x12#\n" +
 	"\rexternal_link\x18\x05 \x01(\tR\fexternalLink\x12=\n" +
 	"\fdata_sources\x18\x06 \x03(\v2\x1a.bytebase.store.DataSourceR\vdataSources\x12>\n" +
-	"\rsync_interval\x18\a \x01(\v2\x19.google.protobuf.DurationR\fsyncInterval\x12/\n" +
-	"\x13maximum_connections\x18\b \x01(\x05R\x12maximumConnections\x12%\n" +
+	"\rsync_interval\x18\a \x01(\v2\x19.google.protobuf.DurationR\fsyncInterval\x12%\n" +
 	"\x0esync_databases\x18\t \x03(\tR\rsyncDatabases\x12>\n" +
 	"\x1cmysql_lower_case_table_names\x18\n" +
 	" \x01(\x05R\x18mysqlLowerCaseTableNames\x12@\n" +

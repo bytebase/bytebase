@@ -138,30 +138,6 @@ func (s *Scheduler) scheduleRunningTaskRun(ctx context.Context, taskRun *store.T
 		return errors.Errorf("executor not found for task type: %v", task.Type)
 	}
 
-	// Check max connections per instance.
-	maximumConnections := int(instance.Metadata.GetMaximumConnections())
-	if maximumConnections <= 0 {
-		maximumConnections = common.DefaultInstanceMaximumConnections
-	}
-	if s.stateCfg.InstanceOutstandingConnections.Increment(task.InstanceID, maximumConnections) {
-		s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
-			ReportTime: timestamppb.Now(),
-			WaitingCause: &storepb.SchedulerInfo_WaitingCause{
-				Cause: &storepb.SchedulerInfo_WaitingCause_ConnectionLimit{
-					ConnectionLimit: true,
-				},
-			},
-		})
-		return nil
-	}
-	// decrement the connection count if we return below.
-	revertInstanceConnectionsIncrement := true
-	defer func() {
-		if revertInstanceConnectionsIncrement {
-			s.stateCfg.InstanceOutstandingConnections.Decrement(task.InstanceID)
-		}
-	}()
-
 	// Check max running task runs per rollout.
 	pipeline, err := s.store.GetPipelineByID(ctx, task.PipelineID)
 	if err != nil {
@@ -227,7 +203,6 @@ func (s *Scheduler) scheduleRunningTaskRun(ctx context.Context, taskRun *store.T
 
 	// We are sure that we will run the task.
 	// The executor will decrement them.
-	revertInstanceConnectionsIncrement = false
 	revertRolloutConnectionsIncrement = false
 	go s.runTaskRunOnce(ctx, taskRun, task, executor)
 	return nil
@@ -249,7 +224,6 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 		if task.DatabaseName != nil {
 			s.stateCfg.RunningDatabaseMigration.Delete(getDatabaseKey(task.InstanceID, *task.DatabaseName))
 		}
-		s.stateCfg.InstanceOutstandingConnections.Decrement(task.InstanceID)
 		s.stateCfg.RolloutOutstandingTasks.Decrement(strconv.Itoa(task.PipelineID) + "/" + task.InstanceID)
 	}()
 
