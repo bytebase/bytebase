@@ -10,7 +10,6 @@ import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
-import "v1/plan_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -45,18 +44,6 @@ service RolloutService {
     option (bytebase.v1.permission) = "bb.rollouts.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-  }
-
-  // Previews the rollout that would be created from a plan.
-  // Permissions required: bb.rollouts.preview
-  rpc PreviewRollout(PreviewRolloutRequest) returns (Rollout) {
-    option (google.api.http) = {
-      post: "/v1/{project=projects/*}:previewRollout"
-      body: "*"
-    };
-    option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.rollouts.preview";
-    option (bytebase.v1.auth_method) = IAM;
   }
 
   // Lists task run executions for a task.
@@ -256,18 +243,6 @@ message CreateRolloutRequest {
   // If set, validate the request and preview the rollout, but
   // do not actually create it.
   bool validate_only = 4;
-}
-
-message PreviewRolloutRequest {
-  // The name of the project.
-  // Format: projects/{project}
-  string project = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Project"}
-  ];
-
-  // The plan used to preview rollout.
-  Plan plan = 2;
 }
 
 message ListTaskRunsRequest {

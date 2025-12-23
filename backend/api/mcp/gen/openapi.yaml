@@ -5064,44 +5064,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListTaskRunsResponse'
-  /bytebase.v1.RolloutService/PreviewRollout:
-    post:
-      tags:
-        - bytebase.v1.RolloutService
-      summary: 'Previews the rollout that would be created from a plan.  Permissions required: bb.rollouts.preview'
-      description: |-
-        Previews the rollout that would be created from a plan.
-         Permissions required: bb.rollouts.preview
-      operationId: bytebase.v1.RolloutService.PreviewRollout
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.PreviewRolloutRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.Rollout'
   /bytebase.v1.RolloutService/PreviewTaskRunRollback:
     post:
       tags:
@@ -13353,21 +13315,6 @@ components:
          - If only line is known, set line and leave column as 0 (e.g., line=5, column=0)
          - If only column is known (rare), set column and leave line as 0
          Frontends should check for nil/undefined/zero values and handle them appropriately.
-    bytebase.v1.PreviewRolloutRequest:
-      type: object
-      properties:
-        project:
-          type: string
-          title: project
-          description: |-
-            The name of the project.
-             Format: projects/{project}
-        plan:
-          title: plan
-          description: The plan used to preview rollout.
-          $ref: '#/components/schemas/bytebase.v1.Plan'
-      title: PreviewRolloutRequest
-      additionalProperties: false
     bytebase.v1.PreviewTaskRunRollbackRequest:
       type: object
       properties:

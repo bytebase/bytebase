@@ -2438,10 +2438,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.PreviewRolloutRequest"><span class="badge">M</span>PreviewRolloutRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PreviewTaskRunRollbackRequest"><span class="badge">M</span>PreviewTaskRunRollbackRequest</a>
                 </li>
               
@@ -27152,38 +27148,6 @@ Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-&#34; to list all
 
         
       
-        <h3 id="bytebase.v1.PreviewRolloutRequest">PreviewRolloutRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>project</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the project.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>plan</td>
-                  <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                  <td></td>
-                  <td><p>The plan used to preview rollout. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.PreviewTaskRunRollbackRequest">PreviewTaskRunRollbackRequest</h3>
         <p></p>
 
@@ -28936,14 +28900,6 @@ Permissions required: bb.rollouts.create</p></td>
               </tr>
             
               <tr>
-                <td>PreviewRollout</td>
-                <td><a href="#bytebase.v1.PreviewRolloutRequest">PreviewRolloutRequest</a></td>
-                <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                <td><p>Previews the rollout that would be created from a plan.
-Permissions required: bb.rollouts.preview</p></td>
-              </tr>
-            
-              <tr>
                 <td>ListTaskRuns</td>
                 <td><a href="#bytebase.v1.ListTaskRunsRequest">ListTaskRunsRequest</a></td>
                 <td><a href="#bytebase.v1.ListTaskRunsResponse">ListTaskRunsResponse</a></td>
@@ -29052,16 +29008,6 @@ Permissions required: bb.taskRuns.list</p></td>
                 <td>POST</td>
                 <td>/v1/{parent=projects/*}/rollouts</td>
                 <td>rollout</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>PreviewRollout</td>
-                <td>POST</td>
-                <td>/v1/{project=projects/*}:previewRollout</td>
-                <td>*</td>
               </tr>
               
             
