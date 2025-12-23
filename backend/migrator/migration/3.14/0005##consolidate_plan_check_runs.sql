@@ -3,18 +3,20 @@
 -- Step 1: Create temp table with deduplicated latest records (last 30 days only)
 CREATE TEMP TABLE plan_check_run_deduped AS
 SELECT DISTINCT ON (plan_id, type, config->>'instanceId', config->>'databaseName')
-    *
+    id, plan_id, type, status, config, result, created_at, updated_at
 FROM plan_check_run
 WHERE created_at >= NOW() - INTERVAL '30 days'
   AND status != 'CANCELED'
 ORDER BY plan_id, type, config->>'instanceId', config->>'databaseName', created_at DESC;
 
--- Step 2: Delete all old records
+-- Step 2: Drop type column first (no longer needed)
+ALTER TABLE plan_check_run DROP COLUMN type;
+
+-- Step 3: Delete all old records
 DELETE FROM plan_check_run;
 
--- Step 3: Insert consolidated records (one per plan)
--- Include type column with dummy value to satisfy NOT NULL constraint before dropping
-INSERT INTO plan_check_run (plan_id, status, type, config, result, created_at, updated_at)
+-- Step 4: Insert consolidated records (one per plan)
+INSERT INTO plan_check_run (plan_id, status, config, result, created_at, updated_at)
 SELECT
     plan_id,
     -- Status aggregation
@@ -23,8 +25,6 @@ SELECT
         WHEN bool_or(status = 'FAILED') THEN 'FAILED'
         ELSE 'DONE'
     END,
-    -- Type is deprecated but keep a value for compatibility (will be dropped)
-    'bb.plan-check.database.statement.advise',
     -- Config: if any RUNNING, empty (will be re-run); otherwise aggregate
     CASE
         WHEN bool_or(status = 'RUNNING') THEN '{"targets": []}'::jsonb
@@ -85,8 +85,5 @@ SELECT
 FROM plan_check_run_deduped d
 GROUP BY plan_id;
 
--- Step 4: Cleanup temp table
+-- Step 5: Cleanup temp table
 DROP TABLE plan_check_run_deduped;
-
--- Step 5: Drop type column (no longer used)
-ALTER TABLE plan_check_run DROP COLUMN IF EXISTS type;
