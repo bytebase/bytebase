@@ -122,10 +122,10 @@ interface LocalState {
 
 const filterRole = (role: string) => {
   if (!props.supportRoles) {
-    return true
+    return true;
   }
-  return props.supportRoles.includes(role)
-}
+  return props.supportRoles.includes(role);
+};
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
