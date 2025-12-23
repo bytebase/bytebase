@@ -54,7 +54,6 @@ type UpdatePlanMessage struct {
 	Name        *string
 	Description *string
 	Specs       *[]*storepb.PlanConfig_Spec
-	Deployment  **storepb.PlanConfig_Deployment
 	Deleted     *bool
 }
 
@@ -246,14 +245,6 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error 
 		}
 		payloadSets = append(payloadSets, "jsonb_build_object('specs', (?)::JSONB->'specs')")
 		args = append(args, config)
-	}
-	if v := patch.Deployment; v != nil {
-		p, err := protojson.Marshal(*v)
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal deployment")
-		}
-		payloadSets = append(payloadSets, "jsonb_build_object('deployment', (?)::JSONB)")
-		args = append(args, p)
 	}
 	if len(payloadSets) > 0 {
 		set = append(set, fmt.Sprintf("config = config || %s", strings.Join(payloadSets, " || ")))

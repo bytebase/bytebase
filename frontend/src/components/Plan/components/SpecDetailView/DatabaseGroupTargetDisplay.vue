@@ -65,14 +65,14 @@
 <script setup lang="ts">
 import { ExternalLinkIcon } from "lucide-vue-next";
 import { NPopover, NTag, NVirtualList } from "naive-ui";
-import { computed } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { getProjectNameAndDatabaseGroupName, useDBGroupStore } from "@/store";
 import { isValidDatabaseGroupName } from "@/types";
-import { usePlanContext } from "../../logic/context";
+import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 
 const MAX_INLINE_DATABASES = 5;
@@ -89,15 +89,20 @@ const props = withDefaults(
 
 const router = useRouter();
 const dbGroupStore = useDBGroupStore();
-const { plan } = usePlanContext();
 
-const databases = computed(() => {
-  const deployment = plan.value.deployment;
-  if (!deployment) return [];
-  const mapping = deployment.databaseGroupMappings.find(
-    (m: { databaseGroup: string }) => m.databaseGroup === props.target
-  );
-  return mapping?.databases ?? [];
+const databases = ref<string[]>([]);
+
+// Fetch database group and populate databases
+watchEffect(async () => {
+  try {
+    const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(props.target, {
+      view: DatabaseGroupView.FULL,
+      silent: true,
+    });
+    databases.value = dbGroup.matchedDatabases?.map((db) => db.name) ?? [];
+  } catch {
+    databases.value = [];
+  }
 });
 
 const extraDatabaseItems = computed(() => {

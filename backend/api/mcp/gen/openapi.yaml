@@ -5064,44 +5064,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListTaskRunsResponse'
-  /bytebase.v1.RolloutService/PreviewRollout:
-    post:
-      tags:
-        - bytebase.v1.RolloutService
-      summary: 'Previews the rollout that would be created from a plan.  Permissions required: bb.rollouts.preview'
-      description: |-
-        Previews the rollout that would be created from a plan.
-         Permissions required: bb.rollouts.preview
-      operationId: bytebase.v1.RolloutService.PreviewRollout
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.PreviewRolloutRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.Rollout'
   /bytebase.v1.RolloutService/PreviewTaskRunRollback:
     post:
       tags:
@@ -12801,9 +12763,6 @@ components:
              - WARNING
              - ERROR
              - RUNNING
-        deployment:
-          title: deployment
-          $ref: '#/components/schemas/bytebase.v1.Plan.Deployment'
       title: Plan
       additionalProperties: false
     bytebase.v1.Plan.ChangeDatabaseConfig:
@@ -12903,38 +12862,6 @@ components:
             The environment resource.
              Format: environments/prod where prod is the environment resource ID.
       title: CreateDatabaseConfig
-      additionalProperties: false
-    bytebase.v1.Plan.Deployment:
-      type: object
-      properties:
-        environments:
-          type: array
-          items:
-            type: string
-          title: environments
-          description: The environments deploy order.
-        databaseGroupMappings:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.Plan.Deployment.DatabaseGroupMapping'
-          title: database_group_mappings
-          description: The database group mapping.
-      title: Deployment
-      additionalProperties: false
-    bytebase.v1.Plan.Deployment.DatabaseGroupMapping:
-      type: object
-      properties:
-        databaseGroup:
-          type: string
-          title: database_group
-          description: 'Format: projects/{project}/databaseGroups/{databaseGroup}.'
-        databases:
-          type: array
-          items:
-            type: string
-          title: databases
-          description: 'Format: instances/{instance-id}/databases/{database-name}.'
-      title: DatabaseGroupMapping
       additionalProperties: false
     bytebase.v1.Plan.ExportDataConfig:
       type: object
@@ -13388,21 +13315,6 @@ components:
          - If only line is known, set line and leave column as 0 (e.g., line=5, column=0)
          - If only column is known (rare), set column and leave line as 0
          Frontends should check for nil/undefined/zero values and handle them appropriately.
-    bytebase.v1.PreviewRolloutRequest:
-      type: object
-      properties:
-        project:
-          type: string
-          title: project
-          description: |-
-            The name of the project.
-             Format: projects/{project}
-        plan:
-          title: plan
-          description: The plan used to preview rollout.
-          $ref: '#/components/schemas/bytebase.v1.Plan'
-      title: PreviewRolloutRequest
-      additionalProperties: false
     bytebase.v1.PreviewTaskRunRollbackRequest:
       type: object
       properties:

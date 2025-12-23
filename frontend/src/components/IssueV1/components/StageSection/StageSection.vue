@@ -41,11 +41,7 @@
       </div>
     </template>
     <template v-else>
-      <NoPermissionPlaceholder
-        v-if="placeholder === 'PERMISSION_DENIED'"
-        class="py-6"
-      />
-      <NEmpty v-else class="py-6" />
+      <NEmpty class="py-6" />
     </template>
   </div>
 </template>
@@ -54,25 +50,11 @@
 import { NEmpty, NScrollbar } from "naive-ui";
 import { computed } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
-import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
-import { useCurrentProjectV1 } from "@/store";
-import { hasProjectPermissionV2 } from "@/utils";
 import StageCard from "./StageCard.vue";
 
-const { isCreating, issue } = useIssueContext();
-const { project } = useCurrentProjectV1();
+const { issue } = useIssueContext();
 
 const stageList = computed(() => {
   return issue.value.rolloutEntity?.stages || [];
-});
-
-const placeholder = computed(() => {
-  if (
-    isCreating.value &&
-    !hasProjectPermissionV2(project.value, "bb.rollouts.preview")
-  ) {
-    return "PERMISSION_DENIED";
-  }
-  return "NO_DATA";
 });
 </script>

@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -164,12 +163,6 @@ func TestDatabaseGroup(t *testing.T) {
 	plan, rollout, issue, err := ctl.changeDatabaseWithConfig(ctx, project, spec)
 	a.NoError(err)
 
-	// Assert the plan deployment.
-	a.Len(plan.Deployment.DatabaseGroupMappings, 1)
-	a.Equal(databaseGroup.Name, plan.Deployment.DatabaseGroupMappings[0].DatabaseGroup)
-	a.Len(plan.Deployment.DatabaseGroupMappings[0].Databases, 2)
-	a.ElementsMatch([]string{testDatabases[0].Name, prodDatabases[0].Name}, plan.Deployment.DatabaseGroupMappings[0].Databases)
-
 	// Query schema.
 	for _, testInstance := range testInstances {
 		dbMetadataResp, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, connect.NewRequest(&v1pb.GetDatabaseSchemaRequest{Name: fmt.Sprintf("%s/databases/%s/schema", testInstance.Name, databaseName)}))
@@ -202,24 +195,7 @@ func TestDatabaseGroup(t *testing.T) {
 	}
 	a.Len(prodDatabases, 2)
 
-	// Update the plan deployment.
-	planResp, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
-		Plan: &v1pb.Plan{
-			Name: plan.Name,
-		},
-		UpdateMask: &fieldmaskpb.FieldMask{
-			Paths: []string{"deployment"},
-		},
-	}))
-	a.NoError(err)
-	plan = planResp.Msg
-
-	a.Len(plan.Deployment.DatabaseGroupMappings, 1)
-	a.Equal(databaseGroup.Name, plan.Deployment.DatabaseGroupMappings[0].DatabaseGroup)
-	a.Len(plan.Deployment.DatabaseGroupMappings[0].Databases, 3)
-	a.ElementsMatch([]string{testDatabases[0].Name, prodDatabases[0].Name, prodDatabases[1].Name}, plan.Deployment.DatabaseGroupMappings[0].Databases)
-
-	// Create the new task.
+	// CreateRollout is now idempotent and will automatically pick up the new database.
 	rollout2Resp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
 		Parent: project.Name,
 		Rollout: &v1pb.Rollout{

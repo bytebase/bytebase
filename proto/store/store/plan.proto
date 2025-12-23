@@ -10,7 +10,6 @@ option go_package = "generated-go/store";
 message PlanConfig {
   repeated Spec specs = 1;
 
-  Deployment deployment = 2;
   message Spec {
     // A UUID4 string that uniquely identifies the Spec.
     string id = 5;
@@ -86,19 +85,5 @@ message PlanConfig {
     // The zip password provided by users.
     // Leave it empty if there is no need to encrypt the zip file.
     optional string password = 4;
-  }
-
-  message Deployment {
-    // The environments deploy order.
-    repeated string environments = 1;
-    // The database group mapping.
-    repeated DatabaseGroupMapping database_group_mappings = 2;
-
-    message DatabaseGroupMapping {
-      // Format: projects/{project}/databaseGroups/{databaseGroup}.
-      string database_group = 1;
-      // Format: instances/{instance-id}/databases/{database-name}.
-      repeated string databases = 2;
-    }
   }
 }

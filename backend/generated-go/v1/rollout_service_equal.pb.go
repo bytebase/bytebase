@@ -180,22 +180,6 @@ func (x *CreateRolloutRequest) Equal(y *CreateRolloutRequest) bool {
 	return true
 }
 
-func (x *PreviewRolloutRequest) Equal(y *PreviewRolloutRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Project != y.Project {
-		return false
-	}
-	if !x.Plan.Equal(y.Plan) {
-		return false
-	}
-	return true
-}
-
 func (x *ListTaskRunsRequest) Equal(y *ListTaskRunsRequest) bool {
 	if x == y {
 		return true

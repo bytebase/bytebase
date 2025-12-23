@@ -86,7 +86,6 @@ roles:
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.list
-      - bb.rollouts.preview
       - bb.settings.get
       - bb.settings.list
       - bb.settings.set
@@ -200,7 +199,6 @@ roles:
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.list
-      - bb.rollouts.preview
       - bb.settings.get
       - bb.settings.list
       - bb.settings.set
@@ -298,7 +296,6 @@ roles:
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.list
-      - bb.rollouts.preview
       - bb.sheets.create
       - bb.sheets.get
       - bb.sheets.update
@@ -345,7 +342,6 @@ roles:
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.list
-      - bb.rollouts.preview
       - bb.sheets.create
       - bb.sheets.get
       - bb.sheets.update

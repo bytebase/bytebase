@@ -5,7 +5,6 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import type { Plan } from "./plan_service_pb";
 import type { DatabaseChangeType, ExportFormat, Position, Range } from "./common_pb";
 
 /**
@@ -292,32 +291,6 @@ export declare type CreateRolloutRequest = Message<"bytebase.v1.CreateRolloutReq
  * Use `create(CreateRolloutRequestSchema)` to create a new message.
  */
 export declare const CreateRolloutRequestSchema: GenMessage<CreateRolloutRequest>;
-
-/**
- * @generated from message bytebase.v1.PreviewRolloutRequest
- */
-export declare type PreviewRolloutRequest = Message<"bytebase.v1.PreviewRolloutRequest"> & {
-  /**
-   * The name of the project.
-   * Format: projects/{project}
-   *
-   * @generated from field: string project = 1;
-   */
-  project: string;
-
-  /**
-   * The plan used to preview rollout.
-   *
-   * @generated from field: bytebase.v1.Plan plan = 2;
-   */
-  plan?: Plan;
-};
-
-/**
- * Describes the message bytebase.v1.PreviewRolloutRequest.
- * Use `create(PreviewRolloutRequestSchema)` to create a new message.
- */
-export declare const PreviewRolloutRequestSchema: GenMessage<PreviewRolloutRequest>;
 
 /**
  * @generated from message bytebase.v1.ListTaskRunsRequest
@@ -2076,17 +2049,6 @@ export declare const RolloutService: GenService<{
   createRollout: {
     methodKind: "unary";
     input: typeof CreateRolloutRequestSchema;
-    output: typeof RolloutSchema;
-  },
-  /**
-   * Previews the rollout that would be created from a plan.
-   * Permissions required: bb.rollouts.preview
-   *
-   * @generated from rpc bytebase.v1.RolloutService.PreviewRollout
-   */
-  previewRollout: {
-    methodKind: "unary";
-    input: typeof PreviewRolloutRequestSchema;
     output: typeof RolloutSchema;
   },
   /**

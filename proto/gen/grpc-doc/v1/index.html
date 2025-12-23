@@ -1928,14 +1928,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Plan.Deployment"><span class="badge">M</span>Plan.Deployment</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.Plan.Deployment.DatabaseGroupMapping"><span class="badge">M</span>Plan.Deployment.DatabaseGroupMapping</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Plan.ExportDataConfig"><span class="badge">M</span>Plan.ExportDataConfig</a>
                 </li>
               
@@ -2443,10 +2435,6 @@
               
                 <li>
                   <a href="#bytebase.v1.ListTaskRunsResponse"><span class="badge">M</span>ListTaskRunsResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.PreviewRolloutRequest"><span class="badge">M</span>PreviewRolloutRequest</a>
                 </li>
               
                 <li>
@@ -21371,13 +21359,6 @@ Keys are:
 - RUNNING </p></td>
                 </tr>
               
-                <tr>
-                  <td>deployment</td>
-                  <td><a href="#bytebase.v1.Plan.Deployment">Plan.Deployment</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -21553,68 +21534,6 @@ For example, in MongoDB, it only creates the database when we first store data i
                   <td></td>
                   <td><p>The environment resource.
 Format: environments/prod where prod is the environment resource ID. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.Deployment">Plan.Deployment</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>environments</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The environments deploy order. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_group_mappings</td>
-                  <td><a href="#bytebase.v1.Plan.Deployment.DatabaseGroupMapping">Plan.Deployment.DatabaseGroupMapping</a></td>
-                  <td>repeated</td>
-                  <td><p>The database group mapping. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Plan.Deployment.DatabaseGroupMapping">Plan.Deployment.DatabaseGroupMapping</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database_group</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: projects/{project}/databaseGroups/{databaseGroup}. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>databases</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>Format: instances/{instance-id}/databases/{database-name}. </p></td>
                 </tr>
               
             </tbody>
@@ -27229,38 +27148,6 @@ Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-&#34; to list all
 
         
       
-        <h3 id="bytebase.v1.PreviewRolloutRequest">PreviewRolloutRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>project</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the project.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>plan</td>
-                  <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                  <td></td>
-                  <td><p>The plan used to preview rollout. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.PreviewTaskRunRollbackRequest">PreviewTaskRunRollbackRequest</h3>
         <p></p>
 
@@ -29013,14 +28900,6 @@ Permissions required: bb.rollouts.create</p></td>
               </tr>
             
               <tr>
-                <td>PreviewRollout</td>
-                <td><a href="#bytebase.v1.PreviewRolloutRequest">PreviewRolloutRequest</a></td>
-                <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                <td><p>Previews the rollout that would be created from a plan.
-Permissions required: bb.rollouts.preview</p></td>
-              </tr>
-            
-              <tr>
                 <td>ListTaskRuns</td>
                 <td><a href="#bytebase.v1.ListTaskRunsRequest">ListTaskRunsRequest</a></td>
                 <td><a href="#bytebase.v1.ListTaskRunsResponse">ListTaskRunsResponse</a></td>
@@ -29129,16 +29008,6 @@ Permissions required: bb.taskRuns.list</p></td>
                 <td>POST</td>
                 <td>/v1/{parent=projects/*}/rollouts</td>
                 <td>rollout</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>PreviewRollout</td>
-                <td>POST</td>
-                <td>/v1/{project=projects/*}:previewRollout</td>
-                <td>*</td>
               </tr>
               
             

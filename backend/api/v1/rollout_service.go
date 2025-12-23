@@ -56,37 +56,6 @@ func NewRolloutService(store *store.Store, sheetManager *sheet.Manager, licenseS
 	}
 }
 
-// PreviewRollout previews the rollout for a plan.
-func (s *RolloutService) PreviewRollout(ctx context.Context, req *connect.Request[v1pb.PreviewRolloutRequest]) (*connect.Response[v1pb.Rollout], error) {
-	request := req.Msg
-	projectID, err := common.GetProjectID(request.Project)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
-	}
-
-	specs := convertPlanSpecs(request.Plan.Specs)
-
-	rollout, err := GetPipelineCreate(ctx, s.store, s.dbFactory, specs, nil /* snapshot */, project)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
-	}
-
-	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
-	}
-	return connect.NewResponse(rolloutV1), nil
-}
-
 // GetRollout gets a rollout.
 func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1pb.GetRolloutRequest]) (*connect.Response[v1pb.Rollout], error) {
 	request := req.Msg
@@ -234,12 +203,12 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
 	}
 
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.dbFactory, plan.Config.GetSpecs(), plan.Config.GetDeployment(), project)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.dbFactory, plan.Config.GetSpecs(), project)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
 	}
 	if isChangeDatabasePlan(plan.Config.GetSpecs()) {
-		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, plan.Config.GetDeployment(), pipelineCreate, request.Target)
+		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, pipelineCreate, request.Target)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to filter stages with stageId, error: %v", err))
 		}
@@ -942,28 +911,14 @@ func isChangeDatabasePlan(specs []*storepb.PlanConfig_Spec) bool {
 	return false
 }
 
-// getPlanEnvironmentSnapshots returns the environment snapshots and environment index map.
-func getPlanEnvironmentSnapshots(ctx context.Context, s *store.Store, deployment *storepb.PlanConfig_Deployment) ([]string, map[string]int, error) {
-	snapshotEnvironments := deployment.GetEnvironments()
-	if len(snapshotEnvironments) == 0 {
-		var err error
-		snapshotEnvironments, err = getAllEnvironmentIDs(ctx, s)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	environmentIndex := make(map[string]int)
-	for i, e := range snapshotEnvironments {
-		environmentIndex[e] = i
-	}
-	return snapshotEnvironments, environmentIndex, nil
-}
-
 // GetPipelineCreate gets a pipeline create message from a plan.
-func GetPipelineCreate(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment /* nullable */, project *store.ProjectMessage) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, specs []*storepb.PlanConfig_Spec, project *store.ProjectMessage) (*store.PipelineMessage, error) {
 	// Step 1 - transform database group specs.
-	// Others are untouched.
-	transformedSpecs := applyDatabaseGroupSpecTransformations(specs, deployment)
+	// Re-evaluate database groups live to pick up newly created databases.
+	transformedSpecs, err := applyDatabaseGroupSpecTransformations(ctx, s, specs, project.ResourceID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to apply database group spec transformations")
+	}
 
 	// Step 2 - convert all task creates.
 	var taskCreates []*store.TaskMessage
@@ -982,7 +937,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, dbFactory *dbfactory
 }
 
 // filter pipelineCreate.Tasks using targetEnvironmentID.
-func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, deployment *storepb.PlanConfig_Deployment, pipelineCreate *store.PipelineMessage, targetEnvironment *string) (*store.PipelineMessage, error) {
+func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, pipelineCreate *store.PipelineMessage, targetEnvironment *string) (*store.PipelineMessage, error) {
 	if targetEnvironment == nil {
 		return pipelineCreate, nil
 	}
@@ -995,14 +950,19 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, deploym
 		return nil, errors.Wrapf(err, "failed to get environment id from %q", *targetEnvironment)
 	}
 
-	snapshotEnvironments, _, err := getPlanEnvironmentSnapshots(ctx, s, deployment)
+	// Get live environment order
+	environments, err := s.GetEnvironment(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get environment snapshots")
+		return nil, errors.Wrap(err, "failed to get environments")
+	}
+	var environmentOrder []string
+	for _, env := range environments.GetEnvironments() {
+		environmentOrder = append(environmentOrder, env.Id)
 	}
 
 	// Build a set of allowed environments up to and including the target
 	allowedEnvironments := make(map[string]bool)
-	for _, environmentID := range snapshotEnvironments {
+	for _, environmentID := range environmentOrder {
 		allowedEnvironments[environmentID] = true
 		if environmentID == targetEnvironmentID {
 			break

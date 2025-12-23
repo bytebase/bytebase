@@ -22,7 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, deployment *storepb.PlanConfig_Deployment) []*storepb.PlanConfig_Spec {
+func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, specs []*storepb.PlanConfig_Spec, projectID string) ([]*storepb.PlanConfig_Spec, error) {
 	var result []*storepb.PlanConfig_Spec
 	for _, spec := range specs {
 		// Clone the spec to avoid modifying the original
@@ -31,19 +31,40 @@ func applyDatabaseGroupSpecTransformations(specs []*storepb.PlanConfig_Spec, dep
 		if config := clonedSpec.GetChangeDatabaseConfig(); config != nil {
 			// transform database group.
 			if len(config.Targets) == 1 {
-				if _, _, err := common.GetProjectIDDatabaseGroupID(config.Targets[0]); err == nil {
-					for _, s := range deployment.GetDatabaseGroupMappings() {
-						if s.DatabaseGroup == config.Targets[0] {
-							config.Targets = s.Databases
-							break
-						}
+				if _, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(config.Targets[0]); err == nil {
+					// Re-evaluate database group matches live instead of using deployment snapshot
+					databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+						ResourceID: &databaseGroupID,
+						ProjectID:  &projectID,
+					})
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to get database group")
 					}
+					if databaseGroup == nil {
+						return nil, errors.Errorf("database group %q not found", config.Targets[0])
+					}
+
+					allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to list databases for project %q", projectID)
+					}
+
+					matchedDatabases, err := utils.GetMatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+					if err != nil {
+						return nil, errors.Wrapf(err, "failed to get matched databases in database group %q", databaseGroupID)
+					}
+
+					var databases []string
+					for _, db := range matchedDatabases {
+						databases = append(databases, common.FormatDatabase(db.InstanceID, db.DatabaseName))
+					}
+					config.Targets = databases
 				}
 			}
 		}
 		result = append(result, clonedSpec)
 	}
-	return result
+	return result, nil
 }
 
 func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec) ([]*store.TaskMessage, error) {

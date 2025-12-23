@@ -271,53 +271,6 @@ func (x *Plan_ExportDataConfig) Equal(y *Plan_ExportDataConfig) bool {
 	return true
 }
 
-func (x *Plan_Deployment_DatabaseGroupMapping) Equal(y *Plan_Deployment_DatabaseGroupMapping) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.DatabaseGroup != y.DatabaseGroup {
-		return false
-	}
-	if len(x.Databases) != len(y.Databases) {
-		return false
-	}
-	for i := 0; i < len(x.Databases); i++ {
-		if x.Databases[i] != y.Databases[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func (x *Plan_Deployment) Equal(y *Plan_Deployment) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Environments) != len(y.Environments) {
-		return false
-	}
-	for i := 0; i < len(x.Environments); i++ {
-		if x.Environments[i] != y.Environments[i] {
-			return false
-		}
-	}
-	if len(x.DatabaseGroupMappings) != len(y.DatabaseGroupMappings) {
-		return false
-	}
-	for i := 0; i < len(x.DatabaseGroupMappings); i++ {
-		if !x.DatabaseGroupMappings[i].Equal(y.DatabaseGroupMappings[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 func (x *Plan) Equal(y *Plan) bool {
 	if x == y {
 		return true
@@ -371,9 +324,6 @@ func (x *Plan) Equal(y *Plan) bool {
 		if x.PlanCheckRunStatusCount[k] != y.PlanCheckRunStatusCount[k] {
 			return false
 		}
-	}
-	if !x.Deployment.Equal(y.Deployment) {
-		return false
 	}
 	return true
 }

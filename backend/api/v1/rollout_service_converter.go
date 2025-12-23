@@ -227,17 +227,14 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		rolloutV1.Issue = common.FormatIssue(project.ResourceID, *rollout.IssueID)
 	}
 
-	// Get environment order from plan deployment config or global settings
+	// Get live environment order
+	environments, err := s.GetEnvironment(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var environmentOrder []string
-	if plan != nil && len(plan.Config.GetDeployment().GetEnvironments()) > 0 {
-		environmentOrder = plan.Config.Deployment.GetEnvironments()
-	} else {
-		// Use global environment setting order
-		var err error
-		environmentOrder, err = getAllEnvironmentIDs(ctx, s)
-		if err != nil {
-			return nil, err
-		}
+	for _, env := range environments.GetEnvironments() {
+		environmentOrder = append(environmentOrder, env.Id)
 	}
 
 	// Group tasks by environment.

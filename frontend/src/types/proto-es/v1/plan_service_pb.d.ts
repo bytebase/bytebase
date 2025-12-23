@@ -340,11 +340,6 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
    * @generated from field: map<string, int32> plan_check_run_status_count = 11;
    */
   planCheckRunStatusCount: { [key: string]: number };
-
-  /**
-   * @generated from field: bytebase.v1.Plan.Deployment deployment = 12;
-   */
-  deployment?: Plan_Deployment;
 };
 
 /**
@@ -568,56 +563,6 @@ export declare type Plan_ExportDataConfig = Message<"bytebase.v1.Plan.ExportData
  * Use `create(Plan_ExportDataConfigSchema)` to create a new message.
  */
 export declare const Plan_ExportDataConfigSchema: GenMessage<Plan_ExportDataConfig>;
-
-/**
- * @generated from message bytebase.v1.Plan.Deployment
- */
-export declare type Plan_Deployment = Message<"bytebase.v1.Plan.Deployment"> & {
-  /**
-   * The environments deploy order.
-   *
-   * @generated from field: repeated string environments = 1;
-   */
-  environments: string[];
-
-  /**
-   * The database group mapping.
-   *
-   * @generated from field: repeated bytebase.v1.Plan.Deployment.DatabaseGroupMapping database_group_mappings = 2;
-   */
-  databaseGroupMappings: Plan_Deployment_DatabaseGroupMapping[];
-};
-
-/**
- * Describes the message bytebase.v1.Plan.Deployment.
- * Use `create(Plan_DeploymentSchema)` to create a new message.
- */
-export declare const Plan_DeploymentSchema: GenMessage<Plan_Deployment>;
-
-/**
- * @generated from message bytebase.v1.Plan.Deployment.DatabaseGroupMapping
- */
-export declare type Plan_Deployment_DatabaseGroupMapping = Message<"bytebase.v1.Plan.Deployment.DatabaseGroupMapping"> & {
-  /**
-   * Format: projects/{project}/databaseGroups/{databaseGroup}.
-   *
-   * @generated from field: string database_group = 1;
-   */
-  databaseGroup: string;
-
-  /**
-   * Format: instances/{instance-id}/databases/{database-name}.
-   *
-   * @generated from field: repeated string databases = 2;
-   */
-  databases: string[];
-};
-
-/**
- * Describes the message bytebase.v1.Plan.Deployment.DatabaseGroupMapping.
- * Use `create(Plan_Deployment_DatabaseGroupMappingSchema)` to create a new message.
- */
-export declare const Plan_Deployment_DatabaseGroupMappingSchema: GenMessage<Plan_Deployment_DatabaseGroupMapping>;
 
 /**
  * @generated from message bytebase.v1.ListPlanCheckRunsRequest

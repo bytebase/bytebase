@@ -458,8 +458,6 @@
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
     - [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
-    - [Plan.Deployment](#bytebase-v1-Plan-Deployment)
-    - [Plan.Deployment.DatabaseGroupMapping](#bytebase-v1-Plan-Deployment-DatabaseGroupMapping)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
@@ -595,7 +593,6 @@
     - [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse)
     - [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest)
     - [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse)
-    - [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest)
     - [PreviewTaskRunRollbackRequest](#bytebase-v1-PreviewTaskRunRollbackRequest)
     - [PreviewTaskRunRollbackResponse](#bytebase-v1-PreviewTaskRunRollbackResponse)
     - [Rollout](#bytebase-v1-Rollout)
@@ -7563,7 +7560,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR - RUNNING |
-| deployment | [Plan.Deployment](#bytebase-v1-Plan-Deployment) |  |  |
 
 
 
@@ -7623,38 +7619,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-Deployment"></a>
-
-### Plan.Deployment
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| environments | [string](#string) | repeated | The environments deploy order. |
-| database_group_mappings | [Plan.Deployment.DatabaseGroupMapping](#bytebase-v1-Plan-Deployment-DatabaseGroupMapping) | repeated | The database group mapping. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-Deployment-DatabaseGroupMapping"></a>
-
-### Plan.Deployment.DatabaseGroupMapping
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database_group | [string](#string) |  | Format: projects/{project}/databaseGroups/{databaseGroup}. |
-| databases | [string](#string) | repeated | Format: instances/{instance-id}/databases/{database-name}. |
 
 
 
@@ -9702,22 +9666,6 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &
 
 
 
-<a name="bytebase-v1-PreviewRolloutRequest"></a>
-
-### PreviewRolloutRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The name of the project. Format: projects/{project} |
-| plan | [Plan](#bytebase-v1-Plan) |  | The plan used to preview rollout. |
-
-
-
-
-
-
 <a name="bytebase-v1-PreviewTaskRunRollbackRequest"></a>
 
 ### PreviewTaskRunRollbackRequest
@@ -10375,7 +10323,6 @@ RolloutService manages the execution of deployment plans.
 | GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Retrieves a rollout by name. Permissions required: bb.rollouts.get |
 | ListRollouts | [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest) | [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse) | Lists rollouts in a project. Permissions required: bb.rollouts.list |
 | CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Creates a new rollout from a plan. Permissions required: bb.rollouts.create |
-| PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Previews the rollout that would be created from a plan. Permissions required: bb.rollouts.preview |
 | ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) | Lists task run executions for a task. Permissions required: bb.taskRuns.list |
 | GetTaskRun | [GetTaskRunRequest](#bytebase-v1-GetTaskRunRequest) | [TaskRun](#bytebase-v1-TaskRun) | Retrieves a task run by name. Permissions required: bb.taskRuns.list |
 | GetTaskRunLog | [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest) | [TaskRunLog](#bytebase-v1-TaskRunLog) | Retrieves execution logs for a task run. Permissions required: bb.taskRuns.list |

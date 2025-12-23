@@ -482,7 +482,7 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 	}
 
 	// Build CEL variables for each task
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.dbFactory, plan.Config.GetSpecs(), plan.Config.GetDeployment(), issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.dbFactory, plan.Config.GetSpecs(), issue.Project)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to get pipeline create")
 	}
@@ -596,7 +596,7 @@ func (r *Runner) buildCELVariablesForDataExport(ctx context.Context, issue *stor
 		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.dbFactory, plan.Config.GetSpecs(), plan.Config.GetDeployment(), issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, r.dbFactory, plan.Config.GetSpecs(), issue.Project)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to get pipeline create")
 	}
