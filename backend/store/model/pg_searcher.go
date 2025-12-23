@@ -32,6 +32,25 @@ func (d *DatabaseMetadata) NewSearcher(schemaName string) *DatabaseSearcher {
 	}
 }
 
+// NewSearcherWithPath creates a searcher with an explicit fallback search path.
+// If schemaName is provided (non-empty), it searches only in that schema.
+// Otherwise, it uses the provided fallbackSearchPath (e.g., from UI-selected schema).
+// This allows overriding the database's default search path.
+// NOTE: This is primarily designed for PostgreSQL's search_path concept.
+func (d *DatabaseMetadata) NewSearcherWithPath(schemaName string, fallbackSearchPath []string) *DatabaseSearcher {
+	searchPath := fallbackSearchPath
+	if schemaName != "" {
+		searchPath = []string{schemaName}
+	} else if len(searchPath) == 0 {
+		// Default to "public" schema if no search path is set (PostgreSQL default)
+		searchPath = []string{"public"}
+	}
+	return &DatabaseSearcher{
+		db:         d,
+		searchPath: searchPath,
+	}
+}
+
 // SearchTable searches for a table in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (s *DatabaseSearcher) SearchTable(name string) (string, *TableMetadata) {
