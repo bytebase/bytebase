@@ -458,8 +458,6 @@
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
     - [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
-    - [Plan.Deployment](#bytebase-v1-Plan-Deployment)
-    - [Plan.Deployment.DatabaseGroupMapping](#bytebase-v1-Plan-Deployment-DatabaseGroupMapping)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
@@ -7563,7 +7561,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR - RUNNING |
-| deployment | [Plan.Deployment](#bytebase-v1-Plan-Deployment) |  |  |
 
 
 
@@ -7623,38 +7620,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-Deployment"></a>
-
-### Plan.Deployment
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| environments | [string](#string) | repeated | The environments deploy order. |
-| database_group_mappings | [Plan.Deployment.DatabaseGroupMapping](#bytebase-v1-Plan-Deployment-DatabaseGroupMapping) | repeated | The database group mapping. |
-
-
-
-
-
-
-<a name="bytebase-v1-Plan-Deployment-DatabaseGroupMapping"></a>
-
-### Plan.Deployment.DatabaseGroupMapping
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database_group | [string](#string) |  | Format: projects/{project}/databaseGroups/{databaseGroup}. |
-| databases | [string](#string) | repeated | Format: instances/{instance-id}/databases/{database-name}. |
 
 
 

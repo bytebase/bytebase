@@ -284,8 +284,6 @@ message Plan {
   // - RUNNING
   map<string, int32> plan_check_run_status_count = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  Deployment deployment = 12;
-
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
     // Format: instances/{instance}
@@ -346,20 +344,6 @@ message Plan {
     // The zip password provide by users.
     // Leave it empty if no needs to encrypt the zip file.
     optional string password = 4;
-  }
-
-  message Deployment {
-    // The environments deploy order.
-    repeated string environments = 1;
-    // The database group mapping.
-    repeated DatabaseGroupMapping database_group_mappings = 2;
-
-    message DatabaseGroupMapping {
-      // Format: projects/{project}/databaseGroups/{databaseGroup}.
-      string database_group = 1;
-      // Format: instances/{instance-id}/databases/{database-name}.
-      repeated string databases = 2;
-    }
   }
 }
 

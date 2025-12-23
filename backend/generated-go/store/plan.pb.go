@@ -77,7 +77,6 @@ func (PlanConfig_ChangeDatabaseConfig_Type) EnumDescriptor() ([]byte, []int) {
 type PlanConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Specs         []*PlanConfig_Spec     `protobuf:"bytes,1,rep,name=specs,proto3" json:"specs,omitempty"`
-	Deployment    *PlanConfig_Deployment `protobuf:"bytes,2,opt,name=deployment,proto3" json:"deployment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -115,13 +114,6 @@ func (*PlanConfig) Descriptor() ([]byte, []int) {
 func (x *PlanConfig) GetSpecs() []*PlanConfig_Spec {
 	if x != nil {
 		return x.Specs
-	}
-	return nil
-}
-
-func (x *PlanConfig) GetDeployment() *PlanConfig_Deployment {
-	if x != nil {
-		return x.Deployment
 	}
 	return nil
 }
@@ -519,125 +511,15 @@ func (x *PlanConfig_ExportDataConfig) GetPassword() string {
 	return ""
 }
 
-type PlanConfig_Deployment struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The environments deploy order.
-	Environments []string `protobuf:"bytes,1,rep,name=environments,proto3" json:"environments,omitempty"`
-	// The database group mapping.
-	DatabaseGroupMappings []*PlanConfig_Deployment_DatabaseGroupMapping `protobuf:"bytes,2,rep,name=database_group_mappings,json=databaseGroupMappings,proto3" json:"database_group_mappings,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
-}
-
-func (x *PlanConfig_Deployment) Reset() {
-	*x = PlanConfig_Deployment{}
-	mi := &file_store_plan_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PlanConfig_Deployment) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanConfig_Deployment) ProtoMessage() {}
-
-func (x *PlanConfig_Deployment) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanConfig_Deployment.ProtoReflect.Descriptor instead.
-func (*PlanConfig_Deployment) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 4}
-}
-
-func (x *PlanConfig_Deployment) GetEnvironments() []string {
-	if x != nil {
-		return x.Environments
-	}
-	return nil
-}
-
-func (x *PlanConfig_Deployment) GetDatabaseGroupMappings() []*PlanConfig_Deployment_DatabaseGroupMapping {
-	if x != nil {
-		return x.DatabaseGroupMappings
-	}
-	return nil
-}
-
-type PlanConfig_Deployment_DatabaseGroupMapping struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: projects/{project}/databaseGroups/{databaseGroup}.
-	DatabaseGroup string `protobuf:"bytes,1,opt,name=database_group,json=databaseGroup,proto3" json:"database_group,omitempty"`
-	// Format: instances/{instance-id}/databases/{database-name}.
-	Databases     []string `protobuf:"bytes,2,rep,name=databases,proto3" json:"databases,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PlanConfig_Deployment_DatabaseGroupMapping) Reset() {
-	*x = PlanConfig_Deployment_DatabaseGroupMapping{}
-	mi := &file_store_plan_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PlanConfig_Deployment_DatabaseGroupMapping) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PlanConfig_Deployment_DatabaseGroupMapping) ProtoMessage() {}
-
-func (x *PlanConfig_Deployment_DatabaseGroupMapping) ProtoReflect() protoreflect.Message {
-	mi := &file_store_plan_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PlanConfig_Deployment_DatabaseGroupMapping.ProtoReflect.Descriptor instead.
-func (*PlanConfig_Deployment_DatabaseGroupMapping) Descriptor() ([]byte, []int) {
-	return file_store_plan_proto_rawDescGZIP(), []int{0, 4, 0}
-}
-
-func (x *PlanConfig_Deployment_DatabaseGroupMapping) GetDatabaseGroup() string {
-	if x != nil {
-		return x.DatabaseGroup
-	}
-	return ""
-}
-
-func (x *PlanConfig_Deployment_DatabaseGroupMapping) GetDatabases() []string {
-	if x != nil {
-		return x.Databases
-	}
-	return nil
-}
-
 var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\x98\r\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\xcd\n" +
+	"\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
-	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12E\n" +
-	"\n" +
-	"deployment\x18\x02 \x01(\v2%.bytebase.store.PlanConfig.DeploymentR\n" +
-	"deployment\x1a\xcf\x02\n" +
+	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x1a\xcf\x02\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x05 \x01(\tR\x02id\x12g\n" +
 	"\x16create_database_config\x18\x01 \x01(\v2/.bytebase.store.PlanConfig.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12g\n" +
@@ -675,14 +557,7 @@ const file_store_plan_proto_rawDesc = "" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x124\n" +
 	"\x06format\x18\x03 \x01(\x0e2\x1c.bytebase.store.ExportFormatR\x06format\x12\x1f\n" +
 	"\bpassword\x18\x04 \x01(\tH\x00R\bpassword\x88\x01\x01B\v\n" +
-	"\t_password\x1a\x81\x02\n" +
-	"\n" +
-	"Deployment\x12\"\n" +
-	"\fenvironments\x18\x01 \x03(\tR\fenvironments\x12r\n" +
-	"\x17database_group_mappings\x18\x02 \x03(\v2:.bytebase.store.PlanConfig.Deployment.DatabaseGroupMappingR\x15databaseGroupMappings\x1a[\n" +
-	"\x14DatabaseGroupMapping\x12%\n" +
-	"\x0edatabase_group\x18\x01 \x01(\tR\rdatabaseGroup\x12\x1c\n" +
-	"\tdatabases\x18\x02 \x03(\tR\tdatabasesB\x8c\x01\n" +
+	"\t_passwordB\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tPlanProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -698,34 +573,30 @@ func file_store_plan_proto_rawDescGZIP() []byte {
 }
 
 var file_store_plan_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_store_plan_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_plan_proto_goTypes = []any{
-	(PlanConfig_ChangeDatabaseConfig_Type)(0),          // 0: bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	(*PlanConfig)(nil),                                 // 1: bytebase.store.PlanConfig
-	(*PlanConfig_Spec)(nil),                            // 2: bytebase.store.PlanConfig.Spec
-	(*PlanConfig_CreateDatabaseConfig)(nil),            // 3: bytebase.store.PlanConfig.CreateDatabaseConfig
-	(*PlanConfig_ChangeDatabaseConfig)(nil),            // 4: bytebase.store.PlanConfig.ChangeDatabaseConfig
-	(*PlanConfig_ExportDataConfig)(nil),                // 5: bytebase.store.PlanConfig.ExportDataConfig
-	(*PlanConfig_Deployment)(nil),                      // 6: bytebase.store.PlanConfig.Deployment
-	nil,                                                // 7: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	(*PlanConfig_Deployment_DatabaseGroupMapping)(nil), // 8: bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
-	(ExportFormat)(0),                                  // 9: bytebase.store.ExportFormat
+	(PlanConfig_ChangeDatabaseConfig_Type)(0), // 0: bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
+	(*PlanConfig)(nil),                        // 1: bytebase.store.PlanConfig
+	(*PlanConfig_Spec)(nil),                   // 2: bytebase.store.PlanConfig.Spec
+	(*PlanConfig_CreateDatabaseConfig)(nil),   // 3: bytebase.store.PlanConfig.CreateDatabaseConfig
+	(*PlanConfig_ChangeDatabaseConfig)(nil),   // 4: bytebase.store.PlanConfig.ChangeDatabaseConfig
+	(*PlanConfig_ExportDataConfig)(nil),       // 5: bytebase.store.PlanConfig.ExportDataConfig
+	nil,                                       // 6: bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	(ExportFormat)(0),                         // 7: bytebase.store.ExportFormat
 }
 var file_store_plan_proto_depIdxs = []int32{
 	2, // 0: bytebase.store.PlanConfig.specs:type_name -> bytebase.store.PlanConfig.Spec
-	6, // 1: bytebase.store.PlanConfig.deployment:type_name -> bytebase.store.PlanConfig.Deployment
-	3, // 2: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
-	4, // 3: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
-	5, // 4: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
-	0, // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
-	7, // 6: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
-	9, // 7: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
-	8, // 8: bytebase.store.PlanConfig.Deployment.database_group_mappings:type_name -> bytebase.store.PlanConfig.Deployment.DatabaseGroupMapping
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	3, // 1: bytebase.store.PlanConfig.Spec.create_database_config:type_name -> bytebase.store.PlanConfig.CreateDatabaseConfig
+	4, // 2: bytebase.store.PlanConfig.Spec.change_database_config:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig
+	5, // 3: bytebase.store.PlanConfig.Spec.export_data_config:type_name -> bytebase.store.PlanConfig.ExportDataConfig
+	0, // 4: bytebase.store.PlanConfig.ChangeDatabaseConfig.type:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.Type
+	6, // 5: bytebase.store.PlanConfig.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry
+	7, // 6: bytebase.store.PlanConfig.ExportDataConfig.format:type_name -> bytebase.store.ExportFormat
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_store_plan_proto_init() }
@@ -746,7 +617,7 @@ func file_store_plan_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_plan_proto_rawDesc), len(file_store_plan_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

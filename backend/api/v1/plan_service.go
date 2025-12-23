@@ -3,9 +3,7 @@ package v1
 import (
 	"context"
 	"log/slog"
-	"maps"
 	"slices"
-	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/google/cel-go/cel"
@@ -17,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -26,7 +23,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // PlanService represents a service for managing plan.
@@ -252,11 +248,6 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		Description: req.Plan.Description,
 		Config:      convertPlan(req.Plan),
 	}
-	deployment, err := getPlanDeployment(ctx, s.store, planMessage.Config.GetSpecs(), project)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan deployment snapshot, error: %v", err))
-	}
-	planMessage.Config.Deployment = deployment
 
 	plan, err := s.store.CreatePlan(ctx, planMessage, user.Email)
 	if err != nil {
@@ -348,20 +339,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	}
 
 	var planCheckRunsTrigger bool
-
-	// Update the deployment in the end because the specs might change.
-	paths := slices.Clone(req.UpdateMask.Paths)
-	slices.SortFunc(paths, func(a, b string) int {
-		if a == "deployment" {
-			return 1
-		}
-		if b == "deployment" {
-			return -1
-		}
-		return strings.Compare(a, b)
-	})
 	var databaseGroup *v1pb.DatabaseGroup
-	for _, path := range paths {
+
+	for _, path := range req.UpdateMask.Paths {
 		switch path {
 		case "title":
 			title := req.Plan.Title
@@ -372,322 +352,42 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		case "state":
 			deleted := req.Plan.State == v1pb.State_DELETED
 			planUpdate.Deleted = &deleted
-		case "deployment":
-			specs := oldPlan.Config.GetSpecs()
-			if planUpdate.Specs != nil {
-				specs = *planUpdate.Specs
-			}
-			deployment, err := getPlanDeployment(ctx, s.store, specs, project)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan deployment snapshot, error: %v", err))
-			}
-			planUpdate.Deployment = &deployment
 		case "specs":
-			planCheckRunsTrigger = true
-			// Use specs directly for internal storage
-			allSpecs := convertPlanSpecs(req.GetPlan().GetSpecs())
-			planUpdate.Specs = &allSpecs
-
-			// Compare specs directly
-			oldSpecs := convertToPlanSpecs(project.ResourceID, oldPlan.Config.Specs)
-			removed, added, updated := diffSpecs(oldSpecs, req.Plan.Specs)
-
-			// Check if there are any changes at all.
-			hasChanges := len(removed) > 0 || len(added) > 0 || len(updated) > 0
-			if !hasChanges {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("no specs updated"))
-			}
-
-			// Validate spec modifications based on pipeline existence.
+			// Block all spec changes if plan has a rollout (pipeline).
 			if oldPlan.PipelineUID != nil {
-				// Plan has a pipeline - only updates are allowed, no adding/removing.
-				if len(removed) > 0 {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot remove specs from plan that has a pipeline"))
-				}
-				if len(added) > 0 {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot add specs to plan that has a pipeline"))
-				}
-				if len(updated) == 0 {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("no specs updated"))
-				}
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot update specs for plan that has a rollout"))
 			}
 
-			// Validate the new specs
+			// Validate the new specs.
 			dg, err := validateSpecs(ctx, s.store, oldPlan.ProjectID, req.Plan.Specs)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
 			}
 			databaseGroup = dg
 
-			// Handle task updates for specs
-			tasksMap := map[int]*store.TaskMessage{}
-			var taskPatchList []*store.TaskPatch
-			var issueCommentCreates []*store.IssueCommentMessage
+			// Convert and store new specs.
+			allSpecs := convertPlanSpecs(req.GetPlan().GetSpecs())
+			planUpdate.Specs = &allSpecs
 
-			oldSpecsByID := make(map[string]*v1pb.Plan_Spec)
-			for _, spec := range oldSpecs {
-				oldSpecsByID[spec.Id] = spec
-			}
+			// Trigger plan check runs.
+			planCheckRunsTrigger = true
 
-			updatedByID := make(map[string]*v1pb.Plan_Spec)
-			for _, spec := range updated {
-				updatedByID[spec.Id] = spec
-			}
-
+			// Evict approvals if issue exists to request re-approval.
 			issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue: %v", err))
 			}
-
-			if oldPlan.PipelineUID != nil {
-				tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: oldPlan.PipelineUID})
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list tasks: %v", err))
-				}
-				tasksBySpecID := make(map[string][]*store.TaskMessage)
-				for _, task := range tasks {
-					specID := task.Payload.GetSpecId()
-					tasksBySpecID[specID] = append(tasksBySpecID[specID], task)
-				}
-				for _, task := range tasks {
-					doUpdate := false
-					taskPatch := &store.TaskPatch{
-						ID:        task.ID,
-						UpdaterID: user.ID,
-					}
-					specID := task.Payload.GetSpecId()
-					spec, ok := updatedByID[specID]
-					if !ok {
-						continue
-					}
-
-					newTaskType, err := getTaskTypeFromSpec(spec)
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task type from spec, err: %v", err))
-					}
-
-					// Check if enable_ghost changed for DATABASE_MIGRATE tasks
-					if newTaskType == storepb.Task_DATABASE_MIGRATE && task.Type == storepb.Task_DATABASE_MIGRATE {
-						if config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig); ok {
-							newEnableGhost := config.ChangeDatabaseConfig.EnableGhost
-							if newEnableGhost != task.Payload.GetEnableGhost() {
-								taskPatch.EnableGhost = &newEnableGhost
-								doUpdate = true
-							}
-						}
-					} else if newTaskType != task.Type {
-						// Task type changed - only allow within DATABASE_MIGRATE types or to/from DATABASE_SDL
-						if (newTaskType == storepb.Task_DATABASE_MIGRATE && task.Type == storepb.Task_DATABASE_SDL) ||
-							(newTaskType == storepb.Task_DATABASE_SDL && task.Type == storepb.Task_DATABASE_MIGRATE) {
-							// Allow DATABASE_MIGRATE <-> DATABASE_SDL conversion
-							if newTaskType == storepb.Task_DATABASE_MIGRATE {
-								if config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig); ok {
-									newEnableGhost := config.ChangeDatabaseConfig.EnableGhost
-									taskPatch.EnableGhost = &newEnableGhost
-									doUpdate = true
-								}
-							}
-						} else {
-							return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot change task type from %v to %v", task.Type, newTaskType))
-						}
-					}
-
-					// Flags for gh-ost.
-					if err := func() error {
-						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
-						if !ok {
-							return nil
-						}
-						if config.ChangeDatabaseConfig.Type != v1pb.DatabaseChangeType_MIGRATE || !config.ChangeDatabaseConfig.EnableGhost {
-							return nil
-						}
-
-						newFlags := config.ChangeDatabaseConfig.GetGhostFlags()
-						if _, err := ghost.GetUserFlags(newFlags); err != nil {
-							return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid ghost flags %q, error %v", newFlags, err))
-						}
-						oldFlags := task.Payload.GetFlags()
-						if maps.Equal(oldFlags, newFlags) {
-							return nil
-						}
-						taskPatch.Flags = &newFlags
-						doUpdate = true
-						return nil
-					}(); err != nil {
-						return nil, err
-					}
-
-					// Prior Backup
-					func() {
-						config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
-						if !ok {
-							return
-						}
-						// Prior backup is allowed for non-ghost migrations
-						if config.ChangeDatabaseConfig.Type != v1pb.DatabaseChangeType_MIGRATE || config.ChangeDatabaseConfig.EnableGhost {
-							return
-						}
-
-						// Check if backup setting has changed.
-						planEnableBackup := config.ChangeDatabaseConfig.GetEnablePriorBackup()
-						taskEnableBackup := task.Payload.GetEnablePriorBackup()
-						if planEnableBackup != taskEnableBackup {
-							taskPatch.EnablePriorBackup = &planEnableBackup
-							doUpdate = true
-						}
-					}()
-
-					// Sheet
-					if err := func() error {
-						switch newTaskType {
-						case storepb.Task_DATABASE_MIGRATE, storepb.Task_DATABASE_SDL, storepb.Task_DATABASE_EXPORT:
-							var oldSheetName string
-							if newTaskType == storepb.Task_DATABASE_EXPORT {
-								config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
-								if !ok {
-									return nil
-								}
-								oldSheetName = config.ExportDataConfig.Sheet
-							} else {
-								config, ok := spec.Config.(*v1pb.Plan_Spec_ChangeDatabaseConfig)
-								if !ok {
-									return nil
-								}
-								oldSheetName = config.ChangeDatabaseConfig.Sheet
-							}
-							_, newSheetSha256, err := common.GetProjectResourceIDSheetSha256(oldSheetName)
-							if err != nil {
-								return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get sheet sha256 from %q, error: %v", oldSheetName, err))
-							}
-							if task.Payload.GetSheetSha256() == newSheetSha256 {
-								return nil
-							}
-
-							doUpdate = true
-							taskPatch.SheetSha256 = &newSheetSha256
-
-							if issue != nil {
-								oldSheetSha256 := task.Payload.GetSheetSha256()
-								issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-									IssueUID: issue.UID,
-									Payload: &storepb.IssueCommentPayload{
-										Event: &storepb.IssueCommentPayload_PlanSpecUpdate_{
-											PlanSpecUpdate: &storepb.IssueCommentPayload_PlanSpecUpdate{
-												Spec:            common.FormatSpec(issue.Project.ResourceID, oldPlan.UID, specID),
-												FromSheetSha256: &oldSheetSha256,
-												ToSheetSha256:   &newSheetSha256,
-											},
-										},
-									},
-								})
-							}
-						default:
-							// Other task types
-						}
-						return nil
-					}(); err != nil {
-						return nil, err
-					}
-
-					// ExportDataConfig
-					func() {
-						if newTaskType != storepb.Task_DATABASE_EXPORT {
-							return
-						}
-						config, ok := spec.Config.(*v1pb.Plan_Spec_ExportDataConfig)
-						if !ok {
-							return
-						}
-						if config.ExportDataConfig.Format != convertExportFormat(task.Payload.GetFormat()) {
-							format := convertToExportFormat(config.ExportDataConfig.Format)
-							taskPatch.ExportFormat = &format
-							doUpdate = true
-						}
-						if (config.ExportDataConfig.Password == nil && task.Payload.GetPassword() != "") || (config.ExportDataConfig.Password != nil && *config.ExportDataConfig.Password != task.Payload.GetPassword()) {
-							taskPatch.ExportPassword = config.ExportDataConfig.Password
-							doUpdate = true
-						}
-					}()
-
-					if !doUpdate {
-						continue
-					}
-					tasksMap[task.ID] = task
-					taskPatchList = append(taskPatchList, taskPatch)
-				}
-
-				if len(taskPatchList) != 0 {
-					if issue != nil {
-						// Do not allow to update task if issue is done or canceled.
-						if issue.Status == storepb.Issue_DONE || issue.Status == storepb.Issue_CANCELED {
-							return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update task because issue %q is %s", issue.Title, issue.Status))
-						}
-					}
-				}
-			}
-
-			for _, taskPatch := range taskPatchList {
-				task := tasksMap[taskPatch.ID]
-				if task.LatestTaskRunStatus == storepb.TaskRun_PENDING || task.LatestTaskRunStatus == storepb.TaskRun_RUNNING || task.LatestTaskRunStatus == storepb.TaskRun_SKIPPED || task.LatestTaskRunStatus == storepb.TaskRun_DONE {
-					return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update plan because task %v is %s", task.ID, task.LatestTaskRunStatus))
-				}
-			}
-
-			var doUpdateSheet bool
-			for _, taskPatch := range taskPatchList {
-				if taskPatch.SheetSha256 != nil {
-					doUpdateSheet = true
-				}
-			}
-
-			// For plans without pipeline, check if sheet references changed in specs
-			if oldPlan.PipelineUID == nil {
-				for _, specPatch := range updated {
-					oldSpec := oldSpecsByID[specPatch.Id]
-					if oldSpec.GetChangeDatabaseConfig() != nil && specPatch.GetChangeDatabaseConfig() != nil {
-						oldConfig, newConfig := oldSpec.GetChangeDatabaseConfig(), specPatch.GetChangeDatabaseConfig()
-						if oldConfig.Sheet != newConfig.Sheet {
-							doUpdateSheet = true
-							break
-						}
-					}
-				}
-			}
-
-			// Check project setting for modify statement.
-			if len(taskPatchList) > 0 && doUpdateSheet && !project.Setting.AllowModifyStatement {
-				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("modify statement is not allowed for project %s", project.Title))
-			}
-
-			for _, taskPatch := range taskPatchList {
-				task := tasksMap[taskPatch.ID]
-				if _, err := s.store.UpdateTask(ctx, taskPatch); err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update task %v: %v", task.ID, err))
-				}
-			}
-
-			for _, issueCommentCreate := range issueCommentCreates {
-				if _, err := s.store.CreateIssueComment(ctx, issueCommentCreate, user.Email); err != nil {
-					slog.Warn("failed to create issue comments", "issueUID", issue.UID, log.BBError(err))
-				}
-			}
-
-			if issue != nil && doUpdateSheet {
-				if err := func() error {
-					issue, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
-						PayloadUpsert: &storepb.Issue{
-							Approval: &storepb.IssuePayloadApproval{
-								ApprovalFindingDone: false,
-							},
+			if issue != nil {
+				if _, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
+					PayloadUpsert: &storepb.Issue{
+						Approval: &storepb.IssuePayloadApproval{
+							ApprovalFindingDone: false,
 						},
-					})
-					if err != nil {
-						return errors.Errorf("failed to update issue: %v", err)
-					}
-					s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
-					return nil
-				}(); err != nil {
+					},
+				}); err != nil {
 					slog.Error("failed to update issue to refind approval", log.BBError(err))
+				} else {
+					s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 				}
 			}
 		default:
@@ -1044,42 +744,6 @@ func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *con
 	return connect.NewResponse(&v1pb.BatchCancelPlanCheckRunsResponse{}), nil
 }
 
-// diffSpecs checks if there are any specs removed, added or updated in the new plan.
-// It performs a deep comparison of all spec fields using protocol buffer comparison.
-// Returns (removed, added, updated) slices of specs.
-func diffSpecs(oldSpecs []*v1pb.Plan_Spec, newSpecs []*v1pb.Plan_Spec) ([]*v1pb.Plan_Spec, []*v1pb.Plan_Spec, []*v1pb.Plan_Spec) {
-	oldSpecsMap := make(map[string]*v1pb.Plan_Spec, len(oldSpecs))
-	newSpecsMap := make(map[string]*v1pb.Plan_Spec, len(newSpecs))
-
-	// Build maps for efficient lookup
-	for _, spec := range oldSpecs {
-		oldSpecsMap[spec.Id] = spec
-	}
-	for _, spec := range newSpecs {
-		newSpecsMap[spec.Id] = spec
-	}
-
-	var removed, added, updated []*v1pb.Plan_Spec
-
-	// Find removed specs - specs in old but not in new.
-	for _, spec := range oldSpecs {
-		if _, exists := newSpecsMap[spec.Id]; !exists {
-			removed = append(removed, spec)
-		}
-	}
-
-	// Find added and updated specs - specs in new but not in old, or changed.
-	for _, spec := range newSpecs {
-		if oldSpec, exists := oldSpecsMap[spec.Id]; !exists {
-			added = append(added, spec)
-		} else if !oldSpec.Equal(spec) {
-			updated = append(updated, spec)
-		}
-	}
-
-	return removed, added, updated
-}
-
 func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs []*v1pb.Plan_Spec) (*v1pb.DatabaseGroup, error) {
 	if len(specs) == 0 {
 		return nil, errors.Errorf("the plan has zero spec")
@@ -1269,88 +933,6 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 	return databaseGroup, nil
 }
 
-func getPlanSpecDatabaseGroups(specs []*storepb.PlanConfig_Spec) []string {
-	var databaseGroups []string
-	for _, spec := range specs {
-		if _, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); !ok {
-			continue
-		}
-		for _, target := range spec.GetChangeDatabaseConfig().GetTargets() {
-			if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
-				databaseGroups = append(databaseGroups, target)
-			}
-		}
-	}
-	return databaseGroups
-}
-
-// getAllEnvironmentIDs returns all environment IDs from the store.
-func getAllEnvironmentIDs(ctx context.Context, s *store.Store) ([]string, error) {
-	environments, err := s.GetEnvironment(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list environments")
-	}
-	var environmentIDs []string
-	for _, e := range environments.GetEnvironments() {
-		environmentIDs = append(environmentIDs, e.Id)
-	}
-	return environmentIDs, nil
-}
-
-func getPlanDeployment(ctx context.Context, s *store.Store, specs []*storepb.PlanConfig_Spec, project *store.ProjectMessage) (*storepb.PlanConfig_Deployment, error) {
-	snapshot := &storepb.PlanConfig_Deployment{}
-
-	environmentIDs, err := getAllEnvironmentIDs(ctx, s)
-	if err != nil {
-		return nil, err
-	}
-	snapshot.Environments = environmentIDs
-
-	databaseGroups := getPlanSpecDatabaseGroups(specs)
-
-	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
-	}
-
-	for _, name := range databaseGroups {
-		projectID, id, err := common.GetProjectIDDatabaseGroupID(name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database group id")
-		}
-		if projectID != project.ResourceID {
-			return nil, errors.Errorf("%s does not belong to project %s", name, project.ResourceID)
-		}
-		databaseGroup, err := s.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-			ResourceID: &id,
-			ProjectID:  &project.ResourceID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database group")
-		}
-		if databaseGroup == nil {
-			return nil, errors.Errorf("database group %q not found", name)
-		}
-
-		matchedDatabases, err := utils.GetMatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", id)
-		}
-
-		var databases []string
-		for _, db := range matchedDatabases {
-			databases = append(databases, common.FormatDatabase(db.InstanceID, db.DatabaseName))
-		}
-
-		snapshot.DatabaseGroupMappings = append(snapshot.DatabaseGroupMappings, &storepb.PlanConfig_Deployment_DatabaseGroupMapping{
-			DatabaseGroup: name,
-			Databases:     databases,
-		})
-	}
-
-	return snapshot, nil
-}
-
 func storePlanConfigHasRelease(plan *storepb.PlanConfig) bool {
 	for _, spec := range plan.GetSpecs() {
 		if c, ok := spec.Config.(*storepb.PlanConfig_Spec_ChangeDatabaseConfig); ok {
@@ -1360,27 +942,4 @@ func storePlanConfigHasRelease(plan *storepb.PlanConfig) bool {
 		}
 	}
 	return false
-}
-
-func getTaskTypeFromSpec(spec *v1pb.Plan_Spec) (storepb.Task_Type, error) {
-	//exhaustive:enforce
-	switch s := spec.Config.(type) {
-	case *v1pb.Plan_Spec_CreateDatabaseConfig:
-		return storepb.Task_DATABASE_CREATE, nil
-	case *v1pb.Plan_Spec_ChangeDatabaseConfig:
-		switch s.ChangeDatabaseConfig.Type {
-		case v1pb.DatabaseChangeType_MIGRATE:
-			return storepb.Task_DATABASE_MIGRATE, nil
-		case v1pb.DatabaseChangeType_SDL:
-			return storepb.Task_DATABASE_SDL, nil
-		case v1pb.DatabaseChangeType_DATABASE_CHANGE_TYPE_UNSPECIFIED:
-			return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unexpected unspecified change database config type")
-		default:
-			return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("invalid change database config type %s", s.ChangeDatabaseConfig.Type)
-		}
-	case *v1pb.Plan_Spec_ExportDataConfig:
-		return storepb.Task_DATABASE_EXPORT, nil
-	default:
-		return storepb.Task_TASK_TYPE_UNSPECIFIED, errors.Errorf("unknown spec config type")
-	}
 }

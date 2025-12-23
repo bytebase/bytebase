@@ -161,8 +161,6 @@
     - [PlanConfig.ChangeDatabaseConfig](#bytebase-store-PlanConfig-ChangeDatabaseConfig)
     - [PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-store-PlanConfig-ChangeDatabaseConfig-GhostFlagsEntry)
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
-    - [PlanConfig.Deployment](#bytebase-store-PlanConfig-Deployment)
-    - [PlanConfig.Deployment.DatabaseGroupMapping](#bytebase-store-PlanConfig-Deployment-DatabaseGroupMapping)
     - [PlanConfig.ExportDataConfig](#bytebase-store-PlanConfig-ExportDataConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
   
@@ -2783,7 +2781,6 @@ Plan spec update event (tracks sheet changes to plan specs)
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
-| deployment | [PlanConfig.Deployment](#bytebase-store-PlanConfig-Deployment) |  |  |
 
 
 
@@ -2843,38 +2840,6 @@ Plan spec update event (tracks sheet changes to plan specs)
 | cluster | [string](#string) |  | cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. |
 | owner | [string](#string) |  | owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. |
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-
-
-
-
-
-
-<a name="bytebase-store-PlanConfig-Deployment"></a>
-
-### PlanConfig.Deployment
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| environments | [string](#string) | repeated | The environments deploy order. |
-| database_group_mappings | [PlanConfig.Deployment.DatabaseGroupMapping](#bytebase-store-PlanConfig-Deployment-DatabaseGroupMapping) | repeated | The database group mapping. |
-
-
-
-
-
-
-<a name="bytebase-store-PlanConfig-Deployment-DatabaseGroupMapping"></a>
-
-### PlanConfig.Deployment.DatabaseGroupMapping
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database_group | [string](#string) |  | Format: projects/{project}/databaseGroups/{databaseGroup}. |
-| databases | [string](#string) | repeated | Format: instances/{instance-id}/databases/{database-name}. |
 
 
 

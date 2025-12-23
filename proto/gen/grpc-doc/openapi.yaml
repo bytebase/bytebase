@@ -9699,17 +9699,6 @@ components:
                 table:
                     type: string
                     description: The table is the name of a reference table.
-        Deployment_DatabaseGroupMapping:
-            type: object
-            properties:
-                databaseGroup:
-                    type: string
-                    description: 'Format: projects/{project}/databaseGroups/{databaseGroup}.'
-                databases:
-                    type: array
-                    items:
-                        type: string
-                    description: 'Format: instances/{instance-id}/databases/{database-name}.'
         DiffMetadataRequest:
             required:
                 - sourceMetadata
@@ -11881,8 +11870,6 @@ components:
                          - WARNING
                          - ERROR
                          - RUNNING
-                deployment:
-                    $ref: '#/components/schemas/Plan_Deployment'
         PlanCheckRun:
             type: object
             properties:
@@ -12020,19 +12007,6 @@ components:
                     description: |-
                         The environment resource.
                          Format: environments/prod where prod is the environment resource ID.
-        Plan_Deployment:
-            type: object
-            properties:
-                environments:
-                    type: array
-                    items:
-                        type: string
-                    description: The environments deploy order.
-                databaseGroupMappings:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Deployment_DatabaseGroupMapping'
-                    description: The database group mapping.
         Plan_ExportDataConfig:
             type: object
             properties:
