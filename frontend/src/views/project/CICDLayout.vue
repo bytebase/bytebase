@@ -131,6 +131,7 @@ providePlanContext({
   issue,
   rollout,
   taskRuns,
+  issueLabels: ref<string[]>(issue.value?.labels ?? []),
   ...planBaseContext,
 });
 

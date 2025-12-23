@@ -30,6 +30,7 @@ export type PlanContext = {
   issue: Ref<Issue | undefined>;
   rollout: Ref<Rollout | undefined>;
   taskRuns: Ref<TaskRun[]>;
+  issueLabels: Ref<string[]>;
 
   readonly: ComputedRef<boolean>;
 
