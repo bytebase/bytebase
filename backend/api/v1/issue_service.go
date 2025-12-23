@@ -395,27 +395,7 @@ func (s *IssueService) getUserByIdentifier(ctx context.Context, identifier strin
 
 // CreateIssue creates a issue.
 func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1pb.CreateIssueRequest]) (*connect.Response[v1pb.Issue], error) {
-	switch req.Msg.Issue.Type {
-	case v1pb.Issue_GRANT_REQUEST:
-		if req.Msg.Issue.Title == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
-		}
-		return s.createIssueGrantRequest(ctx, req.Msg)
-	case v1pb.Issue_DATABASE_CHANGE:
-		return s.createIssueDatabaseChange(ctx, req.Msg)
-	case v1pb.Issue_DATABASE_EXPORT:
-		return s.createIssueDatabaseDataExport(ctx, req.Msg)
-	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown issue type %q", req.Msg.Issue.Type))
-	}
-}
-
-func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-	projectID, err := common.GetProjectID(request.Parent)
+	projectID, err := common.GetProjectID(req.Msg.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
@@ -428,6 +408,30 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
+	if project.Setting.ForceIssueLabels && len(req.Msg.Issue.Labels) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
+	}
+
+	switch req.Msg.Issue.Type {
+	case v1pb.Issue_GRANT_REQUEST:
+		if req.Msg.Issue.Title == "" {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
+		}
+		return s.createIssueGrantRequest(ctx, project, req.Msg)
+	case v1pb.Issue_DATABASE_CHANGE:
+		return s.createIssueDatabaseChange(ctx, project, req.Msg)
+	case v1pb.Issue_DATABASE_EXPORT:
+		return s.createIssueDatabaseDataExport(ctx, project, req.Msg)
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown issue type %q", req.Msg.Issue.Type))
+	}
+}
+
+func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
 
 	if request.Issue.Plan == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan is required"))
@@ -438,12 +442,12 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &projectID})
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 	}
 	planUID = &plan.UID
 	var rolloutUID *int
@@ -454,13 +458,13 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		}
 		pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
 			ID:        &rolloutID,
-			ProjectID: &projectID,
+			ProjectID: &project.ResourceID,
 		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout, error: %v", err))
 		}
 		if pipeline == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, project.ResourceID))
 		}
 		rolloutUID = &pipeline.ID
 	}
@@ -506,7 +510,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	return connect.NewResponse(converted), nil
 }
 
-func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
+func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
 	// Check if grant request feature is enabled.
 	// Grant requests are only available in Enterprise plan.
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW); err != nil {
@@ -517,19 +521,6 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-	projectID, err := common.GetProjectID(request.Parent)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
 
 	if request.Issue.GrantRequest.GetRole() == "" {
@@ -596,23 +587,10 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	return connect.NewResponse(converted), nil
 }
 
-func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
+func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-	projectID, err := common.GetProjectID(request.Parent)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
 
 	if request.Issue.Plan == "" {
@@ -624,12 +602,12 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &projectID})
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 	}
 	planUID = &plan.UID
 	var rolloutUID *int
@@ -640,13 +618,13 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		}
 		pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
 			ID:        &rolloutID,
-			ProjectID: &projectID,
+			ProjectID: &project.ResourceID,
 		})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout, error: %v", err))
 		}
 		if pipeline == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, project.ResourceID))
 		}
 		rolloutUID = &pipeline.ID
 	}
