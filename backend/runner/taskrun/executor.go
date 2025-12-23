@@ -62,9 +62,9 @@ type migrateContext struct {
 	profile   *config.Profile
 	dbFactory *dbfactory.DBFactory
 
-	instance    *store.InstanceMessage
-	database    *store.DatabaseMessage
-	sheetSha256 string
+	instance *store.InstanceMessage
+	database *store.DatabaseMessage
+	sheet    *store.SheetMessage
 
 	task        *store.TaskMessage
 	taskRunUID  int
@@ -132,7 +132,7 @@ func runMigrationWithFunc(
 	schemaVersion string,
 	execFunc execFuncType,
 ) (terminated bool, result *storepb.TaskRunResult, err error) {
-	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheet.Sha256, taskRunUID, dbFactory)
+	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheet, taskRunUID, dbFactory)
 	if err != nil {
 		return true, nil, err
 	}
@@ -148,7 +148,7 @@ func runMigrationWithFunc(
 	return postMigration(ctx, store, mc, skipped)
 }
 
-func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, schemaVersion string, sheetSha256 string, taskRunUID int, dbFactory *dbfactory.DBFactory) (*migrateContext, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, schemaVersion string, sheet *store.SheetMessage, taskRunUID int, dbFactory *dbfactory.DBFactory) (*migrateContext, error) {
 	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, err
@@ -174,6 +174,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		dbFactory:   dbFactory,
 		instance:    instance,
 		database:    database,
+		sheet:       sheet,
 		task:        task,
 		version:     schemaVersion,
 		taskRunName: common.FormatTaskRun(pipeline.ProjectID, task.PipelineID, task.Environment, task.ID, taskRunUID),
@@ -192,8 +193,6 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	default:
 		return nil, errors.Errorf("task type %s is unexpected", task.Type)
 	}
-
-	mc.sheetSha256 = sheetSha256
 
 	if isChangeDatabaseTask(task) {
 		if f := task.Payload.GetTaskReleaseSource().GetFile(); f != "" {
@@ -430,7 +429,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mc *migrateContext
 		Payload: &storepb.ChangelogPayload{
 			TaskRun:     mc.taskRunName,
 			Revision:    0,
-			SheetSha256: mc.sheetSha256,
+			SheetSha256: mc.sheet.Sha256,
 			Version:     mc.version,
 			Type:        changelogType,
 			GitCommit:   mc.profile.GitCommit,
@@ -471,7 +470,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, mc *migrateCo
 				Payload: &storepb.RevisionPayload{
 					Release:     mc.release.release,
 					File:        mc.release.file,
-					SheetSha256: mc.sheetSha256,
+					SheetSha256: mc.sheet.Sha256,
 					TaskRun:     mc.taskRunName,
 					Type:        storepb.SchemaChangeType_VERSIONED,
 				},
