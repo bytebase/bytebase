@@ -169,34 +169,28 @@ const useExecuteSQL = () => {
       }
 
       if (hasFeature(PlanFeature.FEATURE_DATABASE_GROUPS)) {
-        try {
-          const projectName =
-            databaseGroups.length > 0
-              ? databaseGroups[0].split("/").slice(0, 2).join("/")
-              : "";
-
-          if (projectName) {
-            const fetchedGroups =
-              await dbGroupStore.batchGetOrFetchDBGroupsByNames(
-                projectName,
-                databaseGroups,
-                DatabaseGroupView.FULL
-              );
-
-            for (const databaseGroup of fetchedGroups) {
-              for (const matchedDatabase of databaseGroup.matchedDatabases) {
-                if (!isValidDatabaseName(matchedDatabase.name)) {
-                  continue;
-                }
-                if (batchQueryDatabaseSet.has(matchedDatabase.name)) {
-                  continue;
-                }
-                batchQueryDatabaseSet.add(matchedDatabase.name);
+        for (const databaseGroupName of databaseGroups) {
+          try {
+            const databaseGroup = await dbGroupStore.getOrFetchDBGroupByName(
+              databaseGroupName,
+              {
+                skipCache: false,
+                silent: true,
+                view: DatabaseGroupView.FULL,
               }
+            );
+            for (const matchedDatabase of databaseGroup.matchedDatabases) {
+              if (!isValidDatabaseName(matchedDatabase.name)) {
+                continue;
+              }
+              if (batchQueryDatabaseSet.has(matchedDatabase.name)) {
+                continue;
+              }
+              batchQueryDatabaseSet.add(matchedDatabase.name);
             }
+          } catch {
+            // skip
           }
-        } catch {
-          // skip
         }
       }
     }

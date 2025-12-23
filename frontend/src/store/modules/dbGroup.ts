@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { head, uniq } from "lodash-es";
+import { head } from "lodash-es";
 import { defineStore } from "pinia";
 import type { MaybeRef } from "vue";
 import { computed, ref, unref, watch, watchEffect } from "vue";
@@ -12,7 +12,6 @@ import { isValidDatabaseGroupName, unknownDatabaseGroup } from "@/types";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 import {
-  BatchGetDatabaseGroupsRequestSchema,
   CreateDatabaseGroupRequestSchema,
   DatabaseGroupSchema,
   DatabaseGroupView,
@@ -126,47 +125,6 @@ export const useDBGroupStore = defineStore("db-group", () => {
     return getCacheWithFallback(name, view) ?? unknownDatabaseGroup();
   };
 
-  const batchGetDBGroups = async (
-    projectName: string,
-    names: string[],
-    options?: { silent?: boolean; view?: DatabaseGroupView }
-  ) => {
-    if (names.length === 0) return [];
-    const { silent = false, view = DatabaseGroupView.BASIC } = options ?? {};
-
-    const request = create(BatchGetDatabaseGroupsRequestSchema, {
-      parent: projectName,
-      names,
-      view,
-    });
-
-    const response =
-      await databaseGroupServiceClientConnect.batchGetDatabaseGroups(request, {
-        contextValues: createContextValues().set(silentContextKey, silent),
-      });
-
-    for (const databaseGroup of response.databaseGroups) {
-      setDatabaseGroupCache(databaseGroup, view);
-    }
-
-    return response.databaseGroups;
-  };
-
-  const batchGetOrFetchDBGroupsByNames = async (
-    projectName: string,
-    names: string[],
-    view?: DatabaseGroupView
-  ): Promise<DatabaseGroup[]> => {
-    const validNames = uniq(names).filter((name) => {
-      if (!isValidDatabaseGroupName(name)) return false;
-      const namePrefix = `${projectName}/${databaseGroupNamePrefix}`;
-      return name.startsWith(namePrefix);
-    });
-
-    await batchGetDBGroups(projectName, validNames, { silent: true, view });
-    return validNames.map((name) => getDBGroupByName(name, view));
-  };
-
   const createDatabaseGroup = async ({
     projectName,
     databaseGroup,
@@ -263,8 +221,6 @@ export const useDBGroupStore = defineStore("db-group", () => {
     getOrFetchDBGroupByName,
     fetchDBGroupListByProjectName,
     getDBGroupByName,
-    batchGetDBGroups,
-    batchGetOrFetchDBGroupsByNames,
     createDatabaseGroup,
     updateDatabaseGroup,
     deleteDatabaseGroup,

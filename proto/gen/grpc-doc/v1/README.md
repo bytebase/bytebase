@@ -201,8 +201,6 @@
     - [DatabaseCatalogService](#bytebase-v1-DatabaseCatalogService)
   
 - [v1/database_group_service.proto](#v1_database_group_service-proto)
-    - [BatchGetDatabaseGroupsRequest](#bytebase-v1-BatchGetDatabaseGroupsRequest)
-    - [BatchGetDatabaseGroupsResponse](#bytebase-v1-BatchGetDatabaseGroupsResponse)
     - [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest)
     - [DatabaseGroup](#bytebase-v1-DatabaseGroup)
     - [DatabaseGroup.Database](#bytebase-v1-DatabaseGroup-Database)
@@ -3492,38 +3490,6 @@ DatabaseCatalogService manages database schema metadata and classification.
 
 
 
-<a name="bytebase-v1-BatchGetDatabaseGroupsRequest"></a>
-
-### BatchGetDatabaseGroupsRequest
-Request message for batch getting database groups.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource whose database groups are to be retrieved. Format: projects/{project} All names must belong to this parent project. |
-| names | [string](#string) | repeated | The names of the database groups to retrieve. Format: projects/{project}/databaseGroups/{databaseGroup} Maximum 1000 names per request. |
-| view | [DatabaseGroupView](#bytebase-v1-DatabaseGroupView) |  | The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchGetDatabaseGroupsResponse"></a>
-
-### BatchGetDatabaseGroupsResponse
-Response message for batch getting database groups.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| database_groups | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | repeated | The database groups from the specified request. Groups that don&#39;t exist or user doesn&#39;t have permission to access are omitted. |
-
-
-
-
-
-
 <a name="bytebase-v1-CreateDatabaseGroupRequest"></a>
 
 ### CreateDatabaseGroupRequest
@@ -3690,7 +3656,6 @@ DatabaseGroupService manages database groups for organizing databases by criteri
 | ----------- | ------------ | ------------- | ------------|
 | ListDatabaseGroups | [ListDatabaseGroupsRequest](#bytebase-v1-ListDatabaseGroupsRequest) | [ListDatabaseGroupsResponse](#bytebase-v1-ListDatabaseGroupsResponse) | Lists database groups in a project. Permissions required: bb.databaseGroups.list |
 | GetDatabaseGroup | [GetDatabaseGroupRequest](#bytebase-v1-GetDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Gets a database group by name. Permissions required: bb.databaseGroups.get |
-| BatchGetDatabaseGroups | [BatchGetDatabaseGroupsRequest](#bytebase-v1-BatchGetDatabaseGroupsRequest) | [BatchGetDatabaseGroupsResponse](#bytebase-v1-BatchGetDatabaseGroupsResponse) | Batch retrieves multiple database groups by their names. Permissions required: bb.databaseGroups.get |
 | CreateDatabaseGroup | [CreateDatabaseGroupRequest](#bytebase-v1-CreateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Creates a new database group. Permissions required: bb.databaseGroups.create |
 | UpdateDatabaseGroup | [UpdateDatabaseGroupRequest](#bytebase-v1-UpdateDatabaseGroupRequest) | [DatabaseGroup](#bytebase-v1-DatabaseGroup) | Updates a database group. Permissions required: bb.databaseGroups.update When allow_missing=true, also requires: bb.databaseGroups.create |
 | DeleteDatabaseGroup | [DeleteDatabaseGroupRequest](#bytebase-v1-DeleteDatabaseGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a database group. Permissions required: bb.databaseGroups.delete |

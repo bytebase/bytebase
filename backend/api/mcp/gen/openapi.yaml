@@ -534,44 +534,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
-  /bytebase.v1.DatabaseGroupService/BatchGetDatabaseGroups:
-    post:
-      tags:
-        - bytebase.v1.DatabaseGroupService
-      summary: 'Batch retrieves multiple database groups by their names.  Permissions required: bb.databaseGroups.get'
-      description: |-
-        Batch retrieves multiple database groups by their names.
-         Permissions required: bb.databaseGroups.get
-      operationId: bytebase.v1.DatabaseGroupService.BatchGetDatabaseGroups
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.BatchGetDatabaseGroupsRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.BatchGetDatabaseGroupsResponse'
   /bytebase.v1.DatabaseGroupService/CreateDatabaseGroup:
     post:
       tags:
@@ -7316,46 +7278,6 @@ components:
       title: BatchDeparseResponse
       additionalProperties: false
       description: Response message for batch deparsing CEL expressions.
-    bytebase.v1.BatchGetDatabaseGroupsRequest:
-      type: object
-      properties:
-        parent:
-          type: string
-          title: parent
-          description: |-
-            The parent resource whose database groups are to be retrieved.
-             Format: projects/{project}
-             All names must belong to this parent project.
-        names:
-          type: array
-          items:
-            type: string
-          title: names
-          description: |-
-            The names of the database groups to retrieve.
-             Format: projects/{project}/databaseGroups/{databaseGroup}
-             Maximum 1000 names per request.
-        view:
-          title: view
-          description: The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
-          $ref: '#/components/schemas/bytebase.v1.DatabaseGroupView'
-      title: BatchGetDatabaseGroupsRequest
-      additionalProperties: false
-      description: Request message for batch getting database groups.
-    bytebase.v1.BatchGetDatabaseGroupsResponse:
-      type: object
-      properties:
-        databaseGroups:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.DatabaseGroup'
-          title: database_groups
-          description: |-
-            The database groups from the specified request.
-             Groups that don't exist or user doesn't have permission to access are omitted.
-      title: BatchGetDatabaseGroupsResponse
-      additionalProperties: false
-      description: Response message for batch getting database groups.
     bytebase.v1.BatchGetDatabasesRequest:
       type: object
       properties:

@@ -238,121 +238,6 @@ func (x *GetDatabaseGroupRequest) GetView() DatabaseGroupView {
 	return DatabaseGroupView_DATABASE_GROUP_VIEW_UNSPECIFIED
 }
 
-// Request message for batch getting database groups.
-type BatchGetDatabaseGroupsRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent resource whose database groups are to be retrieved.
-	// Format: projects/{project}
-	// All names must belong to this parent project.
-	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// The names of the database groups to retrieve.
-	// Format: projects/{project}/databaseGroups/{databaseGroup}
-	// Maximum 1000 names per request.
-	Names []string `protobuf:"bytes,2,rep,name=names,proto3" json:"names,omitempty"`
-	// The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
-	View          DatabaseGroupView `protobuf:"varint,3,opt,name=view,proto3,enum=bytebase.v1.DatabaseGroupView" json:"view,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *BatchGetDatabaseGroupsRequest) Reset() {
-	*x = BatchGetDatabaseGroupsRequest{}
-	mi := &file_v1_database_group_service_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *BatchGetDatabaseGroupsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BatchGetDatabaseGroupsRequest) ProtoMessage() {}
-
-func (x *BatchGetDatabaseGroupsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_group_service_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BatchGetDatabaseGroupsRequest.ProtoReflect.Descriptor instead.
-func (*BatchGetDatabaseGroupsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_group_service_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *BatchGetDatabaseGroupsRequest) GetParent() string {
-	if x != nil {
-		return x.Parent
-	}
-	return ""
-}
-
-func (x *BatchGetDatabaseGroupsRequest) GetNames() []string {
-	if x != nil {
-		return x.Names
-	}
-	return nil
-}
-
-func (x *BatchGetDatabaseGroupsRequest) GetView() DatabaseGroupView {
-	if x != nil {
-		return x.View
-	}
-	return DatabaseGroupView_DATABASE_GROUP_VIEW_UNSPECIFIED
-}
-
-// Response message for batch getting database groups.
-type BatchGetDatabaseGroupsResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The database groups from the specified request.
-	// Groups that don't exist or user doesn't have permission to access are omitted.
-	DatabaseGroups []*DatabaseGroup `protobuf:"bytes,1,rep,name=database_groups,json=databaseGroups,proto3" json:"database_groups,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
-}
-
-func (x *BatchGetDatabaseGroupsResponse) Reset() {
-	*x = BatchGetDatabaseGroupsResponse{}
-	mi := &file_v1_database_group_service_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *BatchGetDatabaseGroupsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BatchGetDatabaseGroupsResponse) ProtoMessage() {}
-
-func (x *BatchGetDatabaseGroupsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_group_service_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BatchGetDatabaseGroupsResponse.ProtoReflect.Descriptor instead.
-func (*BatchGetDatabaseGroupsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_database_group_service_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *BatchGetDatabaseGroupsResponse) GetDatabaseGroups() []*DatabaseGroup {
-	if x != nil {
-		return x.DatabaseGroups
-	}
-	return nil
-}
-
 // Request message for creating a database group.
 type CreateDatabaseGroupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -375,7 +260,7 @@ type CreateDatabaseGroupRequest struct {
 
 func (x *CreateDatabaseGroupRequest) Reset() {
 	*x = CreateDatabaseGroupRequest{}
-	mi := &file_v1_database_group_service_proto_msgTypes[5]
+	mi := &file_v1_database_group_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -387,7 +272,7 @@ func (x *CreateDatabaseGroupRequest) String() string {
 func (*CreateDatabaseGroupRequest) ProtoMessage() {}
 
 func (x *CreateDatabaseGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_group_service_proto_msgTypes[5]
+	mi := &file_v1_database_group_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -400,7 +285,7 @@ func (x *CreateDatabaseGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateDatabaseGroupRequest.ProtoReflect.Descriptor instead.
 func (*CreateDatabaseGroupRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_group_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_database_group_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreateDatabaseGroupRequest) GetParent() string {
@@ -450,7 +335,7 @@ type UpdateDatabaseGroupRequest struct {
 
 func (x *UpdateDatabaseGroupRequest) Reset() {
 	*x = UpdateDatabaseGroupRequest{}
-	mi := &file_v1_database_group_service_proto_msgTypes[6]
+	mi := &file_v1_database_group_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -462,7 +347,7 @@ func (x *UpdateDatabaseGroupRequest) String() string {
 func (*UpdateDatabaseGroupRequest) ProtoMessage() {}
 
 func (x *UpdateDatabaseGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_group_service_proto_msgTypes[6]
+	mi := &file_v1_database_group_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -475,7 +360,7 @@ func (x *UpdateDatabaseGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDatabaseGroupRequest.ProtoReflect.Descriptor instead.
 func (*UpdateDatabaseGroupRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_group_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_database_group_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *UpdateDatabaseGroupRequest) GetDatabaseGroup() *DatabaseGroup {
@@ -511,7 +396,7 @@ type DeleteDatabaseGroupRequest struct {
 
 func (x *DeleteDatabaseGroupRequest) Reset() {
 	*x = DeleteDatabaseGroupRequest{}
-	mi := &file_v1_database_group_service_proto_msgTypes[7]
+	mi := &file_v1_database_group_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -523,7 +408,7 @@ func (x *DeleteDatabaseGroupRequest) String() string {
 func (*DeleteDatabaseGroupRequest) ProtoMessage() {}
 
 func (x *DeleteDatabaseGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_group_service_proto_msgTypes[7]
+	mi := &file_v1_database_group_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -536,7 +421,7 @@ func (x *DeleteDatabaseGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteDatabaseGroupRequest.ProtoReflect.Descriptor instead.
 func (*DeleteDatabaseGroupRequest) Descriptor() ([]byte, []int) {
-	return file_v1_database_group_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_database_group_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DeleteDatabaseGroupRequest) GetName() string {
@@ -576,7 +461,7 @@ type DatabaseGroup struct {
 
 func (x *DatabaseGroup) Reset() {
 	*x = DatabaseGroup{}
-	mi := &file_v1_database_group_service_proto_msgTypes[8]
+	mi := &file_v1_database_group_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -588,7 +473,7 @@ func (x *DatabaseGroup) String() string {
 func (*DatabaseGroup) ProtoMessage() {}
 
 func (x *DatabaseGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_group_service_proto_msgTypes[8]
+	mi := &file_v1_database_group_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -601,7 +486,7 @@ func (x *DatabaseGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseGroup.ProtoReflect.Descriptor instead.
 func (*DatabaseGroup) Descriptor() ([]byte, []int) {
-	return file_v1_database_group_service_proto_rawDescGZIP(), []int{8}
+	return file_v1_database_group_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DatabaseGroup) GetName() string {
@@ -644,7 +529,7 @@ type DatabaseGroup_Database struct {
 
 func (x *DatabaseGroup_Database) Reset() {
 	*x = DatabaseGroup_Database{}
-	mi := &file_v1_database_group_service_proto_msgTypes[9]
+	mi := &file_v1_database_group_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -656,7 +541,7 @@ func (x *DatabaseGroup_Database) String() string {
 func (*DatabaseGroup_Database) ProtoMessage() {}
 
 func (x *DatabaseGroup_Database) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_database_group_service_proto_msgTypes[9]
+	mi := &file_v1_database_group_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -669,7 +554,7 @@ func (x *DatabaseGroup_Database) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseGroup_Database.ProtoReflect.Descriptor instead.
 func (*DatabaseGroup_Database) Descriptor() ([]byte, []int) {
-	return file_v1_database_group_service_proto_rawDescGZIP(), []int{8, 0}
+	return file_v1_database_group_service_proto_rawDescGZIP(), []int{6, 0}
 }
 
 func (x *DatabaseGroup_Database) GetName() string {
@@ -693,15 +578,7 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"\x17GetDatabaseGroupRequest\x126\n" +
 	"\x04name\x18\x01 \x01(\tB\"\xe0A\x02\xfaA\x1c\n" +
 	"\x1abytebase.com/DatabaseGroupR\x04name\x122\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x1e.bytebase.v1.DatabaseGroupViewR\x04view\"\xc3\x01\n" +
-	"\x1dBatchGetDatabaseGroupsRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x128\n" +
-	"\x05names\x18\x02 \x03(\tB\"\xe0A\x02\xfaA\x1c\n" +
-	"\x1abytebase.com/DatabaseGroupR\x05names\x122\n" +
-	"\x04view\x18\x03 \x01(\x0e2\x1e.bytebase.v1.DatabaseGroupViewR\x04view\"e\n" +
-	"\x1eBatchGetDatabaseGroupsResponse\x12C\n" +
-	"\x0fdatabase_groups\x18\x01 \x03(\v2\x1a.bytebase.v1.DatabaseGroupR\x0edatabaseGroups\"\xeb\x01\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x1e.bytebase.v1.DatabaseGroupViewR\x04view\"\xeb\x01\n" +
 	"\x1aCreateDatabaseGroupRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12F\n" +
@@ -727,11 +604,10 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"\x11DatabaseGroupView\x12#\n" +
 	"\x1fDATABASE_GROUP_VIEW_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19DATABASE_GROUP_VIEW_BASIC\x10\x01\x12\x1c\n" +
-	"\x18DATABASE_GROUP_VIEW_FULL\x10\x022\xc4\t\n" +
+	"\x18DATABASE_GROUP_VIEW_FULL\x10\x022\xfa\a\n" +
 	"\x14DatabaseGroupService\x12\xbc\x01\n" +
 	"\x12ListDatabaseGroups\x12&.bytebase.v1.ListDatabaseGroupsRequest\x1a'.bytebase.v1.ListDatabaseGroupsResponse\"U\xdaA\x06parent\x8a\xea0\x16bb.databaseGroups.list\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{parent=projects/*}/databaseGroups\x12\xa8\x01\n" +
-	"\x10GetDatabaseGroup\x12$.bytebase.v1.GetDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"R\xdaA\x04name\x8a\xea0\x15bb.databaseGroups.get\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{name=projects/*/databaseGroups/*}\x12\xc7\x01\n" +
-	"\x16BatchGetDatabaseGroups\x12*.bytebase.v1.BatchGetDatabaseGroupsRequest\x1a+.bytebase.v1.BatchGetDatabaseGroupsResponse\"T\x8a\xea0\x15bb.databaseGroups.get\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{parent=projects/*}/databaseGroups:batchGet\x12\xd5\x01\n" +
+	"\x10GetDatabaseGroup\x12$.bytebase.v1.GetDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"R\xdaA\x04name\x8a\xea0\x15bb.databaseGroups.get\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{name=projects/*/databaseGroups/*}\x12\xd5\x01\n" +
 	"\x13CreateDatabaseGroup\x12'.bytebase.v1.CreateDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"y\xdaA\x14parent,databaseGroup\x8a\xea0\x18bb.databaseGroups.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x028:\x0edatabase_group\"&/v1/{parent=projects/*}/databaseGroups\x12\xeb\x01\n" +
 	"\x13UpdateDatabaseGroup\x12'.bytebase.v1.UpdateDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"\x8e\x01\xdaA\x1adatabase_group,update_mask\x8a\xea0\x18bb.databaseGroups.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02G:\x0edatabase_group25/v1/{database_group.name=projects/*/databaseGroups/*}\x12\xb1\x01\n" +
 	"\x13DeleteDatabaseGroup\x12'.bytebase.v1.DeleteDatabaseGroupRequest\x1a\x16.google.protobuf.Empty\"Y\xdaA\x04name\x8a\xea0\x18bb.databaseGroups.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02(*&/v1/{name=projects/*/databaseGroups/*}B\xaf\x01\n" +
@@ -750,51 +626,45 @@ func file_v1_database_group_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_database_group_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_database_group_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_v1_database_group_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_v1_database_group_service_proto_goTypes = []any{
-	(DatabaseGroupView)(0),                 // 0: bytebase.v1.DatabaseGroupView
-	(*ListDatabaseGroupsRequest)(nil),      // 1: bytebase.v1.ListDatabaseGroupsRequest
-	(*ListDatabaseGroupsResponse)(nil),     // 2: bytebase.v1.ListDatabaseGroupsResponse
-	(*GetDatabaseGroupRequest)(nil),        // 3: bytebase.v1.GetDatabaseGroupRequest
-	(*BatchGetDatabaseGroupsRequest)(nil),  // 4: bytebase.v1.BatchGetDatabaseGroupsRequest
-	(*BatchGetDatabaseGroupsResponse)(nil), // 5: bytebase.v1.BatchGetDatabaseGroupsResponse
-	(*CreateDatabaseGroupRequest)(nil),     // 6: bytebase.v1.CreateDatabaseGroupRequest
-	(*UpdateDatabaseGroupRequest)(nil),     // 7: bytebase.v1.UpdateDatabaseGroupRequest
-	(*DeleteDatabaseGroupRequest)(nil),     // 8: bytebase.v1.DeleteDatabaseGroupRequest
-	(*DatabaseGroup)(nil),                  // 9: bytebase.v1.DatabaseGroup
-	(*DatabaseGroup_Database)(nil),         // 10: bytebase.v1.DatabaseGroup.Database
-	(*fieldmaskpb.FieldMask)(nil),          // 11: google.protobuf.FieldMask
-	(*expr.Expr)(nil),                      // 12: google.type.Expr
-	(*emptypb.Empty)(nil),                  // 13: google.protobuf.Empty
+	(DatabaseGroupView)(0),             // 0: bytebase.v1.DatabaseGroupView
+	(*ListDatabaseGroupsRequest)(nil),  // 1: bytebase.v1.ListDatabaseGroupsRequest
+	(*ListDatabaseGroupsResponse)(nil), // 2: bytebase.v1.ListDatabaseGroupsResponse
+	(*GetDatabaseGroupRequest)(nil),    // 3: bytebase.v1.GetDatabaseGroupRequest
+	(*CreateDatabaseGroupRequest)(nil), // 4: bytebase.v1.CreateDatabaseGroupRequest
+	(*UpdateDatabaseGroupRequest)(nil), // 5: bytebase.v1.UpdateDatabaseGroupRequest
+	(*DeleteDatabaseGroupRequest)(nil), // 6: bytebase.v1.DeleteDatabaseGroupRequest
+	(*DatabaseGroup)(nil),              // 7: bytebase.v1.DatabaseGroup
+	(*DatabaseGroup_Database)(nil),     // 8: bytebase.v1.DatabaseGroup.Database
+	(*fieldmaskpb.FieldMask)(nil),      // 9: google.protobuf.FieldMask
+	(*expr.Expr)(nil),                  // 10: google.type.Expr
+	(*emptypb.Empty)(nil),              // 11: google.protobuf.Empty
 }
 var file_v1_database_group_service_proto_depIdxs = []int32{
 	0,  // 0: bytebase.v1.ListDatabaseGroupsRequest.view:type_name -> bytebase.v1.DatabaseGroupView
-	9,  // 1: bytebase.v1.ListDatabaseGroupsResponse.database_groups:type_name -> bytebase.v1.DatabaseGroup
+	7,  // 1: bytebase.v1.ListDatabaseGroupsResponse.database_groups:type_name -> bytebase.v1.DatabaseGroup
 	0,  // 2: bytebase.v1.GetDatabaseGroupRequest.view:type_name -> bytebase.v1.DatabaseGroupView
-	0,  // 3: bytebase.v1.BatchGetDatabaseGroupsRequest.view:type_name -> bytebase.v1.DatabaseGroupView
-	9,  // 4: bytebase.v1.BatchGetDatabaseGroupsResponse.database_groups:type_name -> bytebase.v1.DatabaseGroup
-	9,  // 5: bytebase.v1.CreateDatabaseGroupRequest.database_group:type_name -> bytebase.v1.DatabaseGroup
-	9,  // 6: bytebase.v1.UpdateDatabaseGroupRequest.database_group:type_name -> bytebase.v1.DatabaseGroup
-	11, // 7: bytebase.v1.UpdateDatabaseGroupRequest.update_mask:type_name -> google.protobuf.FieldMask
-	12, // 8: bytebase.v1.DatabaseGroup.database_expr:type_name -> google.type.Expr
-	10, // 9: bytebase.v1.DatabaseGroup.matched_databases:type_name -> bytebase.v1.DatabaseGroup.Database
-	1,  // 10: bytebase.v1.DatabaseGroupService.ListDatabaseGroups:input_type -> bytebase.v1.ListDatabaseGroupsRequest
-	3,  // 11: bytebase.v1.DatabaseGroupService.GetDatabaseGroup:input_type -> bytebase.v1.GetDatabaseGroupRequest
-	4,  // 12: bytebase.v1.DatabaseGroupService.BatchGetDatabaseGroups:input_type -> bytebase.v1.BatchGetDatabaseGroupsRequest
-	6,  // 13: bytebase.v1.DatabaseGroupService.CreateDatabaseGroup:input_type -> bytebase.v1.CreateDatabaseGroupRequest
-	7,  // 14: bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup:input_type -> bytebase.v1.UpdateDatabaseGroupRequest
-	8,  // 15: bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup:input_type -> bytebase.v1.DeleteDatabaseGroupRequest
-	2,  // 16: bytebase.v1.DatabaseGroupService.ListDatabaseGroups:output_type -> bytebase.v1.ListDatabaseGroupsResponse
-	9,  // 17: bytebase.v1.DatabaseGroupService.GetDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
-	5,  // 18: bytebase.v1.DatabaseGroupService.BatchGetDatabaseGroups:output_type -> bytebase.v1.BatchGetDatabaseGroupsResponse
-	9,  // 19: bytebase.v1.DatabaseGroupService.CreateDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
-	9,  // 20: bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
-	13, // 21: bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup:output_type -> google.protobuf.Empty
-	16, // [16:22] is the sub-list for method output_type
-	10, // [10:16] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	7,  // 3: bytebase.v1.CreateDatabaseGroupRequest.database_group:type_name -> bytebase.v1.DatabaseGroup
+	7,  // 4: bytebase.v1.UpdateDatabaseGroupRequest.database_group:type_name -> bytebase.v1.DatabaseGroup
+	9,  // 5: bytebase.v1.UpdateDatabaseGroupRequest.update_mask:type_name -> google.protobuf.FieldMask
+	10, // 6: bytebase.v1.DatabaseGroup.database_expr:type_name -> google.type.Expr
+	8,  // 7: bytebase.v1.DatabaseGroup.matched_databases:type_name -> bytebase.v1.DatabaseGroup.Database
+	1,  // 8: bytebase.v1.DatabaseGroupService.ListDatabaseGroups:input_type -> bytebase.v1.ListDatabaseGroupsRequest
+	3,  // 9: bytebase.v1.DatabaseGroupService.GetDatabaseGroup:input_type -> bytebase.v1.GetDatabaseGroupRequest
+	4,  // 10: bytebase.v1.DatabaseGroupService.CreateDatabaseGroup:input_type -> bytebase.v1.CreateDatabaseGroupRequest
+	5,  // 11: bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup:input_type -> bytebase.v1.UpdateDatabaseGroupRequest
+	6,  // 12: bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup:input_type -> bytebase.v1.DeleteDatabaseGroupRequest
+	2,  // 13: bytebase.v1.DatabaseGroupService.ListDatabaseGroups:output_type -> bytebase.v1.ListDatabaseGroupsResponse
+	7,  // 14: bytebase.v1.DatabaseGroupService.GetDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
+	7,  // 15: bytebase.v1.DatabaseGroupService.CreateDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
+	7,  // 16: bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup:output_type -> bytebase.v1.DatabaseGroup
+	11, // 17: bytebase.v1.DatabaseGroupService.DeleteDatabaseGroup:output_type -> google.protobuf.Empty
+	13, // [13:18] is the sub-list for method output_type
+	8,  // [8:13] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_v1_database_group_service_proto_init() }
@@ -809,7 +679,7 @@ func file_v1_database_group_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_database_group_service_proto_rawDesc), len(file_v1_database_group_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   10,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

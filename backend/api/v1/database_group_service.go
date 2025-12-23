@@ -258,64 +258,6 @@ func (s *DatabaseGroupService) GetDatabaseGroup(ctx context.Context, req *connec
 	return connect.NewResponse(result), nil
 }
 
-// BatchGetDatabaseGroups retrieves multiple database groups in a single request.
-func (s *DatabaseGroupService) BatchGetDatabaseGroups(ctx context.Context, req *connect.Request[v1pb.BatchGetDatabaseGroupsRequest]) (*connect.Response[v1pb.BatchGetDatabaseGroupsResponse], error) {
-	projectResourceID, err := common.GetProjectID(req.Msg.Parent)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectResourceID})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", req.Msg.Parent))
-	}
-	if project.Deleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q has been deleted", req.Msg.Parent))
-	}
-
-	var allProjectDatabases []*store.DatabaseMessage
-	if req.Msg.View == v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL {
-		allProjectDatabases, err = s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectResourceID})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-	}
-
-	databaseGroups := make([]*v1pb.DatabaseGroup, 0, len(req.Msg.Names))
-	for _, name := range req.Msg.Names {
-		nameProjectID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(name)
-		if err != nil {
-			continue // Skip invalid names
-		}
-		if nameProjectID != projectResourceID {
-			continue // Skip names from other projects
-		}
-
-		databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-			ProjectID:  &projectResourceID,
-			ResourceID: &databaseGroupResourceID,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		if databaseGroup == nil {
-			continue // Skip missing groups
-		}
-
-		result, err := convertStoreToV1DatabaseGroup(ctx, databaseGroup, projectResourceID, allProjectDatabases)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-
-		databaseGroups = append(databaseGroups, result)
-	}
-
-	return connect.NewResponse(&v1pb.BatchGetDatabaseGroupsResponse{DatabaseGroups: databaseGroups}), nil
-}
-
 func getDatabaseGroupByName(ctx context.Context, stores *store.Store, databaseGroupName string, view v1pb.DatabaseGroupView) (*v1pb.DatabaseGroup, error) {
 	projectResourceID, databaseGroupResourceID, err := common.GetProjectIDDatabaseGroupID(databaseGroupName)
 	if err != nil {
