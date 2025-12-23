@@ -15,6 +15,7 @@ import {
 import { bindingListInIAM, getUserEmailListInBinding } from "@/utils";
 import { extractUserId } from "./common";
 import { extractGroupEmail } from "./group";
+import { composePolicyBindings } from "./projectIamPolicy";
 
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   const _workspaceIamPolicy = ref<IamPolicy>(create(IamPolicySchema, {}));
@@ -65,6 +66,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
       resource: "workspaces/-",
     });
     const policy = await workspaceServiceClientConnect.getIamPolicy(request);
+    await composePolicyBindings(policy.bindings);
     _workspaceIamPolicy.value = policy;
     return policy;
   };

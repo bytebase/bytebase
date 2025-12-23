@@ -44,7 +44,7 @@ const props = withDefaults(
     multiple?: boolean;
     suffix?: string;
     includeWorkspaceRoles?: boolean;
-    supportRoles?: string[];
+    filter?: (role: string) => boolean;
   }>(),
   {
     clearable: true,
@@ -53,7 +53,6 @@ const props = withDefaults(
       ` (${t("common.optional")}, ${t(
         "role.project-roles.apply-to-all-projects"
       ).toLocaleLowerCase()})`,
-    supportRoles: () => [],
   }
 );
 
@@ -66,10 +65,10 @@ const showFeatureModal = ref(false);
 const hasCustomRoleFeature = featureToRef(PlanFeature.FEATURE_CUSTOM_ROLES);
 
 const filterRole = (role: string) => {
-  if (!props.supportRoles || props.supportRoles.length === 0) {
+  if (!props.filter) {
     return true;
   }
-  return props.supportRoles.includes(role);
+  return props.filter(role);
 };
 
 const availableRoleOptions = computed(

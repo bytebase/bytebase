@@ -30,6 +30,7 @@ import {
 } from "@/components/v2";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {
+  composePolicyBindings,
   extractGroupEmail,
   pushNotification,
   useDatabaseV1Store,
@@ -190,10 +191,10 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
 
 const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;
 
-const getAccessUsers = async (
+const getAccessUsers = (
   exception: MaskingExemptionPolicy_Exemption,
   condition: ConditionExpression
-): Promise<AccessUser[]> => {
+): AccessUser[] => {
   let expirationTimestamp: number | undefined;
   const expression = exception.condition?.expression ?? "";
   const description = exception.condition?.description ?? "";
@@ -217,10 +218,10 @@ const getAccessUsers = async (
 
     if (member.startsWith(groupBindingPrefix)) {
       access.type = "group";
-      access.group = await groupStore.getOrFetchGroupByIdentifier(member);
+      access.group = groupStore.getGroupByIdentifier(member);
     } else {
       access.type = "user";
-      access.user = await userStore.getOrFetchUserByIdentifier(member);
+      access.user = userStore.getUserByIdentifier(member);
     }
 
     if (access.group || access.user) {
@@ -257,11 +258,12 @@ const updateAccessUserList = async () => {
   );
   const conditionList = await batchConvertFromCELString(expressionList);
 
+  await composePolicyBindings(exemptions);
   for (let i = 0; i < exemptions.length; i++) {
     const exception = exemptions[i];
     const condition = conditionList[i];
 
-    const items = await getAccessUsers(exception, condition);
+    const items = getAccessUsers(exception, condition);
     for (const item of items) {
       memberMap.set(item.key, item);
     }

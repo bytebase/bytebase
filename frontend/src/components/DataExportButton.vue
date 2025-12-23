@@ -381,10 +381,13 @@ const doDownload = async (content: DownloadContent[], format: ExportFormat) => {
   }
 
   const zip = new JSZip();
-  for (const c of content) {
-    const blob = await convertSingleFile(c, format);
-    zip.file(c.filename, blob);
-  }
+
+  await Promise.all(
+    content.map(async (c) => {
+      const blob = await convertSingleFile(c, format);
+      zip.file(c.filename, blob);
+    })
+  );
 
   const zipFile = await zip.generateAsync({ type: "blob" });
   const fileName = `download_${dayjs().format("YYYY-MM-DDTHH-mm-ss")}.zip`;

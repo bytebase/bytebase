@@ -6,6 +6,7 @@ import { projectServiceClientConnect } from "@/grpcweb";
 import {
   ALL_USERS_USER_EMAIL,
   type ComposedDatabase,
+  groupBindingPrefix,
   type MaybeRef,
   type QueryPermission,
   QueryPermissionQueryAny,
@@ -25,7 +26,28 @@ import { convertFromExpr } from "@/utils/issue/cel";
 import { useRoleStore } from "../role";
 import { useUserStore } from "../user";
 import { useCurrentUserV1 } from "./auth";
+import { useGroupStore } from "./group";
 import { usePermissionStore } from "./permission";
+
+export const composePolicyBindings = async (
+  bindings: { members: string[] }[]
+) => {
+  const users: string[] = [];
+  const groups: string[] = [];
+  for (const binding of bindings) {
+    for (const member of binding.members) {
+      if (member.startsWith(groupBindingPrefix)) {
+        groups.push(member);
+      } else {
+        users.push(member);
+      }
+    }
+  }
+  await Promise.all([
+    useUserStore().batchGetUsers(users),
+    useGroupStore().batchFetchGroups(groups),
+  ]);
+};
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -33,16 +55,8 @@ export const useProjectIamPolicyStore = defineStore(
     const policyMap = ref(new Map<string, IamPolicy>());
     const requestCache = new Map<string, Promise<IamPolicy>>();
 
-    const composeProjectPolicy = async (policy: IamPolicy) => {
-      const members = policy.bindings.reduce((list, binding) => {
-        list.push(...binding.members);
-        return list;
-      }, [] as string[]);
-      await useUserStore().batchGetUsers(members);
-    };
-
     const setIamPolicy = async (project: string, policy: IamPolicy) => {
-      await composeProjectPolicy(policy);
+      await composePolicyBindings(policy.bindings);
       policyMap.value.set(project, policy);
       return policy;
     };

@@ -83,7 +83,6 @@ const props = withDefaults(
     databaseResources: () => [],
     role: undefined,
     placement: "right",
-    supportRoles: () => [],
   }
 );
 

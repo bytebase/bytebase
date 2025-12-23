@@ -409,10 +409,11 @@ const getQueryableDatabase = async (batchQueryContext: BatchQueryContext) => {
 
   for (const databaseGroupName of batchQueryContext.databaseGroups ?? []) {
     const databaseGroup = dbGroupStore.getDBGroupByName(databaseGroupName);
+    await batchGetOrFetchDatabases(
+      databaseGroup.matchedDatabases.map((db) => db.name)
+    );
     for (const matchedDatabase of databaseGroup.matchedDatabases) {
-      const database = await databaseStore.getOrFetchDatabaseByName(
-        matchedDatabase.name
-      );
+      const database = databaseStore.getDatabaseByName(matchedDatabase.name);
       if (isDatabaseV1Queryable(database)) {
         return database;
       }
