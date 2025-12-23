@@ -1517,12 +1517,6 @@
       "description": "Bytebase は定期的にインスタンスのスキーマを同期し、異常検出を実行します。",
       "min-value": "最短 {value} 分"
     },
-    "maximum-connections": {
-      "self": "最大接続数",
-      "default-value": "デフォルト (10 接続)",
-      "description": "インスタンスの最大接続数を設定して、接続とリソースの使用を制限します。",
-      "max-value": "最大接続数 {value}"
-    },
     "sync-databases": {
       "self": "データベースを同期する",
       "description": "選択したデータベースのみを同期します。",

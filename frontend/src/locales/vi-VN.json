@@ -1517,12 +1517,6 @@
       "description": "Bytebase định kỳ đồng bộ lược đồ phiên bản và phát hiện bất thường.",
       "min-value": "Giá trị nhỏ nhất {value} phút"
     },
-    "maximum-connections": {
-      "self": "Số kết nối tối đa",
-      "default-value": "Mặc định (10)",
-      "description": "Việc giới hạn kết nối và sử dụng tài nguyên đạt được bằng cách đặt số lượng kết nối tối đa đến phiên bản.",
-      "max-value": "Tối đa {value} kết nối"
-    },
     "sync-databases": {
       "self": "Đồng bộ cơ sở dữ liệu",
       "description": "Chỉ đồng bộ các cơ sở dữ liệu đã chọn.",

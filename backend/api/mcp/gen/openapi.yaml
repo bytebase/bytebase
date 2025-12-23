@@ -10731,13 +10731,6 @@ components:
           title: sync_interval
           description: How often the instance is synced.
           $ref: '#/components/schemas/google.protobuf.Duration'
-        maximumConnections:
-          type: integer
-          title: maximum_connections
-          format: int32
-          description: |-
-            The maximum number of connections.
-             The default is 10 if the value is unset or zero.
         syncDatabases:
           type: array
           items:
