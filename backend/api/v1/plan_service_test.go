@@ -225,7 +225,6 @@ func TestParsePlanCheckRunFilter(t *testing.T) {
 			// Compare other fields that should remain unchanged
 			a.Equal(test.want.PlanUID, find.PlanUID, "PlanUID should match")
 			a.Equal(test.want.UIDs, find.UIDs, "UIDs should match")
-			a.Equal(test.want.Type, find.Type, "Type should match")
 		})
 	}
 }
