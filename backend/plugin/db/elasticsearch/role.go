@@ -95,14 +95,13 @@ func (d *Driver) isSecurityEnabled(ctx context.Context) (bool, error) {
 	return info.Features.Security.Available && info.Features.Security.Enabled, nil
 }
 
-func (d *Driver) getInstanceRoles() ([]*storepb.InstanceRole, error) {
+func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
 	// AWS IAM authentication doesn't use internal users - skip role fetching
 	if d.config.DataSource.GetAuthenticationType() == storepb.DataSource_AWS_RDS_IAM {
 		return nil, nil
 	}
 
 	var bytes []byte
-	ctx := context.Background()
 
 	if d.isOpenSearch && d.opensearchClient != nil {
 		// OpenSearch uses a different security plugin architecture.

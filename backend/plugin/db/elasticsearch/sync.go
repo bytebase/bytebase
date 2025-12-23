@@ -28,7 +28,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, errors.Wrapf(err, "failed to fetch indices from Elasticsearch server")
 	}
 
-	instanceRoles, err := d.getInstanceRoles()
+	instanceRoles, err := d.getInstanceRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
