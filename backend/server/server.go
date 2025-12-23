@@ -193,13 +193,8 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.taskScheduler.Register(storepb.Task_DATABASE_EXPORT, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 	s.taskScheduler.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 
-	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg)
-	statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(stores, sheetManager, s.dbFactory, s.licenseService)
-	s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
-	ghostSyncExecutor := plancheck.NewGhostSyncExecutor(stores, s.dbFactory)
-	s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
-	statementReportExecutor := plancheck.NewStatementReportExecutor(stores, sheetManager, s.dbFactory)
-	s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
+	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory, s.licenseService)
+	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg, combinedExecutor)
 
 	// Data cleaner
 	s.dataCleaner = cleaner.NewDataCleaner(stores)

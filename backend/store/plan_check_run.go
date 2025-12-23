@@ -12,18 +12,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// PlanCheckRunType is the type of a plan check run.
-type PlanCheckRunType string
-
-const (
-	// PlanCheckDatabaseStatementAdvise is the plan check type for schema system review policy.
-	PlanCheckDatabaseStatementAdvise PlanCheckRunType = "bb.plan-check.database.statement.advise"
-	// PlanCheckDatabaseStatementSummaryReport is the plan check type for statement summary report.
-	PlanCheckDatabaseStatementSummaryReport PlanCheckRunType = "bb.plan-check.database.statement.summary.report"
-	// PlanCheckDatabaseGhostSync is the plan check type for the gh-ost sync task.
-	PlanCheckDatabaseGhostSync PlanCheckRunType = "bb.plan-check.database.ghost.sync"
-)
-
 // PlanCheckRunStatus is the status of a plan check run.
 type PlanCheckRunStatus string
 
@@ -47,7 +35,6 @@ type PlanCheckRunMessage struct {
 	PlanUID int64
 
 	Status PlanCheckRunStatus
-	Type   PlanCheckRunType
 	Config *storepb.PlanCheckRunConfig
 	Result *storepb.PlanCheckRunResult
 }
@@ -57,7 +44,6 @@ type FindPlanCheckRunMessage struct {
 	PlanUID      *int64
 	UIDs         *[]int
 	Status       *[]PlanCheckRunStatus
-	Type         *[]PlanCheckRunType
 	ResultStatus *[]storepb.Advice_Status
 }
 
@@ -84,11 +70,11 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, plan *PlanMessage, crea
 	}
 
 	// Insert new plan check runs
-	q = qb.Q().Space("INSERT INTO plan_check_run (plan_id, status, type, config, result) VALUES")
+	q = qb.Q().Space("INSERT INTO plan_check_run (plan_id, status, config, result) VALUES")
 	for i, create := range creates {
 		config, err := protojson.Marshal(create.Config)
 		if err != nil {
-			return errors.Wrapf(err, "faield to marshal create config %v", create.Config)
+			return errors.Wrapf(err, "failed to marshal create config")
 		}
 		result, err := protojson.Marshal(create.Result)
 		if err != nil {
@@ -97,7 +83,7 @@ func (s *Store) CreatePlanCheckRuns(ctx context.Context, plan *PlanMessage, crea
 		if i > 0 {
 			q.Space(",")
 		}
-		q.Space("(?, ?, ?, ?, ?)", create.PlanUID, create.Status, create.Type, config, result)
+		q.Space("(?, ?, ?, ?)", create.PlanUID, create.Status, config, result)
 	}
 	query, args, err = q.ToSQL()
 	if err != nil {
@@ -118,7 +104,6 @@ SELECT
 	plan_check_run.updated_at,
 	plan_check_run.plan_id,
 	plan_check_run.status,
-	plan_check_run.type,
 	plan_check_run.config,
 	plan_check_run.result
 FROM plan_check_run
@@ -131,9 +116,6 @@ WHERE TRUE`)
 	}
 	if v := find.Status; v != nil {
 		q.Space("AND plan_check_run.status = ANY(?)", *v)
-	}
-	if v := find.Type; v != nil {
-		q.Space("AND plan_check_run.type = ANY(?)", *v)
 	}
 	if v := find.ResultStatus; v != nil {
 		statusStrings := make([]string, len(*v))
@@ -166,7 +148,6 @@ WHERE TRUE`)
 			&planCheckRun.UpdatedAt,
 			&planCheckRun.PlanUID,
 			&planCheckRun.Status,
-			&planCheckRun.Type,
 			&config,
 			&result,
 		); err != nil {
@@ -186,6 +167,19 @@ WHERE TRUE`)
 	}
 
 	return planCheckRuns, nil
+}
+
+// GetPlanCheckRun returns the plan check run for a plan.
+func (s *Store) GetPlanCheckRun(ctx context.Context, planUID int64) (*PlanCheckRunMessage, error) {
+	runs, err := s.ListPlanCheckRuns(ctx, &FindPlanCheckRunMessage{PlanUID: &planUID})
+	if err != nil {
+		return nil, err
+	}
+	if len(runs) == 0 {
+		return nil, nil
+	}
+	// With consolidated model, there should be only one record per plan
+	return runs[0], nil
 }
 
 // UpdatePlanCheckRun updates a plan check run.

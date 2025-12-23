@@ -849,7 +849,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.store.PlanCheckRunConfig.GhostFlagsEntry"><span class="badge">M</span>PlanCheckRunConfig.GhostFlagsEntry</a>
+                  <a href="#bytebase.store.PlanCheckRunConfig.CheckTarget"><span class="badge">M</span>PlanCheckRunConfig.CheckTarget</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntry"><span class="badge">M</span>PlanCheckRunConfig.CheckTarget.GhostFlagsEntry</a>
                 </li>
               
                 <li>
@@ -868,6 +872,10 @@
                   <a href="#bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport"><span class="badge">M</span>PlanCheckRunResult.Result.SqlSummaryReport</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.PlanCheckType"><span class="badge">E</span>PlanCheckType</a>
+                </li>
               
               
               
@@ -8596,52 +8604,10 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
             <tbody>
               
                 <tr>
-                  <td>sheet_sha256</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The SHA256 hash of the sheet content (hex-encoded). </p></td>
-                </tr>
-              
-                <tr>
-                  <td>instance_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ghost_flags</td>
-                  <td><a href="#bytebase.store.PlanCheckRunConfig.GhostFlagsEntry">PlanCheckRunConfig.GhostFlagsEntry</a></td>
+                  <td>targets</td>
+                  <td><a href="#bytebase.store.PlanCheckRunConfig.CheckTarget">PlanCheckRunConfig.CheckTarget</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_prior_backup</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_ghost</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether to use gh-ost for online schema migration. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>enable_sdl</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether this is a Schema Definition Language (SDL) change. </p></td>
                 </tr>
               
             </tbody>
@@ -8651,7 +8617,73 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
 
         
       
-        <h3 id="bytebase.store.PlanCheckRunConfig.GhostFlagsEntry">PlanCheckRunConfig.GhostFlagsEntry</h3>
+        <h3 id="bytebase.store.PlanCheckRunConfig.CheckTarget">PlanCheckRunConfig.CheckTarget</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_sha256</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_prior_backup</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_ghost</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_sdl</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ghost_flags</td>
+                  <td><a href="#bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntry">PlanCheckRunConfig.CheckTarget.GhostFlagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>types</td>
+                  <td><a href="#bytebase.store.PlanCheckType">PlanCheckType</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntry">PlanCheckRunConfig.CheckTarget.GhostFlagsEntry</h3>
         <p></p>
 
         
@@ -8752,6 +8784,21 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                 </tr>
               
                 <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Target identification for consolidated results
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.PlanCheckType">PlanCheckType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>sql_summary_report</td>
                   <td><a href="#bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport">PlanCheckRunResult.Result.SqlSummaryReport</a></td>
                   <td></td>
@@ -8842,6 +8889,41 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
         
       
 
+      
+        <h3 id="bytebase.store.PlanCheckType">PlanCheckType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PLAN_CHECK_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PLAN_CHECK_TYPE_STATEMENT_ADVISE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PLAN_CHECK_TYPE_GHOST_SYNC</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       
