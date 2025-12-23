@@ -50,26 +50,34 @@ export const useSelectedSpec = () => {
     return [];
   });
 
-  const getDatabasesForGroup = (groupName: string): string[] => {
-    const deployment = plan.value.deployment;
-    if (!deployment) return [];
-    const mapping = deployment.databaseGroupMappings.find(
-      (m: { databaseGroup: string }) => m.databaseGroup === groupName
+  const getDatabasesForGroup = async (groupName: string): Promise<string[]> => {
+    const { useDBGroupStore } = await import("@/store");
+    const { DatabaseGroupView } = await import(
+      "@/types/proto-es/v1/database_group_service_pb"
     );
-    return mapping?.databases ?? [];
+    const dbGroupStore = useDBGroupStore();
+    try {
+      const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(groupName, {
+        view: DatabaseGroupView.FULL,
+        silent: true,
+      });
+      return dbGroup.matchedDatabases?.map((db) => db.name) ?? [];
+    } catch {
+      return [];
+    }
   };
 
-  const getDatabaseTargets = (
+  const getDatabaseTargets = async (
     targets: string[]
-  ): { databaseTargets: string[]; dbGroupTargets: string[] } => {
+  ): Promise<{ databaseTargets: string[]; dbGroupTargets: string[] }> => {
     const databaseTargets: string[] = [];
     const dbGroupTargets: string[] = [];
 
     for (const target of targets) {
       if (isValidDatabaseGroupName(target)) {
         dbGroupTargets.push(target);
-        // Also collect databases from deployment mapping for this group
-        const mappedDatabases = getDatabasesForGroup(target);
+        // Fetch live databases from the database group
+        const mappedDatabases = await getDatabasesForGroup(target);
         databaseTargets.push(...mappedDatabases);
       } else {
         databaseTargets.push(target);

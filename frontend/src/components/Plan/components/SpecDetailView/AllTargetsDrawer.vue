@@ -121,7 +121,7 @@ const loadAllTargets = async () => {
 
   try {
     // Separate different types of targets for optimized fetching
-    const { databaseTargets, dbGroupTargets } = getDatabaseTargets(
+    const { databaseTargets, dbGroupTargets } = await getDatabaseTargets(
       props.targets
     );
 

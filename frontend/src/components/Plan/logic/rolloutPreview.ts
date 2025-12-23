@@ -1,12 +1,16 @@
 import { create } from "@bufbuild/protobuf";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import {
+  useDatabaseV1Store,
+  useDBGroupStore,
+  useEnvironmentV1Store,
+} from "@/store";
 import { batchGetOrFetchDatabases } from "@/store/modules/v1/database";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
+import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type {
   Plan,
   Plan_ChangeDatabaseConfig,
-  Plan_Deployment,
   Plan_Spec,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type {
@@ -42,10 +46,7 @@ export async function generateRolloutPreview(
   projectName: string
 ): Promise<Rollout> {
   // Step 1: Extract all database targets from specs and expand database groups
-  const allDatabaseNames = extractAndExpandDatabaseTargets(
-    plan.specs,
-    plan.deployment
-  );
+  const allDatabaseNames = await extractAndExpandDatabaseTargets(plan.specs);
 
   // Step 2: Fetch databases that are not cached
   if (allDatabaseNames.length > 0) {
@@ -53,10 +54,10 @@ export async function generateRolloutPreview(
   }
 
   // Step 3: Generate tasks from specs
-  const tasks = generateTasksFromSpecs(plan.specs, plan.deployment);
+  const tasks = await generateTasksFromSpecs(plan.specs);
 
-  // Step 4: Get environment order
-  const environmentOrder = getEnvironmentOrder(plan.deployment);
+  // Step 4: Get environment order from store
+  const environmentOrder = getEnvironmentOrder();
 
   // Step 5: Group tasks by environment and create stages
   const stages = groupTasksIntoStages(tasks, environmentOrder, projectName);
@@ -70,10 +71,9 @@ export async function generateRolloutPreview(
   });
 }
 
-function extractAndExpandDatabaseTargets(
-  specs: Plan_Spec[],
-  deployment?: Plan_Deployment
-): string[] {
+async function extractAndExpandDatabaseTargets(
+  specs: Plan_Spec[]
+): Promise<string[]> {
   const databaseNames: string[] = [];
 
   for (const spec of specs) {
@@ -85,7 +85,7 @@ function extractAndExpandDatabaseTargets(
       if (isValidDatabaseName(target)) {
         databaseNames.push(target);
       } else if (isValidDatabaseGroupName(target)) {
-        const expandedDbs = expandDatabaseGroup(target, deployment);
+        const expandedDbs = await expandDatabaseGroup(target);
         databaseNames.push(...expandedDbs);
       }
     }
@@ -94,32 +94,32 @@ function extractAndExpandDatabaseTargets(
   return [...new Set(databaseNames)];
 }
 
-function expandDatabaseGroup(
-  databaseGroupName: string,
-  deployment?: Plan_Deployment
-): string[] {
-  if (!deployment) return [];
-
-  const mapping = deployment.databaseGroupMappings.find(
-    (m) => m.databaseGroup === databaseGroupName
-  );
-
-  return mapping?.databases ?? [];
+async function expandDatabaseGroup(
+  databaseGroupName: string
+): Promise<string[]> {
+  const dbGroupStore = useDBGroupStore();
+  try {
+    const dbGroup = await dbGroupStore.getOrFetchDBGroupByName(
+      databaseGroupName,
+      { view: DatabaseGroupView.FULL, silent: true }
+    );
+    return dbGroup.matchedDatabases?.map((db) => db.name) ?? [];
+  } catch {
+    return [];
+  }
 }
 
-function generateTasksFromSpecs(
-  specs: Plan_Spec[],
-  deployment?: Plan_Deployment
-): TaskCreate[] {
+async function generateTasksFromSpecs(
+  specs: Plan_Spec[]
+): Promise<TaskCreate[]> {
   const tasks: TaskCreate[] = [];
 
   for (const spec of specs) {
     if (spec.config.case !== "changeDatabaseConfig") continue;
 
-    const specTasks = generateChangeDatabaseTasks(
+    const specTasks = await generateChangeDatabaseTasks(
       spec.id,
-      spec.config.value,
-      deployment
+      spec.config.value
     );
     tasks.push(...specTasks);
   }
@@ -127,16 +127,15 @@ function generateTasksFromSpecs(
   return tasks;
 }
 
-function generateChangeDatabaseTasks(
+async function generateChangeDatabaseTasks(
   specId: string,
-  config: Plan_ChangeDatabaseConfig,
-  deployment?: Plan_Deployment
-): TaskCreate[] {
+  config: Plan_ChangeDatabaseConfig
+): Promise<TaskCreate[]> {
   const tasks: TaskCreate[] = [];
 
   let targets = config.targets ?? [];
   if (targets.length === 1 && isValidDatabaseGroupName(targets[0])) {
-    targets = expandDatabaseGroup(targets[0], deployment);
+    targets = await expandDatabaseGroup(targets[0]);
   }
 
   for (const target of targets) {
@@ -159,15 +158,7 @@ function generateChangeDatabaseTasks(
   return tasks;
 }
 
-function getEnvironmentOrder(deployment?: Plan_Deployment): string[] {
-  if (deployment && deployment.environments.length > 0) {
-    // deployment.environments contains environment IDs like "staging"
-    // Convert to full resource names to match db.effectiveEnvironment format
-    return deployment.environments.map((env) =>
-      env.startsWith("environments/") ? env : `environments/${env}`
-    );
-  }
-
+function getEnvironmentOrder(): string[] {
   const environmentStore = useEnvironmentV1Store();
   return environmentStore.environmentList.map((env) => env.name);
 }

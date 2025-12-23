@@ -196,7 +196,7 @@ import { cloneDeep, includes, isEmpty } from "lodash-es";
 import { ExpandIcon, TableIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention, BBModal } from "@/bbkit";
 import { MonacoEditor } from "@/components/MonacoEditor";
@@ -410,8 +410,11 @@ const shouldShowSchemaEditorButton = computed(() => {
   });
 });
 
-const targetDatabaseNames = computed(() => {
-  return getDatabaseTargets(targets.value).databaseTargets;
+const targetDatabaseNames = ref<string[]>([]);
+
+watchEffect(async () => {
+  const result = await getDatabaseTargets(targets.value);
+  targetDatabaseNames.value = result.databaseTargets;
 });
 
 const beginEdit = () => {
