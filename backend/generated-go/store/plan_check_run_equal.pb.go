@@ -3,20 +3,29 @@
 
 package store
 
-func (x *PlanCheckRunConfig) Equal(y *PlanCheckRunConfig) bool {
+func (x *PlanCheckRunConfig_CheckTarget) Equal(y *PlanCheckRunConfig_CheckTarget) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.SheetSha256 != y.SheetSha256 {
-		return false
-	}
 	if x.InstanceId != y.InstanceId {
 		return false
 	}
 	if x.DatabaseName != y.DatabaseName {
+		return false
+	}
+	if x.SheetSha256 != y.SheetSha256 {
+		return false
+	}
+	if x.EnablePriorBackup != y.EnablePriorBackup {
+		return false
+	}
+	if x.EnableGhost != y.EnableGhost {
+		return false
+	}
+	if x.EnableSdl != y.EnableSdl {
 		return false
 	}
 	if len(x.GhostFlags) != len(y.GhostFlags) {
@@ -31,14 +40,31 @@ func (x *PlanCheckRunConfig) Equal(y *PlanCheckRunConfig) bool {
 			return false
 		}
 	}
-	if x.EnablePriorBackup != y.EnablePriorBackup {
+	if len(x.CheckTypes) != len(y.CheckTypes) {
 		return false
 	}
-	if x.EnableGhost != y.EnableGhost {
+	for i := 0; i < len(x.CheckTypes); i++ {
+		if x.CheckTypes[i] != y.CheckTypes[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *PlanCheckRunConfig) Equal(y *PlanCheckRunConfig) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Targets) != len(y.Targets) {
 		return false
 	}
-	if x.EnableSdl != y.EnableSdl {
-		return false
+	for i := 0; i < len(x.Targets); i++ {
+		if !x.Targets[i].Equal(y.Targets[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -100,6 +126,15 @@ func (x *PlanCheckRunResult_Result) Equal(y *PlanCheckRunResult_Result) bool {
 		return false
 	}
 	if x.Code != y.Code {
+		return false
+	}
+	if x.InstanceId != y.InstanceId {
+		return false
+	}
+	if x.DatabaseName != y.DatabaseName {
+		return false
+	}
+	if x.CheckType != y.CheckType {
 		return false
 	}
 	if !x.GetSqlSummaryReport().Equal(y.GetSqlSummaryReport()) {

@@ -7,22 +7,26 @@ import "store/common.proto";
 
 option go_package = "generated-go/store";
 
+enum PlanCheckType {
+  PLAN_CHECK_TYPE_UNSPECIFIED = 0;
+  PLAN_CHECK_TYPE_STATEMENT_ADVISE = 1;
+  PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT = 2;
+  PLAN_CHECK_TYPE_GHOST_SYNC = 3;
+}
+
 message PlanCheckRunConfig {
-  // The SHA256 hash of the sheet content (hex-encoded).
-  string sheet_sha256 = 1;
-  string instance_id = 2;
-  string database_name = 3;
+  repeated CheckTarget targets = 1;
 
-  map<string, string> ghost_flags = 4;
-
-  // If set, a backup of the modified data will be created automatically before any changes are applied.
-  bool enable_prior_backup = 5;
-
-  // Whether to use gh-ost for online schema migration.
-  bool enable_ghost = 6;
-
-  // Whether this is a Schema Definition Language (SDL) change.
-  bool enable_sdl = 7;
+  message CheckTarget {
+    string instance_id = 1;
+    string database_name = 2;
+    string sheet_sha256 = 3;
+    bool enable_prior_backup = 4;
+    bool enable_ghost = 5;
+    bool enable_sdl = 6;
+    map<string, string> ghost_flags = 7;
+    repeated PlanCheckType check_types = 8;
+  }
 }
 
 message PlanCheckRunResult {
@@ -34,6 +38,11 @@ message PlanCheckRunResult {
     string title = 2;
     string content = 3;
     int32 code = 4;
+
+    // Target identification for consolidated results
+    string instance_id = 7;
+    string database_name = 8;
+    PlanCheckType check_type = 9;
 
     oneof report {
       SqlSummaryReport sql_summary_report = 5;
