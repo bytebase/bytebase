@@ -26,7 +26,7 @@
         v-model:value="state.role"
         :include-workspace-roles="false"
         :suffix="''"
-        :support-roles="supportRoles"
+        :filter="filterRole"
       />
     </div>
     <div class="w-full flex flex-col gap-y-2">
@@ -104,7 +104,6 @@ const props = withDefaults(
   {
     disableMemberChange: false,
     requireReason: false,
-    supportRoles: () => [],
     databaseResources: () => [],
   }
 );
@@ -119,6 +118,13 @@ interface LocalState {
   reason: string;
   expirationTimestampInMS?: number;
   databaseId?: string;
+}
+
+const filterRole = (role: string) => {
+  if (!props.supportRoles) {
+    return true
+  }
+  return props.supportRoles.includes(role)
 }
 
 const getInitialState = (): LocalState => {

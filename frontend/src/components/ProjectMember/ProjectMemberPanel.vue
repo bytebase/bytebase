@@ -102,7 +102,6 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { NButton, NTabPane, NTabs, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
@@ -196,7 +195,7 @@ const shouldShowRequestRoleButton = computed(() => {
 
 const workspaceRoles = computed(() => new Set(PRESET_WORKSPACE_ROLES));
 
-const memberBindings = computedAsync(() => {
+const memberBindings = computed(() => {
   return getMemberBindings({
     policies: [
       {
@@ -211,7 +210,7 @@ const memberBindings = computedAsync(() => {
     searchText: state.searchText,
     ignoreRoles: workspaceRoles.value,
   });
-}, []);
+});
 
 const selectMember = (binding: MemberBinding) => {
   state.editingMember = binding.binding;

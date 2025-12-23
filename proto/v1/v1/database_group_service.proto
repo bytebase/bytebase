@@ -34,6 +34,14 @@ service DatabaseGroupService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Batch retrieves multiple database groups by their names.
+  // Permissions required: bb.databaseGroups.get
+  rpc BatchGetDatabaseGroups(BatchGetDatabaseGroupsRequest) returns (BatchGetDatabaseGroupsResponse) {
+    option (google.api.http) = {get: "/v1/databaseGroups:batchGet"};
+    option (bytebase.v1.permission) = "bb.databaseGroups.get";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   // Creates a new database group.
   // Permissions required: bb.databaseGroups.create
   rpc CreateDatabaseGroup(CreateDatabaseGroupRequest) returns (DatabaseGroup) {
@@ -102,6 +110,35 @@ message GetDatabaseGroupRequest {
 
   // The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
   DatabaseGroupView view = 2;
+}
+
+// Request message for batch getting database groups.
+message BatchGetDatabaseGroupsRequest {
+  // The parent resource whose database groups are to be retrieved.
+  // Format: projects/{project}
+  // All names must belong to this parent project.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The names of the database groups to retrieve.
+  // Format: projects/{project}/databaseGroups/{databaseGroup}
+  // Maximum 1000 names per request.
+  repeated string names = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseGroup"}
+  ];
+
+  // The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
+  DatabaseGroupView view = 3;
+}
+
+// Response message for batch getting database groups.
+message BatchGetDatabaseGroupsResponse {
+  // The database groups from the specified request.
+  // Groups that don't exist or user doesn't have permission to access are omitted.
+  repeated DatabaseGroup database_groups = 1;
 }
 
 // Request message for creating a database group.

@@ -36,12 +36,11 @@ export const useRecentProjects = () => {
     const projects = [];
     const invalidProjects: string[] = [];
 
+    await projectV1Store.batchGetProjects(recentViewProjectNames.value);
+
     for (const projectName of recentViewProjectNames.value) {
       try {
-        const project = await projectV1Store.getOrFetchProjectByName(
-          projectName,
-          true /* silent */
-        );
+        const project = projectV1Store.getProjectByName(projectName);
         if (
           isValidProjectName(project.name) &&
           hasProjectPermissionV2(project, "bb.projects.get")

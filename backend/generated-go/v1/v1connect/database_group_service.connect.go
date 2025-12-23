@@ -40,6 +40,9 @@ const (
 	// DatabaseGroupServiceGetDatabaseGroupProcedure is the fully-qualified name of the
 	// DatabaseGroupService's GetDatabaseGroup RPC.
 	DatabaseGroupServiceGetDatabaseGroupProcedure = "/bytebase.v1.DatabaseGroupService/GetDatabaseGroup"
+	// DatabaseGroupServiceBatchGetDatabaseGroupsProcedure is the fully-qualified name of the
+	// DatabaseGroupService's BatchGetDatabaseGroups RPC.
+	DatabaseGroupServiceBatchGetDatabaseGroupsProcedure = "/bytebase.v1.DatabaseGroupService/BatchGetDatabaseGroups"
 	// DatabaseGroupServiceCreateDatabaseGroupProcedure is the fully-qualified name of the
 	// DatabaseGroupService's CreateDatabaseGroup RPC.
 	DatabaseGroupServiceCreateDatabaseGroupProcedure = "/bytebase.v1.DatabaseGroupService/CreateDatabaseGroup"
@@ -59,6 +62,9 @@ type DatabaseGroupServiceClient interface {
 	// Gets a database group by name.
 	// Permissions required: bb.databaseGroups.get
 	GetDatabaseGroup(context.Context, *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	// Batch retrieves multiple database groups by their names.
+	// Permissions required: bb.databaseGroups.get
+	BatchGetDatabaseGroups(context.Context, *connect.Request[v1.BatchGetDatabaseGroupsRequest]) (*connect.Response[v1.BatchGetDatabaseGroupsResponse], error)
 	// Creates a new database group.
 	// Permissions required: bb.databaseGroups.create
 	CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
@@ -94,6 +100,12 @@ func NewDatabaseGroupServiceClient(httpClient connect.HTTPClient, baseURL string
 			connect.WithSchema(databaseGroupServiceMethods.ByName("GetDatabaseGroup")),
 			connect.WithClientOptions(opts...),
 		),
+		batchGetDatabaseGroups: connect.NewClient[v1.BatchGetDatabaseGroupsRequest, v1.BatchGetDatabaseGroupsResponse](
+			httpClient,
+			baseURL+DatabaseGroupServiceBatchGetDatabaseGroupsProcedure,
+			connect.WithSchema(databaseGroupServiceMethods.ByName("BatchGetDatabaseGroups")),
+			connect.WithClientOptions(opts...),
+		),
 		createDatabaseGroup: connect.NewClient[v1.CreateDatabaseGroupRequest, v1.DatabaseGroup](
 			httpClient,
 			baseURL+DatabaseGroupServiceCreateDatabaseGroupProcedure,
@@ -117,11 +129,12 @@ func NewDatabaseGroupServiceClient(httpClient connect.HTTPClient, baseURL string
 
 // databaseGroupServiceClient implements DatabaseGroupServiceClient.
 type databaseGroupServiceClient struct {
-	listDatabaseGroups  *connect.Client[v1.ListDatabaseGroupsRequest, v1.ListDatabaseGroupsResponse]
-	getDatabaseGroup    *connect.Client[v1.GetDatabaseGroupRequest, v1.DatabaseGroup]
-	createDatabaseGroup *connect.Client[v1.CreateDatabaseGroupRequest, v1.DatabaseGroup]
-	updateDatabaseGroup *connect.Client[v1.UpdateDatabaseGroupRequest, v1.DatabaseGroup]
-	deleteDatabaseGroup *connect.Client[v1.DeleteDatabaseGroupRequest, emptypb.Empty]
+	listDatabaseGroups     *connect.Client[v1.ListDatabaseGroupsRequest, v1.ListDatabaseGroupsResponse]
+	getDatabaseGroup       *connect.Client[v1.GetDatabaseGroupRequest, v1.DatabaseGroup]
+	batchGetDatabaseGroups *connect.Client[v1.BatchGetDatabaseGroupsRequest, v1.BatchGetDatabaseGroupsResponse]
+	createDatabaseGroup    *connect.Client[v1.CreateDatabaseGroupRequest, v1.DatabaseGroup]
+	updateDatabaseGroup    *connect.Client[v1.UpdateDatabaseGroupRequest, v1.DatabaseGroup]
+	deleteDatabaseGroup    *connect.Client[v1.DeleteDatabaseGroupRequest, emptypb.Empty]
 }
 
 // ListDatabaseGroups calls bytebase.v1.DatabaseGroupService.ListDatabaseGroups.
@@ -132,6 +145,11 @@ func (c *databaseGroupServiceClient) ListDatabaseGroups(ctx context.Context, req
 // GetDatabaseGroup calls bytebase.v1.DatabaseGroupService.GetDatabaseGroup.
 func (c *databaseGroupServiceClient) GetDatabaseGroup(ctx context.Context, req *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error) {
 	return c.getDatabaseGroup.CallUnary(ctx, req)
+}
+
+// BatchGetDatabaseGroups calls bytebase.v1.DatabaseGroupService.BatchGetDatabaseGroups.
+func (c *databaseGroupServiceClient) BatchGetDatabaseGroups(ctx context.Context, req *connect.Request[v1.BatchGetDatabaseGroupsRequest]) (*connect.Response[v1.BatchGetDatabaseGroupsResponse], error) {
+	return c.batchGetDatabaseGroups.CallUnary(ctx, req)
 }
 
 // CreateDatabaseGroup calls bytebase.v1.DatabaseGroupService.CreateDatabaseGroup.
@@ -157,6 +175,9 @@ type DatabaseGroupServiceHandler interface {
 	// Gets a database group by name.
 	// Permissions required: bb.databaseGroups.get
 	GetDatabaseGroup(context.Context, *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
+	// Batch retrieves multiple database groups by their names.
+	// Permissions required: bb.databaseGroups.get
+	BatchGetDatabaseGroups(context.Context, *connect.Request[v1.BatchGetDatabaseGroupsRequest]) (*connect.Response[v1.BatchGetDatabaseGroupsResponse], error)
 	// Creates a new database group.
 	// Permissions required: bb.databaseGroups.create
 	CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error)
@@ -188,6 +209,12 @@ func NewDatabaseGroupServiceHandler(svc DatabaseGroupServiceHandler, opts ...con
 		connect.WithSchema(databaseGroupServiceMethods.ByName("GetDatabaseGroup")),
 		connect.WithHandlerOptions(opts...),
 	)
+	databaseGroupServiceBatchGetDatabaseGroupsHandler := connect.NewUnaryHandler(
+		DatabaseGroupServiceBatchGetDatabaseGroupsProcedure,
+		svc.BatchGetDatabaseGroups,
+		connect.WithSchema(databaseGroupServiceMethods.ByName("BatchGetDatabaseGroups")),
+		connect.WithHandlerOptions(opts...),
+	)
 	databaseGroupServiceCreateDatabaseGroupHandler := connect.NewUnaryHandler(
 		DatabaseGroupServiceCreateDatabaseGroupProcedure,
 		svc.CreateDatabaseGroup,
@@ -212,6 +239,8 @@ func NewDatabaseGroupServiceHandler(svc DatabaseGroupServiceHandler, opts ...con
 			databaseGroupServiceListDatabaseGroupsHandler.ServeHTTP(w, r)
 		case DatabaseGroupServiceGetDatabaseGroupProcedure:
 			databaseGroupServiceGetDatabaseGroupHandler.ServeHTTP(w, r)
+		case DatabaseGroupServiceBatchGetDatabaseGroupsProcedure:
+			databaseGroupServiceBatchGetDatabaseGroupsHandler.ServeHTTP(w, r)
 		case DatabaseGroupServiceCreateDatabaseGroupProcedure:
 			databaseGroupServiceCreateDatabaseGroupHandler.ServeHTTP(w, r)
 		case DatabaseGroupServiceUpdateDatabaseGroupProcedure:
@@ -233,6 +262,10 @@ func (UnimplementedDatabaseGroupServiceHandler) ListDatabaseGroups(context.Conte
 
 func (UnimplementedDatabaseGroupServiceHandler) GetDatabaseGroup(context.Context, *connect.Request[v1.GetDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.GetDatabaseGroup is not implemented"))
+}
+
+func (UnimplementedDatabaseGroupServiceHandler) BatchGetDatabaseGroups(context.Context, *connect.Request[v1.BatchGetDatabaseGroupsRequest]) (*connect.Response[v1.BatchGetDatabaseGroupsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.DatabaseGroupService.BatchGetDatabaseGroups is not implemented"))
 }
 
 func (UnimplementedDatabaseGroupServiceHandler) CreateDatabaseGroup(context.Context, *connect.Request[v1.CreateDatabaseGroupRequest]) (*connect.Response[v1.DatabaseGroup], error) {

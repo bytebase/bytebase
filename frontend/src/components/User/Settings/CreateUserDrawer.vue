@@ -394,7 +394,7 @@ const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 const state = reactive<LocalState>({
   isRequesting: false,
   user: emptyUser(),
-  roles: [PresetRoleType.WORKSPACE_MEMBER],
+  roles: [],
   passwordConfirm: "",
   wif: {
     emailPrefix: "",

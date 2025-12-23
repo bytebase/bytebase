@@ -20,11 +20,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DatabaseGroupService_ListDatabaseGroups_FullMethodName  = "/bytebase.v1.DatabaseGroupService/ListDatabaseGroups"
-	DatabaseGroupService_GetDatabaseGroup_FullMethodName    = "/bytebase.v1.DatabaseGroupService/GetDatabaseGroup"
-	DatabaseGroupService_CreateDatabaseGroup_FullMethodName = "/bytebase.v1.DatabaseGroupService/CreateDatabaseGroup"
-	DatabaseGroupService_UpdateDatabaseGroup_FullMethodName = "/bytebase.v1.DatabaseGroupService/UpdateDatabaseGroup"
-	DatabaseGroupService_DeleteDatabaseGroup_FullMethodName = "/bytebase.v1.DatabaseGroupService/DeleteDatabaseGroup"
+	DatabaseGroupService_ListDatabaseGroups_FullMethodName     = "/bytebase.v1.DatabaseGroupService/ListDatabaseGroups"
+	DatabaseGroupService_GetDatabaseGroup_FullMethodName       = "/bytebase.v1.DatabaseGroupService/GetDatabaseGroup"
+	DatabaseGroupService_BatchGetDatabaseGroups_FullMethodName = "/bytebase.v1.DatabaseGroupService/BatchGetDatabaseGroups"
+	DatabaseGroupService_CreateDatabaseGroup_FullMethodName    = "/bytebase.v1.DatabaseGroupService/CreateDatabaseGroup"
+	DatabaseGroupService_UpdateDatabaseGroup_FullMethodName    = "/bytebase.v1.DatabaseGroupService/UpdateDatabaseGroup"
+	DatabaseGroupService_DeleteDatabaseGroup_FullMethodName    = "/bytebase.v1.DatabaseGroupService/DeleteDatabaseGroup"
 )
 
 // DatabaseGroupServiceClient is the client API for DatabaseGroupService service.
@@ -39,6 +40,9 @@ type DatabaseGroupServiceClient interface {
 	// Gets a database group by name.
 	// Permissions required: bb.databaseGroups.get
 	GetDatabaseGroup(ctx context.Context, in *GetDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
+	// Batch retrieves multiple database groups by their names.
+	// Permissions required: bb.databaseGroups.get
+	BatchGetDatabaseGroups(ctx context.Context, in *BatchGetDatabaseGroupsRequest, opts ...grpc.CallOption) (*BatchGetDatabaseGroupsResponse, error)
 	// Creates a new database group.
 	// Permissions required: bb.databaseGroups.create
 	CreateDatabaseGroup(ctx context.Context, in *CreateDatabaseGroupRequest, opts ...grpc.CallOption) (*DatabaseGroup, error)
@@ -73,6 +77,16 @@ func (c *databaseGroupServiceClient) GetDatabaseGroup(ctx context.Context, in *G
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DatabaseGroup)
 	err := c.cc.Invoke(ctx, DatabaseGroupService_GetDatabaseGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *databaseGroupServiceClient) BatchGetDatabaseGroups(ctx context.Context, in *BatchGetDatabaseGroupsRequest, opts ...grpc.CallOption) (*BatchGetDatabaseGroupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchGetDatabaseGroupsResponse)
+	err := c.cc.Invoke(ctx, DatabaseGroupService_BatchGetDatabaseGroups_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +135,9 @@ type DatabaseGroupServiceServer interface {
 	// Gets a database group by name.
 	// Permissions required: bb.databaseGroups.get
 	GetDatabaseGroup(context.Context, *GetDatabaseGroupRequest) (*DatabaseGroup, error)
+	// Batch retrieves multiple database groups by their names.
+	// Permissions required: bb.databaseGroups.get
+	BatchGetDatabaseGroups(context.Context, *BatchGetDatabaseGroupsRequest) (*BatchGetDatabaseGroupsResponse, error)
 	// Creates a new database group.
 	// Permissions required: bb.databaseGroups.create
 	CreateDatabaseGroup(context.Context, *CreateDatabaseGroupRequest) (*DatabaseGroup, error)
@@ -146,6 +163,9 @@ func (UnimplementedDatabaseGroupServiceServer) ListDatabaseGroups(context.Contex
 }
 func (UnimplementedDatabaseGroupServiceServer) GetDatabaseGroup(context.Context, *GetDatabaseGroupRequest) (*DatabaseGroup, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetDatabaseGroup not implemented")
+}
+func (UnimplementedDatabaseGroupServiceServer) BatchGetDatabaseGroups(context.Context, *BatchGetDatabaseGroupsRequest) (*BatchGetDatabaseGroupsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BatchGetDatabaseGroups not implemented")
 }
 func (UnimplementedDatabaseGroupServiceServer) CreateDatabaseGroup(context.Context, *CreateDatabaseGroupRequest) (*DatabaseGroup, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateDatabaseGroup not implemented")
@@ -209,6 +229,24 @@ func _DatabaseGroupService_GetDatabaseGroup_Handler(srv interface{}, ctx context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DatabaseGroupServiceServer).GetDatabaseGroup(ctx, req.(*GetDatabaseGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DatabaseGroupService_BatchGetDatabaseGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchGetDatabaseGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseGroupServiceServer).BatchGetDatabaseGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseGroupService_BatchGetDatabaseGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseGroupServiceServer).BatchGetDatabaseGroups(ctx, req.(*BatchGetDatabaseGroupsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -281,6 +319,10 @@ var DatabaseGroupService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDatabaseGroup",
 			Handler:    _DatabaseGroupService_GetDatabaseGroup_Handler,
+		},
+		{
+			MethodName: "BatchGetDatabaseGroups",
+			Handler:    _DatabaseGroupService_BatchGetDatabaseGroups_Handler,
 		},
 		{
 			MethodName: "CreateDatabaseGroup",

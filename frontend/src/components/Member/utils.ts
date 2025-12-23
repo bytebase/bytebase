@@ -14,30 +14,25 @@ import {
 import { State } from "@/types/proto-es/v1/common_pb";
 import { GroupSchema } from "@/types/proto-es/v1/group_service_pb";
 import type { IamPolicy } from "@/types/proto-es/v1/iam_policy_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UserSchema, UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { GroupBinding, MemberBinding } from "./types";
 
-const getMemberBinding = async (
+const getMemberBinding = (
   member: string,
   searchText: string
-): Promise<MemberBinding | undefined> => {
+): MemberBinding | undefined => {
   const groupStore = useGroupStore();
   const userStore = useUserStore();
 
   let memberBinding: MemberBinding | undefined = undefined;
   if (member.startsWith(groupBindingPrefix)) {
+    const g = groupStore.getGroupByIdentifier(member);
     let group: GroupBinding | undefined;
-    try {
-      const g = await groupStore.getOrFetchGroupByIdentifier(member);
-      if (g) {
-        group = {
-          ...g,
-          deleted: false,
-        };
-      }
-    } catch {
-      // nothing
+    if (g) {
+      group = {
+        ...g,
+        deleted: false,
+      };
     }
     if (!group) {
       const email = extractGroupEmail(member);
@@ -59,17 +54,11 @@ const getMemberBinding = async (
       projectRoleBindings: [],
     };
   } else {
-    let user: User | undefined;
-    try {
-      user = await userStore.getOrFetchUserByIdentifier(member);
-    } catch {
-      // nothing
-    }
-
+    let user = userStore.getUserByIdentifier(member);
     if (!user) {
       const email = extractUserId(member);
       user = create(UserSchema, {
-        title: member,
+        title: email,
         name: `${userNamePrefix}${email}`,
         email: email,
         userType: UserType.USER,
@@ -98,7 +87,7 @@ const getMemberBinding = async (
   return memberBinding;
 };
 
-export const getMemberBindings = async ({
+export const getMemberBindings = ({
   policies,
   searchText,
   ignoreRoles,
@@ -106,22 +95,9 @@ export const getMemberBindings = async ({
   policies: { level: "WORKSPACE" | "PROJECT"; policy: IamPolicy }[];
   searchText: string;
   ignoreRoles: Set<string>;
-}): Promise<MemberBinding[]> => {
+}): MemberBinding[] => {
   const memberMap = new Map<string, MemberBinding>();
   const search = searchText.trim().toLowerCase();
-
-  const ensureMemberBinding = async (member: string) => {
-    if (!memberMap.has(member)) {
-      try {
-        const memberBinding = await getMemberBinding(member, search);
-        if (!memberBinding) {
-          return undefined;
-        }
-        memberMap.set(member, memberBinding);
-      } catch {}
-    }
-    return memberMap.get(member);
-  };
 
   for (const policy of policies) {
     for (const binding of policy.policy.bindings) {
@@ -130,7 +106,13 @@ export const getMemberBindings = async ({
       }
 
       for (const member of binding.members) {
-        const memberBinding = await ensureMemberBinding(member);
+        if (!memberMap.has(member)) {
+          const memberBinding = getMemberBinding(member, search);
+          if (memberBinding) {
+            memberMap.set(member, memberBinding);
+          }
+        }
+        const memberBinding = memberMap.get(member);
         if (!memberBinding) {
           continue;
         }

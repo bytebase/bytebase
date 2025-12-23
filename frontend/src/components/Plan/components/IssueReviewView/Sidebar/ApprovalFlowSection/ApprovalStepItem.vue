@@ -92,7 +92,11 @@ import type {
 } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
 import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
-import { isBindingPolicyExpired, memberMapToRolesInProjectIAM } from "@/utils";
+import {
+  ensureUserFullName,
+  isBindingPolicyExpired,
+  memberMapToRolesInProjectIAM,
+} from "@/utils";
 import ApprovalUserView from "./ApprovalUserView.vue";
 import PotentialApprovers from "./PotentialApprovers.vue";
 
@@ -279,8 +283,11 @@ const potentialApprovers = computedAsync(async () => {
   }
 
   const users: UserType[] = [];
+  await userStore.batchGetUsers(
+    filteredCandidateEmails.value.map(ensureUserFullName)
+  );
   for (const email of filteredCandidateEmails.value) {
-    const user = await userStore.getOrFetchUserByIdentifier(email);
+    const user = userStore.getUserByIdentifier(email);
     if (user && user.state === State.ACTIVE) {
       users.push(user);
     }

@@ -59,6 +59,48 @@ func (x *GetDatabaseGroupRequest) Equal(y *GetDatabaseGroupRequest) bool {
 	return true
 }
 
+func (x *BatchGetDatabaseGroupsRequest) Equal(y *BatchGetDatabaseGroupsRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Parent != y.Parent {
+		return false
+	}
+	if len(x.Names) != len(y.Names) {
+		return false
+	}
+	for i := 0; i < len(x.Names); i++ {
+		if x.Names[i] != y.Names[i] {
+			return false
+		}
+	}
+	if x.View != y.View {
+		return false
+	}
+	return true
+}
+
+func (x *BatchGetDatabaseGroupsResponse) Equal(y *BatchGetDatabaseGroupsResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.DatabaseGroups) != len(y.DatabaseGroups) {
+		return false
+	}
+	for i := 0; i < len(x.DatabaseGroups); i++ {
+		if !x.DatabaseGroups[i].Equal(y.DatabaseGroups[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *CreateDatabaseGroupRequest) Equal(y *CreateDatabaseGroupRequest) bool {
 	if x == y {
 		return true

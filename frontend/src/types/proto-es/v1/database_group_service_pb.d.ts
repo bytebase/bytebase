@@ -89,6 +89,65 @@ export declare type GetDatabaseGroupRequest = Message<"bytebase.v1.GetDatabaseGr
 export declare const GetDatabaseGroupRequestSchema: GenMessage<GetDatabaseGroupRequest>;
 
 /**
+ * Request message for batch getting database groups.
+ *
+ * @generated from message bytebase.v1.BatchGetDatabaseGroupsRequest
+ */
+export declare type BatchGetDatabaseGroupsRequest = Message<"bytebase.v1.BatchGetDatabaseGroupsRequest"> & {
+  /**
+   * The parent resource whose database groups are to be retrieved.
+   * Format: projects/{project}
+   * All names must belong to this parent project.
+   *
+   * @generated from field: string parent = 1;
+   */
+  parent: string;
+
+  /**
+   * The names of the database groups to retrieve.
+   * Format: projects/{project}/databaseGroups/{databaseGroup}
+   * Maximum 1000 names per request.
+   *
+   * @generated from field: repeated string names = 2;
+   */
+  names: string[];
+
+  /**
+   * The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
+   *
+   * @generated from field: bytebase.v1.DatabaseGroupView view = 3;
+   */
+  view: DatabaseGroupView;
+};
+
+/**
+ * Describes the message bytebase.v1.BatchGetDatabaseGroupsRequest.
+ * Use `create(BatchGetDatabaseGroupsRequestSchema)` to create a new message.
+ */
+export declare const BatchGetDatabaseGroupsRequestSchema: GenMessage<BatchGetDatabaseGroupsRequest>;
+
+/**
+ * Response message for batch getting database groups.
+ *
+ * @generated from message bytebase.v1.BatchGetDatabaseGroupsResponse
+ */
+export declare type BatchGetDatabaseGroupsResponse = Message<"bytebase.v1.BatchGetDatabaseGroupsResponse"> & {
+  /**
+   * The database groups from the specified request.
+   * Groups that don't exist or user doesn't have permission to access are omitted.
+   *
+   * @generated from field: repeated bytebase.v1.DatabaseGroup database_groups = 1;
+   */
+  databaseGroups: DatabaseGroup[];
+};
+
+/**
+ * Describes the message bytebase.v1.BatchGetDatabaseGroupsResponse.
+ * Use `create(BatchGetDatabaseGroupsResponseSchema)` to create a new message.
+ */
+export declare const BatchGetDatabaseGroupsResponseSchema: GenMessage<BatchGetDatabaseGroupsResponse>;
+
+/**
  * Request message for creating a database group.
  *
  * @generated from message bytebase.v1.CreateDatabaseGroupRequest
@@ -329,6 +388,17 @@ export declare const DatabaseGroupService: GenService<{
     methodKind: "unary";
     input: typeof GetDatabaseGroupRequestSchema;
     output: typeof DatabaseGroupSchema;
+  },
+  /**
+   * Batch retrieves multiple database groups by their names.
+   * Permissions required: bb.databaseGroups.get
+   *
+   * @generated from rpc bytebase.v1.DatabaseGroupService.BatchGetDatabaseGroups
+   */
+  batchGetDatabaseGroups: {
+    methodKind: "unary";
+    input: typeof BatchGetDatabaseGroupsRequestSchema;
+    output: typeof BatchGetDatabaseGroupsResponseSchema;
   },
   /**
    * Creates a new database group.

@@ -936,6 +936,14 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.BatchGetDatabaseGroupsRequest"><span class="badge">M</span>BatchGetDatabaseGroupsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchGetDatabaseGroupsResponse"><span class="badge">M</span>BatchGetDatabaseGroupsResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.CreateDatabaseGroupRequest"><span class="badge">M</span>CreateDatabaseGroupRequest</a>
                 </li>
               
@@ -9934,6 +9942,73 @@ Permissions required: bb.databaseCatalogs.update</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.BatchGetDatabaseGroupsRequest">BatchGetDatabaseGroupsRequest</h3>
+        <p>Request message for batch getting database groups.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource whose database groups are to be retrieved.
+Format: projects/{project}
+All names must belong to this parent project. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>names</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The names of the database groups to retrieve.
+Format: projects/{project}/databaseGroups/{databaseGroup}
+Maximum 1000 names per request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>view</td>
+                  <td><a href="#bytebase.v1.DatabaseGroupView">DatabaseGroupView</a></td>
+                  <td></td>
+                  <td><p>The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchGetDatabaseGroupsResponse">BatchGetDatabaseGroupsResponse</h3>
+        <p>Response message for batch getting database groups.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database_groups</td>
+                  <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
+                  <td>repeated</td>
+                  <td><p>The database groups from the specified request.
+Groups that don&#39;t exist or user doesn&#39;t have permission to access are omitted. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.CreateDatabaseGroupRequest">CreateDatabaseGroupRequest</h3>
         <p>Request message for creating a database group.</p>
 
@@ -10283,6 +10358,14 @@ Permissions required: bb.databaseGroups.get</p></td>
               </tr>
             
               <tr>
+                <td>BatchGetDatabaseGroups</td>
+                <td><a href="#bytebase.v1.BatchGetDatabaseGroupsRequest">BatchGetDatabaseGroupsRequest</a></td>
+                <td><a href="#bytebase.v1.BatchGetDatabaseGroupsResponse">BatchGetDatabaseGroupsResponse</a></td>
+                <td><p>Batch retrieves multiple database groups by their names.
+Permissions required: bb.databaseGroups.get</p></td>
+              </tr>
+            
+              <tr>
                 <td>CreateDatabaseGroup</td>
                 <td><a href="#bytebase.v1.CreateDatabaseGroupRequest">CreateDatabaseGroupRequest</a></td>
                 <td><a href="#bytebase.v1.DatabaseGroup">DatabaseGroup</a></td>
@@ -10341,6 +10424,16 @@ Permissions required: bb.databaseGroups.delete</p></td>
                 <td>GetDatabaseGroup</td>
                 <td>GET</td>
                 <td>/v1/{name=projects/*/databaseGroups/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchGetDatabaseGroups</td>
+                <td>GET</td>
+                <td>/v1/databaseGroups:batchGet</td>
                 <td></td>
               </tr>
               
