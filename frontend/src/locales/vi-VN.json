@@ -1167,6 +1167,7 @@
     "add-spec": "Thêm thông số kỹ thuật",
     "select-targets": "Chọn mục tiêu",
     "ready-for-review": "Sẵn sàng để xem xét",
+    "labels-required-for-review": "Cần có nhãn trước khi yêu cầu xem xét",
     "overview": {
       "no-checks": "Không kiểm tra"
     },

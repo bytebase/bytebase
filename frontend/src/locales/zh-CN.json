@@ -1167,6 +1167,7 @@
     "add-spec": "添加变更项",
     "select-targets": "选择目标库",
     "ready-for-review": "提交审批",
+    "labels-required-for-review": "提交审批前需要选择标签",
     "overview": {
       "no-checks": "没有检查"
     },

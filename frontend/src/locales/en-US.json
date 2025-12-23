@@ -1167,6 +1167,7 @@
     "add-spec": "Add Change",
     "select-targets": "Select Targets",
     "ready-for-review": "Ready for Review",
+    "labels-required-for-review": "Labels are required before requesting review",
     "overview": {
       "no-checks": "No checks"
     },
