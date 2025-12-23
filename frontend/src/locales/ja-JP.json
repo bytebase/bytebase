@@ -1167,6 +1167,7 @@
     "add-spec": "仕様を追加",
     "select-targets": "ターゲットを選択",
     "ready-for-review": "レビュー準備完了",
+    "labels-required-for-review": "レビューをリクエストする前にラベルが必要です",
     "overview": {
       "no-checks": "チェックなし"
     },

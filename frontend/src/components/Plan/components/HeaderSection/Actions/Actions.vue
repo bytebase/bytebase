@@ -1,14 +1,31 @@
 <template>
   <CreateButton v-if="isCreating" />
   <template v-else>
-    <!-- Show unified actions for all plan states -->
-    <UnifiedActionGroup
-      :primary-action="primaryAction"
-      :secondary-actions="secondaryActions"
-      :disabled="actionsDisabled"
-      :disabled-tooltip="disabledTooltip"
-      @perform-action="handlePerformAction"
-    />
+    <!-- Show CreateIssueButton when ISSUE_CREATE is the primary action -->
+    <template v-if="showCreateIssueButton">
+      <div class="flex items-center gap-x-2">
+        <CreateIssueButton />
+        <!-- Secondary actions dropdown -->
+        <UnifiedActionGroup
+          v-if="secondaryActions.length > 0"
+          :secondary-actions="secondaryActions"
+          :disabled="actionsDisabled"
+          :disabled-tooltip="disabledTooltip"
+          @perform-action="handlePerformAction"
+        />
+      </div>
+    </template>
+
+    <!-- Show unified actions for other plan states -->
+    <template v-else>
+      <UnifiedActionGroup
+        :primary-action="primaryAction"
+        :secondary-actions="secondaryActions"
+        :disabled="actionsDisabled"
+        :disabled-tooltip="disabledTooltip"
+        @perform-action="handlePerformAction"
+      />
+    </template>
 
     <!-- Panels -->
     <template v-if="issue">
@@ -42,47 +59,19 @@
 </template>
 
 <script setup lang="ts">
-import { create } from "@bufbuild/protobuf";
 import { useDialog } from "naive-ui";
-import { computed, nextTick, ref } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
-import { useSpecsValidation } from "@/components/Plan/components/common";
-import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
+import { usePlanContext } from "@/components/Plan/logic";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { useEditorState } from "@/components/Plan/logic/useEditorState";
-import {
-  issueServiceClientConnect,
-  rolloutServiceClientConnect,
-} from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
-import {
-  pushNotification,
-  useCurrentProjectV1,
-  useCurrentUserV1,
-} from "@/store";
+import { pushNotification } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { State } from "@/types/proto-es/v1/common_pb";
-import {
-  CreateIssueRequestSchema,
-  Issue_Type,
-  IssueSchema,
-  IssueStatus,
-} from "@/types/proto-es/v1/issue_service_pb";
-import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import {
-  CreateRolloutRequestSchema,
-  Task_Type,
-} from "@/types/proto-es/v1/rollout_service_pb";
-import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
-import {
-  extractIssueUID,
-  extractProjectResourceName,
-  isValidIssueName,
-  isValidPlanName,
-} from "@/utils";
+import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import { isValidIssueName, isValidPlanName } from "@/utils";
 import TaskRolloutActionPanel from "../../RolloutView/TaskRolloutActionPanel.vue";
-import { CreateButton } from "./create";
+import { CreateButton, CreateIssueButton } from "./create";
 import { IssueReviewActionPanel, IssueStatusActionPanel } from "./panels";
 import {
   type ActionConfig,
@@ -92,31 +81,16 @@ import {
   type RolloutAction,
   type UnifiedAction,
   UnifiedActionGroup,
+  usePlanAction,
 } from "./unified";
-import { usePlanAction } from "./unified/action";
 
 const { t } = useI18n();
-const router = useRouter();
 const dialog = useDialog();
 const resourcePoller = useResourcePoller();
-const { isCreating, plan, issueLabels, issue, rollout, events } =
-  usePlanContext();
-const currentUser = useCurrentUserV1();
-const { project } = useCurrentProjectV1();
+const { isCreating, plan, issue, rollout, events } = usePlanContext();
 const planStore = usePlanStore();
 const editorState = useEditorState();
 const { availableActions } = usePlanAction();
-
-// Use the validation hook for all specs
-const { isSpecEmpty } = useSpecsValidation(computed(() => plan.value.specs));
-
-// Use plan check status for issue creation validation
-const {
-  getOverallStatus: planCheckSummaryStatus,
-  hasRunning: hasRunningPlanChecks,
-} = usePlanCheckStatus(plan);
-
-// Policy for restricting issue creation when plan checks fail
 
 // Computed property for actions disabled state.
 const actionsDisabled = computed(() => {
@@ -136,9 +110,6 @@ const pendingReviewAction = ref<IssueReviewAction | undefined>(undefined);
 const pendingStatusAction = ref<IssueStatusAction | undefined>(undefined);
 const pendingRolloutAction = ref<RolloutAction | undefined>(undefined);
 
-// Loading state for issue creation to prevent race conditions
-const isCreatingIssue = ref(false);
-
 // Get the stage that contains database creation or export tasks
 const rolloutStage = computed(() => {
   if (!rollout.value) return undefined;
@@ -153,54 +124,24 @@ const rolloutStage = computed(() => {
   );
 });
 
+// Issue-only mode: when viewing an issue without a valid plan (legacy issues)
+const isIssueOnly = computed(() => {
+  return (
+    !isValidPlanName(plan.value.name) && isValidIssueName(issue.value?.name)
+  );
+});
+
+// Check if we should show CreateIssueButton instead of UnifiedActionGroup
+const showCreateIssueButton = computed(() => {
+  // Show CreateIssueButton when ISSUE_CREATE is available and not issue-only
+  return !isIssueOnly.value && availableActions.value.includes("ISSUE_CREATE");
+});
+
 const primaryAction = computed((): ActionConfig | undefined => {
   const actions = availableActions.value;
-  const isIssueOnly =
-    !isValidPlanName(plan.value.name) && isValidIssueName(issue.value?.name);
-
-  // Skip plan-specific actions for issue-only cases
-  if (isIssueOnly) {
-    // Skip ISSUE_CREATE, PLAN_REOPEN checks and go directly to issue actions
-  }
-  // ISSUE_CREATE is the highest priority when no issue exists
-  else if (actions.includes("ISSUE_CREATE")) {
-    // Check if all specs have valid statements (not empty)
-    const hasValidSpecs = !plan.value.specs.some((spec) => isSpecEmpty(spec));
-
-    // Check plan check status and policy restrictions
-    const planChecksFailed =
-      planCheckSummaryStatus.value === Advice_Level.ERROR;
-    const isRestrictedByPolicy =
-      planChecksFailed && (project.value.enforceSqlReview || false);
-    const hasRunningChecks = hasRunningPlanChecks.value;
-
-    const errors: string[] = [];
-    if (!hasValidSpecs) {
-      errors.push("Missing statement");
-    }
-    if (hasRunningChecks) {
-      errors.push("Plan checks are running");
-    }
-    if (isRestrictedByPolicy) {
-      errors.push(
-        t(
-          "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
-        )
-      );
-    }
-    if (project.value.forceIssueLabels && issueLabels.value.length === 0) {
-      errors.push("Missing issue labels");
-    }
-
-    return {
-      action: "ISSUE_CREATE",
-      disabled: errors.length > 0,
-      description: errors.length > 0 ? errors.join(", ") : undefined,
-    };
-  }
 
   // PLAN_REOPEN is primary when plan is deleted (skip for issue-only)
-  if (!isIssueOnly && actions.includes("PLAN_REOPEN")) {
+  if (!isIssueOnly.value && actions.includes("PLAN_REOPEN")) {
     return { action: "PLAN_REOPEN" };
   }
 
@@ -232,8 +173,6 @@ const primaryAction = computed((): ActionConfig | undefined => {
 
 const secondaryActions = computed((): ActionConfig[] => {
   const actions = availableActions.value;
-  const isIssueOnly =
-    !isValidPlanName(plan.value.name) && isValidIssueName(issue.value?.name);
   const secondary: ActionConfig[] = [];
 
   if (actions.includes("ISSUE_REVIEW_REJECT")) {
@@ -246,7 +185,7 @@ const secondaryActions = computed((): ActionConfig[] => {
     secondary.push({ action: "ISSUE_STATUS_CLOSE" });
   }
   // Skip PLAN_CLOSE for issue-only cases
-  if (!isIssueOnly && actions.includes("PLAN_CLOSE")) {
+  if (!isIssueOnly.value && actions.includes("PLAN_CLOSE")) {
     secondary.push({ action: "PLAN_CLOSE" });
   }
 
@@ -265,9 +204,6 @@ const handlePerformAction = async (action: UnifiedAction) => {
     case "ISSUE_STATUS_RESOLVE":
       pendingStatusAction.value = action as IssueStatusAction;
       break;
-    case "ISSUE_CREATE":
-      await handleIssueCreate();
-      break;
     case "PLAN_CLOSE":
       await handlePlanStateChange("PLAN_CLOSE");
       break;
@@ -281,86 +217,6 @@ const handlePerformAction = async (action: UnifiedAction) => {
   }
 };
 
-const handleIssueCreate = async () => {
-  if (!plan?.value) return;
-
-  // Prevent race condition: check if already creating issue
-  if (isCreatingIssue.value) {
-    return;
-  }
-  isCreatingIssue.value = true;
-
-  try {
-    await doCreateIssue();
-  } catch (error) {
-    console.error("Failed to create issue:", error);
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Failed to create issue",
-      description: String(error),
-    });
-  } finally {
-    isCreatingIssue.value = false;
-  }
-};
-
-// Helper function to determine issue type from plan specs
-const getIssueTypeFromPlan = (planValue: Plan): Issue_Type => {
-  // Check if any spec is for data export
-  const hasExportDataSpec = planValue.specs.some(
-    (spec: Plan_Spec) => spec.config?.case === "exportDataConfig"
-  );
-
-  if (hasExportDataSpec) {
-    return Issue_Type.DATABASE_EXPORT;
-  }
-
-  // For both database creation and changes, use DATABASE_CHANGE
-  return Issue_Type.DATABASE_CHANGE;
-};
-
-const doCreateIssue = async () => {
-  const createIssueRequest = create(CreateIssueRequestSchema, {
-    parent: project.value.name,
-    issue: create(IssueSchema, {
-      creator: `users/${currentUser.value.email}`,
-      labels: [], // No labels for direct creation
-      plan: plan.value.name,
-      status: IssueStatus.OPEN,
-      type: getIssueTypeFromPlan(plan.value),
-      rollout: "",
-    }),
-  });
-
-  // Create issue first
-  const createdIssue =
-    await issueServiceClientConnect.createIssue(createIssueRequest);
-
-  const createRolloutRequest = create(CreateRolloutRequestSchema, {
-    parent: project.value.name,
-    rollout: {
-      plan: plan.value.name,
-    },
-  });
-
-  // Then create rollout
-  await rolloutServiceClientConnect.createRollout(createRolloutRequest);
-
-  // Emit status changed to refresh the UI
-  events.emit("status-changed", { eager: true });
-
-  nextTick(() => {
-    router.push({
-      name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
-      params: {
-        projectId: extractProjectResourceName(plan.value.name),
-        issueId: extractIssueUID(createdIssue.name),
-      },
-    });
-  });
-};
-
 const handlePlanStateChange = async (action: PlanAction) => {
   if (!plan?.value) return;
 
@@ -369,16 +225,12 @@ const handlePlanStateChange = async (action: PlanAction) => {
   const content = isClosing
     ? t("plan.state.close-confirm")
     : t("plan.state.reopen-confirm");
-  const positiveText = title;
   const newState = isClosing ? State.DELETED : State.ACTIVE;
-  const errorMessage = isClosing
-    ? "Failed to close plan:"
-    : "Failed to reopen plan:";
 
   const d = dialog.warning({
     title,
     content,
-    positiveText,
+    positiveText: title,
     negativeText: t("common.cancel"),
     onPositiveClick: async () => {
       d.loading = true;
@@ -389,11 +241,10 @@ const handlePlanStateChange = async (action: PlanAction) => {
         // The plan context should automatically refresh and redirect or update the UI.
         await resourcePoller.refreshResources();
       } catch (error) {
-        console.error(errorMessage, error);
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
-          title: "Failed to update plan",
+          title: t("common.failed"),
           description: String(error),
         });
       }

@@ -1167,6 +1167,7 @@
     "add-spec": "Agregar especificación",
     "select-targets": "Seleccionar objetivos",
     "ready-for-review": "Listo para revisión",
+    "labels-required-for-review": "Se requieren etiquetas antes de solicitar revisión",
     "overview": {
       "no-checks": "Sin controles"
     },
