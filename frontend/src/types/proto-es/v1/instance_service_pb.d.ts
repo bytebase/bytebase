@@ -612,14 +612,6 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
   syncInterval?: Duration;
 
   /**
-   * The maximum number of connections.
-   * The default is 10 if the value is unset or zero.
-   *
-   * @generated from field: int32 maximum_connections = 13;
-   */
-  maximumConnections: number;
-
-  /**
    * Enable sync for following databases.
    * Default empty, means sync all schemas & databases.
    *

@@ -384,9 +384,6 @@ func (x *Instance) Equal(y *Instance) bool {
 	if p, q := x.SyncInterval, y.SyncInterval; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if x.MaximumConnections != y.MaximumConnections {
-		return false
-	}
 	if len(x.SyncDatabases) != len(y.SyncDatabases) {
 		return false
 	}

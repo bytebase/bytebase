@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -106,26 +105,11 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 		return
 	}
 
-	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &planCheckRun.Config.InstanceId})
-	if err != nil {
-		slog.Error("failed to find instance", slog.Int("uid", planCheckRun.UID), slog.Int64("plan_uid", planCheckRun.PlanUID), slog.String("instance", planCheckRun.Config.InstanceId))
-		return
-	}
-
-	maximumConnections := int(instance.Metadata.GetMaximumConnections())
-	if maximumConnections <= 0 {
-		maximumConnections = common.DefaultInstanceMaximumConnections
-	}
-	if s.stateCfg.InstanceOutstandingConnections.Increment(instance.ResourceID, maximumConnections) {
-		return
-	}
-
 	s.stateCfg.RunningPlanChecks.Store(planCheckRun.UID, true)
 	go func() {
 		defer func() {
 			s.stateCfg.RunningPlanChecks.Delete(planCheckRun.UID)
 			s.stateCfg.RunningPlanCheckRunsCancelFunc.Delete(planCheckRun.UID)
-			s.stateCfg.InstanceOutstandingConnections.Decrement(instance.ResourceID)
 		}()
 
 		ctxWithCancel, cancel := context.WithCancel(ctx)

@@ -176,7 +176,11 @@ defineExpose({
     if (!expirationSelectorRef.value?.isValid) {
       return false;
     }
-    if (!databaseResourceFormRef.value?.isValid) {
+    // Only check database form validity if it's rendered
+    if (
+      databaseResourceFormRef.value &&
+      !databaseResourceFormRef.value.isValid
+    ) {
       return false;
     }
     if (props.requireReason && !state.reason.trim()) {

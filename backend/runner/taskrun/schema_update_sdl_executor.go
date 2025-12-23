@@ -58,7 +58,6 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 	if sheet == nil {
 		return true, nil, errors.Errorf("sheet not found: %s", task.Payload.GetSheetSha256())
 	}
-	sheetContent := sheet.Statement
 
 	execFunc := func(ctx context.Context, execStatement string, driver db.Driver, opts db.ExecuteOptions) error {
 		opts.LogComputeDiffStart()
@@ -77,7 +76,7 @@ func (exec *SchemaDeclareExecutor) RunOnce(ctx context.Context, driverCtx contex
 		return nil
 	}
 
-	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, sheetContent, task.Payload.GetSchemaVersion(), &sheet.Sha256, execFunc)
+	return runMigrationWithFunc(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, sheet, task.Payload.GetSchemaVersion(), execFunc)
 }
 
 func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, sheetContent string) (string, error) {

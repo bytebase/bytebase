@@ -90,10 +90,8 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 			case <-ticker.C:
 				instances, err := s.store.ListInstances(ctx, &store.FindInstanceMessage{})
 				if err != nil {
-					if err != nil {
-						slog.Error("Failed to list instance", log.BBError(err))
-						return
-					}
+					slog.Error("Failed to list instance", log.BBError(err))
+					return
 				}
 				instanceMap := make(map[string]*store.InstanceMessage)
 				for _, instance := range instances {
@@ -106,26 +104,8 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 						return true
 					}
 
-					instance, ok := instanceMap[database.InstanceID]
-					if !ok {
-						slog.Debug("Instance not found",
-							slog.String("instance", database.InstanceID),
-							log.BBError(err))
-						return true
-					}
-					maximumConnections := int(instance.Metadata.GetMaximumConnections())
-					if maximumConnections <= 0 {
-						maximumConnections = common.DefaultInstanceMaximumConnections
-					}
-					if s.stateCfg.InstanceOutstandingConnections.Increment(instance.ResourceID, maximumConnections) {
-						return true
-					}
-
 					s.databaseSyncMap.Delete(key)
 					dbwp.Go(func() {
-						defer func() {
-							s.stateCfg.InstanceOutstandingConnections.Decrement(instance.ResourceID)
-						}()
 						slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
 						if err := s.SyncDatabaseSchema(ctx, database); err != nil {
 							slog.Debug("Failed to sync database schema",

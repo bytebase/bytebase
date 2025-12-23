@@ -19,7 +19,7 @@ import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { HighlightLabelText } from "@/components/v2";
 import { UserNameCell } from "@/components/v2/Model/cells";
-import { type UserFilter, useUserStore } from "@/store";
+import { type UserFilter, userNamePrefix, useUserStore } from "@/store";
 import { allUsersUser } from "@/types";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
@@ -36,7 +36,7 @@ const props = defineProps<{
   multiple?: boolean;
   disabled?: boolean;
   size?: SelectSize;
-  value?: string | string[] | undefined;
+  value?: string | string[] | undefined; // email or emails
   projectName?: string;
   // allUsers is a special user that represents all users in the project.
   includeAllUsers?: boolean;
@@ -87,15 +87,25 @@ const additionalOptions = computedAsync(async () => {
     options.unshift(getOption(allUsersUser()));
   }
 
-  let userNames: string[] = [];
+  let userEmails: string[] = [];
   if (Array.isArray(props.value)) {
-    userNames = props.value;
+    userEmails = props.value;
   } else if (props.value) {
-    userNames = [props.value];
+    userEmails = [props.value];
   }
 
-  const users = await userStore.batchGetUsers(userNames);
-  options.push(...users.map(getOption));
+  // Ensure users are fetched into store
+  await userStore.batchGetUsers(
+    userEmails.map((email) => `${userNamePrefix}${email}`)
+  );
+
+  // Get all users from store
+  for (const email of userEmails) {
+    const user = userStore.getUserByIdentifier(email);
+    if (user) {
+      options.push(getOption(user));
+    }
+  }
 
   return options;
 }, []);

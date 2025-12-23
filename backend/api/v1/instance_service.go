@@ -379,11 +379,6 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 				return nil, connect.NewError(connect.CodePermissionDenied, err)
 			}
 			patch.Metadata.SyncInterval = req.Msg.Instance.SyncInterval
-		case "maximum_connections":
-			if err := s.licenseService.IsFeatureEnabledForInstance(v1pb.PlanFeature_FEATURE_CUSTOM_INSTANCE_CONNECTION_LIMIT, instance); err != nil {
-				return nil, connect.NewError(connect.CodePermissionDenied, err)
-			}
-			patch.Metadata.MaximumConnections = req.Msg.Instance.MaximumConnections
 		case "sync_databases":
 			patch.Metadata.SyncDatabases = req.Msg.Instance.SyncDatabases
 		case "labels":

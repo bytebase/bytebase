@@ -1413,9 +1413,6 @@ type Instance struct {
 	Roles []*InstanceRole `protobuf:"bytes,11,rep,name=roles,proto3" json:"roles,omitempty"`
 	// How often the instance is synced.
 	SyncInterval *durationpb.Duration `protobuf:"bytes,12,opt,name=sync_interval,json=syncInterval,proto3" json:"sync_interval,omitempty"`
-	// The maximum number of connections.
-	// The default is 10 if the value is unset or zero.
-	MaximumConnections int32 `protobuf:"varint,13,opt,name=maximum_connections,json=maximumConnections,proto3" json:"maximum_connections,omitempty"`
 	// Enable sync for following databases.
 	// Default empty, means sync all schemas & databases.
 	SyncDatabases []string `protobuf:"bytes,14,rep,name=sync_databases,json=syncDatabases,proto3" json:"sync_databases,omitempty"`
@@ -1533,13 +1530,6 @@ func (x *Instance) GetSyncInterval() *durationpb.Duration {
 		return x.SyncInterval
 	}
 	return nil
-}
-
-func (x *Instance) GetMaximumConnections() int32 {
-	if x != nil {
-		return x.MaximumConnections
-	}
-	return 0
 }
 
 func (x *Instance) GetSyncDatabases() []string {
@@ -2826,7 +2816,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
 	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\x12#\n" +
-	"\rallow_missing\x18\x05 \x01(\bR\fallowMissing\"\xbb\x06\n" +
+	"\rallow_missing\x18\x05 \x01(\bR\fallowMissing\"\x8a\x06\n" +
 	"\bInstance\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
@@ -2841,8 +2831,7 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	" \x01(\bR\n" +
 	"activation\x124\n" +
 	"\x05roles\x18\v \x03(\v2\x19.bytebase.v1.InstanceRoleB\x03\xe0A\x03R\x05roles\x12>\n" +
-	"\rsync_interval\x18\f \x01(\v2\x19.google.protobuf.DurationR\fsyncInterval\x12/\n" +
-	"\x13maximum_connections\x18\r \x01(\x05R\x12maximumConnections\x12%\n" +
+	"\rsync_interval\x18\f \x01(\v2\x19.google.protobuf.DurationR\fsyncInterval\x12%\n" +
 	"\x0esync_databases\x18\x0e \x03(\tR\rsyncDatabases\x12E\n" +
 	"\x0elast_sync_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\flastSyncTime\x129\n" +
 	"\x06labels\x18\x10 \x03(\v2!.bytebase.v1.Instance.LabelsEntryR\x06labels\x1a9\n" +

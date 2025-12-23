@@ -375,9 +375,6 @@ const doUpdate = async () => {
     ) {
       updateMask.push("sync_interval");
     }
-    if (instancePatch.maximumConnections !== inst.maximumConnections) {
-      updateMask.push("maximum_connections");
-    }
     if (!isEqual(instancePatch.syncDatabases, inst.syncDatabases)) {
       updateMask.push("sync_databases");
     }

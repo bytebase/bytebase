@@ -27,9 +27,6 @@ const (
 	WorkloadIdentityEmailSuffix = "@workload.bytebase.com"
 )
 
-// DefaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
-const DefaultInstanceMaximumConnections = 10
-
 const (
 	// ReservedTagReviewConfig is the tag for review config.
 	ReservedTagReviewConfig string = "bb.tag.review_config"
