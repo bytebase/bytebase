@@ -102,6 +102,21 @@ export const useGroupStore = defineStore("group", () => {
     return groups;
   };
 
+  const batchGetOrFetchGroups = async (groupNames: string[]) => {
+    const distinctGroupList = uniq(groupNames).filter((groupName) => {
+      if (!groupName) {
+        return false;
+      }
+      const group = getGroupByIdentifier(groupName);
+      if (group) {
+        return false;
+      }
+      return true;
+    });
+    await batchFetchGroups(distinctGroupList);
+    return distinctGroupList.map(getGroupByIdentifier);
+  };
+
   const getOrFetchGroupByIdentifier = async (id: string) => {
     if (!hasWorkspacePermissionV2("bb.groups.get")) {
       return;
@@ -152,7 +167,7 @@ export const useGroupStore = defineStore("group", () => {
   return {
     groupList,
     fetchGroupList,
-    batchFetchGroups,
+    batchGetOrFetchGroups,
     getGroupByIdentifier,
     getOrFetchGroupByIdentifier,
     deleteGroup,
@@ -160,21 +175,3 @@ export const useGroupStore = defineStore("group", () => {
     createGroup,
   };
 });
-
-export const batchGetOrFetchGroups = async (groupNames: string[]) => {
-  const store = useGroupStore();
-
-  const distinctGroupList = uniq(groupNames).filter((groupName) => {
-    if (!groupName) {
-      return false;
-    }
-    const group = store.getGroupByIdentifier(groupName);
-    if (group) {
-      return false;
-    }
-    return true;
-  });
-  if (distinctGroupList.length > 0) {
-    return store.batchFetchGroups(distinctGroupList);
-  }
-};

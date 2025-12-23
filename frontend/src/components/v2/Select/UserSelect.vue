@@ -95,7 +95,7 @@ const additionalOptions = computedAsync(async () => {
   }
 
   // Ensure users are fetched into store
-  await userStore.batchGetUsers(
+  await userStore.batchGetOrFetchUsers(
     userEmails.map((email) => `${userNamePrefix}${email}`)
   );
 

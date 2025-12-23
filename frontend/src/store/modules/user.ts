@@ -174,7 +174,7 @@ export const useUserStore = defineStore("user", () => {
     return setUser(response);
   };
 
-  const batchGetUsers = async (userNameList: string[]) => {
+  const batchGetOrFetchUsers = async (userNameList: string[]) => {
     const distinctList = uniq(userNameList)
       .filter(
         (name) =>
@@ -197,7 +197,7 @@ export const useUserStore = defineStore("user", () => {
     for (const user of response.users) {
       setUser(user);
     }
-    return response.users;
+    return distinctList.map((name) => getUserByIdentifier(name));
   };
 
   const getOrFetchUserByIdentifier = async (
@@ -245,7 +245,7 @@ export const useUserStore = defineStore("user", () => {
     createUser,
     updateUser,
     updateEmail,
-    batchGetUsers,
+    batchGetOrFetchUsers,
     getOrFetchUserByIdentifier,
     getUserByIdentifier,
     archiveUser,

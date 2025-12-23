@@ -1,5 +1,5 @@
 import { ref, watch } from "vue";
-import { batchGetOrFetchDatabases } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 
 /**
@@ -8,6 +8,7 @@ import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
  */
 export const useTaskInstancePreload = (stages: () => Stage[]) => {
   const fetchedDatabases = ref(new Set<string>());
+  const dbStore = useDatabaseV1Store();
 
   watch(
     stages,
@@ -31,7 +32,7 @@ export const useTaskInstancePreload = (stages: () => Stage[]) => {
       if (newDatabases.length > 0) {
         // Batch fetch databases (which also fetches their instances)
         try {
-          await batchGetOrFetchDatabases(newDatabases);
+          await dbStore.batchGetOrFetchDatabases(newDatabases);
           // Mark these databases as fetched
           newDatabases.forEach((name) => fetchedDatabases.value.add(name));
         } catch {

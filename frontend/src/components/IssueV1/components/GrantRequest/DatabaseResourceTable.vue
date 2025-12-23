@@ -9,13 +9,12 @@
 </template>
 
 <script lang="tsx" setup>
-import { uniq } from "lodash-es";
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
-import { batchGetOrFetchDatabases, useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import type { DatabaseResource } from "@/types";
 import type { DatabaseGroup } from "@/types/proto-es/v1/database_group_service_pb";
 
@@ -59,11 +58,9 @@ const extractComposedDatabase = (databaseResource: DatabaseResource) => {
 watch(
   () => props.databaseResourceList,
   async () => {
-    await batchGetOrFetchDatabases(
-      uniq(
-        props.databaseResourceList.map(
-          (databaseResource) => databaseResource.databaseFullName
-        )
+    await databaseStore.batchGetOrFetchDatabases(
+      props.databaseResourceList.map(
+        (databaseResource) => databaseResource.databaseFullName
       )
     );
   },

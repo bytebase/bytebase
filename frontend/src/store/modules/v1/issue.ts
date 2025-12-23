@@ -28,7 +28,7 @@ import {
   type ComposeIssueConfig,
   shallowComposeIssue,
 } from "./experimental-issue";
-import { batchGetOrFetchProjects, useProjectV1Store } from "./project";
+import { useProjectV1Store } from "./project";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export type ListIssueParams = {
@@ -114,13 +114,13 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
     const projects = issues.map((issue) => {
       return `projects/${extractProjectResourceName(issue.name)}`;
     });
-    await batchGetOrFetchProjects(projects);
+    await projectStore.batchGetOrFetchProjects(projects);
     const composedIssues = await Promise.all(
       issues.map((issue) => shallowComposeIssue(issue, composeIssueConfig))
     );
     // Preprare creator for the issues.
     const users = uniq(composedIssues.map((issue) => issue.creator));
-    await useUserStore().batchGetUsers(users);
+    await useUserStore().batchGetOrFetchUsers(users);
     return {
       nextPageToken: resp.nextPageToken,
       issues: composedIssues,

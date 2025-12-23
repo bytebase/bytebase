@@ -90,7 +90,6 @@ import {
 import { BBSpin } from "@/bbkit";
 import type { IStandaloneCodeEditor } from "@/components/MonacoEditor";
 import {
-  batchGetOrFetchDatabases,
   useDatabaseV1Store,
   useSQLEditorTabStore,
   useWebTerminalStore,
@@ -120,7 +119,7 @@ const queryList = computed(() => {
 });
 
 watchEffect(async () => {
-  await batchGetOrFetchDatabases(
+  await databaseStore.batchGetOrFetchDatabases(
     queryList.value.map((query) => query?.params?.connection.database ?? "")
   );
 });

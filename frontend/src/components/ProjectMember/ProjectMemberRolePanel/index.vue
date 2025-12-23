@@ -151,7 +151,6 @@ import {
   MiniActionButton,
 } from "@/components/v2";
 import {
-  batchGetOrFetchDatabases,
   extractGroupEmail,
   extractUserId,
   pushNotification,
@@ -588,7 +587,7 @@ watch(
           Array.isArray(conditionExpr.databaseResources) &&
           conditionExpr.databaseResources.length > 0
         ) {
-          await batchGetOrFetchDatabases(
+          await databaseStore.batchGetOrFetchDatabases(
             conditionExpr.databaseResources.map(
               (resource) => resource.databaseFullName
             )
@@ -638,10 +637,7 @@ const groupMembers = computedAsync(async () => {
 
   // Fetch user data for group members
   const members = props.binding.group?.members ?? [];
-  if (members.length > 0) {
-    const memberUserIds = members.map((m) => m.member);
-    await userStore.batchGetUsers(memberUserIds);
-  }
+  await userStore.batchGetOrFetchUsers(members.map((m) => m.member));
 
   const resp = [];
   for (const member of members) {

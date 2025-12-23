@@ -45,7 +45,7 @@ import {
 } from "./common";
 import { useDBSchemaV1Store } from "./dbSchema";
 import { useEnvironmentV1Store } from "./environment";
-import { batchGetOrFetchProjects, useProjectV1Store } from "./project";
+import { useProjectV1Store } from "./project";
 
 export interface DatabaseFilter {
   project?: string;
@@ -288,6 +288,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     databaseRequestCache.set(name, request);
     return request;
   };
+
   const batchGetDatabases = async (names: string[], silent = true) => {
     const validNames = names.filter(isValidDatabaseName);
     if (validNames.length === 0) {
@@ -306,6 +307,24 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     const composed = await upsertDatabaseMap(databases);
     return composed;
   };
+
+  const batchGetOrFetchDatabases = async (databaseNames: string[]) => {
+    const distinctDatabaseList = uniq(databaseNames).filter((databaseName) => {
+      if (!databaseName || !isValidDatabaseName(databaseName)) {
+        return false;
+      }
+      if (
+        getDatabaseByName(databaseName) &&
+        isValidDatabaseName(getDatabaseByName(databaseName).name)
+      ) {
+        return false;
+      }
+      return true;
+    });
+    await batchGetDatabases(distinctDatabaseList);
+    return distinctDatabaseList.map(getDatabaseByName);
+  };
+
   const batchUpdateDatabases = async (params: BatchUpdateDatabasesRequest) => {
     const request = create(BatchUpdateDatabasesRequestSchema, {
       parent: params.parent,
@@ -357,7 +376,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     getDatabaseByName,
     fetchDatabaseByName,
     getOrFetchDatabaseByName,
-    batchGetDatabases,
+    batchGetOrFetchDatabases,
     batchUpdateDatabases,
     updateDatabase,
     fetchDatabaseSchema,
@@ -388,30 +407,13 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
   };
 };
 
-export const batchGetOrFetchDatabases = async (databaseNames: string[]) => {
-  const store = useDatabaseV1Store();
-  const distinctDatabaseList = uniq(databaseNames).filter((databaseName) => {
-    if (!databaseName || !isValidDatabaseName(databaseName)) {
-      return false;
-    }
-    if (
-      store.getDatabaseByName(databaseName) &&
-      isValidDatabaseName(store.getDatabaseByName(databaseName).name)
-    ) {
-      return false;
-    }
-    return true;
-  });
-  if (distinctDatabaseList.length > 0) {
-    await store.batchGetDatabases(distinctDatabaseList);
-  }
-};
-
 export const batchComposeDatabase = async (databaseList: Database[]) => {
   const environmentV1Store = useEnvironmentV1Store();
   const projectV1Store = useProjectV1Store();
 
-  await batchGetOrFetchProjects(databaseList.map((db) => db.project));
+  await projectV1Store.batchGetOrFetchProjects(
+    databaseList.map((db) => db.project)
+  );
 
   return databaseList.map((db) => {
     const composed = db as ComposedDatabase;

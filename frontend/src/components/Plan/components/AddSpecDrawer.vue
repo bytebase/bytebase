@@ -53,9 +53,9 @@ import DatabaseAndGroupSelector from "@/components/DatabaseAndGroupSelector";
 import { getLocalSheetByName, getNextLocalSheetUID } from "@/components/Plan";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
-  batchGetOrFetchDatabases,
   pushNotification,
   useCurrentProjectV1,
+  useDatabaseV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
@@ -77,6 +77,7 @@ const emit = defineEmits<{
 
 const { project } = useCurrentProjectV1();
 const { t } = useI18n();
+const dbStore = useDatabaseV1Store();
 const show = defineModel<boolean>("show", { default: false });
 
 const isCreating = ref(false);
@@ -127,7 +128,7 @@ const handleUpdateSelection = async (newState: DatabaseSelectState) => {
     newState.changeSource === "DATABASE" &&
     newState.selectedDatabaseNameList?.length > 0
   ) {
-    await batchGetOrFetchDatabases(newState.selectedDatabaseNameList);
+    await dbStore.batchGetOrFetchDatabases(newState.selectedDatabaseNameList);
   }
 };
 

@@ -218,7 +218,6 @@ import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { RichDatabaseName } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  batchGetOrFetchDatabases,
   type DatabaseFilter,
   featureToRef,
   idForSQLEditorTreeNodeTarget,
@@ -409,7 +408,7 @@ const getQueryableDatabase = async (batchQueryContext: BatchQueryContext) => {
 
   for (const databaseGroupName of batchQueryContext.databaseGroups ?? []) {
     const databaseGroup = dbGroupStore.getDBGroupByName(databaseGroupName);
-    await batchGetOrFetchDatabases(
+    await databaseStore.batchGetOrFetchDatabases(
       databaseGroup.matchedDatabases.map((db) => db.name)
     );
     for (const matchedDatabase of databaseGroup.matchedDatabases) {
@@ -507,7 +506,7 @@ watch(
       return;
     }
     const databases = tabStore.currentTab.batchQueryContext.databases ?? [];
-    await batchGetOrFetchDatabases(databases);
+    await databaseStore.batchGetOrFetchDatabases(databases);
   },
   {
     immediate: true,

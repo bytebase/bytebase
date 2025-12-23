@@ -72,7 +72,7 @@ const onGroupLoad = async (row: DataTableRowData) => {
   const group = (row as GroupRowData).group;
   const memberUserIds = group.members.map((m) => m.member);
   if (memberUserIds.length > 0) {
-    await userStore.batchGetUsers(memberUserIds);
+    await userStore.batchGetOrFetchUsers(memberUserIds);
   }
 
   const members: UserRowData[] = [];

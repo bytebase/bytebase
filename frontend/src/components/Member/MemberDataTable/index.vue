@@ -86,10 +86,9 @@ const onGroupLoad = async (row: DataTableRowData) => {
     return;
   }
 
-  const memberUserIds = binding.group.members.map((m) => m.member);
-  if (memberUserIds.length > 0) {
-    await userStore.batchGetUsers(memberUserIds);
-  }
+  await userStore.batchGetOrFetchUsers(
+    binding.group.members.map((m) => m.member)
+  );
 
   const children: UserRoleData[] = [];
   for (const member of binding.group.members) {

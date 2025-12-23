@@ -204,6 +204,25 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     return composedProjects;
   };
 
+  const batchGetOrFetchProjects = async (projectNames: string[]) => {
+    const distinctProjectList = uniq(projectNames).filter((projectName) => {
+      if (
+        !projectName ||
+        !isValidProjectName(projectName) ||
+        projectName === DEFAULT_PROJECT_NAME
+      ) {
+        return false;
+      }
+      const project = getProjectByName(projectName);
+      if (isValidProjectName(project.name)) {
+        return false;
+      }
+      return true;
+    });
+    await batchGetProjects(distinctProjectList, true /* silent */);
+    return distinctProjectList.map(getProjectByName);
+  };
+
   const getOrFetchProjectByName = async (name: string, silent = true) => {
     const cachedData = getProjectByName(name);
     if (cachedData && cachedData.name !== UNKNOWN_PROJECT_NAME) {
@@ -296,7 +315,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     restoreProject,
     updateProjectCache,
     fetchProjectList,
-    batchGetProjects,
+    batchGetOrFetchProjects,
   };
 });
 
@@ -323,26 +342,4 @@ export const useCurrentProjectV1 = () => {
       : unknownProject().name
   );
   return useProjectByName(projectName);
-};
-
-export const batchGetOrFetchProjects = async (projectNames: string[]) => {
-  const store = useProjectV1Store();
-
-  const distinctProjectList = uniq(projectNames).filter((projectName) => {
-    if (
-      !projectName ||
-      !isValidProjectName(projectName) ||
-      projectName === DEFAULT_PROJECT_NAME
-    ) {
-      return false;
-    }
-    const project = store.getProjectByName(projectName);
-    if (isValidProjectName(project.name)) {
-      return false;
-    }
-    return true;
-  });
-  if (distinctProjectList.length > 0) {
-    return store.batchGetProjects(distinctProjectList, true /* silent */);
-  }
 };

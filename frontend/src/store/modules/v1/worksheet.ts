@@ -31,8 +31,8 @@ import { useSQLEditorTabStore } from "../sqlEditor";
 import { useUserStore } from "../user";
 import { useCurrentUserV1 } from "./auth";
 import { extractUserId } from "./common";
-import { batchGetOrFetchDatabases, useDatabaseV1Store } from "./database";
-import { batchGetOrFetchProjects, useProjectV1Store } from "./project";
+import { useDatabaseV1Store } from "./database";
+import { useProjectV1Store } from "./project";
 
 type WorksheetView = "FULL" | "BASIC";
 type WorksheetCacheKey = [string /* uid */, WorksheetView];
@@ -90,11 +90,15 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
 
   const setListCache = async (worksheets: Worksheet[]) => {
     await Promise.all([
-      batchGetOrFetchProjects(worksheets.map((worksheet) => worksheet.project)),
-      batchGetOrFetchDatabases(
+      projectStore.batchGetOrFetchProjects(
+        worksheets.map((worksheet) => worksheet.project)
+      ),
+      databaseStore.batchGetOrFetchDatabases(
         worksheets.map((worksheet) => worksheet.database)
       ),
-      userStore.batchGetUsers(worksheets.map((worksheet) => worksheet.creator)),
+      userStore.batchGetOrFetchUsers(
+        worksheets.map((worksheet) => worksheet.creator)
+      ),
     ]);
     for (const worksheet of worksheets) {
       setCacheEntry(worksheet, "BASIC");

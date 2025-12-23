@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from "uuid";
 import { markRaw, reactive } from "vue";
 import { t } from "@/plugins/i18n";
 import {
-  batchGetOrFetchDatabases,
   hasFeature,
   pushNotification,
   useDatabaseV1Store,
@@ -205,7 +204,7 @@ const useExecuteSQL = () => {
     }
 
     const isBatch = batchQueryDatabaseSet.size > 1;
-    await batchGetOrFetchDatabases([...batchQueryDatabaseSet.keys()]);
+    await dbStore.batchGetOrFetchDatabases([...batchQueryDatabaseSet.keys()]);
 
     for (const databaseName of batchQueryDatabaseSet.values()) {
       if (!databaseQueryContexts.has(databaseName)) {
