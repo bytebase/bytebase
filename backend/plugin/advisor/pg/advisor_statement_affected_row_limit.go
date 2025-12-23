@@ -60,11 +60,11 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			maxRow:                   int(numberPayload.Number),
-			ctx:                      ctx,
-			driver:                   checkCtx.Driver,
-			usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
-			tokens:                   antlrAST.Tokens,
+			maxRow:     int(numberPayload.Number),
+			ctx:        ctx,
+			driver:     checkCtx.Driver,
+			tenantMode: checkCtx.TenantMode,
+			tokens:     antlrAST.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -78,13 +78,13 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 
 type statementAffectedRowLimitRule struct {
 	BaseRule
-	maxRow                   int
-	driver                   *sql.DB
-	ctx                      context.Context
-	explainCount             int
-	setRoles                 []string
-	usePostgresDatabaseOwner bool
-	tokens                   *antlr.CommonTokenStream
+	maxRow       int
+	driver       *sql.DB
+	ctx          context.Context
+	explainCount int
+	setRoles     []string
+	tenantMode   bool
+	tokens       *antlr.CommonTokenStream
 }
 
 func (*statementAffectedRowLimitRule) Name() string {
@@ -160,8 +160,8 @@ func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleCo
 
 	// Run EXPLAIN to get estimated row count
 	res, err := advisor.Query(r.ctx, advisor.QueryContext{
-		UsePostgresDatabaseOwner: r.usePostgresDatabaseOwner,
-		PreExecutions:            r.setRoles,
+		TenantMode:    r.tenantMode,
+		PreExecutions: r.setRoles,
 	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
 
 	if err != nil {

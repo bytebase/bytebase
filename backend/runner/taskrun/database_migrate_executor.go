@@ -294,12 +294,12 @@ func (exec *DatabaseMigrateExecutor) backupData(
 		defer backupDriver.Close(driverCtx)
 	}
 
-	useDatabaseOwner, err := getUseDatabaseOwner(ctx, exec.store, instance, database)
+	project, err := exec.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to check use database owner")
+		return nil, errors.Wrap(err, "failed to get project")
 	}
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database, db.ConnectionContext{
-		UseDatabaseOwner: useDatabaseOwner,
+		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get database driver")

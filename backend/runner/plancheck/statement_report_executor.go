@@ -177,12 +177,12 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	var explainCalculator getAffectedRowsFromExplain
 	var sqlTypes []string
 	var defaultSchema string
-	useDatabaseOwner, err := getUseDatabaseOwner(ctx, stores, instance, database)
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
 		return nil, err
 	}
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-		UseDatabaseOwner: useDatabaseOwner,
+		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
 	})
 	if err != nil {
 		return nil, err
@@ -288,24 +288,6 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		AffectedRows:     totalAffectedRows,
 		ChangedResources: changeSummary.ChangedResources.Build(),
 	}, nil
-}
-
-func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
-	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
-		return false, nil
-	}
-
-	// Check the project setting to see if we should use the database owner.
-	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get project")
-	}
-
-	if project.Setting == nil {
-		return false, nil
-	}
-
-	return project.Setting.PostgresDatabaseTenantMode, nil
 }
 
 type getAffectedRowsFromExplain func(context.Context, string) (int64, error)

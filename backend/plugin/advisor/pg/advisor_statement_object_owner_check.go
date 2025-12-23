@@ -41,7 +41,7 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 
 	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_POSTGRES, checkCtx.IsObjectCaseSensitive)
 	currentRole := checkCtx.DBSchema.Owner
-	if !checkCtx.UsePostgresDatabaseOwner {
+	if !checkCtx.TenantMode {
 		currentRole, err = getCurrentUser(ctx, checkCtx.Driver)
 		if err != nil {
 			slog.Debug("Failed to get current user", log.BBError(err))

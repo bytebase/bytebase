@@ -128,7 +128,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 		}
 		response = resp
 	case v1pb.Release_File_VERSIONED:
-		resp, err := s.checkReleaseVersioned(ctx, sanitizedFiles, targetDatabases, request.CustomRules)
+		resp, err := s.checkReleaseVersioned(ctx, project, sanitizedFiles, targetDatabases, request.CustomRules)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check release versioned"))
 		}
@@ -140,7 +140,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(response), nil
 }
 
-func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, files []*v1pb.Release_File, databases []*store.DatabaseMessage, customRules string) (*v1pb.CheckReleaseResponse, error) {
+func (s *ReleaseService) checkReleaseVersioned(ctx context.Context, project *store.ProjectMessage, files []*v1pb.Release_File, databases []*store.DatabaseMessage, customRules string) (*v1pb.CheckReleaseResponse, error) {
 	resp := &v1pb.CheckReleaseResponse{}
 	var errorAdviceCount, warningAdviceCount int
 
@@ -280,7 +280,7 @@ loop:
 					resp.AffectedRows += summaryReport.AffectedRows
 				}
 				if common.EngineSupportSQLReview(engine) {
-					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, originMetadata, finalMetadata, instance, database, false /* enableSDL */, statement)
+					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, project, originMetadata, finalMetadata, instance, database, false /* enableSDL */, statement)
 					if err != nil {
 						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check SQL review"))
 					}
@@ -629,6 +629,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 
 func (s *ReleaseService) runSQLReviewCheckForFile(
 	ctx context.Context,
+	project *store.ProjectMessage,
 	originMetadata *model.DatabaseMetadata,
 	finalMetadata *model.DatabaseMetadata,
 	instance *store.InstanceMessage,
@@ -644,26 +645,10 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
 	}
 	if dbMetadata == nil {
-		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database); err != nil {
-			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %s", database.String())
-		}
-		dbMetadata, err = s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-			InstanceID:   database.InstanceID,
-			DatabaseName: database.DatabaseName,
-		})
-		if err != nil {
-			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %s", database.String())
-		}
-		if dbMetadata == nil {
-			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %s", database.String())
-		}
+		return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %s", database.String())
 	}
 
 	dbMetadataProto := dbMetadata.GetProto()
-	useDatabaseOwner, err := getUseDatabaseOwner(ctx, s.store, instance, database)
-	if err != nil {
-		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get use database owner"))
-	}
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
@@ -672,17 +657,17 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	connection := driver.GetDB()
 
 	context := advisor.Context{
-		EnableSDL:                enableSDL,
-		DBSchema:                 dbMetadataProto,
-		DBType:                   instance.Metadata.GetEngine(),
-		OriginalMetadata:         originMetadata,
-		FinalMetadata:            finalMetadata,
-		Driver:                   connection,
-		CurrentDatabase:          database.DatabaseName,
-		UsePostgresDatabaseOwner: useDatabaseOwner,
-		ListDatabaseNamesFunc:    BuildListDatabaseNamesFunc(s.store),
-		InstanceID:               instance.ResourceID,
-		IsObjectCaseSensitive:    store.IsObjectCaseSensitive(instance),
+		EnableSDL:             enableSDL,
+		DBSchema:              dbMetadataProto,
+		DBType:                instance.Metadata.GetEngine(),
+		OriginalMetadata:      originMetadata,
+		FinalMetadata:         finalMetadata,
+		Driver:                connection,
+		CurrentDatabase:       database.DatabaseName,
+		TenantMode:            project.Setting.GetPostgresDatabaseTenantMode(),
+		ListDatabaseNamesFunc: BuildListDatabaseNamesFunc(s.store),
+		InstanceID:            instance.ResourceID,
+		IsObjectCaseSensitive: store.IsObjectCaseSensitive(instance),
 	}
 
 	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)

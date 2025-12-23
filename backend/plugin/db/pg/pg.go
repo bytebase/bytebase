@@ -115,7 +115,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		return nil, err
 	}
 	d.db = db
-	if config.ConnectionContext.UseDatabaseOwner {
+	if config.ConnectionContext.TenantMode {
 		owner, err := d.GetCurrentDatabaseOwner(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database owner")
@@ -407,7 +407,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 			case IsNonTransactionStatement(command.Text):
 				nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command)
 				continue
-			case isSuperuserStatement(command.Text) && d.connectionCtx.UseDatabaseOwner:
+			case isSuperuserStatement(command.Text) && d.connectionCtx.TenantMode:
 				// Use superuser privilege to run privileged statements.
 				slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", command.Text))
 				ct := command.Text
@@ -502,7 +502,7 @@ func (d *Driver) executeInTransactionMode(
 	}
 
 	if isPlsql {
-		if d.connectionCtx.UseDatabaseOwner {
+		if d.connectionCtx.TenantMode {
 			// USE SET SESSION ROLE to set the role for the current session.
 			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
 				return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
@@ -545,7 +545,7 @@ func (d *Driver) executeInTransactionMode(
 				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
 			}()
 
-			if d.connectionCtx.UseDatabaseOwner {
+			if d.connectionCtx.TenantMode {
 				// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
 				if _, err := tx.Exec(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
 					return err
@@ -598,7 +598,7 @@ func (d *Driver) executeInTransactionMode(
 		}
 	}
 
-	if d.connectionCtx.UseDatabaseOwner {
+	if d.connectionCtx.TenantMode {
 		// USE SET SESSION ROLE to set the role for the current session.
 		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
@@ -646,7 +646,7 @@ func (d *Driver) executeInAutoCommitMode(
 		}
 	}
 
-	if d.connectionCtx.UseDatabaseOwner {
+	if d.connectionCtx.TenantMode {
 		// USE SET SESSION ROLE to set the role for the current session.
 		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)

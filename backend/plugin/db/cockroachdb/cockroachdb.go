@@ -60,7 +60,7 @@ func newDriver() db.Driver {
 }
 
 // Open opens a Postgres driver.
-func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	pgxConnConfig, err := getCockroachConnectionConfig(config)
 	if err != nil {
 		return nil, err
@@ -98,18 +98,6 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		return nil, err
 	}
 	d.db = db
-	if config.ConnectionContext.UseDatabaseOwner {
-		owner, err := d.GetCurrentDatabaseOwner(ctx)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database owner")
-		}
-		if err := crdb.Execute(func() error {
-			_, err := d.db.ExecContext(ctx, fmt.Sprintf("SET ROLE \"%s\";", owner))
-			return err
-		}); err != nil {
-			return nil, errors.Wrapf(err, "failed to set role to database owner %q", owner)
-		}
-	}
 	d.connectionCtx = config.ConnectionContext
 	return d, nil
 }

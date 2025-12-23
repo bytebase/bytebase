@@ -53,10 +53,10 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 				level: level,
 				title: checkCtx.Rule.Type.String(),
 			},
-			ctx:                      ctx,
-			driver:                   checkCtx.Driver,
-			usePostgresDatabaseOwner: checkCtx.UsePostgresDatabaseOwner,
-			tokens:                   antlrAST.Tokens,
+			ctx:        ctx,
+			driver:     checkCtx.Driver,
+			tenantMode: checkCtx.TenantMode,
+			tokens:     antlrAST.Tokens,
 		}
 		rule.SetBaseLine(stmtInfo.BaseLine)
 
@@ -70,12 +70,12 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 
 type statementDMLDryRunRule struct {
 	BaseRule
-	driver                   *sql.DB
-	ctx                      context.Context
-	explainCount             int
-	setRoles                 []string
-	usePostgresDatabaseOwner bool
-	tokens                   *antlr.CommonTokenStream
+	driver       *sql.DB
+	ctx          context.Context
+	explainCount int
+	setRoles     []string
+	tenantMode   bool
+	tokens       *antlr.CommonTokenStream
 }
 
 // Name returns the rule name.
@@ -157,8 +157,8 @@ func (r *statementDMLDryRunRule) checkDMLDryRun(ctx antlr.ParserRuleContext) {
 
 	// Run EXPLAIN to perform dry run
 	_, err := advisor.Query(r.ctx, advisor.QueryContext{
-		UsePostgresDatabaseOwner: r.usePostgresDatabaseOwner,
-		PreExecutions:            r.setRoles,
+		TenantMode:    r.tenantMode,
+		PreExecutions: r.setRoles,
 	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
 
 	if err != nil {
