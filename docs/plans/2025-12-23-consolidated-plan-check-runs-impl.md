@@ -15,9 +15,9 @@
 **Files:**
 - Modify: `proto/store/store/plan_check_run.proto`
 
-**Step 1: Add CheckType enum and CheckTarget message**
+**Step 1: Add CheckType enum and replace PlanCheckRunConfig**
 
-Add after line 26 (after current `PlanCheckRunConfig` message):
+Replace the entire `PlanCheckRunConfig` message with the new consolidated version:
 
 ```protobuf
 enum PlanCheckType {
@@ -27,7 +27,7 @@ enum PlanCheckType {
   PLAN_CHECK_TYPE_GHOST_SYNC = 3;
 }
 
-message PlanCheckRunConfigV2 {
+message PlanCheckRunConfig {
   repeated CheckTarget targets = 1;
 
   message CheckTarget {
@@ -42,6 +42,8 @@ message PlanCheckRunConfigV2 {
   }
 }
 ```
+
+Note: We reuse the name `PlanCheckRunConfig` but with new structure. Migration handles the conversion.
 
 **Step 2: Add target fields to Result message**
 
@@ -89,9 +91,9 @@ but commit consolidated-plan-check-runs-design -m "proto: add PlanCheckRunConfig
 **Files:**
 - Modify: `backend/store/plan_check_run.go`
 
-**Step 1: Add new config field to PlanCheckRunMessage**
+**Step 1: Simplify PlanCheckRunMessage struct**
 
-Around line 42, update the struct:
+Around line 42, update the struct (remove Type field, Config uses new structure):
 
 ```go
 // PlanCheckRunMessage is the message for a plan check run.
@@ -103,28 +105,31 @@ type PlanCheckRunMessage struct {
 	PlanUID int64
 
 	Status PlanCheckRunStatus
-	Type   PlanCheckRunType           // Deprecated: kept for migration compatibility
-	Config *storepb.PlanCheckRunConfig   // Deprecated: old single-target config
-	ConfigV2 *storepb.PlanCheckRunConfigV2 // New: multi-target config
+	Config *storepb.PlanCheckRunConfig  // New consolidated config with targets
 	Result *storepb.PlanCheckRunResult
 }
 ```
 
-**Step 2: Update CreatePlanCheckRuns to handle ConfigV2**
+**Step 2: Remove PlanCheckRunType constants**
 
-Modify the INSERT around line 87-100:
+Delete the type constants (lines 18-25):
+
+```go
+// DELETE THESE:
+// PlanCheckDatabaseStatementAdvise
+// PlanCheckDatabaseStatementSummaryReport
+// PlanCheckDatabaseGhostSync
+```
+
+**Step 3: Update CreatePlanCheckRuns**
+
+Simplify the INSERT (remove type column):
 
 ```go
 // Insert new plan check runs
-q = qb.Q().Space("INSERT INTO plan_check_run (plan_id, status, type, config, result) VALUES")
+q = qb.Q().Space("INSERT INTO plan_check_run (plan_id, status, config, result) VALUES")
 for i, create := range creates {
-	var configBytes []byte
-	var err error
-	if create.ConfigV2 != nil {
-		configBytes, err = protojson.Marshal(create.ConfigV2)
-	} else {
-		configBytes, err = protojson.Marshal(create.Config)
-	}
+	config, err := protojson.Marshal(create.Config)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal create config")
 	}
@@ -135,20 +140,19 @@ for i, create := range creates {
 	if i > 0 {
 		q.Space(",")
 	}
-	q.Space("(?, ?, ?, ?, ?)", create.PlanUID, create.Status, create.Type, configBytes, result)
+	q.Space("(?, ?, ?, ?)", create.PlanUID, create.Status, config, result)
 }
 ```
 
-**Step 3: Update ListPlanCheckRuns to detect config format**
+**Step 4: Update ListPlanCheckRuns**
 
-Modify the scan loop around line 157-181:
+Simplify the scan (remove type):
 
 ```go
 for rows.Next() {
 	planCheckRun := PlanCheckRunMessage{
-		Config:   &storepb.PlanCheckRunConfig{},
-		ConfigV2: &storepb.PlanCheckRunConfigV2{},
-		Result:   &storepb.PlanCheckRunResult{},
+		Config: &storepb.PlanCheckRunConfig{},
+		Result: &storepb.PlanCheckRunResult{},
 	}
 	var config, result string
 	if err := rows.Scan(
@@ -157,26 +161,15 @@ for rows.Next() {
 		&planCheckRun.UpdatedAt,
 		&planCheckRun.PlanUID,
 		&planCheckRun.Status,
-		&planCheckRun.Type,
 		&config,
 		&result,
 	); err != nil {
 		return nil, err
 	}
 
-	// Detect config format: V2 has "targets" field, V1 has "instanceId"
-	if strings.Contains(config, `"targets"`) {
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), planCheckRun.ConfigV2); err != nil {
-			return nil, err
-		}
-		planCheckRun.Config = nil
-	} else {
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), planCheckRun.Config); err != nil {
-			return nil, err
-		}
-		planCheckRun.ConfigV2 = nil
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(config), planCheckRun.Config); err != nil {
+		return nil, err
 	}
-
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(result), planCheckRun.Result); err != nil {
 		return nil, err
 	}
@@ -184,7 +177,21 @@ for rows.Next() {
 }
 ```
 
-**Step 4: Add GetPlanCheckRun helper**
+**Step 5: Update FindPlanCheckRunMessage**
+
+Remove Type filter field:
+
+```go
+type FindPlanCheckRunMessage struct {
+	PlanUID      *int64
+	UIDs         *[]int
+	Status       *[]PlanCheckRunStatus
+	ResultStatus *[]storepb.Advice_Status
+	// Type field removed
+}
+```
+
+**Step 6: Add GetPlanCheckRun helper**
 
 Add after `ListPlanCheckRuns`:
 
@@ -204,15 +211,15 @@ func (s *Store) GetPlanCheckRun(ctx context.Context, planUID int64) (*PlanCheckR
 }
 ```
 
-**Step 5: Run linter**
+**Step 7: Run linter**
 
 Run: `golangci-lint run --allow-parallel-runners backend/store/plan_check_run.go`
 Expected: No errors (fix any that appear)
 
-**Step 6: Commit**
+**Step 8: Commit**
 
 ```bash
-but commit consolidated-plan-check-runs-design -m "store: add ConfigV2 support and GetPlanCheckRun"
+but commit consolidated-plan-check-runs-design -m "store: simplify PlanCheckRunMessage for consolidated model"
 ```
 
 ---
@@ -261,8 +268,8 @@ func NewCombinedExecutor(
 	}
 }
 
-// RunV2 runs all checks for a consolidated config.
-func (e *CombinedExecutor) RunV2(ctx context.Context, config *storepb.PlanCheckRunConfigV2) ([]*storepb.PlanCheckRunResult_Result, error) {
+// Run runs all checks for a consolidated config.
+func (e *CombinedExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
 	var allResults []*storepb.PlanCheckRunResult_Result
 
 	for _, target := range config.Targets {
@@ -294,31 +301,49 @@ func (e *CombinedExecutor) RunV2(ctx context.Context, config *storepb.PlanCheckR
 	return allResults, nil
 }
 
-func (e *CombinedExecutor) runCheck(ctx context.Context, target *storepb.PlanCheckRunConfigV2_CheckTarget, checkType storepb.PlanCheckType) ([]*storepb.PlanCheckRunResult_Result, error) {
-	// Build legacy config for reusing existing executor logic
-	legacyConfig := &storepb.PlanCheckRunConfig{
-		InstanceId:        target.InstanceId,
-		DatabaseName:      target.DatabaseName,
-		SheetSha256:       target.SheetSha256,
-		EnablePriorBackup: target.EnablePriorBackup,
-		EnableGhost:       target.EnableGhost,
-		EnableSdl:         target.EnableSdl,
-		GhostFlags:        target.GhostFlags,
-	}
-
+func (e *CombinedExecutor) runCheck(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget, checkType storepb.PlanCheckType) ([]*storepb.PlanCheckRunResult_Result, error) {
 	switch checkType {
 	case storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE:
-		executor := NewStatementAdviseExecutor(e.store, e.sheetManager, e.dbFactory, e.licenseService)
-		return executor.Run(ctx, legacyConfig)
+		return e.runStatementAdvise(ctx, target)
 	case storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT:
-		executor := NewStatementReportExecutor(e.store, e.sheetManager, e.dbFactory)
-		return executor.Run(ctx, legacyConfig)
+		return e.runStatementReport(ctx, target)
 	case storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC:
-		executor := NewGhostSyncExecutor(e.store, e.dbFactory)
-		return executor.Run(ctx, legacyConfig)
+		return e.runGhostSync(ctx, target)
 	default:
 		return nil, nil
 	}
+}
+
+// Helper methods that call into existing executor logic
+// These will need to be refactored from the existing executors
+func (e *CombinedExecutor) runStatementAdvise(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+	// Inline the logic from StatementAdviseExecutor.Run
+	// or refactor to share code
+	// For now, create executor instance
+	executor := &StatementAdviseExecutor{
+		store:          e.store,
+		sheetManager:   e.sheetManager,
+		dbFactory:      e.dbFactory,
+		licenseService: e.licenseService,
+	}
+	return executor.runForTarget(ctx, target)
+}
+
+func (e *CombinedExecutor) runStatementReport(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+	executor := &StatementReportExecutor{
+		store:        e.store,
+		sheetManager: e.sheetManager,
+		dbFactory:    e.dbFactory,
+	}
+	return executor.runForTarget(ctx, target)
+}
+
+func (e *CombinedExecutor) runGhostSync(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+	executor := &GhostSyncExecutor{
+		store:     e.store,
+		dbFactory: e.dbFactory,
+	}
+	return executor.runForTarget(ctx, target)
 }
 ```
 
@@ -335,40 +360,42 @@ but commit consolidated-plan-check-runs-design -m "plancheck: add CombinedExecut
 
 ---
 
-## Task 4: Update Scheduler
+## Task 4: Simplify Scheduler
 
 **Files:**
 - Modify: `backend/runner/plancheck/scheduler.go`
 
-**Step 1: Add CombinedExecutor field to Scheduler**
+**Step 1: Simplify Scheduler struct**
 
-Around line 35, update the struct:
+Remove the type-based executor map, use only CombinedExecutor:
 
 ```go
 // Scheduler is the plan check run scheduler.
 type Scheduler struct {
-	store            *store.Store
-	licenseService   *enterprise.LicenseService
-	stateCfg         *state.State
-	executors        map[store.PlanCheckRunType]Executor
-	combinedExecutor *CombinedExecutor
+	store          *store.Store
+	licenseService *enterprise.LicenseService
+	stateCfg       *state.State
+	executor       *CombinedExecutor
+}
+
+// NewScheduler creates a new plan check scheduler.
+func NewScheduler(s *store.Store, licenseService *enterprise.LicenseService, stateCfg *state.State, executor *CombinedExecutor) *Scheduler {
+	return &Scheduler{
+		store:          s,
+		licenseService: licenseService,
+		stateCfg:       stateCfg,
+		executor:       executor,
+	}
 }
 ```
 
-**Step 2: Add SetCombinedExecutor method**
+**Step 2: Remove Register method**
 
-Add after `Register` method (around line 69):
+Delete the `Register` method entirely - no longer needed.
 
-```go
-// SetCombinedExecutor sets the combined executor for V2 config.
-func (s *Scheduler) SetCombinedExecutor(executor *CombinedExecutor) {
-	s.combinedExecutor = executor
-}
-```
+**Step 3: Simplify runPlanCheckRun**
 
-**Step 3: Update runPlanCheckRun to handle V2**
-
-Replace the `runPlanCheckRun` method (around line 97-130):
+Replace the `runPlanCheckRun` method:
 
 ```go
 func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.PlanCheckRunMessage) {
@@ -388,26 +415,7 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 		defer cancel()
 		s.stateCfg.RunningPlanCheckRunsCancelFunc.Store(planCheckRun.UID, cancel)
 
-		var results []*storepb.PlanCheckRunResult_Result
-		var err error
-
-		// Check if this is a V2 (consolidated) config
-		if planCheckRun.ConfigV2 != nil && len(planCheckRun.ConfigV2.Targets) > 0 {
-			if s.combinedExecutor == nil {
-				slog.Error("Combined executor not set for V2 config", slog.Int("uid", planCheckRun.UID))
-				s.markPlanCheckRunFailed(ctx, planCheckRun, "combined executor not configured")
-				return
-			}
-			results, err = s.combinedExecutor.RunV2(ctxWithCancel, planCheckRun.ConfigV2)
-		} else {
-			// Legacy V1 config - use type-based executor
-			executor, ok := s.executors[planCheckRun.Type]
-			if !ok {
-				slog.Error("Skip running plan check for unknown type", slog.Int("uid", planCheckRun.UID), slog.Int64("plan_uid", planCheckRun.PlanUID), slog.String("type", string(planCheckRun.Type)))
-				return
-			}
-			results, err = runExecutorOnce(ctxWithCancel, executor, planCheckRun.Config)
-		}
+		results, err := s.executor.Run(ctxWithCancel, planCheckRun.Config)
 
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
@@ -434,7 +442,7 @@ Expected: No errors
 **Step 6: Commit**
 
 ```bash
-but commit consolidated-plan-check-runs-design -m "plancheck: update scheduler to handle V2 consolidated config"
+but commit consolidated-plan-check-runs-design -m "plancheck: simplify scheduler for consolidated model"
 ```
 
 ---
@@ -444,17 +452,23 @@ but commit consolidated-plan-check-runs-design -m "plancheck: update scheduler t
 **Files:**
 - Modify: `backend/server/server.go`
 
-**Step 1: Register CombinedExecutor**
+**Step 1: Replace executor registrations with CombinedExecutor**
 
-Around line 202, after the existing executor registrations, add:
+Around line 196-202, replace the old executor setup:
 
 ```go
-	statementReportExecutor := plancheck.NewStatementReportExecutor(stores, sheetManager, s.dbFactory)
-	s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
+	// OLD CODE TO REMOVE:
+	// s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg)
+	// statementAdviseExecutor := plancheck.NewStatementAdviseExecutor(...)
+	// s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementAdvise, statementAdviseExecutor)
+	// ghostSyncExecutor := plancheck.NewGhostSyncExecutor(...)
+	// s.planCheckScheduler.Register(store.PlanCheckDatabaseGhostSync, ghostSyncExecutor)
+	// statementReportExecutor := plancheck.NewStatementReportExecutor(...)
+	// s.planCheckScheduler.Register(store.PlanCheckDatabaseStatementSummaryReport, statementReportExecutor)
 
-	// Combined executor for V2 consolidated configs
+	// NEW CODE:
 	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory, s.licenseService)
-	s.planCheckScheduler.SetCombinedExecutor(combinedExecutor)
+	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg, combinedExecutor)
 ```
 
 **Step 2: Run linter**
@@ -465,7 +479,7 @@ Expected: No errors
 **Step 3: Commit**
 
 ```bash
-but commit consolidated-plan-check-runs-design -m "server: register CombinedExecutor"
+but commit consolidated-plan-check-runs-design -m "server: use CombinedExecutor for plan checks"
 ```
 
 ---
@@ -475,13 +489,13 @@ but commit consolidated-plan-check-runs-design -m "server: register CombinedExec
 **Files:**
 - Modify: `backend/api/v1/plan_service_plan_check.go`
 
-**Step 1: Rewrite getPlanCheckRunsFromPlan to return single V2 config**
+**Step 1: Rewrite getPlanCheckRunsFromPlan to return single consolidated config**
 
 Replace the entire function:
 
 ```go
 func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) (*store.PlanCheckRunMessage, error) {
-	var targets []*storepb.PlanCheckRunConfigV2_CheckTarget
+	var targets []*storepb.PlanCheckRunConfig_CheckTarget
 
 	for _, spec := range plan.Config.Specs {
 		switch config := spec.Config.(type) {
@@ -528,7 +542,7 @@ func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMess
 					checkTypes = append(checkTypes, storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC)
 				}
 
-				targets = append(targets, &storepb.PlanCheckRunConfigV2_CheckTarget{
+				targets = append(targets, &storepb.PlanCheckRunConfig_CheckTarget{
 					InstanceId:        instanceID,
 					DatabaseName:      databaseName,
 					SheetSha256:       config.ChangeDatabaseConfig.SheetSha256,
@@ -549,9 +563,9 @@ func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMess
 	}
 
 	return &store.PlanCheckRunMessage{
-		PlanUID:  plan.UID,
-		Status:   store.PlanCheckRunStatusRunning,
-		ConfigV2: &storepb.PlanCheckRunConfigV2{Targets: targets},
+		PlanUID: plan.UID,
+		Status:  store.PlanCheckRunStatusRunning,
+		Config:  &storepb.PlanCheckRunConfig{Targets: targets},
 	}, nil
 }
 ```
@@ -571,7 +585,7 @@ Expected: No errors
 **Step 4: Commit**
 
 ```bash
-but commit consolidated-plan-check-runs-design -m "api: rewrite config generation for consolidated V2 format"
+but commit consolidated-plan-check-runs-design -m "api: rewrite config generation for consolidated format"
 ```
 
 ---
@@ -784,18 +798,41 @@ SELECT
 FROM plan_check_run_deduped d
 GROUP BY plan_id;
 
--- Step 4: Cleanup
+-- Step 4: Cleanup temp table
 DROP TABLE plan_check_run_deduped;
+
+-- Step 5: Drop type column (no longer used)
+ALTER TABLE plan_check_run DROP COLUMN IF EXISTS type;
 ```
 
-**Step 2: Update LATEST.sql if needed**
+**Step 2: Update LATEST.sql**
 
-Check if `plan_check_run` schema needs updates in `backend/migrator/migration/LATEST.sql`.
+Modify `backend/migrator/migration/LATEST.sql` to remove the `type` column from `plan_check_run` table:
 
-**Step 3: Commit**
+```sql
+CREATE TABLE plan_check_run (
+    id serial PRIMARY KEY,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    plan_id bigint NOT NULL REFERENCES plan(id),
+    status text NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
+    -- type column removed - check types now in config.targets[].checkTypes
+    -- Stored as PlanCheckRunConfig (proto/store/store/plan_check_run.proto)
+    config jsonb NOT NULL DEFAULT '{}',
+    -- Stored as PlanCheckRunResult (proto/store/store/plan_check_run.proto)
+    result jsonb NOT NULL DEFAULT '{}',
+    payload jsonb NOT NULL DEFAULT '{}'
+);
+```
+
+**Step 3: Update migrator test version**
+
+Update `TestLatestVersion` in `backend/migrator/migrator_test.go` if needed.
+
+**Step 4: Commit**
 
 ```bash
-but commit consolidated-plan-check-runs-design -m "migration: add consolidate_plan_check_runs migration"
+but commit consolidated-plan-check-runs-design -m "migration: consolidate plan_check_runs and drop type column"
 ```
 
 ---
@@ -806,13 +843,13 @@ but commit consolidated-plan-check-runs-design -m "migration: add consolidate_pl
 - Modify: `backend/api/v1/plan_service.go`
 - Modify: `backend/api/v1/plan_service_converter.go`
 
-**Step 1: Update ListPlanCheckRuns API to expand V2 to virtual records**
+**Step 1: Update ListPlanCheckRuns API**
 
-In `plan_service.go`, around line 749, update the response building to handle V2 format and expand to multiple virtual records for API backward compatibility.
+In `plan_service.go`, the API now returns results from the single consolidated record. Update to expand results into the API response format that clients expect.
 
-**Step 2: Update converter to handle V2 format**
+**Step 2: Update converter**
 
-In `plan_service_converter.go`, around line 51, update the plan check run conversion.
+In `plan_service_converter.go`, update plan check run conversion to use new `Config.Targets` structure instead of old single-target config.
 
 **Step 3: Run linter**
 
@@ -821,7 +858,7 @@ Run: `golangci-lint run --allow-parallel-runners backend/api/v1/plan_service.go 
 **Step 4: Commit**
 
 ```bash
-but commit consolidated-plan-check-runs-design -m "api: add V2 compatibility layer for ListPlanCheckRuns"
+but commit consolidated-plan-check-runs-design -m "api: update for consolidated plan check run format"
 ```
 
 ---

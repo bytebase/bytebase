@@ -27,6 +27,13 @@ Consolidate to **one record per plan** containing all check configs and results.
 ### PlanCheckRunConfig (proto)
 
 ```protobuf
+enum PlanCheckType {
+  PLAN_CHECK_TYPE_UNSPECIFIED = 0;
+  PLAN_CHECK_TYPE_STATEMENT_ADVISE = 1;
+  PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT = 2;
+  PLAN_CHECK_TYPE_GHOST_SYNC = 3;
+}
+
 message PlanCheckRunConfig {
   repeated CheckTarget targets = 1;
 
@@ -38,14 +45,7 @@ message PlanCheckRunConfig {
     bool enable_ghost = 5;
     bool enable_sdl = 6;
     map<string, string> ghost_flags = 7;
-    repeated CheckType check_types = 8;
-  }
-
-  enum CheckType {
-    CHECK_TYPE_UNSPECIFIED = 0;
-    STATEMENT_ADVISE = 1;
-    STATEMENT_SUMMARY_REPORT = 2;
-    GHOST_SYNC = 3;
+    repeated PlanCheckType check_types = 8;
   }
 }
 ```
@@ -56,9 +56,9 @@ Add fields to existing Result message:
 ```protobuf
 message Result {
   // existing fields...
-  string instance_id = N;
-  string database_name = N+1;
-  CheckType check_type = N+2;
+  string instance_id = 7;
+  string database_name = 8;
+  PlanCheckType check_type = 9;
 }
 ```
 
