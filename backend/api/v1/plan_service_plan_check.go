@@ -3,7 +3,6 @@ package v1
 import (
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -45,28 +44,22 @@ func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMess
 			enableGhost := config.ChangeDatabaseConfig.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE && config.ChangeDatabaseConfig.EnableGhost
 
 			for _, target := range databases {
-				instanceID, databaseName, err := common.GetInstanceDatabaseID(target)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to parse %q", target)
-				}
-
-				checkTypes := []storepb.PlanCheckType{
+				types := []storepb.PlanCheckType{
 					storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE,
 					storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT,
 				}
 				if enableGhost {
-					checkTypes = append(checkTypes, storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC)
+					types = append(types, storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC)
 				}
 
 				targets = append(targets, &storepb.PlanCheckRunConfig_CheckTarget{
-					InstanceId:        instanceID,
-					DatabaseName:      databaseName,
+					Target:            target,
 					SheetSha256:       config.ChangeDatabaseConfig.SheetSha256,
 					EnablePriorBackup: config.ChangeDatabaseConfig.EnablePriorBackup,
 					EnableGhost:       config.ChangeDatabaseConfig.EnableGhost,
 					EnableSdl:         enableSDL,
 					GhostFlags:        config.ChangeDatabaseConfig.GhostFlags,
-					CheckTypes:        checkTypes,
+					Types:             types,
 				})
 			}
 		default:

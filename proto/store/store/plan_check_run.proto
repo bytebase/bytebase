@@ -18,14 +18,14 @@ message PlanCheckRunConfig {
   repeated CheckTarget targets = 1;
 
   message CheckTarget {
-    string instance_id = 1;
-    string database_name = 2;
-    string sheet_sha256 = 3;
-    bool enable_prior_backup = 4;
-    bool enable_ghost = 5;
-    bool enable_sdl = 6;
-    map<string, string> ghost_flags = 7;
-    repeated PlanCheckType check_types = 8;
+    // Format: instances/{instance}/databases/{database}
+    string target = 1;
+    string sheet_sha256 = 2;
+    bool enable_prior_backup = 3;
+    bool enable_ghost = 4;
+    bool enable_sdl = 5;
+    map<string, string> ghost_flags = 6;
+    repeated PlanCheckType types = 7;
   }
 }
 
@@ -40,9 +40,9 @@ message PlanCheckRunResult {
     int32 code = 4;
 
     // Target identification for consolidated results
-    string instance_id = 7;
-    string database_name = 8;
-    PlanCheckType check_type = 9;
+    // Format: instances/{instance}/databases/{database}
+    string target = 7;
+    PlanCheckType type = 8;
 
     oneof report {
       SqlSummaryReport sql_summary_report = 5;

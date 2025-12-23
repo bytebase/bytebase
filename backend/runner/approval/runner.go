@@ -464,12 +464,16 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 	// Build map from results, filtering for STATEMENT_SUMMARY_REPORT
 	if planCheckRun != nil {
 		for _, result := range planCheckRun.Result.Results {
-			if result.CheckType != storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT {
+			if result.Type != storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT {
+				continue
+			}
+			instanceID, databaseName, err := common.GetInstanceDatabaseID(result.Target)
+			if err != nil {
 				continue
 			}
 			key := Key{
-				InstanceID:   result.InstanceId,
-				DatabaseName: result.DatabaseName,
+				InstanceID:   instanceID,
+				DatabaseName: databaseName,
 			}
 			latestPlanCheckRun[key] = result
 		}

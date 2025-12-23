@@ -8628,17 +8628,10 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
             <tbody>
               
                 <tr>
-                  <td>instance_id</td>
+                  <td>target</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
+                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -8677,7 +8670,7 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                 </tr>
               
                 <tr>
-                  <td>check_types</td>
+                  <td>types</td>
                   <td><a href="#bytebase.store.PlanCheckType">PlanCheckType</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
@@ -8791,21 +8784,15 @@ Leave it empty if there is no need to encrypt the zip file. </p></td>
                 </tr>
               
                 <tr>
-                  <td>instance_id</td>
+                  <td>target</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Target identification for consolidated results </p></td>
+                  <td><p>Target identification for consolidated results
+Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
-                  <td>database_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>check_type</td>
+                  <td>type</td>
                   <td><a href="#bytebase.store.PlanCheckType">PlanCheckType</a></td>
                   <td></td>
                   <td><p> </p></td>

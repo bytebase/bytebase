@@ -62,20 +62,25 @@ func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *storepb.Pl
 		}
 	}()
 
-	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &target.InstanceId})
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(target.Target)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", target.InstanceId)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance %s not found", target.InstanceId)
+		return nil, errors.Wrapf(err, "failed to parse target %s", target.Target)
 	}
 
-	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &target.DatabaseName})
+	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", target.DatabaseName)
+		return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %s not found", instanceID)
+	}
+
+	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &databaseName})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database %q", databaseName)
 	}
 	if database == nil {
-		return nil, errors.Errorf("database not found %q", target.DatabaseName)
+		return nil, errors.Errorf("database not found %q", databaseName)
 	}
 
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)

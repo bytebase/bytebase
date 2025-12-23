@@ -10,10 +10,7 @@ func (x *PlanCheckRunConfig_CheckTarget) Equal(y *PlanCheckRunConfig_CheckTarget
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.InstanceId != y.InstanceId {
-		return false
-	}
-	if x.DatabaseName != y.DatabaseName {
+	if x.Target != y.Target {
 		return false
 	}
 	if x.SheetSha256 != y.SheetSha256 {
@@ -40,11 +37,11 @@ func (x *PlanCheckRunConfig_CheckTarget) Equal(y *PlanCheckRunConfig_CheckTarget
 			return false
 		}
 	}
-	if len(x.CheckTypes) != len(y.CheckTypes) {
+	if len(x.Types) != len(y.Types) {
 		return false
 	}
-	for i := 0; i < len(x.CheckTypes); i++ {
-		if x.CheckTypes[i] != y.CheckTypes[i] {
+	for i := 0; i < len(x.Types); i++ {
+		if x.Types[i] != y.Types[i] {
 			return false
 		}
 	}
@@ -128,13 +125,10 @@ func (x *PlanCheckRunResult_Result) Equal(y *PlanCheckRunResult_Result) bool {
 	if x.Code != y.Code {
 		return false
 	}
-	if x.InstanceId != y.InstanceId {
+	if x.Target != y.Target {
 		return false
 	}
-	if x.DatabaseName != y.DatabaseName {
-		return false
-	}
-	if x.CheckType != y.CheckType {
+	if x.Type != y.Type {
 		return false
 	}
 	if !x.GetSqlSummaryReport().Equal(y.GetSqlSummaryReport()) {

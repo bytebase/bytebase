@@ -275,16 +275,14 @@ func expandPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRun
 
 	// Group results by target and type
 	type key struct {
-		instanceID   string
-		databaseName string
-		checkType    storepb.PlanCheckType
+		target    string
+		checkType storepb.PlanCheckType
 	}
 	resultsByKey := make(map[key][]*storepb.PlanCheckRunResult_Result)
 	for _, result := range run.Result.GetResults() {
 		k := key{
-			instanceID:   result.InstanceId,
-			databaseName: result.DatabaseName,
-			checkType:    result.CheckType,
+			target:    result.Target,
+			checkType: result.Type,
 		}
 		resultsByKey[k] = append(resultsByKey[k], result)
 	}
@@ -292,12 +290,11 @@ func expandPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRun
 	// Build virtual records from targets
 	virtualID := 0
 	for _, target := range run.Config.GetTargets() {
-		for _, checkType := range target.CheckTypes {
+		for _, checkType := range target.Types {
 			virtualID++
 			k := key{
-				instanceID:   target.InstanceId,
-				databaseName: target.DatabaseName,
-				checkType:    checkType,
+				target:    target.Target,
+				checkType: checkType,
 			}
 			results := resultsByKey[k]
 
@@ -306,7 +303,7 @@ func expandPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRun
 				CreateTime: timestamppb.New(run.CreatedAt),
 				Type:       convertPlanCheckType(checkType),
 				Status:     convertToPlanCheckRunStatus(run.Status),
-				Target:     common.FormatDatabase(target.InstanceId, target.DatabaseName),
+				Target:     target.Target,
 				Sheet:      common.FormatSheet(projectID, target.SheetSha256),
 				Results:    convertToPlanCheckRunResults(results),
 				Error:      run.Result.Error,

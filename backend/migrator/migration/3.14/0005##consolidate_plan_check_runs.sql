@@ -32,14 +32,13 @@ SELECT
             SELECT jsonb_agg(target)
             FROM (
                 SELECT jsonb_build_object(
-                    'instanceId', d2.config->>'instanceId',
-                    'databaseName', d2.config->>'databaseName',
+                    'target', 'instances/' || (d2.config->>'instanceId') || '/databases/' || (d2.config->>'databaseName'),
                     'sheetSha256', d2.config->>'sheetSha256',
                     'enablePriorBackup', COALESCE((d2.config->>'enablePriorBackup')::boolean, false),
                     'enableGhost', COALESCE((d2.config->>'enableGhost')::boolean, false),
                     'enableSdl', COALESCE((d2.config->>'enableSdl')::boolean, false),
                     'ghostFlags', COALESCE(d2.config->'ghostFlags', '{}'::jsonb),
-                    'checkTypes', array_agg(
+                    'types', array_agg(
                         CASE d2.type
                             WHEN 'bb.plan-check.database.statement.advise' THEN 'PLAN_CHECK_TYPE_STATEMENT_ADVISE'
                             WHEN 'bb.plan-check.database.statement.summary.report' THEN 'PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT'
@@ -66,9 +65,8 @@ SELECT
         ELSE jsonb_build_object('results', (
             SELECT COALESCE(jsonb_agg(
                 r || jsonb_build_object(
-                    'instanceId', d3.config->>'instanceId',
-                    'databaseName', d3.config->>'databaseName',
-                    'checkType', CASE d3.type
+                    'target', 'instances/' || (d3.config->>'instanceId') || '/databases/' || (d3.config->>'databaseName'),
+                    'type', CASE d3.type
                         WHEN 'bb.plan-check.database.statement.advise' THEN 'PLAN_CHECK_TYPE_STATEMENT_ADVISE'
                         WHEN 'bb.plan-check.database.statement.summary.report' THEN 'PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT'
                         WHEN 'bb.plan-check.database.ghost.sync' THEN 'PLAN_CHECK_TYPE_GHOST_SYNC'

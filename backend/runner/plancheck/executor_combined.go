@@ -39,26 +39,24 @@ func (e *CombinedExecutor) Run(ctx context.Context, config *storepb.PlanCheckRun
 	var allResults []*storepb.PlanCheckRunResult_Result
 
 	for _, target := range config.Targets {
-		for _, checkType := range target.CheckTypes {
+		for _, checkType := range target.Types {
 			results, err := e.runCheck(ctx, target, checkType)
 			if err != nil {
 				// Add error result for this target/type, continue to next
 				allResults = append(allResults, &storepb.PlanCheckRunResult_Result{
-					Status:       storepb.Advice_ERROR,
-					InstanceId:   target.InstanceId,
-					DatabaseName: target.DatabaseName,
-					CheckType:    checkType,
-					Title:        "Check failed",
-					Content:      err.Error(),
-					Code:         common.Internal.Int32(),
+					Status:  storepb.Advice_ERROR,
+					Target:  target.Target,
+					Type:    checkType,
+					Title:   "Check failed",
+					Content: err.Error(),
+					Code:    common.Internal.Int32(),
 				})
 				continue
 			}
 			// Tag results with target info
 			for _, r := range results {
-				r.InstanceId = target.InstanceId
-				r.DatabaseName = target.DatabaseName
-				r.CheckType = checkType
+				r.Target = target.Target
+				r.Type = checkType
 			}
 			allResults = append(allResults, results...)
 		}

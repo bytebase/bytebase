@@ -371,15 +371,15 @@ func (x *ChangedResourceTable) GetTableRows() int64 {
 }
 
 type PlanCheckRunConfig_CheckTarget struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId        string                 `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	DatabaseName      string                 `protobuf:"bytes,2,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
-	SheetSha256       string                 `protobuf:"bytes,3,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
-	EnablePriorBackup bool                   `protobuf:"varint,4,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
-	EnableGhost       bool                   `protobuf:"varint,5,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
-	EnableSdl         bool                   `protobuf:"varint,6,opt,name=enable_sdl,json=enableSdl,proto3" json:"enable_sdl,omitempty"`
-	GhostFlags        map[string]string      `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	CheckTypes        []PlanCheckType        `protobuf:"varint,8,rep,packed,name=check_types,json=checkTypes,proto3,enum=bytebase.store.PlanCheckType" json:"check_types,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Format: instances/{instance}/databases/{database}
+	Target            string            `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	SheetSha256       string            `protobuf:"bytes,2,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
+	EnablePriorBackup bool              `protobuf:"varint,3,opt,name=enable_prior_backup,json=enablePriorBackup,proto3" json:"enable_prior_backup,omitempty"`
+	EnableGhost       bool              `protobuf:"varint,4,opt,name=enable_ghost,json=enableGhost,proto3" json:"enable_ghost,omitempty"`
+	EnableSdl         bool              `protobuf:"varint,5,opt,name=enable_sdl,json=enableSdl,proto3" json:"enable_sdl,omitempty"`
+	GhostFlags        map[string]string `protobuf:"bytes,6,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Types             []PlanCheckType   `protobuf:"varint,7,rep,packed,name=types,proto3,enum=bytebase.store.PlanCheckType" json:"types,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -414,16 +414,9 @@ func (*PlanCheckRunConfig_CheckTarget) Descriptor() ([]byte, []int) {
 	return file_store_plan_check_run_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *PlanCheckRunConfig_CheckTarget) GetInstanceId() string {
+func (x *PlanCheckRunConfig_CheckTarget) GetTarget() string {
 	if x != nil {
-		return x.InstanceId
-	}
-	return ""
-}
-
-func (x *PlanCheckRunConfig_CheckTarget) GetDatabaseName() string {
-	if x != nil {
-		return x.DatabaseName
+		return x.Target
 	}
 	return ""
 }
@@ -463,9 +456,9 @@ func (x *PlanCheckRunConfig_CheckTarget) GetGhostFlags() map[string]string {
 	return nil
 }
 
-func (x *PlanCheckRunConfig_CheckTarget) GetCheckTypes() []PlanCheckType {
+func (x *PlanCheckRunConfig_CheckTarget) GetTypes() []PlanCheckType {
 	if x != nil {
-		return x.CheckTypes
+		return x.Types
 	}
 	return nil
 }
@@ -477,9 +470,9 @@ type PlanCheckRunResult_Result struct {
 	Content string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
 	Code    int32                  `protobuf:"varint,4,opt,name=code,proto3" json:"code,omitempty"`
 	// Target identification for consolidated results
-	InstanceId   string        `protobuf:"bytes,7,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	DatabaseName string        `protobuf:"bytes,8,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
-	CheckType    PlanCheckType `protobuf:"varint,9,opt,name=check_type,json=checkType,proto3,enum=bytebase.store.PlanCheckType" json:"check_type,omitempty"`
+	// Format: instances/{instance}/databases/{database}
+	Target string        `protobuf:"bytes,7,opt,name=target,proto3" json:"target,omitempty"`
+	Type   PlanCheckType `protobuf:"varint,8,opt,name=type,proto3,enum=bytebase.store.PlanCheckType" json:"type,omitempty"`
 	// Types that are valid to be assigned to Report:
 	//
 	//	*PlanCheckRunResult_Result_SqlSummaryReport_
@@ -547,23 +540,16 @@ func (x *PlanCheckRunResult_Result) GetCode() int32 {
 	return 0
 }
 
-func (x *PlanCheckRunResult_Result) GetInstanceId() string {
+func (x *PlanCheckRunResult_Result) GetTarget() string {
 	if x != nil {
-		return x.InstanceId
+		return x.Target
 	}
 	return ""
 }
 
-func (x *PlanCheckRunResult_Result) GetDatabaseName() string {
+func (x *PlanCheckRunResult_Result) GetType() PlanCheckType {
 	if x != nil {
-		return x.DatabaseName
-	}
-	return ""
-}
-
-func (x *PlanCheckRunResult_Result) GetCheckType() PlanCheckType {
-	if x != nil {
-		return x.CheckType
+		return x.Type
 	}
 	return PlanCheckType_PLAN_CHECK_TYPE_UNSPECIFIED
 }
@@ -727,38 +713,32 @@ var File_store_plan_check_run_proto protoreflect.FileDescriptor
 
 const file_store_plan_check_run_proto_rawDesc = "" +
 	"\n" +
-	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xa9\x04\n" +
+	"\x1astore/plan_check_run.proto\x12\x0ebytebase.store\x1a\x12store/advice.proto\x1a\x12store/common.proto\"\xf0\x03\n" +
 	"\x12PlanCheckRunConfig\x12H\n" +
-	"\atargets\x18\x01 \x03(\v2..bytebase.store.PlanCheckRunConfig.CheckTargetR\atargets\x1a\xc8\x03\n" +
-	"\vCheckTarget\x12\x1f\n" +
-	"\vinstance_id\x18\x01 \x01(\tR\n" +
-	"instanceId\x12#\n" +
-	"\rdatabase_name\x18\x02 \x01(\tR\fdatabaseName\x12!\n" +
-	"\fsheet_sha256\x18\x03 \x01(\tR\vsheetSha256\x12.\n" +
-	"\x13enable_prior_backup\x18\x04 \x01(\bR\x11enablePriorBackup\x12!\n" +
-	"\fenable_ghost\x18\x05 \x01(\bR\venableGhost\x12\x1d\n" +
+	"\atargets\x18\x01 \x03(\v2..bytebase.store.PlanCheckRunConfig.CheckTargetR\atargets\x1a\x8f\x03\n" +
+	"\vCheckTarget\x12\x16\n" +
+	"\x06target\x18\x01 \x01(\tR\x06target\x12!\n" +
+	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12.\n" +
+	"\x13enable_prior_backup\x18\x03 \x01(\bR\x11enablePriorBackup\x12!\n" +
+	"\fenable_ghost\x18\x04 \x01(\bR\venableGhost\x12\x1d\n" +
 	"\n" +
-	"enable_sdl\x18\x06 \x01(\bR\tenableSdl\x12_\n" +
-	"\vghost_flags\x18\a \x03(\v2>.bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntryR\n" +
-	"ghostFlags\x12>\n" +
-	"\vcheck_types\x18\b \x03(\x0e2\x1d.bytebase.store.PlanCheckTypeR\n" +
-	"checkTypes\x1a=\n" +
+	"enable_sdl\x18\x05 \x01(\bR\tenableSdl\x12_\n" +
+	"\vghost_flags\x18\x06 \x03(\v2>.bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntryR\n" +
+	"ghostFlags\x123\n" +
+	"\x05types\x18\a \x03(\x0e2\x1d.bytebase.store.PlanCheckTypeR\x05types\x1a=\n" +
 	"\x0fGhostFlagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9c\a\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe3\x06\n" +
 	"\x12PlanCheckRunResult\x12C\n" +
 	"\aresults\x18\x01 \x03(\v2).bytebase.store.PlanCheckRunResult.ResultR\aresults\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xaa\x06\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\x1a\xf1\x05\n" +
 	"\x06Result\x125\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1d.bytebase.store.Advice.StatusR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x12\n" +
-	"\x04code\x18\x04 \x01(\x05R\x04code\x12\x1f\n" +
-	"\vinstance_id\x18\a \x01(\tR\n" +
-	"instanceId\x12#\n" +
-	"\rdatabase_name\x18\b \x01(\tR\fdatabaseName\x12<\n" +
-	"\n" +
-	"check_type\x18\t \x01(\x0e2\x1d.bytebase.store.PlanCheckTypeR\tcheckType\x12j\n" +
+	"\x04code\x18\x04 \x01(\x05R\x04code\x12\x16\n" +
+	"\x06target\x18\a \x01(\tR\x06target\x121\n" +
+	"\x04type\x18\b \x01(\x0e2\x1d.bytebase.store.PlanCheckTypeR\x04type\x12j\n" +
 	"\x12sql_summary_report\x18\x05 \x01(\v2:.bytebase.store.PlanCheckRunResult.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12g\n" +
 	"\x11sql_review_report\x18\x06 \x01(\v29.bytebase.store.PlanCheckRunResult.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a\xaf\x01\n" +
 	"\x10SqlSummaryReport\x12'\n" +
@@ -825,9 +805,9 @@ var file_store_plan_check_run_proto_depIdxs = []int32{
 	5,  // 3: bytebase.store.ChangedResourceDatabase.schemas:type_name -> bytebase.store.ChangedResourceSchema
 	6,  // 4: bytebase.store.ChangedResourceSchema.tables:type_name -> bytebase.store.ChangedResourceTable
 	8,  // 5: bytebase.store.PlanCheckRunConfig.CheckTarget.ghost_flags:type_name -> bytebase.store.PlanCheckRunConfig.CheckTarget.GhostFlagsEntry
-	0,  // 6: bytebase.store.PlanCheckRunConfig.CheckTarget.check_types:type_name -> bytebase.store.PlanCheckType
+	0,  // 6: bytebase.store.PlanCheckRunConfig.CheckTarget.types:type_name -> bytebase.store.PlanCheckType
 	12, // 7: bytebase.store.PlanCheckRunResult.Result.status:type_name -> bytebase.store.Advice.Status
-	0,  // 8: bytebase.store.PlanCheckRunResult.Result.check_type:type_name -> bytebase.store.PlanCheckType
+	0,  // 8: bytebase.store.PlanCheckRunResult.Result.type:type_name -> bytebase.store.PlanCheckType
 	10, // 9: bytebase.store.PlanCheckRunResult.Result.sql_summary_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport
 	11, // 10: bytebase.store.PlanCheckRunResult.Result.sql_review_report:type_name -> bytebase.store.PlanCheckRunResult.Result.SqlReviewReport
 	3,  // 11: bytebase.store.PlanCheckRunResult.Result.SqlSummaryReport.changed_resources:type_name -> bytebase.store.ChangedResources
