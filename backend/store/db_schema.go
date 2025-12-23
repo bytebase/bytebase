@@ -25,10 +25,6 @@ type FindDBSchemaMessage struct {
 
 // GetDBSchema gets the schema for a database.
 func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*model.DatabaseMetadata, error) {
-	if v, ok := s.dbMetadataCache.Get(getDatabaseCacheKey(find.InstanceID, find.DatabaseName)); ok && s.enableCache {
-		return v, nil
-	}
-
 	q := qb.Q().Space(`
 		SELECT
 			metadata,
@@ -68,7 +64,6 @@ func (s *Store) GetDBSchema(ctx context.Context, find *FindDBSchemaMessage) (*mo
 		return nil, err
 	}
 
-	s.dbMetadataCache.Add(getDatabaseCacheKey(find.InstanceID, find.DatabaseName), dbMetadata)
 	return dbMetadata, nil
 }
 
@@ -130,16 +125,8 @@ func (s *Store) UpsertDBSchema(
 	); err != nil {
 		return err
 	}
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	updatedDBSchema, err := s.convertMetadataAndConfig(ctx, metadata, schema, config, instanceID)
-	if err != nil {
-		return err
-	}
 
-	s.dbMetadataCache.Add(getDatabaseCacheKey(instanceID, databaseName), updatedDBSchema)
-	return nil
+	return tx.Commit()
 }
 
 // UpdateDBSchema updates a database schema.
@@ -171,12 +158,8 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	// Invalid the cache and read the value again.
-	s.dbMetadataCache.Remove(getDatabaseCacheKey(instanceID, databaseName))
-	return nil
+
+	return tx.Commit()
 }
 
 func (s *Store) convertMetadataAndConfig(ctx context.Context, metadata, schema, config []byte, instanceID string) (*model.DatabaseMetadata, error) {
