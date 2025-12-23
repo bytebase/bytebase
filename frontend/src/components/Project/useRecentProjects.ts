@@ -1,6 +1,10 @@
 import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
-import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import {
+  batchGetOrFetchProjects,
+  useCurrentUserV1,
+  useProjectV1Store,
+} from "@/store";
 import { isValidProjectName } from "@/types";
 import { hasProjectPermissionV2, useDynamicLocalStorage } from "@/utils";
 
@@ -36,7 +40,7 @@ export const useRecentProjects = () => {
     const projects = [];
     const invalidProjects: string[] = [];
 
-    await projectV1Store.batchGetProjects(recentViewProjectNames.value);
+    await batchGetOrFetchProjects(recentViewProjectNames.value);
 
     for (const projectName of recentViewProjectNames.value) {
       try {
