@@ -114,8 +114,8 @@ func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *sto
 	return project.Setting.PostgresDatabaseTenantMode, nil
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, statement string, schemaVersion string, sheetID *string) (terminated bool, result *storepb.TaskRunResult, err error) {
-	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, stateCfg, syncer, profile, task, taskRunUID, statement, schemaVersion, sheetID, nil /* default */)
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, schemaVersion string) (terminated bool, result *storepb.TaskRunResult, err error) {
+	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, stateCfg, syncer, profile, task, taskRunUID, sheet, schemaVersion, nil /* default */)
 }
 
 func runMigrationWithFunc(
@@ -128,28 +128,27 @@ func runMigrationWithFunc(
 	profile *config.Profile,
 	task *store.TaskMessage,
 	taskRunUID int,
-	statement string,
+	sheet *store.SheetMessage,
 	schemaVersion string,
-	sheetID *string,
 	execFunc execFuncType,
 ) (terminated bool, result *storepb.TaskRunResult, err error) {
-	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheetID, taskRunUID, dbFactory)
+	mc, err := getMigrationInfo(ctx, store, profile, syncer, task, schemaVersion, sheet.Sha256, taskRunUID, dbFactory)
 	if err != nil {
 		return true, nil, err
 	}
 
 	// Pre-compute whether schema dump is needed.
 	// Skip dump for pure DML statements (INSERT, UPDATE, DELETE) as they don't change schema.
-	mc.needDump = computeNeedDump(task.Type, mc.database.Engine, statement)
+	mc.needDump = computeNeedDump(task.Type, mc.database.Engine, sheet.Statement)
 
-	skipped, err := doMigrationWithFunc(ctx, driverCtx, store, stateCfg, profile, statement, mc, execFunc)
+	skipped, err := doMigrationWithFunc(ctx, driverCtx, store, stateCfg, profile, sheet.Statement, mc, execFunc)
 	if err != nil {
 		return true, nil, err
 	}
 	return postMigration(ctx, store, mc, skipped)
 }
 
-func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, schemaVersion string, sheetID *string, taskRunUID int, dbFactory *dbfactory.DBFactory) (*migrateContext, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, schemaVersion string, sheetSha256 string, taskRunUID int, dbFactory *dbfactory.DBFactory) (*migrateContext, error) {
 	instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
 	if err != nil {
 		return nil, err
@@ -194,9 +193,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		return nil, errors.Errorf("task type %s is unexpected", task.Type)
 	}
 
-	if sheetID != nil {
-		mc.sheetSha256 = *sheetID
-	}
+	mc.sheetSha256 = sheetSha256
 
 	if isChangeDatabaseTask(task) {
 		if f := task.Payload.GetTaskReleaseSource().GetFile(); f != "" {
