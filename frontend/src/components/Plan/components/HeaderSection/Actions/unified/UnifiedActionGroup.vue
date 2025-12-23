@@ -59,6 +59,7 @@ import { extractTaskRunUID, extractTaskUID } from "@/utils";
 import { usePlanContext, useRolloutReadyLink } from "../../../../logic";
 import { ExportArchiveDownloadAction } from "../export";
 import RolloutReadyLink from "../RolloutReadyLink.vue";
+import { usePlanAction } from "./action";
 import type { ActionConfig, UnifiedAction } from "./types";
 import UnifiedActionButton from "./UnifiedActionButton.vue";
 
@@ -80,16 +81,10 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { plan, issue, rollout, taskRuns } = usePlanContext();
+const { issue, rollout, taskRuns } = usePlanContext();
 const currentUser = useCurrentUserV1();
 const { shouldShow: shouldShowRolloutReadyLink } = useRolloutReadyLink();
-
-// Check if this is a database export plan
-const isExportPlan = computed(() => {
-  return plan.value.specs.every(
-    (spec) => spec.config.case === "exportDataConfig"
-  );
-});
+const { actionDisplayName } = usePlanAction();
 
 const shouldShowExportDownload = computed(() => {
   // Must have an issue
@@ -155,33 +150,6 @@ const shouldShowExportDownload = computed(() => {
 
   return true;
 });
-
-const actionDisplayName = (action: UnifiedAction): string => {
-  switch (action) {
-    case "ISSUE_REVIEW_APPROVE":
-      return t("common.approve");
-    case "ISSUE_REVIEW_REJECT":
-      return t("custom-approval.issue-review.send-back");
-    case "ISSUE_REVIEW_RE_REQUEST":
-      return t("custom-approval.issue-review.re-request-review");
-    case "ISSUE_STATUS_CLOSE":
-      return t("issue.batch-transition.close");
-    case "ISSUE_STATUS_REOPEN":
-      return t("issue.batch-transition.reopen");
-    case "ISSUE_STATUS_RESOLVE":
-      return t("issue.batch-transition.resolve");
-    case "ISSUE_CREATE":
-      return t("plan.ready-for-review");
-    case "PLAN_CLOSE":
-      return t("common.close");
-    case "PLAN_REOPEN":
-      return t("common.reopen");
-    case "ROLLOUT_START":
-      return isExportPlan.value ? t("common.export") : t("common.rollout");
-    case "ROLLOUT_CANCEL":
-      return t("common.cancel");
-  }
-};
 
 const dropdownOptions = computed((): DropdownActionOption[] => {
   return props.secondaryActions.map((config) => ({

@@ -23,6 +23,13 @@
       </div>
     </div>
     <DescriptionSection v-if="showDescriptionSection" />
+    <div class=" max-w-120 my-4">
+      <IssueLabels
+        v-if="availableActions.includes('ISSUE_CREATE')"
+        :project="project"
+        v-model:value="issueLabels"
+      />
+    </div>
   </div>
 </template>
 
@@ -31,16 +38,21 @@ import { CircleDotDashedIcon, MenuIcon } from "lucide-vue-next";
 import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
+import IssueLabels from "@/components/IssueV1/components/Sidebar/IssueLabels.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
+import { useCurrentProjectV1 } from "@/store";
 import { isValidPlanName } from "@/utils";
 import { usePlanContext } from "../../logic";
 import { useSidebarContext } from "../../logic/sidebar";
 import Actions from "./Actions";
+import { usePlanAction } from "./Actions/unified/action";
 import DescriptionSection from "./DescriptionSection.vue";
 import TitleInput from "./TitleInput.vue";
 
 const route = useRoute();
-const { isCreating, plan } = usePlanContext();
+const { isCreating, plan, issueLabels } = usePlanContext();
+const { project } = useCurrentProjectV1();
+const { availableActions } = usePlanAction();
 
 const hasSidebar = computed(() => {
   // Check if we're in a layout with sidebar (Issue overview tab only)
