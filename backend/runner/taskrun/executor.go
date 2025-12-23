@@ -96,24 +96,6 @@ func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, pr
 	}
 }
 
-func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
-	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
-		return false, nil
-	}
-
-	// Check the project setting to see if we should use the database owner.
-	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get project")
-	}
-
-	if project.Setting == nil {
-		return false, nil
-	}
-
-	return project.Setting.PostgresDatabaseTenantMode, nil
-}
-
 func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, schemaVersion string) (terminated bool, result *storepb.TaskRunResult, err error) {
 	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, stateCfg, syncer, profile, task, taskRunUID, sheet, schemaVersion, nil /* default */)
 }
@@ -221,12 +203,12 @@ func doMigrationWithFunc(
 	instance := mc.instance
 	database := mc.database
 
-	useDBOwner, err := getUseDatabaseOwner(ctx, stores, instance, database)
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to check if we should use database owner")
+		return false, errors.Wrapf(err, "failed to get project")
 	}
 	driver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
-		UseDatabaseOwner: useDBOwner,
+		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
 	})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
@@ -243,10 +225,6 @@ func doMigrationWithFunc(
 
 	opts := db.ExecuteOptions{}
 
-	project, err := stores.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get project %v for database %v", database.ProjectID, database.DatabaseName)
-	}
 	if project != nil && project.Setting != nil {
 		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
 	}

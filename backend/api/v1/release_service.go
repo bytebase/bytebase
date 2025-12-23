@@ -19,7 +19,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -28,7 +27,6 @@ type ReleaseService struct {
 	v1connect.UnimplementedReleaseServiceHandler
 	store        *store.Store
 	sheetManager *sheet.Manager
-	schemaSyncer *schemasync.Syncer
 	dbFactory    *dbfactory.DBFactory
 	iamManager   *iam.Manager
 }
@@ -36,14 +34,12 @@ type ReleaseService struct {
 func NewReleaseService(
 	store *store.Store,
 	sheetManager *sheet.Manager,
-	schemaSyncer *schemasync.Syncer,
 	dbFactory *dbfactory.DBFactory,
 	iamManager *iam.Manager,
 ) *ReleaseService {
 	return &ReleaseService{
 		store:        store,
 		sheetManager: sheetManager,
-		schemaSyncer: schemaSyncer,
 		dbFactory:    dbFactory,
 		iamManager:   iamManager,
 	}

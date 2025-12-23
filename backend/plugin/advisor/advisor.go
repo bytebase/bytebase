@@ -57,8 +57,8 @@ type Context struct {
 	// StatementsTotalSize is the total size of all statements in bytes.
 	// Used for size limit checks without needing the full statement text.
 	StatementsTotalSize int
-	// UsePostgresDatabaseOwner is true if the advisor should use the database owner as default role.
-	UsePostgresDatabaseOwner bool
+	// TenantMode indicates whether to use database owner role for PostgreSQL tenant mode.
+	TenantMode bool
 
 	// SQL review level fields.
 	DBType storepb.Engine

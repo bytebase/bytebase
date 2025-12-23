@@ -169,11 +169,11 @@ func (e *StatementAdviseExecutor) runReview(
 	}
 	finalMetadata := model.NewDatabaseMetadata(clonedMetadata, nil, nil, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 
-	useDatabaseOwner, err := getUseDatabaseOwner(ctx, e.store, instance, database)
+	project, err := e.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
 	if err != nil {
-		return nil, common.Wrapf(err, common.Internal, "failed to get use database owner")
+		return nil, common.Wrapf(err, common.Internal, "failed to get project")
 	}
-	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: useDatabaseOwner})
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{TenantMode: project.Setting.GetPostgresDatabaseTenantMode()})
 	if err != nil {
 		return nil, err
 	}
@@ -181,18 +181,18 @@ func (e *StatementAdviseExecutor) runReview(
 	connection := driver.GetDB()
 
 	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.Context{
-		DBSchema:                 dbMetadata.GetProto(),
-		EnableSDL:                enableSDL,
-		DBType:                   instance.Metadata.GetEngine(),
-		OriginalMetadata:         originMetadata,
-		FinalMetadata:            finalMetadata,
-		Driver:                   connection,
-		EnablePriorBackup:        enablePriorBackup,
-		EnableGhost:              enableGhost,
-		UsePostgresDatabaseOwner: useDatabaseOwner,
-		ListDatabaseNamesFunc:    e.buildListDatabaseNamesFunc(),
-		InstanceID:               instance.ResourceID,
-		IsObjectCaseSensitive:    store.IsObjectCaseSensitive(instance),
+		DBSchema:              dbMetadata.GetProto(),
+		EnableSDL:             enableSDL,
+		DBType:                instance.Metadata.GetEngine(),
+		OriginalMetadata:      originMetadata,
+		FinalMetadata:         finalMetadata,
+		Driver:                connection,
+		EnablePriorBackup:     enablePriorBackup,
+		EnableGhost:           enableGhost,
+		TenantMode:            project.Setting.GetPostgresDatabaseTenantMode(),
+		ListDatabaseNamesFunc: e.buildListDatabaseNamesFunc(),
+		InstanceID:            instance.ResourceID,
+		IsObjectCaseSensitive: store.IsObjectCaseSensitive(instance),
 	})
 	if err != nil {
 		return nil, err
