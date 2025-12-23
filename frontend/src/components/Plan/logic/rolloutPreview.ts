@@ -4,7 +4,6 @@ import {
   useDBGroupStore,
   useEnvironmentV1Store,
 } from "@/store";
-import { batchGetOrFetchDatabases } from "@/store/modules/v1/database";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
@@ -47,11 +46,10 @@ export async function generateRolloutPreview(
 ): Promise<Rollout> {
   // Step 1: Extract all database targets from specs and expand database groups
   const allDatabaseNames = await extractAndExpandDatabaseTargets(plan.specs);
+  const dbStore = useDatabaseV1Store();
 
   // Step 2: Fetch databases that are not cached
-  if (allDatabaseNames.length > 0) {
-    await batchGetOrFetchDatabases(allDatabaseNames);
-  }
+  await dbStore.batchGetOrFetchDatabases(allDatabaseNames);
 
   // Step 3: Generate tasks from specs
   const tasks = await generateTasksFromSpecs(plan.specs);

@@ -59,9 +59,11 @@ const additionalOptions = computedAsync(async () => {
     groupNames = [props.value];
   }
 
-  const groups = await groupStore.batchFetchGroups(groupNames);
+  const groups = await groupStore.batchGetOrFetchGroups(groupNames);
   for (const group of groups) {
-    options.push(getOption(group));
+    if (group) {
+      options.push(getOption(group));
+    }
   }
 
   return options;

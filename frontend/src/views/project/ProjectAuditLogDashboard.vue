@@ -122,7 +122,7 @@ const fetchAuditLog = async ({
     pageToken,
     pageSize,
   });
-  await useUserStore().batchGetUsers(auditLogs.map((log) => log.user));
+  await useUserStore().batchGetOrFetchUsers(auditLogs.map((log) => log.user));
   return { nextPageToken, list: auditLogs };
 };
 

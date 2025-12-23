@@ -66,7 +66,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { usePlanSQLCheckContext } from "@/components/Plan/components/SQLCheckSection/context";
 import { useVerticalScrollState } from "@/composables/useScrollState";
-import { batchGetOrFetchDatabases, useCurrentProjectV1 } from "@/store";
+import { useCurrentProjectV1, useDatabaseV1Store } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
@@ -106,6 +106,7 @@ const { project } = useCurrentProjectV1();
 const { resultMap } = usePlanSQLCheckContext();
 const taskBar = ref<HTMLDivElement>();
 const taskBarScrollState = useVerticalScrollState(taskBar, MAX_LIST_HEIGHT);
+const dbStore = useDatabaseV1Store();
 
 const taskList = computed(() => {
   return selectedStage.value.tasks;
@@ -173,7 +174,7 @@ const loadMore = useDebounceFn(async () => {
     .map((task) => databaseForTask(project.value, task).name);
 
   try {
-    await batchGetOrFetchDatabases(databaseNames);
+    await dbStore.batchGetOrFetchDatabases(databaseNames);
   } catch {
     // Ignore errors
     // If the issue type is create database,

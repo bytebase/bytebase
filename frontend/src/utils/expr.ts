@@ -137,7 +137,7 @@ export const getProjectIdOptionConfig = (): OptionConfig => {
   return {
     options: [],
     fetch: async (projectIds: string[]) => {
-      const projects = await projectStore.batchGetProjects(
+      const projects = await projectStore.batchGetOrFetchProjects(
         projectIds.map((projectId) => `${projectNamePrefix}${projectId}`)
       );
       return projects.map(getProjectIdOption);
@@ -245,7 +245,7 @@ export const getDatabaseNameOptionConfig = (parent: string): OptionConfig => {
   return {
     options: [],
     fetch: async (names: string[]) => {
-      const databases = await dbStore.batchGetDatabases(names);
+      const databases = await dbStore.batchGetOrFetchDatabases(names);
       return databases.map(getDatabasFullNameOption);
     },
     search: async (params: {

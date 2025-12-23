@@ -68,11 +68,7 @@ import SchemaEditorLite, {
   generateDiffDDL,
 } from "@/components/SchemaEditorLite";
 import { Drawer, DrawerContent } from "@/components/v2";
-import {
-  batchGetOrFetchDatabases,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-} from "@/store";
+import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
@@ -117,7 +113,7 @@ watchDebounced(
   () => state.databaseSelectorPageIndex,
   async (index) => {
     try {
-      await batchGetOrFetchDatabases(
+      await databaseStore.batchGetOrFetchDatabases(
         props.databaseNames.slice(
           DEFAULT_VISIBLE_TARGETS * index,
           DEFAULT_VISIBLE_TARGETS * (index + 1)

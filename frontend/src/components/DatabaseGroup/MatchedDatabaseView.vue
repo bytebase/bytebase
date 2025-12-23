@@ -72,11 +72,7 @@ import {
 } from "@/components/v2";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { validateSimpleExpr } from "@/plugins/cel";
-import {
-  batchGetOrFetchDatabases,
-  useDatabaseV1Store,
-  useDBGroupStore,
-} from "@/store";
+import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import {
   type ComposedDatabase,
   DEBOUNCE_SEARCH_DELAY,
@@ -125,7 +121,7 @@ const loadMoreMatched = async (index: number) => {
   const previous = index;
   const next = previous + pageSize.value;
   const databaseNames = matchedDatabaseNameList.value.slice(previous, next);
-  await batchGetOrFetchDatabases(databaseNames);
+  await databaseStore.batchGetOrFetchDatabases(databaseNames);
 
   return {
     databases: databaseNames.map(databaseStore.getDatabaseByName),

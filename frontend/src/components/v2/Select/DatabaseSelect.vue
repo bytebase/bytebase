@@ -76,7 +76,7 @@ const additionalOptions = computedAsync(async () => {
     databaseNames = [props.value];
   }
 
-  const databases = await databaseStore.batchGetDatabases(databaseNames);
+  const databases = await databaseStore.batchGetOrFetchDatabases(databaseNames);
   options.push(...databases.map(getOption));
 
   return options;

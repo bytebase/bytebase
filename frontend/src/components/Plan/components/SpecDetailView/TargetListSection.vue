@@ -84,9 +84,9 @@ import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { planServiceClientConnect } from "@/grpcweb";
 import {
-  batchGetOrFetchDatabases,
   projectNamePrefix,
   pushNotification,
+  useDatabaseV1Store,
   useDBGroupStore,
   useProjectV1Store,
 } from "@/store";
@@ -106,6 +106,7 @@ const { plan, isCreating, readonly } = usePlanContext();
 const { selectedSpec, targets, getDatabaseTargets } = useSelectedSpec();
 const dbGroupStore = useDBGroupStore();
 const projectStore = useProjectV1Store();
+const dbStore = useDatabaseV1Store();
 
 const isLoadingTargets = ref(false);
 const showTargetsSelector = ref(false);
@@ -172,17 +173,14 @@ const loadTargetData = async () => {
       visibleTargets.value
     );
 
-    if (databaseTargets.length > 0) {
-      await batchGetOrFetchDatabases(databaseTargets);
-    }
-
-    const dbGroupPromises = dbGroupTargets.map((target) =>
-      dbGroupStore.getOrFetchDBGroupByName(target, {
-        view: DatabaseGroupView.FULL,
-      })
+    await dbStore.batchGetOrFetchDatabases(databaseTargets);
+    await Promise.allSettled(
+      dbGroupTargets.map((target) =>
+        dbGroupStore.getOrFetchDBGroupByName(target, {
+          view: DatabaseGroupView.FULL,
+        })
+      )
     );
-
-    await Promise.allSettled(dbGroupPromises);
   } catch {
     // Ignore errors
   } finally {

@@ -44,8 +44,8 @@ export const composePolicyBindings = async (
     }
   }
   await Promise.all([
-    useUserStore().batchGetUsers(users),
-    useGroupStore().batchFetchGroups(groups),
+    useUserStore().batchGetOrFetchUsers(users),
+    useGroupStore().batchGetOrFetchGroups(groups),
   ]);
 };
 

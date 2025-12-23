@@ -36,7 +36,6 @@ import { BBSpin } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import {
-  batchGetOrFetchDatabases,
   type DatabaseFilter,
   useDatabaseV1Store,
   useDBSchemaV1Store,
@@ -300,7 +299,7 @@ watch(
 );
 
 onMounted(async () => {
-  await batchGetOrFetchDatabases(
+  await databaseStore.batchGetOrFetchDatabases(
     props.databaseResources.map((resource) => resource.databaseFullName)
   );
   await refreshData();

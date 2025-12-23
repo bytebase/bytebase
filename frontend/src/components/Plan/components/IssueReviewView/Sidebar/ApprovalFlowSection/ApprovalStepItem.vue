@@ -76,9 +76,9 @@ import { NTimelineItem } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import {
-  batchGetOrFetchGroups,
   useCurrentProjectV1,
   useCurrentUserV1,
+  useGroupStore,
   useProjectIamPolicyStore,
   useRoleStore,
   useUserStore,
@@ -112,6 +112,7 @@ const { project } = useCurrentProjectV1();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const roleStore = useRoleStore();
+const groupStore = useGroupStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const currentUserEmail = computed(() => currentUser.value.email);
 
@@ -216,7 +217,7 @@ watchEffect(async () => {
     }
   }
 
-  await batchGetOrFetchGroups(groupNames);
+  await groupStore.batchGetOrFetchGroups(groupNames);
 });
 
 // Get candidates for this approval step
@@ -282,19 +283,15 @@ const potentialApprovers = computedAsync(async () => {
     return [];
   }
 
-  const users: UserType[] = [];
-  await userStore.batchGetUsers(
+  const users = await userStore.batchGetOrFetchUsers(
     filteredCandidateEmails.value.map(ensureUserFullName)
   );
-  for (const email of filteredCandidateEmails.value) {
-    const user = userStore.getUserByIdentifier(email);
-    if (user && user.state === State.ACTIVE) {
-      users.push(user);
-    }
-  }
-
   // Sort to put current user first if they're in the list
-  return users.sort((a, b) => {
+  return (
+    users.filter((user) => {
+      return user && user.state === State.ACTIVE;
+    }) as UserType[]
+  ).sort((a, b) => {
     if (a.email === currentUserEmail.value) return -1;
     if (b.email === currentUserEmail.value) return 1;
     return a.title.localeCompare(b.title);

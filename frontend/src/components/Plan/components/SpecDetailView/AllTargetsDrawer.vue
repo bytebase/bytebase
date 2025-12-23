@@ -63,11 +63,7 @@
 import { computed, reactive, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { Drawer, DrawerContent, SearchBox } from "@/components/v2";
-import {
-  batchGetOrFetchDatabases,
-  useDatabaseV1Store,
-  useDBGroupStore,
-} from "@/store";
+import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { isValidDatabaseGroupName, isValidDatabaseName } from "@/types";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import { useSelectedSpec } from "./context";
@@ -129,7 +125,9 @@ const loadAllTargets = async () => {
     const fetchPromises: Promise<unknown>[] = [];
 
     if (databaseTargets.length > 0) {
-      fetchPromises.push(batchGetOrFetchDatabases(databaseTargets));
+      fetchPromises.push(
+        databaseStore.batchGetOrFetchDatabases(databaseTargets)
+      );
     }
 
     const dbGroupPromises = dbGroupTargets.map((target) =>

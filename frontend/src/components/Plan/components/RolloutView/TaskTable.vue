@@ -30,7 +30,7 @@ import Timestamp from "@/components/misc/Timestamp.vue";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
-import { batchGetOrFetchDatabases, useCurrentProjectV1 } from "@/store";
+import { useCurrentProjectV1, useDatabaseV1Store } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
@@ -64,6 +64,7 @@ const router = useRouter();
 const { project } = useCurrentProjectV1();
 const { rollout, mergedStages } = useRolloutViewContext();
 const { taskRuns } = usePlanContextWithRollout();
+const dbStore = useDatabaseV1Store();
 
 const taskList = computed(() => {
   if (props.taskStatusFilter.length === 0) {
@@ -105,7 +106,9 @@ const stageMap = computed(() => {
 const prepareDatabases = async () => {
   if (taskList.value.length > 0) {
     try {
-      await batchGetOrFetchDatabases(taskList.value.map((task) => task.target));
+      await dbStore.batchGetOrFetchDatabases(
+        taskList.value.map((task) => task.target)
+      );
     } catch {
       // Ignore errors - this is just for pre-loading data
     }

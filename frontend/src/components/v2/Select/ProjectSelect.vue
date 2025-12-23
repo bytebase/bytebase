@@ -118,7 +118,7 @@ const additionalOptions = computedAsync(async () => {
     options.unshift(getOption(dummyAll));
   }
 
-  const projects = await projectStore.batchGetProjects(projectNames);
+  const projects = await projectStore.batchGetOrFetchProjects(projectNames);
   options.push(...projects.map(getOption));
 
   return options;
