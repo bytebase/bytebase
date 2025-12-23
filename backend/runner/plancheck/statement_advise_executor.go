@@ -43,14 +43,14 @@ type StatementAdviseExecutor struct {
 	licenseService *enterprise.LicenseService
 }
 
-// Run will run the plan check statement advise executor once, and run its sub-advisors one-by-one.
-func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
-	fullSheet, err := e.store.GetSheetFull(ctx, config.SheetSha256)
+// RunForTarget runs the statement advise check for a single target.
+func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
+	fullSheet, err := e.store.GetSheetFull(ctx, target.SheetSha256)
 	if err != nil {
 		return nil, err
 	}
 	if fullSheet == nil {
-		return nil, errors.Errorf("sheet full %s not found", config.SheetSha256)
+		return nil, errors.Errorf("sheet full %s not found", target.SheetSha256)
 	}
 	if fullSheet.Size > common.MaxSheetCheckSize {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -62,16 +62,16 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 			},
 		}, nil
 	}
-	enablePriorBackup := config.EnablePriorBackup
-	enableGhost := config.EnableGhost
-	enableSDL := config.EnableSdl
+	enablePriorBackup := target.EnablePriorBackup
+	enableGhost := target.EnableGhost
+	enableSDL := target.EnableSdl
 
-	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &config.InstanceId})
+	instance, err := e.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &target.InstanceId})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", config.InstanceId)
+		return nil, errors.Wrapf(err, "failed to get instance %s", target.InstanceId)
 	}
 	if instance == nil {
-		return nil, errors.Errorf("instance %s not found", config.InstanceId)
+		return nil, errors.Errorf("instance %s not found", target.InstanceId)
 	}
 	if !common.EngineSupportStatementAdvise(instance.Metadata.GetEngine()) {
 		return []*storepb.PlanCheckRunResult_Result{
@@ -84,12 +84,12 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 		}, nil
 	}
 
-	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
+	database, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &target.DatabaseName})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
+		return nil, errors.Wrapf(err, "failed to get database %q", target.DatabaseName)
 	}
 	if database == nil {
-		return nil, errors.Errorf("database not found %q", config.DatabaseName)
+		return nil, errors.Errorf("database not found %q", target.DatabaseName)
 	}
 
 	results, err := e.runReview(ctx, instance, database, fullSheet.Statement, enablePriorBackup, enableGhost, enableSDL)
@@ -109,6 +109,15 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 		}, nil
 	}
 	return results, nil
+}
+
+// Run will run the plan check statement advise executor once, and run its sub-advisors one-by-one.
+// Deprecated: Use RunForTarget instead. This method is kept for backward compatibility.
+func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
+	if len(config.Targets) == 0 {
+		return nil, nil
+	}
+	return e.RunForTarget(ctx, config.Targets[0])
 }
 
 func (e *StatementAdviseExecutor) runReview(
