@@ -444,41 +444,35 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	// Check plan check runs status
-	planCheckRuns, err := r.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-		PlanUID: &plan.UID,
-		Type:    &[]store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport},
-	})
+	// Check plan check run status (consolidated model: one run per plan)
+	planCheckRun, err := r.store.GetPlanCheckRun(ctx, plan.UID)
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to list plan check runs for plan %v", plan.UID)
+		return nil, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)
 	}
 
 	type Key struct {
 		InstanceID   string
 		DatabaseName string
 	}
-	latestPlanCheckRun := map[Key]*store.PlanCheckRunMessage{}
-	for _, run := range planCheckRuns {
-		key := Key{
-			InstanceID:   run.Config.InstanceId,
-			DatabaseName: run.Config.DatabaseName,
-		}
-		latestPlanCheckRun[key] = run
+	latestPlanCheckRun := map[Key]*storepb.PlanCheckRunResult_Result{}
+
+	// Wait for plan check to complete if running
+	if planCheckRun != nil && planCheckRun.Status == store.PlanCheckRunStatusRunning {
+		return nil, false, nil // Not ready yet, retry later
 	}
 
-	// Wait for plan check runs to complete
-	var planCheckRunDone int
-	for _, run := range latestPlanCheckRun {
-		if run.Status != store.PlanCheckRunStatusRunning {
-			planCheckRunDone++
+	// Build map from results, filtering for STATEMENT_SUMMARY_REPORT
+	if planCheckRun != nil {
+		for _, result := range planCheckRun.Result.Results {
+			if result.CheckType != storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT {
+				continue
+			}
+			key := Key{
+				InstanceID:   result.InstanceId,
+				DatabaseName: result.DatabaseName,
+			}
+			latestPlanCheckRun[key] = result
 		}
-	}
-	planCheckRunCount := len(latestPlanCheckRun)
-	if planCheckRunCount < common.MinimumCompletedPlanCheckRun && planCheckRunCount != planCheckRunDone {
-		return nil, false, nil // Not ready yet, retry later
-	}
-	if planCheckRunCount >= common.MinimumCompletedPlanCheckRun && planCheckRunDone < common.MinimumCompletedPlanCheckRun {
-		return nil, false, nil // Not ready yet, retry later
 	}
 
 	// Build CEL variables for each task
@@ -542,7 +536,7 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 		}
 
 		// Add summary report data if available
-		run, ok := latestPlanCheckRun[Key{
+		result, ok := latestPlanCheckRun[Key{
 			InstanceID:   instance.ResourceID,
 			DatabaseName: databaseName,
 		}]
@@ -551,7 +545,7 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 			continue
 		}
 
-		report := findSQLSummaryReport(run.Result.Results)
+		report := result.GetSqlSummaryReport()
 		if report == nil {
 			celVarsList = append(celVarsList, celVars)
 			continue
@@ -789,15 +783,6 @@ func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *stor
 		},
 	}); err != nil {
 		return errors.Wrap(err, "failed to update issue payload")
-	}
-	return nil
-}
-
-func findSQLSummaryReport(results []*storepb.PlanCheckRunResult_Result) *storepb.PlanCheckRunResult_Result_SqlSummaryReport {
-	for _, result := range results {
-		if report := result.GetSqlSummaryReport(); report != nil {
-			return report
-		}
 	}
 	return nil
 }
