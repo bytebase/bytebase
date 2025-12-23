@@ -56,37 +56,6 @@ func NewRolloutService(store *store.Store, sheetManager *sheet.Manager, licenseS
 	}
 }
 
-// PreviewRollout previews the rollout for a plan.
-func (s *RolloutService) PreviewRollout(ctx context.Context, req *connect.Request[v1pb.PreviewRolloutRequest]) (*connect.Response[v1pb.Rollout], error) {
-	request := req.Msg
-	projectID, err := common.GetProjectID(request.Project)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
-	}
-
-	specs := convertPlanSpecs(request.Plan.Specs)
-
-	rollout, err := GetPipelineCreate(ctx, s.store, s.dbFactory, specs, project)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
-	}
-
-	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
-	}
-	return connect.NewResponse(rolloutV1), nil
-}
-
 // GetRollout gets a rollout.
 func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1pb.GetRolloutRequest]) (*connect.Response[v1pb.Rollout], error) {
 	request := req.Msg

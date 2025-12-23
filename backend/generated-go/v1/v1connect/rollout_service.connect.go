@@ -42,9 +42,6 @@ const (
 	// RolloutServiceCreateRolloutProcedure is the fully-qualified name of the RolloutService's
 	// CreateRollout RPC.
 	RolloutServiceCreateRolloutProcedure = "/bytebase.v1.RolloutService/CreateRollout"
-	// RolloutServicePreviewRolloutProcedure is the fully-qualified name of the RolloutService's
-	// PreviewRollout RPC.
-	RolloutServicePreviewRolloutProcedure = "/bytebase.v1.RolloutService/PreviewRollout"
 	// RolloutServiceListTaskRunsProcedure is the fully-qualified name of the RolloutService's
 	// ListTaskRuns RPC.
 	RolloutServiceListTaskRunsProcedure = "/bytebase.v1.RolloutService/ListTaskRuns"
@@ -82,9 +79,6 @@ type RolloutServiceClient interface {
 	// Creates a new rollout from a plan.
 	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
-	// Previews the rollout that would be created from a plan.
-	// Permissions required: bb.rollouts.preview
-	PreviewRollout(context.Context, *connect.Request[v1.PreviewRolloutRequest]) (*connect.Response[v1.Rollout], error)
 	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
 	ListTaskRuns(context.Context, *connect.Request[v1.ListTaskRunsRequest]) (*connect.Response[v1.ListTaskRunsResponse], error)
@@ -138,12 +132,6 @@ func NewRolloutServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+RolloutServiceCreateRolloutProcedure,
 			connect.WithSchema(rolloutServiceMethods.ByName("CreateRollout")),
-			connect.WithClientOptions(opts...),
-		),
-		previewRollout: connect.NewClient[v1.PreviewRolloutRequest, v1.Rollout](
-			httpClient,
-			baseURL+RolloutServicePreviewRolloutProcedure,
-			connect.WithSchema(rolloutServiceMethods.ByName("PreviewRollout")),
 			connect.WithClientOptions(opts...),
 		),
 		listTaskRuns: connect.NewClient[v1.ListTaskRunsRequest, v1.ListTaskRunsResponse](
@@ -202,7 +190,6 @@ type rolloutServiceClient struct {
 	getRollout             *connect.Client[v1.GetRolloutRequest, v1.Rollout]
 	listRollouts           *connect.Client[v1.ListRolloutsRequest, v1.ListRolloutsResponse]
 	createRollout          *connect.Client[v1.CreateRolloutRequest, v1.Rollout]
-	previewRollout         *connect.Client[v1.PreviewRolloutRequest, v1.Rollout]
 	listTaskRuns           *connect.Client[v1.ListTaskRunsRequest, v1.ListTaskRunsResponse]
 	getTaskRun             *connect.Client[v1.GetTaskRunRequest, v1.TaskRun]
 	getTaskRunLog          *connect.Client[v1.GetTaskRunLogRequest, v1.TaskRunLog]
@@ -226,11 +213,6 @@ func (c *rolloutServiceClient) ListRollouts(ctx context.Context, req *connect.Re
 // CreateRollout calls bytebase.v1.RolloutService.CreateRollout.
 func (c *rolloutServiceClient) CreateRollout(ctx context.Context, req *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error) {
 	return c.createRollout.CallUnary(ctx, req)
-}
-
-// PreviewRollout calls bytebase.v1.RolloutService.PreviewRollout.
-func (c *rolloutServiceClient) PreviewRollout(ctx context.Context, req *connect.Request[v1.PreviewRolloutRequest]) (*connect.Response[v1.Rollout], error) {
-	return c.previewRollout.CallUnary(ctx, req)
 }
 
 // ListTaskRuns calls bytebase.v1.RolloutService.ListTaskRuns.
@@ -284,9 +266,6 @@ type RolloutServiceHandler interface {
 	// Creates a new rollout from a plan.
 	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
-	// Previews the rollout that would be created from a plan.
-	// Permissions required: bb.rollouts.preview
-	PreviewRollout(context.Context, *connect.Request[v1.PreviewRolloutRequest]) (*connect.Response[v1.Rollout], error)
 	// Lists task run executions for a task.
 	// Permissions required: bb.taskRuns.list
 	ListTaskRuns(context.Context, *connect.Request[v1.ListTaskRunsRequest]) (*connect.Response[v1.ListTaskRunsResponse], error)
@@ -336,12 +315,6 @@ func NewRolloutServiceHandler(svc RolloutServiceHandler, opts ...connect.Handler
 		RolloutServiceCreateRolloutProcedure,
 		svc.CreateRollout,
 		connect.WithSchema(rolloutServiceMethods.ByName("CreateRollout")),
-		connect.WithHandlerOptions(opts...),
-	)
-	rolloutServicePreviewRolloutHandler := connect.NewUnaryHandler(
-		RolloutServicePreviewRolloutProcedure,
-		svc.PreviewRollout,
-		connect.WithSchema(rolloutServiceMethods.ByName("PreviewRollout")),
 		connect.WithHandlerOptions(opts...),
 	)
 	rolloutServiceListTaskRunsHandler := connect.NewUnaryHandler(
@@ -400,8 +373,6 @@ func NewRolloutServiceHandler(svc RolloutServiceHandler, opts ...connect.Handler
 			rolloutServiceListRolloutsHandler.ServeHTTP(w, r)
 		case RolloutServiceCreateRolloutProcedure:
 			rolloutServiceCreateRolloutHandler.ServeHTTP(w, r)
-		case RolloutServicePreviewRolloutProcedure:
-			rolloutServicePreviewRolloutHandler.ServeHTTP(w, r)
 		case RolloutServiceListTaskRunsProcedure:
 			rolloutServiceListTaskRunsHandler.ServeHTTP(w, r)
 		case RolloutServiceGetTaskRunProcedure:
@@ -437,10 +408,6 @@ func (UnimplementedRolloutServiceHandler) ListRollouts(context.Context, *connect
 
 func (UnimplementedRolloutServiceHandler) CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.CreateRollout is not implemented"))
-}
-
-func (UnimplementedRolloutServiceHandler) PreviewRollout(context.Context, *connect.Request[v1.PreviewRolloutRequest]) (*connect.Response[v1.Rollout], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.RolloutService.PreviewRollout is not implemented"))
 }
 
 func (UnimplementedRolloutServiceHandler) ListTaskRuns(context.Context, *connect.Request[v1.ListTaskRunsRequest]) (*connect.Response[v1.ListTaskRunsResponse], error) {

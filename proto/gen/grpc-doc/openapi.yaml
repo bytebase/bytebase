@@ -6227,40 +6227,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}:previewRollout:
-        post:
-            tags:
-                - RolloutService
-            description: |-
-                Previews the rollout that would be created from a plan.
-                 Permissions required: bb.rollouts.preview
-            operationId: RolloutService_PreviewRollout
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/PreviewRolloutRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Rollout'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}:setIamPolicy:
         post:
             tags:
@@ -12181,20 +12147,6 @@ components:
                     description: When the current query started.
                     format: date-time
             description: PostgreSQL session information read from `pg_stat_activity`.
-        PreviewRolloutRequest:
-            required:
-                - project
-            type: object
-            properties:
-                project:
-                    type: string
-                    description: |-
-                        The name of the project.
-                         Format: projects/{project}
-                plan:
-                    allOf:
-                        - $ref: '#/components/schemas/Plan'
-                    description: The plan used to preview rollout.
         PreviewTaskRunRollbackRequest:
             required:
                 - name

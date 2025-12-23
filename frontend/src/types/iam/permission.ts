@@ -90,7 +90,6 @@ export type Permission =
   | "bb.rollouts.create"
   | "bb.rollouts.get"
   | "bb.rollouts.list"
-  | "bb.rollouts.preview"
   | "bb.settings.get"
   | "bb.settings.list"
   | "bb.settings.set"
