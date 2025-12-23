@@ -345,56 +345,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/databaseGroups:batchGet:
-        get:
-            tags:
-                - DatabaseGroupService
-            description: |-
-                Batch retrieves multiple database groups by their names.
-                 Permissions required: bb.databaseGroups.get
-            operationId: DatabaseGroupService_BatchGetDatabaseGroups
-            parameters:
-                - name: parent
-                  in: query
-                  description: |-
-                    The parent resource whose database groups are to be retrieved.
-                     Format: projects/{project}
-                     All names must belong to this parent project.
-                  schema:
-                    type: string
-                - name: names
-                  in: query
-                  description: |-
-                    The names of the database groups to retrieve.
-                     Format: projects/{project}/databaseGroups/{databaseGroup}
-                     Maximum 1000 names per request.
-                  schema:
-                    type: array
-                    items:
-                        type: string
-                - name: view
-                  in: query
-                  description: The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
-                  schema:
-                    enum:
-                        - DATABASE_GROUP_VIEW_UNSPECIFIED
-                        - DATABASE_GROUP_VIEW_BASIC
-                        - DATABASE_GROUP_VIEW_FULL
-                    type: string
-                    format: enum
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BatchGetDatabaseGroupsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/environments/{environment}/policies:
         get:
             tags:
@@ -3837,6 +3787,54 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/DatabaseGroup'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/databaseGroups:batchGet:
+        get:
+            tags:
+                - DatabaseGroupService
+            description: |-
+                Batch retrieves multiple database groups by their names.
+                 Permissions required: bb.databaseGroups.get
+            operationId: DatabaseGroupService_BatchGetDatabaseGroups
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: names
+                  in: query
+                  description: |-
+                    The names of the database groups to retrieve.
+                     Format: projects/{project}/databaseGroups/{databaseGroup}
+                     Maximum 1000 names per request.
+                  schema:
+                    type: array
+                    items:
+                        type: string
+                - name: view
+                  in: query
+                  description: The view to return. Defaults to DATABASE_GROUP_VIEW_BASIC.
+                  schema:
+                    enum:
+                        - DATABASE_GROUP_VIEW_UNSPECIFIED
+                        - DATABASE_GROUP_VIEW_BASIC
+                        - DATABASE_GROUP_VIEW_FULL
+                    type: string
+                    format: enum
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchGetDatabaseGroupsResponse'
                 default:
                     description: Default error response
                     content:

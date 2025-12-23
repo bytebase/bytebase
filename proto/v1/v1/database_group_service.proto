@@ -37,7 +37,7 @@ service DatabaseGroupService {
   // Batch retrieves multiple database groups by their names.
   // Permissions required: bb.databaseGroups.get
   rpc BatchGetDatabaseGroups(BatchGetDatabaseGroupsRequest) returns (BatchGetDatabaseGroupsResponse) {
-    option (google.api.http) = {get: "/v1/databaseGroups:batchGet"};
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/databaseGroups:batchGet"};
     option (bytebase.v1.permission) = "bb.databaseGroups.get";
     option (bytebase.v1.auth_method) = IAM;
   }

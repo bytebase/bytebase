@@ -141,15 +141,24 @@ func local_request_DatabaseGroupService_GetDatabaseGroup_0(ctx context.Context, 
 	return msg, metadata, err
 }
 
-var filter_DatabaseGroupService_BatchGetDatabaseGroups_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+var filter_DatabaseGroupService_BatchGetDatabaseGroups_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_DatabaseGroupService_BatchGetDatabaseGroups_0(ctx context.Context, marshaler runtime.Marshaler, client DatabaseGroupServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq BatchGetDatabaseGroupsRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
 	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -165,7 +174,16 @@ func local_request_DatabaseGroupService_BatchGetDatabaseGroups_0(ctx context.Con
 	var (
 		protoReq BatchGetDatabaseGroupsRequest
 		metadata runtime.ServerMetadata
+		err      error
 	)
+	val, ok := pathParams["parent"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "parent")
+	}
+	protoReq.Parent, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "parent", err)
+	}
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
@@ -407,7 +425,7 @@ func RegisterDatabaseGroupServiceHandlerServer(ctx context.Context, mux *runtime
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseGroupService/BatchGetDatabaseGroups", runtime.WithHTTPPathPattern("/v1/databaseGroups:batchGet"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/bytebase.v1.DatabaseGroupService/BatchGetDatabaseGroups", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/databaseGroups:batchGet"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -559,7 +577,7 @@ func RegisterDatabaseGroupServiceHandlerClient(ctx context.Context, mux *runtime
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseGroupService/BatchGetDatabaseGroups", runtime.WithHTTPPathPattern("/v1/databaseGroups:batchGet"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/bytebase.v1.DatabaseGroupService/BatchGetDatabaseGroups", runtime.WithHTTPPathPattern("/v1/{parent=projects/*}/databaseGroups:batchGet"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -629,7 +647,7 @@ func RegisterDatabaseGroupServiceHandlerClient(ctx context.Context, mux *runtime
 var (
 	pattern_DatabaseGroupService_ListDatabaseGroups_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "databaseGroups"}, ""))
 	pattern_DatabaseGroupService_GetDatabaseGroup_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "databaseGroups", "name"}, ""))
-	pattern_DatabaseGroupService_BatchGetDatabaseGroups_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "databaseGroups"}, "batchGet"))
+	pattern_DatabaseGroupService_BatchGetDatabaseGroups_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "databaseGroups"}, "batchGet"))
 	pattern_DatabaseGroupService_CreateDatabaseGroup_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 2, 5, 2, 2, 3}, []string{"v1", "projects", "parent", "databaseGroups"}, ""))
 	pattern_DatabaseGroupService_UpdateDatabaseGroup_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "databaseGroups", "database_group.name"}, ""))
 	pattern_DatabaseGroupService_DeleteDatabaseGroup_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 2, 2, 1, 0, 4, 4, 5, 3}, []string{"v1", "projects", "databaseGroups", "name"}, ""))

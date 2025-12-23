@@ -727,11 +727,11 @@ const file_v1_database_group_service_proto_rawDesc = "" +
 	"\x11DatabaseGroupView\x12#\n" +
 	"\x1fDATABASE_GROUP_VIEW_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19DATABASE_GROUP_VIEW_BASIC\x10\x01\x12\x1c\n" +
-	"\x18DATABASE_GROUP_VIEW_FULL\x10\x022\xb0\t\n" +
+	"\x18DATABASE_GROUP_VIEW_FULL\x10\x022\xc4\t\n" +
 	"\x14DatabaseGroupService\x12\xbc\x01\n" +
 	"\x12ListDatabaseGroups\x12&.bytebase.v1.ListDatabaseGroupsRequest\x1a'.bytebase.v1.ListDatabaseGroupsResponse\"U\xdaA\x06parent\x8a\xea0\x16bb.databaseGroups.list\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{parent=projects/*}/databaseGroups\x12\xa8\x01\n" +
-	"\x10GetDatabaseGroup\x12$.bytebase.v1.GetDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"R\xdaA\x04name\x8a\xea0\x15bb.databaseGroups.get\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{name=projects/*/databaseGroups/*}\x12\xb3\x01\n" +
-	"\x16BatchGetDatabaseGroups\x12*.bytebase.v1.BatchGetDatabaseGroupsRequest\x1a+.bytebase.v1.BatchGetDatabaseGroupsResponse\"@\x8a\xea0\x15bb.databaseGroups.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1d\x12\x1b/v1/databaseGroups:batchGet\x12\xd5\x01\n" +
+	"\x10GetDatabaseGroup\x12$.bytebase.v1.GetDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"R\xdaA\x04name\x8a\xea0\x15bb.databaseGroups.get\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{name=projects/*/databaseGroups/*}\x12\xc7\x01\n" +
+	"\x16BatchGetDatabaseGroups\x12*.bytebase.v1.BatchGetDatabaseGroupsRequest\x1a+.bytebase.v1.BatchGetDatabaseGroupsResponse\"T\x8a\xea0\x15bb.databaseGroups.get\x90\xea0\x01\x82\xd3\xe4\x93\x021\x12//v1/{parent=projects/*}/databaseGroups:batchGet\x12\xd5\x01\n" +
 	"\x13CreateDatabaseGroup\x12'.bytebase.v1.CreateDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"y\xdaA\x14parent,databaseGroup\x8a\xea0\x18bb.databaseGroups.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x028:\x0edatabase_group\"&/v1/{parent=projects/*}/databaseGroups\x12\xeb\x01\n" +
 	"\x13UpdateDatabaseGroup\x12'.bytebase.v1.UpdateDatabaseGroupRequest\x1a\x1a.bytebase.v1.DatabaseGroup\"\x8e\x01\xdaA\x1adatabase_group,update_mask\x8a\xea0\x18bb.databaseGroups.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02G:\x0edatabase_group25/v1/{database_group.name=projects/*/databaseGroups/*}\x12\xb1\x01\n" +
 	"\x13DeleteDatabaseGroup\x12'.bytebase.v1.DeleteDatabaseGroupRequest\x1a\x16.google.protobuf.Empty\"Y\xdaA\x04name\x8a\xea0\x18bb.databaseGroups.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02(*&/v1/{name=projects/*/databaseGroups/*}B\xaf\x01\n" +
