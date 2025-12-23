@@ -15,11 +15,12 @@ type DatabaseSearcher struct {
 }
 
 // NewSearcher creates a searcher for database objects.
-// If schemaName is provided (non-empty), it searches only in that schema; otherwise uses the database's search path.
-// If the database's search path is empty, defaults to ["public"] for PostgreSQL.
+// If schemaName is provided (non-empty), it searches only in that schema.
+// Otherwise, it uses the provided fallbackSearchPath (e.g., from UI-selected schema).
+// If fallbackSearchPath is also empty, defaults to ["public"] for PostgreSQL.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (d *DatabaseMetadata) NewSearcher(schemaName string) *DatabaseSearcher {
-	searchPath := d.GetSearchPath()
+func (d *DatabaseMetadata) NewSearcher(schemaName string, fallbackSearchPath []string) *DatabaseSearcher {
+	searchPath := fallbackSearchPath
 	if schemaName != "" {
 		searchPath = []string{schemaName}
 	} else if len(searchPath) == 0 {

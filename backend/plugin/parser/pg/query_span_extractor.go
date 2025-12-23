@@ -1219,7 +1219,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 			Database: &q.defaultDatabase,
 		}
 	}
-	searcher := dbMetadata.NewSearcher(schemaName)
+	searcher := dbMetadata.NewSearcher(schemaName, q.searchPath)
 	tableSchemaName, table := searcher.SearchTable(tableName)
 	viewSchemaName, view := searcher.SearchView(tableName)
 	materializedViewSchemaName, materializedView := searcher.SearchMaterializedView(tableName)
