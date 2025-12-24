@@ -12960,20 +12960,9 @@ components:
           type: string
           title: name
           description: 'Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}'
-        type:
-          title: type
-          $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Type'
         status:
           title: status
           $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Status'
-        target:
-          type: string
-          title: target
-          description: 'Format: instances/{instance}/databases/{database}'
-        sheet:
-          type: string
-          title: sheet
-          description: 'Format: project/{project}/sheets/{sheet}'
         results:
           type: array
           items:
@@ -13005,6 +12994,15 @@ components:
               type: integer
               title: code
               format: int32
+            target:
+              type: string
+              title: target
+              description: |-
+                Target identification for consolidated results.
+                 Format: instances/{instance}/databases/{database}
+            type:
+              title: type
+              $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Result.Type'
         - oneOf:
             - properties:
                 sqlReviewReport:
@@ -13051,6 +13049,14 @@ components:
           format: int64
       title: SqlSummaryReport
       additionalProperties: false
+    bytebase.v1.PlanCheckRun.Result.Type:
+      type: string
+      title: Type
+      enum:
+        - TYPE_UNSPECIFIED
+        - STATEMENT_ADVISE
+        - STATEMENT_SUMMARY_REPORT
+        - GHOST_SYNC
     bytebase.v1.PlanCheckRun.Status:
       type: string
       title: Status
@@ -13060,14 +13066,6 @@ components:
         - DONE
         - FAILED
         - CANCELED
-    bytebase.v1.PlanCheckRun.Type:
-      type: string
-      title: Type
-      enum:
-        - TYPE_UNSPECIFIED
-        - DATABASE_STATEMENT_ADVISE
-        - DATABASE_STATEMENT_SUMMARY_REPORT
-        - DATABASE_GHOST_SYNC
     bytebase.v1.PlanConfig:
       type: object
       properties:

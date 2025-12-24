@@ -478,6 +478,12 @@ func (x *PlanCheckRun_Result) Equal(y *PlanCheckRun_Result) bool {
 	if x.Code != y.Code {
 		return false
 	}
+	if x.Target != y.Target {
+		return false
+	}
+	if x.Type != y.Type {
+		return false
+	}
 	if !x.GetSqlSummaryReport().Equal(y.GetSqlSummaryReport()) {
 		return false
 	}
@@ -497,16 +503,7 @@ func (x *PlanCheckRun) Equal(y *PlanCheckRun) bool {
 	if x.Name != y.Name {
 		return false
 	}
-	if x.Type != y.Type {
-		return false
-	}
 	if x.Status != y.Status {
-		return false
-	}
-	if x.Target != y.Target {
-		return false
-	}
-	if x.Sheet != y.Sheet {
 		return false
 	}
 	if len(x.Results) != len(y.Results) {
