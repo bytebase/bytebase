@@ -201,7 +201,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 
   const batchGetOrFetchProjects = async (projectNames: string[]) => {
-    const distinctProjectList = uniq(projectNames).filter((projectName) => {
+    const validProjectList = uniq(projectNames).filter((projectName) => {
       if (
         !projectName ||
         !isValidProjectName(projectName) ||
@@ -209,14 +209,17 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       ) {
         return false;
       }
+      return true;
+    });
+    const pendingFetch = validProjectList.filter((projectName) => {
       const project = getProjectByName(projectName);
       if (isValidProjectName(project.name)) {
         return false;
       }
       return true;
     });
-    await batchGetProjects(distinctProjectList, true /* silent */);
-    return distinctProjectList.map(getProjectByName);
+    await batchGetProjects(pendingFetch, true /* silent */);
+    return validProjectList.map(getProjectByName);
   };
 
   const getOrFetchProjectByName = async (name: string, silent = true) => {
