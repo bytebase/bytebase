@@ -547,13 +547,6 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
   forceIssueLabels: boolean;
 
   /**
-   * Allow modifying SQL statements after issue is created.
-   *
-   * @generated from field: bool allow_modify_statement = 8;
-   */
-  allowModifyStatement: boolean;
-
-  /**
    * Enable automatic issue resolution when tasks complete.
    *
    * @generated from field: bool auto_resolve_issue = 9;

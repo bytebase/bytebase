@@ -12261,9 +12261,6 @@ components:
                 forceIssueLabels:
                     type: boolean
                     description: Force issue labels to be used when creating an issue.
-                allowModifyStatement:
-                    type: boolean
-                    description: Allow modifying SQL statements after issue is created.
                 autoResolveIssue:
                     type: boolean
                     description: Enable automatic issue resolution when tasks complete.

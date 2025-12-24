@@ -154,8 +154,7 @@ func (m *Manager) Port() int {
 // GenerateOnboardingData generates onboarding data including project and instance.
 func (m *Manager) GenerateOnboardingData(ctx context.Context, user *store.UserMessage, schemaSyncer *schemasync.Syncer) error {
 	setting := &storepb.Project{
-		AllowModifyStatement: true,
-		AutoResolveIssue:     true,
+		AutoResolveIssue: true,
 	}
 
 	projectID := "project-sample"

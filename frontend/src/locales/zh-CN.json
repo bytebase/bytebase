@@ -1917,10 +1917,6 @@
             "warning": "至少需要配置一个标签"
           }
         },
-        "allow-modify-statement": {
-          "self": "允许工单创建后修改语句",
-          "description": "允许用户在创建工单后修改该变更语句。"
-        },
         "auto-resolve-issue": {
           "self": "自动完成工单",
           "description": "所有任务执行成功后自动完成工单。"

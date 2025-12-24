@@ -1917,10 +1917,6 @@
             "warning": "Yêu cầu ít nhất một nhãn được cấu hình"
           }
         },
-        "allow-modify-statement": {
-          "self": "Cho phép sửa đổi câu lệnh",
-          "description": "Cho phép người dùng sửa đổi câu lệnh của vấn đề sau khi tạo."
-        },
         "auto-resolve-issue": {
           "self": "Tự động giải quyết vấn đề",
           "description": "Tự động giải quyết vấn đề sau khi tất cả các tác vụ được hoàn thành."

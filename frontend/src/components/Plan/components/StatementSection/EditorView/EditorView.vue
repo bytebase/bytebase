@@ -317,8 +317,8 @@ const isSheetOversize = computed(() => {
 const denyEditStatementReasons = computed(() => {
   const reasons: string[] = [];
 
-  // Check if the project allows modifying statements.
-  if (!project.value.allowModifyStatement && plan.value.issue) {
+  // Check if the plan has been rolled out.
+  if (plan.value.rollout) {
     reasons.push(t("issue.error.statement-cannot-be-modified"));
   }
 
