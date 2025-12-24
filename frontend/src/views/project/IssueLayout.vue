@@ -3,8 +3,6 @@
     <template v-if="ready">
       <PollerProvider>
         <div class="h-full flex flex-col">
-          <BannerSection />
-
           <HeaderSection />
 
           <NTabs
@@ -21,13 +19,6 @@
               :name="tab"
               :tab="tabRender(tab)"
             />
-
-            <!-- Suffix slot -->
-            <template #suffix>
-              <div class="pr-3 flex flex-row justify-end items-center gap-4">
-                <RefreshIndicator />
-              </div>
-            </template>
           </NTabs>
 
           <div class="flex-1 flex">
@@ -62,10 +53,9 @@ import {
   useBasePlanContext,
   useInitializePlan,
 } from "@/components/Plan";
-import { BannerSection, HeaderSection } from "@/components/Plan/components";
-import RefreshIndicator from "@/components/Plan/components/RefreshIndicator.vue";
+import { HeaderSection } from "@/components/Plan/components";
 import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
-import { useCICDTabNavigation } from "@/components/Plan/logic/useCICDTabNavigation.tsx";
+import { useIssueTabNavigation } from "@/components/Plan/logic/useIssueTabNavigation.tsx";
 import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
@@ -75,7 +65,6 @@ const props = defineProps<{
   projectId: string;
   planId?: string;
   issueId?: string;
-  rolloutId?: string;
 }>();
 
 const { t } = useI18n();
@@ -90,8 +79,7 @@ const {
 } = useInitializePlan(
   toRef(props, "projectId"),
   toRef(props, "planId"),
-  toRef(props, "issueId"),
-  toRef(props, "rolloutId")
+  toRef(props, "issueId")
 );
 const planBaseContext = useBasePlanContext({
   isCreating,
@@ -107,7 +95,7 @@ const ready = computed(() => {
 });
 
 const shouldShowNavigation = computed(() => {
-  // Or if we have a valid plan with supported specs
+  // Show navigation if we have a valid plan with supported specs and an issue
   if (!plan.value) {
     return false;
   }
@@ -116,7 +104,7 @@ const shouldShowNavigation = computed(() => {
     plan.value.specs.some(
       (spec) => spec.config.case === "changeDatabaseConfig"
     ) &&
-    (plan.value.issue || plan.value.rollout)
+    plan.value.issue
   );
 });
 
@@ -138,7 +126,7 @@ provideSidebarContext(containerRef);
 
 // Tab navigation
 const { tabKey, availableTabs, tabRender, handleTabChange } =
-  useCICDTabNavigation({
+  useIssueTabNavigation({
     route,
     router,
     plan,

@@ -34,10 +34,10 @@ export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUTS}.det
 export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUT_DETAIL}.stage.detail`;
 export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL}.task.detail`;
 
-const cicdRoutes: RouteRecordRaw[] = [
+const issueRoutes: RouteRecordRaw[] = [
   {
     path: "",
-    component: () => import("@/views/project/CICDLayout.vue"),
+    component: () => import("@/views/project/IssueLayout.vue"),
     props: true,
     children: [
       {
@@ -75,11 +75,21 @@ const cicdRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/project/IssueDetailV1View.vue"),
         props: true,
       },
+    ],
+  },
+];
+
+const rolloutRoutes: RouteRecordRaw[] = [
+  {
+    path: "rollouts/:rolloutId",
+    component: () => import("@/views/project/RolloutLayout.vue"),
+    props: true,
+    meta: {
+      title: () => t("common.rollout"),
+    },
+    children: [
       {
-        path: "rollouts/:rolloutId",
-        meta: {
-          title: () => t("common.rollout"),
-        },
+        path: "",
         component: () => import("@/views/project/RolloutDetailLayout.vue"),
         props: true,
         children: [
@@ -87,9 +97,7 @@ const cicdRoutes: RouteRecordRaw[] = [
             path: "",
             name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
             component: () =>
-              import(
-                "@/components/Plan/components/RolloutView/v2/RolloutView.vue"
-              ),
+              import("@/components/RolloutV1/components/RolloutView.vue"),
             props: true,
             meta: {
               requiredPermissionList: () => ["bb.rollouts.get"],
@@ -99,9 +107,7 @@ const cicdRoutes: RouteRecordRaw[] = [
             path: "stages/:stageId",
             name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
             component: () =>
-              import(
-                "@/components/Plan/components/RolloutView/v2/RolloutView.vue"
-              ),
+              import("@/components/RolloutV1/components/RolloutView.vue"),
             props: true,
             meta: {
               requiredPermissionList: () => ["bb.rollouts.get"],
@@ -111,7 +117,7 @@ const cicdRoutes: RouteRecordRaw[] = [
             path: "stages/:stageId/tasks/:taskId",
             name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
             component: () =>
-              import("@/components/Plan/components/RolloutView/TaskView.vue"),
+              import("@/components/RolloutV1/components/TaskView.vue"),
             props: true,
             meta: {
               requiredPermissionList: () => ["bb.rollouts.get"],
@@ -409,7 +415,8 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
         ],
       },
-      ...cicdRoutes,
+      ...issueRoutes,
+      ...rolloutRoutes,
     ],
   },
 ];

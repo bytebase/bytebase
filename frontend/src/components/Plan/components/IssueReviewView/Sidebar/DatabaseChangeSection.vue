@@ -1,22 +1,5 @@
 <template>
   <template v-if="shouldShowSection">
-    <!-- SQL Checks -->
-    <div class="flex flex-col gap-y-1">
-      <h3 class="textlabel">
-        {{ $t("plan.navigator.checks") }}
-      </h3>
-      <div class="flex items-center gap-2">
-        <PlanCheckStatusCount
-          :plan="plan"
-          clickable
-          @click="selectedResultStatus = $event"
-        />
-        <span v-if="!hasAnyChecks" class="text-sm text-control-placeholder">
-          {{ $t("plan.overview.no-checks") }}
-        </span>
-      </div>
-    </div>
-
     <!-- Stages -->
     <div v-if="rollout" class="flex flex-col gap-y-1">
       <h3 class="textlabel">
@@ -53,6 +36,23 @@
         </template>
         <span v-else class="text-sm text-control-placeholder">
           {{ $t("common.no-data") }}
+        </span>
+      </div>
+    </div>
+
+    <!-- SQL Checks -->
+    <div class="flex flex-col gap-y-1">
+      <h3 class="textlabel">
+        {{ $t("plan.navigator.checks") }}
+      </h3>
+      <div class="flex items-center gap-2">
+        <PlanCheckStatusCount
+          :plan="plan"
+          clickable
+          @click="selectedResultStatus = $event"
+        />
+        <span v-if="!hasAnyChecks" class="text-sm text-control-placeholder">
+          {{ $t("plan.overview.no-checks") }}
         </span>
       </div>
     </div>

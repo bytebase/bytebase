@@ -247,6 +247,19 @@ export const getStageStatus = (stage: Stage): Task_Status => {
   return Task_Status.NOT_STARTED;
 };
 
+export const getRolloutStatus = (rollout: Rollout): Task_Status => {
+  const stages = rollout.stages;
+  if (stages.length === 0) return Task_Status.NOT_STARTED;
+
+  for (const status of TASK_STATUS_FILTERS) {
+    if (stages.some((stage) => getStageStatus(stage) === status)) {
+      return status;
+    }
+  }
+
+  return Task_Status.NOT_STARTED;
+};
+
 export const databaseForTask = (project: Project, task: Task) => {
   switch (task.type) {
     case Task_Type.DATABASE_CREATE:

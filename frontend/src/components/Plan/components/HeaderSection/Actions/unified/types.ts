@@ -15,7 +15,10 @@ export type IssueAction =
 
 export type PlanAction = "PLAN_CLOSE" | "PLAN_REOPEN";
 
-export type RolloutAction = "ROLLOUT_START" | "ROLLOUT_CANCEL";
+export type RolloutAction =
+  | "ROLLOUT_CREATE"
+  | "ROLLOUT_START"
+  | "ROLLOUT_CANCEL";
 
 // All unified actions
 export type UnifiedAction = IssueAction | PlanAction | RolloutAction;

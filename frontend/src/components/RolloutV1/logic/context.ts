@@ -1,10 +1,13 @@
 import { create } from "@bufbuild/protobuf";
 import type { InjectionKey } from "vue";
 import { computed, inject, nextTick, onUnmounted, provide, ref } from "vue";
+import {
+  generateRolloutPreview,
+  usePlanContextWithRollout,
+} from "@/components/Plan/logic";
 import { useCurrentProjectV1 } from "@/store";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { generateRolloutPreview, usePlanContextWithRollout } from "../../logic";
 
 export const KEY = Symbol(
   "bb.plan.rollout-view"

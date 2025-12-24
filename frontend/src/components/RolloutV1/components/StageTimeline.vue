@@ -135,6 +135,7 @@ import { computed, ref, watch } from "vue";
 import BBSpin from "@/bbkit/BBSpin.vue";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import TimestampDisplay from "@/components/misc/Timestamp.vue";
+import { useResourcePoller } from "@/components/Plan/logic/poller";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useCurrentProjectV1 } from "@/store";
@@ -145,7 +146,6 @@ import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
 } from "@/utils";
-import { useResourcePoller } from "../../../logic/poller";
 import { useTaskNavigation } from "./composables/useTaskNavigation";
 import {
   getTaskNameFromTaskRun,

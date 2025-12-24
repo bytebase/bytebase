@@ -5,18 +5,6 @@
       <div class="w-full flex flex-row items-center justify-between py-4 gap-2">
         <!-- Left: Stage info and filters -->
         <div class="flex flex-row items-center gap-3">
-          <div class="flex flex-row items-center gap-2">
-            <NTag round>{{ $t("common.stage") }}</NTag>
-            <span class="font-medium text-lg">
-              <EnvironmentV1Name
-                :environment="
-                  environmentStore.getEnvironmentByName(selectedStage.environment)
-                "
-                :null-environment-placeholder="'Null'"
-                :link="false"
-              />
-            </span>
-          </div>
           <TaskFilter
             v-if="isStageCreated(selectedStage)"
             :stage="selectedStage"
@@ -94,13 +82,11 @@
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
 import { PlayIcon, PlusIcon } from "lucide-vue-next";
-import { NButton, NPopconfirm, NTag } from "naive-ui";
+import { NButton, NPopconfirm } from "naive-ui";
 import { computed, ref } from "vue";
-import { EnvironmentV1Name } from "@/components/v2";
-import { useEnvironmentV1Store } from "@/store";
+import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { usePlanContextWithRollout } from "../../../logic";
 import StageContentSidebar from "./StageContentSidebar.vue";
 import TaskFilter from "./TaskFilter.vue";
 import TaskList from "./TaskList.vue";
@@ -116,7 +102,6 @@ defineEmits<{
   (event: "create-stage", stage: Stage): void;
 }>();
 
-const environmentStore = useEnvironmentV1Store();
 const filterStatuses = ref<Task_Status[]>([]);
 
 // Responsive layout: sidebar on wide screen (>= 768px), drawer on narrow

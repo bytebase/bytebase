@@ -48,7 +48,7 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from "vue";
-import { usePlanContextWithRollout } from "@/components/Plan/logic/context";
+import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { useTaskCollapse } from "./composables/useTaskCollapse";

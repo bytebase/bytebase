@@ -7,8 +7,8 @@ import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
  * This ensures database and engine icons display correctly
  */
 export const useTaskInstancePreload = (stages: () => Stage[]) => {
+  const databaseStore = useDatabaseV1Store();
   const fetchedDatabases = ref(new Set<string>());
-  const dbStore = useDatabaseV1Store();
 
   watch(
     stages,
@@ -32,7 +32,7 @@ export const useTaskInstancePreload = (stages: () => Stage[]) => {
       if (newDatabases.length > 0) {
         // Batch fetch databases (which also fetches their instances)
         try {
-          await dbStore.batchGetOrFetchDatabases(newDatabases);
+          await databaseStore.batchGetOrFetchDatabases(newDatabases);
           // Mark these databases as fetched
           newDatabases.forEach((name) => fetchedDatabases.value.add(name));
         } catch {

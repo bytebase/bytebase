@@ -31,8 +31,8 @@
 <script lang="ts" setup>
 import { NTag } from "naive-ui";
 import { computed } from "vue";
-import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
+import { TASK_STATUS_FILTERS } from "@/components/RolloutV1/constants/task";
 import type {
   Stage,
   Task_Status,
