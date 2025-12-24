@@ -1918,8 +1918,8 @@
           }
         },
         "enforce-issue-title": {
-          "self": "要求手动输入工单标题",
-          "description": "工单标题必须由用户输入而不是自动生成。"
+          "self": "要求手动输入标题",
+          "description": "工单和计划的标题必须由用户输入，而不是自动生成。"
         },
         "enforce-sql-review": {
           "self": "强制 SQL 审核",
