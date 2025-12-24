@@ -938,7 +938,7 @@
     "labels": "工单标签",
     "my-issues": "我的工单",
     "waiting-approval": "等待审批",
-    "create-rollout": "创建上线",
+    "create-rollout": "创建发布",
     "status-transition": {
       "modal": {
         "resolve": "完成工单?",
