@@ -199,7 +199,7 @@ export const usePlanAction = () => {
 
         // Issue must be approved/skipped if requireIssueApproval is enabled
         const issueReady =
-                      !requireIssueApproval ||
+          !requireIssueApproval ||
           issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
           issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
 
