@@ -486,10 +486,18 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 	result, err := ctl.GetSQLReviewResult(ctx, plan.Msg)
 	a.NoError(err)
 
+	// With consolidated model, filter to only STATEMENT_ADVISE results
+	var statementAdviseResults []*v1pb.PlanCheckRun_Result
+	for _, r := range result.Results {
+		if r.Type == v1pb.PlanCheckRun_Result_STATEMENT_ADVISE {
+			statementAdviseResults = append(statementAdviseResults, r)
+		}
+	}
+
 	if wait {
 		a.NotNil(result)
-		a.Len(result.Results, 1)
-		a.Equal(v1pb.Advice_SUCCESS, result.Results[0].Status)
+		a.Len(statementAdviseResults, 1)
+		a.Equal(v1pb.Advice_SUCCESS, statementAdviseResults[0].Status)
 		issue, err := ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
 			Parent: project.Name,
 			Issue: &v1pb.Issue{
@@ -508,7 +516,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 		time.Sleep(5 * time.Second)
 	}
 
-	return result.Results
+	return statementAdviseResults
 }
 
 func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckRun_Result, message string) {
