@@ -25,8 +25,8 @@ import { useIssueContext } from "@/components/IssueV1";
 import {
   type PlanCheckRun,
   type PlanCheckRun_Result,
-  PlanCheckRunSchema,
   PlanCheckRun_Result_Type,
+  PlanCheckRunSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { flattenTaskV1List, isDatabaseChangeRelatedIssue } from "@/utils";
 import AffectedRowsView from "./AffectedRowsView.vue";

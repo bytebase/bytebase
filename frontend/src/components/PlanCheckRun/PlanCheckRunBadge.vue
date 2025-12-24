@@ -45,8 +45,8 @@ import { useI18n } from "vue-i18n";
 import { TaskSpinner } from "@/components/IssueV1/components/common";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import {
-  PlanCheckRun_Status,
   PlanCheckRun_Result_Type,
+  PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";

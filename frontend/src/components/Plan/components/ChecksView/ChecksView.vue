@@ -156,9 +156,9 @@ import { BBSpin } from "@/bbkit";
 import {
   type PlanCheckRun,
   type PlanCheckRun_Result,
+  PlanCheckRun_Result_Type,
   PlanCheckRun_ResultSchema,
   PlanCheckRun_Status,
-  PlanCheckRun_Result_Type,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { humanizeTs } from "@/utils";
@@ -318,7 +318,10 @@ const remainingCount = computed(() => {
 
 // Check type configuration lookup
 const checkTypeConfig: Partial<
-  Record<PlanCheckRun_Result_Type, { icon: typeof FileCodeIcon; labelKey: string }>
+  Record<
+    PlanCheckRun_Result_Type,
+    { icon: typeof FileCodeIcon; labelKey: string }
+  >
 > = {
   [PlanCheckRun_Result_Type.STATEMENT_ADVISE]: {
     icon: SearchCodeIcon,

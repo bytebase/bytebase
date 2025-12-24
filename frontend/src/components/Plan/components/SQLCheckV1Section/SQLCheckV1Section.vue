@@ -106,9 +106,9 @@ import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import {
   type PlanCheckRun,
   type PlanCheckRun_Result,
+  PlanCheckRun_Result_Type,
   PlanCheckRun_ResultSchema,
   PlanCheckRun_Status,
-  PlanCheckRun_Result_Type,
   PlanCheckRunSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {

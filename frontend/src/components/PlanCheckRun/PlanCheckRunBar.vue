@@ -37,9 +37,7 @@ import { create } from "@bufbuild/protobuf";
 import { ref } from "vue";
 import { planServiceClientConnect } from "@/grpcweb";
 import type { ComposedDatabase } from "@/types";
-import type {
-  PlanCheckRun,
-} from "@/types/proto-es/v1/plan_service_pb";
+import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import {
   PlanCheckRun_Result_Type,
   RunPlanChecksRequestSchema,

@@ -35,9 +35,9 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID, humanizeDate } from "@/utils";
+import { HiddenPlanCheckTypes } from "./common";
 import PlanCheckRunBadgeBar from "./PlanCheckRunBadgeBar.vue";
 import PlanCheckRunDetail from "./PlanCheckRunDetail.vue";
-import { HiddenPlanCheckTypes } from "./common";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];

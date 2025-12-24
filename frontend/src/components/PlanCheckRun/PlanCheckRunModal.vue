@@ -18,9 +18,7 @@
 <script setup lang="ts">
 import { BBModal } from "@/bbkit";
 import type { ComposedDatabase } from "@/types";
-import type {
-  PlanCheckRun,
-} from "@/types/proto-es/v1/plan_service_pb";
+import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { PlanCheckRun_Result_Type } from "@/types/proto-es/v1/plan_service_pb";
 import PlanCheckRunPanel from "./PlanCheckRunPanel.vue";
 

@@ -19,8 +19,8 @@ import {
   type PlanCheckRun,
   PlanCheckRun_Result_Type,
 } from "@/types/proto-es/v1/plan_service_pb";
-import PlanCheckRunBadge from "./PlanCheckRunBadge.vue";
 import { HiddenPlanCheckTypes } from "./common";
+import PlanCheckRunBadge from "./PlanCheckRunBadge.vue";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
