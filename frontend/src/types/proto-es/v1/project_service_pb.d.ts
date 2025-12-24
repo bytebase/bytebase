@@ -5,8 +5,8 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
-import type { GetIamPolicyRequestSchema, IamPolicy, IamPolicySchema, SetIamPolicyRequestSchema } from "./iam_policy_pb";
 import type { State, WebhookType } from "./common_pb";
+import type { GetIamPolicyRequestSchema, IamPolicySchema, SetIamPolicyRequestSchema } from "./iam_policy_pb";
 
 /**
  * Describes the file v1/project_service.proto.
@@ -389,74 +389,6 @@ export declare type BatchDeleteProjectsRequest = Message<"bytebase.v1.BatchDelet
  * Use `create(BatchDeleteProjectsRequestSchema)` to create a new message.
  */
 export declare const BatchDeleteProjectsRequestSchema: GenMessage<BatchDeleteProjectsRequest>;
-
-/**
- * @generated from message bytebase.v1.BatchGetIamPolicyRequest
- */
-export declare type BatchGetIamPolicyRequest = Message<"bytebase.v1.BatchGetIamPolicyRequest"> & {
-  /**
-   * The scope of the batch get. Typically it's "projects/-".
-   *
-   * @generated from field: string scope = 1;
-   */
-  scope: string;
-
-  /**
-   * @generated from field: repeated string names = 2;
-   */
-  names: string[];
-};
-
-/**
- * Describes the message bytebase.v1.BatchGetIamPolicyRequest.
- * Use `create(BatchGetIamPolicyRequestSchema)` to create a new message.
- */
-export declare const BatchGetIamPolicyRequestSchema: GenMessage<BatchGetIamPolicyRequest>;
-
-/**
- * @generated from message bytebase.v1.BatchGetIamPolicyResponse
- */
-export declare type BatchGetIamPolicyResponse = Message<"bytebase.v1.BatchGetIamPolicyResponse"> & {
-  /**
-   * The policy results for each requested project.
-   *
-   * @generated from field: repeated bytebase.v1.BatchGetIamPolicyResponse.PolicyResult policy_results = 1;
-   */
-  policyResults: BatchGetIamPolicyResponse_PolicyResult[];
-};
-
-/**
- * Describes the message bytebase.v1.BatchGetIamPolicyResponse.
- * Use `create(BatchGetIamPolicyResponseSchema)` to create a new message.
- */
-export declare const BatchGetIamPolicyResponseSchema: GenMessage<BatchGetIamPolicyResponse>;
-
-/**
- * Result for a single project's IAM policy.
- *
- * @generated from message bytebase.v1.BatchGetIamPolicyResponse.PolicyResult
- */
-export declare type BatchGetIamPolicyResponse_PolicyResult = Message<"bytebase.v1.BatchGetIamPolicyResponse.PolicyResult"> & {
-  /**
-   * The project resource name.
-   *
-   * @generated from field: string project = 1;
-   */
-  project: string;
-
-  /**
-   * The IAM policy for the project.
-   *
-   * @generated from field: bytebase.v1.IamPolicy policy = 2;
-   */
-  policy?: IamPolicy;
-};
-
-/**
- * Describes the message bytebase.v1.BatchGetIamPolicyResponse.PolicyResult.
- * Use `create(BatchGetIamPolicyResponse_PolicyResultSchema)` to create a new message.
- */
-export declare const BatchGetIamPolicyResponse_PolicyResultSchema: GenMessage<BatchGetIamPolicyResponse_PolicyResult>;
 
 /**
  * A label for categorizing and organizing issues.
@@ -1073,17 +1005,6 @@ export declare const ProjectService: GenService<{
     methodKind: "unary";
     input: typeof GetIamPolicyRequestSchema;
     output: typeof IamPolicySchema;
-  },
-  /**
-   * Deprecated. No permission check implemented.
-   * Permissions required: None
-   *
-   * @generated from rpc bytebase.v1.ProjectService.BatchGetIamPolicy
-   */
-  batchGetIamPolicy: {
-    methodKind: "unary";
-    input: typeof BatchGetIamPolicyRequestSchema;
-    output: typeof BatchGetIamPolicyResponseSchema;
   },
   /**
    * Sets the IAM policy for a project.

@@ -586,41 +586,6 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(iamPolicy), nil
 }
 
-// BatchGetIamPolicy returns the IAM policy for projects in batch.
-func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, req *connect.Request[v1pb.BatchGetIamPolicyRequest]) (*connect.Response[v1pb.BatchGetIamPolicyResponse], error) {
-	resp := &v1pb.BatchGetIamPolicyResponse{}
-	for _, name := range req.Msg.Names {
-		projectID, err := common.GetProjectID(name)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-
-		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-			ResourceID: &projectID,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		if project == nil {
-			continue
-		}
-		policy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-
-		iamPolicy, err := convertToV1IamPolicy(ctx, s.store, policy)
-		if err != nil {
-			return nil, err
-		}
-		resp.PolicyResults = append(resp.PolicyResults, &v1pb.BatchGetIamPolicyResponse_PolicyResult{
-			Project: name,
-			Policy:  iamPolicy,
-		})
-	}
-	return connect.NewResponse(resp), nil
-}
-
 // SetIamPolicy sets the IAM policy for a project.
 func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[v1pb.SetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	projectID, err := common.GetProjectID(req.Msg.Resource)

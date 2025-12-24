@@ -30,7 +30,6 @@ const (
 	ProjectService_UndeleteProject_FullMethodName     = "/bytebase.v1.ProjectService/UndeleteProject"
 	ProjectService_BatchDeleteProjects_FullMethodName = "/bytebase.v1.ProjectService/BatchDeleteProjects"
 	ProjectService_GetIamPolicy_FullMethodName        = "/bytebase.v1.ProjectService/GetIamPolicy"
-	ProjectService_BatchGetIamPolicy_FullMethodName   = "/bytebase.v1.ProjectService/BatchGetIamPolicy"
 	ProjectService_SetIamPolicy_FullMethodName        = "/bytebase.v1.ProjectService/SetIamPolicy"
 	ProjectService_AddWebhook_FullMethodName          = "/bytebase.v1.ProjectService/AddWebhook"
 	ProjectService_UpdateWebhook_FullMethodName       = "/bytebase.v1.ProjectService/UpdateWebhook"
@@ -75,9 +74,6 @@ type ProjectServiceClient interface {
 	// Retrieves the IAM policy for a project.
 	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(ctx context.Context, in *GetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
-	// Deprecated. No permission check implemented.
-	// Permissions required: None
-	BatchGetIamPolicy(ctx context.Context, in *BatchGetIamPolicyRequest, opts ...grpc.CallOption) (*BatchGetIamPolicyResponse, error)
 	// Sets the IAM policy for a project.
 	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
@@ -203,16 +199,6 @@ func (c *projectServiceClient) GetIamPolicy(ctx context.Context, in *GetIamPolic
 	return out, nil
 }
 
-func (c *projectServiceClient) BatchGetIamPolicy(ctx context.Context, in *BatchGetIamPolicyRequest, opts ...grpc.CallOption) (*BatchGetIamPolicyResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BatchGetIamPolicyResponse)
-	err := c.cc.Invoke(ctx, ProjectService_BatchGetIamPolicy_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *projectServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IamPolicy)
@@ -300,9 +286,6 @@ type ProjectServiceServer interface {
 	// Retrieves the IAM policy for a project.
 	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error)
-	// Deprecated. No permission check implemented.
-	// Permissions required: None
-	BatchGetIamPolicy(context.Context, *BatchGetIamPolicyRequest) (*BatchGetIamPolicyResponse, error)
 	// Sets the IAM policy for a project.
 	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
@@ -357,9 +340,6 @@ func (UnimplementedProjectServiceServer) BatchDeleteProjects(context.Context, *B
 }
 func (UnimplementedProjectServiceServer) GetIamPolicy(context.Context, *GetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetIamPolicy not implemented")
-}
-func (UnimplementedProjectServiceServer) BatchGetIamPolicy(context.Context, *BatchGetIamPolicyRequest) (*BatchGetIamPolicyResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method BatchGetIamPolicy not implemented")
 }
 func (UnimplementedProjectServiceServer) SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetIamPolicy not implemented")
@@ -577,24 +557,6 @@ func _ProjectService_GetIamPolicy_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_BatchGetIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BatchGetIamPolicyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).BatchGetIamPolicy(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_BatchGetIamPolicy_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).BatchGetIamPolicy(ctx, req.(*BatchGetIamPolicyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ProjectService_SetIamPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetIamPolicyRequest)
 	if err := dec(in); err != nil {
@@ -731,10 +693,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetIamPolicy",
 			Handler:    _ProjectService_GetIamPolicy_Handler,
-		},
-		{
-			MethodName: "BatchGetIamPolicy",
-			Handler:    _ProjectService_BatchGetIamPolicy_Handler,
 		},
 		{
 			MethodName: "SetIamPolicy",

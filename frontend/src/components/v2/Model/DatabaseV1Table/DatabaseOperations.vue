@@ -95,7 +95,6 @@
 <script lang="ts" setup>
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema as FieldMaskProtoEsSchema } from "@bufbuild/protobuf/wkt";
-import { computedAsync } from "@vueuse/core";
 import {
   ArrowRightLeftIcon,
   ChevronsDownIcon,
@@ -223,14 +222,8 @@ const selectedProjectName = computed(() => {
   return [...selectedProjectNames.value][0];
 });
 
-const allowTransferOutProject = computed(() => {
-  return props.databases.every((db) =>
-    hasProjectPermissionV2(db.projectEntity, "bb.projects.update")
-  );
-});
-
-const allowTransferInProject = computedAsync(async () => {
-  const project = await projectStore.getOrFetchProjectByName(props.projectName);
+const allowTransferInProject = computed(() => {
+  const project = projectStore.getProjectByName(props.projectName);
   return hasProjectPermissionV2(project, "bb.projects.update");
 });
 
@@ -267,13 +260,7 @@ const operations = computed(() => {
     "EDIT-ENVIRONMENT",
     "TRANSFER-OUT",
     "TRANSFER-IN",
-  ].filter((operation) => {
-    switch (operation) {
-      case "TRANSFER-IN":
-        return allowTransferInProject.value;
-    }
-    return true;
-  });
+  ];
 });
 
 const showDatabaseDriftedWarningDialog = () => {
@@ -432,49 +419,53 @@ const actions = computed((): DatabaseAction[] => {
   for (const operation of operations.value) {
     switch (operation) {
       case "CHANGE-DATABASE":
-        resp.push({
-          icon: h(PencilIcon),
-          text: t("database.change-database"),
-          disabled:
-            !allowChangeDatabase.value ||
-            !selectedProjectName.value ||
-            selectedDatabaseNameList.value.length < 1 ||
-            selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
-          click: () => {
-            preCreateIssue(
-              selectedProjectName.value,
-              selectedDatabaseNameList.value
-            );
-          },
-          tooltip: (action) => {
-            if (!allowChangeDatabase.value) {
-              return t("database.batch-action-permission-denied", {
-                action,
-              });
-            }
-            return getDisabledTooltip(action);
-          },
-        });
+        if (operationsInProjectDetail.value && !isInDefaultProject.value) {
+          resp.push({
+            icon: h(PencilIcon),
+            text: t("database.change-database"),
+            disabled:
+              !allowChangeDatabase.value ||
+              !selectedProjectName.value ||
+              selectedDatabaseNameList.value.length < 1 ||
+              selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
+            click: () => {
+              preCreateIssue(
+                selectedProjectName.value,
+                selectedDatabaseNameList.value
+              );
+            },
+            tooltip: (action) => {
+              if (!allowChangeDatabase.value) {
+                return t("database.batch-action-permission-denied", {
+                  action,
+                });
+              }
+              return getDisabledTooltip(action);
+            },
+          });
+        }
         break;
       case "EXPORT-DATA":
-        resp.push({
-          icon: h(DownloadIcon),
-          text: t("custom-approval.risk-rule.risk.namespace.data_export"),
-          disabled:
-            !allowExportData.value ||
-            !selectedProjectName.value ||
-            props.databases.length < 1 ||
-            selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
-          click: () => generateMultiDb("bb.issue.database.data.export"),
-          tooltip: (action) => {
-            if (!allowExportData.value) {
-              return t("database.batch-action-permission-denied", {
-                action,
-              });
-            }
-            return "";
-          },
-        });
+        if (operationsInProjectDetail.value && !isInDefaultProject.value) {
+          resp.push({
+            icon: h(DownloadIcon),
+            text: t("custom-approval.risk-rule.risk.namespace.data_export"),
+            disabled:
+              !allowExportData.value ||
+              !selectedProjectName.value ||
+              props.databases.length < 1 ||
+              selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
+            click: () => generateMultiDb("bb.issue.database.data.export"),
+            tooltip: (action) => {
+              if (!allowExportData.value) {
+                return t("database.batch-action-permission-denied", {
+                  action,
+                });
+              }
+              return "";
+            },
+          });
+        }
         break;
       case "SYNC-SCHEMA":
         resp.push({
@@ -541,15 +532,9 @@ const actions = computed((): DatabaseAction[] => {
           resp.push({
             icon: h(ArrowRightLeftIcon),
             text: t("database.transfer-project"),
-            disabled:
-              !allowTransferOutProject.value || props.databases.length < 1,
+            disabled: props.databases.length < 1,
             click: () => (state.transferOutDatabaseType = "TRANSFER-OUT"),
             tooltip: (action) => {
-              if (!allowTransferOutProject.value) {
-                return t("database.batch-action-permission-denied", {
-                  action,
-                });
-              }
               return getDisabledTooltip(action);
             },
           });
@@ -557,11 +542,10 @@ const actions = computed((): DatabaseAction[] => {
           resp.push({
             icon: h(UnlinkIcon),
             text: t("database.unassign"),
-            disabled:
-              !allowTransferOutProject.value || props.databases.length < 1,
+            disabled: !allowUpdateDatabase.value || props.databases.length < 1,
             click: () => (state.showUnassignAlert = true),
             tooltip: (action) => {
-              if (!allowTransferOutProject.value) {
+              if (!allowUpdateDatabase.value) {
                 return t("database.batch-action-permission-denied", {
                   action,
                 });
