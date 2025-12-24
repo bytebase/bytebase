@@ -17,28 +17,46 @@ import { orderBy } from "lodash-es";
 import { computed } from "vue";
 import {
   type PlanCheckRun,
-  PlanCheckRun_Type,
+  PlanCheckRun_Result_Type,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { groupBy } from "@/utils/collections";
+import { HiddenPlanCheckTypes } from "./common";
 import PlanCheckRunBadge from "./PlanCheckRunBadge.vue";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
-  selectedType?: PlanCheckRun_Type;
+  selectedType?: PlanCheckRun_Result_Type;
 }>();
 
 defineEmits<{
-  (event: "select-type", type: PlanCheckRun_Type): void;
+  (event: "select-type", type: PlanCheckRun_Result_Type): void;
 }>();
 
 const planCheckRunsGroupByType = computed(() => {
-  const groups = groupBy(props.planCheckRunList, (checkRun) => checkRun.type);
-  const list = Array.from(groups.entries()).map(([type, list]) => ({
+  // With consolidated model, group by result type across all runs
+  const typeToRuns = new Map<PlanCheckRun_Result_Type, PlanCheckRun[]>();
+
+  for (const run of props.planCheckRunList) {
+    for (const result of run.results) {
+      if (HiddenPlanCheckTypes.has(result.type)) {
+        continue;
+      }
+      if (!typeToRuns.has(result.type)) {
+        typeToRuns.set(result.type, []);
+      }
+      // Add the run if not already added for this type
+      const runs = typeToRuns.get(result.type)!;
+      if (!runs.includes(run)) {
+        runs.push(run);
+      }
+    }
+  }
+
+  const list = Array.from(typeToRuns.entries()).map(([type, list]) => ({
     type,
     list,
   }));
+
   // Sort by pre-defined orders
-  // If an item's order is not defined, put it behind
   return orderBy(
     list,
     [(group) => PlanCheckTypeOrderDict.get(group.type) ?? 99999],
@@ -46,11 +64,11 @@ const planCheckRunsGroupByType = computed(() => {
   );
 });
 
-const PlanCheckTypeOrderList: PlanCheckRun_Type[] = [
-  PlanCheckRun_Type.DATABASE_GHOST_SYNC,
-  PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
+const PlanCheckTypeOrderList: PlanCheckRun_Result_Type[] = [
+  PlanCheckRun_Result_Type.GHOST_SYNC,
+  PlanCheckRun_Result_Type.STATEMENT_ADVISE,
 ];
-const PlanCheckTypeOrderDict = new Map<PlanCheckRun_Type, number>(
+const PlanCheckTypeOrderDict = new Map<PlanCheckRun_Result_Type, number>(
   PlanCheckTypeOrderList.map((type, order) => [type, order])
 );
 </script>

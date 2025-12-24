@@ -471,8 +471,8 @@
     - [SearchPlansResponse](#bytebase-v1-SearchPlansResponse)
     - [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest)
   
+    - [PlanCheckRun.Result.Type](#bytebase-v1-PlanCheckRun-Result-Type)
     - [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status)
-    - [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type)
   
     - [PlanService](#bytebase-v1-PlanService)
   
@@ -7688,10 +7688,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} |
-| type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
 | status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
-| target | [string](#string) |  | Format: instances/{instance}/databases/{database} |
-| sheet | [string](#string) |  | Format: project/{project}/sheets/{sheet} |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
 | error | [string](#string) |  | error is set if the Status is FAILED. |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -7713,6 +7710,8 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | title | [string](#string) |  |  |
 | content | [string](#string) |  |  |
 | code | [int32](#int32) |  |  |
+| target | [string](#string) |  | Target identification for consolidated results. Format: instances/{instance}/databases/{database} |
+| type | [PlanCheckRun.Result.Type](#bytebase-v1-PlanCheckRun-Result-Type) |  |  |
 | sql_summary_report | [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport) |  |  |
 | sql_review_report | [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport) |  |  |
 
@@ -7840,6 +7839,20 @@ The plan&#39;s `name` field is used to identify the plan to update. Format: proj
  
 
 
+<a name="bytebase-v1-PlanCheckRun-Result-Type"></a>
+
+### PlanCheckRun.Result.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| STATEMENT_ADVISE | 1 |  |
+| STATEMENT_SUMMARY_REPORT | 2 |  |
+| GHOST_SYNC | 3 |  |
+
+
+
 <a name="bytebase-v1-PlanCheckRun-Status"></a>
 
 ### PlanCheckRun.Status
@@ -7852,20 +7865,6 @@ The plan&#39;s `name` field is used to identify the plan to update. Format: proj
 | DONE | 2 |  |
 | FAILED | 3 |  |
 | CANCELED | 4 |  |
-
-
-
-<a name="bytebase-v1-PlanCheckRun-Type"></a>
-
-### PlanCheckRun.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 | Unspecified check type. |
-| DATABASE_STATEMENT_ADVISE | 2 | SQL review check that analyzes statements against configured SQL review rules. |
-| DATABASE_STATEMENT_SUMMARY_REPORT | 3 | Summary report check that generates impact analysis for the statements. |
-| DATABASE_GHOST_SYNC | 5 | Ghost sync check that validates gh-ost online schema change compatibility. |
 
 
  

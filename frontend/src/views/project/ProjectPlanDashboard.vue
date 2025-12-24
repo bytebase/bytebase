@@ -325,18 +325,24 @@ const handleSpecCreated = async (spec: Plan_Spec) => {
       throw new Error("No valid database group name found in targets.");
     }
     query.databaseGroupName = databaseGroupName;
-    query.name = generateIssueTitle(template, [
-      extractDatabaseGroupName(databaseGroupName),
-    ]);
+    // Only set title from generated if enforceIssueTitle is false.
+    if (!project.value.enforceIssueTitle) {
+      query.name = generateIssueTitle(template, [
+        extractDatabaseGroupName(databaseGroupName),
+      ]);
+    }
   } else {
     query.databaseList = targets.join(",");
-    query.name = generateIssueTitle(
-      template,
-      targets.map((db) => {
-        const { databaseName } = extractDatabaseResourceName(db);
-        return databaseName;
-      })
-    );
+    // Only set title from generated if enforceIssueTitle is false.
+    if (!project.value.enforceIssueTitle) {
+      query.name = generateIssueTitle(
+        template,
+        targets.map((db) => {
+          const { databaseName } = extractDatabaseResourceName(db);
+          return databaseName;
+        })
+      );
+    }
   }
 
   // Navigate to the spec detail page with the created spec.

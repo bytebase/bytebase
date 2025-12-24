@@ -23,7 +23,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import TaskRunTable from "@/components/Plan/components/RolloutView/TaskRunTable.vue";
+import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractTaskUID } from "@/utils";
 import { usePlanContext, usePlanContextWithRollout } from "../../../logic";

@@ -103,18 +103,16 @@ export const useGroupStore = defineStore("group", () => {
   };
 
   const batchGetOrFetchGroups = async (groupNames: string[]) => {
-    const distinctGroupList = uniq(groupNames).filter((groupName) => {
-      if (!groupName) {
-        return false;
-      }
+    const validGroupList = uniq(groupNames).filter((groupName) => !!groupName);
+    const pendingFetch = validGroupList.filter((groupName) => {
       const group = getGroupByIdentifier(groupName);
       if (group) {
         return false;
       }
       return true;
     });
-    await batchFetchGroups(distinctGroupList);
-    return distinctGroupList.map(getGroupByIdentifier);
+    await batchFetchGroups(pendingFetch);
+    return validGroupList.map(getGroupByIdentifier);
   };
 
   const getOrFetchGroupByIdentifier = async (id: string) => {

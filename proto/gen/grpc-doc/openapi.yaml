@@ -11805,14 +11805,6 @@ components:
                 name:
                     type: string
                     description: 'Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}'
-                type:
-                    enum:
-                        - TYPE_UNSPECIFIED
-                        - DATABASE_STATEMENT_ADVISE
-                        - DATABASE_STATEMENT_SUMMARY_REPORT
-                        - DATABASE_GHOST_SYNC
-                    type: string
-                    format: enum
                 status:
                     enum:
                         - STATUS_UNSPECIFIED
@@ -11822,12 +11814,6 @@ components:
                         - CANCELED
                     type: string
                     format: enum
-                target:
-                    type: string
-                    description: 'Format: instances/{instance}/databases/{database}'
-                sheet:
-                    type: string
-                    description: 'Format: project/{project}/sheets/{sheet}'
                 results:
                     type: array
                     items:
@@ -11857,6 +11843,19 @@ components:
                 code:
                     type: integer
                     format: int32
+                target:
+                    type: string
+                    description: |-
+                        Target identification for consolidated results.
+                         Format: instances/{instance}/databases/{database}
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - STATEMENT_ADVISE
+                        - STATEMENT_SUMMARY_REPORT
+                        - GHOST_SYNC
+                    type: string
+                    format: enum
                 sqlSummaryReport:
                     $ref: '#/components/schemas/Result_SqlSummaryReport'
                 sqlReviewReport:

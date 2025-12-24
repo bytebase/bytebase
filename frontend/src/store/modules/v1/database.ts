@@ -309,10 +309,8 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
 
   const batchGetOrFetchDatabases = async (databaseNames: string[]) => {
-    const distinctDatabaseList = uniq(databaseNames).filter((databaseName) => {
-      if (!databaseName || !isValidDatabaseName(databaseName)) {
-        return false;
-      }
+    const validDatabaseList = uniq(databaseNames).filter(isValidDatabaseName);
+    const pendingFetch = validDatabaseList.filter((databaseName) => {
       if (
         getDatabaseByName(databaseName) &&
         isValidDatabaseName(getDatabaseByName(databaseName).name)
@@ -321,8 +319,8 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       }
       return true;
     });
-    await batchGetDatabases(distinctDatabaseList);
-    return distinctDatabaseList.map(getDatabaseByName);
+    await batchGetDatabases(pendingFetch);
+    return validDatabaseList.map(getDatabaseByName);
   };
 
   const batchUpdateDatabases = async (params: BatchUpdateDatabasesRequest) => {

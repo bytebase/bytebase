@@ -1977,11 +1977,11 @@
               
               
                 <li>
-                  <a href="#bytebase.v1.PlanCheckRun.Status"><span class="badge">E</span>PlanCheckRun.Status</a>
+                  <a href="#bytebase.v1.PlanCheckRun.Result.Type"><span class="badge">E</span>PlanCheckRun.Result.Type</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.PlanCheckRun.Type"><span class="badge">E</span>PlanCheckRun.Type</a>
+                  <a href="#bytebase.v1.PlanCheckRun.Status"><span class="badge">E</span>PlanCheckRun.Status</a>
                 </li>
               
               
@@ -21691,31 +21691,10 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                 </tr>
               
                 <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.PlanCheckRun.Type">PlanCheckRun.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>status</td>
                   <td><a href="#bytebase.v1.PlanCheckRun.Status">PlanCheckRun.Status</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: project/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
@@ -21780,6 +21759,21 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                 <tr>
                   <td>code</td>
                   <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Target identification for consolidated results.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.PlanCheckRun.Result.Type">PlanCheckRun.Result.Type</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -22056,6 +22050,41 @@ In this situation, `update_mask` is ignored. </p></td>
       
 
       
+        <h3 id="bytebase.v1.PlanCheckRun.Result.Type">PlanCheckRun.Result.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STATEMENT_ADVISE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>STATEMENT_SUMMARY_REPORT</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>GHOST_SYNC</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.PlanCheckRun.Status">PlanCheckRun.Status</h3>
         <p></p>
         <table class="enum-table">
@@ -22092,41 +22121,6 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>CANCELED</td>
                 <td>4</td>
                 <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.PlanCheckRun.Type">PlanCheckRun.Type</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>Unspecified check type.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_STATEMENT_ADVISE</td>
-                <td>2</td>
-                <td><p>SQL review check that analyzes statements against configured SQL review rules.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_STATEMENT_SUMMARY_REPORT</td>
-                <td>3</td>
-                <td><p>Summary report check that generates impact analysis for the statements.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE_GHOST_SYNC</td>
-                <td>5</td>
-                <td><p>Ghost sync check that validates gh-ost online schema change compatibility.</p></td>
               </tr>
             
           </tbody>

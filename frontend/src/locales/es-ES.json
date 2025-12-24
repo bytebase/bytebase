@@ -173,6 +173,7 @@
     "deleted": "Eliminado",
     "active": "Activo",
     "reopen": "Reabrir",
+    "plan": "Plan",
     "rollout": "Implementar",
     "upload": "Subir",
     "clear": "Limpiar",
@@ -937,6 +938,7 @@
     "labels": "Etiquetas de problema",
     "my-issues": "Mis Incidencias",
     "waiting-approval": "A la espera de la aprobación",
+    "create-rollout": "Crear despliegue",
     "status-transition": {
       "modal": {
         "resolve": "¿Resolver incidencia?",
@@ -1156,8 +1158,7 @@
     "approval": {
       "rejected-error": "Se ha rechazado la aprobación del problema.",
       "pending-error": "La aprobación del problema está pendiente.",
-      "approved-and-waiting-for-rollout": "Este problema ha sido aprobado y está listo para implementarse.",
-      "ready-for-rollout": "Listo para implementar"
+      "approved-and-waiting-for-rollout": "Este problema ha sido aprobado y está listo para implementarse."
     },
     "new-layout": "Nuevo diseño de CI/CD"
   },
@@ -1174,7 +1175,6 @@
     "navigator": {
       "changes": "Cambios",
       "checks": "Cheques",
-      "rollout": "Despliegue",
       "statement-empty": "La declaración está vacía"
     },
     "checks": {
@@ -1918,8 +1918,8 @@
           }
         },
         "enforce-issue-title": {
-          "self": "Hacer cumplir el título del problema",
-          "description": "Exigir que el título del problema no esté vacío y que lo cree el usuario en lugar de generarse automáticamente."
+          "self": "Requerir título manual",
+          "description": "Requerir que los títulos de problemas y planes sean creados por el usuario en lugar de generarse automáticamente."
         },
         "enforce-sql-review": {
           "self": "Aplicar revisión SQL",

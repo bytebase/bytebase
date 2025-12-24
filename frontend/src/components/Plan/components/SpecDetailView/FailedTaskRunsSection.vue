@@ -58,6 +58,7 @@ import { useRouter } from "vue-router";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import TaskRunStatusIcon from "@/components/IssueV1/components/TaskRunSection/TaskRunStatusIcon.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
+import TaskRunComment from "@/components/RolloutV1/components/TaskRunComment.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useDatabaseV1Store } from "@/store";
@@ -75,7 +76,6 @@ import {
 } from "@/utils";
 import { usePlanContextWithRollout } from "../../logic";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
-import TaskRunComment from "../RolloutView/TaskRunComment.vue";
 import { useSelectedSpec } from "./context";
 
 const DEFAULT_TASK_RUNS_PER_PAGE = 5;

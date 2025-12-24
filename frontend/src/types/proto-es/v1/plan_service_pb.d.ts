@@ -718,28 +718,9 @@ export declare type PlanCheckRun = Message<"bytebase.v1.PlanCheckRun"> & {
   name: string;
 
   /**
-   * @generated from field: bytebase.v1.PlanCheckRun.Type type = 2;
-   */
-  type: PlanCheckRun_Type;
-
-  /**
    * @generated from field: bytebase.v1.PlanCheckRun.Status status = 3;
    */
   status: PlanCheckRun_Status;
-
-  /**
-   * Format: instances/{instance}/databases/{database}
-   *
-   * @generated from field: string target = 4;
-   */
-  target: string;
-
-  /**
-   * Format: project/{project}/sheets/{sheet}
-   *
-   * @generated from field: string sheet = 5;
-   */
-  sheet: string;
 
   /**
    * @generated from field: repeated bytebase.v1.PlanCheckRun.Result results = 6;
@@ -788,6 +769,19 @@ export declare type PlanCheckRun_Result = Message<"bytebase.v1.PlanCheckRun.Resu
    * @generated from field: int32 code = 4;
    */
   code: number;
+
+  /**
+   * Target identification for consolidated results.
+   * Format: instances/{instance}/databases/{database}
+   *
+   * @generated from field: string target = 7;
+   */
+  target: string;
+
+  /**
+   * @generated from field: bytebase.v1.PlanCheckRun.Result.Type type = 8;
+   */
+  type: PlanCheckRun_Result_Type;
 
   /**
    * @generated from oneof bytebase.v1.PlanCheckRun.Result.report
@@ -860,42 +854,34 @@ export declare type PlanCheckRun_Result_SqlReviewReport = Message<"bytebase.v1.P
 export declare const PlanCheckRun_Result_SqlReviewReportSchema: GenMessage<PlanCheckRun_Result_SqlReviewReport>;
 
 /**
- * @generated from enum bytebase.v1.PlanCheckRun.Type
+ * @generated from enum bytebase.v1.PlanCheckRun.Result.Type
  */
-export enum PlanCheckRun_Type {
+export enum PlanCheckRun_Result_Type {
   /**
-   * Unspecified check type.
-   *
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
   TYPE_UNSPECIFIED = 0,
 
   /**
-   * SQL review check that analyzes statements against configured SQL review rules.
-   *
-   * @generated from enum value: DATABASE_STATEMENT_ADVISE = 2;
+   * @generated from enum value: STATEMENT_ADVISE = 1;
    */
-  DATABASE_STATEMENT_ADVISE = 2,
+  STATEMENT_ADVISE = 1,
 
   /**
-   * Summary report check that generates impact analysis for the statements.
-   *
-   * @generated from enum value: DATABASE_STATEMENT_SUMMARY_REPORT = 3;
+   * @generated from enum value: STATEMENT_SUMMARY_REPORT = 2;
    */
-  DATABASE_STATEMENT_SUMMARY_REPORT = 3,
+  STATEMENT_SUMMARY_REPORT = 2,
 
   /**
-   * Ghost sync check that validates gh-ost online schema change compatibility.
-   *
-   * @generated from enum value: DATABASE_GHOST_SYNC = 5;
+   * @generated from enum value: GHOST_SYNC = 3;
    */
-  DATABASE_GHOST_SYNC = 5,
+  GHOST_SYNC = 3,
 }
 
 /**
- * Describes the enum bytebase.v1.PlanCheckRun.Type.
+ * Describes the enum bytebase.v1.PlanCheckRun.Result.Type.
  */
-export declare const PlanCheckRun_TypeSchema: GenEnum<PlanCheckRun_Type>;
+export declare const PlanCheckRun_Result_TypeSchema: GenEnum<PlanCheckRun_Result_Type>;
 
 /**
  * @generated from enum bytebase.v1.PlanCheckRun.Status

@@ -5,7 +5,7 @@
 <script lang="ts" setup>
 import { watchEffect } from "vue";
 import { usePlanContextWithRollout } from "@/components/Plan";
-import { provideRolloutViewContext } from "@/components/Plan/components/RolloutView/context";
+import { provideRolloutViewContext } from "@/components/RolloutV1/logic/context";
 import { usePolicyV1Store } from "@/store";
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 
