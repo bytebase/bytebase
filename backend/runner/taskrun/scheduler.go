@@ -224,8 +224,8 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 					slog.Error("failed to create rollout release notification activity", log.BBError(err))
 				}
 
-				// After all tasks in the pipeline are done, we will resolve the issue if the issue is auto-resolvable.
-				if issueN != nil && project.Setting.AutoResolveIssue && pipelineDone {
+				// After all tasks in the pipeline are done, we will resolve the issue.
+				if issueN != nil && pipelineDone {
 					if err := func() error {
 						// For those database data export issues, we don't resolve them automatically.
 						if issueN.Type == storepb.Issue_DATABASE_EXPORT {
