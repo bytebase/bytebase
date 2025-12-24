@@ -240,6 +240,21 @@ func GetProjectIDPlanIDPlanCheckRunID(name string) (string, int, int, error) {
 	return tokens[0], planID, planCheckRunID, nil
 }
 
+// GetProjectIDPlanIDFromPlanCheckRun returns the project ID and plan ID from a plan check run singleton resource name.
+// Format: projects/{project}/plans/{plan}/planCheckRun
+func GetProjectIDPlanIDFromPlanCheckRun(name string) (string, int64, error) {
+	// Remove the trailing "/planCheckRun" suffix
+	if !strings.HasSuffix(name, "/planCheckRun") {
+		return "", 0, errors.Errorf("invalid plan check run name %q, expected suffix /planCheckRun", name)
+	}
+	planName := strings.TrimSuffix(name, "/planCheckRun")
+	projectID, planID, err := GetProjectIDPlanID(planName)
+	if err != nil {
+		return "", 0, err
+	}
+	return projectID, int64(planID), nil
+}
+
 // GetProjectIDRolloutID returns the project ID and rollout ID from a resource name.
 func GetProjectIDRolloutID(name string) (string, int, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, RolloutPrefix)
@@ -562,8 +577,10 @@ func FormatPlan(projectID string, planUID int64) string {
 	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), PlanPrefix, planUID)
 }
 
-func FormatPlanCheckRun(projectID string, planUID, runUID int64) string {
-	return fmt.Sprintf("%s/%s%d", FormatPlan(projectID, planUID), PlanCheckRunPrefix, runUID)
+// FormatPlanCheckRun formats a plan check run singleton resource name.
+// Format: projects/{project}/plans/{plan}/planCheckRun
+func FormatPlanCheckRun(projectID string, planUID int64) string {
+	return fmt.Sprintf("%s/planCheckRun", FormatPlan(projectID, planUID))
 }
 
 func FormatSpec(projectID string, planUID int64, specID string) string {
