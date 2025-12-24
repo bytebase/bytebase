@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -349,30 +348,6 @@ func scanPrincipalRow(ctx context.Context, tx *sql.Tx, sqlStr string, args []any
 	user.Profile = &profile
 
 	return &user, nil
-}
-
-// fetchUserGroups fetches the groups for a user by email.
-func fetchUserGroups(ctx context.Context, tx *sql.Tx, email string) ([]string, error) {
-	groupsQuery := qb.Q().Space(`
-		SELECT COALESCE(ARRAY_AGG(user_group.email ORDER BY user_group.email) FILTER (WHERE user_group.email IS NOT NULL), '{}')
-		FROM principal
-		LEFT JOIN user_group ON EXISTS (
-			SELECT 1 FROM jsonb_array_elements(user_group.payload->'members') AS m
-			WHERE m->>'member' = CONCAT('users/', principal.email)
-		)
-		WHERE principal.email = ?
-		GROUP BY principal.email
-	`, email)
-	groupsSQL, groupsArgs, err := groupsQuery.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build groups sql")
-	}
-
-	var groups pq.StringArray
-	if err := tx.QueryRowContext(ctx, groupsSQL, groupsArgs...).Scan(&groups); err != nil {
-		return nil, err
-	}
-	return []string(groups), nil
 }
 
 // CreateUser creates an user.
