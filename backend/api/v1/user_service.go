@@ -64,7 +64,7 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 	if user == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", email))
 	}
-	return connect.NewResponse(convertToUser(ctx, user)), nil
+	return connect.NewResponse(convertToUser(ctx, s.iamManager, user)), nil
 }
 
 // BatchGetUsers get users in batch.
@@ -81,12 +81,12 @@ func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Reques
 }
 
 // GetCurrentUser gets the current authenticated user.
-func (*UserService) GetCurrentUser(ctx context.Context, _ *connect.Request[emptypb.Empty]) (*connect.Response[v1pb.User], error) {
+func (s *UserService) GetCurrentUser(ctx context.Context, _ *connect.Request[emptypb.Empty]) (*connect.Response[v1pb.User], error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok || user == nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("authenticated user not found"))
 	}
-	return connect.NewResponse(convertToUser(ctx, user)), nil
+	return connect.NewResponse(convertToUser(ctx, s.iamManager, user)), nil
 }
 
 // ListUsers lists all users.
@@ -145,7 +145,7 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 		NextPageToken: nextPageToken,
 	}
 	for _, user := range users {
-		response.Users = append(response.Users, convertToUser(ctx, user))
+		response.Users = append(response.Users, convertToUser(ctx, s.iamManager, user))
 	}
 	return connect.NewResponse(response), nil
 }
@@ -304,7 +304,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		}
 	}
 
-	userResponse := convertToUser(ctx, user)
+	userResponse := convertToUser(ctx, s.iamManager, user)
 	if request.Msg.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
 		userResponse.ServiceKey = password
 	}
@@ -521,7 +521,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update user, error: %v", err))
 	}
 
-	userResponse := convertToUser(ctx, user)
+	userResponse := convertToUser(ctx, s.iamManager, user)
 	if request.Msg.User.UserType == v1pb.UserType_SERVICE_ACCOUNT && passwordPatch != nil {
 		userResponse.ServiceKey = *passwordPatch
 	}
@@ -659,7 +659,7 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	return connect.NewResponse(convertToUser(ctx, user)), nil
+	return connect.NewResponse(convertToUser(ctx, s.iamManager, user)), nil
 }
 
 // UpdateEmail updates a user's email address.
@@ -717,7 +717,7 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update user email, error: %v", err))
 	}
 
-	return connect.NewResponse(convertToUser(ctx, user)), nil
+	return connect.NewResponse(convertToUser(ctx, s.iamManager, user)), nil
 }
 
 func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
@@ -735,7 +735,7 @@ func convertToV1UserType(userType storepb.PrincipalType) v1pb.UserType {
 	}
 }
 
-func convertToUser(ctx context.Context, user *store.UserMessage) *v1pb.User {
+func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.UserMessage) *v1pb.User {
 	convertedUser := &v1pb.User{
 		Name:     common.FormatUserEmail(user.Email),
 		State:    convertDeletedToState(user.MemberDeleted),
@@ -748,10 +748,7 @@ func convertToUser(ctx context.Context, user *store.UserMessage) *v1pb.User {
 			LastChangePasswordTime: user.Profile.LastChangePasswordTime,
 			Source:                 user.Profile.Source,
 		},
-	}
-
-	for _, group := range user.Groups {
-		convertedUser.Groups = append(convertedUser.Groups, common.FormatGroupEmail(group))
+		Groups: iamManager.GetUserGroups(user.Email),
 	}
 
 	// Add workload identity config if present

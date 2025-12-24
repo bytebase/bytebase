@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 //go:embed acl.yaml
@@ -29,6 +30,8 @@ type Manager struct {
 	// rolePermissions is a map from role to permissions. Key is "roles/{role}".
 	rolePermissions map[string]map[Permission]bool
 	groupMembers    map[string]map[string]bool
+	// member - groups mapping
+	memberGroups    map[string][]string
 	PredefinedRoles []*store.RoleMessage
 	store           *store.Store
 	licenseService  *enterprise.LicenseService
@@ -105,15 +108,21 @@ func (m *Manager) ReloadCache(ctx context.Context) error {
 		return err
 	}
 	groupMembers := make(map[string]map[string]bool)
+	memberGroups := make(map[string][]string)
 	for _, group := range groups {
 		usersSet := make(map[string]bool)
+		groupName := utils.FormatGroupName(group)
 		for _, m := range group.Payload.GetMembers() {
 			usersSet[m.Member] = true
+			if _, ok := memberGroups[m.Member]; !ok {
+				memberGroups[m.Member] = []string{}
+			}
+			memberGroups[m.Member] = append(memberGroups[m.Member], groupName)
 		}
-		groupName := common.FormatGroupEmail(group.Email)
 		groupMembers[groupName] = usersSet
 	}
 	m.groupMembers = groupMembers
+	m.memberGroups = memberGroups
 	return nil
 }
 
@@ -125,6 +134,10 @@ func (m *Manager) GetPermissions(role string) (map[Permission]bool, error) {
 		return nil, nil
 	}
 	return permissions, nil
+}
+
+func (m *Manager) GetUserGroups(email string) []string {
+	return m.memberGroups[common.FormatUserEmail(email)]
 }
 
 func check(user *store.UserMessage, p Permission, policy *storepb.IamPolicy, rolePermissions map[string]map[Permission]bool, groupMembers map[string]map[string]bool) bool {
