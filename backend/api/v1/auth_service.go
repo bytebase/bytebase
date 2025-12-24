@@ -221,7 +221,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 		slog.Error("failed to update user profile", log.BBError(err), slog.String("user", loginUser.Email))
 	}
 
-	response.User = convertToUser(ctx, loginUser)
+	response.User = convertToUser(ctx, s.iamManager, loginUser)
 
 	return resp, nil
 }

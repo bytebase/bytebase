@@ -78,7 +78,7 @@ import SchemaPane from "./SchemaPane";
 import WorksheetPane from "./WorksheetPane";
 
 const editorStore = useSQLEditorStore();
-const { asidePanelTab } = useSQLEditorContext();
+const { asidePanelTab, maybeSwitchProject } = useSQLEditorContext();
 const { isDisconnected } = storeToRefs(useSQLEditorTabStore());
 
 const { project, projectContextReady } = storeToRefs(editorStore);
@@ -96,7 +96,7 @@ const handleSwitchProject = (name: string | undefined) => {
   if (!name || !isValidProjectName(name)) {
     editorStore.setProject("");
   } else {
-    editorStore.setProject(name);
+    maybeSwitchProject(name);
   }
 };
 </script>
