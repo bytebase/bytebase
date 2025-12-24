@@ -184,7 +184,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 		endColumn := endToken.GetColumn() + len(endToken.GetText())
 
 		result = append(result, base.Statement{
-			Text:     text,
+			Text: text,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),

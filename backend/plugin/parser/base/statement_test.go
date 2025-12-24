@@ -44,8 +44,8 @@ func TestParsedStatementEmbedding(t *testing.T) {
 	// Fields should be accessible directly
 	ps := ParsedStatement{
 		Statement: Statement{
-			Text:     "SELECT 1",
-			Start:    &storepb.Position{Line: 6, Column: 1},
+			Text:  "SELECT 1",
+			Start: &storepb.Position{Line: 6, Column: 1},
 		},
 		AST: &ANTLRAST{StartPosition: &storepb.Position{Line: 6}},
 	}

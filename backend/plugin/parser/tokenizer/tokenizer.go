@@ -264,9 +264,9 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				res = append(res, base.Statement{
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-					Start:    &store.Position{Line: int32(startLine)},
-					End:      &store.Position{Line: int32(t.line)},
-					Empty:    t.emptyStatement,
+					Start: &store.Position{Line: int32(startLine)},
+					End:   &store.Position{Line: int32(t.line)},
+					Empty: t.emptyStatement,
 					Range: &store.Range{
 						Start: int32(t.getByteOffset(int(startPos))),
 						End:   int32(t.getByteOffset(int(t.pos()))),
@@ -292,9 +292,9 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				res = append(res, base.Statement{
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-					Start:    &store.Position{Line: int32(startLine)},
-					End:      &store.Position{Line: int32(t.line)},
-					Empty:    false,
+					Start: &store.Position{Line: int32(startLine)},
+					End:   &store.Position{Line: int32(t.line)},
+					Empty: false,
 					Range: &store.Range{
 						Start: int32(t.getByteOffset(int(startPos))),
 						End:   int32(t.getByteOffset(int(t.pos()))),

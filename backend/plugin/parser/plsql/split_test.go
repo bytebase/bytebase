@@ -32,14 +32,14 @@ func TestOracleSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.Statement{
 					{
-						Text:     `select * from t`,
+						Text: `select * from t`,
 						Range: &storepb.Range{Start: int32(5),
 							End: int32(20)},
 						Start: &storepb.Position{Line: 2, Column: 5},
 						End:   &storepb.Position{Line: 2, Column: 19},
 					},
 					{
-						Text:     `create table table$1 (id int)`,
+						Text: `create table table$1 (id int)`,
 						Range: &storepb.Range{Start: int32(26),
 							End: int32(56)},
 						Start: &storepb.Position{Line: 3, Column: 5},
@@ -162,16 +162,16 @@ END;
 			want: resData{
 				res: []base.Statement{
 					{
-						Text:     "CREATE OR REPLACE PROCEDURE proc1 IS\nBEGIN\n    NULL;\nEND;",
-						Start:    &storepb.Position{Line: 1, Column: 1},
-						End:      &storepb.Position{Line: 4, Column: 4},
+						Text:  "CREATE OR REPLACE PROCEDURE proc1 IS\nBEGIN\n    NULL;\nEND;",
+						Start: &storepb.Position{Line: 1, Column: 1},
+						End:   &storepb.Position{Line: 4, Column: 4},
 						Range: &storepb.Range{Start: int32(0),
 							End: int32(57)},
 					},
 					{
-						Text:     "CREATE OR REPLACE PROCEDURE proc2 IS\nBEGIN\n    NULL;\nEND;",
-						Start:    &storepb.Position{Line: 6, Column: 1},
-						End:      &storepb.Position{Line: 9, Column: 4},
+						Text:  "CREATE OR REPLACE PROCEDURE proc2 IS\nBEGIN\n    NULL;\nEND;",
+						Start: &storepb.Position{Line: 6, Column: 1},
+						End:   &storepb.Position{Line: 9, Column: 4},
 						Range: &storepb.Range{Start: int32(60),
 							End: int32(117)},
 					},
@@ -185,16 +185,16 @@ SELECT * FROM t2;`,
 			want: resData{
 				res: []base.Statement{
 					{
-						Text:     "SELECT * FROM t1",
-						Start:    &storepb.Position{Line: 1, Column: 1},
-						End:      &storepb.Position{Line: 1, Column: 15},
+						Text:  "SELECT * FROM t1",
+						Start: &storepb.Position{Line: 1, Column: 1},
+						End:   &storepb.Position{Line: 1, Column: 15},
 						Range: &storepb.Range{Start: int32(0),
 							End: int32(16)},
 					},
 					{
-						Text:     "SELECT * FROM t2",
-						Start:    &storepb.Position{Line: 3, Column: 1},
-						End:      &storepb.Position{Line: 3, Column: 15},
+						Text:  "SELECT * FROM t2",
+						Start: &storepb.Position{Line: 3, Column: 1},
+						End:   &storepb.Position{Line: 3, Column: 15},
 						Range: &storepb.Range{Start: int32(20),
 							End: int32(36)},
 					},

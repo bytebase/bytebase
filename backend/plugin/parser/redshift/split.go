@@ -75,7 +75,7 @@ func splitByParser(statement string, lexer *parser.RedshiftLexer, stream *antlr.
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stmtText,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
@@ -100,7 +100,7 @@ func splitByParser(statement string, lexer *parser.RedshiftLexer, stream *antlr.
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stmtText,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
@@ -207,7 +207,7 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stmtText,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
@@ -232,7 +232,7 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
-			Text:     stmtText,
+			Text: stmtText,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),

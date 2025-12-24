@@ -105,7 +105,7 @@ func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int, stateme
 			antlrPosition := FirstDefaultChannelTokenPosition(buf)
 
 			sqls = append(sqls, Statement{
-				Text:     bufStr.String(),
+				Text: bufStr.String(),
 				Range: &storepb.Range{
 					Start: int32(buf[0].GetStart()),
 					End:   int32(buf[len(buf)-1].GetStop() + 1),

@@ -15,25 +15,25 @@ func TestSplitSQL(t *testing.T) {
 	SELECT * FROM products;`
 	want := []base.Statement{
 		{
-			Text:     "SELECT * FROM users;",
-			Range:    &storepb.Range{Start: 0, End: 20},
-			Start:    &storepb.Position{Line: 1, Column: 1},
-			End:      &storepb.Position{Line: 1, Column: 20},
-			Empty:    false,
+			Text:  "SELECT * FROM users;",
+			Range: &storepb.Range{Start: 0, End: 20},
+			Start: &storepb.Position{Line: 1, Column: 1},
+			End:   &storepb.Position{Line: 1, Column: 20},
+			Empty: false,
 		},
 		{
-			Text:     "\n\tSELECT * FROM orders;",
-			Range:    &storepb.Range{Start: 20, End: 43},
-			Start:    &storepb.Position{Line: 2, Column: 2},
-			End:      &storepb.Position{Line: 2, Column: 22},
-			Empty:    false,
+			Text:  "\n\tSELECT * FROM orders;",
+			Range: &storepb.Range{Start: 20, End: 43},
+			Start: &storepb.Position{Line: 2, Column: 2},
+			End:   &storepb.Position{Line: 2, Column: 22},
+			Empty: false,
 		},
 		{
-			Text:     "\n\tSELECT * FROM products;",
-			Range:    &storepb.Range{Start: 43, End: 68},
-			Start:    &storepb.Position{Line: 3, Column: 2},
-			End:      &storepb.Position{Line: 3, Column: 24},
-			Empty:    false,
+			Text:  "\n\tSELECT * FROM products;",
+			Range: &storepb.Range{Start: 43, End: 68},
+			Start: &storepb.Position{Line: 3, Column: 2},
+			End:   &storepb.Position{Line: 3, Column: 24},
+			Empty: false,
 		},
 	}
 
