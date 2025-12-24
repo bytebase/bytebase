@@ -85,9 +85,6 @@ func parseChangelogFilter(filter string, find *store.FindChangelogMessage) error
 				default:
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
 				}
-				if variable != "status" {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
-				}
 			default:
 				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
 			}
