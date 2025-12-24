@@ -94,11 +94,7 @@ func parseChangelogFilter(filter string, find *store.FindChangelogMessage) error
 		return nil
 	}
 
-	if err := parseFilter(ast.NativeRep().Expr()); err != nil {
-		return err
-	}
-
-	return nil
+	return parseFilter(ast.NativeRep().Expr())
 }
 
 func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Request[v1pb.ListChangelogsRequest]) (*connect.Response[v1pb.ListChangelogsResponse], error) {
@@ -300,6 +296,8 @@ func convertToChangelogStoreType(t v1pb.Changelog_Type) storepb.ChangelogPayload
 		return storepb.ChangelogPayload_MIGRATE
 	case v1pb.Changelog_SDL:
 		return storepb.ChangelogPayload_SDL
+	case v1pb.Changelog_TYPE_UNSPECIFIED:
+		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 	default:
 		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 	}

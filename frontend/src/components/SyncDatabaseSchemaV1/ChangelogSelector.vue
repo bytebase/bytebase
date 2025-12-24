@@ -115,8 +115,8 @@ const handleSearch = async (params: {
 
 const renderSchemaVersionLabel = (
   option: ResourceSelectOption<Changelog>,
-  selected: boolean,
-  searchText: string
+  _selected: boolean,
+  _searchText: string
 ) => {
   const { resource } = option;
   if (!resource || !isValidChangelogName(resource.name)) {
