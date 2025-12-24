@@ -82,7 +82,6 @@ import type { ComposedDatabase } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   isValidProjectName,
-  PresetRoleType,
 } from "@/types";
 import {
   BatchUpdateDatabasesRequestSchema,
