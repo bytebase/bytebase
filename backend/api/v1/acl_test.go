@@ -174,12 +174,12 @@ func TestGetResourceFromRequest(t *testing.T) {
 			},
 		},
 		{
-			request: &v1pb.BatchCancelPlanCheckRunsRequest{
-				Parent: "projects/hello/plans/world",
+			request: &v1pb.CancelPlanCheckRunRequest{
+				Name: "projects/hello/plans/world/planCheckRun",
 			},
-			method: "/bytebase.v1.PlanService/BatchCancelPlanCheckRuns",
+			method: "/bytebase.v1.PlanService/CancelPlanCheckRun",
 			want: []*common.Resource{
-				{Name: "projects/hello/plans/world"},
+				{Name: "projects/hello/plans/world/planCheckRun"},
 			},
 		},
 	}
