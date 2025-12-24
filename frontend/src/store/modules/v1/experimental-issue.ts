@@ -1,5 +1,4 @@
 import { create } from "@bufbuild/protobuf";
-import { orderBy } from "lodash-es";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,
@@ -22,8 +21,8 @@ import {
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
   CreatePlanRequestSchema,
+  GetPlanCheckRunRequestSchema,
   GetPlanRequestSchema,
-  ListPlanCheckRunsRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -63,16 +62,18 @@ const composeIssue = async (
       issue.planEntity = response;
     }
 
-    if (hasProjectPermissionV2(projectEntity, "bb.planCheckRuns.list")) {
-      // Only show the latest plan check runs.
-      const request = create(ListPlanCheckRunsRequestSchema, {
-        parent: issue.plan,
-        latestOnly: true,
+    if (hasProjectPermissionV2(projectEntity, "bb.planCheckRuns.get")) {
+      const request = create(GetPlanCheckRunRequestSchema, {
+        name: `${issue.plan}/planCheckRun`,
       });
-      const response =
-        await planServiceClientConnect.listPlanCheckRuns(request);
-      const planCheckRuns = response.planCheckRuns;
-      issue.planCheckRunList = orderBy(planCheckRuns, "name", "desc");
+      try {
+        const response =
+          await planServiceClientConnect.getPlanCheckRun(request);
+        issue.planCheckRunList = [response];
+      } catch {
+        // Plan check run might not exist yet
+        issue.planCheckRunList = [];
+      }
     }
   }
   if (config.withRollout && issue.rollout) {

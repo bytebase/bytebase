@@ -43,7 +43,7 @@ export type Permission =
   | "bb.issues.get"
   | "bb.issues.list"
   | "bb.issues.update"
-  | "bb.planCheckRuns.list"
+  | "bb.planCheckRuns.get"
   | "bb.planCheckRuns.run"
   | "bb.plans.create"
   | "bb.plans.get"

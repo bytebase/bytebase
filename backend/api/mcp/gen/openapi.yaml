@@ -2931,15 +2931,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Policy'
-  /bytebase.v1.PlanService/BatchCancelPlanCheckRuns:
+  /bytebase.v1.PlanService/CancelPlanCheckRun:
     post:
       tags:
         - bytebase.v1.PlanService
-      summary: 'Cancels multiple plan check runs.  Permissions required: bb.planCheckRuns.run'
+      summary: 'Cancels the plan check run for a deployment plan.  Permissions required: bb.planCheckRuns.run'
       description: |-
-        Cancels multiple plan check runs.
+        Cancels the plan check run for a deployment plan.
          Permissions required: bb.planCheckRuns.run
-      operationId: bytebase.v1.PlanService.BatchCancelPlanCheckRuns
+      operationId: bytebase.v1.PlanService.CancelPlanCheckRun
       parameters:
         - name: Connect-Protocol-Version
           in: header
@@ -2954,7 +2954,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/bytebase.v1.BatchCancelPlanCheckRunsRequest'
+              $ref: '#/components/schemas/bytebase.v1.CancelPlanCheckRunRequest'
         required: true
       responses:
         default:
@@ -2968,7 +2968,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bytebase.v1.BatchCancelPlanCheckRunsResponse'
+                $ref: '#/components/schemas/bytebase.v1.CancelPlanCheckRunResponse'
   /bytebase.v1.PlanService/CreatePlan:
     post:
       tags:
@@ -3045,15 +3045,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Plan'
-  /bytebase.v1.PlanService/ListPlanCheckRuns:
+  /bytebase.v1.PlanService/GetPlanCheckRun:
     post:
       tags:
         - bytebase.v1.PlanService
-      summary: 'Lists plan check runs for a deployment plan.  Permissions required: bb.planCheckRuns.list'
+      summary: 'Gets the plan check run for a deployment plan.  Permissions required: bb.planCheckRuns.get'
       description: |-
-        Lists plan check runs for a deployment plan.
-         Permissions required: bb.planCheckRuns.list
-      operationId: bytebase.v1.PlanService.ListPlanCheckRuns
+        Gets the plan check run for a deployment plan.
+         Permissions required: bb.planCheckRuns.get
+      operationId: bytebase.v1.PlanService.GetPlanCheckRun
       parameters:
         - name: Connect-Protocol-Version
           in: header
@@ -3068,7 +3068,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/bytebase.v1.ListPlanCheckRunsRequest'
+              $ref: '#/components/schemas/bytebase.v1.GetPlanCheckRunRequest'
         required: true
       responses:
         default:
@@ -3082,7 +3082,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bytebase.v1.ListPlanCheckRunsResponse'
+                $ref: '#/components/schemas/bytebase.v1.PlanCheckRun'
   /bytebase.v1.PlanService/ListPlans:
     post:
       tags:
@@ -7053,30 +7053,6 @@ components:
         - IAM
         - CUSTOM
       description: Authorization method for RPC calls.
-    bytebase.v1.BatchCancelPlanCheckRunsRequest:
-      type: object
-      properties:
-        parent:
-          type: string
-          title: parent
-          description: |-
-            The name of the parent of the planChecks.
-             Format: projects/{project}/plans/{plan}
-        planCheckRuns:
-          type: array
-          items:
-            type: string
-          title: plan_check_runs
-          description: |-
-            TODO(d): update this API.
-             The planCheckRuns to cancel.
-             Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
-      title: BatchCancelPlanCheckRunsRequest
-      additionalProperties: false
-    bytebase.v1.BatchCancelPlanCheckRunsResponse:
-      type: object
-      title: BatchCancelPlanCheckRunsResponse
-      additionalProperties: false
     bytebase.v1.BatchCancelTaskRunsRequest:
       type: object
       properties:
@@ -7633,6 +7609,21 @@ components:
       title: BoundingBox
       additionalProperties: false
       description: BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
+    bytebase.v1.CancelPlanCheckRunRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the plan check run to cancel.
+             Format: projects/{project}/plans/{plan}/planCheckRun
+      title: CancelPlanCheckRunRequest
+      additionalProperties: false
+    bytebase.v1.CancelPlanCheckRunResponse:
+      type: object
+      title: CancelPlanCheckRunResponse
+      additionalProperties: false
     bytebase.v1.Changelog:
       type: object
       properties:
@@ -10023,6 +10014,17 @@ components:
           description: If set to true, bypass cache and fetch the latest data.
       title: GetIssueRequest
       additionalProperties: false
+    bytebase.v1.GetPlanCheckRunRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            The name of the plan check run to retrieve.
+             Format: projects/{project}/plans/{plan}/planCheckRun
+      title: GetPlanCheckRunRequest
+      additionalProperties: false
     bytebase.v1.GetPlanRequest:
       type: object
       properties:
@@ -11699,48 +11701,6 @@ components:
              If this field is omitted, there are no subsequent pages.
       title: ListIssuesResponse
       additionalProperties: false
-    bytebase.v1.ListPlanCheckRunsRequest:
-      type: object
-      properties:
-        parent:
-          type: string
-          title: parent
-          description: |-
-            The parent, which owns this collection of plan check runs.
-             Format: projects/{project}/plans/{plan}
-        latestOnly:
-          type: boolean
-          title: latest_only
-          description: If set to true, only the latest plan check run will be returned.
-        filter:
-          type: string
-          title: filter
-          description: |-
-            Filter is used to filter plan check runs returned in the list.
-             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-             Supported filters:
-             - status: the plan check run status, support "==" and "in" operator, check the Status enum in the PlanCheckRun message for the values.
-             - result_status: the plan check run result status, support "==" and "in" operator, check the Result.Status enum in the PlanCheckRun message for the values.
-
-             For example:
-             status in ["DONE", "FAILED"]
-             status == "RUNNING"
-             result_status in ["SUCCESS", "ERROR"]
-             result_status == "WARNING"
-      title: ListPlanCheckRunsRequest
-      additionalProperties: false
-    bytebase.v1.ListPlanCheckRunsResponse:
-      type: object
-      properties:
-        planCheckRuns:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.PlanCheckRun'
-          title: plan_check_runs
-          description: The plan check runs from the specified request.
-      title: ListPlanCheckRunsResponse
-      additionalProperties: false
     bytebase.v1.ListPlansRequest:
       type: object
       properties:
@@ -12882,7 +12842,7 @@ components:
         name:
           type: string
           title: name
-          description: 'Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}'
+          description: 'Format: projects/{project}/plans/{plan}/planCheckRun'
         status:
           title: status
           $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Status'

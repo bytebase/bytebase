@@ -4607,14 +4607,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/plans/{plan}/planCheckRuns:
+    /v1/projects/{project}/plans/{plan}/planCheckRun:
         get:
             tags:
                 - PlanService
             description: |-
-                Lists plan check runs for a deployment plan.
-                 Permissions required: bb.planCheckRuns.list
-            operationId: PlanService_ListPlanCheckRuns
+                Gets the plan check run for a deployment plan.
+                 Permissions required: bb.planCheckRuns.get
+            operationId: PlanService_GetPlanCheckRun
             parameters:
                 - name: project
                   in: path
@@ -4628,49 +4628,27 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: latestOnly
-                  in: query
-                  description: If set to true, only the latest plan check run will be returned.
-                  schema:
-                    type: boolean
-                - name: filter
-                  in: query
-                  description: |-
-                    Filter is used to filter plan check runs returned in the list.
-                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-                     Supported filters:
-                     - status: the plan check run status, support "==" and "in" operator, check the Status enum in the PlanCheckRun message for the values.
-                     - result_status: the plan check run result status, support "==" and "in" operator, check the Result.Status enum in the PlanCheckRun message for the values.
-
-                     For example:
-                     status in ["DONE", "FAILED"]
-                     status == "RUNNING"
-                     result_status in ["SUCCESS", "ERROR"]
-                     result_status == "WARNING"
-                  schema:
-                    type: string
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListPlanCheckRunsResponse'
+                                $ref: '#/components/schemas/PlanCheckRun'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/plans/{plan}/planCheckRuns:batchCancel:
+    /v1/projects/{project}/plans/{plan}/planCheckRun:cancel:
         post:
             tags:
                 - PlanService
             description: |-
-                Cancels multiple plan check runs.
+                Cancels the plan check run for a deployment plan.
                  Permissions required: bb.planCheckRuns.run
-            operationId: PlanService_BatchCancelPlanCheckRuns
+            operationId: PlanService_CancelPlanCheckRun
             parameters:
                 - name: project
                   in: path
@@ -4688,7 +4666,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/BatchCancelPlanCheckRunsRequest'
+                            $ref: '#/components/schemas/CancelPlanCheckRunRequest'
                 required: true
             responses:
                 "200":
@@ -4696,7 +4674,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/BatchCancelPlanCheckRunsResponse'
+                                $ref: '#/components/schemas/CancelPlanCheckRunResponse'
                 default:
                     description: Default error response
                     content:
@@ -8258,27 +8236,6 @@ components:
                         - $ref: '#/components/schemas/RequestMetadata'
                     description: Metadata about the request context.
             description: Audit log entry recording system activity or API call.
-        BatchCancelPlanCheckRunsRequest:
-            required:
-                - parent
-            type: object
-            properties:
-                parent:
-                    type: string
-                    description: |-
-                        The name of the parent of the planChecks.
-                         Format: projects/{project}/plans/{plan}
-                planCheckRuns:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        TODO(d): update this API.
-                         The planCheckRuns to cancel.
-                         Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
-        BatchCancelPlanCheckRunsResponse:
-            type: object
-            properties: {}
         BatchCancelTaskRunsRequest:
             type: object
             properties:
@@ -8666,6 +8623,19 @@ components:
                     description: Maximum Y coordinate
                     format: double
             description: BoundingBox defines the spatial bounds for GEOMETRY spatial indexes.
+        CancelPlanCheckRunRequest:
+            required:
+                - name
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: |-
+                        The name of the plan check run to cancel.
+                         Format: projects/{project}/plans/{plan}/planCheckRun
+        CancelPlanCheckRunResponse:
+            type: object
+            properties: {}
         Candidate_Content:
             type: object
             properties:
@@ -11256,14 +11226,6 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
-        ListPlanCheckRunsResponse:
-            type: object
-            properties:
-                planCheckRuns:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/PlanCheckRun'
-                    description: The plan check runs from the specified request.
         ListPlansResponse:
             type: object
             properties:
@@ -11804,7 +11766,7 @@ components:
             properties:
                 name:
                     type: string
-                    description: 'Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}'
+                    description: 'Format: projects/{project}/plans/{plan}/planCheckRun'
                 status:
                     enum:
                         - STATUS_UNSPECIFIED
