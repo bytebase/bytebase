@@ -243,11 +243,6 @@ import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { planServiceClientConnect } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyForDatabase } from "@/store";
-import {
-  getProjectNamePlanIdPlanCheckRunId,
-  planNamePrefix,
-  projectNamePrefix,
-} from "@/store/modules/v1/common";
 import type { ComposedDatabase, RuleTemplateV2 } from "@/types";
 import {
   convertPolicyRuleToRuleTemplate,
@@ -262,7 +257,7 @@ import type {
   PlanCheckRun_Result,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
-  BatchCancelPlanCheckRunsRequestSchema,
+  CancelPlanCheckRunRequestSchema,
   PlanCheckRun_ResultSchema,
   PlanCheckRun_Status,
 } from "@/types/proto-es/v1/plan_service_pb";
@@ -558,14 +553,10 @@ const handleClickPlanCheckDetailLine = (line: number) => {
 };
 
 const cancelPlanCheckRun = async () => {
-  const planCheckRunName = props.planCheckRun.name;
-  const [projectName, planId] =
-    getProjectNamePlanIdPlanCheckRunId(planCheckRunName);
-  const request = create(BatchCancelPlanCheckRunsRequestSchema, {
-    parent: `${projectNamePrefix}${projectName}/${planNamePrefix}${planId}`,
-    planCheckRuns: [planCheckRunName],
+  const request = create(CancelPlanCheckRunRequestSchema, {
+    name: props.planCheckRun.name,
   });
-  await planServiceClientConnect.batchCancelPlanCheckRuns(request);
+  await planServiceClientConnect.cancelPlanCheckRun(request);
   if (usePlanCheckRunContext()) {
     usePlanCheckRunContext().events.emit("status-changed");
   }
