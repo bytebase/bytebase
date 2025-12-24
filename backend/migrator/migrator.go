@@ -56,10 +56,6 @@ func MigrateSchema(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	if err := backfill(ctx, conn); err != nil {
-		return err
-	}
-
 	latestDatabaseVersion, err := getLatestDatabaseVersion(ctx, conn)
 	if err != nil {
 		return err
@@ -211,63 +207,4 @@ func getLatestDatabaseVersion(ctx context.Context, conn *sql.Conn) (*semver.Vers
 		return nil, errors.Wrapf(err, "invalid version %q", v)
 	}
 	return &version, nil
-}
-
-func backfill(ctx context.Context, conn *sql.Conn) error {
-	var c int
-	err := conn.QueryRowContext(ctx, "SELECT count(1) FROM instance_change_history WHERE database_id IS NOT NULL").Scan(&c)
-	if err == nil && c > 0 {
-		return errors.Errorf("Must upgrade to Bytebase 3.3.1 first")
-	}
-	if _, err := conn.ExecContext(ctx, `
-	ALTER TABLE instance_change_history
-	DROP COLUMN IF EXISTS row_status,
-	DROP COLUMN IF EXISTS creator_id,
-	DROP COLUMN IF EXISTS updater_id,
-	DROP COLUMN IF EXISTS created_ts,
-	DROP COLUMN IF EXISTS updated_ts,
-	DROP COLUMN IF EXISTS instance_id,
-	DROP COLUMN IF EXISTS database_id,
-	DROP COLUMN IF EXISTS project_id,
-	DROP COLUMN IF EXISTS issue_id,
-	DROP COLUMN IF EXISTS release_version,
-	DROP COLUMN IF EXISTS sequence,
-	DROP COLUMN IF EXISTS source,
-	DROP COLUMN IF EXISTS type,
-	DROP COLUMN IF EXISTS description,
-	DROP COLUMN IF EXISTS sheet_id,
-	DROP COLUMN IF EXISTS statement,
-	DROP COLUMN IF EXISTS schema,
-	DROP COLUMN IF EXISTS schema_prev,
-	DROP COLUMN IF EXISTS payload;
-	CREATE UNIQUE INDEX IF NOT EXISTS idx_instance_change_history_unique_version ON instance_change_history (version);`); err != nil {
-		return err
-	}
-	var hasStatus bool
-	if err := conn.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'instance_change_history' AND column_name = 'status')").Scan(&hasStatus); err != nil {
-		return err
-	}
-	if hasStatus {
-		if _, err := conn.ExecContext(ctx, `
-		DELETE FROM instance_change_history WHERE status = 'FAILED';
-		UPDATE instance_change_history
-		SET
-			version = ARRAY_TO_STRING(
-				(STRING_TO_ARRAY(
-					SUBSTRING(version, 0, 15),
-					'.'
-				)::integer[])::text[],
-				'.'
-			)
-		WHERE version LIKE '%-%';`); err != nil {
-			return err
-		}
-	}
-	if _, err := conn.ExecContext(ctx, `
-	ALTER TABLE instance_change_history
-	DROP COLUMN IF EXISTS status,
-	DROP COLUMN IF EXISTS execution_duration_ns;`); err != nil {
-		return err
-	}
-	return nil
 }

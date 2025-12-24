@@ -10,7 +10,7 @@
     class="bb-project-select"
     :additional-options="additionalOptions"
     :search="handleSearch"
-    :filter="filterProject"
+    :filter="filter"
     @update:value="(val) => $emit('update:value', val)"
   >
     <template v-if="$slots.empty" #empty>
@@ -21,18 +21,16 @@
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
-import { intersection } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/cells";
-import { usePermissionStore, useProjectV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import {
   DEFAULT_PROJECT_NAME,
   UNKNOWN_PROJECT_NAME,
   unknownProject,
 } from "@/types";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import RemoteResourceSelector from "./RemoteResourceSelector/index.vue";
 import type {
   ResourceSelectOption,
@@ -47,7 +45,6 @@ const props = withDefaults(
   defineProps<{
     disabled?: boolean;
     value?: string[] | string | undefined; // UNKNOWN_PROJECT_NAME to "ALL"
-    allowedProjectRoleList?: string[]; // Empty array([]) to "ALL"
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     multiple?: boolean;
@@ -56,7 +53,6 @@ const props = withDefaults(
     filter?: (project: Project) => boolean;
   }>(),
   {
-    allowedProjectRoleList: () => [],
     renderSuffix: () => "",
   }
 );
@@ -66,30 +62,7 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const permissionStore = usePermissionStore();
 const projectStore = useProjectV1Store();
-
-const hasWorkspaceManageProjectPermission = computed(() =>
-  hasWorkspacePermissionV2("bb.projects.list")
-);
-
-const filterProject = (project: Project) => {
-  if (
-    !hasWorkspaceManageProjectPermission.value &&
-    props.allowedProjectRoleList.length > 0
-  ) {
-    const roles = permissionStore.currentRoleListInProjectV1(project);
-    if (intersection(props.allowedProjectRoleList, roles).length == 0) {
-      return false;
-    }
-  }
-
-  if (props.filter) {
-    return props.filter(project);
-  }
-
-  return true;
-};
 
 const getOption = (project: Project): ResourceSelectOption<Project> => ({
   resource: project,

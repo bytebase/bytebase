@@ -35,7 +35,6 @@
         <ProjectSelect
           v-if="transfer === 'project'"
           v-model:value="targetProjectName"
-          :allowed-project-role-list="[PresetRoleType.PROJECT_OWNER]"
         />
       </div>
     </div>
@@ -80,11 +79,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import {
-  DEFAULT_PROJECT_NAME,
-  isValidProjectName,
-  PresetRoleType,
-} from "@/types";
+import { DEFAULT_PROJECT_NAME, isValidProjectName } from "@/types";
 import {
   BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,

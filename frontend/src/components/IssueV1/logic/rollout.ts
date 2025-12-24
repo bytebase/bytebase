@@ -37,9 +37,8 @@ export const allowUserToEditStatementForTask = (
   if (issue.status !== IssueStatus.OPEN) {
     denyReasons.push("The issue is not open");
   }
-  const project = projectOfIssue(issue);
-  if (!project.allowModifyStatement) {
-    denyReasons.push("Cannot edit statement after issue created");
+  if (issue.planEntity?.rollout) {
+    denyReasons.push("Cannot edit statement after rollout");
   }
 
   if (task.type === Task_Type.DATABASE_CREATE) {

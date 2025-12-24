@@ -42,7 +42,12 @@ import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_LANDING } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { pushNotification, useProjectByName, useProjectV1Store } from "@/store";
+import {
+  pushNotification,
+  useProjectByName,
+  useProjectIamPolicy,
+  useProjectV1Store,
+} from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DEFAULT_PROJECT_NAME, UNKNOWN_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -89,9 +94,11 @@ watchEffect(async () => {
 });
 
 const { project, ready } = useProjectByName(projectName);
+const { ready: iamReady } = useProjectIamPolicy(projectName);
 
 const initialized = computed(
-  () => ready && project.value.name !== UNKNOWN_PROJECT_NAME
+  () =>
+    ready.value && iamReady.value && project.value.name !== UNKNOWN_PROJECT_NAME
 );
 
 const isDefaultProject = computed((): boolean => {

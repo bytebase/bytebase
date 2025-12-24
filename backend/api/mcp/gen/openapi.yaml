@@ -3312,44 +3312,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/google.protobuf.Empty'
-  /bytebase.v1.ProjectService/BatchGetIamPolicy:
-    post:
-      tags:
-        - bytebase.v1.ProjectService
-      summary: 'Deprecated. No permission check implemented.  Permissions required: None'
-      description: |-
-        Deprecated. No permission check implemented.
-         Permissions required: None
-      operationId: bytebase.v1.ProjectService.BatchGetIamPolicy
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.BatchGetIamPolicyRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.BatchGetIamPolicyResponse'
   /bytebase.v1.ProjectService/BatchGetProjects:
     post:
       tags:
@@ -7296,45 +7258,6 @@ components:
       title: BatchGetGroupsResponse
       additionalProperties: false
       description: Response message for batch getting groups.
-    bytebase.v1.BatchGetIamPolicyRequest:
-      type: object
-      properties:
-        scope:
-          type: string
-          title: scope
-          description: The scope of the batch get. Typically it's "projects/-".
-        names:
-          type: array
-          items:
-            type: string
-          title: names
-      title: BatchGetIamPolicyRequest
-      additionalProperties: false
-    bytebase.v1.BatchGetIamPolicyResponse:
-      type: object
-      properties:
-        policyResults:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.BatchGetIamPolicyResponse.PolicyResult'
-          title: policy_results
-          description: The policy results for each requested project.
-      title: BatchGetIamPolicyResponse
-      additionalProperties: false
-    bytebase.v1.BatchGetIamPolicyResponse.PolicyResult:
-      type: object
-      properties:
-        project:
-          type: string
-          title: project
-          description: The project resource name.
-        policy:
-          title: policy
-          description: The IAM policy for the project.
-          $ref: '#/components/schemas/bytebase.v1.IamPolicy'
-      title: PolicyResult
-      additionalProperties: false
-      description: Result for a single project's IAM policy.
     bytebase.v1.BatchGetProjectsRequest:
       type: object
       properties:
@@ -12960,20 +12883,9 @@ components:
           type: string
           title: name
           description: 'Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}'
-        type:
-          title: type
-          $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Type'
         status:
           title: status
           $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Status'
-        target:
-          type: string
-          title: target
-          description: 'Format: instances/{instance}/databases/{database}'
-        sheet:
-          type: string
-          title: sheet
-          description: 'Format: project/{project}/sheets/{sheet}'
         results:
           type: array
           items:
@@ -13005,6 +12917,15 @@ components:
               type: integer
               title: code
               format: int32
+            target:
+              type: string
+              title: target
+              description: |-
+                Target identification for consolidated results.
+                 Format: instances/{instance}/databases/{database}
+            type:
+              title: type
+              $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Result.Type'
         - oneOf:
             - properties:
                 sqlReviewReport:
@@ -13051,6 +12972,14 @@ components:
           format: int64
       title: SqlSummaryReport
       additionalProperties: false
+    bytebase.v1.PlanCheckRun.Result.Type:
+      type: string
+      title: Type
+      enum:
+        - TYPE_UNSPECIFIED
+        - STATEMENT_ADVISE
+        - STATEMENT_SUMMARY_REPORT
+        - GHOST_SYNC
     bytebase.v1.PlanCheckRun.Status:
       type: string
       title: Status
@@ -13060,14 +12989,6 @@ components:
         - DONE
         - FAILED
         - CANCELED
-    bytebase.v1.PlanCheckRun.Type:
-      type: string
-      title: Type
-      enum:
-        - TYPE_UNSPECIFIED
-        - DATABASE_STATEMENT_ADVISE
-        - DATABASE_STATEMENT_SUMMARY_REPORT
-        - DATABASE_GHOST_SYNC
     bytebase.v1.PlanConfig:
       type: object
       properties:
@@ -13426,14 +13347,6 @@ components:
           type: boolean
           title: force_issue_labels
           description: Force issue labels to be used when creating an issue.
-        allowModifyStatement:
-          type: boolean
-          title: allow_modify_statement
-          description: Allow modifying SQL statements after issue is created.
-        autoResolveIssue:
-          type: boolean
-          title: auto_resolve_issue
-          description: Enable automatic issue resolution when tasks complete.
         enforceIssueTitle:
           type: boolean
           title: enforce_issue_title

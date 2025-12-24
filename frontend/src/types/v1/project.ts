@@ -14,6 +14,7 @@ export const emptyProject = (): Project => {
     name: EMPTY_PROJECT_NAME,
     title: "",
     state: State.ACTIVE,
+    enforceIssueTitle: true,
   });
 };
 

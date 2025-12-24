@@ -53,12 +53,6 @@ func (x *Project) Equal(y *Project) bool {
 	if x.ForceIssueLabels != y.ForceIssueLabels {
 		return false
 	}
-	if x.AllowModifyStatement != y.AllowModifyStatement {
-		return false
-	}
-	if x.AutoResolveIssue != y.AutoResolveIssue {
-		return false
-	}
 	if x.EnforceIssueTitle != y.EnforceIssueTitle {
 		return false
 	}

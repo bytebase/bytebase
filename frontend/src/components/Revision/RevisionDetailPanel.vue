@@ -48,6 +48,7 @@ import { computedAsync } from "@vueuse/core";
 import { NSpin } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
 import { CopyButton } from "@/components/v2";
 import {
   rolloutServiceClientConnect,
@@ -61,7 +62,6 @@ import {
   GetTaskRunRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import HumanizeDate from "../misc/HumanizeDate.vue";
-import { TaskRunLogViewer } from "../Plan/components/RolloutView/v2/TaskRunLogViewer";
 
 const props = defineProps<{
   database: ComposedDatabase;

@@ -6,6 +6,7 @@ import { type IRange } from "monaco-editor";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, nextTick, provide, ref } from "vue";
 import {
+  useProjectIamPolicyStore,
   useProjectV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
@@ -106,6 +107,7 @@ export const provideSQLEditorContext = () => {
   const editorStore = useSQLEditorStore();
   const tabStore = useSQLEditorTabStore();
   const projectStore = useProjectV1Store();
+  const projectIamPolicyStore = useProjectIamPolicyStore();
   const worksheetStore = useWorkSheetStore();
   const showConnectionPanel = ref(false);
 
@@ -264,6 +266,8 @@ export const provideSQLEditorContext = () => {
       editorStore.projectContextReady = false;
       try {
         const project = await projectStore.getOrFetchProjectByName(projectName);
+        // Fetch IAM policy to ensure permission checks work correctly
+        await projectIamPolicyStore.getOrFetchProjectIamPolicy(project.name);
         editorStore.setProject(project.name);
         context.events.emit("project-context-ready", { project: project.name });
         return project.name;

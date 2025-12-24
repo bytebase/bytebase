@@ -4,7 +4,7 @@
     <RolloutReadyLink v-if="shouldShowRolloutReadyLink" />
 
     <!-- Export Archive Download Action for export data issues (replaces primary action) -->
-    <ExportArchiveDownloadAction v-else-if="shouldShowExportDownload" />
+    <ExportArchiveDownloadAction v-if="shouldShowExportDownload" />
 
     <!-- Primary action button (hidden when export download is shown) -->
     <UnifiedActionButton
@@ -32,7 +32,7 @@
         :disabled="disabled"
         :title="disabled ? disabledTooltip : undefined"
       >
-        <EllipsisVerticalIcon class="w-5 h-5" />
+        <EllipsisVerticalIcon class="w-4 h-4" />
       </NButton>
     </NDropdown>
   </div>

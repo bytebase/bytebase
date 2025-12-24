@@ -25,62 +25,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type PlanCheckRun_Type int32
-
-const (
-	// Unspecified check type.
-	PlanCheckRun_TYPE_UNSPECIFIED PlanCheckRun_Type = 0
-	// SQL review check that analyzes statements against configured SQL review rules.
-	PlanCheckRun_DATABASE_STATEMENT_ADVISE PlanCheckRun_Type = 2
-	// Summary report check that generates impact analysis for the statements.
-	PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT PlanCheckRun_Type = 3
-	// Ghost sync check that validates gh-ost online schema change compatibility.
-	PlanCheckRun_DATABASE_GHOST_SYNC PlanCheckRun_Type = 5
-)
-
-// Enum value maps for PlanCheckRun_Type.
-var (
-	PlanCheckRun_Type_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		2: "DATABASE_STATEMENT_ADVISE",
-		3: "DATABASE_STATEMENT_SUMMARY_REPORT",
-		5: "DATABASE_GHOST_SYNC",
-	}
-	PlanCheckRun_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED":                  0,
-		"DATABASE_STATEMENT_ADVISE":         2,
-		"DATABASE_STATEMENT_SUMMARY_REPORT": 3,
-		"DATABASE_GHOST_SYNC":               5,
-	}
-)
-
-func (x PlanCheckRun_Type) Enum() *PlanCheckRun_Type {
-	p := new(PlanCheckRun_Type)
-	*p = x
-	return p
-}
-
-func (x PlanCheckRun_Type) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (PlanCheckRun_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_plan_service_proto_enumTypes[0].Descriptor()
-}
-
-func (PlanCheckRun_Type) Type() protoreflect.EnumType {
-	return &file_v1_plan_service_proto_enumTypes[0]
-}
-
-func (x PlanCheckRun_Type) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use PlanCheckRun_Type.Descriptor instead.
-func (PlanCheckRun_Type) EnumDescriptor() ([]byte, []int) {
-	return file_v1_plan_service_proto_rawDescGZIP(), []int{14, 0}
-}
-
 type PlanCheckRun_Status int32
 
 const (
@@ -120,11 +64,11 @@ func (x PlanCheckRun_Status) String() string {
 }
 
 func (PlanCheckRun_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_plan_service_proto_enumTypes[1].Descriptor()
+	return file_v1_plan_service_proto_enumTypes[0].Descriptor()
 }
 
 func (PlanCheckRun_Status) Type() protoreflect.EnumType {
-	return &file_v1_plan_service_proto_enumTypes[1]
+	return &file_v1_plan_service_proto_enumTypes[0]
 }
 
 func (x PlanCheckRun_Status) Number() protoreflect.EnumNumber {
@@ -133,7 +77,59 @@ func (x PlanCheckRun_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PlanCheckRun_Status.Descriptor instead.
 func (PlanCheckRun_Status) EnumDescriptor() ([]byte, []int) {
-	return file_v1_plan_service_proto_rawDescGZIP(), []int{14, 1}
+	return file_v1_plan_service_proto_rawDescGZIP(), []int{14, 0}
+}
+
+type PlanCheckRun_Result_Type int32
+
+const (
+	PlanCheckRun_Result_TYPE_UNSPECIFIED         PlanCheckRun_Result_Type = 0
+	PlanCheckRun_Result_STATEMENT_ADVISE         PlanCheckRun_Result_Type = 1
+	PlanCheckRun_Result_STATEMENT_SUMMARY_REPORT PlanCheckRun_Result_Type = 2
+	PlanCheckRun_Result_GHOST_SYNC               PlanCheckRun_Result_Type = 3
+)
+
+// Enum value maps for PlanCheckRun_Result_Type.
+var (
+	PlanCheckRun_Result_Type_name = map[int32]string{
+		0: "TYPE_UNSPECIFIED",
+		1: "STATEMENT_ADVISE",
+		2: "STATEMENT_SUMMARY_REPORT",
+		3: "GHOST_SYNC",
+	}
+	PlanCheckRun_Result_Type_value = map[string]int32{
+		"TYPE_UNSPECIFIED":         0,
+		"STATEMENT_ADVISE":         1,
+		"STATEMENT_SUMMARY_REPORT": 2,
+		"GHOST_SYNC":               3,
+	}
+)
+
+func (x PlanCheckRun_Result_Type) Enum() *PlanCheckRun_Result_Type {
+	p := new(PlanCheckRun_Result_Type)
+	*p = x
+	return p
+}
+
+func (x PlanCheckRun_Result_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PlanCheckRun_Result_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_plan_service_proto_enumTypes[1].Descriptor()
+}
+
+func (PlanCheckRun_Result_Type) Type() protoreflect.EnumType {
+	return &file_v1_plan_service_proto_enumTypes[1]
+}
+
+func (x PlanCheckRun_Result_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PlanCheckRun_Result_Type.Descriptor instead.
+func (PlanCheckRun_Result_Type) EnumDescriptor() ([]byte, []int) {
+	return file_v1_plan_service_proto_rawDescGZIP(), []int{14, 0, 0}
 }
 
 type GetPlanRequest struct {
@@ -1038,13 +1034,8 @@ func (*BatchCancelPlanCheckRunsResponse) Descriptor() ([]byte, []int) {
 type PlanCheckRun struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
-	Name   string              `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Type   PlanCheckRun_Type   `protobuf:"varint,2,opt,name=type,proto3,enum=bytebase.v1.PlanCheckRun_Type" json:"type,omitempty"`
-	Status PlanCheckRun_Status `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.PlanCheckRun_Status" json:"status,omitempty"`
-	// Format: instances/{instance}/databases/{database}
-	Target string `protobuf:"bytes,4,opt,name=target,proto3" json:"target,omitempty"`
-	// Format: project/{project}/sheets/{sheet}
-	Sheet   string                 `protobuf:"bytes,5,opt,name=sheet,proto3" json:"sheet,omitempty"`
+	Name    string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Status  PlanCheckRun_Status    `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.PlanCheckRun_Status" json:"status,omitempty"`
 	Results []*PlanCheckRun_Result `protobuf:"bytes,6,rep,name=results,proto3" json:"results,omitempty"`
 	// error is set if the Status is FAILED.
 	Error         string                 `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
@@ -1090,32 +1081,11 @@ func (x *PlanCheckRun) GetName() string {
 	return ""
 }
 
-func (x *PlanCheckRun) GetType() PlanCheckRun_Type {
-	if x != nil {
-		return x.Type
-	}
-	return PlanCheckRun_TYPE_UNSPECIFIED
-}
-
 func (x *PlanCheckRun) GetStatus() PlanCheckRun_Status {
 	if x != nil {
 		return x.Status
 	}
 	return PlanCheckRun_STATUS_UNSPECIFIED
-}
-
-func (x *PlanCheckRun) GetTarget() string {
-	if x != nil {
-		return x.Target
-	}
-	return ""
-}
-
-func (x *PlanCheckRun) GetSheet() string {
-	if x != nil {
-		return x.Sheet
-	}
-	return ""
 }
 
 func (x *PlanCheckRun) GetResults() []*PlanCheckRun_Result {
@@ -1541,6 +1511,10 @@ type PlanCheckRun_Result struct {
 	Title   string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	Content string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
 	Code    int32                  `protobuf:"varint,4,opt,name=code,proto3" json:"code,omitempty"`
+	// Target identification for consolidated results.
+	// Format: instances/{instance}/databases/{database}
+	Target string                   `protobuf:"bytes,7,opt,name=target,proto3" json:"target,omitempty"`
+	Type   PlanCheckRun_Result_Type `protobuf:"varint,8,opt,name=type,proto3,enum=bytebase.v1.PlanCheckRun_Result_Type" json:"type,omitempty"`
 	// Types that are valid to be assigned to Report:
 	//
 	//	*PlanCheckRun_Result_SqlSummaryReport_
@@ -1606,6 +1580,20 @@ func (x *PlanCheckRun_Result) GetCode() int32 {
 		return x.Code
 	}
 	return 0
+}
+
+func (x *PlanCheckRun_Result) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *PlanCheckRun_Result) GetType() PlanCheckRun_Result_Type {
+	if x != nil {
+		return x.Type
+	}
+	return PlanCheckRun_Result_TYPE_UNSPECIFIED
 }
 
 func (x *PlanCheckRun_Result) GetReport() isPlanCheckRun_Result_Report {
@@ -1862,22 +1850,21 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x06parent\x12&\n" +
 	"\x0fplan_check_runs\x18\x02 \x03(\tR\rplanCheckRuns\"\"\n" +
-	" BatchCancelPlanCheckRunsResponse\"\xdf\b\n" +
+	" BatchCancelPlanCheckRunsResponse\"\xb5\b\n" +
 	"\fPlanCheckRun\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x122\n" +
-	"\x04type\x18\x02 \x01(\x0e2\x1e.bytebase.v1.PlanCheckRun.TypeR\x04type\x128\n" +
-	"\x06status\x18\x03 \x01(\x0e2 .bytebase.v1.PlanCheckRun.StatusR\x06status\x12\x16\n" +
-	"\x06target\x18\x04 \x01(\tR\x06target\x12\x14\n" +
-	"\x05sheet\x18\x05 \x01(\tR\x05sheet\x12:\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
+	"\x06status\x18\x03 \x01(\x0e2 .bytebase.v1.PlanCheckRun.StatusR\x06status\x12:\n" +
 	"\aresults\x18\x06 \x03(\v2 .bytebase.v1.PlanCheckRun.ResultR\aresults\x12\x14\n" +
 	"\x05error\x18\a \x01(\tR\x05error\x12@\n" +
 	"\vcreate_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x1a\xba\x04\n" +
+	"createTime\x1a\xef\x05\n" +
 	"\x06Result\x121\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x19.bytebase.v1.Advice.LevelR\x06status\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x12\n" +
-	"\x04code\x18\x04 \x01(\x05R\x04code\x12a\n" +
+	"\x04code\x18\x04 \x01(\x05R\x04code\x12\x16\n" +
+	"\x06target\x18\a \x01(\tR\x06target\x129\n" +
+	"\x04type\x18\b \x01(\x0e2%.bytebase.v1.PlanCheckRun.Result.TypeR\x04type\x12a\n" +
 	"\x12sql_summary_report\x18\x05 \x01(\v21.bytebase.v1.PlanCheckRun.Result.SqlSummaryReportH\x00R\x10sqlSummaryReport\x12^\n" +
 	"\x11sql_review_report\x18\x06 \x01(\v20.bytebase.v1.PlanCheckRun.Result.SqlReviewReportH\x00R\x0fsqlReviewReport\x1a`\n" +
 	"\x10SqlSummaryReport\x12'\n" +
@@ -1885,13 +1872,14 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\raffected_rows\x18\x03 \x01(\x03R\faffectedRows\x1a\x89\x01\n" +
 	"\x0fSqlReviewReport\x12<\n" +
 	"\x0estart_position\x18\x05 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
-	"\fend_position\x18\x06 \x01(\v2\x15.bytebase.v1.PositionR\vendPositionB\b\n" +
-	"\x06report\"{\n" +
+	"\fend_position\x18\x06 \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"`\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x1d\n" +
-	"\x19DATABASE_STATEMENT_ADVISE\x10\x02\x12%\n" +
-	"!DATABASE_STATEMENT_SUMMARY_REPORT\x10\x03\x12\x17\n" +
-	"\x13DATABASE_GHOST_SYNC\x10\x05\"Q\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x14\n" +
+	"\x10STATEMENT_ADVISE\x10\x01\x12\x1c\n" +
+	"\x18STATEMENT_SUMMARY_REPORT\x10\x02\x12\x0e\n" +
+	"\n" +
+	"GHOST_SYNC\x10\x03B\b\n" +
+	"\x06report\"Q\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aRUNNING\x10\x01\x12\b\n" +
@@ -1928,8 +1916,8 @@ func file_v1_plan_service_proto_rawDescGZIP() []byte {
 var file_v1_plan_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_v1_plan_service_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_v1_plan_service_proto_goTypes = []any{
-	(PlanCheckRun_Type)(0),                       // 0: bytebase.v1.PlanCheckRun.Type
-	(PlanCheckRun_Status)(0),                     // 1: bytebase.v1.PlanCheckRun.Status
+	(PlanCheckRun_Status)(0),                     // 0: bytebase.v1.PlanCheckRun.Status
+	(PlanCheckRun_Result_Type)(0),                // 1: bytebase.v1.PlanCheckRun.Result.Type
 	(*GetPlanRequest)(nil),                       // 2: bytebase.v1.GetPlanRequest
 	(*ListPlansRequest)(nil),                     // 3: bytebase.v1.ListPlansRequest
 	(*ListPlansResponse)(nil),                    // 4: bytebase.v1.ListPlansResponse
@@ -1974,17 +1962,17 @@ var file_v1_plan_service_proto_depIdxs = []int32{
 	28, // 8: bytebase.v1.Plan.update_time:type_name -> google.protobuf.Timestamp
 	18, // 9: bytebase.v1.Plan.plan_check_run_status_count:type_name -> bytebase.v1.Plan.PlanCheckRunStatusCountEntry
 	16, // 10: bytebase.v1.ListPlanCheckRunsResponse.plan_check_runs:type_name -> bytebase.v1.PlanCheckRun
-	0,  // 11: bytebase.v1.PlanCheckRun.type:type_name -> bytebase.v1.PlanCheckRun.Type
-	1,  // 12: bytebase.v1.PlanCheckRun.status:type_name -> bytebase.v1.PlanCheckRun.Status
-	23, // 13: bytebase.v1.PlanCheckRun.results:type_name -> bytebase.v1.PlanCheckRun.Result
-	28, // 14: bytebase.v1.PlanCheckRun.create_time:type_name -> google.protobuf.Timestamp
-	19, // 15: bytebase.v1.Plan.Spec.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
-	20, // 16: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig
-	21, // 17: bytebase.v1.Plan.Spec.export_data_config:type_name -> bytebase.v1.Plan.ExportDataConfig
-	29, // 18: bytebase.v1.Plan.ChangeDatabaseConfig.type:type_name -> bytebase.v1.DatabaseChangeType
-	22, // 19: bytebase.v1.Plan.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry
-	30, // 20: bytebase.v1.Plan.ExportDataConfig.format:type_name -> bytebase.v1.ExportFormat
-	31, // 21: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.Advice.Level
+	0,  // 11: bytebase.v1.PlanCheckRun.status:type_name -> bytebase.v1.PlanCheckRun.Status
+	23, // 12: bytebase.v1.PlanCheckRun.results:type_name -> bytebase.v1.PlanCheckRun.Result
+	28, // 13: bytebase.v1.PlanCheckRun.create_time:type_name -> google.protobuf.Timestamp
+	19, // 14: bytebase.v1.Plan.Spec.create_database_config:type_name -> bytebase.v1.Plan.CreateDatabaseConfig
+	20, // 15: bytebase.v1.Plan.Spec.change_database_config:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig
+	21, // 16: bytebase.v1.Plan.Spec.export_data_config:type_name -> bytebase.v1.Plan.ExportDataConfig
+	29, // 17: bytebase.v1.Plan.ChangeDatabaseConfig.type:type_name -> bytebase.v1.DatabaseChangeType
+	22, // 18: bytebase.v1.Plan.ChangeDatabaseConfig.ghost_flags:type_name -> bytebase.v1.Plan.ChangeDatabaseConfig.GhostFlagsEntry
+	30, // 19: bytebase.v1.Plan.ExportDataConfig.format:type_name -> bytebase.v1.ExportFormat
+	31, // 20: bytebase.v1.PlanCheckRun.Result.status:type_name -> bytebase.v1.Advice.Level
+	1,  // 21: bytebase.v1.PlanCheckRun.Result.type:type_name -> bytebase.v1.PlanCheckRun.Result.Type
 	24, // 22: bytebase.v1.PlanCheckRun.Result.sql_summary_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlSummaryReport
 	25, // 23: bytebase.v1.PlanCheckRun.Result.sql_review_report:type_name -> bytebase.v1.PlanCheckRun.Result.SqlReviewReport
 	32, // 24: bytebase.v1.PlanCheckRun.Result.SqlReviewReport.start_position:type_name -> bytebase.v1.Position

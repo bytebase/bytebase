@@ -413,18 +413,6 @@ message PlanCheckRun {
   // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
   string name = 1;
 
-  enum Type {
-    // Unspecified check type.
-    TYPE_UNSPECIFIED = 0;
-    // SQL review check that analyzes statements against configured SQL review rules.
-    DATABASE_STATEMENT_ADVISE = 2;
-    // Summary report check that generates impact analysis for the statements.
-    DATABASE_STATEMENT_SUMMARY_REPORT = 3;
-    // Ghost sync check that validates gh-ost online schema change compatibility.
-    DATABASE_GHOST_SYNC = 5;
-  }
-  Type type = 2;
-
   enum Status {
     STATUS_UNSPECIFIED = 0;
     RUNNING = 1;
@@ -433,12 +421,6 @@ message PlanCheckRun {
     CANCELED = 4;
   }
   Status status = 3;
-
-  // Format: instances/{instance}/databases/{database}
-  string target = 4;
-
-  // Format: project/{project}/sheets/{sheet}
-  string sheet = 5;
 
   repeated Result results = 6;
   // error is set if the Status is FAILED.
@@ -451,6 +433,18 @@ message PlanCheckRun {
     string title = 2;
     string content = 3;
     int32 code = 4;
+
+    // Target identification for consolidated results.
+    // Format: instances/{instance}/databases/{database}
+    string target = 7;
+    Type type = 8;
+
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      STATEMENT_ADVISE = 1;
+      STATEMENT_SUMMARY_REPORT = 2;
+      GHOST_SYNC = 3;
+    }
 
     oneof report {
       SqlSummaryReport sql_summary_report = 5;

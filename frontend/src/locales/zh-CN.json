@@ -173,6 +173,7 @@
     "deleted": "已删除",
     "active": "开启",
     "reopen": "重开",
+    "plan": "变更计划",
     "rollout": "发布",
     "upload": "上传",
     "clear": "清除",
@@ -937,6 +938,7 @@
     "labels": "工单标签",
     "my-issues": "我的工单",
     "waiting-approval": "等待审批",
+    "create-rollout": "创建发布",
     "status-transition": {
       "modal": {
         "resolve": "完成工单?",
@@ -1156,8 +1158,7 @@
     "approval": {
       "rejected-error": "此工单已被退回。",
       "pending-error": "此工单正在等待审批。",
-      "approved-and-waiting-for-rollout": "该工单已批准，等待发布。",
-      "ready-for-rollout": "等待发布"
+      "approved-and-waiting-for-rollout": "该工单已批准，等待发布。"
     },
     "new-layout": "使用新版 CI/CD 页面"
   },
@@ -1174,7 +1175,6 @@
     "navigator": {
       "changes": "变更项",
       "checks": "SQL 检查",
-      "rollout": "发布任务",
       "statement-empty": "变更语句为空"
     },
     "checks": {
@@ -1917,17 +1917,9 @@
             "warning": "至少需要配置一个标签"
           }
         },
-        "allow-modify-statement": {
-          "self": "允许工单创建后修改语句",
-          "description": "允许用户在创建工单后修改该变更语句。"
-        },
-        "auto-resolve-issue": {
-          "self": "自动完成工单",
-          "description": "所有任务执行成功后自动完成工单。"
-        },
         "enforce-issue-title": {
-          "self": "要求手动输入工单标题",
-          "description": "工单标题必须由用户输入而不是自动生成。"
+          "self": "要求手动输入标题",
+          "description": "工单和计划的标题必须由用户输入，而不是自动生成。"
         },
         "enforce-sql-review": {
           "self": "强制 SQL 审核",

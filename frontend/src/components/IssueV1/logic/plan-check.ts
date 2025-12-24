@@ -1,4 +1,3 @@
-import { sheetNameForSpec } from "@/components/Plan";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import type { ComposedIssue } from "@/types";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
@@ -6,7 +5,7 @@ import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { databaseForTask } from "@/utils";
-import { projectOfIssue, specForTask, useIssueContext } from ".";
+import { projectOfIssue, useIssueContext } from ".";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
   if (spec.config?.case === "createDatabaseConfig") {
@@ -23,10 +22,10 @@ export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
 
 export const planCheckRunListForTask = (issue: ComposedIssue, task: Task) => {
   const target = databaseForTask(projectOfIssue(issue), task).name;
-  const spec = specForTask(issue.planEntity, task);
-  const sheet = spec ? sheetNameForSpec(spec) : "";
-  return issue.planCheckRunList.filter((check) => {
-    return check.sheet === sheet && check.target === target;
+
+  // With consolidated model, return runs that have results for this target
+  return issue.planCheckRunList.filter((run) => {
+    return run.results.some((result) => result.target === target);
   });
 };
 
@@ -46,18 +45,6 @@ export const planCheckStatusForTask = (task: Task) => {
 };
 
 export const planCheckRunSummaryForIssue = (issue: ComposedIssue) => {
-  const sheets = issue.planEntity?.specs.reduce((acc, spec) => {
-    if (
-      spec.config?.case === "changeDatabaseConfig" &&
-      spec.config.value.sheet
-    ) {
-      acc.add(spec.config.value.sheet);
-    }
-    return acc;
-  }, new Set<string>());
-  const planCheckRunList = issue.planCheckRunList.filter((check) => {
-    return sheets?.has(check.sheet);
-  });
-
-  return planCheckRunSummaryForCheckRunList(planCheckRunList);
+  // With consolidated model, just use all plan check runs
+  return planCheckRunSummaryForCheckRunList(issue.planCheckRunList);
 };

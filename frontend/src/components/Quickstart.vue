@@ -101,6 +101,7 @@ import {
   useActuatorV1Store,
   useAppFeature,
   useIssueV1Store,
+  useProjectIamPolicyStore,
   useProjectV1Store,
   useUIStateStore,
   useWorkSheetStore,
@@ -134,6 +135,7 @@ const uiStateStore = useUIStateStore();
 const actuatorStore = useActuatorV1Store();
 const issueStore = useIssueV1Store();
 const worksheetStore = useWorkSheetStore();
+const projectIamPolicyStore = useProjectIamPolicyStore();
 const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
 
 const sampleProject = computedAsync(async () => {
@@ -144,6 +146,7 @@ const sampleProject = computedAsync(async () => {
   if (!isValidProjectName(project.name)) {
     return;
   }
+  await projectIamPolicyStore.getOrFetchProjectIamPolicy(project.name);
   return project;
 });
 

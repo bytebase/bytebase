@@ -2,7 +2,7 @@ import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { isValidProjectName } from "@/types";
-import { hasProjectPermissionV2, useDynamicLocalStorage } from "@/utils";
+import { useDynamicLocalStorage } from "@/utils";
 
 const MAX_RECENT_PROJECT = 5;
 
@@ -41,13 +41,11 @@ export const useRecentProjects = () => {
     for (const projectName of recentViewProjectNames.value) {
       try {
         const project = projectV1Store.getProjectByName(projectName);
-        if (
-          isValidProjectName(project.name) &&
-          hasProjectPermissionV2(project, "bb.projects.get")
-        ) {
+        if (isValidProjectName(project.name)) {
+          // Only check if project exists, let ProjectV1Layout handle permission
           projects.push(project);
         } else {
-          // Project exists but user lost access or it's invalid
+          // Project doesn't exist or is invalid
           invalidProjects.push(projectName);
         }
       } catch {
@@ -56,7 +54,7 @@ export const useRecentProjects = () => {
       }
     }
 
-    // Clean up invalid/deleted projects from localStorage
+    // Only clean up truly invalid/deleted projects
     if (invalidProjects.length > 0) {
       recentViewProjectNames.value = recentViewProjectNames.value.filter(
         (name) => !invalidProjects.includes(name)

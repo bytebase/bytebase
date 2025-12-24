@@ -73,6 +73,7 @@
 import { computed, watchEffect } from "vue";
 import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/IssueV1/logic/utils";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
+import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
 import {
   DatabaseV1Name,
   EnvironmentV1Name,
@@ -90,7 +91,6 @@ import { isValidInstanceName } from "@/types/v1/instance";
 import { getSheetStatement } from "@/utils";
 import { extractInstanceResourceName } from "@/utils/v1/instance";
 import { usePlanContextWithRollout } from "../..";
-import TaskRunTable from "../RolloutView/TaskRunTable.vue";
 
 const { plan, rollout, taskRuns } = usePlanContextWithRollout();
 const { project } = useCurrentProjectV1();

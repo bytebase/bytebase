@@ -73,8 +73,8 @@ SELECT
                     END
                 )
             ), '[]'::jsonb)
-            FROM plan_check_run_deduped d3
-            LEFT JOIN LATERAL jsonb_array_elements(d3.result->'results') r ON true
+            FROM plan_check_run_deduped d3,
+            LATERAL jsonb_array_elements(d3.result->'results') r
             WHERE d3.plan_id = d.plan_id
         ))
     END,

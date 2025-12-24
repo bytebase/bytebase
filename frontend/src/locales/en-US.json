@@ -173,6 +173,7 @@
     "deleted": "Deleted",
     "active": "Active",
     "reopen": "Reopen",
+    "plan": "Plan",
     "rollout": "Rollout",
     "upload": "Upload",
     "clear": "Clear",
@@ -937,6 +938,7 @@
     "labels": "Issue Labels",
     "my-issues": "My Issues",
     "waiting-approval": "Waiting for Approval",
+    "create-rollout": "Create Rollout",
     "status-transition": {
       "modal": {
         "resolve": "Resolve issue?",
@@ -1156,8 +1158,7 @@
     "approval": {
       "rejected-error": "Issue approval has been rejected.",
       "pending-error": "Issue approval is pending.",
-      "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout.",
-      "ready-for-rollout": "Ready to rollout"
+      "approved-and-waiting-for-rollout": "This issue has been approved and is ready to rollout."
     },
     "new-layout": "New CI/CD Layout"
   },
@@ -1174,7 +1175,6 @@
     "navigator": {
       "changes": "Changes",
       "checks": "Checks",
-      "rollout": "Rollout",
       "statement-empty": "Statement is empty"
     },
     "checks": {
@@ -1917,17 +1917,9 @@
             "warning": "Require at least configured one label"
           }
         },
-        "allow-modify-statement": {
-          "self": "Allow modify statement",
-          "description": "Allow users to modify the statement of the issue after creation."
-        },
-        "auto-resolve-issue": {
-          "self": "Auto resolve issue",
-          "description": "Automatically resolve the issue after all tasks are completed."
-        },
         "enforce-issue-title": {
-          "self": "Enforce issue title",
-          "description": "Enforce issue title to be non-empty and created by user instead of auto generated."
+          "self": "Require manual title",
+          "description": "Require titles for issues and plans to be created by user instead of auto-generated."
         },
         "enforce-sql-review": {
           "self": "Enforce SQL review",

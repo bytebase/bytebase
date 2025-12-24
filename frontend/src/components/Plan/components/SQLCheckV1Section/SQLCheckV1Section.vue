@@ -106,9 +106,9 @@ import { DatabaseChangeType } from "@/types/proto-es/v1/common_pb";
 import {
   type PlanCheckRun,
   type PlanCheckRun_Result,
+  PlanCheckRun_Result_Type,
   PlanCheckRun_ResultSchema,
   PlanCheckRun_Status,
-  PlanCheckRun_Type,
   PlanCheckRunSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
@@ -275,13 +275,16 @@ watch(
 );
 
 // Transform CheckReleaseResponse_CheckResult[] to PlanCheckRun[] format
+// With consolidated model, we create a single PlanCheckRun with all results
 const transformToFormattedCheckRuns = (
   results: CheckReleaseResponse_CheckResult[]
 ): PlanCheckRun[] => {
-  return results.map((result, index) => {
-    const planCheckRunResults: PlanCheckRun_Result[] = result.advices.map(
-      (advice) => {
-        return create(PlanCheckRun_ResultSchema, {
+  const allResults: PlanCheckRun_Result[] = [];
+
+  for (const result of results) {
+    for (const advice of result.advices) {
+      allResults.push(
+        create(PlanCheckRun_ResultSchema, {
           status:
             advice.status === Advice_Level.ERROR
               ? Advice_Level.ERROR
@@ -291,25 +294,31 @@ const transformToFormattedCheckRuns = (
           title: advice.title,
           content: advice.content,
           code: advice.code,
+          target: result.target,
+          type: PlanCheckRun_Result_Type.STATEMENT_ADVISE,
           report: {
             case: "sqlReviewReport",
             value: {
               startPosition: advice.startPosition,
             },
           },
-        });
-      }
-    );
+        })
+      );
+    }
+  }
 
-    return create(PlanCheckRunSchema, {
-      name: `check-run-${index}`,
-      type: PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
+  if (allResults.length === 0) {
+    return [];
+  }
+
+  return [
+    create(PlanCheckRunSchema, {
+      name: "check-run-0",
       status: PlanCheckRun_Status.DONE,
-      target: result.target,
-      results: planCheckRunResults,
+      results: allResults,
       createTime: { seconds: BigInt(Math.floor(Date.now() / 1000)), nanos: 0 },
-    });
-  });
+    }),
+  ];
 };
 
 // Format check runs for ChecksView component

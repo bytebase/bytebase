@@ -173,6 +173,7 @@
     "deleted": "Đã xóa",
     "active": "Tích cực",
     "reopen": "Mở lại",
+    "plan": "Kế hoạch",
     "rollout": "Triển khai",
     "upload": "Tải lên",
     "clear": "Xóa",
@@ -937,6 +938,7 @@
     "labels": "Nhãn vấn đề",
     "my-issues": "Vấn đề của tôi",
     "waiting-approval": "Đang chờ phê duyệt",
+    "create-rollout": "Tạo triển khai",
     "status-transition": {
       "modal": {
         "resolve": "Giải quyết vấn đề?",
@@ -1156,8 +1158,7 @@
     "approval": {
       "rejected-error": "Đã từ chối phê duyệt vấn đề.",
       "pending-error": "Đang chờ phê duyệt vấn đề.",
-      "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai.",
-      "ready-for-rollout": "Sẵn sàng triển khai"
+      "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai."
     },
     "new-layout": "Bố cục CI/CD mới"
   },
@@ -1174,7 +1175,6 @@
     "navigator": {
       "changes": "Thay đổi",
       "checks": "Kiểm tra",
-      "rollout": "Triển khai",
       "statement-empty": "Câu lệnh trống rỗng"
     },
     "checks": {
@@ -1917,17 +1917,9 @@
             "warning": "Yêu cầu ít nhất một nhãn được cấu hình"
           }
         },
-        "allow-modify-statement": {
-          "self": "Cho phép sửa đổi câu lệnh",
-          "description": "Cho phép người dùng sửa đổi câu lệnh của vấn đề sau khi tạo."
-        },
-        "auto-resolve-issue": {
-          "self": "Tự động giải quyết vấn đề",
-          "description": "Tự động giải quyết vấn đề sau khi tất cả các tác vụ được hoàn thành."
-        },
         "enforce-issue-title": {
-          "self": "Bắt buộc tiêu đề vấn đề",
-          "description": "Bắt buộc tiêu đề vấn đề không được để trống và được tạo bởi người dùng thay vì được tạo tự động."
+          "self": "Yêu cầu tiêu đề thủ công",
+          "description": "Yêu cầu tiêu đề cho vấn đề và kế hoạch được tạo bởi người dùng thay vì tự động tạo."
         },
         "enforce-sql-review": {
           "self": "Bắt buộc đánh giá SQL",

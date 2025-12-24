@@ -6,40 +6,6 @@ info:
     title: ""
     version: 0.0.1
 paths:
-    /v1/*/{*}/iamPolicies:batchGet:
-        get:
-            tags:
-                - ProjectService
-            description: |-
-                Deprecated. No permission check implemented.
-                 Permissions required: None
-            operationId: ProjectService_BatchGetIamPolicy
-            parameters:
-                - name: '*'
-                  in: path
-                  description: The * id.
-                  required: true
-                  schema:
-                    type: string
-                - name: names
-                  in: query
-                  schema:
-                    type: array
-                    items:
-                        type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BatchGetIamPolicyResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/actuator/cache:
         delete:
             tags:
@@ -8434,25 +8400,6 @@ components:
                         $ref: '#/components/schemas/Group'
                     description: The groups from the specified request.
             description: Response message for batch getting groups.
-        BatchGetIamPolicyResponse:
-            type: object
-            properties:
-                policyResults:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/BatchGetIamPolicyResponse_PolicyResult'
-                    description: The policy results for each requested project.
-        BatchGetIamPolicyResponse_PolicyResult:
-            type: object
-            properties:
-                project:
-                    type: string
-                    description: The project resource name.
-                policy:
-                    allOf:
-                        - $ref: '#/components/schemas/IamPolicy'
-                    description: The IAM policy for the project.
-            description: Result for a single project's IAM policy.
         BatchGetProjectsResponse:
             type: object
             properties:
@@ -11858,14 +11805,6 @@ components:
                 name:
                     type: string
                     description: 'Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}'
-                type:
-                    enum:
-                        - TYPE_UNSPECIFIED
-                        - DATABASE_STATEMENT_ADVISE
-                        - DATABASE_STATEMENT_SUMMARY_REPORT
-                        - DATABASE_GHOST_SYNC
-                    type: string
-                    format: enum
                 status:
                     enum:
                         - STATUS_UNSPECIFIED
@@ -11875,12 +11814,6 @@ components:
                         - CANCELED
                     type: string
                     format: enum
-                target:
-                    type: string
-                    description: 'Format: instances/{instance}/databases/{database}'
-                sheet:
-                    type: string
-                    description: 'Format: project/{project}/sheets/{sheet}'
                 results:
                     type: array
                     items:
@@ -11910,6 +11843,19 @@ components:
                 code:
                     type: integer
                     format: int32
+                target:
+                    type: string
+                    description: |-
+                        Target identification for consolidated results.
+                         Format: instances/{instance}/databases/{database}
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - STATEMENT_ADVISE
+                        - STATEMENT_SUMMARY_REPORT
+                        - GHOST_SYNC
+                    type: string
+                    format: enum
                 sqlSummaryReport:
                     $ref: '#/components/schemas/Result_SqlSummaryReport'
                 sqlReviewReport:
@@ -12261,12 +12207,6 @@ components:
                 forceIssueLabels:
                     type: boolean
                     description: Force issue labels to be used when creating an issue.
-                allowModifyStatement:
-                    type: boolean
-                    description: Allow modifying SQL statements after issue is created.
-                autoResolveIssue:
-                    type: boolean
-                    description: Enable automatic issue resolution when tasks complete.
                 enforceIssueTitle:
                     type: boolean
                     description: Enforce issue title to be created by user instead of generated by Bytebase.
