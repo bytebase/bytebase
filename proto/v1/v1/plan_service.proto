@@ -350,7 +350,10 @@ message Plan {
 message GetPlanCheckRunRequest {
   // The name of the plan check run to retrieve.
   // Format: projects/{project}/plans/{plan}/planCheckRun
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/PlanCheckRun"}
+  ];
 }
 
 message RunPlanChecksRequest {
@@ -372,12 +375,20 @@ message RunPlanChecksResponse {}
 message CancelPlanCheckRunRequest {
   // The name of the plan check run to cancel.
   // Format: projects/{project}/plans/{plan}/planCheckRun
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/PlanCheckRun"}
+  ];
 }
 
 message CancelPlanCheckRunResponse {}
 
 message PlanCheckRun {
+  option (google.api.resource) = {
+    type: "bytebase.com/PlanCheckRun"
+    pattern: "projects/{project}/plans/{plan}/planCheckRun"
+  };
+
   // Format: projects/{project}/plans/{plan}/planCheckRun
   string name = 1;
 

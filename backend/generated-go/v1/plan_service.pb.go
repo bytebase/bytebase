@@ -1745,19 +1745,21 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x06format\x18\x03 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x1f\n" +
 	"\bpassword\x18\x04 \x01(\tH\x00R\bpassword\x88\x01\x01B\v\n" +
 	"\t_password:7\xeaA4\n" +
-	"\x11bytebase.com/Plan\x12\x1fprojects/{project}/plans/{plan}\"1\n" +
-	"\x16GetPlanCheckRunRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"o\n" +
+	"\x11bytebase.com/Plan\x12\x1fprojects/{project}/plans/{plan}\"O\n" +
+	"\x16GetPlanCheckRunRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x1b\n" +
+	"\x19bytebase.com/PlanCheckRunR\x04name\"o\n" +
 	"\x14RunPlanChecksRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x04name\x12\x1c\n" +
 	"\aspec_id\x18\x02 \x01(\tH\x00R\x06specId\x88\x01\x01B\n" +
 	"\n" +
 	"\b_spec_id\"\x17\n" +
-	"\x15RunPlanChecksResponse\"4\n" +
-	"\x19CancelPlanCheckRunRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\x1c\n" +
-	"\x1aCancelPlanCheckRunResponse\"\xb5\b\n" +
+	"\x15RunPlanChecksResponse\"R\n" +
+	"\x19CancelPlanCheckRunRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x1b\n" +
+	"\x19bytebase.com/PlanCheckRunR\x04name\"\x1c\n" +
+	"\x1aCancelPlanCheckRunResponse\"\x83\t\n" +
 	"\fPlanCheckRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\x06status\x18\x03 \x01(\x0e2 .bytebase.v1.PlanCheckRun.StatusR\x06status\x12:\n" +
@@ -1793,7 +1795,8 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04DONE\x10\x02\x12\n" +
 	"\n" +
 	"\x06FAILED\x10\x03\x12\f\n" +
-	"\bCANCELED\x10\x042\x9f\n" +
+	"\bCANCELED\x10\x04:L\xeaAI\n" +
+	"\x19bytebase.com/PlanCheckRun\x12,projects/{project}/plans/{plan}/planCheckRun2\x9f\n" +
 	"\n" +
 	"\vPlanService\x12{\n" +
 	"\aGetPlan\x12\x1b.bytebase.v1.GetPlanRequest\x1a\x11.bytebase.v1.Plan\"@\xdaA\x04name\x8a\xea0\fbb.plans.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{name=projects/*/plans/*}\x12\x8f\x01\n" +
