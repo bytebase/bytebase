@@ -148,7 +148,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 		if record {
 			tests[i].Result = result
 		} else {
-			equalReviewResultProtos(a, t.Result, result, t.Statement)
+			equalReviewResultProtos(a, t.Result, result, database.Msg.Name, t.Statement)
 		}
 	}
 
@@ -168,7 +168,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, statements[0], false)
-	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
+	equalReviewResultProtos(a, noSQLReviewPolicy, result, database.Msg.Name, "")
 
 	// delete the SQL review policy
 	_, err = ctl.orgPolicyServiceClient.DeletePolicy(ctx, connect.NewRequest(&v1pb.DeletePolicyRequest{
@@ -177,7 +177,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, statements[0], false)
-	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
+	equalReviewResultProtos(a, noSQLReviewPolicy, result, database.Msg.Name, "")
 }
 
 func TestSQLReviewForMySQL(t *testing.T) {
@@ -315,7 +315,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 		if record {
 			tests[i].Result = result
 		} else {
-			equalReviewResultProtos(a, t.Result, result, tests[i].Statement)
+			equalReviewResultProtos(a, t.Result, result, database.Msg.Name, tests[i].Statement)
 		}
 	}
 
@@ -383,7 +383,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	result := createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, statements[0], false)
-	equalReviewResultProtos(a, noSQLReviewPolicy, result, "")
+	equalReviewResultProtos(a, noSQLReviewPolicy, result, database.Msg.Name, "")
 }
 
 func readTestData(path string) ([]test, error) {
@@ -519,10 +519,16 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 	return statementAdviseResults
 }
 
-func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckRun_Result, message string) {
+func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckRun_Result, expectedTarget, message string) {
 	a.Equal(len(want), len(got), message)
 	for i := 0; i < len(want); i++ {
-		diff := cmp.Diff(want[i], got[i], protocmp.Transform())
+		// Verify target matches expected database
+		a.Equal(expectedTarget, got[i].Target, message)
+		// Verify type is STATEMENT_ADVISE (we filter for this type)
+		a.Equal(v1pb.PlanCheckRun_Result_STATEMENT_ADVISE, got[i].Type, message)
+		// Compare other fields, ignoring target and type since we checked them above
+		diff := cmp.Diff(want[i], got[i], protocmp.Transform(),
+			protocmp.IgnoreFields(&v1pb.PlanCheckRun_Result{}, "target", "type"))
 		a.Empty(diff, message)
 	}
 }
