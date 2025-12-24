@@ -1058,9 +1058,13 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 func convertToPlanCheckRuns(projectID string, planUID int64, runs []*store.PlanCheckRunMessage) []*v1pb.PlanCheckRun {
 	var planCheckRuns []*v1pb.PlanCheckRun
 	for _, run := range runs {
-		// Expand consolidated run into virtual records for backward compatibility
-		expanded := expandPlanCheckRun(projectID, planUID, run)
-		planCheckRuns = append(planCheckRuns, expanded...)
+		planCheckRuns = append(planCheckRuns, &v1pb.PlanCheckRun{
+			Name:       common.FormatPlanCheckRun(projectID, planUID, int64(run.UID)),
+			Status:     convertToPlanCheckRunStatus(run.Status),
+			Results:    convertToPlanCheckRunResults(run.Result.GetResults()),
+			Error:      run.Result.Error,
+			CreateTime: timestamppb.New(run.CreatedAt),
+		})
 	}
 	return planCheckRuns
 }
@@ -1248,66 +1252,6 @@ func convertPlanSpecExportDataConfig(config *v1pb.Plan_Spec_ExportDataConfig) *s
 	}
 }
 
-// expandPlanCheckRun expands a consolidated plan check run into multiple virtual
-// records for API backward compatibility. Each target/type combination becomes
-// a separate API response record.
-func expandPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRunMessage) []*v1pb.PlanCheckRun {
-	var runs []*v1pb.PlanCheckRun
-
-	// Group results by target and type
-	type key struct {
-		target    string
-		checkType storepb.PlanCheckType
-	}
-	resultsByKey := make(map[key][]*storepb.PlanCheckRunResult_Result)
-	for _, result := range run.Result.GetResults() {
-		k := key{
-			target:    result.Target,
-			checkType: result.Type,
-		}
-		resultsByKey[k] = append(resultsByKey[k], result)
-	}
-
-	// Build virtual records from targets
-	virtualID := 0
-	for _, target := range run.Config.GetTargets() {
-		for _, checkType := range target.Types {
-			virtualID++
-			k := key{
-				target:    target.Target,
-				checkType: checkType,
-			}
-			results := resultsByKey[k]
-
-			runs = append(runs, &v1pb.PlanCheckRun{
-				Name:       common.FormatPlanCheckRun(projectID, planUID, int64(run.UID)*1000+int64(virtualID)),
-				CreateTime: timestamppb.New(run.CreatedAt),
-				Type:       convertPlanCheckType(checkType),
-				Status:     convertToPlanCheckRunStatus(run.Status),
-				Target:     target.Target,
-				Sheet:      common.FormatSheet(projectID, target.SheetSha256),
-				Results:    convertToPlanCheckRunResults(results),
-				Error:      run.Result.Error,
-			})
-		}
-	}
-
-	return runs
-}
-
-func convertPlanCheckType(t storepb.PlanCheckType) v1pb.PlanCheckRun_Type {
-	switch t {
-	case storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE:
-		return v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE
-	case storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT:
-		return v1pb.PlanCheckRun_DATABASE_STATEMENT_SUMMARY_REPORT
-	case storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC:
-		return v1pb.PlanCheckRun_DATABASE_GHOST_SYNC
-	default:
-		return v1pb.PlanCheckRun_TYPE_UNSPECIFIED
-	}
-}
-
 func convertToPlanCheckRunStatus(status store.PlanCheckRunStatus) v1pb.PlanCheckRun_Status {
 	switch status {
 	case store.PlanCheckRunStatusCanceled:
@@ -1337,6 +1281,8 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 		Title:   result.Title,
 		Content: result.Content,
 		Code:    result.Code,
+		Target:  result.Target,
+		Type:    convertToV1ResultType(result.Type),
 		Report:  nil,
 	}
 	switch report := result.Report.(type) {
@@ -1356,6 +1302,19 @@ func convertToPlanCheckRunResult(result *storepb.PlanCheckRunResult_Result) *v1p
 		}
 	}
 	return resultV1
+}
+
+func convertToV1ResultType(t storepb.PlanCheckType) v1pb.PlanCheckRun_Result_Type {
+	switch t {
+	case storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_ADVISE:
+		return v1pb.PlanCheckRun_Result_STATEMENT_ADVISE
+	case storepb.PlanCheckType_PLAN_CHECK_TYPE_STATEMENT_SUMMARY_REPORT:
+		return v1pb.PlanCheckRun_Result_STATEMENT_SUMMARY_REPORT
+	case storepb.PlanCheckType_PLAN_CHECK_TYPE_GHOST_SYNC:
+		return v1pb.PlanCheckRun_Result_GHOST_SYNC
+	default:
+		return v1pb.PlanCheckRun_Result_TYPE_UNSPECIFIED
+	}
 }
 
 func convertToPlanCheckRunResultStatus(status storepb.Advice_Status) v1pb.Advice_Level {
