@@ -40,7 +40,15 @@ func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) 
 			return nil, err
 		}
 		for _, check := range resp.Msg.PlanCheckRuns {
-			if check.Type == v1pb.PlanCheckRun_DATABASE_STATEMENT_ADVISE {
+			// With consolidated model, check if any result has STATEMENT_ADVISE type
+			hasStatementAdvise := false
+			for _, result := range check.Results {
+				if result.Type == v1pb.PlanCheckRun_Result_STATEMENT_ADVISE {
+					hasStatementAdvise = true
+					break
+				}
+			}
+			if hasStatementAdvise {
 				if check.Status == v1pb.PlanCheckRun_DONE || check.Status == v1pb.PlanCheckRun_FAILED {
 					return check, nil
 				}

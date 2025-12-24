@@ -15,6 +15,7 @@
     <PlanCheckRunDetail
       v-if="selectedPlanCheckRun"
       :plan-check-run="selectedPlanCheckRun"
+      :selected-type="selectedTypeRef"
       :database="database"
       :show-code-location="isLatestPlanCheckRun"
     />
@@ -30,17 +31,18 @@ import { TabFilter } from "@/components/v2";
 import { type ComposedDatabase, getDateForPbTimestampProtoEs } from "@/types";
 import {
   type PlanCheckRun,
-  PlanCheckRun_Type,
+  PlanCheckRun_Result_Type,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID, humanizeDate } from "@/utils";
+import { HiddenPlanCheckTypes } from "./common";
 import PlanCheckRunBadgeBar from "./PlanCheckRunBadgeBar.vue";
 import PlanCheckRunDetail from "./PlanCheckRunDetail.vue";
 
 const props = defineProps<{
   planCheckRunList: PlanCheckRun[];
   database: ComposedDatabase;
-  selectedType?: PlanCheckRun_Type;
+  selectedType?: PlanCheckRun_Result_Type;
 }>();
 
 const getInitialSelectedType = () => {
@@ -48,27 +50,41 @@ const getInitialSelectedType = () => {
     return props.selectedType;
   }
 
-  // Find the first plan check run with error or warning.
-  const planCheck = props.planCheckRunList.find((checkRun) =>
-    [Advice_Level.ERROR, Advice_Level.WARNING].some((status) =>
-      checkRun.results.map((result) => result.status).includes(status)
-    )
-  );
-  if (planCheck) {
-    return planCheck.type;
+  // Find the first result type with error or warning
+  for (const run of props.planCheckRunList) {
+    for (const result of run.results) {
+      if (HiddenPlanCheckTypes.has(result.type)) {
+        continue;
+      }
+      if (
+        result.status === Advice_Level.ERROR ||
+        result.status === Advice_Level.WARNING
+      ) {
+        return result.type;
+      }
+    }
   }
-  return (
-    first(props.planCheckRunList)?.type ?? PlanCheckRun_Type.TYPE_UNSPECIFIED
-  );
+
+  // Fall back to first non-hidden result type
+  for (const run of props.planCheckRunList) {
+    for (const result of run.results) {
+      if (!HiddenPlanCheckTypes.has(result.type)) {
+        return result.type;
+      }
+    }
+  }
+
+  return PlanCheckRun_Result_Type.TYPE_UNSPECIFIED;
 };
 
 const { t } = useI18n();
-const selectedTypeRef = ref<PlanCheckRun_Type>(getInitialSelectedType());
+const selectedTypeRef = ref<PlanCheckRun_Result_Type>(getInitialSelectedType());
 
 const selectedPlanCheckRunList = computed(() => {
+  // With consolidated model, return runs that have results of the selected type
   return orderBy(
-    props.planCheckRunList.filter(
-      (checkRun) => checkRun.type === selectedTypeRef.value
+    props.planCheckRunList.filter((run) =>
+      run.results.some((result) => result.type === selectedTypeRef.value)
     ),
     (checkRun) => parseInt(extractPlanCheckRunUID(checkRun.name), 10),
     "desc"
@@ -113,7 +129,7 @@ const tabItemList = computed(() => {
   );
 });
 
-const handlePlanCheckRunTypeChange = (type: PlanCheckRun_Type) => {
+const handlePlanCheckRunTypeChange = (type: PlanCheckRun_Result_Type) => {
   selectedTypeRef.value = type;
   selectedPlanCheckRunName.value = first(selectedPlanCheckRunList.value)?.name;
 };

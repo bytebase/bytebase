@@ -11,8 +11,7 @@
           class="flex items-center gap-1 text-control"
         >
           <LoaderIcon :class="iconSizeClass" class="animate-spin" />
-          <span v-if="showLabel">{{ $t("task.status.running") }}</span>
-          <span>{{ statusSummary.running }}</span>
+          <span>{{ $t("task.status.running") }}</span>
         </div>
         <div
           v-if="statusSummary.error > 0"

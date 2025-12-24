@@ -2,7 +2,7 @@ import { maxBy } from "lodash-es";
 import { computed, type Ref } from "vue";
 import type { AdviceOption } from "@/components/MonacoEditor";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
-import { PlanCheckRun_Type } from "@/types/proto-es/v1/plan_service_pb";
+import { PlanCheckRun_Result_Type } from "@/types/proto-es/v1/plan_service_pb";
 import { type Advice, Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractPlanCheckRunUID } from "@/utils";
 import { type IssueContext } from "../../logic";
@@ -41,27 +41,30 @@ export const useSQLAdviceMarkers = (
       const { selectedTask, getPlanCheckRunsForTask } = context;
       const planCheckRunList = getPlanCheckRunsForTask(selectedTask.value);
 
-      const types: PlanCheckRun_Type[] = [
-        PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
-      ];
-      return types.flatMap((type) => {
-        return getLatestAdviceOptions(
-          planCheckRunList.filter((checkRun) => checkRun.type === type)
-        );
-      });
+      // With consolidated model, filter results by type instead of checkRuns
+      return getLatestAdviceOptions(
+        planCheckRunList,
+        PlanCheckRun_Result_Type.STATEMENT_ADVISE
+      );
     }
   });
   return { markers };
 };
 
-const getLatestAdviceOptions = (planCheckRunList: PlanCheckRun[]) => {
+const getLatestAdviceOptions = (
+  planCheckRunList: PlanCheckRun[],
+  resultType: PlanCheckRun_Result_Type
+) => {
   const latest = maxBy(planCheckRunList, (checkRun) =>
     parseInt(extractPlanCheckRunUID(checkRun.name), 10)
   );
   if (!latest) {
     return [];
   }
-  const resultList = latest.results;
+  // Filter results by type
+  const resultList = latest.results.filter(
+    (result) => result.type === resultType
+  );
   return resultList
     .filter(
       (result) =>

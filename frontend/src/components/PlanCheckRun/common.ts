@@ -1,11 +1,9 @@
-import { maxBy } from "lodash-es";
 import {
   type PlanCheckRun,
+  PlanCheckRun_Result_Type,
   PlanCheckRun_Status,
-  PlanCheckRun_Type,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
-import { extractPlanCheckRunUID } from "@/utils";
 
 export const planCheckRunResultStatus = (checkRun: PlanCheckRun) => {
   let status = Advice_Level.SUCCESS;
@@ -21,8 +19,8 @@ export const planCheckRunResultStatus = (checkRun: PlanCheckRun) => {
   return status;
 };
 
-export const HiddenPlanCheckTypes = new Set<PlanCheckRun_Type>([
-  PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT,
+export const HiddenPlanCheckTypes = new Set<PlanCheckRun_Result_Type>([
+  PlanCheckRun_Result_Type.STATEMENT_SUMMARY_REPORT,
 ]);
 
 export type PlanCheckRunSummary = {
@@ -42,54 +40,46 @@ export const planCheckRunSummaryForCheckRunList = (
     errorCount: 0,
   };
 
-  planCheckRuns = planCheckRuns.filter(
-    (check) => !HiddenPlanCheckTypes.has(check.type)
-  );
+  for (const checkRun of planCheckRuns) {
+    if (checkRun.status === PlanCheckRun_Status.RUNNING) {
+      summary.runningCount++;
+      continue;
+    }
+    if (checkRun.status === PlanCheckRun_Status.FAILED) {
+      summary.errorCount++;
+      continue;
+    }
+    if (checkRun.status === PlanCheckRun_Status.CANCELED) {
+      continue;
+    }
 
-  const listGroupByTypeTargetSheet = planCheckRuns.reduce(
-    (acc, checkRun) => {
-      const key = `${checkRun.type}-${checkRun.target}-${checkRun.sheet}`;
-      if (!acc[key]) {
-        acc[key] = [];
+    // For DONE status, analyze results by type-target
+    // Group results by type-target to count unique checks
+    const resultsByTypeTarget = new Map<string, Advice_Level>();
+    for (const result of checkRun.results) {
+      if (HiddenPlanCheckTypes.has(result.type)) {
+        continue;
       }
-      acc[key].push(checkRun);
-      return acc;
-    },
-    {} as { [key: string]: PlanCheckRun[] }
-  );
+      const key = `${result.type}-${result.target}`;
+      const existing = resultsByTypeTarget.get(key);
+      // Keep worst status (ERROR > WARNING > SUCCESS)
+      if (!existing || result.status > existing) {
+        resultsByTypeTarget.set(key, result.status);
+      }
+    }
 
-  const latestCheckRunOfEachTypeTargetSheet = Object.keys(
-    listGroupByTypeTargetSheet
-  ).map((k) => {
-    const listOfTypeTargetSheet = listGroupByTypeTargetSheet[k];
-    const latest = maxBy(listOfTypeTargetSheet, (checkRun) =>
-      Number(extractPlanCheckRunUID(checkRun.name))
-    )!;
-    return latest;
-  });
-
-  for (const checkRun of latestCheckRunOfEachTypeTargetSheet) {
-    switch (checkRun.status) {
-      case PlanCheckRun_Status.CANCELED:
-        // nothing todo
-        break;
-      case PlanCheckRun_Status.FAILED:
-        summary.errorCount++;
-        break;
-      case PlanCheckRun_Status.RUNNING:
-        summary.runningCount++;
-        break;
-      case PlanCheckRun_Status.DONE:
-        switch (planCheckRunResultStatus(checkRun)) {
-          case Advice_Level.SUCCESS:
-            summary.successCount++;
-            break;
-          case Advice_Level.WARNING:
-            summary.warnCount++;
-            break;
-          case Advice_Level.ERROR:
-            summary.errorCount++;
-        }
+    for (const status of resultsByTypeTarget.values()) {
+      switch (status) {
+        case Advice_Level.SUCCESS:
+          summary.successCount++;
+          break;
+        case Advice_Level.WARNING:
+          summary.warnCount++;
+          break;
+        case Advice_Level.ERROR:
+          summary.errorCount++;
+          break;
+      }
     }
   }
 
