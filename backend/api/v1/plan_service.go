@@ -6,9 +6,6 @@ import (
 	"slices"
 
 	"connectrpc.com/connect"
-	"github.com/google/cel-go/cel"
-	celast "github.com/google/cel-go/common/ast"
-	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -434,162 +431,24 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	return connect.NewResponse(convertedPlan), nil
 }
 
-// ListPlanCheckRuns lists plan check runs for the plan.
-func (s *PlanService) ListPlanCheckRuns(ctx context.Context, request *connect.Request[v1pb.ListPlanCheckRunsRequest]) (*connect.Response[v1pb.ListPlanCheckRunsResponse], error) {
+// GetPlanCheckRun gets the plan check run for the plan.
+func (s *PlanService) GetPlanCheckRun(ctx context.Context, request *connect.Request[v1pb.GetPlanCheckRunRequest]) (*connect.Response[v1pb.PlanCheckRun], error) {
 	req := request.Msg
-	projectID, planUID, err := common.GetProjectIDPlanID(req.Parent)
+	projectID, planUID, err := common.GetProjectIDPlanIDFromPlanCheckRun(req.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	find := &store.FindPlanCheckRunMessage{
-		PlanUID: &planUID,
-	}
-	// Parse filter if provided
-	if req.Filter != "" {
-		if err := s.parsePlanCheckRunFilter(req.Filter, find); err != nil {
-			return nil, err
-		}
-	}
-	planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, find)
+	planCheckRun, err := s.store.GetPlanCheckRun(ctx, planUID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list plan check runs, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run, error: %v", err))
 	}
-	converted := convertToPlanCheckRuns(projectID, planUID, planCheckRuns)
-
-	return connect.NewResponse(&v1pb.ListPlanCheckRunsResponse{
-		PlanCheckRuns: converted,
-	}), nil
-}
-
-// parsePlanCheckRunFilter parses the filter for plan check runs.
-func (*PlanService) parsePlanCheckRunFilter(filter string, find *store.FindPlanCheckRunMessage) error {
-	if filter == "" {
-		return nil
+	if planCheckRun == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run not found for plan %d", planUID))
 	}
 
-	e, err := cel.NewEnv()
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
-	}
-
-	var parseFilter func(expr celast.Expr) error
-	parseFilter = func(expr celast.Expr) error {
-		switch expr.Kind() {
-		case celast.CallKind:
-			functionName := expr.AsCall().FunctionName()
-			switch functionName {
-			case celoperators.LogicalAnd:
-				// Handle AND operator by recursively parsing left and right expressions
-				for _, arg := range expr.AsCall().Args() {
-					if err := parseFilter(arg); err != nil {
-						return err
-					}
-				}
-			case celoperators.Equals:
-				variable, value := getVariableAndValueFromExpr(expr)
-				switch variable {
-				case "status":
-					statusStr, ok := value.(string)
-					if !ok {
-						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("status value must be a string"))
-					}
-					// Convert v1pb status to store status
-					v1Status := v1pb.PlanCheckRun_Status_value[statusStr]
-					if v1Status == 0 && statusStr != "STATUS_UNSPECIFIED" {
-						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid status value: %s", statusStr))
-					}
-					storeStatus := convertToStorePlanCheckRunStatus(v1pb.PlanCheckRun_Status(v1Status))
-					if find.Status == nil {
-						find.Status = &[]store.PlanCheckRunStatus{}
-					}
-					*find.Status = append(*find.Status, storeStatus)
-				case "result_status":
-					resultStatusStr, ok := value.(string)
-					if !ok {
-						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("result_status value must be a string"))
-					}
-					// Convert v1pb result status to store result status
-					v1ResultStatus := v1pb.Advice_Level_value[resultStatusStr]
-					if v1ResultStatus == 0 && resultStatusStr != "STATUS_UNSPECIFIED" {
-						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid result_status value: %s", resultStatusStr))
-					}
-					storeResultStatus := convertToStoreResultStatus(v1pb.Advice_Level(v1ResultStatus))
-					if find.ResultStatus == nil {
-						find.ResultStatus = &[]storepb.Advice_Status{}
-					}
-					*find.ResultStatus = append(*find.ResultStatus, storeResultStatus)
-				default:
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported filter variable: %s", variable))
-				}
-			case celoperators.In:
-				variable, value := getVariableAndValueFromExpr(expr)
-				switch variable {
-				case "status":
-					rawList, ok := value.([]any)
-					if !ok {
-						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid list value %q for %v", value, variable))
-					}
-					if len(rawList) == 0 {
-						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("empty list value for filter %v", variable))
-					}
-					if find.Status == nil {
-						find.Status = &[]store.PlanCheckRunStatus{}
-					}
-					for _, raw := range rawList {
-						statusStr, ok := raw.(string)
-						if !ok {
-							return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("status value must be a string"))
-						}
-						// Convert v1pb status to store status
-						v1Status := v1pb.PlanCheckRun_Status_value[statusStr]
-						if v1Status == 0 && statusStr != "STATUS_UNSPECIFIED" {
-							return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid status value: %s", statusStr))
-						}
-						storeStatus := convertToStorePlanCheckRunStatus(v1pb.PlanCheckRun_Status(v1Status))
-						*find.Status = append(*find.Status, storeStatus)
-					}
-				case "result_status":
-					rawList, ok := value.([]any)
-					if !ok {
-						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid list value %q for %v", value, variable))
-					}
-					if len(rawList) == 0 {
-						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("empty list value for filter %v", variable))
-					}
-					if find.ResultStatus == nil {
-						find.ResultStatus = &[]storepb.Advice_Status{}
-					}
-					for _, raw := range rawList {
-						resultStatusStr, ok := raw.(string)
-						if !ok {
-							return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("result_status value must be a string"))
-						}
-						// Convert v1pb result status to store result status
-						v1ResultStatus := v1pb.Advice_Level_value[resultStatusStr]
-						if v1ResultStatus == 0 && resultStatusStr != "STATUS_UNSPECIFIED" {
-							return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid result_status value: %s", resultStatusStr))
-						}
-						storeResultStatus := convertToStoreResultStatus(v1pb.Advice_Level(v1ResultStatus))
-						*find.ResultStatus = append(*find.ResultStatus, storeResultStatus)
-					}
-				default:
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported filter variable: %s", variable))
-				}
-			default:
-				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported operator: %s", functionName))
-			}
-		default:
-			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid filter expression"))
-		}
-		return nil
-	}
-
-	return parseFilter(ast.NativeRep().Expr())
+	converted := convertToPlanCheckRun(projectID, planUID, planCheckRun)
+	return connect.NewResponse(converted), nil
 }
 
 // RunPlanChecks runs plan checks for a plan.
@@ -655,17 +514,14 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 	return connect.NewResponse(&v1pb.RunPlanChecksResponse{}), nil
 }
 
-// BatchCancelPlanCheckRuns cancels a list of plan check runs.
-func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *connect.Request[v1pb.BatchCancelPlanCheckRunsRequest]) (*connect.Response[v1pb.BatchCancelPlanCheckRunsResponse], error) {
+// CancelPlanCheckRun cancels the plan check run for a plan.
+func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.Request[v1pb.CancelPlanCheckRunRequest]) (*connect.Response[v1pb.CancelPlanCheckRunResponse], error) {
 	req := request.Msg
-	if len(req.PlanCheckRuns) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan check runs cannot be empty"))
-	}
-
-	projectID, planID, err := common.GetProjectIDPlanID(req.Parent)
+	projectID, planUID, err := common.GetProjectIDPlanIDFromPlanCheckRun(req.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
@@ -676,49 +532,29 @@ func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *con
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
-	var planCheckRunIDs []int
-	for _, planCheckRun := range req.PlanCheckRuns {
-		_, _, planCheckRunID, err := common.GetProjectIDPlanIDPlanCheckRunID(planCheckRun)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		planCheckRunIDs = append(planCheckRunIDs, planCheckRunID)
-	}
-
-	planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-		UIDs: &planCheckRunIDs,
-	})
+	planCheckRun, err := s.store.GetPlanCheckRun(ctx, planUID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list plan check runs, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run, error: %v", err))
+	}
+	if planCheckRun == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run not found for plan %d", planUID))
 	}
 
-	// Validate that all plan check runs belong to the plan specified in the parent.
-	for _, planCheckRun := range planCheckRuns {
-		if planCheckRun.PlanUID != planID {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run %d not found in plan %d", planCheckRun.UID, planID))
-		}
+	if planCheckRun.Status != store.PlanCheckRunStatusRunning {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("plan check run is not running"))
 	}
 
-	// Check if any of the given plan check runs are not running.
-	for _, planCheckRun := range planCheckRuns {
-		switch planCheckRun.Status {
-		case store.PlanCheckRunStatusRunning:
-		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("planCheckRun %v is not running", planCheckRun.UID))
-		}
-	}
-	// Cancel the plan check runs.
-	for _, planCheckRun := range planCheckRuns {
-		if cancelFunc, ok := s.stateCfg.RunningPlanCheckRunsCancelFunc.Load(planCheckRun.UID); ok {
-			cancelFunc.(context.CancelFunc)()
-		}
-	}
-	// Update the status of the plan check runs to canceled.
-	if err := s.store.BatchCancelPlanCheckRuns(ctx, planCheckRunIDs); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch patch task run status to canceled, error: %v", err))
+	// Cancel the plan check run.
+	if cancelFunc, ok := s.stateCfg.RunningPlanCheckRunsCancelFunc.Load(planCheckRun.UID); ok {
+		cancelFunc.(context.CancelFunc)()
 	}
 
-	return connect.NewResponse(&v1pb.BatchCancelPlanCheckRunsResponse{}), nil
+	// Update the status to canceled.
+	if err := s.store.BatchCancelPlanCheckRuns(ctx, []int{planCheckRun.UID}); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to cancel plan check run, error: %v", err))
+	}
+
+	return connect.NewResponse(&v1pb.CancelPlanCheckRunResponse{}), nil
 }
 
 func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs []*v1pb.Plan_Spec) (*v1pb.DatabaseGroup, error) {
@@ -1028,15 +864,13 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	if plan.PipelineUID != nil {
 		p.Rollout = common.FormatRollout(plan.ProjectID, *plan.PipelineUID)
 	}
-	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-		PlanUID: &plan.UID,
-	})
+	planCheckRun, err := s.GetPlanCheckRun(ctx, int64(plan.UID))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list plan check runs for plan uid %d", plan.UID)
+		return nil, errors.Wrapf(err, "failed to get plan check run for plan uid %d", plan.UID)
 	}
-	for _, run := range planCheckRuns {
-		p.PlanCheckRunStatusCount[string(run.Status)]++
-		for _, result := range run.Result.Results {
+	if planCheckRun != nil {
+		p.PlanCheckRunStatusCount[string(planCheckRun.Status)]++
+		for _, result := range planCheckRun.Result.Results {
 			p.PlanCheckRunStatusCount[storepb.Advice_Status_name[int32(result.Status)]]++
 		}
 	}
@@ -1055,18 +889,14 @@ func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
 	}
 }
 
-func convertToPlanCheckRuns(projectID string, planUID int64, runs []*store.PlanCheckRunMessage) []*v1pb.PlanCheckRun {
-	var planCheckRuns []*v1pb.PlanCheckRun
-	for _, run := range runs {
-		planCheckRuns = append(planCheckRuns, &v1pb.PlanCheckRun{
-			Name:       common.FormatPlanCheckRun(projectID, planUID, int64(run.UID)),
-			Status:     convertToPlanCheckRunStatus(run.Status),
-			Results:    convertToPlanCheckRunResults(run.Result.GetResults()),
-			Error:      run.Result.Error,
-			CreateTime: timestamppb.New(run.CreatedAt),
-		})
+func convertToPlanCheckRun(projectID string, planUID int64, run *store.PlanCheckRunMessage) *v1pb.PlanCheckRun {
+	return &v1pb.PlanCheckRun{
+		Name:       common.FormatPlanCheckRun(projectID, planUID),
+		Status:     convertToPlanCheckRunStatus(run.Status),
+		Results:    convertToPlanCheckRunResults(run.Result.GetResults()),
+		Error:      run.Result.Error,
+		CreateTime: timestamppb.New(run.CreatedAt),
 	}
-	return planCheckRuns
 }
 
 func convertToPlanSpecs(projectID string, specs []*storepb.PlanConfig_Spec) []*v1pb.Plan_Spec {
@@ -1329,35 +1159,5 @@ func convertToPlanCheckRunResultStatus(status storepb.Advice_Status) v1pb.Advice
 		return v1pb.Advice_ERROR
 	default:
 		return v1pb.Advice_ADVICE_LEVEL_UNSPECIFIED
-	}
-}
-
-// convertToStorePlanCheckRunStatus converts v1pb.PlanCheckRun_Status to store.PlanCheckRunStatus.
-func convertToStorePlanCheckRunStatus(status v1pb.PlanCheckRun_Status) store.PlanCheckRunStatus {
-	switch status {
-	case v1pb.PlanCheckRun_CANCELED:
-		return store.PlanCheckRunStatusCanceled
-	case v1pb.PlanCheckRun_DONE:
-		return store.PlanCheckRunStatusDone
-	case v1pb.PlanCheckRun_FAILED:
-		return store.PlanCheckRunStatusFailed
-	case v1pb.PlanCheckRun_RUNNING:
-		return store.PlanCheckRunStatusRunning
-	default:
-		return store.PlanCheckRunStatusRunning
-	}
-}
-
-// convertToStoreResultStatus converts v1pb.Advice_Status to storepb.Advice_Status.
-func convertToStoreResultStatus(status v1pb.Advice_Level) storepb.Advice_Status {
-	switch status {
-	case v1pb.Advice_ERROR:
-		return storepb.Advice_ERROR
-	case v1pb.Advice_WARNING:
-		return storepb.Advice_WARNING
-	case v1pb.Advice_SUCCESS:
-		return storepb.Advice_SUCCESS
-	default:
-		return storepb.Advice_STATUS_UNSPECIFIED
 	}
 }
