@@ -250,6 +250,25 @@ export const provideSQLEditorContext = () => {
     }
   };
 
+  const maybeSwitchProject = async (projectName: string) => {
+    editorStore.projectContextReady = false;
+    try {
+      if (!isValidProjectName(projectName)) {
+        return;
+      }
+      const project = await projectStore.getOrFetchProjectByName(projectName);
+      // Fetch IAM policy to ensure permission checks work correctly
+      await projectIamPolicyStore.getOrFetchProjectIamPolicy(project.name);
+      editorStore.setProject(project.name);
+      context.events.emit("project-context-ready", { project: project.name });
+      return project.name;
+    } catch {
+      // Nothing
+    } finally {
+      editorStore.projectContextReady = true;
+    }
+  };
+
   const context: SQLEditorContext = {
     asidePanelTab: ref("WORKSHEET"),
     showConnectionPanel,
@@ -259,24 +278,7 @@ export const provideSQLEditorContext = () => {
     pendingInsertAtCaret: ref(),
     events: new Emittery(),
 
-    maybeSwitchProject: async (projectName) => {
-      if (!isValidProjectName(projectName)) {
-        return;
-      }
-      editorStore.projectContextReady = false;
-      try {
-        const project = await projectStore.getOrFetchProjectByName(projectName);
-        // Fetch IAM policy to ensure permission checks work correctly
-        await projectIamPolicyStore.getOrFetchProjectIamPolicy(project.name);
-        editorStore.setProject(project.name);
-        context.events.emit("project-context-ready", { project: project.name });
-        return project.name;
-      } catch {
-        // Nothing
-      } finally {
-        editorStore.projectContextReady = true;
-      }
-    },
+    maybeSwitchProject,
     handleEditorPanelResize: (size: number) => {
       if (size >= 1) {
         return;
