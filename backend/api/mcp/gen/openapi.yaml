@@ -12842,7 +12842,7 @@ components:
         name:
           type: string
           title: name
-          description: 'Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}'
+          description: 'Format: projects/{project}/plans/{plan}/planCheckRun'
         status:
           title: status
           $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Status'
