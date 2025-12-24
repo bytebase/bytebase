@@ -97,7 +97,6 @@ export const useGroupStore = defineStore("group", () => {
       contextValues: createContextValues().set(silentContextKey, true),
     });
     for (const group of groups) {
-      console.log("group", group);
       groupMapByName.set(group.name, group);
     }
     return groups;
