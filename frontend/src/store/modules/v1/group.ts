@@ -97,24 +97,23 @@ export const useGroupStore = defineStore("group", () => {
       contextValues: createContextValues().set(silentContextKey, true),
     });
     for (const group of groups) {
+      console.log("group", group);
       groupMapByName.set(group.name, group);
     }
     return groups;
   };
 
   const batchGetOrFetchGroups = async (groupNames: string[]) => {
-    const distinctGroupList = uniq(groupNames).filter((groupName) => {
-      if (!groupName) {
-        return false;
-      }
+    const validGroupList = uniq(groupNames).filter((groupName) => !!groupName);
+    const pendingFetch = validGroupList.filter((groupName) => {
       const group = getGroupByIdentifier(groupName);
       if (group) {
         return false;
       }
       return true;
     });
-    await batchFetchGroups(distinctGroupList);
-    return distinctGroupList.map(getGroupByIdentifier);
+    await batchFetchGroups(pendingFetch);
+    return validGroupList.map(getGroupByIdentifier);
   };
 
   const getOrFetchGroupByIdentifier = async (id: string) => {

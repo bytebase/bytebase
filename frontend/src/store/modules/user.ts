@@ -175,29 +175,28 @@ export const useUserStore = defineStore("user", () => {
   };
 
   const batchGetOrFetchUsers = async (userNameList: string[]) => {
-    const distinctList = uniq(userNameList)
-      .filter(
-        (name) =>
-          Boolean(name) &&
-          (name.startsWith(userNamePrefix) ||
-            name.startsWith(userBindingPrefix))
-      )
-      .map((name) => ensureUserFullName(name))
-      .filter(
-        (name) =>
-          isValidUserName(name) && getUserByIdentifier(name) === undefined
-      );
-    if (distinctList.length === 0) {
-      return [];
+    const validList = uniq(userNameList).filter(
+      (name) =>
+        Boolean(name) &&
+        (name.startsWith(userNamePrefix) || name.startsWith(userBindingPrefix))
+    );
+    const pendingFetch = validList
+      .filter((name) => {
+        return isValidUserName(name) && getUserByIdentifier(name) === undefined;
+      })
+      .map((name) => ensureUserFullName(name));
+    if (pendingFetch.length === 0) {
+      return validList.map(getUserByIdentifier);
     }
+
     const request = create(BatchGetUsersRequestSchema, {
-      names: distinctList,
+      names: pendingFetch,
     });
     const response = await userServiceClientConnect.batchGetUsers(request);
     for (const user of response.users) {
       setUser(user);
     }
-    return distinctList.map((name) => getUserByIdentifier(name));
+    return validList.map((name) => getUserByIdentifier(name));
   };
 
   const getOrFetchUserByIdentifier = async (
