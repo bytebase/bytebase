@@ -1917,10 +1917,6 @@
             "warning": "少なくとも 1 つのラベルを設定する必要があります"
           }
         },
-        "allow-modify-statement": {
-          "self": "ステートメントの変更を許可する",
-          "description": "ユーザーが作成後に問題の説明を変更できるようにします。"
-        },
         "auto-resolve-issue": {
           "self": "自動解決の問題",
           "description": "すべてのタスクが完了すると、問題が自動的に解決されます。"

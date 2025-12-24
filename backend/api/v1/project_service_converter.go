@@ -312,7 +312,6 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		DataClassificationConfigId: projectMessage.DataClassificationConfigID,
 		IssueLabels:                issueLabels,
 		ForceIssueLabels:           projectMessage.Setting.ForceIssueLabels,
-		AllowModifyStatement:       projectMessage.Setting.AllowModifyStatement,
 		AutoResolveIssue:           projectMessage.Setting.AutoResolveIssue,
 		EnforceIssueTitle:          projectMessage.Setting.EnforceIssueTitle,
 		EnforceSqlReview:           projectMessage.Setting.EnforceSqlReview,
@@ -353,7 +352,6 @@ func convertToStoreExecutionRetryPolicy(policy *v1pb.Project_ExecutionRetryPolic
 
 func convertToProjectMessage(resourceID string, project *v1pb.Project) *store.ProjectMessage {
 	setting := &storepb.Project{
-		AllowModifyStatement:       project.AllowModifyStatement,
 		AutoResolveIssue:           project.AutoResolveIssue,
 		EnforceIssueTitle:          project.EnforceIssueTitle,
 		AutoEnableBackup:           project.AutoEnableBackup,

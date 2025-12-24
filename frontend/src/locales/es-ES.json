@@ -1917,10 +1917,6 @@
             "warning": "Requiere al menos una etiqueta configurada"
           }
         },
-        "allow-modify-statement": {
-          "self": "Permitir modificar declaración",
-          "description": "Permitir a los usuarios modificar la declaración del problema después de su creación."
-        },
         "auto-resolve-issue": {
           "self": "Problema de resolución automática",
           "description": "Resuelva automáticamente el problema después de completar todas las tareas."

@@ -1917,10 +1917,6 @@
             "warning": "Require at least configured one label"
           }
         },
-        "allow-modify-statement": {
-          "self": "Allow modify statement",
-          "description": "Allow users to modify the statement of the issue after creation."
-        },
         "auto-resolve-issue": {
           "self": "Auto resolve issue",
           "description": "Automatically resolve the issue after all tasks are completed."
