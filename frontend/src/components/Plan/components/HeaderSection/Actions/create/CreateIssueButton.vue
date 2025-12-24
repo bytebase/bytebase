@@ -78,10 +78,7 @@ import {
 } from "@/components/Plan/components/common";
 import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
 import RequiredStar from "@/components/RequiredStar.vue";
-import {
-  issueServiceClientConnect,
-  rolloutServiceClientConnect,
-} from "@/grpcweb";
+import { issueServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
@@ -95,7 +92,6 @@ import {
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
-import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractIssueUID, extractProjectResourceName } from "@/utils";
 
@@ -201,15 +197,6 @@ const doCreateIssue = async () => {
 
     const createdIssue =
       await issueServiceClientConnect.createIssue(createIssueRequest);
-
-    // const createRolloutRequest = create(CreateRolloutRequestSchema, {
-    //   parent: project.value.name,
-    //   rollout: {
-    //     plan: plan.value.name,
-    //   },
-    // });
-
-    // await rolloutServiceClientConnect.createRollout(createRolloutRequest);
 
     events.emit("status-changed", { eager: true });
 
