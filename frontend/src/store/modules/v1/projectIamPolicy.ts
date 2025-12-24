@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, ref, unref, watch } from "vue";
+import { computed, ref, shallowReactive, unref, watch } from "vue";
 import { projectServiceClientConnect } from "@/grpcweb";
 import {
   ALL_USERS_USER_EMAIL,
@@ -19,7 +19,6 @@ import {
   SetIamPolicyRequestSchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { BatchGetIamPolicyRequestSchema } from "@/types/proto-es/v1/project_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
@@ -52,26 +51,15 @@ export const composePolicyBindings = async (
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
   () => {
-    const policyMap = ref(new Map<string, IamPolicy>());
-    const requestCache = new Map<string, Promise<IamPolicy>>();
+    const policyMap = shallowReactive(new Map<string, IamPolicy>());
 
     const setIamPolicy = async (project: string, policy: IamPolicy) => {
       await composePolicyBindings(policy.bindings);
-      policyMap.value.set(project, policy);
+      policyMap.set(project, policy);
       return policy;
     };
 
-    const fetchProjectIamPolicy = async (
-      project: string,
-      skipCache = false
-    ) => {
-      if (!skipCache) {
-        const cache = requestCache.get(project);
-        if (cache) {
-          return cache;
-        }
-      }
-
+    const fetchProjectIamPolicy = async (project: string) => {
       const request = create(GetIamPolicyRequestSchema, {
         resource: project,
       });
@@ -80,22 +68,7 @@ export const useProjectIamPolicyStore = defineStore(
         .then((response) => {
           return setIamPolicy(project, response);
         });
-      requestCache.set(project, requestPromise);
       return requestPromise;
-    };
-
-    const batchFetchIamPolicy = async (projectList: string[]) => {
-      const request = create(BatchGetIamPolicyRequestSchema, {
-        scope: "projects/-",
-        names: projectList,
-      });
-      const response =
-        await projectServiceClientConnect.batchGetIamPolicy(request);
-      for (const item of response.policyResults) {
-        if (item.policy) {
-          await setIamPolicy(item.project, item.policy);
-        }
-      }
     };
 
     const updateProjectIamPolicy = async (
@@ -113,46 +86,25 @@ export const useProjectIamPolicyStore = defineStore(
         etag: policy.etag,
       });
       const response = await projectServiceClientConnect.setIamPolicy(request);
-      policyMap.value.set(project, response);
+      policyMap.set(project, response);
 
       usePermissionStore().invalidCacheByProject(project);
     };
 
     const getProjectIamPolicy = (project: string) => {
-      return policyMap.value.get(project) ?? create(IamPolicySchema, {});
+      return policyMap.get(project) ?? create(IamPolicySchema, {});
     };
 
     const getOrFetchProjectIamPolicy = async (project: string) => {
-      if (!policyMap.value.has(project)) {
+      if (!policyMap.has(project)) {
         await fetchProjectIamPolicy(project);
       }
       return getProjectIamPolicy(project);
     };
 
-    const batchGetOrFetchProjectIamPolicy = async (
-      projectList: string[],
-      skipCache = false
-    ) => {
-      if (skipCache) {
-        await batchFetchIamPolicy(projectList);
-      } else {
-        // BatchFetch policies that missing in the local map.
-        const missingProjectList = projectList.filter(
-          (project) => !policyMap.value.has(project)
-        );
-        if (missingProjectList.length > 0) {
-          await batchFetchIamPolicy(missingProjectList);
-        }
-      }
-      return projectList.map(getProjectIamPolicy);
-    };
-
     return {
-      policyMap,
       getProjectIamPolicy,
-      fetchProjectIamPolicy,
       getOrFetchProjectIamPolicy,
-      batchGetOrFetchProjectIamPolicy,
       updateProjectIamPolicy,
     };
   }
@@ -165,14 +117,14 @@ export const useProjectIamPolicy = (project: MaybeRef<string>) => {
     () => unref(project),
     (project) => {
       ready.value = false;
-      store.fetchProjectIamPolicy(project).finally(() => {
+      store.getOrFetchProjectIamPolicy(project).finally(() => {
         ready.value = true;
       });
     },
     { immediate: true }
   );
   const policy = computed(() => {
-    return store.policyMap.get(unref(project)) ?? create(IamPolicySchema, {});
+    return store.getProjectIamPolicy(unref(project));
   });
   return { policy, ready };
 };

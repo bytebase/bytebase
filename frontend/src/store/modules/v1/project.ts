@@ -32,7 +32,6 @@ import {
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { projectNamePrefix } from "./common";
 import { getLabelFilter } from "./database";
-import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export interface ProjectFilter {
   query?: string;
@@ -88,14 +87,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   const updateProjectCache = (project: Project) => {
     projectMapByName.set(project.name, project);
   };
-  const upsertProjectMap = async (projectList: Project[]) => {
-    await useProjectIamPolicyStore().batchGetOrFetchProjectIamPolicy(
-      projectList.map((project) => project.name)
-    );
+  const upsertProjectsCache = (projectList: Project[]) => {
     projectList.forEach((project) => {
       updateProjectCache(project);
     });
-    return projectList;
   };
   const getProjectList = (showDeleted = false) => {
     if (showDeleted) {
@@ -116,7 +111,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     const response = await projectServiceClientConnect.getProject(request, {
       contextValues: createContextValues().set(silentContextKey, silent),
     });
-    await upsertProjectMap([response]);
+
+    upsertProjectsCache([response]);
     return response;
   };
 
@@ -178,10 +174,10 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       break;
     }
 
-    const composedProjects = await upsertProjectMap(response.projects);
+    upsertProjectsCache(response.projects);
 
     return {
-      projects: composedProjects,
+      projects: response.projects,
       nextPageToken: response.nextPageToken,
     };
   };
@@ -200,8 +196,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
         contextValues: createContextValues().set(silentContextKey, silent),
       }
     );
-    const composedProjects = await upsertProjectMap(response.projects);
-    return composedProjects;
+    upsertProjectsCache(response.projects);
+    return response.projects;
   };
 
   const batchGetOrFetchProjects = async (projectNames: string[]) => {
@@ -231,6 +227,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     if (!isValidProjectName(name)) {
       return unknownProject();
     }
+
     const cached = projectRequestCache.get(name);
     if (cached) return cached;
     const request = fetchProjectByName(name, silent);
@@ -243,8 +240,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       projectId: resourceId,
     });
     const response = await projectServiceClientConnect.createProject(request);
-    const composed = await upsertProjectMap([response]);
-    return composed[0];
+    upsertProjectsCache([response]);
+    return response;
   };
   const updateProject = async (project: Project, updateMask: string[]) => {
     const request = create(UpdateProjectRequestSchema, {
@@ -252,8 +249,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       updateMask: { paths: updateMask },
     });
     const response = await projectServiceClientConnect.updateProject(request);
-    const composed = await upsertProjectMap([response]);
-    return composed[0];
+    upsertProjectsCache([project]);
+    return response;
   };
   const archiveProject = async (project: Project, force = false) => {
     const request = create(DeleteProjectRequestSchema, {
@@ -262,7 +259,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     });
     await projectServiceClientConnect.deleteProject(request);
     project.state = State.DELETED;
-    await upsertProjectMap([project]);
+    upsertProjectsCache([project]);
   };
   const deleteProject = async (project: string) => {
     const request = create(DeleteProjectRequestSchema, {
@@ -289,21 +286,18 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       })
       .filter((p): p is Project => p !== null);
 
-    if (projects.length > 0) {
-      await upsertProjectMap(projects);
-    }
+    upsertProjectsCache(projects);
   };
   const restoreProject = async (project: Project) => {
     const request = create(UndeleteProjectRequestSchema, {
       name: project.name,
     });
     const response = await projectServiceClientConnect.undeleteProject(request);
-    await upsertProjectMap([response]);
+    upsertProjectsCache([response]);
   };
 
   return {
     reset,
-    upsertProjectMap,
     getProjectList,
     getProjectByName,
     getOrFetchProjectByName,

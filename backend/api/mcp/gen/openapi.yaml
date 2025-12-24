@@ -3312,44 +3312,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/google.protobuf.Empty'
-  /bytebase.v1.ProjectService/BatchGetIamPolicy:
-    post:
-      tags:
-        - bytebase.v1.ProjectService
-      summary: 'Deprecated. No permission check implemented.  Permissions required: None'
-      description: |-
-        Deprecated. No permission check implemented.
-         Permissions required: None
-      operationId: bytebase.v1.ProjectService.BatchGetIamPolicy
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.BatchGetIamPolicyRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.BatchGetIamPolicyResponse'
   /bytebase.v1.ProjectService/BatchGetProjects:
     post:
       tags:
@@ -7296,45 +7258,6 @@ components:
       title: BatchGetGroupsResponse
       additionalProperties: false
       description: Response message for batch getting groups.
-    bytebase.v1.BatchGetIamPolicyRequest:
-      type: object
-      properties:
-        scope:
-          type: string
-          title: scope
-          description: The scope of the batch get. Typically it's "projects/-".
-        names:
-          type: array
-          items:
-            type: string
-          title: names
-      title: BatchGetIamPolicyRequest
-      additionalProperties: false
-    bytebase.v1.BatchGetIamPolicyResponse:
-      type: object
-      properties:
-        policyResults:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.BatchGetIamPolicyResponse.PolicyResult'
-          title: policy_results
-          description: The policy results for each requested project.
-      title: BatchGetIamPolicyResponse
-      additionalProperties: false
-    bytebase.v1.BatchGetIamPolicyResponse.PolicyResult:
-      type: object
-      properties:
-        project:
-          type: string
-          title: project
-          description: The project resource name.
-        policy:
-          title: policy
-          description: The IAM policy for the project.
-          $ref: '#/components/schemas/bytebase.v1.IamPolicy'
-      title: PolicyResult
-      additionalProperties: false
-      description: Result for a single project's IAM policy.
     bytebase.v1.BatchGetProjectsRequest:
       type: object
       properties:

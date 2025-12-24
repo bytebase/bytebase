@@ -87,7 +87,6 @@ import {
 import {
   type ComposedDatabase,
   DEFAULT_PROJECT_NAME,
-  defaultProject,
   formatEnvironmentName,
   isValidProjectName,
 } from "@/types";
@@ -99,7 +98,7 @@ import {
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { DrawerContent, ProjectSelect } from "../v2";
 import { PagedDatabaseTable } from "../v2/Model/DatabaseV1Table";
 import TransferSourceSelector from "./TransferSourceSelector.vue";
@@ -170,15 +169,11 @@ const selectedDatabaseList = computed(() =>
   )
 );
 
-const hasTransferDatabasePermission = (project: Project): boolean => {
-  return (
-    hasProjectPermissionV2(project, "bb.databases.list") &&
-    hasProjectPermissionV2(project, "bb.projects.update")
-  );
-};
-
 const hasPermissionForDefaultProject = computed(() => {
-  return hasTransferDatabasePermission(defaultProject());
+  return (
+    hasWorkspacePermissionV2("bb.databases.list") &&
+    hasWorkspacePermissionV2("bb.projects.update")
+  );
 });
 
 watchEffect(() => {
@@ -196,9 +191,7 @@ const changeProjectFilter = (name: string | undefined) => {
 };
 
 const filterSourceProject = (project: Project) => {
-  return (
-    hasTransferDatabasePermission(project) && project.name !== props.projectName
-  );
+  return project.name !== props.projectName;
 };
 
 const transferDatabase = async () => {

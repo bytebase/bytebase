@@ -65,7 +65,11 @@ export const usePermissionStore = defineStore("permission", () => {
       ...projectBindings.map((binding) => binding.role),
       ...workspaceLevelProjectRoles,
     ]);
-    projectRoleListCache.set(key, result);
+    if (projectBindings.length > 0) {
+      // Note: do not set cache if no project IAM policy.
+      // The project IAM policy may not initialized at this time.
+      projectRoleListCache.set(key, result);
+    }
     return result;
   };
 
@@ -82,7 +86,11 @@ export const usePermissionStore = defineStore("permission", () => {
         .map((role) => roleStore.getRoleByName(role))
         .flatMap((role) => (role ? role.permissions : []) as Permission[])
     );
-    projectPermissionsCache.set(key, permissions);
+    if (permissions.size > 0) {
+      // Note: do not set cache if no project IAM policy.
+      // The project IAM policy may not initialized at this time.
+      projectPermissionsCache.set(key, permissions);
+    }
     return permissions;
   };
 

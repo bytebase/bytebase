@@ -2011,18 +2011,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.BatchGetIamPolicyRequest"><span class="badge">M</span>BatchGetIamPolicyRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.BatchGetIamPolicyResponse"><span class="badge">M</span>BatchGetIamPolicyResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.BatchGetIamPolicyResponse.PolicyResult"><span class="badge">M</span>BatchGetIamPolicyResponse.PolicyResult</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.BatchGetProjectsRequest"><span class="badge">M</span>BatchGetProjectsRequest</a>
                 </li>
               
@@ -22399,92 +22387,6 @@ If set to false, the operation will fail if the project has databases or open is
 
         
       
-        <h3 id="bytebase.v1.BatchGetIamPolicyRequest">BatchGetIamPolicyRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>scope</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The scope of the batch get. Typically it&#39;s &#34;projects/-&#34;. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>names</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.BatchGetIamPolicyResponse">BatchGetIamPolicyResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>policy_results</td>
-                  <td><a href="#bytebase.v1.BatchGetIamPolicyResponse.PolicyResult">BatchGetIamPolicyResponse.PolicyResult</a></td>
-                  <td>repeated</td>
-                  <td><p>The policy results for each requested project. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.BatchGetIamPolicyResponse.PolicyResult">BatchGetIamPolicyResponse.PolicyResult</h3>
-        <p>Result for a single project's IAM policy.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>project</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The project resource name. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>policy</td>
-                  <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
-                  <td></td>
-                  <td><p>The IAM policy for the project. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.BatchGetProjectsRequest">BatchGetProjectsRequest</h3>
         <p></p>
 
@@ -23511,14 +23413,6 @@ Permissions required: bb.projects.getIamPolicy</p></td>
               </tr>
             
               <tr>
-                <td>BatchGetIamPolicy</td>
-                <td><a href="#bytebase.v1.BatchGetIamPolicyRequest">BatchGetIamPolicyRequest</a></td>
-                <td><a href="#bytebase.v1.BatchGetIamPolicyResponse">BatchGetIamPolicyResponse</a></td>
-                <td><p>Deprecated. No permission check implemented.
-Permissions required: None</p></td>
-              </tr>
-            
-              <tr>
                 <td>SetIamPolicy</td>
                 <td><a href="#bytebase.v1.SetIamPolicyRequest">SetIamPolicyRequest</a></td>
                 <td><a href="#bytebase.v1.IamPolicy">IamPolicy</a></td>
@@ -23672,16 +23566,6 @@ Permissions required: bb.projects.update</p></td>
                 <td>GetIamPolicy</td>
                 <td>GET</td>
                 <td>/v1/{resource=projects/*}:getIamPolicy</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>BatchGetIamPolicy</td>
-                <td>GET</td>
-                <td>/v1/{scope=*/*}/iamPolicies:batchGet</td>
                 <td></td>
               </tr>
               

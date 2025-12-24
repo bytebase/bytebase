@@ -64,9 +64,6 @@ const (
 	// ProjectServiceGetIamPolicyProcedure is the fully-qualified name of the ProjectService's
 	// GetIamPolicy RPC.
 	ProjectServiceGetIamPolicyProcedure = "/bytebase.v1.ProjectService/GetIamPolicy"
-	// ProjectServiceBatchGetIamPolicyProcedure is the fully-qualified name of the ProjectService's
-	// BatchGetIamPolicy RPC.
-	ProjectServiceBatchGetIamPolicyProcedure = "/bytebase.v1.ProjectService/BatchGetIamPolicy"
 	// ProjectServiceSetIamPolicyProcedure is the fully-qualified name of the ProjectService's
 	// SetIamPolicy RPC.
 	ProjectServiceSetIamPolicyProcedure = "/bytebase.v1.ProjectService/SetIamPolicy"
@@ -117,9 +114,6 @@ type ProjectServiceClient interface {
 	// Retrieves the IAM policy for a project.
 	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
-	// Deprecated. No permission check implemented.
-	// Permissions required: None
-	BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error)
 	// Sets the IAM policy for a project.
 	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
@@ -208,12 +202,6 @@ func NewProjectServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(projectServiceMethods.ByName("GetIamPolicy")),
 			connect.WithClientOptions(opts...),
 		),
-		batchGetIamPolicy: connect.NewClient[v1.BatchGetIamPolicyRequest, v1.BatchGetIamPolicyResponse](
-			httpClient,
-			baseURL+ProjectServiceBatchGetIamPolicyProcedure,
-			connect.WithSchema(projectServiceMethods.ByName("BatchGetIamPolicy")),
-			connect.WithClientOptions(opts...),
-		),
 		setIamPolicy: connect.NewClient[v1.SetIamPolicyRequest, v1.IamPolicy](
 			httpClient,
 			baseURL+ProjectServiceSetIamPolicyProcedure,
@@ -259,7 +247,6 @@ type projectServiceClient struct {
 	undeleteProject     *connect.Client[v1.UndeleteProjectRequest, v1.Project]
 	batchDeleteProjects *connect.Client[v1.BatchDeleteProjectsRequest, emptypb.Empty]
 	getIamPolicy        *connect.Client[v1.GetIamPolicyRequest, v1.IamPolicy]
-	batchGetIamPolicy   *connect.Client[v1.BatchGetIamPolicyRequest, v1.BatchGetIamPolicyResponse]
 	setIamPolicy        *connect.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
 	addWebhook          *connect.Client[v1.AddWebhookRequest, v1.Project]
 	updateWebhook       *connect.Client[v1.UpdateWebhookRequest, v1.Project]
@@ -315,11 +302,6 @@ func (c *projectServiceClient) BatchDeleteProjects(ctx context.Context, req *con
 // GetIamPolicy calls bytebase.v1.ProjectService.GetIamPolicy.
 func (c *projectServiceClient) GetIamPolicy(ctx context.Context, req *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
 	return c.getIamPolicy.CallUnary(ctx, req)
-}
-
-// BatchGetIamPolicy calls bytebase.v1.ProjectService.BatchGetIamPolicy.
-func (c *projectServiceClient) BatchGetIamPolicy(ctx context.Context, req *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error) {
-	return c.batchGetIamPolicy.CallUnary(ctx, req)
 }
 
 // SetIamPolicy calls bytebase.v1.ProjectService.SetIamPolicy.
@@ -380,9 +362,6 @@ type ProjectServiceHandler interface {
 	// Retrieves the IAM policy for a project.
 	// Permissions required: bb.projects.getIamPolicy
 	GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
-	// Deprecated. No permission check implemented.
-	// Permissions required: None
-	BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error)
 	// Sets the IAM policy for a project.
 	// Permissions required: bb.projects.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
@@ -467,12 +446,6 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.Handler
 		connect.WithSchema(projectServiceMethods.ByName("GetIamPolicy")),
 		connect.WithHandlerOptions(opts...),
 	)
-	projectServiceBatchGetIamPolicyHandler := connect.NewUnaryHandler(
-		ProjectServiceBatchGetIamPolicyProcedure,
-		svc.BatchGetIamPolicy,
-		connect.WithSchema(projectServiceMethods.ByName("BatchGetIamPolicy")),
-		connect.WithHandlerOptions(opts...),
-	)
 	projectServiceSetIamPolicyHandler := connect.NewUnaryHandler(
 		ProjectServiceSetIamPolicyProcedure,
 		svc.SetIamPolicy,
@@ -525,8 +498,6 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.Handler
 			projectServiceBatchDeleteProjectsHandler.ServeHTTP(w, r)
 		case ProjectServiceGetIamPolicyProcedure:
 			projectServiceGetIamPolicyHandler.ServeHTTP(w, r)
-		case ProjectServiceBatchGetIamPolicyProcedure:
-			projectServiceBatchGetIamPolicyHandler.ServeHTTP(w, r)
 		case ProjectServiceSetIamPolicyProcedure:
 			projectServiceSetIamPolicyHandler.ServeHTTP(w, r)
 		case ProjectServiceAddWebhookProcedure:
@@ -584,10 +555,6 @@ func (UnimplementedProjectServiceHandler) BatchDeleteProjects(context.Context, *
 
 func (UnimplementedProjectServiceHandler) GetIamPolicy(context.Context, *connect.Request[v1.GetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.GetIamPolicy is not implemented"))
-}
-
-func (UnimplementedProjectServiceHandler) BatchGetIamPolicy(context.Context, *connect.Request[v1.BatchGetIamPolicyRequest]) (*connect.Response[v1.BatchGetIamPolicyResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ProjectService.BatchGetIamPolicy is not implemented"))
 }
 
 func (UnimplementedProjectServiceHandler) SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {

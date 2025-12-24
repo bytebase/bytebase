@@ -480,9 +480,6 @@
     - [Activity](#bytebase-v1-Activity)
     - [AddWebhookRequest](#bytebase-v1-AddWebhookRequest)
     - [BatchDeleteProjectsRequest](#bytebase-v1-BatchDeleteProjectsRequest)
-    - [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest)
-    - [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse)
-    - [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult)
     - [BatchGetProjectsRequest](#bytebase-v1-BatchGetProjectsRequest)
     - [BatchGetProjectsResponse](#bytebase-v1-BatchGetProjectsResponse)
     - [CreateProjectRequest](#bytebase-v1-CreateProjectRequest)
@@ -7944,53 +7941,6 @@ Activity types for webhook notifications.
 
 
 
-<a name="bytebase-v1-BatchGetIamPolicyRequest"></a>
-
-### BatchGetIamPolicyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| scope | [string](#string) |  | The scope of the batch get. Typically it&#39;s &#34;projects/-&#34;. |
-| names | [string](#string) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchGetIamPolicyResponse"></a>
-
-### BatchGetIamPolicyResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| policy_results | [BatchGetIamPolicyResponse.PolicyResult](#bytebase-v1-BatchGetIamPolicyResponse-PolicyResult) | repeated | The policy results for each requested project. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchGetIamPolicyResponse-PolicyResult"></a>
-
-### BatchGetIamPolicyResponse.PolicyResult
-Result for a single project&#39;s IAM policy.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| project | [string](#string) |  | The project resource name. |
-| policy | [IamPolicy](#bytebase-v1-IamPolicy) |  | The IAM policy for the project. |
-
-
-
-
-
-
 <a name="bytebase-v1-BatchGetProjectsRequest"></a>
 
 ### BatchGetProjectsRequest
@@ -8392,7 +8342,6 @@ ProjectService manages projects that group databases and changes.
 | UndeleteProject | [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest) | [Project](#bytebase-v1-Project) | Restores a soft-deleted project. Permissions required: bb.projects.undelete |
 | BatchDeleteProjects | [BatchDeleteProjectsRequest](#bytebase-v1-BatchDeleteProjectsRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes multiple projects in a single operation. Permissions required: bb.projects.delete |
 | GetIamPolicy | [GetIamPolicyRequest](#bytebase-v1-GetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Retrieves the IAM policy for a project. Permissions required: bb.projects.getIamPolicy |
-| BatchGetIamPolicy | [BatchGetIamPolicyRequest](#bytebase-v1-BatchGetIamPolicyRequest) | [BatchGetIamPolicyResponse](#bytebase-v1-BatchGetIamPolicyResponse) | Deprecated. No permission check implemented. Permissions required: None |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets the IAM policy for a project. Permissions required: bb.projects.setIamPolicy |
 | AddWebhook | [AddWebhookRequest](#bytebase-v1-AddWebhookRequest) | [Project](#bytebase-v1-Project) | Adds a webhook to a project for notifications. Permissions required: bb.projects.update |
 | UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) | Updates an existing webhook configuration. Permissions required: bb.projects.update |

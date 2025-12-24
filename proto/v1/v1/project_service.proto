@@ -122,14 +122,6 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Deprecated. No permission check implemented.
-  // Permissions required: None
-  rpc BatchGetIamPolicy(BatchGetIamPolicyRequest) returns (BatchGetIamPolicyResponse) {
-    option (google.api.http) = {get: "/v1/{scope=*/*}/iamPolicies:batchGet"};
-    option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
-    option (bytebase.v1.auth_method) = CUSTOM;
-  }
-
   // Sets the IAM policy for a project.
   // Permissions required: bb.projects.setIamPolicy
   rpc SetIamPolicy(SetIamPolicyRequest) returns (IamPolicy) {
@@ -366,26 +358,6 @@ message BatchDeleteProjectsRequest {
   // Open issues will remain open but associated with the deleted project.
   // If set to false, the operation will fail if the project has databases or open issues.
   bool force = 2;
-}
-
-message BatchGetIamPolicyRequest {
-  // The scope of the batch get. Typically it's "projects/-".
-  string scope = 1 [(google.api.field_behavior) = REQUIRED];
-
-  repeated string names = 2;
-}
-
-message BatchGetIamPolicyResponse {
-  // Result for a single project's IAM policy.
-  message PolicyResult {
-    // The project resource name.
-    string project = 1;
-
-    // The IAM policy for the project.
-    IamPolicy policy = 2;
-  }
-  // The policy results for each requested project.
-  repeated PolicyResult policy_results = 1;
 }
 
 // A label for categorizing and organizing issues.
