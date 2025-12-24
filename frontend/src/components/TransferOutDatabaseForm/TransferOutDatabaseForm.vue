@@ -79,10 +79,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import {
-  DEFAULT_PROJECT_NAME,
-  isValidProjectName,
-} from "@/types";
+import { DEFAULT_PROJECT_NAME, isValidProjectName } from "@/types";
 import {
   BatchUpdateDatabasesRequestSchema,
   DatabaseSchema$,
