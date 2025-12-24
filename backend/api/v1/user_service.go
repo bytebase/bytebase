@@ -227,7 +227,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find user by email, error: %v", err))
 	}
 	if existingUser != nil {
-		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s is already existed", request.Msg.User.Email))
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s exists", request.Msg.User.Email))
 	}
 
 	password := request.Msg.User.Password
