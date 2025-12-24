@@ -1518,6 +1518,22 @@ paths:
                         - CHANGELOG_VIEW_FULL
                     type: string
                     format: enum
+                - name: filter
+                  in: query
+                  description: |-
+                    Filter is used to filter changelogs returned in the list.
+                     The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+                     Supported filter:
+                     status: the changelog status, support "==" operation. check Changelog.Status for available values.
+                     type: the changelog type, support "in" and "==" operation. check Changelog.Type for available values.
+
+                     Example:
+                     status == "DONE"
+                     type in ["BASELINE", "MIGRATE"]
+                     status == "FAILED" && type == "SDL"
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK

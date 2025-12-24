@@ -11267,6 +11267,21 @@ components:
         view:
           title: view
           $ref: '#/components/schemas/bytebase.v1.ChangelogView'
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter is used to filter changelogs returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filter:
+             status: the changelog status, support "==" operation. check Changelog.Status for available values.
+             type: the changelog type, support "in" and "==" operation. check Changelog.Type for available values.
+
+             Example:
+             status == "DONE"
+             type in ["BASELINE", "MIGRATE"]
+             status == "FAILED" && type == "SDL"
       title: ListChangelogsRequest
       additionalProperties: false
     bytebase.v1.ListChangelogsResponse:

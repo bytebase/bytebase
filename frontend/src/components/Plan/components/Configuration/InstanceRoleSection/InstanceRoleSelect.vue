@@ -24,7 +24,6 @@ import {
   usePlanContext,
 } from "@/components/Plan/logic";
 import { instanceRoleServiceClientConnect } from "@/grpcweb";
-import { DEFAULT_PAGE_SIZE } from "@/store/modules/common";
 import type { InstanceRole } from "@/types/proto-es/v1/instance_role_service_pb";
 import { ListInstanceRolesRequestSchema } from "@/types/proto-es/v1/instance_role_service_pb";
 import { setSheetStatement } from "@/utils";
@@ -80,7 +79,6 @@ watch(
     try {
       const request = create(ListInstanceRolesRequestSchema, {
         parent: database.value.instance,
-        pageSize: DEFAULT_PAGE_SIZE,
       });
       const response =
         await instanceRoleServiceClientConnect.listInstanceRoles(request);

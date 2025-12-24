@@ -5163,6 +5163,11 @@ IndexMetadata is the metadata for indexes.
 
 When paginating, all other parameters provided must match the call that provided the page token. |
 | view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
+| filter | [string](#string) |  | Filter is used to filter changelogs returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filter: status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values. type: the changelog type, support &#34;in&#34; and &#34;==&#34; operation. check Changelog.Type for available values.
+
+Example: status == &#34;DONE&#34; type in [&#34;BASELINE&#34;, &#34;MIGRATE&#34;] status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34; |
 
 
 

@@ -16,7 +16,6 @@ import {
   UndeleteReleaseRequestSchema,
   UpdateReleaseRequestSchema,
 } from "@/types/proto-es/v1/release_service_pb";
-import { DEFAULT_PAGE_SIZE } from "./common";
 
 export const useReleaseStore = defineStore("release", () => {
   const releaseMapByName = reactive(new Map<string, Release>());
@@ -32,7 +31,7 @@ export const useReleaseStore = defineStore("release", () => {
   ) => {
     const request = create(ListReleasesRequestSchema, {
       parent: project,
-      pageSize: pagination?.pageSize || DEFAULT_PAGE_SIZE,
+      pageSize: pagination?.pageSize,
       pageToken: pagination?.pageToken || "",
       showDeleted: Boolean(showDeleted),
     });

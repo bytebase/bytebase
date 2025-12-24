@@ -1627,6 +1627,9 @@ func (x *ListChangelogsRequest) Equal(y *ListChangelogsRequest) bool {
 	if x.View != y.View {
 		return false
 	}
+	if x.Filter != y.Filter {
+		return false
+	}
 	return true
 }
 

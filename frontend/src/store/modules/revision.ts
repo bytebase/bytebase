@@ -9,7 +9,6 @@ import {
   GetRevisionRequestSchema,
   ListRevisionsRequestSchema,
 } from "@/types/proto-es/v1/revision_service_pb";
-import { DEFAULT_PAGE_SIZE } from "./common";
 import { revisionNamePrefix } from "./v1/common";
 
 export const useRevisionStore = defineStore("revision", () => {
@@ -25,7 +24,7 @@ export const useRevisionStore = defineStore("revision", () => {
   ) => {
     const request = create(ListRevisionsRequestSchema, {
       parent: database,
-      pageSize: pagination?.pageSize || DEFAULT_PAGE_SIZE,
+      pageSize: pagination?.pageSize,
       pageToken: pagination?.pageToken,
     });
     const resp = await revisionServiceClientConnect.listRevisions(request);

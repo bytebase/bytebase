@@ -13,7 +13,7 @@
     :options="options"
     :fallback-option="fallbackOption"
     :render-label="customLabel"
-    :render-tag="renderTag"
+    :render-tag="customTag"
     :placeholder="placeholder ?? $t('common.search-for-more')"
     :size="size"
     :consistent-menu-width="consistentMenuWidth"
@@ -61,12 +61,12 @@ const props = withDefaults(
     size?: SelectSize;
     additionalOptions?: ResourceSelectOption<T>[];
     renderLabel?: (
-      option: SelectOption,
+      option: ResourceSelectOption<T>,
       selected: boolean,
       searchText: string
     ) => VNodeChild;
     renderTag?: (props: {
-      option: SelectBaseOption;
+      option: ResourceSelectOption<T>;
       handleClose: () => void;
     }) => VNodeChild;
     filter?: (resource: T) => boolean;
@@ -79,10 +79,12 @@ const props = withDefaults(
       options: ResourceSelectOption<T>[];
     }>;
     fallbackOption?: false | ((value: string) => ResourceSelectOption<T>);
+    filterable?: boolean;
   }>(),
   {
     fallbackOption: false,
     consistentMenuWidth: true,
+    filterable: true,
     additionalOptions: () => [],
   }
 );
@@ -166,7 +168,23 @@ const customLabel = computed(() => {
   const renderLabel = props.renderLabel;
   if (renderLabel) {
     return (option: SelectOption, selected: boolean) =>
-      renderLabel(option, selected, searchText.value);
+      renderLabel(
+        option as ResourceSelectOption<T>,
+        selected,
+        searchText.value
+      );
+  }
+  return undefined;
+});
+
+const customTag = computed(() => {
+  const renderTag = props.renderTag;
+  if (renderTag) {
+    return (params: { option: SelectBaseOption; handleClose: () => void }) =>
+      renderTag({
+        option: params.option as ResourceSelectOption<T>,
+        handleClose: params.handleClose,
+      });
   }
   return undefined;
 });
@@ -177,5 +195,12 @@ const options = computed((): ResourceSelectOption<T>[] => {
     return rawOptions.value;
   }
   return rawOptions.value.filter((raw) => raw.resource && filter(raw.resource));
+});
+
+defineExpose({
+  reset: async () => {
+    await handleSearch("", false);
+  },
+  options,
 });
 </script>

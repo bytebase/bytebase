@@ -18,7 +18,6 @@ import {
   getValueFromSearchParams,
   type SearchParams,
 } from "@/utils";
-import { DEFAULT_PAGE_SIZE } from "./common";
 
 export interface RolloutFind {
   project: string;
@@ -93,7 +92,7 @@ export const useRolloutStore = defineStore("rollout", () => {
   }: ListRolloutParams) => {
     const request = create(ListRolloutsRequestSchema, {
       parent: find.project,
-      pageSize: pageSize || DEFAULT_PAGE_SIZE,
+      pageSize: pageSize,
       pageToken: pageToken || "",
       filter: buildRolloutFilter(find),
     });
