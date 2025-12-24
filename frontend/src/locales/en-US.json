@@ -1918,8 +1918,8 @@
           }
         },
         "enforce-issue-title": {
-          "self": "Enforce issue title",
-          "description": "Enforce issue title to be non-empty and created by user instead of auto generated."
+          "self": "Require manual title",
+          "description": "Require titles for issues and plans to be created by user instead of auto-generated."
         },
         "enforce-sql-review": {
           "self": "Enforce SQL review",

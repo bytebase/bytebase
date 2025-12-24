@@ -1918,8 +1918,8 @@
           }
         },
         "enforce-issue-title": {
-          "self": "Bắt buộc tiêu đề vấn đề",
-          "description": "Bắt buộc tiêu đề vấn đề không được để trống và được tạo bởi người dùng thay vì được tạo tự động."
+          "self": "Yêu cầu tiêu đề thủ công",
+          "description": "Yêu cầu tiêu đề cho vấn đề và kế hoạch được tạo bởi người dùng thay vì tự động tạo."
         },
         "enforce-sql-review": {
           "self": "Bắt buộc đánh giá SQL",

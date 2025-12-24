@@ -1918,8 +1918,8 @@
           }
         },
         "enforce-issue-title": {
-          "self": "Hacer cumplir el título del problema",
-          "description": "Exigir que el título del problema no esté vacío y que lo cree el usuario en lugar de generarse automáticamente."
+          "self": "Requerir título manual",
+          "description": "Requerir que los títulos de problemas y planes sean creados por el usuario en lugar de generarse automáticamente."
         },
         "enforce-sql-review": {
           "self": "Aplicar revisión SQL",

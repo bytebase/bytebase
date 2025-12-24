@@ -306,15 +306,23 @@ const generateMultiDb = async (
     }
   }
 
+  // Fetch project to check enforce_issue_title setting
+  const project = await projectStore.getOrFetchProjectByName(
+    selectedProjectName.value
+  );
+
   const { enabledNewLayout } = useIssueLayoutVersion();
   const query: LocationQueryRaw = {
     template: type,
-    name: generateIssueTitle(
-      type,
-      props.databases.map((db) => db.databaseName)
-    ),
     databaseList: props.databases.map((db) => db.name).join(","),
   };
+  // Only set title from generated if enforceIssueTitle is false.
+  if (!project.enforceIssueTitle) {
+    query.name = generateIssueTitle(
+      type,
+      props.databases.map((db) => db.databaseName)
+    );
+  }
 
   const isDataExport = type === "bb.issue.database.data.export";
   if (isDataExport || enabledNewLayout.value) {
