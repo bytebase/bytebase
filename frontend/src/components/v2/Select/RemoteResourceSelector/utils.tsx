@@ -1,6 +1,4 @@
-import type { SelectOption } from "naive-ui";
 import { NCheckbox, NTag } from "naive-ui";
-import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { type VNodeChild } from "vue";
 import EllipsisText from "@/components/EllipsisText.vue";
 import { HighlightLabelText } from "@/components/v2";
@@ -12,8 +10,8 @@ export const getRenderLabelFunc =
     multiple?: boolean;
     customLabel?: (resource: T, keyword: string) => VNodeChild;
   }) =>
-  (option: SelectOption, selected: boolean, searchText: string) => {
-    const { resource, label } = option as ResourceSelectOption<T>;
+  (option: ResourceSelectOption<T>, selected: boolean, searchText: string) => {
+    const { resource, label } = option;
     const node = (
       <div class="py-1">
         {params.customLabel && resource ? (
@@ -53,10 +51,10 @@ export const getRenderTagFunc =
     option,
     handleClose,
   }: {
-    option: SelectBaseOption;
+    option: ResourceSelectOption<T>;
     handleClose: () => void;
   }) => {
-    const { resource, label } = option as ResourceSelectOption<T>;
+    const { resource, label } = option;
     const node =
       params.customLabel && resource ? params.customLabel(resource, "") : label;
     if (params.multiple) {

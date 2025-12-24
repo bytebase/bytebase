@@ -2932,6 +2932,23 @@ export declare type ListChangelogsRequest = Message<"bytebase.v1.ListChangelogsR
    * @generated from field: bytebase.v1.ChangelogView view = 4;
    */
   view: ChangelogView;
+
+  /**
+   * Filter is used to filter changelogs returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filter:
+   * status: the changelog status, support "==" operation. check Changelog.Status for available values.
+   * type: the changelog type, support "in" and "==" operation. check Changelog.Type for available values.
+   *
+   * Example:
+   * status == "DONE"
+   * type in ["BASELINE", "MIGRATE"]
+   * status == "FAILED" && type == "SDL"
+   *
+   * @generated from field: string filter = 5;
+   */
+  filter: string;
 };
 
 /**

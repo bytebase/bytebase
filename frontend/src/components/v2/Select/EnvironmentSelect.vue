@@ -21,13 +21,17 @@
 <script lang="tsx" setup>
 import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
+import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed, type VNodeChild } from "vue";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentV1Store } from "@/store";
 import { formatEnvironmentName } from "@/types";
 import type { Environment } from "@/types/v1/environment";
 import { EnvironmentV1Name } from "../Model";
-import type { SelectSize } from "./RemoteResourceSelector/types";
+import type {
+  ResourceSelectOption,
+  SelectSize,
+} from "./RemoteResourceSelector/types";
 import {
   getRenderLabelFunc,
   getRenderTagFunc,
@@ -73,12 +77,15 @@ const combinedEnvironmentList = computed(() => {
 });
 
 const options = computed(() => {
-  return combinedEnvironmentList.value.map((environment) => {
-    return {
-      value: formatEnvironmentName(environment.id),
-      label: environment.title,
-    };
-  });
+  return combinedEnvironmentList.value.map<ResourceSelectOption<Environment>>(
+    (environment) => {
+      return {
+        resource: environment,
+        value: formatEnvironmentName(environment.id),
+        label: environment.title,
+      };
+    }
+  );
 });
 
 const customLabel = (environment: Environment) => {
@@ -99,16 +106,25 @@ const renderLabel = (option: SelectOption, selected: boolean) =>
     multiple: props.multiple,
     customLabel,
     showResourceName: true,
-  })(option, selected, "");
+  })(option as ResourceSelectOption<Environment>, selected, "");
 
-const renderTag = computed(() => {
+const renderTag = ({
+  option,
+  handleClose,
+}: {
+  option: SelectBaseOption;
+  handleClose: () => void;
+}) => {
   return getRenderTagFunc({
     multiple: props.multiple,
     disabled: props.disabled,
     size: props.size,
     customLabel,
+  })({
+    option: option as ResourceSelectOption<Environment>,
+    handleClose,
   });
-});
+};
 
 const filterEnvironment = (pattern: string, option: SelectOption) => {
   const { value, label } = option;

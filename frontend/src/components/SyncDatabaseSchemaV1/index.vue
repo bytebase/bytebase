@@ -77,7 +77,6 @@
 
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
-import { isUndefined } from "lodash-es";
 import { NRadio, NRadioGroup, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, nextTick, onMounted, reactive, ref } from "vue";
@@ -241,7 +240,7 @@ const allowNext = computed(() => {
       return (
         isValidEnvironmentName(changelogSourceSchemaState.environmentName) &&
         isValidDatabaseName(changelogSourceSchemaState.databaseName) &&
-        !isUndefined(changelogSourceSchemaState.changelogName)
+        !!changelogSourceSchemaState.changelogName
       );
     } else {
       return rawSQLState.statement !== "";

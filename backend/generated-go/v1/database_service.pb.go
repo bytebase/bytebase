@@ -5148,8 +5148,20 @@ type ListChangelogsRequest struct {
 	//
 	// When paginating, all other parameters provided must match
 	// the call that provided the page token.
-	PageToken     string        `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	View          ChangelogView `protobuf:"varint,4,opt,name=view,proto3,enum=bytebase.v1.ChangelogView" json:"view,omitempty"`
+	PageToken string        `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	View      ChangelogView `protobuf:"varint,4,opt,name=view,proto3,enum=bytebase.v1.ChangelogView" json:"view,omitempty"`
+	// Filter is used to filter changelogs returned in the list.
+	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+	//
+	// Supported filter:
+	// status: the changelog status, support "==" operation. check Changelog.Status for available values.
+	// type: the changelog type, support "in" and "==" operation. check Changelog.Type for available values.
+	//
+	// Example:
+	// status == "DONE"
+	// type in ["BASELINE", "MIGRATE"]
+	// status == "FAILED" && type == "SDL"
+	Filter        string `protobuf:"bytes,5,opt,name=filter,proto3" json:"filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5210,6 +5222,13 @@ func (x *ListChangelogsRequest) GetView() ChangelogView {
 		return x.View
 	}
 	return ChangelogView_CHANGELOG_VIEW_UNSPECIFIED
+}
+
+func (x *ListChangelogsRequest) GetFilter() string {
+	if x != nil {
+		return x.Filter
+	}
+	return ""
 }
 
 type ListChangelogsResponse struct {
@@ -6054,14 +6073,15 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x06schema\x18\x01 \x01(\tR\x06schema\"S\n" +
 	"\x11DatabaseSDLSchema\x12\x16\n" +
 	"\x06schema\x18\x01 \x01(\fR\x06schema\x12&\n" +
-	"\fcontent_type\x18\x02 \x01(\tB\x03\xe0A\x03R\vcontentType\"\xba\x01\n" +
+	"\fcontent_type\x18\x02 \x01(\tB\x03\xe0A\x03R\vcontentType\"\xd2\x01\n" +
 	"\x15ListChangelogsRequest\x125\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12.\n" +
-	"\x04view\x18\x04 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\"x\n" +
+	"\x04view\x18\x04 \x01(\x0e2\x1a.bytebase.v1.ChangelogViewR\x04view\x12\x16\n" +
+	"\x06filter\x18\x05 \x01(\tR\x06filter\"x\n" +
 	"\x16ListChangelogsResponse\x126\n" +
 	"\n" +
 	"changelogs\x18\x01 \x03(\v2\x16.bytebase.v1.ChangelogR\n" +

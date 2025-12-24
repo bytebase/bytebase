@@ -6,6 +6,9 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/google/cel-go/cel"
+	celast "github.com/google/cel-go/common/ast"
+	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -13,6 +16,86 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+func parseChangelogFilter(filter string, find *store.FindChangelogMessage) error {
+	if filter == "" {
+		return nil
+	}
+
+	e, err := cel.NewEnv()
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
+	}
+	ast, iss := e.Parse(filter)
+	if iss != nil {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
+	}
+
+	var parseFilter func(expr celast.Expr) error
+
+	parseFilter = func(expr celast.Expr) error {
+		switch expr.Kind() {
+		case celast.CallKind:
+			functionName := expr.AsCall().FunctionName()
+			switch functionName {
+			case celoperators.LogicalAnd:
+				for _, arg := range expr.AsCall().Args() {
+					if err := parseFilter(arg); err != nil {
+						return err
+					}
+				}
+			case celoperators.In:
+				variable, value := getVariableAndValueFromExpr(expr)
+				if variable != "type" {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
+				}
+				rawList, ok := value.([]any)
+				if !ok {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid list value %q for %v", value, variable))
+				}
+				if len(rawList) == 0 {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("empty list value for filter %v", variable))
+				}
+				typeList := []string{}
+				for _, raw := range rawList {
+					typeStr, ok := raw.(string)
+					if !ok {
+						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("value for type must be a string"))
+					}
+					v1Type := v1pb.Changelog_Type_value[typeStr]
+					storeType := convertToChangelogStoreType(v1pb.Changelog_Type(v1Type))
+					typeList = append(typeList, storeType.String())
+				}
+				find.TypeList = typeList
+			case celoperators.Equals:
+				variable, value := getVariableAndValueFromExpr(expr)
+				strValue, ok := value.(string)
+				if !ok {
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected string but found %q", value))
+				}
+				switch variable {
+				case "status":
+					v1Status := v1pb.Changelog_Status_value[strValue]
+					storeStatus := convertToChangelogStoreStatus(v1pb.Changelog_Status(v1Status))
+					find.Status = &storeStatus
+				case "type":
+					v1Type := v1pb.Changelog_Type_value[strValue]
+					storeType := convertToChangelogStoreType(v1pb.Changelog_Type(v1Type))
+					find.TypeList = []string{storeType.String()}
+				default:
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
+				}
+			default:
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
+			}
+		default:
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected expr kind %v", expr.Kind()))
+		}
+		return nil
+	}
+
+	return parseFilter(ast.NativeRep().Expr())
+}
 
 func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Request[v1pb.ListChangelogsRequest]) (*connect.Response[v1pb.ListChangelogsResponse], error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Msg.Parent)
@@ -48,6 +131,9 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, req *connect.Reque
 	}
 	if req.Msg.View == v1pb.ChangelogView_CHANGELOG_VIEW_FULL {
 		find.ShowFull = true
+	}
+	if err := parseChangelogFilter(req.Msg.Filter, find); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse the filter %q", req.Msg.Filter))
 	}
 
 	changelogs, err := s.store.ListChangelogs(ctx, find)
@@ -172,6 +258,19 @@ func convertToChangelogStatus(s store.ChangelogStatus) v1pb.Changelog_Status {
 	}
 }
 
+func convertToChangelogStoreStatus(s v1pb.Changelog_Status) store.ChangelogStatus {
+	switch s {
+	case v1pb.Changelog_DONE:
+		return store.ChangelogStatusDone
+	case v1pb.Changelog_FAILED:
+		return store.ChangelogStatusFailed
+	case v1pb.Changelog_PENDING:
+		return store.ChangelogStatusPending
+	default:
+		return store.ChangelogStatusDone
+	}
+}
+
 func convertToChangelogType(t storepb.ChangelogPayload_Type) v1pb.Changelog_Type {
 	//exhaustive:enforce
 	switch t {
@@ -185,5 +284,21 @@ func convertToChangelogType(t storepb.ChangelogPayload_Type) v1pb.Changelog_Type
 		return v1pb.Changelog_TYPE_UNSPECIFIED
 	default:
 		return v1pb.Changelog_TYPE_UNSPECIFIED
+	}
+}
+
+func convertToChangelogStoreType(t v1pb.Changelog_Type) storepb.ChangelogPayload_Type {
+	//exhaustive:enforce
+	switch t {
+	case v1pb.Changelog_BASELINE:
+		return storepb.ChangelogPayload_BASELINE
+	case v1pb.Changelog_MIGRATE:
+		return storepb.ChangelogPayload_MIGRATE
+	case v1pb.Changelog_SDL:
+		return storepb.ChangelogPayload_SDL
+	case v1pb.Changelog_TYPE_UNSPECIFIED:
+		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
+	default:
+		return storepb.ChangelogPayload_TYPE_UNSPECIFIED
 	}
 }

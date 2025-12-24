@@ -13,7 +13,6 @@ import {
   ListChangelogsRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import { extractChangelogUID } from "@/utils/v1/changelog";
-import { DEFAULT_PAGE_SIZE } from "../common";
 
 type CacheKeyType = [string /* name */, ChangelogView];
 
@@ -43,6 +42,7 @@ export const useChangelogStore = defineStore("changelog", () => {
       pageSize: params.pageSize,
       pageToken: params.pageToken,
       view: params.view,
+      filter: params.filter,
     });
     const response = await databaseServiceClientConnect.listChangelogs(request);
     const changelogs = response.changelogs;
@@ -52,13 +52,12 @@ export const useChangelogStore = defineStore("changelog", () => {
   };
   const getOrFetchChangelogListOfDatabase = async (
     databaseName: string,
-    pageSize = DEFAULT_PAGE_SIZE,
+    pageSize: number,
     view = ChangelogView.BASIC
   ) => {
     if (changelogsMapByDatabase.has(databaseName)) {
       return changelogsMapByDatabase.get(databaseName) ?? [];
     }
-    // Fetch all changelogs of the database with max DEFAULT_PAGE_SIZE.
     const { changelogs } = await fetchChangelogList({
       parent: databaseName,
       pageSize,
