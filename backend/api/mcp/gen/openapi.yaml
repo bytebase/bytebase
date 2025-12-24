@@ -13426,10 +13426,6 @@ components:
           type: boolean
           title: force_issue_labels
           description: Force issue labels to be used when creating an issue.
-        autoResolveIssue:
-          type: boolean
-          title: auto_resolve_issue
-          description: Enable automatic issue resolution when tasks complete.
         enforceIssueTitle:
           type: boolean
           title: enforce_issue_title
