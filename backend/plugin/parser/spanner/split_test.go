@@ -16,7 +16,6 @@ func TestSplitSQL(t *testing.T) {
 	want := []base.Statement{
 		{
 			Text:     "SELECT * FROM users;",
-			BaseLine: 0,
 			Range:    &storepb.Range{Start: 0, End: 20},
 			Start:    &storepb.Position{Line: 1, Column: 1},
 			End:      &storepb.Position{Line: 1, Column: 20},
@@ -24,7 +23,6 @@ func TestSplitSQL(t *testing.T) {
 		},
 		{
 			Text:     "\n\tSELECT * FROM orders;",
-			BaseLine: 0,
 			Range:    &storepb.Range{Start: 20, End: 43},
 			Start:    &storepb.Position{Line: 2, Column: 2},
 			End:      &storepb.Position{Line: 2, Column: 22},
@@ -32,7 +30,6 @@ func TestSplitSQL(t *testing.T) {
 		},
 		{
 			Text:     "\n\tSELECT * FROM products;",
-			BaseLine: 1,
 			Range:    &storepb.Range{Start: 43, End: 68},
 			Start:    &storepb.Position{Line: 3, Column: 2},
 			End:      &storepb.Position{Line: 3, Column: 24},
@@ -51,6 +48,6 @@ func TestSplitSQLSingleStatement(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(list))
 	require.Equal(t, "SELECT * FROM users;", list[0].Text)
-	require.Equal(t, 0, list[0].BaseLine)
+	require.Equal(t, 0, list[0].GetBaseLine())
 	require.False(t, list[0].Empty)
 }

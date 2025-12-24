@@ -33,7 +33,6 @@ func TestOracleSplitMultiSQL(t *testing.T) {
 				res: []base.Statement{
 					{
 						Text:     `select * from t`,
-						BaseLine: 1,
 						Range: &storepb.Range{Start: int32(5),
 							End: int32(20)},
 						Start: &storepb.Position{Line: 2, Column: 5},
@@ -41,7 +40,6 @@ func TestOracleSplitMultiSQL(t *testing.T) {
 					},
 					{
 						Text:     `create table table$1 (id int)`,
-						BaseLine: 2,
 						Range: &storepb.Range{Start: int32(26),
 							End: int32(56)},
 						Start: &storepb.Position{Line: 3, Column: 5},
@@ -165,7 +163,6 @@ END;
 				res: []base.Statement{
 					{
 						Text:     "CREATE OR REPLACE PROCEDURE proc1 IS\nBEGIN\n    NULL;\nEND;",
-						BaseLine: 0,
 						Start:    &storepb.Position{Line: 1, Column: 1},
 						End:      &storepb.Position{Line: 4, Column: 4},
 						Range: &storepb.Range{Start: int32(0),
@@ -173,7 +170,6 @@ END;
 					},
 					{
 						Text:     "CREATE OR REPLACE PROCEDURE proc2 IS\nBEGIN\n    NULL;\nEND;",
-						BaseLine: 5,
 						Start:    &storepb.Position{Line: 6, Column: 1},
 						End:      &storepb.Position{Line: 9, Column: 4},
 						Range: &storepb.Range{Start: int32(60),
@@ -190,7 +186,6 @@ SELECT * FROM t2;`,
 				res: []base.Statement{
 					{
 						Text:     "SELECT * FROM t1",
-						BaseLine: 0,
 						Start:    &storepb.Position{Line: 1, Column: 1},
 						End:      &storepb.Position{Line: 1, Column: 15},
 						Range: &storepb.Range{Start: int32(0),
@@ -198,7 +193,6 @@ SELECT * FROM t2;`,
 					},
 					{
 						Text:     "SELECT * FROM t2",
-						BaseLine: 2,
 						Start:    &storepb.Position{Line: 3, Column: 1},
 						End:      &storepb.Position{Line: 3, Column: 15},
 						Range: &storepb.Range{Start: int32(20),

@@ -45,8 +45,8 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine)
-		checker.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
+		checker.SetBaseLine(stmt.GetBaseLine())
 		// Set text will be handled in the Query node
 		if stmt.AST == nil {
 			continue

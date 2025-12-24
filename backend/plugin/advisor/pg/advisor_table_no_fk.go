@@ -52,7 +52,7 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		}
 
 		checker := NewGenericChecker([]Rule{rule})
-		checker.SetBaseLine(stmtInfo.BaseLine)
+		checker.SetBaseLine(stmtInfo.GetBaseLine())
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}

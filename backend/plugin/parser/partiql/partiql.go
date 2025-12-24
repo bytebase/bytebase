@@ -76,7 +76,7 @@ func ParsePartiQL(statement string) ([]*base.ANTLRAST, error) {
 			continue
 		}
 
-		parseResult, err := parseSinglePartiQL(stmt.Text, stmt.BaseLine)
+		parseResult, err := parseSinglePartiQL(stmt.Text, stmt.GetBaseLine())
 		if err != nil {
 			return nil, err
 		}

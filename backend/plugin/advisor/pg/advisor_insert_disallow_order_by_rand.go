@@ -50,7 +50,7 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 			},
 			tokens: antlrAST.Tokens,
 		}
-		rule.SetBaseLine(stmtInfo.BaseLine)
+		rule.SetBaseLine(stmtInfo.GetBaseLine())
 
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)

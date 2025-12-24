@@ -64,8 +64,8 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 			// Create the generic checker with the rule
 			checker := NewGenericChecker([]Rule{rule})
 
-			rule.SetBaseLine(stmt.BaseLine)
-			checker.SetBaseLine(stmt.BaseLine)
+			rule.SetBaseLine(stmt.GetBaseLine())
+			checker.SetBaseLine(stmt.GetBaseLine())
 			antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 
 			// Generate advice based on collected table information

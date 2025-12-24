@@ -45,7 +45,7 @@ func TestSplitSQL(t *testing.T) {
 
 			if tt.wantCount > 0 {
 				require.Equal(t, tt.statement, list[0].Text)
-				require.Equal(t, 0, list[0].BaseLine)
+				require.Equal(t, 0, list[0].GetBaseLine())
 				require.Equal(t, tt.wantEmpty, list[0].Empty)
 				require.NotNil(t, list[0].Start)
 				require.NotNil(t, list[0].End)

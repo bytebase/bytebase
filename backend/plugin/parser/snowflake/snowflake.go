@@ -77,7 +77,7 @@ func ParseSnowSQL(sql string) ([]*base.ANTLRAST, error) {
 			continue
 		}
 
-		parseResult, err := parseSingleSnowSQL(stmt.Text, stmt.BaseLine)
+		parseResult, err := parseSingleSnowSQL(stmt.Text, stmt.GetBaseLine())
 		if err != nil {
 			return nil, err
 		}

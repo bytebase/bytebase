@@ -49,7 +49,7 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 			},
 			tokens: antlrAST.Tokens,
 		}
-		rule.SetBaseLine(stmtInfo.BaseLine)
+		rule.SetBaseLine(stmtInfo.GetBaseLine())
 
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)

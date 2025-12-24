@@ -72,7 +72,7 @@ func ParseDorisSQL(statement string) ([]*base.ANTLRAST, error) {
 			continue
 		}
 
-		antlrAST, err := parseSingleDorisSQL(stmt.Text, stmt.BaseLine)
+		antlrAST, err := parseSingleDorisSQL(stmt.Text, stmt.GetBaseLine())
 		if err != nil {
 			return nil, err
 		}

@@ -43,7 +43,6 @@ func TestPGSplitMultiSQL(t *testing.T) {
 				res: []base.Statement{
 					{
 						Text:     "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n\t\t\t",
-						BaseLine: 0,
 						Range:    &storepb.Range{Start: 0, End: 42},
 						Start:    &storepb.Position{Line: 3, Column: 4},
 						End:      &storepb.Position{Line: 3, Column: 3},
@@ -94,7 +93,6 @@ func TestPGSplitMultiSQL(t *testing.T) {
 					},
 					{
 						Text:     "\n\t\t\tselect * from t;",
-						BaseLine: 1,
 						Range:    &storepb.Range{Start: 34, End: 54},
 						Start:    &storepb.Position{Line: 3, Column: 4},
 						End:      &storepb.Position{Line: 3, Column: 19},
@@ -170,7 +168,6 @@ func TestPGSplitMultiSQL(t *testing.T) {
 					},
 					{
 						Text:     "\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO \"tech_Book\" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;\"ka');",
-						BaseLine: 2,
 						Range:    &storepb.Range{Start: 112, End: 225},
 						Start:    &storepb.Position{Line: 5, Column: 7},
 						End:      &storepb.Position{Line: 5, Column: 82},
@@ -205,7 +202,6 @@ func TestPGSplitMultiSQL(t *testing.T) {
 					},
 					{
 						Text:     "\n\t\t\t\t\t\tCREATE TABLE t(a int);",
-						BaseLine: 7,
 						Range:    &storepb.Range{Start: 303, End: 332},
 						Start:    &storepb.Position{Line: 9, Column: 7},
 						End:      &storepb.Position{Line: 9, Column: 28},
@@ -240,7 +236,6 @@ func TestPGSplitMultiSQL(t *testing.T) {
 					},
 					{
 						Text:     "\n\t\t\t\t\t\tCREATE TABLE t(a int);",
-						BaseLine: 7,
 						Range:    &storepb.Range{Start: 315, End: 344},
 						Start:    &storepb.Position{Line: 9, Column: 7},
 						End:      &storepb.Position{Line: 9, Column: 28},
@@ -261,7 +256,6 @@ func TestPGSplitMultiSQL(t *testing.T) {
 					},
 					{
 						Text:     "\r\nCREATE TABLE t1(b int);",
-						BaseLine: 1,
 						Range:    &storepb.Range{Start: 24, End: 49},
 						Start:    &storepb.Position{Line: 3, Column: 1},
 						End:      &storepb.Position{Line: 3, Column: 23},
@@ -319,7 +313,6 @@ func TestPGSplitMultiSQL(t *testing.T) {
 				res: []base.Statement{
 					{
 						Text:     "/*INSERT INTO \"t VALUES ('klajfas)",
-						BaseLine: 0,
 						Range:    &storepb.Range{Start: 0, End: 34},
 						Start:    &storepb.Position{Line: 1, Column: 1},
 						End:      &storepb.Position{Line: 1, Column: 1},

@@ -70,7 +70,6 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	return []base.Statement{
 		{
 			Text:     statement,
-			BaseLine: 0,
 			Range: &storepb.Range{
 				Start: 0,
 				End:   int32(len(statement)),

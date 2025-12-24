@@ -65,7 +65,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 			},
 			tokens: antlrAST.Tokens,
 		}
-		rule.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
 
 		checker := NewGenericChecker([]Rule{rule})
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)

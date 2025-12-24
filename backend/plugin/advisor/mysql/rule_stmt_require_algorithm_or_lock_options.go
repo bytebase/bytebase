@@ -48,8 +48,8 @@ func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx ad
 	checker := NewGenericChecker([]Rule{rule})
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		rule.SetBaseLine(stmt.BaseLine)
-		checker.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
+		checker.SetBaseLine(stmt.GetBaseLine())
 		if stmt.AST == nil {
 			continue
 		}

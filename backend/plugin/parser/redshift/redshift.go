@@ -78,7 +78,7 @@ func ParseRedshift(sql string) ([]*base.ANTLRAST, error) {
 			continue
 		}
 
-		parseResult, err := parseSingleRedshift(stmt.Text, stmt.BaseLine)
+		parseResult, err := parseSingleRedshift(stmt.Text, stmt.GetBaseLine())
 		if err != nil {
 			return nil, err
 		}

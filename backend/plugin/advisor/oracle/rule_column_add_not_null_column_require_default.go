@@ -45,8 +45,8 @@ func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(_ context.Context, che
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine)
-		checker.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
+		checker.SetBaseLine(stmt.GetBaseLine())
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 

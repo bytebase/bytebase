@@ -46,8 +46,8 @@ func (*NamingTableNoKeywordAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine)
-		checker.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
+		checker.SetBaseLine(stmt.GetBaseLine())
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 

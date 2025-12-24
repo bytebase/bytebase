@@ -45,7 +45,6 @@ func TestParsedStatementEmbedding(t *testing.T) {
 	ps := ParsedStatement{
 		Statement: Statement{
 			Text:     "SELECT 1",
-			BaseLine: 5,
 			Start:    &storepb.Position{Line: 6, Column: 1},
 		},
 		AST: &ANTLRAST{StartPosition: &storepb.Position{Line: 6}},
@@ -53,7 +52,7 @@ func TestParsedStatementEmbedding(t *testing.T) {
 
 	// Direct access to embedded fields
 	require.Equal(t, "SELECT 1", ps.Text)
-	require.Equal(t, 5, ps.BaseLine)
+	require.Equal(t, 5, ps.GetBaseLine())
 	require.Equal(t, int32(6), ps.Start.Line)
 	require.NotNil(t, ps.AST)
 }

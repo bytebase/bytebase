@@ -63,7 +63,7 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 

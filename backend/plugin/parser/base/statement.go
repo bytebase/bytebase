@@ -11,10 +11,6 @@ type Statement struct {
 	// Empty indicates if the sql is empty, such as `/* comments */;` or just `;`.
 	Empty bool
 
-	// BaseLine is the line number of the first line of the SQL in the original SQL.
-	// HINT: ZERO based. This is kept for backward compatibility with advisor code.
-	BaseLine int
-
 	// Start is the inclusive start position of the SQL in the original SQL (1-based).
 	Start *storepb.Position
 	// End is the inclusive end position of the SQL in the original SQL (1-based).
@@ -24,6 +20,15 @@ type Statement struct {
 	// This field may not be present for every engine.
 	// Range is intended for sql execution log display. It may not represent the actual sql that is sent to the database.
 	Range *storepb.Range
+}
+
+// GetBaseLine returns the line number of the first line of the SQL in the original SQL.
+// HINT: ZERO based. This is kept for backward compatibility with advisor code.
+func (s *Statement) GetBaseLine() int {
+	if s.Start == nil {
+		return 0
+	}
+	return int(s.Start.Line) - 1
 }
 
 // ParsedStatement is the result of parsing SQL (Statement + AST).

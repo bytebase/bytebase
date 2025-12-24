@@ -57,8 +57,8 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine)
-		checker.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
+		checker.SetBaseLine(stmt.GetBaseLine())
 		rule.tokens = antlrAST.Tokens
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}

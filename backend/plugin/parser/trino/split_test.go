@@ -33,7 +33,6 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 					},
 					{
 						Text:     "SELECT * FROM orders;",
-						BaseLine: 0,
 						Start:    &storepb.Position{Line: 0, Column: 21},
 						End:      &storepb.Position{Line: 0, Column: 42},
 					},
@@ -60,13 +59,11 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 					name 
 				FROM users 
 				WHERE status = 'active';`,
-						BaseLine: 2,
 						Start:    &storepb.Position{Line: 2, Column: 4},
 						End:      &storepb.Position{Line: 6, Column: 28},
 					},
 					{
 						Text:     `SELECT * FROM orders;`,
-						BaseLine: 10,
 						Start:    &storepb.Position{Line: 10, Column: 4},
 						End:      &storepb.Position{Line: 10, Column: 25},
 					},
@@ -96,7 +93,6 @@ func TestTrinoSplitMultiSQL(t *testing.T) {
 					},
 					{
 						Text:     `SELECT * FROM products;`,
-						BaseLine: 7,
 						Start:    &storepb.Position{Line: 7, Column: 4},
 						End:      &storepb.Position{Line: 7, Column: 27},
 					},

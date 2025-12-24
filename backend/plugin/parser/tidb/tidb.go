@@ -45,9 +45,9 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 			// We need to add the offset to get the absolute line number
 			if se, ok := syntaxErr.(*base.SyntaxError); ok && se.Position != nil {
 				// errorLine is 1-based relative to singleSQL.Text
-				// singleSQL.BaseLine is 0-based line number of the first line in the original statement
+				// singleSQL.GetBaseLine() is 0-based line number of the first line in the original statement
 				// Absolute line (1-based) = BaseLine (0-based) + errorLine (1-based)
-				se.Position.Line = int32(singleSQL.BaseLine) + se.Position.Line
+				se.Position.Line = int32(singleSQL.GetBaseLine()) + se.Position.Line
 			}
 			return nil, syntaxErr
 		}
@@ -65,7 +65,7 @@ func ParseTiDBForSyntaxCheck(statement string) ([]base.AST, error) {
 			}
 		}
 		results = append(results, &AST{
-			StartPosition: &storepb.Position{Line: int32(singleSQL.BaseLine) + 1},
+			StartPosition: &storepb.Position{Line: int32(singleSQL.GetBaseLine()) + 1},
 			Node:          node,
 		})
 	}

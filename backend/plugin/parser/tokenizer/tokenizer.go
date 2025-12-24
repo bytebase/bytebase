@@ -230,8 +230,6 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				if t.f == nil {
 					res = append(res, base.Statement{
 						Text: s,
-						// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-						BaseLine: startLine - 1,
 						// Consider this text:
 						// CREATE TABLE t(
 						//   a int
@@ -244,6 +242,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
+						Start: &store.Position{Line: int32(startLine)},
 						End:   &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance())},
 						Empty: t.emptyStatement,
 						Range: &store.Range{
@@ -265,7 +264,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				res = append(res, base.Statement{
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-					BaseLine: startLine - 1,
+					Start:    &store.Position{Line: int32(startLine)},
 					End:      &store.Position{Line: int32(t.line)},
 					Empty:    t.emptyStatement,
 					Range: &store.Range{
@@ -293,7 +292,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				res = append(res, base.Statement{
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
-					BaseLine: startLine - 1,
+					Start:    &store.Position{Line: int32(startLine)},
 					End:      &store.Position{Line: int32(t.line)},
 					Empty:    false,
 					Range: &store.Range{
@@ -394,12 +393,12 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
 				res = append(res, base.Statement{
 					Text: text,
 					End: &store.Position{
-						Line: int32(t.line - 1), // Convert to 0-based.
+						Line: int32(t.line),
 					},
 					// TODO(zp/position): fix column, use bytes instead of rune.
 					Start: &store.Position{
-						Line:   int32(firstStatementLine - 1), // Convert to 0-based.
-						Column: int32(firstStatementColumn),
+						Line:   int32(firstStatementLine),
+						Column: int32(firstStatementColumn + 1),
 					},
 					Empty: t.emptyStatement,
 					Range: &store.Range{
@@ -434,11 +433,11 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						End: &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance() - 1)},
+						End: &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance())},
 						// TODO(zp/position): fix column, use bytes instead of rune.
 						Start: &store.Position{
-							Line:   int32(firstStatementLine - 1), // Convert to 0-based.
-							Column: int32(firstStatementColumn),
+							Line:   int32(firstStatementLine),
+							Column: int32(firstStatementColumn + 1),
 						},
 						Empty: t.emptyStatement,
 						Range: &store.Range{

@@ -76,8 +76,8 @@ func (*NamingPKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		}
 
 		checker := NewGenericChecker([]Rule{rule})
-		rule.SetBaseLine(stmtInfo.BaseLine)
-		checker.SetBaseLine(stmtInfo.BaseLine)
+		rule.SetBaseLine(stmtInfo.GetBaseLine())
+		checker.SetBaseLine(stmtInfo.GetBaseLine())
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 		adviceList = append(adviceList, checker.GetAdviceList()...)
 	}

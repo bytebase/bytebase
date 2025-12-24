@@ -46,7 +46,7 @@ func (*WhereRequirementForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 

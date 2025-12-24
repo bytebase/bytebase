@@ -54,9 +54,9 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
 		rule.tokens = antlrAST.Tokens
-		checker.SetBaseLine(stmt.BaseLine)
+		checker.SetBaseLine(stmt.GetBaseLine())
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 

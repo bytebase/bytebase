@@ -85,14 +85,13 @@ func splitByTokenizer(statement string) ([]base.Statement, error) {
 		}
 
 		list[i].Start = &storepb.Position{
-			Line:   int32(startLine),
-			Column: int32(startCol),
+			Line:   int32(startLine + 1),
+			Column: int32(startCol + 1),
 		}
 		list[i].End = &storepb.Position{
-			Line:   int32(endLine),
-			Column: int32(endCol),
+			Line:   int32(endLine + 1),
+			Column: int32(endCol + 1),
 		}
-		list[i].BaseLine = startLine
 
 		currentPos = endIdx
 	}
@@ -156,12 +155,6 @@ func splitByParser(statement string) ([]base.Statement, error) {
 		startIdx := startToken.GetTokenIndex()
 		endIdx := stopToken.GetTokenIndex()
 
-		// Get the first token (any channel) for baseLine calculation
-		// This is important because when ANTLR reparses fragments, it sees ALL tokens
-		// including comments on hidden channels, so baseLine must be from the first token
-		// of any channel for correct error position mapping: originalLine = antlrLine + baseLine
-		firstToken := tokens[startIdx]
-
 		// Find the first non-hidden token for accurate start position display
 		var firstDefaultToken antlr.Token
 		for i := startIdx; i <= endIdx && i < len(tokens); i++ {
@@ -187,19 +180,18 @@ func splitByParser(statement string) ([]base.Statement, error) {
 
 		// Calculate proper end position
 		endToken := tokens[finalEndIdx]
-		endLine := endToken.GetLine() - 1
+		endLine := endToken.GetLine()
 		endColumn := endToken.GetColumn() + len(endToken.GetText())
 
 		result = append(result, base.Statement{
 			Text:     text,
-			BaseLine: firstToken.GetLine() - 1,
 			Range: &storepb.Range{
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
 			},
 			Start: &storepb.Position{
-				Line:   int32(firstDefaultToken.GetLine() - 1),
-				Column: int32(firstDefaultToken.GetColumn()),
+				Line:   int32(firstDefaultToken.GetLine()),
+				Column: int32(firstDefaultToken.GetColumn() + 1),
 			},
 			End: &storepb.Position{
 				Line:   int32(endLine),

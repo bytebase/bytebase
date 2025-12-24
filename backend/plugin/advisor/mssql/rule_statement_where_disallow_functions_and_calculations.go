@@ -42,7 +42,7 @@ func (*DisallowFuncAndCalculationsAdvisor) Check(_ context.Context, checkCtx adv
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 

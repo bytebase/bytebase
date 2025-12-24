@@ -57,7 +57,7 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 		if !ok {
 			continue
 		}
-		rule.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
 		antlr.ParseTreeWalkerDefault.Walk(checker, antlrAST.Tree)
 	}
 

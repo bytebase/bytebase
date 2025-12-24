@@ -39,7 +39,6 @@ go
 				res: []base.Statement{
 					{
 						Text:     "-- first statement\ndeclare @temp table(a int)",
-						BaseLine: 0,
 						Start:    &storepb.Position{Line: 2, Column: 1},
 						End:      &storepb.Position{Line: 2, Column: 26},
 						Empty:    false,
@@ -47,7 +46,6 @@ go
 					},
 					{
 						Text:     "\n-- second statement\ninsert into @temp values(1)",
-						BaseLine: 1,
 						Start:    &storepb.Position{Line: 4, Column: 1},
 						End:      &storepb.Position{Line: 4, Column: 27},
 						Empty:    false,
@@ -55,7 +53,6 @@ go
 					},
 					{
 						Text:     "\n-- third statement\nselect * from @temp\n-- go statement\ngo",
-						BaseLine: 3,
 						Start:    &storepb.Position{Line: 6, Column: 1},
 						End:      &storepb.Position{Line: 8, Column: 1},
 						Empty:    false,
@@ -63,7 +60,6 @@ go
 					},
 					{
 						Text:     "\ngo",
-						BaseLine: 7,
 						Start:    &storepb.Position{Line: 9, Column: 1},
 						End:      &storepb.Position{Line: 9, Column: 1},
 						Empty:    false,
@@ -71,7 +67,6 @@ go
 					},
 					{
 						Text:     "\ngo\ngo",
-						BaseLine: 8,
 						Start:    &storepb.Position{Line: 10, Column: 1},
 						End:      &storepb.Position{Line: 11, Column: 1},
 						Empty:    false,
@@ -104,7 +99,6 @@ UPDATE SalesLT.ProductModelProductDescription SET Culture = "zh-cn";
 				res: []base.Statement{
 					{
 						Text:     "\n\n\n\n\n\n\n\n\nUPDATE SalesLT.Address SET City = \"Shanghai\";",
-						BaseLine: 0,
 						Start:    &storepb.Position{Line: 10, Column: 1},
 						End:      &storepb.Position{Line: 10, Column: 45},
 						Empty:    false,
@@ -112,7 +106,6 @@ UPDATE SalesLT.ProductModelProductDescription SET Culture = "zh-cn";
 					},
 					{
 						Text:     "\n\nUPDATE SalesLT.Address SET PostalCode = 0;",
-						BaseLine: 9,
 						Start:    &storepb.Position{Line: 12, Column: 1},
 						End:      &storepb.Position{Line: 12, Column: 42},
 						Empty:    false,
@@ -120,7 +113,6 @@ UPDATE SalesLT.ProductModelProductDescription SET Culture = "zh-cn";
 					},
 					{
 						Text:     "\n\n\nUPDATE SalesLT.ProductModelProductDescription SET Culture = \"zh-cn\";",
-						BaseLine: 11,
 						Start:    &storepb.Position{Line: 15, Column: 1},
 						End:      &storepb.Position{Line: 15, Column: 68},
 						Empty:    false,
@@ -135,7 +127,6 @@ UPDATE SalesLT.ProductModelProductDescription SET Culture = "zh-cn";
 				res: []base.Statement{
 					{
 						Text:     "SELECT * FROM 表名;",
-						BaseLine: 0,
 						Start:    &storepb.Position{Line: 1, Column: 1},
 						End:      &storepb.Position{Line: 1, Column: 17},
 						Empty:    false,
@@ -143,7 +134,6 @@ UPDATE SalesLT.ProductModelProductDescription SET Culture = "zh-cn";
 					},
 					{
 						Text:     " INSERT INTO 表 VALUES (1);",
-						BaseLine: 0,
 						Start:    &storepb.Position{Line: 1, Column: 19},
 						End:      &storepb.Position{Line: 1, Column: 43},
 						Empty:    false,

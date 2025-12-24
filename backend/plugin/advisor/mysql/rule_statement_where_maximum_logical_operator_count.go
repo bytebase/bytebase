@@ -44,8 +44,8 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(_ context.Context
 		// Create the generic checker with the rule
 		checker := NewGenericChecker([]Rule{rule})
 
-		rule.SetBaseLine(stmt.BaseLine)
-		checker.SetBaseLine(stmt.BaseLine)
+		rule.SetBaseLine(stmt.GetBaseLine())
+		checker.SetBaseLine(stmt.GetBaseLine())
 		rule.resetForStatement()
 		if stmt.AST == nil {
 			continue

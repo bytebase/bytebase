@@ -45,7 +45,6 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 			antlrPosition := base.FirstDefaultChannelTokenPosition(buf)
 			sqls = append(sqls, base.Statement{
 				Text:     stmtText,
-				BaseLine: buf[0].GetLine() - 1,
 				Range: &storepb.Range{
 					Start: int32(byteOffset),
 					End:   int32(byteOffset + stmtByteLength),

@@ -26,7 +26,6 @@ func TestBigQuerySplitMultiSQL(t *testing.T) {
 				res: []base.Statement{
 					{
 						Text:     "SELECT 1",
-						BaseLine: 0,
 						Start:    &storepb.Position{Line: 1, Column: 1},
 						End:      &storepb.Position{Line: 1, Column: 8},
 						Empty:    false,
@@ -41,7 +40,6 @@ func TestBigQuerySplitMultiSQL(t *testing.T) {
 				res: []base.Statement{
 					{
 						Text:     "SELECT 1;",
-						BaseLine: 0,
 						Start:    &storepb.Position{Line: 1, Column: 1},
 						End:      &storepb.Position{Line: 1, Column: 9},
 						Empty:    false,
@@ -49,7 +47,6 @@ func TestBigQuerySplitMultiSQL(t *testing.T) {
 					},
 					{
 						Text:     "\n SELECT\n 33;",
-						BaseLine: 0,
 						Start:    &storepb.Position{Line: 2, Column: 2},
 						End:      &storepb.Position{Line: 3, Column: 4},
 						Empty:    false,

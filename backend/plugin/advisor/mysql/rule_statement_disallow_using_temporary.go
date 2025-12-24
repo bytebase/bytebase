@@ -44,8 +44,8 @@ func (*StatementDisallowUsingTemporaryAdvisor) Check(ctx context.Context, checkC
 
 	if rule.driver != nil {
 		for _, stmt := range checkCtx.ParsedStatements {
-			rule.SetBaseLine(stmt.BaseLine)
-			checker.SetBaseLine(stmt.BaseLine)
+			rule.SetBaseLine(stmt.GetBaseLine())
+			checker.SetBaseLine(stmt.GetBaseLine())
 			if stmt.AST == nil {
 				continue
 			}

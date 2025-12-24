@@ -25,7 +25,7 @@ func ParseBigQuerySQL(statement string) ([]*base.ANTLRAST, error) {
 			continue
 		}
 
-		ast, err := parseSingleBigQuerySQL(stmt.Text, stmt.BaseLine)
+		ast, err := parseSingleBigQuerySQL(stmt.Text, stmt.GetBaseLine())
 		if err != nil {
 			return nil, err
 		}
