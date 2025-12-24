@@ -74,12 +74,12 @@ service PlanService {
     option (bytebase.v1.audit) = true;
   }
 
-  // Lists plan check runs for a deployment plan.
-  // Permissions required: bb.planCheckRuns.list
-  rpc ListPlanCheckRuns(ListPlanCheckRunsRequest) returns (ListPlanCheckRunsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*}/planCheckRuns"};
-    option (google.api.method_signature) = "parent";
-    option (bytebase.v1.permission) = "bb.planCheckRuns.list";
+  // Gets the plan check run for a deployment plan.
+  // Permissions required: bb.planCheckRuns.get
+  rpc GetPlanCheckRun(GetPlanCheckRunRequest) returns (PlanCheckRun) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/plans/*/planCheckRun}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.planCheckRuns.get";
     option (bytebase.v1.auth_method) = IAM;
   }
 
@@ -95,14 +95,14 @@ service PlanService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Cancels multiple plan check runs.
+  // Cancels the plan check run for a deployment plan.
   // Permissions required: bb.planCheckRuns.run
-  rpc BatchCancelPlanCheckRuns(BatchCancelPlanCheckRunsRequest) returns (BatchCancelPlanCheckRunsResponse) {
+  rpc CancelPlanCheckRun(CancelPlanCheckRunRequest) returns (CancelPlanCheckRunResponse) {
     option (google.api.http) = {
-      post: "/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancel"
+      post: "/v1/{name=projects/*/plans/*/planCheckRun}:cancel"
       body: "*"
     };
-    option (google.api.method_signature) = "parent";
+    option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.planCheckRuns.run";
     option (bytebase.v1.auth_method) = IAM;
   }
@@ -347,35 +347,10 @@ message Plan {
   }
 }
 
-message ListPlanCheckRunsRequest {
-  // The parent, which owns this collection of plan check runs.
-  // Format: projects/{project}/plans/{plan}
-  string parent = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Plan"}
-  ];
-
-  // If set to true, only the latest plan check run will be returned.
-  bool latest_only = 2;
-
-  // Filter is used to filter plan check runs returned in the list.
-  // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-  //
-  // Supported filters:
-  // - status: the plan check run status, support "==" and "in" operator, check the Status enum in the PlanCheckRun message for the values.
-  // - result_status: the plan check run result status, support "==" and "in" operator, check the Result.Status enum in the PlanCheckRun message for the values.
-  //
-  // For example:
-  // status in ["DONE", "FAILED"]
-  // status == "RUNNING"
-  // result_status in ["SUCCESS", "ERROR"]
-  // result_status == "WARNING"
-  string filter = 3;
-}
-
-message ListPlanCheckRunsResponse {
-  // The plan check runs from the specified request.
-  repeated PlanCheckRun plan_check_runs = 1;
+message GetPlanCheckRunRequest {
+  // The name of the plan check run to retrieve.
+  // Format: projects/{project}/plans/{plan}/planCheckRun
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message RunPlanChecksRequest {
@@ -394,23 +369,16 @@ message RunPlanChecksRequest {
 
 message RunPlanChecksResponse {}
 
-message BatchCancelPlanCheckRunsRequest {
-  // The name of the parent of the planChecks.
-  // Format: projects/{project}/plans/{plan}
-  string parent = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Plan"}
-  ];
-  // TODO(d): update this API.
-  // The planCheckRuns to cancel.
-  // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
-  repeated string plan_check_runs = 2;
+message CancelPlanCheckRunRequest {
+  // The name of the plan check run to cancel.
+  // Format: projects/{project}/plans/{plan}/planCheckRun
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
-message BatchCancelPlanCheckRunsResponse {}
+message CancelPlanCheckRunResponse {}
 
 message PlanCheckRun {
-  // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
+  // Format: projects/{project}/plans/{plan}/planCheckRun
   string name = 1;
 
   enum Status {

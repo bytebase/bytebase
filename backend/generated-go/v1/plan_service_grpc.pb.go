@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PlanService_GetPlan_FullMethodName                  = "/bytebase.v1.PlanService/GetPlan"
-	PlanService_ListPlans_FullMethodName                = "/bytebase.v1.PlanService/ListPlans"
-	PlanService_SearchPlans_FullMethodName              = "/bytebase.v1.PlanService/SearchPlans"
-	PlanService_CreatePlan_FullMethodName               = "/bytebase.v1.PlanService/CreatePlan"
-	PlanService_UpdatePlan_FullMethodName               = "/bytebase.v1.PlanService/UpdatePlan"
-	PlanService_ListPlanCheckRuns_FullMethodName        = "/bytebase.v1.PlanService/ListPlanCheckRuns"
-	PlanService_RunPlanChecks_FullMethodName            = "/bytebase.v1.PlanService/RunPlanChecks"
-	PlanService_BatchCancelPlanCheckRuns_FullMethodName = "/bytebase.v1.PlanService/BatchCancelPlanCheckRuns"
+	PlanService_GetPlan_FullMethodName            = "/bytebase.v1.PlanService/GetPlan"
+	PlanService_ListPlans_FullMethodName          = "/bytebase.v1.PlanService/ListPlans"
+	PlanService_SearchPlans_FullMethodName        = "/bytebase.v1.PlanService/SearchPlans"
+	PlanService_CreatePlan_FullMethodName         = "/bytebase.v1.PlanService/CreatePlan"
+	PlanService_UpdatePlan_FullMethodName         = "/bytebase.v1.PlanService/UpdatePlan"
+	PlanService_GetPlanCheckRun_FullMethodName    = "/bytebase.v1.PlanService/GetPlanCheckRun"
+	PlanService_RunPlanChecks_FullMethodName      = "/bytebase.v1.PlanService/RunPlanChecks"
+	PlanService_CancelPlanCheckRun_FullMethodName = "/bytebase.v1.PlanService/CancelPlanCheckRun"
 )
 
 // PlanServiceClient is the client API for PlanService service.
@@ -51,15 +51,15 @@ type PlanServiceClient interface {
 	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
 	// Permissions required: bb.plans.update (or creator)
 	UpdatePlan(ctx context.Context, in *UpdatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
-	// Lists plan check runs for a deployment plan.
-	// Permissions required: bb.planCheckRuns.list
-	ListPlanCheckRuns(ctx context.Context, in *ListPlanCheckRunsRequest, opts ...grpc.CallOption) (*ListPlanCheckRunsResponse, error)
+	// Gets the plan check run for a deployment plan.
+	// Permissions required: bb.planCheckRuns.get
+	GetPlanCheckRun(ctx context.Context, in *GetPlanCheckRunRequest, opts ...grpc.CallOption) (*PlanCheckRun, error)
 	// Executes validation checks on a deployment plan.
 	// Permissions required: bb.planCheckRuns.run
 	RunPlanChecks(ctx context.Context, in *RunPlanChecksRequest, opts ...grpc.CallOption) (*RunPlanChecksResponse, error)
-	// Cancels multiple plan check runs.
+	// Cancels the plan check run for a deployment plan.
 	// Permissions required: bb.planCheckRuns.run
-	BatchCancelPlanCheckRuns(ctx context.Context, in *BatchCancelPlanCheckRunsRequest, opts ...grpc.CallOption) (*BatchCancelPlanCheckRunsResponse, error)
+	CancelPlanCheckRun(ctx context.Context, in *CancelPlanCheckRunRequest, opts ...grpc.CallOption) (*CancelPlanCheckRunResponse, error)
 }
 
 type planServiceClient struct {
@@ -120,10 +120,10 @@ func (c *planServiceClient) UpdatePlan(ctx context.Context, in *UpdatePlanReques
 	return out, nil
 }
 
-func (c *planServiceClient) ListPlanCheckRuns(ctx context.Context, in *ListPlanCheckRunsRequest, opts ...grpc.CallOption) (*ListPlanCheckRunsResponse, error) {
+func (c *planServiceClient) GetPlanCheckRun(ctx context.Context, in *GetPlanCheckRunRequest, opts ...grpc.CallOption) (*PlanCheckRun, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListPlanCheckRunsResponse)
-	err := c.cc.Invoke(ctx, PlanService_ListPlanCheckRuns_FullMethodName, in, out, cOpts...)
+	out := new(PlanCheckRun)
+	err := c.cc.Invoke(ctx, PlanService_GetPlanCheckRun_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -140,10 +140,10 @@ func (c *planServiceClient) RunPlanChecks(ctx context.Context, in *RunPlanChecks
 	return out, nil
 }
 
-func (c *planServiceClient) BatchCancelPlanCheckRuns(ctx context.Context, in *BatchCancelPlanCheckRunsRequest, opts ...grpc.CallOption) (*BatchCancelPlanCheckRunsResponse, error) {
+func (c *planServiceClient) CancelPlanCheckRun(ctx context.Context, in *CancelPlanCheckRunRequest, opts ...grpc.CallOption) (*CancelPlanCheckRunResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BatchCancelPlanCheckRunsResponse)
-	err := c.cc.Invoke(ctx, PlanService_BatchCancelPlanCheckRuns_FullMethodName, in, out, cOpts...)
+	out := new(CancelPlanCheckRunResponse)
+	err := c.cc.Invoke(ctx, PlanService_CancelPlanCheckRun_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -172,15 +172,15 @@ type PlanServiceServer interface {
 	// The plan creator and the user with bb.plans.update permission on the project can update the plan.
 	// Permissions required: bb.plans.update (or creator)
 	UpdatePlan(context.Context, *UpdatePlanRequest) (*Plan, error)
-	// Lists plan check runs for a deployment plan.
-	// Permissions required: bb.planCheckRuns.list
-	ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error)
+	// Gets the plan check run for a deployment plan.
+	// Permissions required: bb.planCheckRuns.get
+	GetPlanCheckRun(context.Context, *GetPlanCheckRunRequest) (*PlanCheckRun, error)
 	// Executes validation checks on a deployment plan.
 	// Permissions required: bb.planCheckRuns.run
 	RunPlanChecks(context.Context, *RunPlanChecksRequest) (*RunPlanChecksResponse, error)
-	// Cancels multiple plan check runs.
+	// Cancels the plan check run for a deployment plan.
 	// Permissions required: bb.planCheckRuns.run
-	BatchCancelPlanCheckRuns(context.Context, *BatchCancelPlanCheckRunsRequest) (*BatchCancelPlanCheckRunsResponse, error)
+	CancelPlanCheckRun(context.Context, *CancelPlanCheckRunRequest) (*CancelPlanCheckRunResponse, error)
 	mustEmbedUnimplementedPlanServiceServer()
 }
 
@@ -206,14 +206,14 @@ func (UnimplementedPlanServiceServer) CreatePlan(context.Context, *CreatePlanReq
 func (UnimplementedPlanServiceServer) UpdatePlan(context.Context, *UpdatePlanRequest) (*Plan, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdatePlan not implemented")
 }
-func (UnimplementedPlanServiceServer) ListPlanCheckRuns(context.Context, *ListPlanCheckRunsRequest) (*ListPlanCheckRunsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListPlanCheckRuns not implemented")
+func (UnimplementedPlanServiceServer) GetPlanCheckRun(context.Context, *GetPlanCheckRunRequest) (*PlanCheckRun, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPlanCheckRun not implemented")
 }
 func (UnimplementedPlanServiceServer) RunPlanChecks(context.Context, *RunPlanChecksRequest) (*RunPlanChecksResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RunPlanChecks not implemented")
 }
-func (UnimplementedPlanServiceServer) BatchCancelPlanCheckRuns(context.Context, *BatchCancelPlanCheckRunsRequest) (*BatchCancelPlanCheckRunsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method BatchCancelPlanCheckRuns not implemented")
+func (UnimplementedPlanServiceServer) CancelPlanCheckRun(context.Context, *CancelPlanCheckRunRequest) (*CancelPlanCheckRunResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelPlanCheckRun not implemented")
 }
 func (UnimplementedPlanServiceServer) mustEmbedUnimplementedPlanServiceServer() {}
 func (UnimplementedPlanServiceServer) testEmbeddedByValue()                     {}
@@ -326,20 +326,20 @@ func _PlanService_UpdatePlan_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PlanService_ListPlanCheckRuns_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListPlanCheckRunsRequest)
+func _PlanService_GetPlanCheckRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPlanCheckRunRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PlanServiceServer).ListPlanCheckRuns(ctx, in)
+		return srv.(PlanServiceServer).GetPlanCheckRun(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PlanService_ListPlanCheckRuns_FullMethodName,
+		FullMethod: PlanService_GetPlanCheckRun_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlanServiceServer).ListPlanCheckRuns(ctx, req.(*ListPlanCheckRunsRequest))
+		return srv.(PlanServiceServer).GetPlanCheckRun(ctx, req.(*GetPlanCheckRunRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -362,20 +362,20 @@ func _PlanService_RunPlanChecks_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PlanService_BatchCancelPlanCheckRuns_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BatchCancelPlanCheckRunsRequest)
+func _PlanService_CancelPlanCheckRun_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelPlanCheckRunRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PlanServiceServer).BatchCancelPlanCheckRuns(ctx, in)
+		return srv.(PlanServiceServer).CancelPlanCheckRun(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PlanService_BatchCancelPlanCheckRuns_FullMethodName,
+		FullMethod: PlanService_CancelPlanCheckRun_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlanServiceServer).BatchCancelPlanCheckRuns(ctx, req.(*BatchCancelPlanCheckRunsRequest))
+		return srv.(PlanServiceServer).CancelPlanCheckRun(ctx, req.(*CancelPlanCheckRunRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -408,16 +408,16 @@ var PlanService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PlanService_UpdatePlan_Handler,
 		},
 		{
-			MethodName: "ListPlanCheckRuns",
-			Handler:    _PlanService_ListPlanCheckRuns_Handler,
+			MethodName: "GetPlanCheckRun",
+			Handler:    _PlanService_GetPlanCheckRun_Handler,
 		},
 		{
 			MethodName: "RunPlanChecks",
 			Handler:    _PlanService_RunPlanChecks_Handler,
 		},
 		{
-			MethodName: "BatchCancelPlanCheckRuns",
-			Handler:    _PlanService_BatchCancelPlanCheckRuns_Handler,
+			MethodName: "CancelPlanCheckRun",
+			Handler:    _PlanService_CancelPlanCheckRun_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
