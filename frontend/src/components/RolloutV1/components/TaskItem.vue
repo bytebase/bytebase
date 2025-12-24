@@ -234,7 +234,6 @@ import HighlightCodeBlock from "@/components/HighlightCodeBlock.vue";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import { usePlanContextWithRollout } from "@/components/Plan";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
-import TaskRolloutActionPanel from "@/components/Plan/components/RolloutView/TaskRolloutActionPanel.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { taskRunNamePrefix, useSheetV1Store } from "@/store";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -247,6 +246,7 @@ import { useTaskStatement } from "./composables/useTaskStatement";
 import { useTaskTiming } from "./composables/useTaskTiming";
 import LatestTaskRunInfo from "./LatestTaskRunInfo.vue";
 import ScheduledTimeIndicator from "./ScheduledTimeIndicator.vue";
+import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
 
 const props = withDefaults(
   defineProps<{

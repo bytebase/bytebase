@@ -153,6 +153,11 @@ import { RouterLink } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
+import {
+  getSpecTitle,
+  usePlanContextWithRollout,
+} from "@/components/Plan/logic";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
@@ -177,8 +182,6 @@ import {
   getSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
-import { getSpecTitle, usePlanContextWithRollout } from "../../logic";
-import DatabaseDisplay from "../common/DatabaseDisplay.vue";
 import TaskRollbackButton from "./TaskRollbackButton.vue";
 import TaskRunTable from "./TaskRunTable.vue";
 import TaskStatusActions from "./TaskStatusActions.vue";

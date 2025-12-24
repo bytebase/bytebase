@@ -173,6 +173,7 @@
     "deleted": "削除されました",
     "active": "アクティブ",
     "reopen": "再開",
+    "plan": "プラン",
     "rollout": "リリース",
     "upload": "アップロード",
     "clear": "クリア",
@@ -937,6 +938,7 @@
     "labels": "イシューラベル",
     "my-issues": "マイイシュー",
     "waiting-approval": "承認待ち",
+    "create-rollout": "ロールアウトを作成",
     "status-transition": {
       "modal": {
         "resolve": "イシューは完了しましたか?",
@@ -1156,8 +1158,7 @@
     "approval": {
       "rejected-error": "問題の承認が拒否されました。",
       "pending-error": "問題の承認が保留中です。",
-      "approved-and-waiting-for-rollout": "この問題は承認されており、展開する準備ができています。",
-      "ready-for-rollout": "展開可能"
+      "approved-and-waiting-for-rollout": "この問題は承認されており、展開する準備ができています。"
     },
     "new-layout": "新しいCI/CDレイアウト"
   },
@@ -1174,7 +1175,6 @@
     "navigator": {
       "changes": "変更点",
       "checks": "小切手",
-      "rollout": "ロールアウトする",
       "statement-empty": "ステートメントが空です"
     },
     "checks": {

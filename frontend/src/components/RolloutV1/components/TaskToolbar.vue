@@ -103,14 +103,14 @@ import { PlayIcon, SkipForwardIcon, XIcon } from "lucide-vue-next";
 import { NButton, NCheckbox, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import TaskRolloutActionPanel from "@/components/Plan/components/RolloutView/TaskRolloutActionPanel.vue";
-import { canRolloutTasks } from "@/components/Plan/components/RolloutView/taskPermissions";
 import { usePlanContext } from "@/components/Plan/logic";
 import { useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import TaskRolloutActionPanel from "./TaskRolloutActionPanel.vue";
+import { canRolloutTasks } from "./taskPermissions";
 import type { TaskAction } from "./types";
 
 const props = defineProps<{

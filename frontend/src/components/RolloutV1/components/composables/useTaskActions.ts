@@ -1,8 +1,8 @@
 import type { ComputedRef, Ref } from "vue";
 import { computed, ref } from "vue";
-import { canRolloutTasks } from "@/components/Plan/components/RolloutView/taskPermissions";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { canRolloutTasks } from "../taskPermissions";
 
 export type TaskAction = "RUN" | "SKIP" | "CANCEL";
 

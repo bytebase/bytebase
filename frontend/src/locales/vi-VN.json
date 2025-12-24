@@ -173,6 +173,7 @@
     "deleted": "Đã xóa",
     "active": "Tích cực",
     "reopen": "Mở lại",
+    "plan": "Kế hoạch",
     "rollout": "Triển khai",
     "upload": "Tải lên",
     "clear": "Xóa",
@@ -937,6 +938,7 @@
     "labels": "Nhãn vấn đề",
     "my-issues": "Vấn đề của tôi",
     "waiting-approval": "Đang chờ phê duyệt",
+    "create-rollout": "Tạo triển khai",
     "status-transition": {
       "modal": {
         "resolve": "Giải quyết vấn đề?",
@@ -1156,8 +1158,7 @@
     "approval": {
       "rejected-error": "Đã từ chối phê duyệt vấn đề.",
       "pending-error": "Đang chờ phê duyệt vấn đề.",
-      "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai.",
-      "ready-for-rollout": "Sẵn sàng triển khai"
+      "approved-and-waiting-for-rollout": "Phiên bản này đã được chấp thuận và sẵn sàng triển khai."
     },
     "new-layout": "Bố cục CI/CD mới"
   },
@@ -1174,7 +1175,6 @@
     "navigator": {
       "changes": "Thay đổi",
       "checks": "Kiểm tra",
-      "rollout": "Triển khai",
       "statement-empty": "Câu lệnh trống rỗng"
     },
     "checks": {

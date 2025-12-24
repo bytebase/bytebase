@@ -1,4 +1,4 @@
-import { CirclePlayIcon, FileDiffIcon, Layers2Icon } from "lucide-vue-next";
+import { FileDiffIcon, Layers2Icon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import type { Ref } from "vue";
 import { computed } from "vue";
@@ -9,23 +9,19 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
 } from "@/router/dashboard/projectV1";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { EMPTY_PLAN_NAME } from "@/types/v1/issue/plan";
-import { extractIssueUID, extractPlanUID, extractRolloutUID } from "@/utils";
+import { extractIssueUID, extractPlanUID } from "@/utils";
 
 export enum TabKey {
   Plan = "plan",
   Issue = "issue",
-  Rollout = "rollout",
 }
 
-export interface UseCICDTabNavigationOptions {
+export interface UseIssueTabNavigationOptions {
   route: RouteLocationNormalizedLoaded;
   router: Router;
   plan: Ref<Plan>;
@@ -35,7 +31,9 @@ export interface UseCICDTabNavigationOptions {
   t: ComposerTranslation;
 }
 
-export const useCICDTabNavigation = (options: UseCICDTabNavigationOptions) => {
+export const useIssueTabNavigation = (
+  options: UseIssueTabNavigationOptions
+) => {
   const { route, router, plan, issue, isCreating, enabledNewLayout, t } =
     options;
 
@@ -56,14 +54,6 @@ export const useCICDTabNavigation = (options: UseCICDTabNavigationOptions) => {
       return TabKey.Plan;
     } else if (routeName === PROJECT_V1_ROUTE_ISSUE_DETAIL_V1) {
       return TabKey.Issue;
-    } else if (
-      [
-        PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-        PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
-        PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
-      ].includes(routeName)
-    ) {
-      return TabKey.Rollout;
     }
     // Fallback: Default to Issue if no valid plan, otherwise Plan
     return plan.value.name === EMPTY_PLAN_NAME ? TabKey.Issue : TabKey.Plan;
@@ -84,11 +74,6 @@ export const useCICDTabNavigation = (options: UseCICDTabNavigationOptions) => {
       plan.value.name !== EMPTY_PLAN_NAME && plan.value.specs.length > 0;
     if (hasValidPlan && !isGrantRequest) {
       tabs.push(TabKey.Plan);
-    }
-
-    // Show Rollout tab if rollout exists
-    if (plan.value.rollout) {
-      tabs.push(TabKey.Rollout);
     }
 
     return tabs;
@@ -113,21 +98,12 @@ export const useCICDTabNavigation = (options: UseCICDTabNavigationOptions) => {
     </div>
   ));
 
-  const rolloutTabContent = computed(() => (
-    <div class="flex items-center gap-2">
-      <CirclePlayIcon size={18} />
-      <span>{t("plan.navigator.rollout")}</span>
-    </div>
-  ));
-
   const tabRender = (tab: TabKey) => {
     switch (tab) {
       case TabKey.Issue:
         return issueTabContent.value;
       case TabKey.Plan:
         return planTabContent.value;
-      case TabKey.Rollout:
-        return rolloutTabContent.value;
       default:
         return tab;
     }
@@ -146,9 +122,6 @@ export const useCICDTabNavigation = (options: UseCICDTabNavigationOptions) => {
       params.planId = extractPlanUID(plan.value.name);
       if (plan.value.issue) {
         params.issueId = extractIssueUID(plan.value.issue);
-      }
-      if (plan.value.rollout) {
-        params.rolloutId = extractRolloutUID(plan.value.rollout);
       }
     }
 
@@ -173,16 +146,6 @@ export const useCICDTabNavigation = (options: UseCICDTabNavigationOptions) => {
         })
         .catch((error) => {
           console.error("Failed to navigate to Plan tab:", error);
-        });
-    } else if (tab === TabKey.Rollout) {
-      router
-        .push({
-          name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-          params: params,
-          query: query,
-        })
-        .catch((error) => {
-          console.error("Failed to navigate to Rollout tab:", error);
         });
     }
   };

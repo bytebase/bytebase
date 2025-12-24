@@ -7,6 +7,18 @@
         </template>
         {{ $t("common.draft") }}
       </NTag>
+      <NTag v-else-if="showClosedTag" round type="default">
+        <template #icon>
+          <BanIcon class="w-4 h-4" />
+        </template>
+        {{ $t("common.closed") }}
+      </NTag>
+      <NTag v-else-if="showDoneTag" round type="success">
+        <template #icon>
+          <CheckCircle2Icon class="w-4 h-4" />
+        </template>
+        {{ $t("common.done") }}
+      </NTag>
       <TitleInput />
       <div class="flex flex-row items-center justify-end">
         <Actions />
@@ -27,11 +39,18 @@
 </template>
 
 <script lang="ts" setup>
-import { CircleDotDashedIcon, MenuIcon } from "lucide-vue-next";
+import {
+  BanIcon,
+  CheckCircle2Icon,
+  CircleDotDashedIcon,
+  MenuIcon,
+} from "lucide-vue-next";
 import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL_V1 } from "@/router/dashboard/projectV1";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { isValidPlanName } from "@/utils";
 import { usePlanContext } from "../../logic";
 import { useSidebarContext } from "../../logic/sidebar";
@@ -40,7 +59,7 @@ import DescriptionSection from "./DescriptionSection.vue";
 import TitleInput from "./TitleInput.vue";
 
 const route = useRoute();
-const { isCreating, plan } = usePlanContext();
+const { isCreating, plan, issue } = usePlanContext();
 
 const hasSidebar = computed(() => {
   // Check if we're in a layout with sidebar (Issue overview tab only)
@@ -65,6 +84,17 @@ const showDraftTag = computed(() => {
     !plan.value.issue &&
     !plan.value.rollout
   );
+});
+
+const showClosedTag = computed(() => {
+  return (
+    plan.value.state === State.DELETED ||
+    issue.value?.status === IssueStatus.CANCELED
+  );
+});
+
+const showDoneTag = computed(() => {
+  return issue.value?.status === IssueStatus.DONE;
 });
 
 const showDescriptionSection = computed(() => {

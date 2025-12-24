@@ -1,6 +1,6 @@
 import type { ComputedRef, MaybeRefOrGetter } from "vue";
 import { computed, onUnmounted, ref, toValue, watch } from "vue";
-import { usePlanContext } from "@/components/Plan/logic/context";
+import { usePlanContext } from "@/components/Plan/logic";
 import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
 import type {
   TaskRun,

@@ -59,18 +59,30 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { usePlanContext } from "@/components/Plan/logic";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
 import { useEditorState } from "@/components/Plan/logic/useEditorState";
-import { pushNotification } from "@/store";
+import TaskRolloutActionPanel from "@/components/RolloutV1/components/TaskRolloutActionPanel.vue";
+import { rolloutServiceClientConnect } from "@/grpcweb";
+import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
+import { pushNotification, useCurrentProjectV1 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import { isValidIssueName, isValidPlanName } from "@/utils";
-import TaskRolloutActionPanel from "../../RolloutView/TaskRolloutActionPanel.vue";
+import {
+  CreateRolloutRequestSchema,
+  Task_Type,
+} from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  extractProjectResourceName,
+  extractRolloutUID,
+  isValidIssueName,
+  isValidPlanName,
+} from "@/utils";
 import { CreateButton, CreateIssueButton } from "./create";
 import { IssueReviewActionPanel, IssueStatusActionPanel } from "./panels";
 import {
@@ -85,12 +97,15 @@ import {
 } from "./unified";
 
 const { t } = useI18n();
+const router = useRouter();
 const dialog = useDialog();
 const resourcePoller = useResourcePoller();
+const { project } = useCurrentProjectV1();
 const { isCreating, plan, issue, rollout, events } = usePlanContext();
 const planStore = usePlanStore();
 const editorState = useEditorState();
 const { availableActions } = usePlanAction();
+const creatingRollout = ref(false);
 
 // Computed property for actions disabled state.
 const actionsDisabled = computed(() => {
@@ -163,6 +178,11 @@ const primaryAction = computed((): ActionConfig | undefined => {
     return { action: "ISSUE_STATUS_RESOLVE" };
   }
 
+  // ROLLOUT_CREATE is primary when issue exists but rollout doesn't
+  if (actions.includes("ROLLOUT_CREATE")) {
+    return { action: "ROLLOUT_CREATE" };
+  }
+
   // Rollout actions as primary actions (high priority for force rollout scenarios)
   if (actions.includes("ROLLOUT_START")) {
     return { action: "ROLLOUT_START" };
@@ -177,6 +197,9 @@ const secondaryActions = computed((): ActionConfig[] => {
 
   if (actions.includes("ISSUE_REVIEW_REJECT")) {
     secondary.push({ action: "ISSUE_REVIEW_REJECT" });
+  }
+  if (actions.includes("ROLLOUT_CREATE")) {
+    secondary.push({ action: "ROLLOUT_CREATE" });
   }
   if (actions.includes("ROLLOUT_CANCEL")) {
     secondary.push({ action: "ROLLOUT_CANCEL" });
@@ -209,6 +232,9 @@ const handlePerformAction = async (action: UnifiedAction) => {
       break;
     case "PLAN_REOPEN":
       await handlePlanStateChange("PLAN_REOPEN");
+      break;
+    case "ROLLOUT_CREATE":
+      await handleCreateRollout();
       break;
     case "ROLLOUT_START":
     case "ROLLOUT_CANCEL":
@@ -250,6 +276,46 @@ const handlePlanStateChange = async (action: PlanAction) => {
       }
     },
   });
+};
+
+const handleCreateRollout = async () => {
+  if (creatingRollout.value) return;
+
+  creatingRollout.value = true;
+  try {
+    const request = create(CreateRolloutRequestSchema, {
+      parent: project.value.name,
+      rollout: {
+        plan: plan.value.name,
+      },
+    });
+    const createdRollout =
+      await rolloutServiceClientConnect.createRollout(request);
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.created"),
+    });
+
+    // Redirect to rollout page
+    router.push({
+      name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(project.value.name),
+        rolloutId: extractRolloutUID(createdRollout.name),
+      },
+    });
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.failed"),
+      description: String(error),
+    });
+  } finally {
+    creatingRollout.value = false;
+  }
 };
 
 const handleRolloutActionConfirm = () => {

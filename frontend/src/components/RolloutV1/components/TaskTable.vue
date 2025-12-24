@@ -28,7 +28,9 @@ import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
 import Timestamp from "@/components/misc/Timestamp.vue";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
+import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
+import { useRolloutViewContext } from "@/components/RolloutV1/logic/context";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useDatabaseV1Store } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
@@ -39,8 +41,6 @@ import {
   extractSchemaVersionFromTask,
   humanizeTs,
 } from "@/utils";
-import { usePlanContextWithRollout } from "../../logic";
-import { useRolloutViewContext } from "./context";
 
 const props = withDefaults(
   defineProps<{
@@ -61,10 +61,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const router = useRouter();
+const databaseStore = useDatabaseV1Store();
 const { project } = useCurrentProjectV1();
 const { rollout, mergedStages } = useRolloutViewContext();
 const { taskRuns } = usePlanContextWithRollout();
-const dbStore = useDatabaseV1Store();
 
 const taskList = computed(() => {
   if (props.taskStatusFilter.length === 0) {
@@ -106,7 +106,7 @@ const stageMap = computed(() => {
 const prepareDatabases = async () => {
   if (taskList.value.length > 0) {
     try {
-      await dbStore.batchGetOrFetchDatabases(
+      await databaseStore.batchGetOrFetchDatabases(
         taskList.value.map((task) => task.target)
       );
     } catch {

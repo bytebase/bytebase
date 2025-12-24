@@ -1,5 +1,5 @@
 import { computed } from "vue";
-import { usePlanContext } from "@/components/Plan/logic";
+import { usePlanCheckStatus, usePlanContext } from "@/components/Plan/logic";
 import { t } from "@/plugins/i18n";
 import {
   candidatesOfApprovalStepV1,
@@ -15,6 +15,7 @@ import {
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import {
   hasProjectPermissionV2,
   isUserIncludedInList,
@@ -28,6 +29,12 @@ export const usePlanAction = () => {
   const { project } = useCurrentProjectV1();
 
   const { isCreating, plan, issue, rollout } = usePlanContext();
+
+  // Plan check status for rollout creation validation
+  const {
+    getOverallStatus: planCheckStatus,
+    hasRunning: hasRunningPlanChecks,
+  } = usePlanCheckStatus(plan);
 
   /**
    * Compute available actions based on issue state and user permissions.
@@ -163,8 +170,8 @@ export const usePlanAction = () => {
     }
 
     if (canUpdateIssue) {
-      // Check if issue can be resolved (all tasks must be finished)
       if (rollout.value) {
+        // Check if issue can be resolved (all tasks must be finished)
         const allTasksFinished = rollout.value.stages
           .flatMap((stage) => stage.tasks)
           .every((task) =>
@@ -173,9 +180,39 @@ export const usePlanAction = () => {
         if (allTasksFinished && issueApproved) {
           actions.push("ISSUE_STATUS_RESOLVE");
         }
+      } else {
+        // Only allow closing issue when rollout doesn't exist
+        actions.push("ISSUE_STATUS_CLOSE");
       }
+    }
 
-      actions.push("ISSUE_STATUS_CLOSE");
+    // Check for rollout creation action
+    // Only shown when issue exists, rollout doesn't, and all preconditions are met.
+    if (plan.value.rollout === "" && !isIssueOnly) {
+      const canCreateRollout = hasProjectPermissionV2(
+        project.value,
+        "bb.rollouts.create"
+      );
+
+      if (canCreateRollout) {
+        const { requireIssueApproval, requirePlanCheckNoError } = project.value;
+
+        // Issue must be approved/skipped if requireIssueApproval is enabled
+        const issueReady =
+                      !requireIssueApproval ||
+          issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+          issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
+
+        // Plan checks must pass if requirePlanCheckNoError is enabled
+        const planCheckReady =
+          !requirePlanCheckNoError ||
+          (!hasRunningPlanChecks.value &&
+            planCheckStatus.value !== Advice_Level.ERROR);
+
+        if (issueReady && planCheckReady) {
+          actions.push("ROLLOUT_CREATE");
+        }
+      }
     }
 
     // Check for rollout actions when rollout has database creation/export tasks
@@ -257,6 +294,8 @@ export const usePlanAction = () => {
         return t("common.close");
       case "PLAN_REOPEN":
         return t("common.reopen");
+      case "ROLLOUT_CREATE":
+        return t("issue.create-rollout");
       case "ROLLOUT_START":
         return isExportPlan.value ? t("common.export") : t("common.rollout");
       case "ROLLOUT_CANCEL":

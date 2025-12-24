@@ -255,6 +255,12 @@ import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
+import PlanCheckStatusCount from "@/components/Plan/components/PlanCheckStatusCount.vue";
+import {
+  usePlanCheckStatus,
+  usePlanContextWithRollout,
+} from "@/components/Plan/logic";
+import { projectOfPlan } from "@/components/Plan/logic/utils";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { trackPriorBackupOnTaskRun } from "@/composables/usePriorBackupTelemetry";
@@ -293,9 +299,6 @@ import {
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractStageUID, isNullOrUndefined } from "@/utils";
-import { usePlanCheckStatus, usePlanContextWithRollout } from "../../logic";
-import { projectOfPlan } from "../../logic/utils";
-import PlanCheckStatusCount from "../PlanCheckStatusCount.vue";
 import TaskDatabaseName from "./TaskDatabaseName.vue";
 import { canRolloutTasks } from "./taskPermissions";
 

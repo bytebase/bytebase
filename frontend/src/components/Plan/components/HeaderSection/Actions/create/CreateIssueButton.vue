@@ -202,14 +202,14 @@ const doCreateIssue = async () => {
     const createdIssue =
       await issueServiceClientConnect.createIssue(createIssueRequest);
 
-    const createRolloutRequest = create(CreateRolloutRequestSchema, {
-      parent: project.value.name,
-      rollout: {
-        plan: plan.value.name,
-      },
-    });
+    // const createRolloutRequest = create(CreateRolloutRequestSchema, {
+    //   parent: project.value.name,
+    //   rollout: {
+    //     plan: plan.value.name,
+    //   },
+    // });
 
-    await rolloutServiceClientConnect.createRollout(createRolloutRequest);
+    // await rolloutServiceClientConnect.createRollout(createRolloutRequest);
 
     events.emit("status-changed", { eager: true });
 

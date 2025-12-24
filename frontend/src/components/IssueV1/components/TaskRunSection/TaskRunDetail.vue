@@ -37,7 +37,7 @@ import { uniqueId } from "lodash-es";
 import { RefreshCcwIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
-import { TaskRunLogViewer } from "@/components/Plan/components/RolloutView/v2/TaskRunLogViewer";
+import { TaskRunLogViewer } from "@/components/RolloutV1/components/TaskRunLogViewer";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { useSheetV1Store } from "@/store";
 import { Engine } from "@/types/proto-es/v1/common_pb";

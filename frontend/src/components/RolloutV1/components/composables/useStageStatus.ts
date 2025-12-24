@@ -1,5 +1,5 @@
 import { type ComputedRef, computed } from "vue";
-import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
+import { TASK_STATUS_FILTERS } from "@/components/RolloutV1/constants/task";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 

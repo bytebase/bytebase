@@ -25,6 +25,7 @@
 import { DatabaseBackupIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
+import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import { taskRunNamePrefix, useCurrentProjectV1 } from "@/store";
 import type {
   Rollout,
@@ -33,7 +34,6 @@ import type {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask } from "@/utils";
-import { usePlanContextWithRollout } from "../../logic";
 import TaskRunRollbackDrawer from "./TaskRunRollbackDrawer.vue";
 
 const props = defineProps<{

@@ -20,10 +20,10 @@
 import { DatabaseBackupIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { ref, toRef } from "vue";
+import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
-import { usePlanContextWithRollout } from "../../../logic";
-import TaskRunRollbackDrawer from "../TaskRunRollbackDrawer.vue";
 import { useRollbackableTasks } from "./composables/useRollbackableTasks";
+import TaskRunRollbackDrawer from "./TaskRunRollbackDrawer.vue";
 
 const props = defineProps<{
   stage: Stage | null | undefined;
