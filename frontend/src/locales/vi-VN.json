@@ -1917,10 +1917,6 @@
             "warning": "Yêu cầu ít nhất một nhãn được cấu hình"
           }
         },
-        "auto-resolve-issue": {
-          "self": "Tự động giải quyết vấn đề",
-          "description": "Tự động giải quyết vấn đề sau khi tất cả các tác vụ được hoàn thành."
-        },
         "enforce-issue-title": {
           "self": "Bắt buộc tiêu đề vấn đề",
           "description": "Bắt buộc tiêu đề vấn đề không được để trống và được tạo bởi người dùng thay vì được tạo tự động."
