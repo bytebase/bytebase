@@ -154,7 +154,7 @@ but commit consolidated-plan-check-runs -m "iam: rename planCheckRuns.list to pl
 ## Task 2.5: Create Permission Migration Script
 
 **Files:**
-- Create: `backend/migrator/migration/3.14/0007##rename_plan_check_runs_permission.sql`
+- Create: `backend/migrator/migration/3.14/0008##rename_plan_check_runs_permission.sql`
 
 **Step 1: Write the migration SQL**
 
@@ -550,7 +550,7 @@ but commit consolidated-plan-check-runs -m "chore: fix build and lint issues"
 |------|-------------|-----------|
 | 1 | Proto changes | `proto/v1/v1/plan_service.proto` |
 | 2 | Permission changes | `backend/component/iam/*.yaml`, `frontend/src/types/iam/permission.ts` |
-| 2.5 | Permission migration | `backend/migrator/migration/3.14/0007##rename_plan_check_runs_permission.sql` |
+| 2.5 | Permission migration | `backend/migrator/migration/3.14/0008##rename_plan_check_runs_permission.sql` |
 | 3 | Backend common helpers | `backend/common/resource_name.go` |
 | 4 | Backend API | `backend/api/v1/plan_service.go` |
 | 5 | Frontend updates | `frontend/src/store/`, `frontend/src/components/` |
