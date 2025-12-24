@@ -246,7 +246,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 		if !passwordRestriction.GetRequireResetPasswordForFirstLogin() {
 			return false
 		}
-		count, err := s.store.CountUsers(ctx, storepb.PrincipalType_END_USER)
+		count, err := s.store.CountActiveEndUsers(ctx)
 		if err != nil {
 			slog.Error("failed to count end users", log.BBError(err))
 			return false
@@ -488,7 +488,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 func (s *AuthService) userCountGuard(ctx context.Context) error {
 	userLimit := s.licenseService.GetUserLimit(ctx)
 
-	count, err := s.store.CountActiveUsers(ctx)
+	count, err := s.store.CountActiveEndUsers(ctx)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}

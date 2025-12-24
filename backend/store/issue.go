@@ -33,7 +33,8 @@ func init() {
 
 // IssueMessage is the mssage for issues.
 type IssueMessage struct {
-	Project         *ProjectMessage
+	ProjectID       string
+	CreatorEmail    string
 	Title           string
 	Status          storepb.Issue_Status
 	Type            storepb.Issue_Type
@@ -47,10 +48,6 @@ type IssueMessage struct {
 	UID       int
 	CreatedAt time.Time
 	UpdatedAt time.Time
-
-	// Internal fields.
-	projectID    string
-	CreatorEmail string
 }
 
 // UpdateIssueMessage is the message for updating an issue.
@@ -113,7 +110,7 @@ func (s *Store) GetIssue(ctx context.Context, find *FindIssueMessage) (*IssueMes
 }
 
 // CreateIssue creates a new issue.
-func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage, creator string) (*IssueMessage, error) {
+func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMessage, error) {
 	create.Status = storepb.Issue_OPEN
 	payload, err := protojson.Marshal(create.Payload)
 	if err != nil {
@@ -135,8 +132,8 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage, creator s
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id`,
-		creator,
-		create.Project.ResourceID,
+		create.CreatorEmail,
+		create.ProjectID,
 		create.PlanUID,
 		create.Title,
 		create.Status.String(),
@@ -398,7 +395,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			&issue.CreatorEmail,
 			&issue.CreatedAt,
 			&issue.UpdatedAt,
-			&issue.projectID,
+			&issue.ProjectID,
 			&issue.PipelineUID,
 			&issue.PlanUID,
 			&issue.Title,
@@ -434,15 +431,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
-	}
-
-	// Populate from internal fields.
-	for _, issue := range issues {
-		project, err := s.GetProject(ctx, &FindProjectMessage{ResourceID: &issue.projectID})
-		if err != nil {
-			return nil, err
-		}
-		issue.Project = project
 	}
 
 	return issues, nil

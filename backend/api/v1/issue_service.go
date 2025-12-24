@@ -470,25 +470,25 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 	}
 
 	issueCreateMessage := &store.IssueMessage{
-		Project:     project,
-		PlanUID:     planUID,
-		PipelineUID: rolloutUID,
-		Title:       request.Issue.Title,
-		Status:      storepb.Issue_OPEN,
-		Type:        storepb.Issue_DATABASE_CHANGE,
-		Description: request.Issue.Description,
-	}
-
-	issueCreateMessage.Payload = &storepb.Issue{
-		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone: false,
-			ApprovalTemplate:    nil,
-			Approvers:           nil,
+		ProjectID:    project.ResourceID,
+		CreatorEmail: user.Email,
+		PlanUID:      planUID,
+		PipelineUID:  rolloutUID,
+		Title:        request.Issue.Title,
+		Status:       storepb.Issue_OPEN,
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Description:  request.Issue.Description,
+		Payload: &storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+				ApprovalTemplate:    nil,
+				Approvers:           nil,
+			},
+			Labels: request.Issue.Labels,
 		},
-		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.Email)
+	issue, err := s.store.CreateIssue(ctx, issueCreateMessage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
 	}
@@ -499,7 +499,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 		Type:    storepb.Activity_ISSUE_CREATE,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
-		Project: webhook.NewProject(issue.Project),
+		Project: webhook.NewProject(project),
 	})
 
 	converted, err := s.convertToIssue(ctx, issue)
@@ -540,32 +540,31 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 		}
 	}
 
-	issueCreateMessage := &store.IssueMessage{
-		Project:     project,
-		PlanUID:     nil,
-		PipelineUID: nil,
-		Title:       request.Issue.Title,
-		Status:      storepb.Issue_OPEN,
-		Type:        storepb.Issue_GRANT_REQUEST,
-		Description: request.Issue.Description,
-	}
-
 	convertedGrantRequest, err := convertGrantRequest(ctx, s.store, request.Issue.GrantRequest)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert GrantRequest, error: %v", err))
 	}
-
-	issueCreateMessage.Payload = &storepb.Issue{
-		GrantRequest: convertedGrantRequest,
-		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone: false,
-			ApprovalTemplate:    nil,
-			Approvers:           nil,
+	issueCreateMessage := &store.IssueMessage{
+		ProjectID:    project.ResourceID,
+		CreatorEmail: user.Email,
+		PlanUID:      nil,
+		PipelineUID:  nil,
+		Title:        request.Issue.Title,
+		Status:       storepb.Issue_OPEN,
+		Type:         storepb.Issue_GRANT_REQUEST,
+		Description:  request.Issue.Description,
+		Payload: &storepb.Issue{
+			GrantRequest: convertedGrantRequest,
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+				ApprovalTemplate:    nil,
+				Approvers:           nil,
+			},
+			Labels: request.Issue.Labels,
 		},
-		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.Email)
+	issue, err := s.store.CreateIssue(ctx, issueCreateMessage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
 	}
@@ -576,7 +575,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 		Type:    storepb.Activity_ISSUE_CREATE,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
-		Project: webhook.NewProject(issue.Project),
+		Project: webhook.NewProject(project),
 	})
 
 	converted, err := s.convertToIssue(ctx, issue)
@@ -630,25 +629,25 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 	}
 
 	issueCreateMessage := &store.IssueMessage{
-		Project:     project,
-		PlanUID:     planUID,
-		PipelineUID: rolloutUID,
-		Title:       request.Issue.Title,
-		Status:      storepb.Issue_OPEN,
-		Type:        storepb.Issue_DATABASE_EXPORT,
-		Description: request.Issue.Description,
-	}
-
-	issueCreateMessage.Payload = &storepb.Issue{
-		Approval: &storepb.IssuePayloadApproval{
-			ApprovalFindingDone: false,
-			ApprovalTemplate:    nil,
-			Approvers:           nil,
+		ProjectID:    project.ResourceID,
+		CreatorEmail: user.Email,
+		PlanUID:      planUID,
+		PipelineUID:  rolloutUID,
+		Title:        request.Issue.Title,
+		Status:       storepb.Issue_OPEN,
+		Type:         storepb.Issue_DATABASE_EXPORT,
+		Description:  request.Issue.Description,
+		Payload: &storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: false,
+				ApprovalTemplate:    nil,
+				Approvers:           nil,
+			},
+			Labels: request.Issue.Labels,
 		},
-		Labels: request.Issue.Labels,
 	}
 
-	issue, err := s.store.CreateIssue(ctx, issueCreateMessage, user.Email)
+	issue, err := s.store.CreateIssue(ctx, issueCreateMessage)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
 	}
@@ -659,7 +658,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 		Type:    storepb.Activity_ISSUE_CREATE,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
-		Project: webhook.NewProject(issue.Project),
+		Project: webhook.NewProject(project),
 	})
 
 	converted, err := s.convertToIssue(ctx, issue)
@@ -675,6 +674,13 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
+	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
+	}
+	if project == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
 	}
 	payload := issue.Payload
 	if payload.Approval == nil {
@@ -771,7 +777,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(issue.Project),
+			Project: webhook.NewProject(project),
 			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
 				Role: role,
 			},
@@ -789,7 +795,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 			Type:    storepb.Activity_NOTIFY_ISSUE_APPROVED,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(issue.Project),
+			Project: webhook.NewProject(project),
 		})
 
 		// notify pipeline rollout
@@ -816,7 +822,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 				Type:    storepb.Activity_NOTIFY_PIPELINE_ROLLOUT,
 				Comment: "",
 				Issue:   webhook.NewIssue(issue),
-				Project: webhook.NewProject(issue.Project),
+				Project: webhook.NewProject(project),
 				IssueRolloutReady: &webhook.EventIssueRolloutReady{
 					RolloutPolicy: policy,
 					StageName:     firstEnvironment,
@@ -938,6 +944,13 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, err
 	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
+	}
+	if project == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
+	}
 	payload := issue.Payload
 	if payload.Approval == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("issue payload approval is nil"))
@@ -999,7 +1012,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(issue.Project),
+			Project: webhook.NewProject(project),
 			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
 				Role: role,
 			},
@@ -1069,6 +1082,13 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 		return nil, err
 	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
+	}
+	if project == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
+	}
 
 	updateMasks := map[string]bool{}
 
@@ -1124,7 +1144,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 				Type:    storepb.Activity_ISSUE_FIELD_UPDATE,
 				Comment: "",
 				Issue:   webhook.NewIssue(issue),
-				Project: webhook.NewProject(issue.Project),
+				Project: webhook.NewProject(project),
 				IssueUpdate: &webhook.EventIssueUpdate{
 					Path: path,
 				},
@@ -1155,7 +1175,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 				Type:    storepb.Activity_ISSUE_FIELD_UPDATE,
 				Comment: "",
 				Issue:   webhook.NewIssue(issue),
-				Project: webhook.NewProject(issue.Project),
+				Project: webhook.NewProject(project),
 				IssueUpdate: &webhook.EventIssueUpdate{
 					Path: path,
 				},
@@ -1265,6 +1285,15 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 				errs = multierr.Append(errs, errors.Wrapf(err, "failed to get issue %v", issue.UID))
 				continue
 			}
+			project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &updatedIssue.ProjectID})
+			if err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to get project for issue %v", issue.UID))
+				continue
+			}
+			if project == nil {
+				errs = multierr.Append(errs, errors.Errorf("project %s not found for issue %v", updatedIssue.ProjectID, issue.UID))
+				continue
+			}
 
 			func() {
 				s.webhookManager.CreateEvent(ctx, &webhook.Event{
@@ -1272,7 +1301,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 					Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
 					Comment: req.Msg.Reason,
 					Issue:   webhook.NewIssue(updatedIssue),
-					Project: webhook.NewProject(updatedIssue.Project),
+					Project: webhook.NewProject(project),
 				})
 			}()
 
@@ -1368,13 +1397,20 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 	if err != nil {
 		return nil, err
 	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
+	}
+	if project == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
+	}
 
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
 		Type:    storepb.Activity_ISSUE_COMMENT_CREATE,
 		Comment: req.Msg.IssueComment.Comment,
 		Issue:   webhook.NewIssue(issue),
-		Project: webhook.NewProject(issue.Project),
+		Project: webhook.NewProject(project),
 	})
 
 	ic, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
@@ -1471,7 +1507,7 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 }
 
 func (s *IssueService) isUserReviewer(ctx context.Context, issue *store.IssueMessage, role string, user *store.UserMessage) bool {
-	roles := s.getUserRoleMap(ctx, issue.Project.ResourceID, user)
+	roles := s.getUserRoleMap(ctx, issue.ProjectID, user)
 	return roles[role]
 }
 

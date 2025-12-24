@@ -216,16 +216,16 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 		ruleList := []*storepb.SQLReviewRule{rule}
 
 		checkCtx := Context{
-			DBType:                   dbType,
-			OriginalMetadata:         originalMetadata,
-			FinalMetadata:            finalMetadata,
-			Driver:                   nil,
-			CurrentDatabase:          curDB,
-			DBSchema:                 schemaMetadata,
-			EnableSDL:                tc.EnableSDL,
-			EnablePriorBackup:        true, // Enable backup for testing
-			NoAppendBuiltin:          true,
-			UsePostgresDatabaseOwner: true,
+			DBType:            dbType,
+			OriginalMetadata:  originalMetadata,
+			FinalMetadata:     finalMetadata,
+			Driver:            nil,
+			CurrentDatabase:   curDB,
+			DBSchema:          schemaMetadata,
+			EnableSDL:         tc.EnableSDL,
+			EnablePriorBackup: true, // Enable backup for testing
+			NoAppendBuiltin:   true,
+			TenantMode:        true,
 		}
 
 		adviceList, err := SQLReviewCheck(t.Context(), sm, tc.Statement, ruleList, checkCtx)

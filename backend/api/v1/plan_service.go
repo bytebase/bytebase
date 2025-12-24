@@ -1023,7 +1023,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
 	}
 	if issue != nil {
-		p.Issue = common.FormatIssue(issue.Project.ResourceID, issue.UID)
+		p.Issue = common.FormatIssue(issue.ProjectID, issue.UID)
 	}
 	if plan.PipelineUID != nil {
 		p.Rollout = common.FormatRollout(plan.ProjectID, *plan.PipelineUID)

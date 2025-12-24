@@ -94,9 +94,9 @@ type ConnectionContext struct {
 	EnvironmentID string
 	InstanceID    string
 	EngineVersion string
-	// UseDatabaseOwner is used by Postgres for using role of database owner.
-	UseDatabaseOwner bool
-	DatabaseName     string
+	// TenantMode indicates whether to use database owner role for PostgreSQL tenant mode.
+	TenantMode   bool
+	DatabaseName string
 	// It's only set for Redshift datashare database.
 	DataShare bool
 	// ReadOnly is only supported for Postgres at the moment.

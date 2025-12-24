@@ -66,10 +66,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}
 	sheet := sheets[0]
-	v1pbSheet, err := s.convertToAPISheetMessage(ctx, project.ResourceID, sheet)
-	if err != nil {
-		return nil, err
-	}
+	v1pbSheet := convertToAPISheetMessage(project.ResourceID, sheet)
 	return connect.NewResponse(v1pbSheet), nil
 }
 
@@ -112,10 +109,7 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 	}
 	response := &v1pb.BatchCreateSheetsResponse{}
 	for _, sheet := range sheets {
-		v1pbSheet, err := s.convertToAPISheetMessage(ctx, project.ResourceID, sheet)
-		if err != nil {
-			return nil, err
-		}
+		v1pbSheet := convertToAPISheetMessage(project.ResourceID, sheet)
 		response.Sheets = append(response.Sheets, v1pbSheet)
 	}
 	return connect.NewResponse(response), nil
@@ -158,29 +152,16 @@ func (s *SheetService) GetSheet(ctx context.Context, request *connect.Request[v1
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the sheet"))
 	}
 
-	v1pbSheet, err := s.convertToAPISheetMessage(ctx, project.ResourceID, sheet)
-	if err != nil {
-		return nil, err
-	}
+	v1pbSheet := convertToAPISheetMessage(project.ResourceID, sheet)
 	return connect.NewResponse(v1pbSheet), nil
 }
 
-func (s *SheetService) convertToAPISheetMessage(ctx context.Context, projectID string, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
-	}
-	if project == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project with id %s not found", projectID))
-	}
-
+func convertToAPISheetMessage(projectID string, sheet *store.SheetMessage) *v1pb.Sheet {
 	return &v1pb.Sheet{
-		Name:        common.FormatSheet(project.ResourceID, sheet.Sha256),
+		Name:        common.FormatSheet(projectID, sheet.Sha256),
 		Content:     []byte(sheet.Statement),
 		ContentSize: sheet.Size,
-	}, nil
+	}
 }
 
 func convertToStoreSheetMessage(sheet *v1pb.Sheet) *store.SheetMessage {
