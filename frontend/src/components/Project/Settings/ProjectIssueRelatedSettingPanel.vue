@@ -23,23 +23,6 @@
     <div>
       <div class="flex items-center gap-x-2">
         <Switch
-          v-model:value="state.autoResolveIssue"
-          :text="true"
-          :disabled="!allowUpdateIssueProjectSetting || loading"
-        />
-        <span class="textlabel">
-          {{ $t("project.settings.issue-related.auto-resolve-issue.self") }}
-        </span>
-      </div>
-      <div class="mt-1 text-sm text-gray-400">
-        {{
-          $t("project.settings.issue-related.auto-resolve-issue.description")
-        }}
-      </div>
-    </div>
-    <div>
-      <div class="flex items-center gap-x-2">
-        <Switch
           v-model:value="state.forceIssueLabels"
           :text="true"
           :disabled="
@@ -330,7 +313,6 @@ import {
 interface LocalState {
   issueLabels: Label[];
   enforceSqlReview: boolean;
-  autoResolveIssue: boolean;
   forceIssueLabels: boolean;
   enforceIssueTitle: boolean;
   allowSelfApproval: boolean;
@@ -349,7 +331,6 @@ const getInitialLocalState = (): LocalState => {
     return {
       issueLabels: [],
       forceIssueLabels: false,
-      autoResolveIssue: false,
       enforceIssueTitle: false,
       enforceSqlReview: false,
       autoEnableBackup: false,
@@ -368,7 +349,6 @@ const getInitialLocalState = (): LocalState => {
   return {
     issueLabels: cloneDeep(props.project.issueLabels),
     forceIssueLabels: props.project.forceIssueLabels,
-    autoResolveIssue: props.project.autoResolveIssue,
     enforceIssueTitle: props.project.enforceIssueTitle,
     enforceSqlReview: props.project.enforceSqlReview,
     autoEnableBackup: props.project.autoEnableBackup,
@@ -494,9 +474,6 @@ const updateMask = computed(() => {
   }
   if (state.enforceSqlReview !== props.project.enforceSqlReview) {
     mask.push("enforce_sql_review");
-  }
-  if (state.autoResolveIssue !== props.project.autoResolveIssue) {
-    mask.push("auto_resolve_issue");
   }
   if (state.enforceIssueTitle !== props.project.enforceIssueTitle) {
     mask.push("enforce_issue_title");

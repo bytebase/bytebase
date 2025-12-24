@@ -300,10 +300,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 			projectSettings := project.Setting
 			projectSettings.ForceIssueLabels = req.Msg.Project.ForceIssueLabels
 			patch.Setting = projectSettings
-		case "auto_resolve_issue":
-			projectSettings := project.Setting
-			projectSettings.AutoResolveIssue = req.Msg.Project.AutoResolveIssue
-			patch.Setting = projectSettings
 		case "enforce_issue_title":
 			projectSettings := project.Setting
 			projectSettings.EnforceIssueTitle = req.Msg.Project.EnforceIssueTitle

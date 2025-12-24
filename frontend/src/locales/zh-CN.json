@@ -1917,10 +1917,6 @@
             "warning": "至少需要配置一个标签"
           }
         },
-        "auto-resolve-issue": {
-          "self": "自动完成工单",
-          "description": "所有任务执行成功后自动完成工单。"
-        },
         "enforce-issue-title": {
           "self": "要求手动输入工单标题",
           "description": "工单标题必须由用户输入而不是自动生成。"

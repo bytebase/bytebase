@@ -1917,10 +1917,6 @@
             "warning": "Requiere al menos una etiqueta configurada"
           }
         },
-        "auto-resolve-issue": {
-          "self": "Problema de resolución automática",
-          "description": "Resuelva automáticamente el problema después de completar todas las tareas."
-        },
         "enforce-issue-title": {
           "self": "Hacer cumplir el título del problema",
           "description": "Exigir que el título del problema no esté vacío y que lo cree el usuario en lugar de generarse automáticamente."

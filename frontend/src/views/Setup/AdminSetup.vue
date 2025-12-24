@@ -145,8 +145,6 @@ const state = reactive<LocalState>({
   project: {
     ...emptyProject(),
     title: "New Project",
-    // Default to enabled for new project.
-    autoResolveIssue: true,
   },
   resourceId: "",
   loading: false,
