@@ -19,17 +19,16 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { computed, ref } from "vue";
 import { useIssueContext } from "@/components/IssueV1";
 import {
   type PlanCheckRun,
-  PlanCheckRun_Type,
+  type PlanCheckRun_Result,
+  PlanCheckRunSchema,
+  PlanCheckRun_Result_Type,
 } from "@/types/proto-es/v1/plan_service_pb";
-import {
-  flattenTaskV1List,
-  isDatabaseChangeRelatedIssue,
-  sheetNameOfTaskV1,
-} from "@/utils";
+import { flattenTaskV1List, isDatabaseChangeRelatedIssue } from "@/utils";
 import AffectedRowsView from "./AffectedRowsView.vue";
 import FailedTasksView from "./FailedTasksView.vue";
 
@@ -54,23 +53,36 @@ const shouldShow = computed(() => {
 
 const tasks = computed(() => flattenTaskV1List(issue.value.rolloutEntity));
 
+// With consolidated model, create synthetic PlanCheckRuns per task
+// containing only the summary report results for that task's target
 const taskSummaryReportMap = computed(() => {
   const { planCheckRunList } = issue.value;
-  const summaryReports = planCheckRunList.filter(
-    (report) =>
-      report.type === PlanCheckRun_Type.DATABASE_STATEMENT_SUMMARY_REPORT
-  );
   const tempMap = new Map<string, PlanCheckRun>();
+
   for (const task of tasks.value) {
-    const summaryReport = summaryReports.find(
-      (report) =>
-        report.target === task.target &&
-        report.sheet === sheetNameOfTaskV1(task)
-    );
-    if (summaryReport) {
-      tempMap.set(task.name, summaryReport);
+    // Find all summary report results that match this task's target
+    const taskResults: PlanCheckRun_Result[] = [];
+
+    for (const run of planCheckRunList) {
+      const matchingResults = run.results.filter(
+        (result) =>
+          result.type === PlanCheckRun_Result_Type.STATEMENT_SUMMARY_REPORT &&
+          result.target === task.target
+      );
+      taskResults.push(...matchingResults);
+    }
+
+    if (taskResults.length > 0) {
+      // Create a synthetic PlanCheckRun with just the results for this task
+      tempMap.set(
+        task.name,
+        create(PlanCheckRunSchema, {
+          results: taskResults,
+        })
+      );
     }
   }
+
   return tempMap;
 });
 </script>
