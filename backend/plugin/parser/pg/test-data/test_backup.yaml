@@ -157,3 +157,20 @@
       endposition:
         line: 2
         column: 44
+- input: |-
+    DELETE FROM test t1
+    USING test2 t2
+    WHERE t1.c1 = t2.c1;
+  result:
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test_public" AS
+          SELECT "t1".* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+      sourceschema: public
+      sourcetablename: test
+      targettablename: rollback_test_public
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 3
+        column: 17
