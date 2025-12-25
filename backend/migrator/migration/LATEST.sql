@@ -191,7 +191,44 @@ CREATE INDEX idx_sheet_project ON sheet(project);
 
 ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
 
--- task table stores the task for the pipeline
+-- plan table stores the plan for a project
+CREATE TABLE plan (
+    id bigserial PRIMARY KEY,
+    deleted boolean NOT NULL DEFAULT FALSE,
+    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    project text NOT NULL REFERENCES project(resource_id),
+    name text NOT NULL,
+    description text NOT NULL,
+    -- Stored as PlanConfig (proto/store/store/plan.proto)
+    config jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_plan_project ON plan(project);
+
+ALTER SEQUENCE plan_id_seq RESTART WITH 101;
+
+CREATE TABLE plan_check_run (
+    id serial PRIMARY KEY,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    plan_id bigint NOT NULL REFERENCES plan(id),
+    status text NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
+    -- Stored as PlanCheckRunConfig (proto/store/store/plan_check_run.proto)
+    config jsonb NOT NULL DEFAULT '{}',
+    -- Stored as PlanCheckRunResult (proto/store/store/plan_check_run.proto)
+    result jsonb NOT NULL DEFAULT '{}',
+    payload jsonb NOT NULL DEFAULT '{}'
+);
+
+CREATE UNIQUE INDEX idx_plan_check_run_unique_plan_id ON plan_check_run(plan_id);
+
+CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status = 'RUNNING';
+
+ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
+
+-- task table stores the task for a plan
 CREATE TABLE task (
     id serial PRIMARY KEY,
     plan_id bigint NOT NULL REFERENCES plan(id),
@@ -249,45 +286,6 @@ CREATE INDEX idx_task_run_log_task_run_id ON task_run_log(task_run_id);
 ALTER SEQUENCE task_run_log_id_seq RESTART WITH 101;
 
 -- Pipeline related END
------------------------
--- Plan related BEGIN
-CREATE TABLE plan (
-    id bigserial PRIMARY KEY,
-    deleted boolean NOT NULL DEFAULT FALSE,
-    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL REFERENCES project(resource_id),
-    name text NOT NULL,
-    description text NOT NULL,
-    -- Stored as PlanConfig (proto/store/store/plan.proto)
-    config jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE INDEX idx_plan_project ON plan(project);
-
-ALTER SEQUENCE plan_id_seq RESTART WITH 101;
-
-CREATE TABLE plan_check_run (
-    id serial PRIMARY KEY,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    plan_id bigint NOT NULL REFERENCES plan(id),
-    status text NOT NULL CHECK (status IN ('RUNNING', 'DONE', 'FAILED', 'CANCELED')),
-    -- Stored as PlanCheckRunConfig (proto/store/store/plan_check_run.proto)
-    config jsonb NOT NULL DEFAULT '{}',
-    -- Stored as PlanCheckRunResult (proto/store/store/plan_check_run.proto)
-    result jsonb NOT NULL DEFAULT '{}',
-    payload jsonb NOT NULL DEFAULT '{}'
-);
-
-CREATE UNIQUE INDEX idx_plan_check_run_unique_plan_id ON plan_check_run(plan_id);
-
-CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status = 'RUNNING';
-
-ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
-
--- Plan related END
 -----------------------
 -- issue
 CREATE TABLE issue (
