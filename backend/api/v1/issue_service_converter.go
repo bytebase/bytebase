@@ -78,15 +78,11 @@ func (s *IssueService) isIssueNextApprover(ctx context.Context, issue *v1pb.Issu
 	return roles[approvalRoles[index]]
 }
 
-func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMessage) (*v1pb.Issue, error) {
+// nolint:unparam
+func (*IssueService) convertToIssue(_ context.Context, issue *store.IssueMessage) (*v1pb.Issue, error) {
 	issuePayload := issue.Payload
 
 	convertedGrantRequest := convertToGrantRequest(issuePayload.GrantRequest)
-
-	releasers, err := s.convertToIssueReleasers(ctx, issue)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get issue releasers")
-	}
 
 	issueV1 := &v1pb.Issue{
 		Name:            common.FormatIssue(issue.ProjectID, issue.UID),
@@ -98,7 +94,6 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 		CreateTime:      timestamppb.New(issue.CreatedAt),
 		UpdateTime:      timestamppb.New(issue.UpdatedAt),
 		GrantRequest:    convertedGrantRequest,
-		Releasers:       releasers,
 		TaskStatusCount: issue.TaskStatusCount,
 		Labels:          issuePayload.Labels,
 	}
@@ -183,43 +178,6 @@ func computeApprovalStatus(approval *storepb.IssuePayloadApproval) v1pb.Issue_Ap
 
 	// Otherwise, approval is pending (more steps to complete or waiting for approvals)
 	return v1pb.Issue_PENDING
-}
-
-func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store.IssueMessage) ([]string, error) {
-	if issue.Type != storepb.Issue_DATABASE_CHANGE {
-		return nil, nil
-	}
-	if issue.Status != storepb.Issue_OPEN {
-		return nil, nil
-	}
-	if issue.PlanUID == nil {
-		return nil, nil
-	}
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: issue.PlanUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list issue tasks")
-	}
-	// Find the active environment (first environment with non-completed tasks)
-	var activeEnvironment string
-	for _, task := range tasks {
-		if task.LatestTaskRunStatus != storepb.TaskRun_DONE && task.LatestTaskRunStatus != storepb.TaskRun_SKIPPED {
-			activeEnvironment = task.Environment
-			break
-		}
-	}
-	if activeEnvironment == "" {
-		return nil, nil
-	}
-	policy, err := GetValidRolloutPolicyForEnvironment(ctx, s.store, activeEnvironment)
-	if err != nil {
-		return nil, err
-	}
-
-	var releasers []string
-
-	releasers = append(releasers, policy.Roles...)
-
-	return releasers, nil
 }
 
 func convertToIssueType(t storepb.Issue_Type) v1pb.Issue_Type {
