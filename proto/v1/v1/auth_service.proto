@@ -60,7 +60,7 @@ message LoginRequest {
   // Format: idps/{idp}
   string idp_name = 4;
 
-  // The idp_context is using to get the user information from identity provider.
+  // The idp_context is used to get the user information from identity provider.
   IdentityProviderContext idp_context = 5;
 
   // The otp_code is used to verify the user's identity by MFA.
