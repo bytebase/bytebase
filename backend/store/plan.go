@@ -54,6 +54,7 @@ type UpdatePlanMessage struct {
 	Name        *string
 	Description *string
 	Specs       *[]*storepb.PlanConfig_Spec
+	HasRollout  *bool
 	Deleted     *bool
 }
 
@@ -246,6 +247,10 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error 
 		}
 		payloadSets = append(payloadSets, "jsonb_build_object('specs', (?)::JSONB->'specs')")
 		args = append(args, config)
+	}
+	if v := patch.HasRollout; v != nil {
+		payloadSets = append(payloadSets, "jsonb_build_object('hasRollout', ?::JSONB)")
+		args = append(args, *v)
 	}
 	if len(payloadSets) > 0 {
 		set = append(set, fmt.Sprintf("config = config || %s", strings.Join(payloadSets, " || ")))

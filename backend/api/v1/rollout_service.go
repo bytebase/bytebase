@@ -263,6 +263,15 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pipeline, error: %v", err))
 	}
 
+	// Update plan to set hasRollout to true
+	hasRollout := true
+	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:        planID,
+		HasRollout: &hasRollout,
+	}); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan hasRollout, error: %v", err))
+	}
+
 	// getRolloutWithTasks inlined
 	// re-fetch plan to get latest state (e.g. hasRollout config)
 	rollout, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
