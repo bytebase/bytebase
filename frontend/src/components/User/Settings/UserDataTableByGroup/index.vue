@@ -8,8 +8,9 @@
     :loading="loading"
     :cascade="false"
     allow-checking-not-loaded
-    @load="onGroupLoad"
-    v-model:expanded-row-keys="expandedRowKeys"
+    :expanded-row-keys="expandedKeys"
+    @update:expanded-row-keys="$emit('update:expanded-keys', $event as string[])"
+    @load="onExpand"
   />
 </template>
 
@@ -17,7 +18,7 @@
 import { orderBy } from "lodash-es";
 import type { DataTableColumn, DataTableRowData } from "naive-ui";
 import { NDataTable } from "naive-ui";
-import { computed, h, ref } from "vue";
+import { computed, h, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
 import type { Group } from "@/types/proto-es/v1/group_service_pb";
@@ -47,33 +48,37 @@ const props = withDefaults(
     groups: Group[];
     loading: boolean;
     showGroupRole?: boolean;
+    expandedKeys?: string[];
     onClickUser?: (user: User, event: MouseEvent) => void;
   }>(),
   {
     showGroupRole: true,
     groupRoleMap: () => new Map(),
     onClickUser: undefined,
+    expandedKeys: () => [],
   }
 );
 
 const emit = defineEmits<{
   (event: "update-group", group: Group): void;
   (event: "remove-group", group: Group): void;
+  (event: "update:expanded-keys", keys: string[]): void;
 }>();
 
 const { t } = useI18n();
 const userStore = useUserStore();
-const expandedRowKeys = ref<string[]>([]);
 
-const onGroupLoad = async (row: DataTableRowData) => {
+const onExpand = async (row: DataTableRowData) => {
   if (row.type !== "group") {
     return;
   }
-  const group = (row as GroupRowData).group;
+  await onGroupLoad(row as GroupRowData);
+};
+
+const onGroupLoad = async (row: GroupRowData) => {
+  const { group } = row;
   const memberUserIds = group.members.map((m) => m.member);
-  if (memberUserIds.length > 0) {
-    await userStore.batchGetOrFetchUsers(memberUserIds);
-  }
+  await userStore.batchGetOrFetchUsers(memberUserIds);
 
   const members: UserRowData[] = [];
   for (const member of group.members) {
@@ -155,5 +160,15 @@ const userListByGroup = computed(() => {
   }
 
   return rowDataList;
+});
+
+watchEffect(async () => {
+  for (const expandKey of props.expandedKeys) {
+    const data = userListByGroup.value.find((row) => row.name === expandKey);
+    if (!data) {
+      continue;
+    }
+    await onGroupLoad(data);
+  }
 });
 </script>
