@@ -204,10 +204,6 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 		}
 
 		origin := req.Header().Get("Origin")
-		if origin == "" {
-			origin = req.Header().Get("grpcgateway-origin")
-		}
-
 		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, response.Token)
 		resp.Header().Add("Set-Cookie", cookie.String())
 	}
@@ -279,9 +275,6 @@ func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.Logo
 	resp := connect.NewResponse(&emptypb.Empty{})
 
 	origin := req.Header().Get("Origin")
-	if origin == "" {
-		origin = req.Header().Get("grpcgateway-origin")
-	}
 	cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, "")
 	resp.Header().Add("Set-Cookie", cookie.String())
 	return resp, nil
