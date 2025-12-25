@@ -22,13 +22,13 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
-  allowUserToApplyTaskRolloutAction,
   getApplicableIssueStatusActionList,
   getApplicableStageRolloutActionList,
   getApplicableTaskRolloutActionList,
   PrimaryTaskRolloutActionList,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { canRolloutTasks } from "@/components/RolloutV1/components/taskPermissions";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import type { ExtraActionOption } from "../common";
 import { IssueStatusActionButtonGroup } from "../common";
@@ -65,7 +65,7 @@ const allowUserToSkipTask = computed(() => {
     (item) => item.action === "SKIP"
   );
   if (!skip) return false;
-  return allowUserToApplyTaskRolloutAction(issue.value, "SKIP");
+  return canRolloutTasks(skip.tasks, issue.value);
 });
 
 const extraActionList = computed(() => {

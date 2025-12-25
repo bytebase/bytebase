@@ -24,13 +24,13 @@ import type {
   TaskRolloutAction,
 } from "@/components/IssueV1/logic";
 import {
-  allowUserToApplyTaskRolloutAction,
   taskRolloutActionButtonProps,
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
+import { canRolloutTasks } from "@/components/RolloutV1/components/taskPermissions";
 import { ContextMenuButton } from "@/components/v2";
 import type { RolloutAction, RolloutButtonAction } from "./common";
 
@@ -48,7 +48,7 @@ const { issue, selectedTask } = useIssueContext();
 
 const errors = computed(() => {
   const errors: ErrorItem[] = [];
-  if (!allowUserToApplyTaskRolloutAction(issue.value, props.action)) {
+  if (!canRolloutTasks([selectedTask.value], issue.value)) {
     errors.push(t("issue.error.you-are-not-allowed-to-perform-this-action"));
   }
   return errors;
