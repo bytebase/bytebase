@@ -237,16 +237,20 @@ func (exec *DatabaseMigrateExecutor) runGhostMigration(ctx context.Context, driv
 }
 
 func (exec *DatabaseMigrateExecutor) shouldSkipBackupError(ctx context.Context, task *store.TaskMessage) (bool, error) {
-	pipeline, pipelineErr := exec.store.GetPipelineByID(ctx, task.PipelineID)
-	if pipelineErr != nil {
-		return false, errors.Wrapf(pipelineErr, "failed to get pipeline %v", task.PipelineID)
+	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get plan %v", task.PlanID)
 	}
-	project, projectErr := exec.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+	if plan == nil {
+		return false, errors.Errorf("plan %v not found", task.PlanID)
+	}
+
+	project, projectErr := exec.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
 	if projectErr != nil {
-		return false, errors.Wrapf(projectErr, "failed to get project %v", pipeline.ProjectID)
+		return false, errors.Wrapf(projectErr, "failed to get project %v", plan.ProjectID)
 	}
 	if project == nil {
-		return false, errors.Errorf("project not found for pipeline %v", task.PipelineID)
+		return false, errors.Errorf("project not found for plan %v", task.PlanID)
 	}
 	if project.Setting == nil {
 		return false, nil

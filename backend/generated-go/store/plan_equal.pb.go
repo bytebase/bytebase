@@ -146,5 +146,8 @@ func (x *PlanConfig) Equal(y *PlanConfig) bool {
 			return false
 		}
 	}
+	if x.HasRollout != y.HasRollout {
+		return false
+	}
 	return true
 }

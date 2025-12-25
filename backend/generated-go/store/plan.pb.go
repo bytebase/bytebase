@@ -75,8 +75,10 @@ func (PlanConfig_ChangeDatabaseConfig_Type) EnumDescriptor() ([]byte, []int) {
 }
 
 type PlanConfig struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Specs         []*PlanConfig_Spec     `protobuf:"bytes,1,rep,name=specs,proto3" json:"specs,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Specs []*PlanConfig_Spec     `protobuf:"bytes,1,rep,name=specs,proto3" json:"specs,omitempty"`
+	// Whether the plan has started the rollout.
+	HasRollout    bool `protobuf:"varint,2,opt,name=has_rollout,json=hasRollout,proto3" json:"has_rollout,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -116,6 +118,13 @@ func (x *PlanConfig) GetSpecs() []*PlanConfig_Spec {
 		return x.Specs
 	}
 	return nil
+}
+
+func (x *PlanConfig) GetHasRollout() bool {
+	if x != nil {
+		return x.HasRollout
+	}
+	return false
 }
 
 type PlanConfig_Spec struct {
@@ -515,11 +524,13 @@ var File_store_plan_proto protoreflect.FileDescriptor
 
 const file_store_plan_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\xcd\n" +
+	"\x10store/plan.proto\x12\x0ebytebase.store\x1a\x1fgoogle/api/field_behavior.proto\x1a\x12store/common.proto\"\xee\n" +
 	"\n" +
 	"\n" +
 	"PlanConfig\x125\n" +
-	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x1a\xcf\x02\n" +
+	"\x05specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\x05specs\x12\x1f\n" +
+	"\vhas_rollout\x18\x02 \x01(\bR\n" +
+	"hasRollout\x1a\xcf\x02\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x05 \x01(\tR\x02id\x12g\n" +
 	"\x16create_database_config\x18\x01 \x01(\v2/.bytebase.store.PlanConfig.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12g\n" +

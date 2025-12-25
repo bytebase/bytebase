@@ -614,8 +614,10 @@ type Plan struct {
 	// - ERROR
 	// - RUNNING
 	PlanCheckRunStatusCount map[string]int32 `protobuf:"bytes,11,rep,name=plan_check_run_status_count,json=planCheckRunStatusCount,proto3" json:"plan_check_run_status_count,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	// Whether the plan has started the rollout.
+	HasRollout    bool `protobuf:"varint,12,opt,name=has_rollout,json=hasRollout,proto3" json:"has_rollout,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Plan) Reset() {
@@ -723,6 +725,13 @@ func (x *Plan) GetPlanCheckRunStatusCount() map[string]int32 {
 		return x.PlanCheckRunStatusCount
 	}
 	return nil
+}
+
+func (x *Plan) GetHasRollout() bool {
+	if x != nil {
+		return x.HasRollout
+	}
+	return false
 }
 
 type GetPlanCheckRunRequest struct {
@@ -1692,7 +1701,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xae\x0e\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xd4\x0e\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -1707,7 +1716,9 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\vupdate_time\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"updateTime\x12q\n" +
-	"\x1bplan_check_run_status_count\x18\v \x03(\v2..bytebase.v1.Plan.PlanCheckRunStatusCountEntryB\x03\xe0A\x03R\x17planCheckRunStatusCount\x1a\xb4\x02\n" +
+	"\x1bplan_check_run_status_count\x18\v \x03(\v2..bytebase.v1.Plan.PlanCheckRunStatusCountEntryB\x03\xe0A\x03R\x17planCheckRunStatusCount\x12$\n" +
+	"\vhas_rollout\x18\f \x01(\bB\x03\xe0A\x03R\n" +
+	"hasRollout\x1a\xb4\x02\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12^\n" +
 	"\x16create_database_config\x18\x02 \x01(\v2&.bytebase.v1.Plan.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12^\n" +
