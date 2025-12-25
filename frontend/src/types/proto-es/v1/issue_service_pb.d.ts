@@ -510,19 +510,6 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   grantRequest?: GrantRequest;
 
   /**
-   * The releasers of the pending stage of the issue rollout, judging
-   * from the rollout policy.
-   * Format:
-   * - roles/workspaceOwner
-   * - roles/workspaceDBA
-   * - roles/projectOwner
-   * - roles/projectReleaser
-   *
-   * @generated from field: repeated string releasers = 14;
-   */
-  releasers: string[];
-
-  /**
    * The risk level of the issue.
    *
    * @generated from field: bytebase.v1.RiskLevel risk_level = 15;

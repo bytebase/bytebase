@@ -10814,18 +10814,6 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/GrantRequest'
                     description: Used if the issue type is GRANT_REQUEST.
-                releasers:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        The releasers of the pending stage of the issue rollout, judging
-                         from the rollout policy.
-                         Format:
-                         - roles/workspaceOwner
-                         - roles/workspaceDBA
-                         - roles/projectOwner
-                         - roles/projectReleaser
                 riskLevel:
                     enum:
                         - RISK_LEVEL_UNSPECIFIED
