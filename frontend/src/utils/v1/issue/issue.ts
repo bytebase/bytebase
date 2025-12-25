@@ -30,6 +30,12 @@ export const isValidIssueName = (name: string | undefined) => {
   return uid && uid !== String(EMPTY_ID) && uid !== String(UNKNOWN_ID);
 };
 
+export const getRolloutFromPlan = (planName: string): string => {
+  // Rollout uses PlanUID as ID, so we convert:
+  // projects/{project}/plans/{plan} -> projects/{project}/rollouts/{plan}
+  return planName.replace("/plans/", "/rollouts/");
+};
+
 export const flattenTaskV1List = (rollout: Rollout | undefined) => {
   return rollout?.stages.flatMap((stage) => stage.tasks) || [];
 };
@@ -42,7 +48,7 @@ const DATABASE_RELATED_TASK_TYPE_LIST = [
 
 export const isDatabaseChangeRelatedIssue = (issue: ComposedIssue): boolean => {
   return (
-    Boolean(issue.rollout) &&
+    Boolean(issue.plan) &&
     flattenTaskV1List(issue.rolloutEntity).some((task) => {
       return DATABASE_RELATED_TASK_TYPE_LIST.includes(task.type);
     })

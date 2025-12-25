@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center" :class="(plan.issue || plan.rollout) && 'mt-3'">
+  <div class="flex items-center" :class="(plan.issue || plan.hasRollout) && 'mt-3'">
     <NTabs
       :key="`${plan.specs.length}-${selectedSpec.id}`"
       :value="selectedSpec.id"
@@ -10,7 +10,7 @@
     >
       <template #prefix>
         <div class=""></div>
-        <div v-if="!plan.issue && !plan.rollout" class="pl-4 text-base font-medium">
+        <div v-if="!plan.issue && !plan.hasRollout" class="pl-4 text-base font-medium">
           {{ $t("plan.navigator.changes") }}
         </div>
       </template>
@@ -106,9 +106,9 @@ const showAddSpecDrawer = ref(false);
 
 // Allow adding/removing specs when:
 // 1. Plan is being created (isCreating = true), OR
-// 2. Plan is created but rollout is empty (plan.rollout === "")
+// 2. Plan is created but rollout is empty (!plan.hasRollout)
 const canModifySpecs = computed(() => {
-  return isCreating.value || plan.value.rollout === "";
+  return isCreating.value || !plan.value.hasRollout;
 });
 
 const handleTabChange = (specId: string) => {

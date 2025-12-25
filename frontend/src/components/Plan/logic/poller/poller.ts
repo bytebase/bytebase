@@ -25,7 +25,11 @@ import { useCurrentProjectV1 } from "@/store";
 import { isValidRolloutName } from "@/types";
 import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { isValidIssueName, isValidPlanName } from "@/utils";
+import {
+  getRolloutFromPlan,
+  isValidIssueName,
+  isValidPlanName,
+} from "@/utils";
 import { usePlanContext } from "../context";
 import {
   refreshIssue,
@@ -101,13 +105,20 @@ export const provideResourcePoller = () => {
       },
     },
     rollout: {
-      canRefresh: () => !!plan.value?.rollout && !!rollout,
-      refresh: () => refreshRollout(plan.value.rollout, project.value, rollout),
-      canInitialize: () =>
-        !!plan.value?.rollout && isValidRolloutName(plan.value.rollout),
+      canRefresh: () => !!plan.value?.name && !!rollout,
+      refresh: () => {
+        const rolloutName = getRolloutFromPlan(plan.value.name);
+        return refreshRollout(rolloutName, project.value, rollout);
+      },
+      canInitialize: () => {
+        if (!plan.value?.name) return false;
+        const rolloutName = getRolloutFromPlan(plan.value.name);
+        return isValidRolloutName(rolloutName);
+      },
       initialize: async () => {
-        if (!plan.value?.rollout) return;
-        rollout.value = create(RolloutSchema, { name: plan.value.rollout });
+        if (!plan.value?.name) return;
+        const rolloutName = getRolloutFromPlan(plan.value.name);
+        rollout.value = create(RolloutSchema, { name: rolloutName });
         await resourceStrategies.rollout.refresh();
       },
     },
@@ -322,7 +333,7 @@ export const provideResourcePoller = () => {
 
   // Watch for plan issue/rollout changes on plan pages
   watch(
-    () => ({ issue: plan.value?.issue, rollout: plan.value?.rollout }),
+    () => ({ issue: plan.value?.issue, hasRollout: plan.value?.hasRollout }),
     async (newValues, oldValues) => {
       const routeName = route.name as string;
       const isPlanRoute = includes(
@@ -337,7 +348,7 @@ export const provideResourcePoller = () => {
       if (!isPlanRoute) return;
 
       const issueAdded = !oldValues?.issue && newValues.issue;
-      const rolloutAdded = !oldValues?.rollout && newValues.rollout;
+      const rolloutAdded = !oldValues?.hasRollout && newValues.hasRollout;
 
       if (issueAdded && resourceStrategies.issue.initialize) {
         await resourceStrategies.issue.initialize();

@@ -92,7 +92,7 @@ const shouldShowSpecList = computed(() => {
   return (
     (isCreating.value ||
       plan.value.specs.length > 1 ||
-      plan.value.rollout === "") &&
+      !plan.value.hasRollout) &&
     !isDataExportPlan.value
   );
 });

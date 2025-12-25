@@ -49,7 +49,6 @@ export const createIssueSkeleton = async (
   issue.planEntity = plan;
 
   const rollout = await generateRolloutFromPlan(plan, params);
-  issue.rollout = rollout.name;
   issue.rolloutEntity = rollout;
 
   const description = query.description;
