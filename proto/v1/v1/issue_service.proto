@@ -426,17 +426,6 @@ message Issue {
   // The risk level of the issue.
   RiskLevel risk_level = 15;
 
-  // The status count of the issue.
-  // Keys are the following:
-  // - NOT_STARTED
-  // - SKIPPED
-  // - PENDING
-  // - RUNNING
-  // - DONE
-  // - FAILED
-  // - CANCELED
-  map<string, int32> task_status_count = 16;
-
   // Labels attached to the issue for categorization and filtering.
   repeated string labels = 17;
 

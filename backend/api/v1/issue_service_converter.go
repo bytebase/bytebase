@@ -19,7 +19,7 @@ import (
 func (s *IssueService) convertToIssues(ctx context.Context, issues []*store.IssueMessage, issueFilter *filterIssueMessage) ([]*v1pb.Issue, error) {
 	var converted []*v1pb.Issue
 	for _, issue := range issues {
-		v1Issue, err := s.convertToIssue(ctx, issue)
+		v1Issue, err := s.convertToIssue(issue)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert to issue")
 		}
@@ -79,23 +79,22 @@ func (s *IssueService) isIssueNextApprover(ctx context.Context, issue *v1pb.Issu
 }
 
 // nolint:unparam
-func (*IssueService) convertToIssue(_ context.Context, issue *store.IssueMessage) (*v1pb.Issue, error) {
+func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, error) {
 	issuePayload := issue.Payload
 
 	convertedGrantRequest := convertToGrantRequest(issuePayload.GrantRequest)
 
 	issueV1 := &v1pb.Issue{
-		Name:            common.FormatIssue(issue.ProjectID, issue.UID),
-		Title:           issue.Title,
-		Description:     issue.Description,
-		Type:            convertToIssueType(issue.Type),
-		Status:          convertToIssueStatus(issue.Status),
-		Creator:         common.FormatUserEmail(issue.CreatorEmail),
-		CreateTime:      timestamppb.New(issue.CreatedAt),
-		UpdateTime:      timestamppb.New(issue.UpdatedAt),
-		GrantRequest:    convertedGrantRequest,
-		TaskStatusCount: issue.TaskStatusCount,
-		Labels:          issuePayload.Labels,
+		Name:         common.FormatIssue(issue.ProjectID, issue.UID),
+		Title:        issue.Title,
+		Description:  issue.Description,
+		Type:         convertToIssueType(issue.Type),
+		Status:       convertToIssueStatus(issue.Status),
+		Creator:      common.FormatUserEmail(issue.CreatorEmail),
+		CreateTime:   timestamppb.New(issue.CreatedAt),
+		UpdateTime:   timestamppb.New(issue.UpdatedAt),
+		GrantRequest: convertedGrantRequest,
+		Labels:       issuePayload.Labels,
 	}
 
 	if issue.PlanUID != nil {

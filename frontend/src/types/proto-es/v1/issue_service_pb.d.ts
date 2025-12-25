@@ -517,21 +517,6 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   riskLevel: RiskLevel;
 
   /**
-   * The status count of the issue.
-   * Keys are the following:
-   * - NOT_STARTED
-   * - SKIPPED
-   * - PENDING
-   * - RUNNING
-   * - DONE
-   * - FAILED
-   * - CANCELED
-   *
-   * @generated from field: map<string, int32> task_status_count = 16;
-   */
-  taskStatusCount: { [key: string]: number };
-
-  /**
    * Labels attached to the issue for categorization and filtering.
    *
    * @generated from field: repeated string labels = 17;

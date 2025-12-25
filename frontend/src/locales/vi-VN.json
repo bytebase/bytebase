@@ -1105,7 +1105,6 @@
     "unfinished-resolved-issue-tips": "Vấn đề này được đánh dấu là \"Hoàn tất\" nhưng một số tác vụ của nó không được thực hiện thành công.",
     "some-tasks-are-not-executed-successfully": "(Một số tác vụ không được thực hiện thành công)",
     "missing-sql-statement": "Thiếu câu lệnh SQL",
-    "task-summary-tooltip": "{failed} tác vụ thất bại | {failed} tác vụ thất bại",
     "data-export": {
       "options": "Tùy chọn",
       "limits": "Giới hạn",

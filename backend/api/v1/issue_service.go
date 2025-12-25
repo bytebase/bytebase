@@ -70,7 +70,7 @@ func (s *IssueService) GetIssue(ctx context.Context, req *connect.Request[v1pb.G
 	if err != nil {
 		return nil, err
 	}
-	issueV1, err := s.convertToIssue(ctx, issue)
+	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
@@ -483,7 +483,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 		Project: webhook.NewProject(project),
 	})
 
-	converted, err := s.convertToIssue(ctx, issue)
+	converted, err := s.convertToIssue(issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
@@ -558,7 +558,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 		Project: webhook.NewProject(project),
 	})
 
-	converted, err := s.convertToIssue(ctx, issue)
+	converted, err := s.convertToIssue(issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
@@ -632,7 +632,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 		Project: webhook.NewProject(project),
 	})
 
-	converted, err := s.convertToIssue(ctx, issue)
+	converted, err := s.convertToIssue(issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
@@ -824,7 +824,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		}
 	}
 
-	issueV1, err := s.convertToIssue(ctx, issue)
+	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
@@ -902,7 +902,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
-	issueV1, err := s.convertToIssue(ctx, issue)
+	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
@@ -1010,7 +1010,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
-	issueV1, err := s.convertToIssue(ctx, issue)
+	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
@@ -1195,7 +1195,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 	}
 
-	issueV1, err := s.convertToIssue(ctx, issue)
+	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}

@@ -10800,23 +10800,6 @@ components:
           title: risk_level
           description: The risk level of the issue.
           $ref: '#/components/schemas/bytebase.v1.RiskLevel'
-        taskStatusCount:
-          type: object
-          title: task_status_count
-          additionalProperties:
-            type: integer
-            title: value
-            format: int32
-          description: |-
-            The status count of the issue.
-             Keys are the following:
-             - NOT_STARTED
-             - SKIPPED
-             - PENDING
-             - RUNNING
-             - DONE
-             - FAILED
-             - CANCELED
         labels:
           type: array
           items:
@@ -10867,18 +10850,6 @@ components:
         - APPROVED
         - REJECTED
       description: The approval status of an approver.
-    bytebase.v1.Issue.TaskStatusCountEntry:
-      type: object
-      properties:
-        key:
-          type: string
-          title: key
-        value:
-          type: integer
-          title: value
-          format: int32
-      title: TaskStatusCountEntry
-      additionalProperties: false
     bytebase.v1.Issue.Type:
       type: string
       title: Type
