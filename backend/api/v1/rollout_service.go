@@ -10,6 +10,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -300,10 +301,11 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	}
 
 	// Update plan to set hasRollout to true
-	hasRollout := true
+	config := proto.CloneOf(plan.Config)
+	config.HasRollout = true
 	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:        planID,
-		HasRollout: &hasRollout,
+		UID:    planID,
+		Config: config,
 	}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan hasRollout, error: %v", err))
 	}

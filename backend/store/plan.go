@@ -53,9 +53,11 @@ type UpdatePlanMessage struct {
 	UID         int64
 	Name        *string
 	Description *string
-	Specs       *[]*storepb.PlanConfig_Spec
-	HasRollout  *bool
-	Deleted     *bool
+	// Config replaces the entire plan config.
+	// Callers should clone the existing config and modify only the fields they want to change.
+	// Example: config := proto.CloneOf(plan.Config); config.HasRollout = true; patch.Config = config
+	Config  *storepb.PlanConfig
+	Deleted *bool
 }
 
 // CreatePlan creates a new plan.
@@ -236,28 +238,13 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error 
 		set = append(set, "deleted = ?")
 		args = append(args, *v)
 	}
-
-	var payloadSets []string
-	if v := patch.Specs; v != nil {
-		config, err := protojson.Marshal(&storepb.PlanConfig{
-			Specs: *v,
-		})
+	if v := patch.Config; v != nil {
+		config, err := protojson.Marshal(v)
 		if err != nil {
 			return errors.Wrapf(err, "failed to marshal plan config")
 		}
-		payloadSets = append(payloadSets, "jsonb_build_object('specs', (?)::JSONB->'specs')")
+		set = append(set, "config = ?")
 		args = append(args, config)
-	}
-	if v := patch.HasRollout; v != nil {
-		boolStr := "false"
-		if *v {
-			boolStr = "true"
-		}
-		payloadSets = append(payloadSets, "jsonb_build_object('hasRollout', ?::jsonb)")
-		args = append(args, boolStr)
-	}
-	if len(payloadSets) > 0 {
-		set = append(set, fmt.Sprintf("config = config || %s", strings.Join(payloadSets, " || ")))
 	}
 
 	args = append(args, patch.UID)
