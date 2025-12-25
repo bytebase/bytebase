@@ -7060,7 +7060,7 @@ components:
           type: string
           title: parent
           description: |-
-            The name of the parent of the taskRuns.
+            The task name for the taskRuns.
              Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
              Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
         taskRuns:
@@ -7313,7 +7313,7 @@ components:
           type: string
           title: parent
           description: |-
-            The name of the parent of the tasks.
+            The stage name for the tasks.
              Format: projects/{project}/rollouts/{rollout}/stages/{stage}
         tasks:
           type: array
@@ -7341,7 +7341,7 @@ components:
           type: string
           title: parent
           description: |-
-            The name of the parent of the tasks.
+            The stage name for the tasks.
              Format: projects/{project}/rollouts/{rollout}/stages/{stage}
         tasks:
           type: array

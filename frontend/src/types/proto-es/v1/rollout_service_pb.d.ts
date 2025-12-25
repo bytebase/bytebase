@@ -17,7 +17,7 @@ export declare const file_v1_rollout_service: GenFile;
  */
 export declare type BatchRunTasksRequest = Message<"bytebase.v1.BatchRunTasksRequest"> & {
   /**
-   * The name of the parent of the tasks.
+   * The stage name for the tasks.
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}
    *
    * @generated from field: string parent = 1;
@@ -63,7 +63,7 @@ export declare const BatchRunTasksResponseSchema: GenMessage<BatchRunTasksRespon
  */
 export declare type BatchSkipTasksRequest = Message<"bytebase.v1.BatchSkipTasksRequest"> & {
   /**
-   * The name of the parent of the tasks.
+   * The stage name for the tasks.
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}
    *
    * @generated from field: string parent = 1;
@@ -109,7 +109,7 @@ export declare const BatchSkipTasksResponseSchema: GenMessage<BatchSkipTasksResp
  */
 export declare type BatchCancelTaskRunsRequest = Message<"bytebase.v1.BatchCancelTaskRunsRequest"> & {
   /**
-   * The name of the parent of the taskRuns.
+   * The task name for the taskRuns.
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
    * Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
    *
