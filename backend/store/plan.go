@@ -249,7 +249,7 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error 
 		args = append(args, config)
 	}
 	if v := patch.HasRollout; v != nil {
-		payloadSets = append(payloadSets, "jsonb_build_object('hasRollout', ?::JSONB)")
+		payloadSets = append(payloadSets, "jsonb_build_object('hasRollout', to_jsonb(?))")
 		args = append(args, *v)
 	}
 	if len(payloadSets) > 0 {
