@@ -41,7 +41,6 @@ func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) 
 			return nil, err
 		}
 		check := resp.Msg
-		// With consolidated model, check if any result has STATEMENT_ADVISE type
 		hasStatementAdvise := false
 		for _, result := range check.Results {
 			if result.Type == v1pb.PlanCheckRun_Result_STATEMENT_ADVISE {

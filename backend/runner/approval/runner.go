@@ -452,7 +452,6 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	// Check plan check run status (consolidated model: one run per plan)
 	planCheckRun, err := r.store.GetPlanCheckRun(ctx, plan.UID)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)

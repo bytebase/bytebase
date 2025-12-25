@@ -252,7 +252,6 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan, error: %v", err))
 	}
 
-	// Create consolidated plan check run if applicable.
 	planCheckRun, err := getPlanCheckRunFromPlan(project, plan, databaseGroup)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run for plan, error: %v", err))
@@ -759,7 +758,7 @@ func storePlanConfigHasRelease(plan *storepb.PlanConfig) bool {
 
 // Converters section - ordered with callers before callees.
 
-// getPlanCheckRunFromPlan returns a single consolidated plan check run for a plan.
+// getPlanCheckRunFromPlan returns the plan check run for a plan.
 func getPlanCheckRunFromPlan(project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) (*store.PlanCheckRunMessage, error) {
 	var targets []*storepb.PlanCheckRunConfig_CheckTarget
 
