@@ -99,7 +99,7 @@ watchEffect(() => {
   }
 });
 
-watch([() => state.value, () => state.shortValue], () => {
+watch([() => state.value, () => state.shortValue, () => state.domain], () => {
   const email = enforceDomain.value
     ? state.shortValue
       ? `${state.shortValue}@${state.domain}`
