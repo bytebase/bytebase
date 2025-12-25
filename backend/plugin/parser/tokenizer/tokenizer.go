@@ -221,7 +221,8 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 	t.skipBlank()
 	t.emptyStatement = true
 	startPos := t.cursor
-	startLine := t.line // Track the starting line number (1-based)
+	startLine := t.line          // Track the starting line number (1-based)
+	startColumn := t.getColumn() // Track the starting column (0-based)
 	for {
 		switch {
 		case t.char(0) == eofRune:
@@ -232,6 +233,10 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 						Text: s,
 						// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
 						BaseLine: startLine - 1,
+						Start: &store.Position{
+							Line:   int32(startLine),
+							Column: int32(startColumn),
+						},
 						// Consider this text:
 						// CREATE TABLE t(
 						//   a int
@@ -266,8 +271,12 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
 					BaseLine: startLine - 1,
-					End:      &store.Position{Line: int32(t.line)},
-					Empty:    t.emptyStatement,
+					Start: &store.Position{
+						Line:   int32(startLine),
+						Column: int32(startColumn),
+					},
+					End:   &store.Position{Line: int32(t.line)},
+					Empty: t.emptyStatement,
 					Range: &store.Range{
 						Start: int32(t.getByteOffset(int(startPos))),
 						End:   int32(t.getByteOffset(int(t.pos()))),
@@ -279,7 +288,8 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				return nil, err
 			}
 			startPos = t.pos()
-			startLine = t.line // Update startLine for next statement
+			startLine = t.line          // Update startLine for next statement
+			startColumn = t.getColumn() // Update startColumn for next statement
 			t.emptyStatement = true
 		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
 		case t.equalWordCaseInsensitive(delimiterRuneList):
@@ -294,8 +304,12 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
 					BaseLine: startLine - 1,
-					End:      &store.Position{Line: int32(t.line)},
-					Empty:    false,
+					Start: &store.Position{
+						Line:   int32(startLine),
+						Column: int32(startColumn),
+					},
+					End:   &store.Position{Line: int32(t.line)},
+					Empty: false,
 					Range: &store.Range{
 						Start: int32(t.getByteOffset(int(startPos))),
 						End:   int32(t.getByteOffset(int(t.pos()))),
@@ -307,7 +321,8 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				return nil, err
 			}
 			startPos = t.pos()
-			startLine = t.line // Update startLine for next statement
+			startLine = t.line          // Update startLine for next statement
+			startColumn = t.getColumn() // Update startColumn for next statement
 			t.emptyStatement = true
 		case t.char(0) == '/' && t.char(1) == '*':
 			if err := t.scanComment(); err != nil {
