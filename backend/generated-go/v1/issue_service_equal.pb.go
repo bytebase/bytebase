@@ -311,18 +311,6 @@ func (x *Issue) Equal(y *Issue) bool {
 	if x.RiskLevel != y.RiskLevel {
 		return false
 	}
-	if len(x.TaskStatusCount) != len(y.TaskStatusCount) {
-		return false
-	}
-	for k := range x.TaskStatusCount {
-		_, ok := y.TaskStatusCount[k]
-		if !ok {
-			return false
-		}
-		if x.TaskStatusCount[k] != y.TaskStatusCount[k] {
-			return false
-		}
-	}
 	if len(x.Labels) != len(y.Labels) {
 		return false
 	}

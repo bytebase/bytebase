@@ -1105,7 +1105,6 @@
     "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
     "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
     "missing-sql-statement": "SQL statement missing.",
-    "task-summary-tooltip": "{failed} task failed | {failed} tasks failed",
     "data-export": {
       "options": "Options",
       "limits": "Limits",

@@ -10829,21 +10829,6 @@ components:
                     type: string
                     description: The risk level of the issue.
                     format: enum
-                taskStatusCount:
-                    type: object
-                    additionalProperties:
-                        type: integer
-                        format: int32
-                    description: |-
-                        The status count of the issue.
-                         Keys are the following:
-                         - NOT_STARTED
-                         - SKIPPED
-                         - PENDING
-                         - RUNNING
-                         - DONE
-                         - FAILED
-                         - CANCELED
                 labels:
                     type: array
                     items:
