@@ -1,18 +1,10 @@
 import { head } from "lodash-es";
 import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { useCurrentUserV1 } from "@/store";
-import { userNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedIssue } from "@/types";
-import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
-  isUserIncludedInList,
-} from "@/utils";
-import { projectOfIssue } from "../utils";
 
 export type TaskRolloutAction =
   | "ROLLOUT" // NOT_STARTED -> PENDING
@@ -124,26 +116,4 @@ export const taskRolloutActionButtonProps = (
   return {
     type: "default",
   };
-};
-
-export const allowUserToApplyTaskRolloutAction = (
-  issue: ComposedIssue,
-  action: TaskRolloutAction,
-  releaserCandidates: string[]
-) => {
-  const me = useCurrentUserV1();
-  // For data export issues, only the creator can take actions.
-  if (issue.type === Issue_Type.DATABASE_EXPORT) {
-    return issue.creator === `${userNamePrefix}${me.value.email}`;
-  }
-
-  // Only for users with permission to create task runs.
-  if (
-    hasWorkspacePermissionV2("bb.taskRuns.create") ||
-    hasProjectPermissionV2(projectOfIssue(issue), "bb.taskRuns.create")
-  ) {
-    return true;
-  }
-
-  return isUserIncludedInList(me.value.email, releaserCandidates);
 };

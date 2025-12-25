@@ -28,11 +28,10 @@ import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
-  allowUserToApplyTaskRolloutAction,
   getApplicableTaskRolloutActionList,
-  releaserCandidatesForIssue,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { canRolloutTasks } from "@/components/RolloutV1/components/taskPermissions";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { DropdownItemWithErrorList } from "../common";
 
@@ -48,10 +47,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const { events, isCreating, selectedTask, issue } = useIssueContext();
 
-const releaserCandidates = computed(() => {
-  return releaserCandidatesForIssue(issue.value);
-});
-
 const actionList = computed(() => {
   return getApplicableTaskRolloutActionList(
     issue.value,
@@ -61,11 +56,7 @@ const actionList = computed(() => {
 });
 
 const allowUserToSkipTask = computed(() => {
-  return allowUserToApplyTaskRolloutAction(
-    issue.value,
-    "SKIP",
-    releaserCandidates.value
-  );
+  return canRolloutTasks([props.task], issue.value);
 });
 
 const options = computed((): ExtraTaskRolloutActionDropdownOption[] => {

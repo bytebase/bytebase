@@ -308,14 +308,6 @@ func (x *Issue) Equal(y *Issue) bool {
 	if !x.GrantRequest.Equal(y.GrantRequest) {
 		return false
 	}
-	if len(x.Releasers) != len(y.Releasers) {
-		return false
-	}
-	for i := 0; i < len(x.Releasers); i++ {
-		if x.Releasers[i] != y.Releasers[i] {
-			return false
-		}
-	}
 	if x.RiskLevel != y.RiskLevel {
 		return false
 	}

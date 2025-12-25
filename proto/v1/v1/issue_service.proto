@@ -423,15 +423,6 @@ message Issue {
   // Used if the issue type is GRANT_REQUEST.
   GrantRequest grant_request = 13;
 
-  // The releasers of the pending stage of the issue rollout, judging
-  // from the rollout policy.
-  // Format:
-  // - roles/workspaceOwner
-  // - roles/workspaceDBA
-  // - roles/projectOwner
-  // - roles/projectReleaser
-  repeated string releasers = 14;
-
   // The risk level of the issue.
   RiskLevel risk_level = 15;
 

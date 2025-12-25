@@ -10796,19 +10796,6 @@ components:
           title: grant_request
           description: Used if the issue type is GRANT_REQUEST.
           $ref: '#/components/schemas/bytebase.v1.GrantRequest'
-        releasers:
-          type: array
-          items:
-            type: string
-          title: releasers
-          description: |-
-            The releasers of the pending stage of the issue rollout, judging
-             from the rollout policy.
-             Format:
-             - roles/workspaceOwner
-             - roles/workspaceDBA
-             - roles/projectOwner
-             - roles/projectReleaser
         riskLevel:
           title: risk_level
           description: The risk level of the issue.

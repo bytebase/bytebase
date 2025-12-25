@@ -1118,14 +1118,6 @@ type Issue struct {
 	Rollout string `protobuf:"bytes,12,opt,name=rollout,proto3" json:"rollout,omitempty"`
 	// Used if the issue type is GRANT_REQUEST.
 	GrantRequest *GrantRequest `protobuf:"bytes,13,opt,name=grant_request,json=grantRequest,proto3" json:"grant_request,omitempty"`
-	// The releasers of the pending stage of the issue rollout, judging
-	// from the rollout policy.
-	// Format:
-	// - roles/workspaceOwner
-	// - roles/workspaceDBA
-	// - roles/projectOwner
-	// - roles/projectReleaser
-	Releasers []string `protobuf:"bytes,14,rep,name=releasers,proto3" json:"releasers,omitempty"`
 	// The risk level of the issue.
 	RiskLevel RiskLevel `protobuf:"varint,15,opt,name=risk_level,json=riskLevel,proto3,enum=bytebase.v1.RiskLevel" json:"risk_level,omitempty"`
 	// The status count of the issue.
@@ -1264,13 +1256,6 @@ func (x *Issue) GetRollout() string {
 func (x *Issue) GetGrantRequest() *GrantRequest {
 	if x != nil {
 		return x.GrantRequest
-	}
-	return nil
-}
-
-func (x *Issue) GetReleasers() []string {
-	if x != nil {
-		return x.Releasers
 	}
 	return nil
 }
@@ -2229,7 +2214,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x13RequestIssueRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x04name\x12\x18\n" +
-	"\acomment\x18\x02 \x01(\tR\acomment\"\xba\v\n" +
+	"\acomment\x18\x02 \x01(\tR\acomment\"\x9c\v\n" +
 	"\x05Issue\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
@@ -2246,8 +2231,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"updateTime\x12\x12\n" +
 	"\x04plan\x18\v \x01(\tR\x04plan\x12\x18\n" +
 	"\arollout\x18\f \x01(\tR\arollout\x12>\n" +
-	"\rgrant_request\x18\r \x01(\v2\x19.bytebase.v1.GrantRequestR\fgrantRequest\x12\x1c\n" +
-	"\treleasers\x18\x0e \x03(\tR\treleasers\x125\n" +
+	"\rgrant_request\x18\r \x01(\v2\x19.bytebase.v1.GrantRequestR\fgrantRequest\x125\n" +
 	"\n" +
 	"risk_level\x18\x0f \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\x12S\n" +
 	"\x11task_status_count\x18\x10 \x03(\v2'.bytebase.v1.Issue.TaskStatusCountEntryR\x0ftaskStatusCount\x12\x16\n" +
