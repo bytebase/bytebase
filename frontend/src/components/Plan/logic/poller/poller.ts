@@ -25,11 +25,7 @@ import { useCurrentProjectV1 } from "@/store";
 import { isValidRolloutName } from "@/types";
 import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  getRolloutFromPlan,
-  isValidIssueName,
-  isValidPlanName,
-} from "@/utils";
+import { getRolloutFromPlan, isValidIssueName, isValidPlanName } from "@/utils";
 import { usePlanContext } from "../context";
 import {
   refreshIssue,
