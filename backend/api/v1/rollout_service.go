@@ -82,7 +82,7 @@ func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
 	}
-	if rollout == nil {
+	if rollout == nil || rollout.Config.HasRollout == false {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
 	}
 
