@@ -7,11 +7,7 @@ import type { ComposedIssue } from "@/types";
 import { Issue_Type, IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  hasProjectPermissionV2,
-  hasWorkspacePermissionV2,
-  isUserIncludedInList,
-} from "@/utils";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { projectOfIssue } from "../utils";
 
 export type TaskRolloutAction =
@@ -128,8 +124,7 @@ export const taskRolloutActionButtonProps = (
 
 export const allowUserToApplyTaskRolloutAction = (
   issue: ComposedIssue,
-  action: TaskRolloutAction,
-  releaserCandidates: string[]
+  _action: TaskRolloutAction
 ) => {
   const me = useCurrentUserV1();
   // For data export issues, only the creator can take actions.
@@ -138,12 +133,8 @@ export const allowUserToApplyTaskRolloutAction = (
   }
 
   // Only for users with permission to create task runs.
-  if (
+  return (
     hasWorkspacePermissionV2("bb.taskRuns.create") ||
     hasProjectPermissionV2(projectOfIssue(issue), "bb.taskRuns.create")
-  ) {
-    return true;
-  }
-
-  return isUserIncludedInList(me.value.email, releaserCandidates);
+  );
 };

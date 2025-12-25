@@ -16,7 +16,6 @@
 </template>
 
 <script setup lang="ts">
-import { asyncComputed } from "@vueuse/core";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -26,7 +25,6 @@ import type {
 } from "@/components/IssueV1/logic";
 import {
   allowUserToApplyTaskRolloutAction,
-  releaserCandidatesForIssue,
   taskRolloutActionButtonProps,
   taskRolloutActionDisplayName,
   useIssueContext,
@@ -34,9 +32,6 @@ import {
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { ContextMenuButton } from "@/components/v2";
-import { useUserStore } from "@/store";
-import { roleNamePrefix, userNamePrefix } from "@/store/modules/v1/common";
-import { displayRoleTitle } from "@/utils";
 import type { RolloutAction, RolloutButtonAction } from "./common";
 
 const props = defineProps<{
@@ -51,43 +46,13 @@ defineEmits<{
 const { t } = useI18n();
 const { issue, selectedTask } = useIssueContext();
 
-const releaserCandidates = computed(() => {
-  return releaserCandidatesForIssue(issue.value);
-});
-
-const errors = asyncComputed(async () => {
+const errors = computed(() => {
   const errors: ErrorItem[] = [];
-  if (
-    !allowUserToApplyTaskRolloutAction(
-      issue.value,
-      props.action,
-      releaserCandidates.value
-    )
-  ) {
+  if (!allowUserToApplyTaskRolloutAction(issue.value, props.action)) {
     errors.push(t("issue.error.you-are-not-allowed-to-perform-this-action"));
-    const { releasers } = issue.value;
-    for (let i = 0; i < releasers.length; i++) {
-      const roleOrUser = releasers[i];
-      if (roleOrUser.startsWith(roleNamePrefix)) {
-        errors.push({
-          error: displayRoleTitle(roleOrUser),
-          indent: 1,
-        });
-      }
-      if (roleOrUser.startsWith(userNamePrefix)) {
-        const user =
-          await useUserStore().getOrFetchUserByIdentifier(roleOrUser);
-        if (user) {
-          errors.push({
-            error: `${user.title} (${user.email})`,
-            indent: 1,
-          });
-        }
-      }
-    }
   }
   return errors;
-}, []);
+});
 
 const actionList = computed(() => {
   const { action } = props;

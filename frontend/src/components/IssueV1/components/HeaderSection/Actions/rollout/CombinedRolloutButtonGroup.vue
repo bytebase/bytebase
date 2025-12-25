@@ -18,7 +18,6 @@
 </template>
 
 <script setup lang="ts">
-import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TaskRolloutAction } from "@/components/IssueV1/logic";
@@ -28,7 +27,6 @@ import {
   getApplicableStageRolloutActionList,
   getApplicableTaskRolloutActionList,
   PrimaryTaskRolloutActionList,
-  releaserCandidatesForIssue,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -39,10 +37,6 @@ import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
 
 const { t } = useI18n();
 const { issue, selectedStage, selectedTask, events } = useIssueContext();
-
-const releaserCandidates = computed(() => {
-  return releaserCandidatesForIssue(issue.value);
-});
 
 const issueStatusActionList = computed(() => {
   return getApplicableIssueStatusActionList(issue.value);
@@ -66,16 +60,12 @@ const primaryTaskRolloutActionList = computed(() => {
   );
 });
 
-const allowUserToSkipTask = asyncComputed(async () => {
+const allowUserToSkipTask = computed(() => {
   const skip = stageRolloutActionList.value.find(
     (item) => item.action === "SKIP"
   );
   if (!skip) return false;
-  return allowUserToApplyTaskRolloutAction(
-    issue.value,
-    "SKIP",
-    releaserCandidates.value
-  );
+  return allowUserToApplyTaskRolloutAction(issue.value, "SKIP");
 });
 
 const extraActionList = computed(() => {
