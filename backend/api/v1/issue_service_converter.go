@@ -108,6 +108,7 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 	}
 	// Rollout uses PlanUID as ID.
 	if issue.PlanUID != nil {
+		// TODO(d): check if plan config hasRollout is true, or just remove the rollout field.
 		issueV1.Rollout = common.FormatRollout(issue.ProjectID, int(*issue.PlanUID))
 	}
 
