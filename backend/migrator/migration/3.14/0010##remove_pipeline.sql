@@ -7,7 +7,12 @@ WHERE task.pipeline_id = pipeline.id;
 
 -- Remove any orphaned tasks that don't belong to a plan (i.e. not linked to a pipeline).
 -- This is required to satisfy the NOT NULL constraint on plan_id.
-DELETE FROM task_run WHERE task_id IN (SELECT id FROM task WHERE plan_id IS NULL);
+DELETE FROM task_run_log USING task_run, task
+WHERE task_run_log.task_run_id = task_run.id AND task_run.task_id = task.id AND task.plan_id IS NULL;
+
+DELETE FROM task_run USING task
+WHERE task_run.task_id = task.id AND task.plan_id IS NULL;
+
 DELETE FROM task WHERE plan_id IS NULL;
 
 ALTER TABLE task ALTER COLUMN plan_id SET NOT NULL;
