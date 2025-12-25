@@ -469,7 +469,7 @@ func (TaskRunLogEntry_TransactionControl_Type) EnumDescriptor() ([]byte, []int) 
 
 type BatchRunTasksRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the parent of the tasks.
+	// The stage name for the tasks.
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The tasks to run.
@@ -570,7 +570,7 @@ func (*BatchRunTasksResponse) Descriptor() ([]byte, []int) {
 
 type BatchSkipTasksRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the parent of the tasks.
+	// The stage name for the tasks.
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The tasks to skip.
@@ -671,7 +671,7 @@ func (*BatchSkipTasksResponse) Descriptor() ([]byte, []int) {
 
 type BatchCancelTaskRunsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name of the parent of the taskRuns.
+	// The task name for the taskRuns.
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
 	// Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
@@ -3581,20 +3581,23 @@ var File_v1_rollout_service_proto protoreflect.FileDescriptor
 
 const file_v1_rollout_service_proto_rawDesc = "" +
 	"\n" +
-	"\x18v1/rollout_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\x8d\x01\n" +
-	"\x14BatchRunTasksRequest\x12\x16\n" +
-	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x14\n" +
+	"\x18v1/rollout_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xa9\x01\n" +
+	"\x14BatchRunTasksRequest\x122\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
+	"\x12bytebase.com/StageR\x06parent\x12\x14\n" +
 	"\x05tasks\x18\x02 \x03(\tR\x05tasks\x12:\n" +
 	"\brun_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\arunTime\x88\x01\x01B\v\n" +
 	"\t_run_time\"\x17\n" +
-	"\x15BatchRunTasksResponse\"g\n" +
-	"\x15BatchSkipTasksRequest\x12\x16\n" +
-	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x14\n" +
+	"\x15BatchRunTasksResponse\"\x83\x01\n" +
+	"\x15BatchSkipTasksRequest\x122\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
+	"\x12bytebase.com/StageR\x06parent\x12\x14\n" +
 	"\x05tasks\x18\x02 \x03(\tR\x05tasks\x12 \n" +
 	"\x06reason\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aR\x06reason\"\x18\n" +
-	"\x16BatchSkipTasksResponse\"Q\n" +
-	"\x1aBatchCancelTaskRunsRequest\x12\x16\n" +
-	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x1b\n" +
+	"\x16BatchSkipTasksResponse\"l\n" +
+	"\x1aBatchCancelTaskRunsRequest\x121\n" +
+	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/TaskR\x06parent\x12\x1b\n" +
 	"\ttask_runs\x18\x02 \x03(\tR\btaskRuns\"\x1d\n" +
 	"\x1bBatchCancelTaskRunsResponse\"E\n" +
 	"\x11GetRolloutRequest\x120\n" +
@@ -3885,7 +3888,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\x04name\">\n" +
 	"\x1ePreviewTaskRunRollbackResponse\x12\x1c\n" +
-	"\tstatement\x18\x01 \x01(\tR\tstatement2\xef\x0f\n" +
+	"\tstatement\x18\x01 \x01(\tR\tstatement2\xfb\x0f\n" +
 	"\x0eRolloutService\x12\x8a\x01\n" +
 	"\n" +
 	"GetRollout\x12\x1e.bytebase.v1.GetRolloutRequest\x1a\x14.bytebase.v1.Rollout\"F\xdaA\x04name\x8a\xea0\x0fbb.rollouts.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\"\x12 /v1/{name=projects/*/rollouts/*}\x12\x9e\x01\n" +
@@ -3895,10 +3898,10 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\n" +
 	"GetTaskRun\x12\x1e.bytebase.v1.GetTaskRunRequest\x1a\x14.bytebase.v1.TaskRun\"c\xdaA\x04name\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02>\x12</v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}\x12\xb8\x01\n" +
 	"\rGetTaskRunLog\x12!.bytebase.v1.GetTaskRunLogRequest\x1a\x17.bytebase.v1.TaskRunLog\"k\xdaA\x06parent\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02D\x12B/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log\x12\xc8\x01\n" +
-	"\x11GetTaskRunSession\x12%.bytebase.v1.GetTaskRunSessionRequest\x1a\x1b.bytebase.v1.TaskRunSession\"o\xdaA\x06parent\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02H\x12F/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/session\x12\xaa\x01\n" +
-	"\rBatchRunTasks\x12!.bytebase.v1.BatchRunTasksRequest\x1a\".bytebase.v1.BatchRunTasksResponse\"R\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02?:\x01*\":/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun\x12\xae\x01\n" +
-	"\x0eBatchSkipTasks\x12\".bytebase.v1.BatchSkipTasksRequest\x1a#.bytebase.v1.BatchSkipTasksResponse\"S\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02@:\x01*\";/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip\x12\xca\x01\n" +
-	"\x13BatchCancelTaskRuns\x12'.bytebase.v1.BatchCancelTaskRunsRequest\x1a(.bytebase.v1.BatchCancelTaskRunsResponse\"`\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x02M:\x01*\"H/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel\x12\xe9\x01\n" +
+	"\x11GetTaskRunSession\x12%.bytebase.v1.GetTaskRunSessionRequest\x1a\x1b.bytebase.v1.TaskRunSession\"o\xdaA\x06parent\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02H\x12F/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/session\x12\xae\x01\n" +
+	"\rBatchRunTasks\x12!.bytebase.v1.BatchRunTasksRequest\x1a\".bytebase.v1.BatchRunTasksResponse\"V\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02?:\x01*\":/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun\x12\xb2\x01\n" +
+	"\x0eBatchSkipTasks\x12\".bytebase.v1.BatchSkipTasksRequest\x1a#.bytebase.v1.BatchSkipTasksResponse\"W\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02@:\x01*\";/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip\x12\xce\x01\n" +
+	"\x13BatchCancelTaskRuns\x12'.bytebase.v1.BatchCancelTaskRunsRequest\x1a(.bytebase.v1.BatchCancelTaskRunsResponse\"d\xdaA\x06parent\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02M:\x01*\"H/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel\x12\xe9\x01\n" +
 	"\x16PreviewTaskRunRollback\x12*.bytebase.v1.PreviewTaskRunRollbackRequest\x1a+.bytebase.v1.PreviewTaskRunRollbackResponse\"v\xdaA\x04name\x8a\xea0\x10bb.taskRuns.list\x90\xea0\x01\x82\xd3\xe4\x93\x02Q:\x01*\"L/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}:previewRollbackB\xa9\x01\n" +
 	"\x0fcom.bytebase.v1B\x13RolloutServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
