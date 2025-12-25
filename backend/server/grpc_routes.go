@@ -53,14 +53,20 @@ func configureGrpcRouters(
 ) error {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
-	gatewayModifier := auth.GatewayResponseModifier{Store: stores, LicenseService: licenseService}
 	mux := grpcruntime.NewServeMux(
 		grpcruntime.WithMarshalerOption(grpcruntime.MIMEWildcard, &grpcruntime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{},
 			//nolint:forbidigo
 			UnmarshalOptions: protojson.UnmarshalOptions{},
 		}),
-		grpcruntime.WithForwardResponseOption(gatewayModifier.Modify),
+		grpcruntime.WithOutgoingHeaderMatcher(func(key string) (string, bool) {
+			switch key {
+			case "set-cookie":
+				return key, true
+			default:
+				return grpcruntime.DefaultHeaderMatcher(key)
+			}
+		}),
 		grpcruntime.WithRoutingErrorHandler(func(ctx context.Context, sm *grpcruntime.ServeMux, m grpcruntime.Marshaler, w http.ResponseWriter, r *http.Request, httpStatus int) {
 			err := &grpcruntime.HTTPStatusError{
 				HTTPStatus: httpStatus,
