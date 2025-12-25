@@ -117,11 +117,11 @@ const createdSentence = computed(() => {
 });
 
 const creatorName = computed(() => {
-  return hasPlan.value ? plan.value.creator : (issue.value?.creator ?? "");
+  return issue.value?.creator || plan.value?.creator || "";
 });
 
 const createTime = computed((): Timestamp | undefined => {
-  return hasPlan.value ? plan.value.createTime : issue.value?.createTime;
+  return issue.value?.createTime || plan.value?.createTime;
 });
 
 const creator = computed(() => {
