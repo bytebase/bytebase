@@ -221,10 +221,10 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if payload.Approval.ApprovalTemplate != nil {
 			return nil
 		}
-		if issue.PipelineUID == nil {
+		if issue.PlanUID == nil {
 			return nil
 		}
-		tasks, err := r.store.ListTasks(ctx, &store.TaskFind{PipelineID: issue.PipelineUID})
+		tasks, err := r.store.ListTasks(ctx, &store.TaskFind{PlanID: issue.PlanUID})
 		if err != nil {
 			return errors.Wrapf(err, "failed to list tasks")
 		}
@@ -452,7 +452,6 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	// Check plan check run status (consolidated model: one run per plan)
 	planCheckRun, err := r.store.GetPlanCheckRun(ctx, plan.UID)
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to get plan check run for plan %v", plan.UID)

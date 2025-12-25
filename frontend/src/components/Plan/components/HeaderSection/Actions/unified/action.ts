@@ -36,12 +36,72 @@ export const usePlanAction = () => {
     hasRunning: hasRunningPlanChecks,
   } = usePlanCheckStatus(plan);
 
+  // Check if user can approve (is a candidate for current approval step)
+  const canApprove = computed(() => {
+    const issueValue = issue?.value;
+    if (!issueValue) return false;
+
+    const issueApproved =
+      issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+      issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
+    if (issueApproved) return false;
+
+    const { approvers, approvalTemplate } = issueValue;
+    const hasRejection = approvers.some(
+      (app) => app.status === Issue_Approver_Status.REJECTED
+    );
+    // Cannot approve if already rejected
+    if (hasRejection) return false;
+
+    const roles = approvalTemplate?.flow?.roles ?? [];
+    if (roles.length === 0) return false;
+
+    const currentRoleIndex = approvers.length;
+    const currentRole = roles[currentRoleIndex];
+    if (!currentRole) return false;
+
+    const candidates = candidatesOfApprovalStepV1(issueValue, currentRole);
+    return isUserIncludedInList(currentUser.value.email, candidates);
+  });
+
+  // Check if user can reject (same as approve, but only if no rejection yet)
+  const canReject = computed(() => {
+    const issueValue = issue?.value;
+    if (!issueValue) return false;
+
+    const issueApproved =
+      issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+      issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
+    if (issueApproved) return false;
+
+    const { approvers, approvalTemplate } = issueValue;
+    const hasRejection = approvers.some(
+      (app) => app.status === Issue_Approver_Status.REJECTED
+    );
+    // Cannot reject if already rejected
+    if (hasRejection) return false;
+
+    const roles = approvalTemplate?.flow?.roles ?? [];
+    if (roles.length === 0) return false;
+
+    const rejectedIndex = approvers.findIndex(
+      (ap) => ap.status === Issue_Approver_Status.REJECTED
+    );
+    const currentRoleIndex =
+      rejectedIndex >= 0 ? rejectedIndex : approvers.length;
+    const currentRole = roles[currentRoleIndex];
+    if (!currentRole) return false;
+
+    const candidates = candidatesOfApprovalStepV1(issueValue, currentRole);
+    return isUserIncludedInList(currentUser.value.email, candidates);
+  });
+
   /**
    * Compute available actions based on issue state and user permissions.
    *
    * Action priority order:
    * 1. Plan-level actions (for draft plans): PLAN_REOPEN, PLAN_CLOSE, ISSUE_CREATE
-   * 2. Issue review actions: ISSUE_REVIEW_APPROVE, ISSUE_REVIEW_REJECT, ISSUE_REVIEW_RE_REQUEST
+   * 2. Issue review action: ISSUE_REVIEW (unified approve/reject/comment)
    * 3. Issue status actions: ISSUE_STATUS_RESOLVE, ISSUE_STATUS_CLOSE, ISSUE_STATUS_REOPEN
    * 4. Rollout actions: ROLLOUT_START, ROLLOUT_CANCEL
    *
@@ -101,7 +161,6 @@ export const usePlanAction = () => {
     const issueValue = issue?.value;
     // Should not reach here.
     if (!issueValue) return actions;
-    const issueCreator = extractUserId(issueValue.creator);
     const isCanceled = issueValue.status === IssueStatus.CANCELED;
     const isDone = issueValue.status === IssueStatus.DONE;
     const canUpdateIssue = hasProjectPermissionV2(
@@ -125,47 +184,13 @@ export const usePlanAction = () => {
       return actions;
     }
 
-    // Check for review actions
+    // Check for review action - show unified review button if user can approve or reject
     const issueApproved =
       issueValue.approvalStatus === Issue_ApprovalStatus.APPROVED ||
       issueValue.approvalStatus === Issue_ApprovalStatus.SKIPPED;
     if (!issueApproved) {
-      const { approvers, approvalTemplate } = issueValue;
-
-      // Check if issue has been rejected
-      const hasRejection = approvers.some(
-        (app) => app.status === Issue_Approver_Status.REJECTED
-      );
-
-      // RE_REQUEST is only available to the issue creator when rejected
-      if (hasRejection && currentUserEmail === issueCreator) {
-        actions.push("ISSUE_REVIEW_RE_REQUEST");
-      } else {
-        // Check if user can approve/reject
-        const roles = approvalTemplate?.flow?.roles ?? [];
-        if (roles.length > 0) {
-          const rejectedIndex = approvers.findIndex(
-            (ap) => ap.status === Issue_Approver_Status.REJECTED
-          );
-          const currentRoleIndex =
-            rejectedIndex >= 0 ? rejectedIndex : approvers.length;
-          const currentRole = roles[currentRoleIndex];
-
-          if (currentRole) {
-            const candidates = candidatesOfApprovalStepV1(
-              issueValue,
-              currentRole
-            );
-            if (isUserIncludedInList(currentUserEmail, candidates)) {
-              actions.push("ISSUE_REVIEW_APPROVE");
-
-              // Only show REJECT if no one has rejected yet.
-              if (!hasRejection) {
-                actions.push("ISSUE_REVIEW_REJECT");
-              }
-            }
-          }
-        }
+      if (canApprove.value || canReject.value) {
+        actions.push("ISSUE_REVIEW");
       }
     }
 
@@ -276,12 +301,8 @@ export const usePlanAction = () => {
 
   const actionDisplayName = (action: UnifiedAction): string => {
     switch (action) {
-      case "ISSUE_REVIEW_APPROVE":
-        return t("common.approve");
-      case "ISSUE_REVIEW_REJECT":
-        return t("custom-approval.issue-review.send-back");
-      case "ISSUE_REVIEW_RE_REQUEST":
-        return t("custom-approval.issue-review.re-request-review");
+      case "ISSUE_REVIEW":
+        return t("issue.review.self");
       case "ISSUE_STATUS_CLOSE":
         return t("issue.batch-transition.close");
       case "ISSUE_STATUS_REOPEN":
@@ -305,6 +326,8 @@ export const usePlanAction = () => {
 
   return {
     availableActions,
+    canApprove,
+    canReject,
     actionDisplayName,
   };
 };

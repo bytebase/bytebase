@@ -40,7 +40,6 @@ type IssueMessage struct {
 	Type            storepb.Issue_Type
 	Description     string
 	Payload         *storepb.Issue
-	PipelineUID     *int // Computed from plan.pipeline_id
 	PlanUID         *int64
 	TaskStatusCount map[string]int32
 
@@ -66,7 +65,7 @@ type FindIssueMessage struct {
 	ProjectID  *string
 	ProjectIDs *[]string
 	PlanUID    *int64
-	PipelineID *int // Filter by pipeline_id (computed from plan)
+	// PipelineID is deprecated, use PlanUID.
 	// To support pagination, we add into creatorEmail.
 	// Only principleID or one of the following three fields can be set.
 	CreatorID       *string
@@ -243,9 +242,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	if v := find.UID; v != nil {
 		where.And("issue.id = ?", *v)
 	}
-	if v := find.PipelineID; v != nil {
-		where.And("plan.pipeline_id = ?", *v)
-	}
 	if v := find.PlanUID; v != nil {
 		where.And("issue.plan_id = ?", *v)
 	}
@@ -256,10 +252,10 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		where.And("issue.project = ANY(?)", *v)
 	}
 	if v := find.InstanceResourceID; v != nil {
-		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.instance = ?)", *v)
+		where.And("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.instance = ?)", *v)
 	}
 	if find.InstanceID != nil && find.DatabaseName != nil {
-		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.instance = ? AND task.db_name = ?)", *find.InstanceID, *find.DatabaseName)
+		where.And("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.instance = ? AND task.db_name = ?)", *find.InstanceID, *find.DatabaseName)
 	}
 	if v := find.CreatorID; v != nil {
 		where.And("issue.creator = ?", *v)
@@ -299,16 +295,16 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		for _, t := range *v {
 			taskTypeStrings = append(taskTypeStrings, t.String())
 		}
-		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.type = ANY(?))", taskTypeStrings)
+		where.And("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY(?))", taskTypeStrings)
 	}
 	if v := find.EnvironmentID; v != nil {
-		where.And("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = plan.pipeline_id AND task.environment = ?)", *v)
+		where.And("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.environment = ?)", *v)
 	}
 	if len(find.LabelList) != 0 {
 		where.And("payload->'labels' ??& ?::TEXT[]", find.LabelList)
 	}
 	if find.NoPipeline {
-		where.And("plan.pipeline_id IS NULL")
+		where.And("NOT EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id)")
 	}
 
 	q := qb.Q().Space(`
@@ -318,7 +314,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			issue.created_at,
 			issue.updated_at,
 			issue.project,
-			plan.pipeline_id,
 			issue.plan_id,
 			COALESCE(plan.name, issue.name) AS name,
 			issue.status,
@@ -347,7 +342,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 							(SELECT task_run.status FROM task_run WHERE task_run.task_id = task.id ORDER BY task_run.id DESC LIMIT 1), 'NOT_STARTED'
 						) AS status
 					) AS latest_task_run ON TRUE
-					WHERE task.pipeline_id = plan.pipeline_id
+					WHERE task.plan_id = plan.id
 				) AS t
 				GROUP BY t.status
 			) AS t
@@ -396,7 +391,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			&issue.CreatedAt,
 			&issue.UpdatedAt,
 			&issue.ProjectID,
-			&issue.PipelineUID,
 			&issue.PlanUID,
 			&issue.Title,
 			&statusString,

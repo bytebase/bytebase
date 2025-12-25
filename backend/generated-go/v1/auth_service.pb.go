@@ -34,7 +34,7 @@ type LoginRequest struct {
 	// The name of the identity provider.
 	// Format: idps/{idp}
 	IdpName string `protobuf:"bytes,4,opt,name=idp_name,json=idpName,proto3" json:"idp_name,omitempty"`
-	// The idp_context is using to get the user information from identity provider.
+	// The idp_context is used to get the user information from identity provider.
 	IdpContext *IdentityProviderContext `protobuf:"bytes,5,opt,name=idp_context,json=idpContext,proto3" json:"idp_context,omitempty"`
 	// The otp_code is used to verify the user's identity by MFA.
 	OtpCode *string `protobuf:"bytes,6,opt,name=otp_code,json=otpCode,proto3,oneof" json:"otp_code,omitempty"`

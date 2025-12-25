@@ -1880,11 +1880,11 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.v1.BatchCancelPlanCheckRunsRequest"><span class="badge">M</span>BatchCancelPlanCheckRunsRequest</a>
+                  <a href="#bytebase.v1.CancelPlanCheckRunRequest"><span class="badge">M</span>CancelPlanCheckRunRequest</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.BatchCancelPlanCheckRunsResponse"><span class="badge">M</span>BatchCancelPlanCheckRunsResponse</a>
+                  <a href="#bytebase.v1.CancelPlanCheckRunResponse"><span class="badge">M</span>CancelPlanCheckRunResponse</a>
                 </li>
               
                 <li>
@@ -1892,15 +1892,11 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetPlanCheckRunRequest"><span class="badge">M</span>GetPlanCheckRunRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetPlanRequest"><span class="badge">M</span>GetPlanRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListPlanCheckRunsRequest"><span class="badge">M</span>ListPlanCheckRunsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListPlanCheckRunsResponse"><span class="badge">M</span>ListPlanCheckRunsResponse</a>
                 </li>
               
                 <li>
@@ -8978,7 +8974,7 @@ Format: idps/{idp} </p></td>
                   <td>idp_context</td>
                   <td><a href="#bytebase.v1.IdentityProviderContext">IdentityProviderContext</a></td>
                   <td></td>
-                  <td><p>The idp_context is using to get the user information from identity provider. </p></td>
+                  <td><p>The idp_context is used to get the user information from identity provider. </p></td>
                 </tr>
               
                 <tr>
@@ -21015,7 +21011,7 @@ Permissions required: None (authenticated users only, requires AI to be enabled)
       <p></p>
 
       
-        <h3 id="bytebase.v1.BatchCancelPlanCheckRunsRequest">BatchCancelPlanCheckRunsRequest</h3>
+        <h3 id="bytebase.v1.CancelPlanCheckRunRequest">CancelPlanCheckRunRequest</h3>
         <p></p>
 
         
@@ -21026,20 +21022,11 @@ Permissions required: None (authenticated users only, requires AI to be enabled)
             <tbody>
               
                 <tr>
-                  <td>parent</td>
+                  <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the parent of the planChecks.
-Format: projects/{project}/plans/{plan} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>plan_check_runs</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>TODO(d): update this API.
-The planCheckRuns to cancel.
-Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} </p></td>
+                  <td><p>The name of the plan check run to cancel.
+Format: projects/{project}/plans/{plan}/planCheckRun </p></td>
                 </tr>
               
             </tbody>
@@ -21049,7 +21036,7 @@ Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} </p></td>
 
         
       
-        <h3 id="bytebase.v1.BatchCancelPlanCheckRunsResponse">BatchCancelPlanCheckRunsResponse</h3>
+        <h3 id="bytebase.v1.CancelPlanCheckRunResponse">CancelPlanCheckRunResponse</h3>
         <p></p>
 
         
@@ -21088,6 +21075,31 @@ Format: projects/{project} </p></td>
 
         
       
+        <h3 id="bytebase.v1.GetPlanCheckRunRequest">GetPlanCheckRunRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the plan check run to retrieve.
+Format: projects/{project}/plans/{plan}/planCheckRun </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetPlanRequest">GetPlanRequest</h3>
         <p></p>
 
@@ -21104,80 +21116,6 @@ Format: projects/{project} </p></td>
                   <td></td>
                   <td><p>The name of the plan to retrieve.
 Format: projects/{project}/plans/{plan} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListPlanCheckRunsRequest">ListPlanCheckRunsRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent, which owns this collection of plan check runs.
-Format: projects/{project}/plans/{plan} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>latest_only</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set to true, only the latest plan check run will be returned. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Filter is used to filter plan check runs returned in the list.
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filters:
-- status: the plan check run status, support &#34;==&#34; and &#34;in&#34; operator, check the Status enum in the PlanCheckRun message for the values.
-- result_status: the plan check run result status, support &#34;==&#34; and &#34;in&#34; operator, check the Result.Status enum in the PlanCheckRun message for the values.
-
-For example:
-status in [&#34;DONE&#34;, &#34;FAILED&#34;]
-status == &#34;RUNNING&#34;
-result_status in [&#34;SUCCESS&#34;, &#34;ERROR&#34;]
-result_status == &#34;WARNING&#34; </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListPlanCheckRunsResponse">ListPlanCheckRunsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>plan_check_runs</td>
-                  <td><a href="#bytebase.v1.PlanCheckRun">PlanCheckRun</a></td>
-                  <td>repeated</td>
-                  <td><p>The plan check runs from the specified request. </p></td>
                 </tr>
               
             </tbody>
@@ -21362,6 +21300,13 @@ Keys are:
 - WARNING
 - ERROR
 - RUNNING </p></td>
+                </tr>
+              
+                <tr>
+                  <td>has_rollout</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the plan has started the rollout. </p></td>
                 </tr>
               
             </tbody>
@@ -21687,7 +21632,7 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} </p></td>
+                  <td><p>Format: projects/{project}/plans/{plan}/planCheckRun </p></td>
                 </tr>
               
                 <tr>
@@ -22180,11 +22125,11 @@ Permissions required: bb.plans.update (or creator)</p></td>
               </tr>
             
               <tr>
-                <td>ListPlanCheckRuns</td>
-                <td><a href="#bytebase.v1.ListPlanCheckRunsRequest">ListPlanCheckRunsRequest</a></td>
-                <td><a href="#bytebase.v1.ListPlanCheckRunsResponse">ListPlanCheckRunsResponse</a></td>
-                <td><p>Lists plan check runs for a deployment plan.
-Permissions required: bb.planCheckRuns.list</p></td>
+                <td>GetPlanCheckRun</td>
+                <td><a href="#bytebase.v1.GetPlanCheckRunRequest">GetPlanCheckRunRequest</a></td>
+                <td><a href="#bytebase.v1.PlanCheckRun">PlanCheckRun</a></td>
+                <td><p>Gets the plan check run for a deployment plan.
+Permissions required: bb.planCheckRuns.get</p></td>
               </tr>
             
               <tr>
@@ -22196,10 +22141,10 @@ Permissions required: bb.planCheckRuns.run</p></td>
               </tr>
             
               <tr>
-                <td>BatchCancelPlanCheckRuns</td>
-                <td><a href="#bytebase.v1.BatchCancelPlanCheckRunsRequest">BatchCancelPlanCheckRunsRequest</a></td>
-                <td><a href="#bytebase.v1.BatchCancelPlanCheckRunsResponse">BatchCancelPlanCheckRunsResponse</a></td>
-                <td><p>Cancels multiple plan check runs.
+                <td>CancelPlanCheckRun</td>
+                <td><a href="#bytebase.v1.CancelPlanCheckRunRequest">CancelPlanCheckRunRequest</a></td>
+                <td><a href="#bytebase.v1.CancelPlanCheckRunResponse">CancelPlanCheckRunResponse</a></td>
+                <td><p>Cancels the plan check run for a deployment plan.
 Permissions required: bb.planCheckRuns.run</p></td>
               </tr>
             
@@ -22274,9 +22219,9 @@ Permissions required: bb.planCheckRuns.run</p></td>
               
               
               <tr>
-                <td>ListPlanCheckRuns</td>
+                <td>GetPlanCheckRun</td>
                 <td>GET</td>
-                <td>/v1/{parent=projects/*/plans/*}/planCheckRuns</td>
+                <td>/v1/{name=projects/*/plans/*/planCheckRun}</td>
                 <td></td>
               </tr>
               
@@ -22294,9 +22239,9 @@ Permissions required: bb.planCheckRuns.run</p></td>
               
               
               <tr>
-                <td>BatchCancelPlanCheckRuns</td>
+                <td>CancelPlanCheckRun</td>
                 <td>POST</td>
-                <td>/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancel</td>
+                <td>/v1/{name=projects/*/plans/*/planCheckRun}:cancel</td>
                 <td>*</td>
               </tr>
               
@@ -26613,7 +26558,7 @@ Permissions required: bb.roles.delete</p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the parent of the taskRuns.
+                  <td><p>The task name for the taskRuns.
 Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
 Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage. </p></td>
                 </tr>
@@ -26654,7 +26599,7 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRu
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the parent of the tasks.
+                  <td><p>The stage name for the tasks.
 Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
                 </tr>
               
@@ -26701,7 +26646,7 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the parent of the tasks.
+                  <td><p>The stage name for the tasks.
 Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
                 </tr>
               

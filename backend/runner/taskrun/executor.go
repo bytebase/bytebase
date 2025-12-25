@@ -142,12 +142,12 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	if database == nil {
 		return nil, errors.Errorf("database not found")
 	}
-	pipeline, err := stores.GetPipelineByID(ctx, task.PipelineID)
+	plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get pipeline")
+		return nil, errors.Wrapf(err, "failed to get plan")
 	}
-	if pipeline == nil {
-		return nil, errors.Errorf("pipeline %v not found", task.PipelineID)
+	if plan == nil {
+		return nil, errors.Errorf("plan %v not found", task.PlanID)
 	}
 
 	mc := &migrateContext{
@@ -159,7 +159,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		sheet:       sheet,
 		task:        task,
 		version:     schemaVersion,
-		taskRunName: common.FormatTaskRun(pipeline.ProjectID, task.PipelineID, task.Environment, task.ID, taskRunUID),
+		taskRunName: common.FormatTaskRun(plan.ProjectID, int(task.PlanID), task.Environment, task.ID, taskRunUID),
 		taskRunUID:  taskRunUID,
 	}
 

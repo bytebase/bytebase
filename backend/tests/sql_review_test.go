@@ -486,7 +486,6 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 	result, err := ctl.GetSQLReviewResult(ctx, plan.Msg)
 	a.NoError(err)
 
-	// With consolidated model, filter to only STATEMENT_ADVISE results
 	var statementAdviseResults []*v1pb.PlanCheckRun_Result
 	for _, r := range result.Results {
 		if r.Type == v1pb.PlanCheckRun_Result_STATEMENT_ADVISE {

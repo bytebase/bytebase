@@ -33,15 +33,15 @@ func TestGetListPlanFilter(t *testing.T) {
 		{
 			name:     "has_pipeline filter - true",
 			filter:   `has_pipeline == true`,
-			wantSQL:  "(plan.pipeline_id IS NOT NULL)",
-			wantArgs: []any{},
+			wantSQL:  "(plan.config->>'hasRollout' = $1)",
+			wantArgs: []any{"true"},
 			wantErr:  false,
 		},
 		{
 			name:     "has_pipeline filter - false",
 			filter:   `has_pipeline == false`,
-			wantSQL:  "(plan.pipeline_id IS NULL)",
-			wantArgs: []any{},
+			wantSQL:  "((plan.config->>'hasRollout' IS NULL OR plan.config->>'hasRollout' = $1))",
+			wantArgs: []any{"false"},
 			wantErr:  false,
 		},
 		{
@@ -130,15 +130,15 @@ func TestGetListPlanFilter(t *testing.T) {
 		{
 			name:     "AND condition with has_pipeline and has_issue",
 			filter:   `has_pipeline == true && has_issue == true`,
-			wantSQL:  "((plan.pipeline_id IS NOT NULL AND issue.id IS NOT NULL))",
-			wantArgs: []any{},
+			wantSQL:  "((plan.config->>'hasRollout' = $1 AND issue.id IS NOT NULL))",
+			wantArgs: []any{"true"},
 			wantErr:  false,
 		},
 		{
 			name:     "complex AND condition",
 			filter:   `title == "Test Plan" && state == "STATE_ACTIVE" && has_pipeline == true`,
-			wantSQL:  "(((plan.name = $1 AND plan.deleted = $2) AND plan.pipeline_id IS NOT NULL))",
-			wantArgs: []any{"Test Plan", false},
+			wantSQL:  "(((plan.name = $1 AND plan.deleted = $2) AND plan.config->>'hasRollout' = $3))",
+			wantArgs: []any{"Test Plan", false, "true"},
 			wantErr:  false,
 		},
 		{

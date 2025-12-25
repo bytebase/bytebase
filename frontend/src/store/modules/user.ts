@@ -182,7 +182,7 @@ export const useUserStore = defineStore("user", () => {
     );
     const pendingFetch = validList
       .filter((name) => {
-        return isValidUserName(name) && getUserByIdentifier(name) === undefined;
+        return getUserByIdentifier(name) === undefined;
       })
       .map((name) => ensureUserFullName(name));
     if (pendingFetch.length === 0) {

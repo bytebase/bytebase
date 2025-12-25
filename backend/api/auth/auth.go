@@ -277,7 +277,7 @@ func GetTokenFromHeaders(headers http.Header) (string, error) {
 
 	// Check HTTP cookies
 	var accessToken string
-	for _, cookieHeader := range append(headers.Values("cookie"), headers.Values("grpcgateway-cookie")...) {
+	for _, cookieHeader := range headers.Values("cookie") {
 		header := http.Header{}
 		header.Add("Cookie", cookieHeader)
 		request := http.Request{Header: header}

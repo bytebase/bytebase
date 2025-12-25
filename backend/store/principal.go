@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -62,8 +61,6 @@ type UserMessage struct {
 	Phone string
 	// output only
 	CreatedAt time.Time
-	// The group email list
-	Groups []string
 }
 
 type UserStat struct {
@@ -192,7 +189,7 @@ func (s *Store) listAndCacheAllUsers(ctx context.Context) error {
 
 func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*UserMessage, error) {
 	with := qb.Q()
-	from := qb.Q().Space("principal INNER JOIN user_groups ON principal.id = user_groups.user_id")
+	from := qb.Q().Space("principal")
 	where := qb.Q().Space("TRUE")
 
 	// Build CTE for project filtering if needed
@@ -206,25 +203,9 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		),
 		project_members AS (
 			SELECT ARRAY_AGG(member) AS members FROM all_members WHERE role NOT LIKE 'roles/workspace%'
-		),`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
+		)`, storepb.Policy_PROJECT.String(), "projects/"+*v, storepb.Policy_WORKSPACE.String(), storepb.Policy_IAM.String())
 		from.Space(`INNER JOIN project_members ON (CONCAT('users/', principal.email) = ANY(project_members.members) OR ? = ANY(project_members.members))`, common.AllUsers)
-	} else {
-		with.Space(`WITH`)
 	}
-
-	// Join the user_group table to find groups for each user.
-	// The user will be stored in the user_group.payload.members.member field, the member is in the "users/{email}" format
-	with.Space(`user_groups AS (
-		SELECT
-			principal.id AS user_id,
-			COALESCE(ARRAY_AGG(user_group.email ORDER BY user_group.email) FILTER (WHERE user_group.email IS NOT NULL), '{}') AS groups
-		FROM principal
-		LEFT JOIN user_group ON EXISTS (
-			SELECT 1 FROM jsonb_array_elements(user_group.payload->'members') AS m
-			WHERE m->>'member' = CONCAT('users/', principal.email)
-		)
-		GROUP BY principal.id
-	)`)
 
 	if filterQ := find.FilterQ; filterQ != nil {
 		where.And("?", filterQ)
@@ -258,8 +239,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			principal.mfa_config,
 			principal.phone,
 			principal.profile,
-			principal.created_at,
-			user_groups.groups
+			principal.created_at
 		FROM ?
 		WHERE ?
 		ORDER BY type DESC, created_at ASC
@@ -288,7 +268,6 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 		var mfaConfigBytes []byte
 		var profileBytes []byte
 		var typeString string
-		var groups pq.StringArray
 		if err := rows.Scan(
 			&userMessage.ID,
 			&userMessage.MemberDeleted,
@@ -300,11 +279,9 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			&userMessage.Phone,
 			&profileBytes,
 			&userMessage.CreatedAt,
-			&groups,
 		); err != nil {
 			return nil, err
 		}
-		userMessage.Groups = []string(groups)
 		if typeValue, ok := storepb.PrincipalType_value[typeString]; ok {
 			userMessage.Type = storepb.PrincipalType(typeValue)
 		} else {
@@ -371,30 +348,6 @@ func scanPrincipalRow(ctx context.Context, tx *sql.Tx, sqlStr string, args []any
 	user.Profile = &profile
 
 	return &user, nil
-}
-
-// fetchUserGroups fetches the groups for a user by email.
-func fetchUserGroups(ctx context.Context, tx *sql.Tx, email string) ([]string, error) {
-	groupsQuery := qb.Q().Space(`
-		SELECT COALESCE(ARRAY_AGG(user_group.email ORDER BY user_group.email) FILTER (WHERE user_group.email IS NOT NULL), '{}')
-		FROM principal
-		LEFT JOIN user_group ON EXISTS (
-			SELECT 1 FROM jsonb_array_elements(user_group.payload->'members') AS m
-			WHERE m->>'member' = CONCAT('users/', principal.email)
-		)
-		WHERE principal.email = ?
-		GROUP BY principal.email
-	`, email)
-	groupsSQL, groupsArgs, err := groupsQuery.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build groups sql")
-	}
-
-	var groups pq.StringArray
-	if err := tx.QueryRowContext(ctx, groupsSQL, groupsArgs...).Scan(&groups); err != nil {
-		return nil, err
-	}
-	return []string(groups), nil
 }
 
 // CreateUser creates an user.
@@ -520,9 +473,6 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 	if err != nil {
 		return nil, err
 	}
-
-	// Preserve groups from currentUser since UpdateUser doesn't modify group memberships
-	updatedUser.Groups = currentUser.Groups
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -844,13 +794,6 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	if _, err := tx.ExecContext(ctx, sqlStr, args...); err != nil {
 		return nil, errors.Wrapf(err, "failed to update audit_log user references")
 	}
-
-	// Fetch groups for the updated user (must be done before commit while tx is still open)
-	groups, err := fetchUserGroups(ctx, tx, updatedUser.Email)
-	if err != nil {
-		return nil, err
-	}
-	updatedUser.Groups = groups
 
 	if err := tx.Commit(); err != nil {
 		return nil, err

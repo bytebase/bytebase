@@ -446,12 +446,11 @@
     - [SQLService](#bytebase-v1-SQLService)
   
 - [v1/plan_service.proto](#v1_plan_service-proto)
-    - [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest)
-    - [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse)
+    - [CancelPlanCheckRunRequest](#bytebase-v1-CancelPlanCheckRunRequest)
+    - [CancelPlanCheckRunResponse](#bytebase-v1-CancelPlanCheckRunResponse)
     - [CreatePlanRequest](#bytebase-v1-CreatePlanRequest)
+    - [GetPlanCheckRunRequest](#bytebase-v1-GetPlanCheckRunRequest)
     - [GetPlanRequest](#bytebase-v1-GetPlanRequest)
-    - [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest)
-    - [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse)
     - [ListPlansRequest](#bytebase-v1-ListPlansRequest)
     - [ListPlansResponse](#bytebase-v1-ListPlansResponse)
     - [Plan](#bytebase-v1-Plan)
@@ -3061,7 +3060,7 @@ Context for identity provider authentication.
 | password | [string](#string) |  | User&#39;s password for authentication. |
 | web | [bool](#bool) |  | If web is set, we will set access token, refresh token, and user to the cookie. |
 | idp_name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
-| idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is using to get the user information from identity provider. |
+| idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is used to get the user information from identity provider. |
 | otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
 | recovery_code | [string](#string) | optional | The recovery_code is used to recovery the user&#39;s identity with MFA. |
 | mfa_temp_token | [string](#string) | optional | The mfa_temp_token is used to verify the user&#39;s identity by MFA. |
@@ -7415,25 +7414,24 @@ SQLService executes SQL queries and manages query operations.
 
 
 
-<a name="bytebase-v1-BatchCancelPlanCheckRunsRequest"></a>
+<a name="bytebase-v1-CancelPlanCheckRunRequest"></a>
 
-### BatchCancelPlanCheckRunsRequest
+### CancelPlanCheckRunRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The name of the parent of the planChecks. Format: projects/{project}/plans/{plan} |
-| plan_check_runs | [string](#string) | repeated | TODO(d): update this API. The planCheckRuns to cancel. Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} |
+| name | [string](#string) |  | The name of the plan check run to cancel. Format: projects/{project}/plans/{plan}/planCheckRun |
 
 
 
 
 
 
-<a name="bytebase-v1-BatchCancelPlanCheckRunsResponse"></a>
+<a name="bytebase-v1-CancelPlanCheckRunResponse"></a>
 
-### BatchCancelPlanCheckRunsResponse
+### CancelPlanCheckRunResponse
 
 
 
@@ -7457,6 +7455,21 @@ SQLService executes SQL queries and manages query operations.
 
 
 
+<a name="bytebase-v1-GetPlanCheckRunRequest"></a>
+
+### GetPlanCheckRunRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the plan check run to retrieve. Format: projects/{project}/plans/{plan}/planCheckRun |
+
+
+
+
+
+
 <a name="bytebase-v1-GetPlanRequest"></a>
 
 ### GetPlanRequest
@@ -7466,42 +7479,6 @@ SQLService executes SQL queries and manages query operations.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the plan to retrieve. Format: projects/{project}/plans/{plan} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPlanCheckRunsRequest"></a>
-
-### ListPlanCheckRunsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of plan check runs. Format: projects/{project}/plans/{plan} |
-| latest_only | [bool](#bool) |  | If set to true, only the latest plan check run will be returned. |
-| filter | [string](#string) |  | Filter is used to filter plan check runs returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filters: - status: the plan check run status, support &#34;==&#34; and &#34;in&#34; operator, check the Status enum in the PlanCheckRun message for the values. - result_status: the plan check run result status, support &#34;==&#34; and &#34;in&#34; operator, check the Result.Status enum in the PlanCheckRun message for the values.
-
-For example: status in [&#34;DONE&#34;, &#34;FAILED&#34;] status == &#34;RUNNING&#34; result_status in [&#34;SUCCESS&#34;, &#34;ERROR&#34;] result_status == &#34;WARNING&#34; |
-
-
-
-
-
-
-<a name="bytebase-v1-ListPlanCheckRunsResponse"></a>
-
-### ListPlanCheckRunsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plan_check_runs | [PlanCheckRun](#bytebase-v1-PlanCheckRun) | repeated | The plan check runs from the specified request. |
 
 
 
@@ -7562,6 +7539,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR - RUNNING |
+| has_rollout | [bool](#bool) |  | Whether the plan has started the rollout. |
 
 
 
@@ -7687,7 +7665,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/planCheckRun |
 | status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
 | results | [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result) | repeated |  |
 | error | [string](#string) |  | error is set if the Status is FAILED. |
@@ -7884,9 +7862,9 @@ PlanService manages deployment plans for database changes.
 | SearchPlans | [SearchPlansRequest](#bytebase-v1-SearchPlansRequest) | [SearchPlansResponse](#bytebase-v1-SearchPlansResponse) | Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter &amp; query. Permissions required: bb.plans.get |
 | CreatePlan | [CreatePlanRequest](#bytebase-v1-CreatePlanRequest) | [Plan](#bytebase-v1-Plan) | Creates a new deployment plan. Permissions required: bb.plans.create |
 | UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) | UpdatePlan updates the plan. The plan creator and the user with bb.plans.update permission on the project can update the plan. Permissions required: bb.plans.update (or creator) |
-| ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) | Lists plan check runs for a deployment plan. Permissions required: bb.planCheckRuns.list |
+| GetPlanCheckRun | [GetPlanCheckRunRequest](#bytebase-v1-GetPlanCheckRunRequest) | [PlanCheckRun](#bytebase-v1-PlanCheckRun) | Gets the plan check run for a deployment plan. Permissions required: bb.planCheckRuns.get |
 | RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) | Executes validation checks on a deployment plan. Permissions required: bb.planCheckRuns.run |
-| BatchCancelPlanCheckRuns | [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest) | [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse) | Cancels multiple plan check runs. Permissions required: bb.planCheckRuns.run |
+| CancelPlanCheckRun | [CancelPlanCheckRunRequest](#bytebase-v1-CancelPlanCheckRunRequest) | [CancelPlanCheckRunResponse](#bytebase-v1-CancelPlanCheckRunResponse) | Cancels the plan check run for a deployment plan. Permissions required: bb.planCheckRuns.run |
 
  
 
@@ -9397,7 +9375,7 @@ RoleService manages workspace roles and permissions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The name of the parent of the taskRuns. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage. |
+| parent | [string](#string) |  | The task name for the taskRuns. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage. |
 | task_runs | [string](#string) | repeated | The taskRuns to cancel. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 
 
@@ -9423,7 +9401,7 @@ RoleService manages workspace roles and permissions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The name of the parent of the tasks. Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
+| parent | [string](#string) |  | The stage name for the tasks. Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
 | tasks | [string](#string) | repeated | The tasks to run. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The task run should run after run_time. |
 
@@ -9450,7 +9428,7 @@ RoleService manages workspace roles and permissions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The name of the parent of the tasks. Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
+| parent | [string](#string) |  | The stage name for the tasks. Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
 | tasks | [string](#string) | repeated | The tasks to skip. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
 | reason | [string](#string) |  | The reason for skipping the tasks. |
 

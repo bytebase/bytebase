@@ -7,12 +7,36 @@ import (
 	"strings"
 	"sync"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
+	"github.com/zeebo/xxh3"
 
 	lsp "github.com/bytebase/lsp-protocol"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
+)
+
+type isAllDMLCacheKey struct {
+	engine storepb.Engine
+	hash   uint64
+}
+
+type isAllDMLResult struct {
+	sync.Mutex
+	computed bool
+	value    bool
+}
+
+var (
+	isAllDMLCacheMu sync.Mutex
+	isAllDMLCache   = func() *lru.Cache[isAllDMLCacheKey, *isAllDMLResult] {
+		cache, err := lru.New[isAllDMLCacheKey, *isAllDMLResult](1024)
+		if err != nil {
+			panic(err)
+		}
+		return cache
+	}()
 )
 
 var (
@@ -320,7 +344,30 @@ func GetStatementTypes(engine storepb.Engine, asts []AST) ([]string, error) {
 
 // IsAllDML checks if all statements are DML (INSERT, UPDATE, DELETE).
 // Returns false for unsupported engines or parse errors (conservative approach).
+// Results are cached to avoid repeated parsing of the same statement.
+// Safe for concurrent calls with the same statement.
 func IsAllDML(engine storepb.Engine, statement string) bool {
+	key := isAllDMLCacheKey{engine: engine, hash: xxh3.HashString(statement)}
+
+	isAllDMLCacheMu.Lock()
+	result, ok := isAllDMLCache.Get(key)
+	if !ok {
+		result = &isAllDMLResult{}
+		isAllDMLCache.Add(key, result)
+	}
+	isAllDMLCacheMu.Unlock()
+
+	result.Lock()
+	defer result.Unlock()
+	if result.computed {
+		return result.value
+	}
+	result.value = isAllDMLImpl(engine, statement)
+	result.computed = true
+	return result.value
+}
+
+func isAllDMLImpl(engine storepb.Engine, statement string) bool {
 	asts, err := Parse(engine, statement)
 	if err != nil {
 		return false

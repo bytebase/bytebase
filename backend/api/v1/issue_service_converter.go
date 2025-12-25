@@ -106,8 +106,9 @@ func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMes
 	if issue.PlanUID != nil {
 		issueV1.Plan = common.FormatPlan(issue.ProjectID, *issue.PlanUID)
 	}
-	if issue.PipelineUID != nil {
-		issueV1.Rollout = common.FormatRollout(issue.ProjectID, *issue.PipelineUID)
+	// Rollout uses PlanUID as ID.
+	if issue.PlanUID != nil {
+		issueV1.Rollout = common.FormatRollout(issue.ProjectID, int(*issue.PlanUID))
 	}
 
 	approval := issuePayload.GetApproval()
@@ -191,10 +192,10 @@ func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store
 	if issue.Status != storepb.Issue_OPEN {
 		return nil, nil
 	}
-	if issue.PipelineUID == nil {
+	if issue.PlanUID == nil {
 		return nil, nil
 	}
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: issue.PipelineUID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: issue.PlanUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list issue tasks")
 	}

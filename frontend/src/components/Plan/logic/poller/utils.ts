@@ -9,8 +9,8 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import {
+  GetPlanCheckRunRequestSchema,
   GetPlanRequestSchema,
-  ListPlanCheckRunsRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
@@ -33,16 +33,20 @@ export const refreshPlanCheckRuns = async (
   project: Project,
   planCheckRuns: Ref<PlanCheckRun[]>
 ): Promise<void> => {
-  if (!hasProjectPermissionV2(project, "bb.planCheckRuns.list")) {
+  if (!hasProjectPermissionV2(project, "bb.planCheckRuns.get")) {
     return;
   }
 
-  const request = create(ListPlanCheckRunsRequestSchema, {
-    parent: plan.name,
-    latestOnly: true,
+  const request = create(GetPlanCheckRunRequestSchema, {
+    name: `${plan.name}/planCheckRun`,
   });
-  const response = await planServiceClientConnect.listPlanCheckRuns(request);
-  planCheckRuns.value = response.planCheckRuns;
+  try {
+    const response = await planServiceClientConnect.getPlanCheckRun(request);
+    planCheckRuns.value = [response];
+  } catch {
+    // Plan check run might not exist yet
+    planCheckRuns.value = [];
+  }
 };
 
 export const refreshRollout = async (

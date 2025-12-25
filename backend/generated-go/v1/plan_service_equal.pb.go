@@ -325,42 +325,21 @@ func (x *Plan) Equal(y *Plan) bool {
 			return false
 		}
 	}
+	if x.HasRollout != y.HasRollout {
+		return false
+	}
 	return true
 }
 
-func (x *ListPlanCheckRunsRequest) Equal(y *ListPlanCheckRunsRequest) bool {
+func (x *GetPlanCheckRunRequest) Equal(y *GetPlanCheckRunRequest) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Parent != y.Parent {
+	if x.Name != y.Name {
 		return false
-	}
-	if x.LatestOnly != y.LatestOnly {
-		return false
-	}
-	if x.Filter != y.Filter {
-		return false
-	}
-	return true
-}
-
-func (x *ListPlanCheckRunsResponse) Equal(y *ListPlanCheckRunsResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.PlanCheckRuns) != len(y.PlanCheckRuns) {
-		return false
-	}
-	for i := 0; i < len(x.PlanCheckRuns); i++ {
-		if !x.PlanCheckRuns[i].Equal(y.PlanCheckRuns[i]) {
-			return false
-		}
 	}
 	return true
 }
@@ -391,28 +370,20 @@ func (x *RunPlanChecksResponse) Equal(y *RunPlanChecksResponse) bool {
 	return true
 }
 
-func (x *BatchCancelPlanCheckRunsRequest) Equal(y *BatchCancelPlanCheckRunsRequest) bool {
+func (x *CancelPlanCheckRunRequest) Equal(y *CancelPlanCheckRunRequest) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Parent != y.Parent {
+	if x.Name != y.Name {
 		return false
-	}
-	if len(x.PlanCheckRuns) != len(y.PlanCheckRuns) {
-		return false
-	}
-	for i := 0; i < len(x.PlanCheckRuns); i++ {
-		if x.PlanCheckRuns[i] != y.PlanCheckRuns[i] {
-			return false
-		}
 	}
 	return true
 }
 
-func (x *BatchCancelPlanCheckRunsResponse) Equal(y *BatchCancelPlanCheckRunsResponse) bool {
+func (x *CancelPlanCheckRunResponse) Equal(y *CancelPlanCheckRunResponse) bool {
 	if x == y {
 		return true
 	}

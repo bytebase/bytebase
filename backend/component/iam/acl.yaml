@@ -39,7 +39,7 @@ roles:
       - bb.issues.get
       - bb.issues.list
       - bb.issues.update
-      - bb.planCheckRuns.list
+      - bb.planCheckRuns.get
       - bb.planCheckRuns.run
       - bb.plans.create
       - bb.plans.get
@@ -152,7 +152,7 @@ roles:
       - bb.issues.get
       - bb.issues.list
       - bb.issues.update
-      - bb.planCheckRuns.list
+      - bb.planCheckRuns.get
       - bb.planCheckRuns.run
       - bb.plans.create
       - bb.plans.get
@@ -267,7 +267,7 @@ roles:
       - bb.issues.get
       - bb.issues.list
       - bb.issues.update
-      - bb.planCheckRuns.list
+      - bb.planCheckRuns.get
       - bb.planCheckRuns.run
       - bb.plans.create
       - bb.plans.get
@@ -327,7 +327,7 @@ roles:
       - bb.issues.get
       - bb.issues.list
       - bb.issues.update
-      - bb.planCheckRuns.list
+      - bb.planCheckRuns.get
       - bb.planCheckRuns.run
       - bb.plans.create
       - bb.plans.get
@@ -381,7 +381,7 @@ roles:
       - bb.issueComments.update
       - bb.issues.get
       - bb.issues.list
-      - bb.planCheckRuns.list
+      - bb.planCheckRuns.get
       - bb.planCheckRuns.run
       - bb.plans.get
       - bb.plans.list

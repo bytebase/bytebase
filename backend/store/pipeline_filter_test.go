@@ -13,7 +13,7 @@ func TestGetListRolloutFilter(t *testing.T) {
 	ctx := context.Background()
 
 	// The subquery used for update_time filtering
-	updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.task_id = task.id WHERE task.pipeline_id = pipeline.id), pipeline.created_at)`
+	updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.task_id = task.id WHERE task.plan_id = plan.id), plan.created_at)`
 
 	tests := []struct {
 		name        string
@@ -33,21 +33,21 @@ func TestGetListRolloutFilter(t *testing.T) {
 		{
 			name:     "creator filter",
 			filter:   `creator == "users/test@example.com"`,
-			wantSQL:  "(pipeline.creator = $1)",
+			wantSQL:  "(plan.creator = $1)",
 			wantArgs: []any{"test@example.com"},
 			wantErr:  false,
 		},
 		{
 			name:     "task_type equals filter",
 			filter:   `task_type == "DATABASE_MIGRATE"`,
-			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = pipeline.id AND task.type = $1))",
+			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = $1))",
 			wantArgs: []any{"DATABASE_MIGRATE"},
 			wantErr:  false,
 		},
 		{
 			name:     "task_type in filter",
 			filter:   `task_type in ["DATABASE_MIGRATE", "DATABASE_SDL"]`,
-			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = pipeline.id AND task.type = ANY($1)))",
+			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY($1)))",
 			wantArgs: []any{[]string{"DATABASE_MIGRATE", "DATABASE_SDL"}},
 			wantErr:  false,
 		},
@@ -84,7 +84,7 @@ func TestGetListRolloutFilter(t *testing.T) {
 		{
 			name:    "AND condition with task_type and update_time",
 			filter:  `task_type == "DATABASE_MIGRATE" && update_time >= "2024-01-01T00:00:00Z"`,
-			wantSQL: "((EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = pipeline.id AND task.type = $1) AND " + updatedAtSubquery + " >= $2))",
+			wantSQL: "((EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = $1) AND " + updatedAtSubquery + " >= $2))",
 			wantArgs: []any{"DATABASE_MIGRATE", func() time.Time {
 				ts, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
 				return ts

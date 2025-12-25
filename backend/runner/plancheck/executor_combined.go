@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// CombinedExecutor processes all plan check types for a consolidated plan check run.
+// CombinedExecutor processes all plan check types.
 type CombinedExecutor struct {
 	store          *store.Store
 	sheetManager   *sheet.Manager
@@ -34,7 +34,7 @@ func NewCombinedExecutor(
 	}
 }
 
-// Run runs all checks for a consolidated config.
+// Run runs all checks for the given config.
 func (e *CombinedExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
 	var allResults []*storepb.PlanCheckRunResult_Result
 

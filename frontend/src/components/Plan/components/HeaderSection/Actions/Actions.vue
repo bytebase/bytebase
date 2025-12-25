@@ -16,6 +16,26 @@
       </div>
     </template>
 
+    <!-- Show IssueReviewButton when review actions are available -->
+    <template v-else-if="showReviewButton">
+      <div class="flex items-center gap-x-2">
+        <IssueReviewButton
+          :can-approve="canApprove"
+          :can-reject="canReject"
+          :disabled="actionsDisabled"
+          :disabled-tooltip="disabledTooltip"
+        />
+        <!-- Secondary actions dropdown (excluding review actions) -->
+        <UnifiedActionGroup
+          v-if="nonReviewSecondaryActions.length > 0"
+          :secondary-actions="nonReviewSecondaryActions"
+          :disabled="actionsDisabled"
+          :disabled-tooltip="disabledTooltip"
+          @perform-action="handlePerformAction"
+        />
+      </div>
+    </template>
+
     <!-- Show unified actions for other plan states -->
     <template v-else>
       <UnifiedActionGroup
@@ -29,10 +49,6 @@
 
     <!-- Panels -->
     <template v-if="issue">
-      <IssueReviewActionPanel
-        :action="pendingReviewAction"
-        @close="pendingReviewAction = undefined"
-      />
       <IssueStatusActionPanel
         :action="pendingStatusAction"
         @close="pendingStatusAction = undefined"
@@ -84,10 +100,10 @@ import {
   isValidPlanName,
 } from "@/utils";
 import { CreateButton, CreateIssueButton } from "./create";
-import { IssueReviewActionPanel, IssueStatusActionPanel } from "./panels";
+import { IssueStatusActionPanel } from "./panels";
 import {
   type ActionConfig,
-  type IssueReviewAction,
+  IssueReviewButton,
   type IssueStatusAction,
   type PlanAction,
   type RolloutAction,
@@ -104,7 +120,7 @@ const { project } = useCurrentProjectV1();
 const { isCreating, plan, issue, rollout, events } = usePlanContext();
 const planStore = usePlanStore();
 const editorState = useEditorState();
-const { availableActions } = usePlanAction();
+const { availableActions, canApprove, canReject } = usePlanAction();
 const creatingRollout = ref(false);
 
 // Computed property for actions disabled state.
@@ -121,7 +137,6 @@ const disabledTooltip = computed(() => {
 });
 
 // Panel visibility state
-const pendingReviewAction = ref<IssueReviewAction | undefined>(undefined);
 const pendingStatusAction = ref<IssueStatusAction | undefined>(undefined);
 const pendingRolloutAction = ref<RolloutAction | undefined>(undefined);
 
@@ -152,6 +167,18 @@ const showCreateIssueButton = computed(() => {
   return !isIssueOnly.value && availableActions.value.includes("ISSUE_CREATE");
 });
 
+// Show the unified review button when ISSUE_REVIEW is available
+const showReviewButton = computed(() => {
+  return availableActions.value.includes("ISSUE_REVIEW");
+});
+
+// Secondary actions excluding review action (for when review button is shown)
+const nonReviewSecondaryActions = computed((): ActionConfig[] => {
+  return secondaryActions.value.filter(
+    (config) => config.action !== "ISSUE_REVIEW"
+  );
+});
+
 const primaryAction = computed((): ActionConfig | undefined => {
   const actions = availableActions.value;
 
@@ -165,13 +192,8 @@ const primaryAction = computed((): ActionConfig | undefined => {
     return { action: "ISSUE_STATUS_REOPEN" };
   }
 
-  // ISSUE_REVIEW_APPROVE and ISSUE_REVIEW_RE_REQUEST are primary actions
-  if (actions.includes("ISSUE_REVIEW_APPROVE")) {
-    return { action: "ISSUE_REVIEW_APPROVE" };
-  }
-  if (actions.includes("ISSUE_REVIEW_RE_REQUEST")) {
-    return { action: "ISSUE_REVIEW_RE_REQUEST" };
-  }
+  // ISSUE_REVIEW is handled by IssueReviewButton, not UnifiedActionGroup
+  // So we skip it here and let showReviewButton handle it
 
   // ISSUE_STATUS_RESOLVE is primary when issue can be resolved
   if (actions.includes("ISSUE_STATUS_RESOLVE")) {
@@ -195,9 +217,7 @@ const secondaryActions = computed((): ActionConfig[] => {
   const actions = availableActions.value;
   const secondary: ActionConfig[] = [];
 
-  if (actions.includes("ISSUE_REVIEW_REJECT")) {
-    secondary.push({ action: "ISSUE_REVIEW_REJECT" });
-  }
+  // ISSUE_REVIEW is handled by IssueReviewButton, not in secondary actions
   if (actions.includes("ROLLOUT_CREATE")) {
     secondary.push({ action: "ROLLOUT_CREATE" });
   }
@@ -217,11 +237,7 @@ const secondaryActions = computed((): ActionConfig[] => {
 
 const handlePerformAction = async (action: UnifiedAction) => {
   switch (action) {
-    case "ISSUE_REVIEW_APPROVE":
-    case "ISSUE_REVIEW_REJECT":
-    case "ISSUE_REVIEW_RE_REQUEST":
-      pendingReviewAction.value = action as IssueReviewAction;
-      break;
+    // ISSUE_REVIEW is handled directly by IssueReviewButton
     case "ISSUE_STATUS_CLOSE":
     case "ISSUE_STATUS_REOPEN":
     case "ISSUE_STATUS_RESOLVE":

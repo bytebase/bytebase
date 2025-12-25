@@ -24,6 +24,13 @@ func validateIAMBinding(binding *storepb.Binding) bool {
 	return ok
 }
 
+func FormatGroupName(group *store.GroupMessage) string {
+	if group.Email != "" {
+		return common.FormatGroupEmail(group.Email)
+	}
+	return common.FormatGroupEmail(group.ID)
+}
+
 // GetUsersByRoleInIAMPolicy gets users in the iam policy.
 func GetUsersByRoleInIAMPolicy(ctx context.Context, stores *store.Store, role string, policies ...*storepb.IamPolicy) []*store.UserMessage {
 	roleFullName := common.FormatRole(role)

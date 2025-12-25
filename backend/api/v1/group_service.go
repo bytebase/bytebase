@@ -212,8 +212,10 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	if err := s.iamManager.ReloadCache(ctx); err != nil {
-		return nil, err
+	if patch.Payload != nil {
+		if err := s.iamManager.ReloadCache(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	result, err := s.convertToV1Group(groupMessage)
@@ -332,14 +334,8 @@ func (*GroupService) convertToV1Group(groupMessage *store.GroupMessage) (*v1pb.G
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("cannot found group"))
 	}
 
-	var name string
-	if groupMessage.Email != "" {
-		name = common.FormatGroupEmail(groupMessage.Email)
-	} else {
-		name = common.FormatGroupEmail(groupMessage.ID)
-	}
 	group := &v1pb.Group{
-		Name:        name,
+		Name:        utils.FormatGroupName(groupMessage),
 		Title:       groupMessage.Title,
 		Description: groupMessage.Description,
 		Source:      groupMessage.Payload.Source,

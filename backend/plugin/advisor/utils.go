@@ -13,15 +13,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// NormalizeStatement limit the max length of the statements.
-func NormalizeStatement(statement string) string {
-	maxLength := 1000
-	if len(statement) > maxLength {
-		return statement[:maxLength] + "..."
-	}
-	return statement
-}
-
 type QueryContext struct {
 	TenantMode    bool
 	PreExecutions []string

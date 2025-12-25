@@ -156,7 +156,6 @@ func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleCo
 
 	// Get the statement text
 	statementText := getTextFromTokens(r.tokens, ctx)
-	normalizedStmt := advisor.NormalizeStatement(statementText)
 
 	// Run EXPLAIN to get estimated row count
 	res, err := advisor.Query(r.ctx, advisor.QueryContext{
@@ -169,7 +168,7 @@ func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleCo
 			Status:  r.level,
 			Code:    code.InsertTooManyRows.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", normalizedStmt, err.Error()),
+			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", statementText, err.Error()),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
 				Column: 0,
@@ -184,7 +183,7 @@ func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleCo
 			Status:  r.level,
 			Code:    code.Internal.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("failed to get row count for \"%s\": %s", normalizedStmt, err.Error()),
+			Content: fmt.Sprintf("failed to get row count for \"%s\": %s", statementText, err.Error()),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
 				Column: 0,
@@ -198,7 +197,7 @@ func (r *statementAffectedRowLimitRule) checkAffectedRows(ctx antlr.ParserRuleCo
 			Status:  r.level,
 			Code:    code.StatementAffectedRowExceedsLimit.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("The statement \"%s\" affected %d rows (estimated). The count exceeds %d.", normalizedStmt, rowCount, r.maxRow),
+			Content: fmt.Sprintf("The statement \"%s\" affected %d rows (estimated). The count exceeds %d.", statementText, rowCount, r.maxRow),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
 				Column: 0,

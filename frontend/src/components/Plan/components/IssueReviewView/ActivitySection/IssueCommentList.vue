@@ -77,6 +77,7 @@ import { NButton } from "naive-ui";
 import { computed, onMounted, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import MarkdownEditor from "@/components/MarkdownEditor";
+import { usePlanContext } from "@/components/Plan/logic";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useCurrentProjectV1, useIssueCommentStore } from "@/store";
 import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
@@ -90,6 +91,7 @@ import IssueDescriptionComment from "./IssueCommentView/IssueDescriptionComment.
 
 const route = useRoute();
 const { project } = useCurrentProjectV1();
+const { events } = usePlanContext();
 const issueCommentStore = useIssueCommentStore();
 
 const commentEdit = useCommentEdit(project);
@@ -113,6 +115,9 @@ const fetchIssueComments = async () => {
 };
 
 watchEffect(fetchIssueComments);
+
+// Refresh comments when a review action is performed (approve/reject/re-request)
+events.on("perform-issue-review-action", fetchIssueComments);
 
 const issueComments = computed(() => {
   if (!issueName.value) return [];

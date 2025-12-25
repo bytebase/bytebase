@@ -64,12 +64,12 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		return true, nil, errors.Errorf("creating database is not supported for engine %v", instance.Metadata.GetEngine().String())
 	}
 
-	pipeline, err := exec.store.GetPipelineByID(ctx, task.PipelineID)
+	plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
 	if err != nil {
-		return true, nil, errors.Wrapf(err, "failed to get pipeline")
+		return true, nil, errors.Wrapf(err, "failed to get plan %v", task.PlanID)
 	}
-	if pipeline == nil {
-		return true, nil, errors.Errorf("pipeline %v not found", task.PipelineID)
+	if plan == nil {
+		return true, nil, errors.Errorf("plan %v not found", task.PlanID)
 	}
 
 	// Create database.
@@ -85,7 +85,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		environmentID = &envID
 	}
 	database, err := exec.store.UpsertDatabase(ctx, &store.DatabaseMessage{
-		ProjectID:     pipeline.ProjectID,
+		ProjectID:     plan.ProjectID,
 		InstanceID:    instance.ResourceID,
 		DatabaseName:  task.Payload.GetDatabaseName(),
 		EnvironmentID: environmentID,

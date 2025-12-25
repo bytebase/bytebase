@@ -340,6 +340,13 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
    * @generated from field: map<string, int32> plan_check_run_status_count = 11;
    */
   planCheckRunStatusCount: { [key: string]: number };
+
+  /**
+   * Whether the plan has started the rollout.
+   *
+   * @generated from field: bool has_rollout = 12;
+   */
+  hasRollout: boolean;
 };
 
 /**
@@ -565,66 +572,23 @@ export declare type Plan_ExportDataConfig = Message<"bytebase.v1.Plan.ExportData
 export declare const Plan_ExportDataConfigSchema: GenMessage<Plan_ExportDataConfig>;
 
 /**
- * @generated from message bytebase.v1.ListPlanCheckRunsRequest
+ * @generated from message bytebase.v1.GetPlanCheckRunRequest
  */
-export declare type ListPlanCheckRunsRequest = Message<"bytebase.v1.ListPlanCheckRunsRequest"> & {
+export declare type GetPlanCheckRunRequest = Message<"bytebase.v1.GetPlanCheckRunRequest"> & {
   /**
-   * The parent, which owns this collection of plan check runs.
-   * Format: projects/{project}/plans/{plan}
+   * The name of the plan check run to retrieve.
+   * Format: projects/{project}/plans/{plan}/planCheckRun
    *
-   * @generated from field: string parent = 1;
+   * @generated from field: string name = 1;
    */
-  parent: string;
-
-  /**
-   * If set to true, only the latest plan check run will be returned.
-   *
-   * @generated from field: bool latest_only = 2;
-   */
-  latestOnly: boolean;
-
-  /**
-   * Filter is used to filter plan check runs returned in the list.
-   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-   *
-   * Supported filters:
-   * - status: the plan check run status, support "==" and "in" operator, check the Status enum in the PlanCheckRun message for the values.
-   * - result_status: the plan check run result status, support "==" and "in" operator, check the Result.Status enum in the PlanCheckRun message for the values.
-   *
-   * For example:
-   * status in ["DONE", "FAILED"]
-   * status == "RUNNING"
-   * result_status in ["SUCCESS", "ERROR"]
-   * result_status == "WARNING"
-   *
-   * @generated from field: string filter = 3;
-   */
-  filter: string;
+  name: string;
 };
 
 /**
- * Describes the message bytebase.v1.ListPlanCheckRunsRequest.
- * Use `create(ListPlanCheckRunsRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.GetPlanCheckRunRequest.
+ * Use `create(GetPlanCheckRunRequestSchema)` to create a new message.
  */
-export declare const ListPlanCheckRunsRequestSchema: GenMessage<ListPlanCheckRunsRequest>;
-
-/**
- * @generated from message bytebase.v1.ListPlanCheckRunsResponse
- */
-export declare type ListPlanCheckRunsResponse = Message<"bytebase.v1.ListPlanCheckRunsResponse"> & {
-  /**
-   * The plan check runs from the specified request.
-   *
-   * @generated from field: repeated bytebase.v1.PlanCheckRun plan_check_runs = 1;
-   */
-  planCheckRuns: PlanCheckRun[];
-};
-
-/**
- * Describes the message bytebase.v1.ListPlanCheckRunsResponse.
- * Use `create(ListPlanCheckRunsResponseSchema)` to create a new message.
- */
-export declare const ListPlanCheckRunsResponseSchema: GenMessage<ListPlanCheckRunsResponse>;
+export declare const GetPlanCheckRunRequestSchema: GenMessage<GetPlanCheckRunRequest>;
 
 /**
  * @generated from message bytebase.v1.RunPlanChecksRequest
@@ -667,51 +631,42 @@ export declare type RunPlanChecksResponse = Message<"bytebase.v1.RunPlanChecksRe
 export declare const RunPlanChecksResponseSchema: GenMessage<RunPlanChecksResponse>;
 
 /**
- * @generated from message bytebase.v1.BatchCancelPlanCheckRunsRequest
+ * @generated from message bytebase.v1.CancelPlanCheckRunRequest
  */
-export declare type BatchCancelPlanCheckRunsRequest = Message<"bytebase.v1.BatchCancelPlanCheckRunsRequest"> & {
+export declare type CancelPlanCheckRunRequest = Message<"bytebase.v1.CancelPlanCheckRunRequest"> & {
   /**
-   * The name of the parent of the planChecks.
-   * Format: projects/{project}/plans/{plan}
+   * The name of the plan check run to cancel.
+   * Format: projects/{project}/plans/{plan}/planCheckRun
    *
-   * @generated from field: string parent = 1;
+   * @generated from field: string name = 1;
    */
-  parent: string;
-
-  /**
-   * TODO(d): update this API.
-   * The planCheckRuns to cancel.
-   * Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
-   *
-   * @generated from field: repeated string plan_check_runs = 2;
-   */
-  planCheckRuns: string[];
+  name: string;
 };
 
 /**
- * Describes the message bytebase.v1.BatchCancelPlanCheckRunsRequest.
- * Use `create(BatchCancelPlanCheckRunsRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.CancelPlanCheckRunRequest.
+ * Use `create(CancelPlanCheckRunRequestSchema)` to create a new message.
  */
-export declare const BatchCancelPlanCheckRunsRequestSchema: GenMessage<BatchCancelPlanCheckRunsRequest>;
+export declare const CancelPlanCheckRunRequestSchema: GenMessage<CancelPlanCheckRunRequest>;
 
 /**
- * @generated from message bytebase.v1.BatchCancelPlanCheckRunsResponse
+ * @generated from message bytebase.v1.CancelPlanCheckRunResponse
  */
-export declare type BatchCancelPlanCheckRunsResponse = Message<"bytebase.v1.BatchCancelPlanCheckRunsResponse"> & {
+export declare type CancelPlanCheckRunResponse = Message<"bytebase.v1.CancelPlanCheckRunResponse"> & {
 };
 
 /**
- * Describes the message bytebase.v1.BatchCancelPlanCheckRunsResponse.
- * Use `create(BatchCancelPlanCheckRunsResponseSchema)` to create a new message.
+ * Describes the message bytebase.v1.CancelPlanCheckRunResponse.
+ * Use `create(CancelPlanCheckRunResponseSchema)` to create a new message.
  */
-export declare const BatchCancelPlanCheckRunsResponseSchema: GenMessage<BatchCancelPlanCheckRunsResponse>;
+export declare const CancelPlanCheckRunResponseSchema: GenMessage<CancelPlanCheckRunResponse>;
 
 /**
  * @generated from message bytebase.v1.PlanCheckRun
  */
 export declare type PlanCheckRun = Message<"bytebase.v1.PlanCheckRun"> & {
   /**
-   * Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
+   * Format: projects/{project}/plans/{plan}/planCheckRun
    *
    * @generated from field: string name = 1;
    */
@@ -981,15 +936,15 @@ export declare const PlanService: GenService<{
     output: typeof PlanSchema;
   },
   /**
-   * Lists plan check runs for a deployment plan.
-   * Permissions required: bb.planCheckRuns.list
+   * Gets the plan check run for a deployment plan.
+   * Permissions required: bb.planCheckRuns.get
    *
-   * @generated from rpc bytebase.v1.PlanService.ListPlanCheckRuns
+   * @generated from rpc bytebase.v1.PlanService.GetPlanCheckRun
    */
-  listPlanCheckRuns: {
+  getPlanCheckRun: {
     methodKind: "unary";
-    input: typeof ListPlanCheckRunsRequestSchema;
-    output: typeof ListPlanCheckRunsResponseSchema;
+    input: typeof GetPlanCheckRunRequestSchema;
+    output: typeof PlanCheckRunSchema;
   },
   /**
    * Executes validation checks on a deployment plan.
@@ -1003,15 +958,15 @@ export declare const PlanService: GenService<{
     output: typeof RunPlanChecksResponseSchema;
   },
   /**
-   * Cancels multiple plan check runs.
+   * Cancels the plan check run for a deployment plan.
    * Permissions required: bb.planCheckRuns.run
    *
-   * @generated from rpc bytebase.v1.PlanService.BatchCancelPlanCheckRuns
+   * @generated from rpc bytebase.v1.PlanService.CancelPlanCheckRun
    */
-  batchCancelPlanCheckRuns: {
+  cancelPlanCheckRun: {
     methodKind: "unary";
-    input: typeof BatchCancelPlanCheckRunsRequestSchema;
-    output: typeof BatchCancelPlanCheckRunsResponseSchema;
+    input: typeof CancelPlanCheckRunRequestSchema;
+    output: typeof CancelPlanCheckRunResponseSchema;
   },
 }>;
 

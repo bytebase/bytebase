@@ -47,52 +47,30 @@ type FindPlanCheckRunMessage struct {
 	ResultStatus *[]storepb.Advice_Status
 }
 
-// CreatePlanCheckRuns creates new plan check runs.
-func (s *Store) CreatePlanCheckRuns(ctx context.Context, plan *PlanMessage, creates ...*PlanCheckRunMessage) error {
-	if len(creates) == 0 {
-		return nil
+// CreatePlanCheckRun creates or replaces the plan check run for a plan.
+func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMessage) error {
+	config, err := protojson.Marshal(create.Config)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal config")
+	}
+	result, err := protojson.Marshal(create.Result)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal result")
 	}
 
-	txn, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return err
+	query := `
+		INSERT INTO plan_check_run (plan_id, status, config, result)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (plan_id) DO UPDATE SET
+			status = EXCLUDED.status,
+			config = EXCLUDED.config,
+			result = EXCLUDED.result,
+			updated_at = now()
+	`
+	if _, err := s.GetDB().ExecContext(ctx, query, create.PlanUID, create.Status, config, result); err != nil {
+		return errors.Wrapf(err, "failed to upsert plan check run")
 	}
-	defer txn.Rollback()
-
-	// Delete existing plan check runs
-	q := qb.Q().Space("DELETE FROM plan_check_run WHERE plan_id = ?", plan.UID)
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build delete sql")
-	}
-	if _, err := txn.ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete plan check run for plan %d", plan.UID)
-	}
-
-	// Insert new plan check runs
-	q = qb.Q().Space("INSERT INTO plan_check_run (plan_id, status, config, result) VALUES")
-	for i, create := range creates {
-		config, err := protojson.Marshal(create.Config)
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal create config")
-		}
-		result, err := protojson.Marshal(create.Result)
-		if err != nil {
-			return errors.Wrapf(err, "failed to marshal create result %v", create.Result)
-		}
-		if i > 0 {
-			q.Space(",")
-		}
-		q.Space("(?, ?, ?, ?)", create.PlanUID, create.Status, config, result)
-	}
-	query, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build insert sql")
-	}
-	if _, err := txn.ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrapf(err, "failed to execute insert")
-	}
-	return txn.Commit()
+	return nil
 }
 
 // ListPlanCheckRuns returns a list of plan check runs based on find.
@@ -178,7 +156,6 @@ func (s *Store) GetPlanCheckRun(ctx context.Context, planUID int64) (*PlanCheckR
 	if len(runs) == 0 {
 		return nil, nil
 	}
-	// With consolidated model, there should be only one record per plan
 	return runs[0], nil
 }
 

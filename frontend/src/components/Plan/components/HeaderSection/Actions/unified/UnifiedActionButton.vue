@@ -36,7 +36,7 @@ const { actionDisplayName } = usePlanAction();
 
 const actionButtonProps = (action: UnifiedAction) => {
   switch (action) {
-    case "ISSUE_REVIEW_APPROVE":
+    case "ISSUE_REVIEW":
     case "ISSUE_CREATE":
     case "ROLLOUT_START":
       return {
@@ -46,13 +46,12 @@ const actionButtonProps = (action: UnifiedAction) => {
       return {
         type: "success" as const,
       };
-    case "ISSUE_REVIEW_RE_REQUEST":
     case "ISSUE_STATUS_REOPEN":
-    case "ISSUE_REVIEW_REJECT":
     case "ISSUE_STATUS_CLOSE":
     case "PLAN_CLOSE":
     case "PLAN_REOPEN":
     case "ROLLOUT_CANCEL":
+    case "ROLLOUT_CREATE":
       return {
         type: "default" as const,
       };

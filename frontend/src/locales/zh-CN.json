@@ -219,6 +219,7 @@
     "resources": "资源",
     "closed": "已关闭",
     "refresh": "刷新",
+    "reject": "驳回",
     "rollback": "回滚",
     "rows": {
       "self": "行",
@@ -1151,9 +1152,13 @@
       "description": "所选数据库存在 Schema 偏差，请在变更前确保该偏差符合预期。"
     },
     "review": {
+      "self": "审批",
       "approved": "已批准",
-      "rejected": "已拒绝",
-      "under-review": "等待审批"
+      "rejected": "已驳回",
+      "under-review": "等待审批",
+      "comment-description": "提交反馈，不进行批准操作",
+      "approve-description": "提交反馈并批准此工单",
+      "reject-description": "提交反馈并要求修改"
     },
     "approval": {
       "rejected-error": "此工单已被退回。",
@@ -1259,8 +1264,7 @@
     "stage": {
       "self": "阶段 | 阶段",
       "run-stage": "运行任务",
-      "confirm-create": "确定要为此阶段创建任务吗？",
-      "back-to-stage": "返回阶段 {stage}"
+      "confirm-create": "确定要为此阶段创建任务吗？"
     },
     "task": {
       "selected-count": "已选择 {count} 个任务",
@@ -2721,6 +2725,7 @@
       "send-back-issue": "退回工单？",
       "re-request-review": "请求再次审批",
       "re-request-review-issue": "请求再次审批工单？",
+      "re-request-review-success": "已成功请求再次审批",
       "sent-back-issue": "退回工单",
       "re-requested-review": "再次请求审批工单",
       "approved-by": "已批准",

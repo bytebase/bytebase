@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"connectrpc.com/connect"
@@ -33,25 +34,23 @@ func (ctl *controller) GetSQLReviewResult(ctx context.Context, plan *v1pb.Plan) 
 	defer ticker.Stop()
 
 	for range ticker.C {
-		resp, err := ctl.planServiceClient.ListPlanCheckRuns(ctx, connect.NewRequest(&v1pb.ListPlanCheckRunsRequest{
-			Parent: plan.Name,
+		resp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+			Name: fmt.Sprintf("%s/planCheckRun", plan.Name),
 		}))
 		if err != nil {
 			return nil, err
 		}
-		for _, check := range resp.Msg.PlanCheckRuns {
-			// With consolidated model, check if any result has STATEMENT_ADVISE type
-			hasStatementAdvise := false
-			for _, result := range check.Results {
-				if result.Type == v1pb.PlanCheckRun_Result_STATEMENT_ADVISE {
-					hasStatementAdvise = true
-					break
-				}
+		check := resp.Msg
+		hasStatementAdvise := false
+		for _, result := range check.Results {
+			if result.Type == v1pb.PlanCheckRun_Result_STATEMENT_ADVISE {
+				hasStatementAdvise = true
+				break
 			}
-			if hasStatementAdvise {
-				if check.Status == v1pb.PlanCheckRun_DONE || check.Status == v1pb.PlanCheckRun_FAILED {
-					return check, nil
-				}
+		}
+		if hasStatementAdvise {
+			if check.Status == v1pb.PlanCheckRun_DONE || check.Status == v1pb.PlanCheckRun_FAILED {
+				return check, nil
 			}
 		}
 	}
