@@ -863,9 +863,6 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	if plan.Config != nil {
 		p.HasRollout = plan.Config.HasRollout
 	}
-	if p.HasRollout {
-		p.Rollout = common.FormatRollout(plan.ProjectID, int(plan.UID))
-	}
 	planCheckRun, err := s.GetPlanCheckRun(ctx, int64(plan.UID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get plan check run for plan uid %d", plan.UID)

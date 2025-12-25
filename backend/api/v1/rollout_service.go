@@ -85,6 +85,10 @@ func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1
 	if rollout == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
 	}
+	// Check if the plan has a rollout
+	if rollout.Config == nil || !rollout.Config.HasRollout {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
+	}
 
 	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &rolloutID64})
 	if err != nil {
