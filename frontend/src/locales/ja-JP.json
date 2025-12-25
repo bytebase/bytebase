@@ -1259,8 +1259,7 @@
     "stage": {
       "self": "ステージ | ステージ",
       "run-stage": "タスクを実行",
-      "confirm-create": "このステージのタスクを作成してもよろしいですか？",
-      "back-to-stage": "ステージに戻る {stage}"
+      "confirm-create": "このステージのタスクを作成してもよろしいですか？"
     },
     "task": {
       "selected-count": "{count} 個のタスクが選択されました | {count} 個のタスクが選択されました",
