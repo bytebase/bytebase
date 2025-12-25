@@ -302,9 +302,6 @@ func (x *Issue) Equal(y *Issue) bool {
 	if x.Plan != y.Plan {
 		return false
 	}
-	if x.Rollout != y.Rollout {
-		return false
-	}
 	if !x.GrantRequest.Equal(y.GrantRequest) {
 		return false
 	}

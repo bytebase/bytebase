@@ -10810,12 +10810,6 @@ components:
                         The plan associated with the issue.
                          Can be empty.
                          Format: projects/{project}/plans/{plan}
-                rollout:
-                    type: string
-                    description: |-
-                        The rollout associated with the issue.
-                         Can be empty.
-                         Format: projects/{project}/rollouts/{rollout}
                 grantRequest:
                     allOf:
                         - $ref: '#/components/schemas/GrantRequest'
@@ -11697,13 +11691,6 @@ components:
                         The issue associated with the plan.
                          Can be empty.
                          Format: projects/{project}/issues/{issue}
-                rollout:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The rollout associated with the plan.
-                         Can be empty.
-                         Format: projects/{project}/rollouts/{rollout}
                 title:
                     type: string
                     description: The title of the plan.
