@@ -3060,7 +3060,7 @@ Context for identity provider authentication.
 | password | [string](#string) |  | User&#39;s password for authentication. |
 | web | [bool](#bool) |  | If web is set, we will set access token, refresh token, and user to the cookie. |
 | idp_name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
-| idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is using to get the user information from identity provider. |
+| idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is used to get the user information from identity provider. |
 | otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
 | recovery_code | [string](#string) | optional | The recovery_code is used to recovery the user&#39;s identity with MFA. |
 | mfa_temp_token | [string](#string) | optional | The mfa_temp_token is used to verify the user&#39;s identity by MFA. |

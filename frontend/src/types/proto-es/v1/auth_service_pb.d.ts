@@ -46,7 +46,7 @@ export declare type LoginRequest = Message<"bytebase.v1.LoginRequest"> & {
   idpName: string;
 
   /**
-   * The idp_context is using to get the user information from identity provider.
+   * The idp_context is used to get the user information from identity provider.
    *
    * @generated from field: bytebase.v1.IdentityProviderContext idp_context = 5;
    */
