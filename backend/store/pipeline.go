@@ -102,7 +102,12 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline 
 	}
 
 	if len(existingTasks) > 0 || len(taskCreateList) > 0 {
-		if _, err := tx.ExecContext(ctx, "UPDATE plan SET config = jsonb_set(config, '{hasRollout}', 'true'::jsonb) WHERE id = ?", planUID); err != nil {
+		q := qb.Q().Space("UPDATE plan SET config = jsonb_set(config, '{hasRollout}', 'true'::jsonb) WHERE id = ?", planUID)
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to build update plan has_rollout query")
+		}
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return 0, errors.Wrapf(err, "failed to update plan has_rollout")
 		}
 	}
