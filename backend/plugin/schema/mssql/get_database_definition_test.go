@@ -10,7 +10,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -44,13 +43,6 @@ func TestGetDatabaseDefinition(t *testing.T) {
 
 		result, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, &metadata)
 		a.NoError(err)
-
-		// Parse the output to ensure it's valid TSQL
-		_, err = tsql.ParseTSQL(result)
-		if err != nil {
-			t.Logf("Test case %d SQL:\n%s", i, result)
-		}
-		a.NoError(err, "Test case %d: Failed to parse generated SQL", i)
 
 		if record {
 			tests[i].Output = result

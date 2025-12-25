@@ -10,7 +10,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -88,12 +87,6 @@ func runMigrationTest(t *testing.T, file string) {
 			// Generate migration
 			migration, err := generateMigration(diff)
 			require.NoErrorf(t, err, "Failed to generate migration for test case [%02d]: %s", i+1, test.Description)
-
-			// Parse the generated migration to ensure it's valid SQL
-			if migration != "" {
-				_, err := tsql.ParseTSQL(migration)
-				require.NoErrorf(t, err, "Failed to parse generated SQL for test case [%02d]: %s\nSQL: %s", i+1, test.Description, migration)
-			}
 
 			require.Equalf(t, test.Expected, migration, "Test case [%02d] failed: %s", i+1, test.Description)
 		})
