@@ -296,7 +296,7 @@ CREATE TABLE plan_check_run (
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_plan_check_run_plan_id ON plan_check_run (plan_id);
+CREATE UNIQUE INDEX idx_plan_check_run_unique_plan_id ON plan_check_run(plan_id);
 
 CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHERE status = 'RUNNING';
 

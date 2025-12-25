@@ -258,7 +258,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run for plan, error: %v", err))
 	}
 	if planCheckRun != nil {
-		if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRun); err != nil {
+		if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check run, error: %v", err))
 		}
 	}
@@ -416,7 +416,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run for plan, error: %v", err))
 		}
 		if planCheckRun != nil {
-			if err := s.store.CreatePlanCheckRuns(ctx, updatedPlan, planCheckRun); err != nil {
+			if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check run, error: %v", err))
 			}
 		}
@@ -503,7 +503,7 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run for plan, error: %v", err))
 	}
 	if planCheckRun != nil {
-		if err := s.store.CreatePlanCheckRuns(ctx, plan, planCheckRun); err != nil {
+		if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check run, error: %v", err))
 		}
 	}
