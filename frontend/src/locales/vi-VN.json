@@ -219,6 +219,7 @@
     "resources": "Tài nguyên",
     "closed": "Đã đóng",
     "refresh": "Làm mới",
+    "reject": "Từ chối",
     "rollback": "Hoàn tác",
     "rows": {
       "self": "dòng",
@@ -1151,9 +1152,13 @@
       "description": "Cơ sở dữ liệu được chọn có sự trôi dạt lược đồ. Vui lòng đảm bảo rằng sự trôi dạt này được mong đợi và an toàn để áp dụng."
     },
     "review": {
+      "self": "Ôn tập",
       "approved": "Tán thành",
       "rejected": "Vật bị loại bỏ",
-      "under-review": "Đang xem xét"
+      "under-review": "Đang xem xét",
+      "comment-description": "Gửi phản hồi chung mà không cần phê duyệt",
+      "approve-description": "Gửi phản hồi và phê duyệt vấn đề này.",
+      "reject-description": "Gửi phản hồi và yêu cầu thay đổi"
     },
     "approval": {
       "rejected-error": "Đã từ chối phê duyệt vấn đề.",
@@ -2720,6 +2725,7 @@
       "send-back-issue": "Gửi lại vấn đề?",
       "re-request-review": "Yêu cầu xem xét lại",
       "re-request-review-issue": "Yêu cầu xem xét lại vấn đề?",
+      "re-request-review-success": "Yêu cầu xem xét lại đã được thực hiện thành công.",
       "sent-back-issue": "Đã gửi lại vấn đề",
       "re-requested-review": "đã yêu cầu xem xét lại vấn đề",
       "approved-by": "Được chấp thuận bởi",
