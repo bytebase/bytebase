@@ -9,7 +9,7 @@
           <NTag round>
             {{ selectedStageTitle }}
           </NTag>
-          <TaskStatus :size="'large'" :status="task.status" />
+          <TaskStatus :status="task.status" />
           <div class="flex flex-row items-center text-xl min-w-0">
             <DatabaseDisplay :database="database.name" :size="'large'" />
           </div>

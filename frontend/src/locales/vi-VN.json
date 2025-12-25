@@ -1259,8 +1259,7 @@
     "stage": {
       "self": "Giai đoạn | Các giai đoạn",
       "run-stage": "Chạy tác vụ",
-      "confirm-create": "Bạn có chắc chắn muốn tạo tác vụ cho giai đoạn này không?",
-      "back-to-stage": "Trở lại sân khấu {stage}"
+      "confirm-create": "Bạn có chắc chắn muốn tạo tác vụ cho giai đoạn này không?"
     },
     "task": {
       "selected-count": "{count} nhiệm vụ đã chọn | {count} nhiệm vụ đã chọn",

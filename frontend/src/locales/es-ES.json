@@ -1259,8 +1259,7 @@
     "stage": {
       "self": "Escenario | Escenarios",
       "run-stage": "Ejecutar tareas",
-      "confirm-create": "¿Está seguro de que desea crear tareas para esta etapa?",
-      "back-to-stage": "Volver a la etapa {stage}"
+      "confirm-create": "¿Está seguro de que desea crear tareas para esta etapa?"
     },
     "task": {
       "selected-count": "{count} tarea seleccionada | {count} tareas seleccionadas",
