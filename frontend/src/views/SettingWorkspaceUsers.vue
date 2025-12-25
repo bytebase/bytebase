@@ -56,6 +56,7 @@
               :groups="list"
               :loading="loading"
               :on-click-user="onUserClick"
+              v-model:expanded-keys="expandedKeys"
               @update-group="handleUpdateGroup"
               @remove-group="handleRemoveGroup"
             />
@@ -273,6 +274,7 @@ const subscriptionV1Store = useSubscriptionV1Store();
 const userPagedTable = ref<ComponentExposed<typeof PagedTable<User>>>();
 const groupPagedTable = ref<ComponentExposed<typeof PagedTable<Group>>>();
 const deletedUserPagedTable = ref<ComponentExposed<typeof PagedTable<User>>>();
+const expandedKeys = ref<string[]>([]);
 
 watch(
   () => route.hash,
@@ -480,8 +482,10 @@ const handleUserRestore = (user: User) => {
 };
 
 const handleGroupUpdated = (group: Group) => {
-  groupPagedTable.value?.refresh().then(() => {
-    groupPagedTable.value?.updateCache([group]);
+  const expanded = [...expandedKeys.value];
+  groupPagedTable.value?.updateCache([group]);
+  requestAnimationFrame(() => {
+    expandedKeys.value = [...expanded];
   });
 };
 
