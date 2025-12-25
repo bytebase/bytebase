@@ -262,7 +262,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 			createdTasks[k] = struct{}{}
 		}
 
-		var newTasks []*store.TaskMessage
+		newTasks := []*store.TaskMessage{}
 		for _, taskCreate := range pipelineCreate.Tasks {
 			k := taskKey{
 				instance: taskCreate.InstanceID,
