@@ -139,23 +139,23 @@ func (s *Scheduler) scheduleRunningTaskRun(ctx context.Context, taskRun *store.T
 	}
 
 	// Check max running task runs per rollout.
-	pipeline, err := s.store.GetPipelineByID(ctx, task.PipelineID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
 	if err != nil {
-		return errors.Wrapf(err, "failed to get pipeline")
+		return errors.Wrapf(err, "failed to get plan")
 	}
-	if pipeline == nil {
-		return errors.Errorf("pipeline %v not found", task.PipelineID)
+	if plan == nil {
+		return errors.Errorf("plan %v not found", task.PlanID)
 	}
 
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get project")
 	}
 	if project == nil {
-		return errors.Errorf("project %v not found", pipeline.ProjectID)
+		return errors.Errorf("project %v not found", plan.ProjectID)
 	}
 
-	rolloutID := strconv.Itoa(pipeline.ID)
+	rolloutID := strconv.FormatInt(plan.UID, 10)
 	maxRunningTaskRunsPerRollout := int(project.Setting.GetParallelTasksPerRollout())
 	if maxRunningTaskRunsPerRollout <= 0 {
 		maxRunningTaskRunsPerRollout = defaultRolloutMaxRunningTaskRuns
@@ -224,7 +224,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 		if task.DatabaseName != nil {
 			s.stateCfg.RunningDatabaseMigration.Delete(getDatabaseKey(task.InstanceID, *task.DatabaseName))
 		}
-		s.stateCfg.RolloutOutstandingTasks.Decrement(strconv.Itoa(task.PipelineID) + "/" + task.InstanceID)
+		s.stateCfg.RolloutOutstandingTasks.Decrement(strconv.FormatInt(task.PlanID, 10) + "/" + task.InstanceID)
 	}()
 
 	driverCtx, cancel := context.WithCancel(ctx)
@@ -366,22 +366,22 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 
 func (s *Scheduler) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus storepb.TaskRun_Status, errDetail string) {
 	if err := func() error {
-		rollout, err := s.store.GetPipelineByID(ctx, task.PipelineID)
+		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
 		if err != nil {
-			return errors.Wrapf(err, "failed to get pipeline")
+			return errors.Wrapf(err, "failed to get plan")
 		}
-		if rollout == nil {
-			return errors.Errorf("pipeline %v not found", task.PipelineID)
+		if plan == nil {
+			return errors.Errorf("plan %v not found", task.PlanID)
 		}
-		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &rollout.ProjectID})
+		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
 		if err != nil {
 			return errors.Wrapf(err, "failed to get project")
 		}
 		if project == nil {
-			return errors.Errorf("project %v not found", rollout.ProjectID)
+			return errors.Errorf("project %v not found", plan.ProjectID)
 		}
 		issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-			PipelineID: &task.PipelineID,
+			PlanUID: &task.PlanID,
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to get issue")
@@ -391,7 +391,7 @@ func (s *Scheduler) createActivityForTaskRunStatusUpdate(ctx context.Context, ta
 			Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
-			Rollout: webhook.NewRollout(rollout),
+			Rollout: webhook.NewRollout(plan),
 			Project: webhook.NewProject(project),
 			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
 				Title:  task.GetDatabaseName(),

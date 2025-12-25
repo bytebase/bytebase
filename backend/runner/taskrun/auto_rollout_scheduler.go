@@ -73,20 +73,20 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 		return nil
 	}
 
-	pipeline, err := s.store.GetPipelineByID(ctx, task.PipelineID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
 	if err != nil {
-		return errors.Wrapf(err, "failed to get pipeline")
+		return errors.Wrapf(err, "failed to get plan")
 	}
-	if pipeline == nil {
-		return errors.Errorf("pipeline %v not found", task.PipelineID)
+	if plan == nil {
+		return errors.Errorf("plan %v not found", task.PlanID)
 	}
 
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
 	if err != nil {
 		return errors.Wrapf(err, "failed to get project")
 	}
 	if project == nil {
-		return errors.Errorf("project %v not found", pipeline.ProjectID)
+		return errors.Errorf("project %v not found", plan.ProjectID)
 	}
 
 	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
@@ -97,7 +97,7 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 		return nil
 	}
 
-	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &task.PlanID})
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 	// Check the latest plan checks based on project settings (error only)
 	if project.Setting.RequirePlanCheckNoError {
 		pass, err := func() (bool, error) {
-			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
+			plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
 			if err != nil {
 				return false, errors.Wrapf(err, "failed to get plan")
 			}
@@ -169,7 +169,7 @@ func (s *Scheduler) scheduleAutoRolloutTask(ctx context.Context, taskUID int) er
 		Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
 		Comment: "",
 		Issue:   webhook.NewIssue(issue),
-		Rollout: webhook.NewRollout(pipeline),
+		Rollout: webhook.NewRollout(plan),
 		Project: webhook.NewProject(project),
 		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
 			Title:  task.GetDatabaseName(),

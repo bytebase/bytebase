@@ -43,9 +43,9 @@ func NewProject(p *store.ProjectMessage) *Project {
 	}
 }
 
-func NewRollout(r *store.PipelineMessage) *Rollout {
+func NewRollout(r *store.PlanMessage) *Rollout {
 	return &Rollout{
-		UID: r.ID,
+		UID: int(r.UID),
 	}
 }
 

@@ -12661,6 +12661,10 @@ components:
              - WARNING
              - ERROR
              - RUNNING
+        hasRollout:
+          type: boolean
+          title: has_rollout
+          description: Whether the plan has started the rollout.
       title: Plan
       additionalProperties: false
     bytebase.v1.Plan.ChangeDatabaseConfig:

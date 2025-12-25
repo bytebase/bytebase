@@ -16,7 +16,7 @@ import (
 type TaskRunMessage struct {
 	TaskUID     int
 	Environment string // Refer to the task's environment.
-	PipelineUID int
+	PlanUID     int64
 	Status      storepb.TaskRun_Status
 	Code        common.Code
 	Result      string
@@ -39,7 +39,7 @@ type FindTaskRunMessage struct {
 	UIDs        *[]int
 	TaskUID     *int
 	Environment *string
-	PipelineUID *int
+	PlanUID     *int64
 	Status      *[]storepb.TaskRun_Status
 }
 
@@ -76,8 +76,8 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			project.resource_id
 		FROM task_run
 		LEFT JOIN task ON task.id = task_run.task_id
-		LEFT JOIN pipeline ON pipeline.id = task.pipeline_id
-		LEFT JOIN project ON project.resource_id = pipeline.project
+		LEFT JOIN plan ON plan.id = task.plan_id
+		LEFT JOIN project ON project.resource_id = plan.project
 		WHERE TRUE
 	`)
 
@@ -93,8 +93,8 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 	if v := find.Environment; v != nil {
 		q.And("task.environment = ?", *v)
 	}
-	if v := find.PipelineUID; v != nil {
-		q.And("task.pipeline_id = ?", *v)
+	if v := find.PlanUID; v != nil {
+		q.And("task.plan_id = ?", *v)
 	}
 	if v := find.Status; v != nil {
 		var statusStrings []string
@@ -135,7 +135,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			&taskRun.Code,
 			&taskRun.Result,
 			&sheetSha256,
-			&taskRun.PipelineUID,
+			&taskRun.PlanUID,
 			&taskRun.Environment,
 			&taskRun.ProjectID,
 		); err != nil {
@@ -203,16 +203,16 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 		return nil, errors.Wrapf(err, "failed to update task run")
 	}
 
-	// Get the pipeline ID for cache invalidation
-	q := qb.Q().Space("SELECT pipeline_id FROM task WHERE id = ?", taskRun.TaskUID)
+	// Get the plan ID for cache invalidation
+	q := qb.Q().Space("SELECT plan_id FROM task WHERE id = ?", taskRun.TaskUID)
 	sql, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	var pipelineID int
-	if err := tx.QueryRowContext(ctx, sql, args...).Scan(&pipelineID); err != nil {
-		return nil, errors.Wrapf(err, "failed to get pipeline ID for task %d", taskRun.TaskUID)
+	var planID int64
+	if err := tx.QueryRowContext(ctx, sql, args...).Scan(&planID); err != nil {
+		return nil, errors.Wrapf(err, "failed to get plan ID for task %d", taskRun.TaskUID)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -227,7 +227,7 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 		UPDATE task_run
 		SET started_at = now(), updated_at = now()
 		WHERE id = ?
-		RETURNING (SELECT pipeline_id FROM task WHERE task.id = task_run.task_id)
+		RETURNING (SELECT plan_id FROM task WHERE task.id = task_run.task_id)
 	`, taskRunID)
 
 	query, args, err := q.ToSQL()
@@ -235,8 +235,8 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	var pipelineID int
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&pipelineID); err != nil {
+	var planID int64
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&planID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
 	return nil

@@ -92,11 +92,11 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 		}
 	}()
 	slog.Info("TaskSkippedOrDoneListener started")
-	type pipelineEnvironment struct {
-		pipelineUID int
+	type planEnvironment struct {
+		planUID     int64
 		environment string
 	}
-	pipelineEnvironmentDoneConfirmed := map[pipelineEnvironment]bool{}
+	planEnvironmentDoneConfirmed := map[planEnvironment]bool{}
 
 	for {
 		select {
@@ -106,11 +106,11 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 				if err != nil {
 					return errors.Wrapf(err, "failed to get task")
 				}
-				if pipelineEnvironmentDoneConfirmed[pipelineEnvironment{pipelineUID: task.PipelineID, environment: task.Environment}] {
+				if planEnvironmentDoneConfirmed[planEnvironment{planUID: task.PlanID, environment: task.Environment}] {
 					return nil
 				}
 
-				environmentTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &task.PipelineID, Environment: &task.Environment})
+				environmentTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &task.PlanID, Environment: &task.Environment})
 				if err != nil {
 					return errors.Wrapf(err, "failed to list tasks")
 				}
@@ -120,7 +120,7 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 					return nil
 				}
 
-				pipelineEnvironmentDoneConfirmed[pipelineEnvironment{pipelineUID: task.PipelineID, environment: task.Environment}] = true
+				planEnvironmentDoneConfirmed[planEnvironment{planUID: task.PlanID, environment: task.Environment}] = true
 
 				// Get live environment order
 				// Some environments may have zero tasks. We need to filter them out.
@@ -133,7 +133,7 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 					environmentOrder = append(environmentOrder, env.Id)
 				}
 
-				allTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &task.PipelineID})
+				allTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &task.PlanID})
 				if err != nil {
 					return errors.Wrapf(err, "failed to list tasks")
 				}
@@ -152,34 +152,34 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 
 				currentEnvironment := task.Environment
 				var nextEnvironment string
-				var pipelineDone bool
+				var planDone bool
 				for i, env := range filteredEnvironmentOrder {
 					if env == currentEnvironment {
 						if i < len(filteredEnvironmentOrder)-1 {
 							nextEnvironment = filteredEnvironmentOrder[i+1]
 						}
 						if i == len(filteredEnvironmentOrder)-1 {
-							pipelineDone = true
+							planDone = true
 						}
 						break
 					}
 				}
 
-				pipeline, err := s.store.GetPipelineByID(ctx, task.PipelineID)
+				plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
 				if err != nil {
-					return errors.Wrapf(err, "failed to get pipeline")
+					return errors.Wrapf(err, "failed to get plan")
 				}
-				if pipeline == nil {
-					return errors.Errorf("pipeline %v not found", task.PipelineID)
+				if plan == nil {
+					return errors.Errorf("plan %v not found", task.PlanID)
 				}
-				project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+				project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
 				if err != nil {
 					return errors.Wrapf(err, "failed to get project")
 				}
 				if project == nil {
-					return errors.Errorf("project %v not found", pipeline.ProjectID)
+					return errors.Errorf("project %v not found", plan.ProjectID)
 				}
-				issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+				issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &task.PlanID})
 				if err != nil {
 					return errors.Wrapf(err, "failed to get issue")
 				}
@@ -191,7 +191,7 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 					Type:    storepb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE,
 					Comment: "",
 					Issue:   webhook.NewIssue(issueN),
-					Rollout: webhook.NewRollout(pipeline),
+					Rollout: webhook.NewRollout(plan),
 					Project: webhook.NewProject(project),
 					StageStatusUpdate: &webhook.EventStageStatusUpdate{
 						StageTitle: currentEnvironment,
@@ -225,7 +225,7 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 				}
 
 				// After all tasks in the pipeline are done, we will resolve the issue.
-				if issueN != nil && pipelineDone {
+				if issueN != nil && planDone {
 					if err := func() error {
 						// For those database data export issues, we don't resolve them automatically.
 						if issueN.Type == storepb.Issue_DATABASE_EXPORT {

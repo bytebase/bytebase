@@ -890,23 +890,24 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		}
 	}
 
-	pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
-		ID:        &rolloutID,
+	rolloutID64 := int64(rolloutID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
+		UID:       &rolloutID64,
 		ProjectID: &projectID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout: %v", err))
 	}
-	if pipeline == nil {
+	if plan == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: &pipeline.ID})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &plan.UID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks: %v", err))
 	}
 	if len(tasks) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", pipeline.ID))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout %d has no task", plan.UID))
 	}
 
 	pendingEncrypts := []*encryptContent{}

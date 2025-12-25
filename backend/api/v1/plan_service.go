@@ -241,7 +241,6 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 
 	planMessage := &store.PlanMessage{
 		ProjectID:   projectID,
-		PipelineUID: nil,
 		Name:        req.Plan.Title,
 		Description: req.Plan.Description,
 		Config:      convertPlan(req.Plan),
@@ -353,7 +352,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			planUpdate.Deleted = &deleted
 		case "specs":
 			// Block all spec changes if plan has a rollout (pipeline).
-			if oldPlan.PipelineUID != nil {
+			// Block all spec changes if plan has a rollout (pipeline).
+			if oldPlan.Config != nil && oldPlan.Config.GetHasRollout() {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot update specs for plan that has a rollout"))
 			}
 
@@ -860,8 +860,11 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	if issue != nil {
 		p.Issue = common.FormatIssue(issue.ProjectID, issue.UID)
 	}
-	if plan.PipelineUID != nil {
-		p.Rollout = common.FormatRollout(plan.ProjectID, *plan.PipelineUID)
+	if plan.Config != nil {
+		p.HasRollout = plan.Config.HasRollout
+	}
+	if p.HasRollout {
+		p.Rollout = common.FormatRollout(plan.ProjectID, int(plan.UID))
 	}
 	planCheckRun, err := s.GetPlanCheckRun(ctx, int64(plan.UID))
 	if err != nil {

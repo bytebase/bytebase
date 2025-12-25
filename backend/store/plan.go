@@ -23,7 +23,6 @@ import (
 // PlanMessage is the message for plan.
 type PlanMessage struct {
 	ProjectID   string
-	PipelineUID *int
 	Name        string
 	Description string
 	Config      *storepb.PlanConfig
@@ -40,7 +39,8 @@ type FindPlanMessage struct {
 	UID        *int64
 	ProjectID  *string
 	ProjectIDs *[]string
-	PipelineID *int
+
+	HasRollout *bool
 
 	Limit  *int
 	Offset *int
@@ -68,14 +68,13 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 		INSERT INTO plan (
 			creator,
 			project,
-			pipeline_id,
 			name,
 			description,
 			config
 		) VALUES (
-			?, ?, ?, ?, ?, ?
+			?, ?, ?, ?, ?
 		) RETURNING id, created_at, updated_at
-	`, creator, plan.ProjectID, plan.PipelineUID, plan.Name, plan.Description, config)
+	`, creator, plan.ProjectID, plan.Name, plan.Description, config)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -126,8 +125,8 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.created_at,
 			plan.updated_at,
 			plan.project,
-			plan.pipeline_id,
 			plan.name,
+			plan.description,
 			plan.description,
 			plan.config,
 			plan.deleted
@@ -152,8 +151,12 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			q.And("plan.project = ANY(?)", *v)
 		}
 	}
-	if v := find.PipelineID; v != nil {
-		q.And("plan.pipeline_id = ?", *v)
+	if v := find.HasRollout; v != nil {
+		if *v {
+			q.And("plan.config->>'hasRollout' = ?", "true")
+		} else {
+			q.And("(plan.config->>'hasRollout' IS NULL OR plan.config->>'hasRollout' = ?)", "false")
+		}
 	}
 
 	q.Space("ORDER BY id DESC")
@@ -193,7 +196,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			&plan.CreatedAt,
 			&plan.UpdatedAt,
 			&plan.ProjectID,
-			&plan.PipelineUID,
 			&plan.Name,
 			&plan.Description,
 			&config,
@@ -322,9 +324,9 @@ func (s *Store) GetListPlanFilter(_ context.Context, filter string) (*qb.Query, 
 						return nil, errors.Errorf(`"has_pipeline" should be bool`)
 					}
 					if !hasPipeline {
-						return qb.Q().Space("plan.pipeline_id IS NULL"), nil
+						return qb.Q().Space("(plan.config->>'hasRollout' IS NULL OR plan.config->>'hasRollout' = ?)", "false"), nil
 					}
-					return qb.Q().Space("plan.pipeline_id IS NOT NULL"), nil
+					return qb.Q().Space("plan.config->>'hasRollout' = ?", "true"), nil
 				case "has_issue":
 					hasIssue, ok := value.(bool)
 					if !ok {

@@ -340,6 +340,13 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
    * @generated from field: map<string, int32> plan_check_run_status_count = 11;
    */
   planCheckRunStatusCount: { [key: string]: number };
+
+  /**
+   * Whether the plan has started the rollout.
+   *
+   * @generated from field: bool has_rollout = 12;
+   */
+  hasRollout: boolean;
 };
 
 /**

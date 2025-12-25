@@ -284,6 +284,9 @@ message Plan {
   // - RUNNING
   map<string, int32> plan_check_run_status_count = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // Whether the plan has started the rollout.
+  bool has_rollout = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
     // Format: instances/{instance}

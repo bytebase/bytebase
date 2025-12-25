@@ -11761,6 +11761,10 @@ components:
                          - WARNING
                          - ERROR
                          - RUNNING
+                hasRollout:
+                    readOnly: true
+                    type: boolean
+                    description: Whether the plan has started the rollout.
         PlanCheckRun:
             type: object
             properties:

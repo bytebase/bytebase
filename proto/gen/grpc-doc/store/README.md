@@ -2784,6 +2784,7 @@ Plan spec update event (tracks sheet changes to plan specs)
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
+| has_rollout | [bool](#bool) |  | Whether the plan has started the rollout. |
 
 
 

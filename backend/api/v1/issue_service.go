@@ -450,30 +450,11 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 	}
 	planUID = &plan.UID
-	var rolloutUID *int
-	if request.Issue.Rollout != "" {
-		_, rolloutID, err := common.GetProjectIDRolloutID(request.Issue.Rollout)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-		}
-		pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
-			ID:        &rolloutID,
-			ProjectID: &project.ResourceID,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout, error: %v", err))
-		}
-		if pipeline == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, project.ResourceID))
-		}
-		rolloutUID = &pipeline.ID
-	}
 
 	issueCreateMessage := &store.IssueMessage{
 		ProjectID:    project.ResourceID,
 		CreatorEmail: user.Email,
 		PlanUID:      planUID,
-		PipelineUID:  rolloutUID,
 		Title:        request.Issue.Title,
 		Status:       storepb.Issue_OPEN,
 		Type:         storepb.Issue_DATABASE_CHANGE,
@@ -548,7 +529,6 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 		ProjectID:    project.ResourceID,
 		CreatorEmail: user.Email,
 		PlanUID:      nil,
-		PipelineUID:  nil,
 		Title:        request.Issue.Title,
 		Status:       storepb.Issue_OPEN,
 		Type:         storepb.Issue_GRANT_REQUEST,
@@ -609,30 +589,21 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 	}
 	planUID = &plan.UID
-	var rolloutUID *int
+	// Rollout is now virtual and derived from Plan.
 	if request.Issue.Rollout != "" {
 		_, rolloutID, err := common.GetProjectIDRolloutID(request.Issue.Rollout)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 		}
-		pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
-			ID:        &rolloutID,
-			ProjectID: &project.ResourceID,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout, error: %v", err))
+		if int64(rolloutID) != plan.UID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout ID %d does not match plan ID %d", rolloutID, plan.UID))
 		}
-		if pipeline == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, project.ResourceID))
-		}
-		rolloutUID = &pipeline.ID
 	}
 
 	issueCreateMessage := &store.IssueMessage{
 		ProjectID:    project.ResourceID,
 		CreatorEmail: user.Email,
 		PlanUID:      planUID,
-		PipelineUID:  rolloutUID,
 		Title:        request.Issue.Title,
 		Status:       storepb.Issue_OPEN,
 		Type:         storepb.Issue_DATABASE_EXPORT,
@@ -800,10 +771,10 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 		// notify pipeline rollout
 		if err := func() error {
-			if issue.PipelineUID == nil {
+			if issue.PlanUID == nil {
 				return nil
 			}
-			tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PipelineID: issue.PipelineUID})
+			tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: issue.PlanUID})
 			if err != nil {
 				return errors.Wrapf(err, "failed to list tasks")
 			}
@@ -1252,9 +1223,9 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 		issues = append(issues, issue)
 
 		// Check if there is any running/pending task runs.
-		if issue.PipelineUID != nil {
+		if issue.PlanUID != nil {
 			taskRunStatusList := []storepb.TaskRun_Status{storepb.TaskRun_RUNNING, storepb.TaskRun_PENDING}
-			taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{PipelineUID: issue.PipelineUID, Status: &taskRunStatusList})
+			taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{PlanUID: issue.PlanUID, Status: &taskRunStatusList})
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list task runs, err: %v", err))
 			}

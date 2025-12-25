@@ -205,7 +205,7 @@ func (s *RevisionService) createRevisions(
 				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", revision.TaskRun))
 			}
 			if taskRun.ProjectID != projectID ||
-				taskRun.PipelineUID != rolloutID ||
+				taskRun.PlanUID != int64(rolloutID) ||
 				taskRun.Environment != formatEnvironmentFromStageID(stageID) ||
 				taskRun.TaskUID != taskID {
 				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", revision.TaskRun))

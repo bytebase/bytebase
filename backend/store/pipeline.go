@@ -41,37 +41,19 @@ type PipelineFind struct {
 	FilterQ *qb.Query
 }
 
-// CreatePipelineAIO creates a pipeline with tasks all in one.
-func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *PipelineMessage, creator string) (createdPipelineUID int, err error) {
+// CreateRolloutTasks creates tasks for a plan.
+func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline *PipelineMessage) (int64, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
 
-	pipelineUIDMaybe, err := lockPlanAndGetPipelineUID(ctx, tx, planUID)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to SELECT plan FOR UPDATE")
-	}
 	invalidateCacheF := func() {}
-	if pipelineUIDMaybe == nil {
-		createdPipeline, err := s.createPipeline(ctx, tx, pipeline, creator)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to create pipeline")
-		}
-		createdPipelineUID = createdPipeline.ID
-
-		// update pipeline uid of associated issue and plan
-		if invalidateCacheF, err = s.updatePipelineUIDOfPlan(ctx, tx, planUID, createdPipelineUID); err != nil {
-			return 0, errors.Wrapf(err, "failed to update associated plan or issue")
-		}
-	} else {
-		createdPipelineUID = *pipelineUIDMaybe
-	}
 
 	// Check existing tasks to avoid duplicates
 	existingTasks, err := s.listTasksTx(ctx, tx, &TaskFind{
-		PipelineID: &createdPipelineUID,
+		PlanID: &planUID,
 	})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to list existing tasks")
@@ -109,7 +91,7 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 		if _, ok := createdTasks[k]; ok {
 			continue
 		}
-		taskCreate.PipelineID = createdPipelineUID
+		taskCreate.PlanID = planUID
 		taskCreateList = append(taskCreateList, taskCreate)
 	}
 
@@ -119,88 +101,18 @@ func (s *Store) CreatePipelineAIO(ctx context.Context, planUID int64, pipeline *
 		}
 	}
 
+	if len(existingTasks) > 0 || len(taskCreateList) > 0 {
+		if _, err := tx.ExecContext(ctx, "UPDATE plan SET config = jsonb_set(config, '{hasRollout}', 'true'::jsonb) WHERE id = ?", planUID); err != nil {
+			return 0, errors.Wrapf(err, "failed to update plan has_rollout")
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return 0, errors.Wrapf(err, "failed to commit tx")
 	}
 	invalidateCacheF()
 
-	return createdPipelineUID, nil
-}
-
-// returns func() to invalidate cache.
-func (*Store) updatePipelineUIDOfPlan(ctx context.Context, txn *sql.Tx, planUID int64, pipelineUID int) (func(), error) {
-	q := qb.Q().Space(`
-		UPDATE plan
-		SET pipeline_id = ?
-		WHERE id = ?
-	`, pipelineUID, planUID)
-	querySQL, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-	if _, err := txn.ExecContext(ctx, querySQL, args...); err != nil {
-		return nil, errors.Wrapf(err, "failed to update plan pipeline_id")
-	}
-
-	return func() {
-		// TODO: need to remove planCache once we add planCache
-	}, nil
-}
-
-func lockPlanAndGetPipelineUID(ctx context.Context, txn *sql.Tx, planUID int64) (*int, error) {
-	q := qb.Q().Space("SELECT pipeline_id FROM plan WHERE id = ? FOR UPDATE", planUID)
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-	var uid sql.NullInt32
-	if err := txn.QueryRowContext(ctx, query, args...).Scan(&uid); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.Errorf("plan %d not found", planUID)
-		}
-		return nil, errors.Wrapf(err, "failed to get pipeline uid")
-	}
-
-	if uid.Valid {
-		uidInt := int(uid.Int32)
-		return &uidInt, nil
-	}
-	return nil, nil
-}
-
-func (*Store) createPipeline(ctx context.Context, txn *sql.Tx, create *PipelineMessage, creator string) (*PipelineMessage, error) {
-	q := qb.Q().Space(`
-		INSERT INTO pipeline (
-			project,
-			creator
-		)
-		VALUES (
-			?,
-			?
-		)
-		RETURNING id, created_at
-	`, create.ProjectID, creator)
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-	pipeline := &PipelineMessage{
-		ProjectID: create.ProjectID,
-		Creator:   creator,
-	}
-	if err := txn.QueryRowContext(ctx, query, args...).Scan(
-		&pipeline.ID,
-		&pipeline.CreatedAt,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return nil, errors.Wrapf(err, "failed to insert")
-	}
-	// Initialize UpdatedAt with CreatedAt for new pipelines
-	pipeline.UpdatedAt = pipeline.CreatedAt
-
-	return pipeline, nil
+	return planUID, nil
 }
 
 // GetPipeline gets the pipeline.
@@ -228,22 +140,21 @@ func (s *Store) GetPipelineByID(ctx context.Context, id int) (*PipelineMessage, 
 func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*PipelineMessage, error) {
 	q := qb.Q().Space(`
 		SELECT
-			pipeline.id,
-			pipeline.creator,
-			pipeline.created_at,
-			pipeline.project,
+			plan.id,
+			plan.creator,
+			plan.created_at,
+			plan.project,
 			issue.id,
 			COALESCE(
 				(
 					SELECT MAX(task_run.updated_at)
 					FROM task
 					JOIN task_run ON task_run.task_id = task.id
-					WHERE task.pipeline_id = pipeline.id
+					WHERE task.plan_id = plan.id
 				),
-				pipeline.created_at
+				plan.created_at
 			) AS updated_at
-		FROM pipeline
-		LEFT JOIN plan ON plan.pipeline_id = pipeline.id
+		FROM plan
 		LEFT JOIN issue ON issue.plan_id = plan.id
 		WHERE TRUE
 	`)
@@ -252,13 +163,13 @@ func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*Pipel
 		q.And("?", filterQ)
 	}
 	if v := find.ID; v != nil {
-		q.And("pipeline.id = ?", *v)
+		q.And("plan.id = ?", *v)
 	}
 	if v := find.ProjectID; v != nil {
-		q.And("pipeline.project = ?", *v)
+		q.And("plan.project = ?", *v)
 	}
 
-	q.Space("ORDER BY pipeline.id DESC")
+	q.Space("ORDER BY plan.id DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -348,7 +259,7 @@ func (s *Store) GetListRolloutFilter(_ context.Context, filter string) (*qb.Quer
 					if creatorEmail == "" {
 						return nil, errors.New("invalid empty creator identifier")
 					}
-					return qb.Q().Space("pipeline.creator = ?", creatorEmail), nil
+					return qb.Q().Space("plan.creator = ?", creatorEmail), nil
 				case "task_type":
 					taskType, ok := value.(string)
 					if !ok {
@@ -359,7 +270,7 @@ func (s *Store) GetListRolloutFilter(_ context.Context, filter string) (*qb.Quer
 					}
 					v1TaskType := v1pb.Task_Type(v1pb.Task_Type_value[taskType])
 					storeTaskType := convertV1ToStoreTaskType(v1TaskType)
-					return qb.Q().Space("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = pipeline.id AND task.type = ?)", storeTaskType.String()), nil
+					return qb.Q().Space("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ?)", storeTaskType.String()), nil
 				default:
 					return nil, errors.Errorf("unsupported variable %q", variable)
 				}
@@ -387,7 +298,7 @@ func (s *Store) GetListRolloutFilter(_ context.Context, filter string) (*qb.Quer
 						storeTaskType := convertV1ToStoreTaskType(v1TaskType)
 						taskTypes = append(taskTypes, storeTaskType.String())
 					}
-					return qb.Q().Space("EXISTS (SELECT 1 FROM task WHERE task.pipeline_id = pipeline.id AND task.type = ANY(?))", taskTypes), nil
+					return qb.Q().Space("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY(?))", taskTypes), nil
 				default:
 					return nil, errors.Errorf("unsupported variable %q", variable)
 				}
@@ -405,7 +316,7 @@ func (s *Store) GetListRolloutFilter(_ context.Context, filter string) (*qb.Quer
 					return nil, errors.Errorf("failed to parse time %v, error: %v", value, err)
 				}
 				// Use the same subquery as in ListPipelines SELECT to compute updated_at
-				updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.task_id = task.id WHERE task.pipeline_id = pipeline.id), pipeline.created_at)`
+				updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.task_id = task.id WHERE task.plan_id = plan.id), plan.created_at)`
 				if functionName == celoperators.GreaterEquals {
 					return qb.Q().Space(updatedAtSubquery+" >= ?", t), nil
 				}

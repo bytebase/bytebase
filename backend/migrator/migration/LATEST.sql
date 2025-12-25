@@ -191,22 +191,10 @@ CREATE INDEX idx_sheet_project ON sheet(project);
 
 ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
 
------------------------
--- Pipeline related BEGIN
--- pipeline table
-CREATE TABLE pipeline (
-    id serial PRIMARY KEY,
-    creator text NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    project text NOT NULL REFERENCES project(resource_id)
-);
-
-ALTER SEQUENCE pipeline_id_seq RESTART WITH 101;
-
 -- task table stores the task for the pipeline
 CREATE TABLE task (
     id serial PRIMARY KEY,
-    pipeline_id integer NOT NULL REFERENCES pipeline(id),
+    plan_id bigint NOT NULL REFERENCES plan(id),
     instance text NOT NULL REFERENCES instance(resource_id),
     environment text,
     db_name text,
@@ -215,7 +203,7 @@ CREATE TABLE task (
     payload jsonb NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_task_pipeline_id_environment ON task(pipeline_id, environment);
+CREATE INDEX idx_task_plan_id_environment ON task(plan_id, environment);
 
 ALTER SEQUENCE task_id_seq RESTART WITH 101;
 
@@ -270,7 +258,6 @@ CREATE TABLE plan (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
-    pipeline_id integer REFERENCES pipeline(id),
     name text NOT NULL,
     description text NOT NULL,
     -- Stored as PlanConfig (proto/store/store/plan.proto)
@@ -278,8 +265,6 @@ CREATE TABLE plan (
 );
 
 CREATE INDEX idx_plan_project ON plan(project);
-
-CREATE UNIQUE INDEX idx_plan_unique_pipeline_id ON plan(pipeline_id);
 
 ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 

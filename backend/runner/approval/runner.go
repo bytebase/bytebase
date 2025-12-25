@@ -221,10 +221,10 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if payload.Approval.ApprovalTemplate != nil {
 			return nil
 		}
-		if issue.PipelineUID == nil {
+		if issue.PlanUID == nil {
 			return nil
 		}
-		tasks, err := r.store.ListTasks(ctx, &store.TaskFind{PipelineID: issue.PipelineUID})
+		tasks, err := r.store.ListTasks(ctx, &store.TaskFind{PlanID: issue.PlanUID})
 		if err != nil {
 			return errors.Wrapf(err, "failed to list tasks")
 		}
