@@ -127,7 +127,6 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			plan.project,
 			plan.name,
 			plan.description,
-			plan.description,
 			plan.config,
 			plan.deleted
 		FROM plan
