@@ -238,6 +238,46 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		}
 	}
 	if request.ValidateOnly {
+		// Filter out tasks that already exist (same logic as CreateRolloutTasks)
+		existingTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list existing tasks, error: %v", err))
+		}
+
+		type taskKey struct {
+			instance string
+			database string
+			sheet    string
+		}
+
+		createdTasks := map[taskKey]struct{}{}
+		for _, task := range existingTasks {
+			k := taskKey{
+				instance: task.InstanceID,
+				sheet:    task.Payload.GetSheetSha256(),
+			}
+			if task.DatabaseName != nil {
+				k.database = *task.DatabaseName
+			}
+			createdTasks[k] = struct{}{}
+		}
+
+		var newTasks []*store.TaskMessage
+		for _, taskCreate := range pipelineCreate.Tasks {
+			k := taskKey{
+				instance: taskCreate.InstanceID,
+				sheet:    taskCreate.Payload.GetSheetSha256(),
+			}
+			if taskCreate.DatabaseName != nil {
+				k.database = *taskCreate.DatabaseName
+			}
+
+			if _, ok := createdTasks[k]; ok {
+				continue
+			}
+			newTasks = append(newTasks, taskCreate)
+		}
+
 		// Construct a dummy plan for preview.
 		previewPlan := &store.PlanMessage{
 			UID:       planID,
@@ -247,15 +287,11 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 			UpdatedAt: time.Now(),
 			ProjectID: project.ResourceID,
 		}
-		rolloutV1, err := convertToRollout(ctx, s.store, project, previewPlan, pipelineCreate.Tasks)
+		rolloutV1, err := convertToRollout(ctx, s.store, project, previewPlan, newTasks)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
 		}
 		rolloutV1.Plan = request.Rollout.GetPlan()
-		// Since it's preview, we might need to adjust names or IDs in tasks if they are 0.
-		// convertToRollout handles tasks with ID 0?
-		// task IDs are usually assigned by DB. For preview they might be 0.
-		// converting 0 ID might result in confusing names, but valid for preview.
 		return connect.NewResponse(rolloutV1), nil
 	}
 	_, err = s.store.CreateRolloutTasks(ctx, planID, pipelineCreate)
