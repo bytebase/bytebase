@@ -42,12 +42,12 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 			Text:     sql,
 			BaseLine: startLine,
 			Start: &storepb.Position{
-				Line:   int32(startLine + 1), // 1-based
-				Column: int32(startColumn),   // 0-based
+				Line:   int32(startLine + 1),   // 1-based
+				Column: int32(startColumn + 1), // 1-based per proto spec
 			},
 			End: &storepb.Position{
-				Line:   int32(endLine + 1), // 1-based
-				Column: int32(endColumn),   // 0-based
+				Line:   int32(endLine + 1),   // 1-based
+				Column: int32(endColumn + 1), // 1-based per proto spec
 			},
 			Range: &storepb.Range{
 				Start: int32(startPos),

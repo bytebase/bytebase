@@ -222,7 +222,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 	t.emptyStatement = true
 	startPos := t.cursor
 	startLine := t.line          // Track the starting line number (1-based)
-	startColumn := t.getColumn() // Track the starting column (0-based)
+	startColumn := t.getColumn() // Track the starting column (1-based)
 	for {
 		switch {
 		case t.char(0) == eofRune:
@@ -734,13 +734,15 @@ func (t *Tokenizer) skipToNewLine() {
 	t.skip(1)
 }
 
+// getColumn returns the 1-based column position of the current cursor.
+// Per the proto spec, the first character of a line is column 1.
 func (t *Tokenizer) getColumn() int {
 	for i := int(t.cursor) - 1; i >= 0; i-- {
 		if t.buffer[i] == '\n' {
-			return int(t.cursor) - i - 1
+			return int(t.cursor) - i // 1-based: first char after newline is column 1
 		}
 	}
-	return int(t.cursor)
+	return int(t.cursor) + 1 // 1-based: first char of first line is column 1
 }
 
 func (t *Tokenizer) pos() uint {

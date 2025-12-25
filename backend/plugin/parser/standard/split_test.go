@@ -84,8 +84,8 @@ func TestSplitSQL(t *testing.T) {
 				{
 					Text:     "SELECT 1;",
 					BaseLine: 0,
-					Start:    &storepb.Position{Line: 1, Column: 0},
-					End:      &storepb.Position{Line: 1, Column: 9},
+					Start:    &storepb.Position{Line: 1, Column: 1},
+					End:      &storepb.Position{Line: 1, Column: 10},
 					Range:    &storepb.Range{Start: 0, End: 9},
 					Empty:    false,
 				},
@@ -98,8 +98,8 @@ func TestSplitSQL(t *testing.T) {
 				{
 					Text:     "SELECT\n  1;",
 					BaseLine: 0,
-					Start:    &storepb.Position{Line: 1, Column: 0},
-					End:      &storepb.Position{Line: 2, Column: 4},
+					Start:    &storepb.Position{Line: 1, Column: 1},
+					End:      &storepb.Position{Line: 2, Column: 5},
 					Range:    &storepb.Range{Start: 0, End: 11},
 					Empty:    false,
 				},
@@ -112,16 +112,16 @@ func TestSplitSQL(t *testing.T) {
 				{
 					Text:     "SELECT 1;",
 					BaseLine: 0,
-					Start:    &storepb.Position{Line: 1, Column: 0},
-					End:      &storepb.Position{Line: 1, Column: 9},
+					Start:    &storepb.Position{Line: 1, Column: 1},
+					End:      &storepb.Position{Line: 1, Column: 10},
 					Range:    &storepb.Range{Start: 0, End: 9},
 					Empty:    false,
 				},
 				{
 					Text:     "SELECT 2;",
 					BaseLine: 1,
-					Start:    &storepb.Position{Line: 2, Column: 0},
-					End:      &storepb.Position{Line: 2, Column: 9},
+					Start:    &storepb.Position{Line: 2, Column: 1},
+					End:      &storepb.Position{Line: 2, Column: 10},
 					Range:    &storepb.Range{Start: 10, End: 19},
 					Empty:    false,
 				},
@@ -134,9 +134,9 @@ func TestSplitSQL(t *testing.T) {
 				{
 					Text:     "SELECT '中文';",
 					BaseLine: 0,
-					Start:    &storepb.Position{Line: 1, Column: 0},
-					// Column is character offset: S(0) E(1) L(2) E(3) C(4) T(5) ' '(6) '(7) 中(8) 文(9) '(10) ;(11) = 12 chars
-					End:   &storepb.Position{Line: 1, Column: 12},
+					Start:    &storepb.Position{Line: 1, Column: 1},
+					// Column is 1-based character offset: S(1) E(2) L(3) E(4) C(5) T(6) ' '(7) '(8) 中(9) 文(10) '(11) ;(12) = 12 chars, End is exclusive so 13
+					End:   &storepb.Position{Line: 1, Column: 13},
 					Range: &storepb.Range{Start: 0, End: 16}, // byte length: 8 + 3 + 3 + 2 = 16
 					Empty: false,
 				},
@@ -149,9 +149,9 @@ func TestSplitSQL(t *testing.T) {
 				{
 					Text:     "SELECT '🎉';",
 					BaseLine: 0,
-					Start:    &storepb.Position{Line: 1, Column: 0},
-					// Column is character offset: S(0) E(1) L(2) E(3) C(4) T(5) ' '(6) '(7) 🎉(8) '(9) ;(10) = 11 chars
-					End:   &storepb.Position{Line: 1, Column: 11},
+					Start:    &storepb.Position{Line: 1, Column: 1},
+					// Column is 1-based character offset: S(1) E(2) L(3) E(4) C(5) T(6) ' '(7) '(8) 🎉(9) '(10) ;(11) = 11 chars, End is exclusive so 12
+					End:   &storepb.Position{Line: 1, Column: 12},
 					Range: &storepb.Range{Start: 0, End: 14}, // byte length: 8 + 4 + 2 = 14
 					Empty: false,
 				},
@@ -164,9 +164,9 @@ func TestSplitSQL(t *testing.T) {
 				{
 					Text:     "SELECT\n  '中文';",
 					BaseLine: 0,
-					Start:    &storepb.Position{Line: 1, Column: 0},
-					// Line 2: ' '(0) ' '(1) '(2) 中(3) 文(4) '(5) ;(6) = 7 chars
-					End:   &storepb.Position{Line: 2, Column: 7},
+					Start:    &storepb.Position{Line: 1, Column: 1},
+					// Line 2 (1-based): ' '(1) ' '(2) '(3) 中(4) 文(5) '(6) ;(7) = 7 chars, End is exclusive so 8
+					End:   &storepb.Position{Line: 2, Column: 8},
 					Range: &storepb.Range{Start: 0, End: 18}, // 7 + 3 + 3 + 3 + 2 = 18
 					Empty: false,
 				},
@@ -179,17 +179,17 @@ func TestSplitSQL(t *testing.T) {
 				{
 					Text:     "SELECT '中';",
 					BaseLine: 0,
-					Start:    &storepb.Position{Line: 1, Column: 0},
-					// S(0) E(1) L(2) E(3) C(4) T(5) ' '(6) '(7) 中(8) '(9) ;(10) = 11 chars
-					End:   &storepb.Position{Line: 1, Column: 11},
+					Start:    &storepb.Position{Line: 1, Column: 1},
+					// S(1) E(2) L(3) E(4) C(5) T(6) ' '(7) '(8) 中(9) '(10) ;(11) = 11 chars, End is exclusive so 12
+					End:   &storepb.Position{Line: 1, Column: 12},
 					Range: &storepb.Range{Start: 0, End: 13}, // 8 + 3 + 2 = 13
 					Empty: false,
 				},
 				{
 					Text:     "SELECT '文';",
 					BaseLine: 1,
-					Start:    &storepb.Position{Line: 2, Column: 0},
-					End:      &storepb.Position{Line: 2, Column: 11},
+					Start:    &storepb.Position{Line: 2, Column: 1},
+					End:      &storepb.Position{Line: 2, Column: 12},
 					Range:    &storepb.Range{Start: 14, End: 27}, // starts after newline
 					Empty:    false,
 				},
