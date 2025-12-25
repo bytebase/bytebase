@@ -48,7 +48,6 @@ type FindPlanCheckRunMessage struct {
 }
 
 // CreatePlanCheckRun creates or replaces the plan check run for a plan.
-// With the consolidated model, there is only one record per plan.
 func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMessage) error {
 	config, err := protojson.Marshal(create.Config)
 	if err != nil {
@@ -157,7 +156,6 @@ func (s *Store) GetPlanCheckRun(ctx context.Context, planUID int64) (*PlanCheckR
 	if len(runs) == 0 {
 		return nil, nil
 	}
-	// With consolidated model, there should be only one record per plan
 	return runs[0], nil
 }
 
