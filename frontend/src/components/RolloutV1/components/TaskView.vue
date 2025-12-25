@@ -1,34 +1,19 @@
 <template>
   <div v-if="task" class="w-full h-full flex flex-col gap-y-4 p-4">
-    <p v-if="selectedStage">
-      <RouterLink
-        :to="{
-          name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
-          params: {
-            projectId: extractProjectResourceName(plan.name),
-            rolloutId: rolloutId,
-            stageId: stageId,
-          },
-        }"
-        class="textinfolabel hover:underline"
-      >
-        &larr; {{ $t("rollout.stage.back-to-stage", { stage: selectedStageTitle }) }}
-      </RouterLink>
-    </p>
     <!-- Task Basic Info -->
     <div class="w-full flex flex-col gap-y-3">
       <div
         class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
       >
         <div class="flex flex-row items-center gap-x-3 flex-wrap">
+          <NTag round>
+            {{ selectedStageTitle }}
+          </NTag>
           <TaskStatus :size="'large'" :status="task.status" />
           <div class="flex flex-row items-center text-xl min-w-0">
             <DatabaseDisplay :database="database.name" :size="'large'" />
           </div>
           <div class="flex flex-row gap-x-2 flex-wrap">
-            <NTag round>
-              {{ semanticTaskType(task.type) }}
-            </NTag>
             <NTooltip v-if="schemaVersion">
               <template #trigger>
                 <NTag round>{{ schemaVersion }}</NTag>
@@ -150,7 +135,6 @@ import { CalendarClockIcon, LinkIcon } from "lucide-vue-next";
 import { NButton, NTag, NTooltip } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { RouterLink } from "vue-router";
-import { semanticTaskType } from "@/components/IssueV1";
 import TaskRunDetail from "@/components/IssueV1/components/TaskRunSection/TaskRunDetail.vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
@@ -159,10 +143,7 @@ import {
   usePlanContextWithRollout,
 } from "@/components/Plan/logic";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import {
-  PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
-} from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL } from "@/router/dashboard/projectV1";
 import {
   taskRunNamePrefix,
   useCurrentProjectV1,
