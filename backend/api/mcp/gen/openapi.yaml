@@ -12151,7 +12151,7 @@ components:
              Format: idps/{idp}
         idpContext:
           title: idp_context
-          description: The idp_context is using to get the user information from identity provider.
+          description: The idp_context is used to get the user information from identity provider.
           $ref: '#/components/schemas/bytebase.v1.IdentityProviderContext'
         otpCode:
           type: string

@@ -11364,7 +11364,7 @@ components:
                 idpContext:
                     allOf:
                         - $ref: '#/components/schemas/IdentityProviderContext'
-                    description: The idp_context is using to get the user information from identity provider.
+                    description: The idp_context is used to get the user information from identity provider.
                 otpCode:
                     type: string
                     description: The otp_code is used to verify the user's identity by MFA.
