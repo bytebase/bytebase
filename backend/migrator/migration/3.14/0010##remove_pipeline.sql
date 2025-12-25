@@ -12,7 +12,7 @@ DELETE FROM task WHERE plan_id IS NULL;
 
 ALTER TABLE task ALTER COLUMN plan_id SET NOT NULL;
 
--- Backfill taskRun in changelog payload to use plan ID instead of pipeline UID
+-- Backfill taskRun in changelog payload to use plan ID instead of pipeline ID
 UPDATE changelog
 SET payload = jsonb_set(
     payload,
@@ -20,16 +20,16 @@ SET payload = jsonb_set(
     to_jsonb(
         replace(
             payload->>'taskRun',
-            '/rollouts/' || pipeline.uid || '/',
+            '/rollouts/' || pipeline.id || '/',
             '/rollouts/' || plan.id || '/'
         )
     )
 )
 FROM plan, pipeline
 WHERE plan.pipeline_id = pipeline.id
-AND changelog.payload->>'taskRun' LIKE '%/rollouts/' || pipeline.uid || '/%';
+AND changelog.payload->>'taskRun' LIKE '%/rollouts/' || pipeline.id || '/%';
 
--- Backfill taskRun in revision payload to use plan ID instead of pipeline UID
+-- Backfill taskRun in revision payload to use plan ID instead of pipeline ID
 UPDATE revision
 SET payload = jsonb_set(
     payload,
@@ -37,14 +37,14 @@ SET payload = jsonb_set(
     to_jsonb(
         replace(
             payload->>'taskRun',
-            '/rollouts/' || pipeline.uid || '/',
+            '/rollouts/' || pipeline.id || '/',
             '/rollouts/' || plan.id || '/'
         )
     )
 )
 FROM plan, pipeline
 WHERE plan.pipeline_id = pipeline.id
-AND revision.payload->>'taskRun' LIKE '%/rollouts/' || pipeline.uid || '/%';
+AND revision.payload->>'taskRun' LIKE '%/rollouts/' || pipeline.id || '/%';
 
 DROP INDEX IF EXISTS idx_task_pipeline_id_environment;
 ALTER TABLE task DROP COLUMN pipeline_id;
