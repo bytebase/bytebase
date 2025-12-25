@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -59,12 +60,23 @@ func configureGrpcRouters(
 			//nolint:forbidigo
 			UnmarshalOptions: protojson.UnmarshalOptions{},
 		}),
+		// pass through request headers that need to be used by connect rpc handlers.
+		grpcruntime.WithIncomingHeaderMatcher(func(key string) (string, bool) {
+			switch strings.ToLower(key) {
+			// grpc-gateway hard codes authorization pass-through already, we do it again anyways.
+			// https://github.com/grpc-ecosystem/grpc-gateway/blob/2cca0efe61de30f05068b9e3b4eb4801b1b2c1aa/runtime/context.go#L160
+			case "authorization", "cookie", "origin":
+				return key, true
+			default:
+				return "", false
+			}
+		}),
 		grpcruntime.WithOutgoingHeaderMatcher(func(key string) (string, bool) {
-			switch key {
+			switch strings.ToLower(key) {
 			case "set-cookie":
 				return key, true
 			default:
-				return grpcruntime.DefaultHeaderMatcher(key)
+				return "", false
 			}
 		}),
 		grpcruntime.WithRoutingErrorHandler(func(ctx context.Context, sm *grpcruntime.ServeMux, m grpcruntime.Marshaler, w http.ResponseWriter, r *http.Request, httpStatus int) {
