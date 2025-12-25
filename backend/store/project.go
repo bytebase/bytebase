@@ -410,12 +410,12 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 		return errors.Wrapf(err, "failed to delete plans for project %s", resourceID)
 	}
 
-	// Delete task_run_log entries for tasks in pipelines of this project
+	// Delete task_run_log entries for tasks in plans of this project
 	q = qb.Q().Space("DELETE FROM task_run_log")
 	q.Space("WHERE task_run_id IN (")
 	q.Space("SELECT tr.id FROM task_run tr")
 	q.Space("JOIN task t ON tr.task_id = t.id")
-	q.Space("JOIN pipeline p ON t.pipeline_id = p.id")
+	q.Space("JOIN plan p ON t.plan_id = p.id")
 	q.Space("WHERE p.project = ?)", resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
@@ -425,11 +425,11 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 		return errors.Wrapf(err, "failed to delete task_run_log for project %s", resourceID)
 	}
 
-	// Delete task_run entries for tasks in pipelines of this project
+	// Delete task_run entries for tasks in plans of this project
 	q = qb.Q().Space("DELETE FROM task_run")
 	q.Space("WHERE task_id IN (")
 	q.Space("SELECT t.id FROM task t")
-	q.Space("JOIN pipeline p ON t.pipeline_id = p.id")
+	q.Space("JOIN plan p ON t.plan_id = p.id")
 	q.Space("WHERE p.project = ?)", resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
@@ -439,25 +439,15 @@ func (s *Store) DeleteProject(ctx context.Context, resourceID string) error {
 		return errors.Wrapf(err, "failed to delete task_run for project %s", resourceID)
 	}
 
-	// Delete tasks in pipelines of this project
+	// Delete tasks in plans of this project
 	q = qb.Q().Space("DELETE FROM task")
-	q.Space("WHERE pipeline_id IN (SELECT id FROM pipeline WHERE project = ?)", resourceID)
+	q.Space("WHERE plan_id IN (SELECT id FROM plan WHERE project = ?)", resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build task delete query")
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete tasks for project %s", resourceID)
-	}
-
-	// Delete pipelines associated with this project
-	q = qb.Q().Space("DELETE FROM pipeline WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build pipeline delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete pipelines for project %s", resourceID)
 	}
 
 	// Delete sheets associated with this project

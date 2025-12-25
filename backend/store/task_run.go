@@ -71,7 +71,7 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 			task_run.code,
 			task_run.result,
 			encode(task_run.sheet_sha256, 'hex'),
-			task.pipeline_id,
+			task.plan_id,
 			task.environment,
 			project.resource_id
 		FROM task_run
