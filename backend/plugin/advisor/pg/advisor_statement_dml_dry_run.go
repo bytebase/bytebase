@@ -153,7 +153,6 @@ func (r *statementDMLDryRunRule) checkDMLDryRun(ctx antlr.ParserRuleContext) {
 	r.explainCount++
 
 	statementText := getTextFromTokens(r.tokens, ctx)
-	normalizedStmt := advisor.NormalizeStatement(statementText)
 
 	// Run EXPLAIN to perform dry run
 	_, err := advisor.Query(r.ctx, advisor.QueryContext{
@@ -166,7 +165,7 @@ func (r *statementDMLDryRunRule) checkDMLDryRun(ctx antlr.ParserRuleContext) {
 			Status:  r.level,
 			Code:    code.StatementDMLDryRunFailed.Int32(),
 			Title:   r.title,
-			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", normalizedStmt, err.Error()),
+			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", statementText, err.Error()),
 			StartPosition: &storepb.Position{
 				Line:   int32(ctx.GetStart().GetLine()),
 				Column: 0,
