@@ -18,10 +18,9 @@
 
 <script lang="ts" setup>
 import { NDynamicTags } from "naive-ui";
-
 import type { RuleConfigComponent } from "@/types";
 
-const props = defineProps<{
+defineProps<{
   config: RuleConfigComponent;
   value: string[];
   disabled: boolean;
