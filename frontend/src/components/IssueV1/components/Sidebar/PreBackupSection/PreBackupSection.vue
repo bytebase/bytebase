@@ -32,9 +32,7 @@ const {
   selectedSpec: computed(() =>
     specForTask(issue.value.planEntity as Plan, selectedTask.value)
   ),
-  selectedTask,
   issue,
-  rollout: computed(() => issue.value.rolloutEntity),
 });
 
 const database = computed(() =>

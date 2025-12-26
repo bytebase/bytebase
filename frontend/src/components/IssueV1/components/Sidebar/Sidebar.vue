@@ -111,7 +111,6 @@ const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
     project,
     plan: computed(() => issue.value.planEntity as Plan),
     selectedSpec,
-    selectedTask: selectedTask,
     issue,
   });
 
