@@ -5,27 +5,22 @@
       isExpanded ? 'shadow-sm' : 'hover:shadow-sm',
     ]"
   >
-    <!-- Absolute checkbox - center-aligned on left border -->
-    <div
-      v-if="isSelectable"
-      class="absolute left-0 -translate-y-1/2 -translate-x-1/2 z-1 transition-opacity"
-      :class="[inSelectMode || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100', isExpanded ? 'top-8': 'top-6']"
-      @click.stop
-    >
-      <NCheckbox
-        :checked="isSelected"
-        @update:checked="emit('toggle-select')"
-      />
-    </div>
-
     <!-- Task content -->
-    <div class="w-full" :class="isExpanded ? 'p-4 space-y-3' : 'py-2.5 px-4'">
+    <div class="w-full" :class="isExpanded ? 'py-4 pl-3 pr-4 space-y-3' : 'py-2.5 pl-3 pr-4'">
       <!-- Header section -->
       <div
         class="flex items-center justify-between gap-x-3"
         :class="{ 'mb-2': isExpanded }"
       >
         <div class="flex items-center gap-x-2 flex-1 min-w-0">
+          <!-- Inline checkbox - always visible like Gmail/GitHub -->
+          <NCheckbox
+            v-if="isSelectable"
+            :checked="isSelected"
+            class="shrink-0"
+            @click.stop
+            @update:checked="emit('toggle-select')"
+          />
           <TaskStatus :status="task.status" :size="isExpanded ? 'large' : 'small'" />
           <RouterLink
             v-if="!readonly"
