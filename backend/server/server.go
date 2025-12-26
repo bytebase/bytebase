@@ -195,11 +195,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.taskScheduler.Register(storepb.Task_DATABASE_EXPORT, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 	s.taskScheduler.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 
-	// Create rollout service (needed by rollout creator and gRPC routes)
+	// Create rollout service (needed by gRPC routes)
 	rolloutService := apiv1.NewRolloutService(stores, sheetManager, s.licenseService, s.dbFactory, s.stateCfg, s.webhookManager, profile, s.iamManager)
 
 	// Create rollout creator component
-	rolloutCreator := rolloutcomponent.NewRolloutCreator(stores, rolloutService)
+	rolloutCreator := rolloutcomponent.NewRolloutCreator(stores, s.stateCfg, s.dbFactory)
 	s.runnerWG.Add(1)
 	go rolloutCreator.Run(ctx, &s.runnerWG, s.stateCfg.RolloutCreationChan)
 

@@ -6,28 +6,31 @@ import (
 	"sync"
 	"time"
 
-	"connectrpc.com/connect"
+	"google.golang.org/protobuf/proto"
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/state"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // RolloutCreator handles automatic rollout creation.
+// nolint:revive
 type RolloutCreator struct {
-	store          *store.Store
-	rolloutService *apiv1.RolloutService
+	store     *store.Store
+	stateCfg  *state.State
+	dbFactory *dbfactory.DBFactory
 }
 
 // NewRolloutCreator creates a new rollout creator.
-func NewRolloutCreator(store *store.Store, rolloutService *apiv1.RolloutService) *RolloutCreator {
+func NewRolloutCreator(store *store.Store, stateCfg *state.State, dbFactory *dbfactory.DBFactory) *RolloutCreator {
 	return &RolloutCreator{
-		store:          store,
-		rolloutService: rolloutService,
+		store:     store,
+		stateCfg:  stateCfg,
+		dbFactory: dbFactory,
 	}
 }
 
@@ -146,32 +149,42 @@ func (rc *RolloutCreator) tryCreateRollout(_ context.Context, planID int64) {
 	}
 
 	// All conditions met - create the rollout
-	slog.Info("auto-creating rollout",
-		slog.Int("plan_id", int(planID)))
+	slog.Info("auto-creating rollout", slog.Int("plan_id", int(planID)))
 
-	projectID := common.FormatProject(plan.ProjectID)
-	planName := common.FormatPlan(plan.ProjectID, planID)
-
-	_, err = rc.rolloutService.CreateRollout(rolloutCtx, connect.NewRequest(&v1pb.CreateRolloutRequest{
-		Parent: projectID,
-		Rollout: &v1pb.Rollout{
-			Plan: planName,
-		},
-	}))
-
+	// Get pipeline create (tasks to create)
+	pipelineCreate, err := apiv1.GetPipelineCreate(rolloutCtx, rc.store, rc.dbFactory, plan.Config.GetSpecs(), project.ResourceID)
 	if err != nil {
-		// If rollout already exists, this is not an error (race condition handled)
-		if connect.CodeOf(err) == connect.CodeAlreadyExists {
-			slog.Debug("rollout already exists (race condition), ignoring",
-				slog.Int("plan_id", int(planID)))
-			return
-		}
-		slog.Error("failed to auto-create rollout",
+		slog.Error("failed to get pipeline create for rollout creation",
 			slog.Int("plan_id", int(planID)),
 			log.BBError(err))
 		return
 	}
 
-	slog.Info("successfully auto-created rollout",
-		slog.Int("plan_id", int(planID)))
+	// Create rollout tasks
+	_, err = rc.store.CreateRolloutTasks(rolloutCtx, planID, pipelineCreate)
+	if err != nil {
+		slog.Error("failed to create rollout tasks",
+			slog.Int("plan_id", int(planID)),
+			log.BBError(err))
+		return
+	}
+
+	// Update plan to set hasRollout to true
+	config := proto.CloneOf(plan.Config)
+	config.HasRollout = true
+	_, err = rc.store.UpdatePlan(rolloutCtx, &store.UpdatePlanMessage{
+		UID:    planID,
+		Config: config,
+	})
+	if err != nil {
+		slog.Error("failed to update plan hasRollout",
+			slog.Int("plan_id", int(planID)),
+			log.BBError(err))
+		return
+	}
+
+	// Tickle task run scheduler
+	rc.stateCfg.TaskRunTickleChan <- 0
+
+	slog.Info("successfully auto-created rollout", slog.Int("plan_id", int(planID)))
 }
