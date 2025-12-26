@@ -329,7 +329,6 @@ const comment = ref("");
 const runTimeInMS = ref<number | undefined>(undefined);
 const bypassPolicyChecks = ref(false);
 const { statusSummary: planCheckStatus } = usePlanCheckStatus(plan);
-const project = computed(() => projectOfPlan(plan.value));
 
 // Check issue approval status using the review context
 const issueApprovalStatus = computed(() => {
@@ -373,50 +372,22 @@ const shouldShowComment = computed(
   () => props.action === "SKIP" && !isNullOrUndefined(issue?.value)
 );
 
-// Plan check error validation based on project settings
-const planCheckError = computed(() => {
-  if (props.action !== "RUN") {
-    return undefined;
-  }
-
-  // If no enforcement is specified, default to no validation
-  if (!project.value || !project.value.requirePlanCheckNoError) {
-    return undefined;
-  }
-
-  if (planCheckStatus.value.running > 0) {
-    return t(
-      "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
-    );
-  }
-
-  if (planCheckStatus.value.error > 0) {
-    return t(
-      "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
-    );
-  }
-
-  return undefined;
-});
-
-// Plan check warning validation for non-blocking plan check results
+// Plan check warning validation - always show as warning (never error)
 const planCheckWarning = computed(() => {
   if (props.action !== "RUN" || planCheckStatus.value.total === 0) {
     return undefined;
   }
 
-  // If enforcement is disabled, show any plan check issues as warnings
-  if (!project.value || !project.value.requirePlanCheckNoError) {
-    if (planCheckStatus.value.running > 0) {
-      return t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
-      );
-    }
-    if (planCheckStatus.value.error > 0 || planCheckStatus.value.warning > 0) {
-      return t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
-      );
-    }
+  // Always show plan check issues as warnings (regardless of require_* setting)
+  if (planCheckStatus.value.running > 0) {
+    return t(
+      "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
+    );
+  }
+  if (planCheckStatus.value.error > 0 || planCheckStatus.value.warning > 0) {
+    return t(
+      "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
+    );
   }
 
   return undefined;
@@ -466,28 +437,6 @@ const validationErrors = computed(() => {
     ) {
       errors.push(t("rollout.no-runnable-task"));
     }
-
-    // Issue approval errors (only if policy requires it) - HARD BLOCK
-    const requiresIssueApproval =
-      project.value && project.value.requireIssueApproval;
-
-    if (
-      requiresIssueApproval &&
-      issueApprovalStatus.value.hasIssue &&
-      !issueApprovalStatus.value.rolloutReady
-    ) {
-      const isRejected = issueApprovalStatus.value.status === "rejected";
-      errors.push(
-        isRejected
-          ? t("issue.approval.rejected-error")
-          : t("issue.approval.pending-error")
-      );
-    }
-
-    // Plan check errors (based on rollout policy) - HARD BLOCK
-    if (planCheckError.value) {
-      errors.push(planCheckError.value);
-    }
   }
 
   return errors;
@@ -508,17 +457,13 @@ const validationWarnings = computed(() => {
       warnings.push(t("task.error.scheduled-time-must-be-in-the-future"));
     }
 
-    // Plan check warnings (non-blocking plan check results)
+    // Plan check warnings - always show when checks have issues
     if (planCheckWarning.value) {
       warnings.push(planCheckWarning.value);
     }
 
-    // Issue approval warnings (when not required by policy but issue is not approved)
-    const requiresIssueApproval =
-      project.value && project.value.requireIssueApproval;
-
+    // Issue approval warnings - always show when not approved (regardless of require_* setting)
     if (
-      !requiresIssueApproval &&
       issueApprovalStatus.value.hasIssue &&
       !issueApprovalStatus.value.rolloutReady
     ) {

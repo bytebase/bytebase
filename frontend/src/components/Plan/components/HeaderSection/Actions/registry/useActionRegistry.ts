@@ -44,6 +44,12 @@ export function useActionRegistry(): ActionRegistryReturn {
       : undefined
   );
 
+  // Helper to resolve category (static or dynamic)
+  const getCategory = (action: ActionDefinition) =>
+    typeof action.category === "function"
+      ? action.category(context.value)
+      : action.category;
+
   // Filter visible actions (no actions during plan creation)
   const visibleActions = computed(() => {
     if (isCreating.value) return [];
@@ -52,15 +58,15 @@ export function useActionRegistry(): ActionRegistryReturn {
 
   // Primary action (first visible by priority, category=primary)
   const primaryAction = computed(() =>
-    visibleActions.value.find((a) => a.category === "primary")
+    visibleActions.value.find((a) => getCategory(a) === "primary")
   );
 
   // Secondary actions: all secondary-category actions + remaining primary actions (excluding the chosen primary)
   const secondaryActions = computed(() =>
     visibleActions.value.filter(
       (a) =>
-        a.category === "secondary" ||
-        (a.category === "primary" && a.id !== primaryAction.value?.id)
+        getCategory(a) === "secondary" ||
+        (getCategory(a) === "primary" && a.id !== primaryAction.value?.id)
     )
   );
 
