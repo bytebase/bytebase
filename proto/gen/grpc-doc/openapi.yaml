@@ -229,6 +229,33 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/auth/refresh:
+        post:
+            tags:
+                - AuthService
+            description: |-
+                Refreshes the access token using the refresh token cookie.
+                 Permissions required: None (validates via refresh token cookie)
+            operationId: AuthService_Refresh
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RefreshRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RefreshResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/auth:exchangeToken:
         post:
             tags:
@@ -12510,6 +12537,14 @@ components:
                 substitution:
                     type: string
                     description: substitution is the string used to replace the OriginalValue[start:end).
+        RefreshRequest:
+            type: object
+            properties: {}
+            description: Request to refresh the access token.
+        RefreshResponse:
+            type: object
+            properties: {}
+            description: Response from refreshing the access token.
         RejectIssueRequest:
             required:
                 - name

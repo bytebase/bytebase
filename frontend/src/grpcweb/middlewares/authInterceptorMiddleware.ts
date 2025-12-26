@@ -3,6 +3,7 @@ import { t } from "@/plugins/i18n";
 import { router } from "@/router";
 import { pushNotification, useAuthStore } from "@/store";
 import { ignoredCodesContextKey, silentContextKey } from "../context-key";
+import { refreshTokens } from "../refreshToken";
 
 export type IgnoreErrorsOptions = {
   /**
@@ -22,7 +23,6 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
     return resp;
   } catch (error) {
     const authStore = useAuthStore();
-    // If silent is set to true, will NOT show redirect to other pages(e.g., 403, sign in page).
     const silent = req.contextValues.get(silentContextKey);
     const ignoredCodes = req.contextValues.get(ignoredCodesContextKey);
 
@@ -32,20 +32,38 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
         // omit specified errors
       } else {
         if (code === Code.Unauthenticated && req.method.name !== "Login") {
-          // Skip show login modal when the request is to get current user.
-          // When receiving 401 and is returned by our server, it means the current
-          // login user's token becomes invalid. Thus we force the user to login again.
-          authStore.unauthenticatedOccurred = true;
-          if (authStore.isLoggedIn) {
-            pushNotification({
-              module: "bytebase",
-              style: "WARN",
-              title: t("auth.token-expired-title"),
-              description: t("auth.token-expired-description"),
-            });
+          // Don't retry refresh endpoint failures
+          if (req.method.name === "Refresh") {
+            authStore.unauthenticatedOccurred = true;
+            if (authStore.isLoggedIn) {
+              pushNotification({
+                module: "bytebase",
+                style: "WARN",
+                title: t("auth.token-expired-title"),
+                description: t("auth.token-expired-description"),
+              });
+            }
+            throw error;
+          }
+
+          // Try to refresh the token
+          try {
+            await refreshTokens();
+            // Retry the original request
+            return await next(req);
+          } catch {
+            // Refresh failed, show login notification
+            authStore.unauthenticatedOccurred = true;
+            if (authStore.isLoggedIn) {
+              pushNotification({
+                module: "bytebase",
+                style: "WARN",
+                title: t("auth.token-expired-title"),
+                description: t("auth.token-expired-description"),
+              });
+            }
           }
         } else if (code === Code.PermissionDenied) {
-          // Jump to 403 page
           router.push({ name: "error.403" });
         }
       }

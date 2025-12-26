@@ -44,6 +44,16 @@ service AuthService {
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
   }
+
+  // Refreshes the access token using the refresh token cookie.
+  // Permissions required: None (validates via refresh token cookie)
+  rpc Refresh(RefreshRequest) returns (RefreshResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/refresh"
+      body: "*"
+    };
+    option (bytebase.v1.allow_without_credential) = true;
+  }
 }
 
 message LoginRequest {
@@ -125,3 +135,9 @@ message ExchangeTokenResponse {
   // Bytebase access token.
   string access_token = 1;
 }
+
+// Request to refresh the access token.
+message RefreshRequest {}
+
+// Response from refreshing the access token.
+message RefreshResponse {}

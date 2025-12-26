@@ -139,3 +139,23 @@ func (x *ExchangeTokenResponse) Equal(y *ExchangeTokenResponse) bool {
 	}
 	return true
 }
+
+func (x *RefreshRequest) Equal(y *RefreshRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *RefreshResponse) Equal(y *RefreshResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}

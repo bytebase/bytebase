@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/mail"
 	"regexp"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -468,6 +470,12 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 		}
 		passwordHashStr := string(passwordHash)
 		patch.PasswordHash = &passwordHashStr
+
+		// Revoke all refresh tokens for this user (including current session)
+		// User must re-login after password change for security
+		if err := s.store.DeleteWebRefreshTokensByUser(ctx, user.Email); err != nil {
+			slog.Error("failed to revoke refresh tokens on password change", log.BBError(err), slog.String("user", user.Email))
+		}
 	}
 	// This flag is mainly used for validating OTP code when user setup MFA.
 	// We only validate OTP code but not update user.

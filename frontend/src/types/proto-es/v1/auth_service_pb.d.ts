@@ -252,6 +252,34 @@ export declare type ExchangeTokenResponse = Message<"bytebase.v1.ExchangeTokenRe
 export declare const ExchangeTokenResponseSchema: GenMessage<ExchangeTokenResponse>;
 
 /**
+ * Request to refresh the access token.
+ *
+ * @generated from message bytebase.v1.RefreshRequest
+ */
+export declare type RefreshRequest = Message<"bytebase.v1.RefreshRequest"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.RefreshRequest.
+ * Use `create(RefreshRequestSchema)` to create a new message.
+ */
+export declare const RefreshRequestSchema: GenMessage<RefreshRequest>;
+
+/**
+ * Response from refreshing the access token.
+ *
+ * @generated from message bytebase.v1.RefreshResponse
+ */
+export declare type RefreshResponse = Message<"bytebase.v1.RefreshResponse"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.RefreshResponse.
+ * Use `create(RefreshResponseSchema)` to create a new message.
+ */
+export declare const RefreshResponseSchema: GenMessage<RefreshResponse>;
+
+/**
  * AuthService handles user authentication operations.
  *
  * @generated from service bytebase.v1.AuthService
@@ -290,6 +318,17 @@ export declare const AuthService: GenService<{
     methodKind: "unary";
     input: typeof ExchangeTokenRequestSchema;
     output: typeof ExchangeTokenResponseSchema;
+  },
+  /**
+   * Refreshes the access token using the refresh token cookie.
+   * Permissions required: None (validates via refresh token cookie)
+   *
+   * @generated from rpc bytebase.v1.AuthService.Refresh
+   */
+  refresh: {
+    methodKind: "unary";
+    input: typeof RefreshRequestSchema;
+    output: typeof RefreshResponseSchema;
   },
 }>;
 

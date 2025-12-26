@@ -72,3 +72,41 @@ func GetTokenDuration(ctx context.Context, store *store.Store, licenseService *e
 
 	return tokenDuration
 }
+
+const RefreshTokenCookieName = "refresh-token"
+
+// GetRefreshTokenCookie creates a cookie for the refresh token.
+// token="" => unset (clears cookie)
+func GetRefreshTokenCookie(origin, token string, duration time.Duration) *http.Cookie {
+	if token == "" {
+		return &http.Cookie{
+			Name:    RefreshTokenCookieName,
+			Value:   "",
+			Expires: time.Unix(0, 0),
+			Path:    "/bytebase.v1.AuthService/Refresh",
+		}
+	}
+	isHTTPS := strings.HasPrefix(origin, "https")
+	return &http.Cookie{
+		Name:     RefreshTokenCookieName,
+		Value:    token,
+		MaxAge:   int(duration.Seconds()),
+		Path:     "/bytebase.v1.AuthService/Refresh",
+		HttpOnly: true,
+		Secure:   isHTTPS,
+		SameSite: http.SameSiteStrictMode,
+	}
+}
+
+// GetRefreshTokenFromCookie extracts the refresh token from request headers.
+func GetRefreshTokenFromCookie(header http.Header) string {
+	for _, cookie := range header.Values("Cookie") {
+		for _, part := range strings.Split(cookie, ";") {
+			part = strings.TrimSpace(part)
+			if strings.HasPrefix(part, RefreshTokenCookieName+"=") {
+				return strings.TrimPrefix(part, RefreshTokenCookieName+"=")
+			}
+		}
+	}
+	return ""
+}
