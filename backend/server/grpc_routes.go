@@ -51,7 +51,6 @@ func configureGrpcRouters(
 	iamManager *iam.Manager,
 	secret string,
 	sampleInstanceManager *sampleinstance.Manager,
-	rolloutService *apiv1.RolloutService,
 ) error {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
@@ -99,6 +98,7 @@ func configureGrpcRouters(
 	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService, profile)
 	instanceRoleService := apiv1.NewInstanceRoleService(stores, dbFactory)
 	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, stateCfg, dbFactory, schemaSyncer, iamManager, sampleInstanceManager)
+	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager)
 	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService)
 	planService := apiv1.NewPlanService(stores, sheetManager, licenseService, dbFactory, stateCfg, profile, iamManager)
 	projectService := apiv1.NewProjectService(stores, profile, iamManager, licenseService)
@@ -106,7 +106,7 @@ func configureGrpcRouters(
 	reviewConfigService := apiv1.NewReviewConfigService(stores, licenseService)
 	revisionService := apiv1.NewRevisionService(stores)
 	roleService := apiv1.NewRoleService(stores, iamManager, licenseService)
-	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager)
+	rolloutService := apiv1.NewRolloutService(stores, sheetManager, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
 	settingService := apiv1.NewSettingService(stores, profile, licenseService, stateCfg)
 	sheetService := apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile)
 	sqlService := apiv1.NewSQLService(stores, sheetManager, schemaSyncer, dbFactory, licenseService, profile, iamManager)
