@@ -10,7 +10,6 @@ import (
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -20,17 +19,15 @@ import (
 // RolloutCreator handles automatic rollout creation.
 // nolint:revive
 type RolloutCreator struct {
-	store     *store.Store
-	stateCfg  *state.State
-	dbFactory *dbfactory.DBFactory
+	store    *store.Store
+	stateCfg *state.State
 }
 
 // NewRolloutCreator creates a new rollout creator.
-func NewRolloutCreator(store *store.Store, stateCfg *state.State, dbFactory *dbfactory.DBFactory) *RolloutCreator {
+func NewRolloutCreator(store *store.Store, stateCfg *state.State) *RolloutCreator {
 	return &RolloutCreator{
-		store:     store,
-		stateCfg:  stateCfg,
-		dbFactory: dbFactory,
+		store:    store,
+		stateCfg: stateCfg,
 	}
 }
 
@@ -148,7 +145,7 @@ func (rc *RolloutCreator) tryCreateRollout(_ context.Context, planID int64) {
 	slog.Info("auto-creating rollout", slog.Int("plan_id", int(planID)))
 
 	// Get pipeline create (tasks to create)
-	pipelineCreate, err := apiv1.GetPipelineCreate(rolloutCtx, rc.store, rc.dbFactory, plan.Config.GetSpecs(), project.ResourceID)
+	pipelineCreate, err := apiv1.GetPipelineCreate(rolloutCtx, rc.store, plan.Config.GetSpecs(), project.ResourceID)
 	if err != nil {
 		slog.Error("failed to get pipeline create for rollout creation",
 			slog.Int("plan_id", int(planID)),

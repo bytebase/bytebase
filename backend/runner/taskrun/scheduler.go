@@ -76,7 +76,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	go s.ListenTaskSkippedOrDone(ctx)
 
 	// Start rollout creator component
-	rolloutCreator := NewRolloutCreator(s.store, s.stateCfg, s.dbFactory)
+	rolloutCreator := NewRolloutCreator(s.store, s.stateCfg)
 	wg.Add(1)
 	go rolloutCreator.Run(ctx, wg, s.stateCfg.RolloutCreationChan)
 
