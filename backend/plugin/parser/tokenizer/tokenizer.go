@@ -221,7 +221,8 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 	t.skipBlank()
 	t.emptyStatement = true
 	startPos := t.cursor
-	startLine := t.line // Track the starting line number (1-based)
+	startLine := t.line          // Track the starting line number (1-based)
+	startColumn := t.getColumn() // Track the starting column (1-based)
 	for {
 		switch {
 		case t.char(0) == eofRune:
@@ -232,6 +233,10 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 						Text: s,
 						// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
 						BaseLine: startLine - 1,
+						Start: &store.Position{
+							Line:   int32(startLine),
+							Column: int32(startColumn),
+						},
 						// Consider this text:
 						// CREATE TABLE t(
 						//   a int
@@ -244,7 +249,10 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						End:   &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance())},
+						End: &store.Position{
+							Line:   int32(t.line - t.aboveNonBlankLineDistance()),
+							Column: int32(t.getLastContentColumn()),
+						},
 						Empty: t.emptyStatement,
 						Range: &store.Range{
 							Start: int32(t.getByteOffset(int(startPos))),
@@ -266,8 +274,15 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
 					BaseLine: startLine - 1,
-					End:      &store.Position{Line: int32(t.line)},
-					Empty:    t.emptyStatement,
+					Start: &store.Position{
+						Line:   int32(startLine),
+						Column: int32(startColumn),
+					},
+					End: &store.Position{
+						Line:   int32(t.line),
+						Column: int32(t.getColumn()),
+					},
+					Empty: t.emptyStatement,
 					Range: &store.Range{
 						Start: int32(t.getByteOffset(int(startPos))),
 						End:   int32(t.getByteOffset(int(t.pos()))),
@@ -279,7 +294,8 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				return nil, err
 			}
 			startPos = t.pos()
-			startLine = t.line // Update startLine for next statement
+			startLine = t.line          // Update startLine for next statement
+			startColumn = t.getColumn() // Update startColumn for next statement
 			t.emptyStatement = true
 		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
 		case t.equalWordCaseInsensitive(delimiterRuneList):
@@ -294,8 +310,15 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 					Text: text,
 					// BaseLine is 0-based line number, so subtract 1 from 1-based startLine
 					BaseLine: startLine - 1,
-					End:      &store.Position{Line: int32(t.line)},
-					Empty:    false,
+					Start: &store.Position{
+						Line:   int32(startLine),
+						Column: int32(startColumn),
+					},
+					End: &store.Position{
+						Line:   int32(t.line),
+						Column: int32(t.getColumn()),
+					},
+					Empty: false,
 					Range: &store.Range{
 						Start: int32(t.getByteOffset(int(startPos))),
 						End:   int32(t.getByteOffset(int(t.pos()))),
@@ -307,7 +330,8 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 				return nil, err
 			}
 			startPos = t.pos()
-			startLine = t.line // Update startLine for next statement
+			startLine = t.line          // Update startLine for next statement
+			startColumn = t.getColumn() // Update startColumn for next statement
 			t.emptyStatement = true
 		case t.char(0) == '/' && t.char(1) == '*':
 			if err := t.scanComment(); err != nil {
@@ -719,13 +743,31 @@ func (t *Tokenizer) skipToNewLine() {
 	t.skip(1)
 }
 
+// getColumn returns the 1-based column position of the current cursor.
+// Per the proto spec, the first character of a line is column 1.
 func (t *Tokenizer) getColumn() int {
-	for i := int(t.cursor) - 1; i >= 0; i-- {
+	return t.getColumnAt(t.cursor)
+}
+
+// getColumnAt returns the 1-based column position at a specific rune position.
+func (t *Tokenizer) getColumnAt(pos uint) int {
+	for i := int(pos) - 1; i >= 0; i-- {
 		if t.buffer[i] == '\n' {
-			return int(t.cursor) - i - 1
+			return int(pos) - i // 1-based: first char after newline is column 1
 		}
 	}
-	return int(t.cursor)
+	return int(pos) + 1 // 1-based: first char of first line is column 1
+}
+
+// getLastContentColumn returns the 1-based column after the last non-blank character.
+// Used for EOF case where we need exclusive end position.
+func (t *Tokenizer) getLastContentColumn() int {
+	for i := int(t.cursor) - 1; i >= 0; i-- {
+		if !emptyRune(t.buffer[i]) && t.buffer[i] != eofRune {
+			return t.getColumnAt(uint(i)) + 1 // Exclusive: position after last content char
+		}
+	}
+	return 1
 }
 
 func (t *Tokenizer) pos() uint {

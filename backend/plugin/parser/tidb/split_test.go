@@ -1,75 +1,13 @@
-package standard
+package tidb
 
 import (
-	"fmt"
-	"math/rand"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
-
-func generateOneMBInsert() string {
-	var rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	letterList := []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	b := make([]byte, 1024*1024)
-	for i := range b {
-		b[i] = letterList[rand.Intn(len(letterList))]
-	}
-	return fmt.Sprintf("INSERT INTO t values('%s')", string(b))
-}
-
-func TestApplyMultiStatements(t *testing.T) {
-	type testData struct {
-		statement string
-		total     int
-	}
-	tests := []testData{
-		{
-			statement: `
-			CREATE TABLE t(
-				a int,
-				b int,
-				c int);
-
-
-			/* This is a comment */
-			CREATE TABLE t1(
-				a int, b int c)`,
-			total: 2,
-		},
-		{
-			statement: `
-			CREATE TABLE t(
-				a int,
-				b int,
-				c int);
-
-
-			CREATE TABLE t1(
-				a int, b int c);
-			` + generateOneMBInsert(),
-			total: 3,
-		},
-	}
-
-	total := 0
-	countStatements := func(string) error {
-		total++
-		return nil
-	}
-
-	for _, test := range tests {
-		total = 0
-		err := applyMultiStatements(strings.NewReader(test.statement), countStatements)
-		require.NoError(t, err)
-		require.Equal(t, test.total, total)
-	}
-}
 
 func TestSplitSQL(t *testing.T) {
 	tests := []struct {
@@ -85,7 +23,7 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT 1;",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					End:      &storepb.Position{Line: 1, Column: 10},
+					End:      &storepb.Position{Line: 1, Column: 10}, // After semicolon (1-based exclusive)
 					Range:    &storepb.Range{Start: 0, End: 9},
 					Empty:    false,
 				},
@@ -99,7 +37,7 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT\n  1;",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					End:      &storepb.Position{Line: 2, Column: 5},
+					End:      &storepb.Position{Line: 2, Column: 5}, // After semicolon on line 2
 					Range:    &storepb.Range{Start: 0, End: 11},
 					Empty:    false,
 				},
@@ -135,7 +73,7 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT '中文';",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					// Column is 1-based character offset: S(1) E(2) L(3) E(4) C(5) T(6) ' '(7) '(8) 中(9) 文(10) '(11) ;(12) = 12 chars, End is exclusive so 13
+					// Column is 1-based exclusive: S(1)..;(12), after = 13
 					End:   &storepb.Position{Line: 1, Column: 13},
 					Range: &storepb.Range{Start: 0, End: 16}, // byte length: 8 + 3 + 3 + 2 = 16
 					Empty: false,
@@ -150,7 +88,7 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT '🎉';",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					// Column is 1-based character offset: S(1) E(2) L(3) E(4) C(5) T(6) ' '(7) '(8) 🎉(9) '(10) ;(11) = 11 chars, End is exclusive so 12
+					// Column is 1-based exclusive: S(1)..;(11), after = 12
 					End:   &storepb.Position{Line: 1, Column: 12},
 					Range: &storepb.Range{Start: 0, End: 14}, // byte length: 8 + 4 + 2 = 14
 					Empty: false,
@@ -165,32 +103,44 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT\n  '中文';",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					// Line 2 (1-based): ' '(1) ' '(2) '(3) 中(4) 文(5) '(6) ;(7) = 7 chars, End is exclusive so 8
-					End:   &storepb.Position{Line: 2, Column: 8},
-					Range: &storepb.Range{Start: 0, End: 18}, // 7 + 3 + 3 + 3 + 2 = 18
-					Empty: false,
+					End:      &storepb.Position{Line: 2, Column: 8}, // After semicolon on line 2
+					Range:    &storepb.Range{Start: 0, End: 18},     // 7 + 3 + 3 + 3 + 2 = 18
+					Empty:    false,
 				},
 			},
 		},
 		{
-			name:      "multiple statements with multi-byte on separate lines",
+			name:      "multiple statements with multi-byte",
 			statement: "SELECT '中';\nSELECT '文';",
 			want: []base.Statement{
 				{
 					Text:     "SELECT '中';",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					// S(1) E(2) L(3) E(4) C(5) T(6) ' '(7) '(8) 中(9) '(10) ;(11) = 11 chars, End is exclusive so 12
-					End:   &storepb.Position{Line: 1, Column: 12},
-					Range: &storepb.Range{Start: 0, End: 13}, // 8 + 3 + 2 = 13
-					Empty: false,
+					End:      &storepb.Position{Line: 1, Column: 12}, // After semicolon
+					Range:    &storepb.Range{Start: 0, End: 13},      // 8 + 3 + 2 = 13
+					Empty:    false,
 				},
 				{
 					Text:     "SELECT '文';",
 					BaseLine: 1,
 					Start:    &storepb.Position{Line: 2, Column: 1},
 					End:      &storepb.Position{Line: 2, Column: 12},
-					Range:    &storepb.Range{Start: 14, End: 27}, // starts after newline
+					Range:    &storepb.Range{Start: 14, End: 27},
+					Empty:    false,
+				},
+			},
+		},
+		{
+			name:      "statement with leading spaces and multi-byte",
+			statement: "  SELECT '中';",
+			want: []base.Statement{
+				{
+					Text:     "SELECT '中';",
+					BaseLine: 0,
+					Start:    &storepb.Position{Line: 1, Column: 3},  // starts after 2 spaces (1-based: column 3)
+					End:      &storepb.Position{Line: 1, Column: 14}, // 2 leading spaces + 11 chars + 1 = 14
+					Range:    &storepb.Range{Start: 2, End: 15},      // 2 + 8 + 3 + 2 = 15
 					Empty:    false,
 				},
 			},
