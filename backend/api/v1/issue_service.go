@@ -818,6 +818,14 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
+
+	// Auto-create rollout if this approval completes the approval flow
+	if issueV1.ApprovalStatus == v1pb.Issue_APPROVED {
+		if issue.PlanUID != nil {
+			s.stateCfg.RolloutCreationChan <- *issue.PlanUID
+		}
+	}
+
 	return connect.NewResponse(issueV1), nil
 }
 
