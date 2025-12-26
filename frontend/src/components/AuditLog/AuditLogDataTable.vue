@@ -78,9 +78,6 @@ const columnList = computed((): AuditDataTableColumn[] => {
         title: t("audit-log.table.created-ts"),
         width: 220,
         resizable: true,
-        ellipsis: {
-          tooltip: true,
-        },
         render: (auditLog) =>
           dayjs(getDateForPbTimestampProtoEs(auditLog.createTime)).format(
             "YYYY-MM-DD HH:mm:ss Z"
@@ -116,9 +113,6 @@ const columnList = computed((): AuditDataTableColumn[] => {
         resizable: true,
         width: 256,
         title: t("audit-log.table.method"),
-        ellipsis: {
-          tooltip: true,
-        },
         render: (auditLog) => auditLog.method,
       },
       {
