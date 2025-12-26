@@ -3,10 +3,6 @@ package state
 
 import (
 	"sync"
-
-	lru "github.com/hashicorp/golang-lru/v2"
-
-	"github.com/pkg/errors"
 )
 
 // State is the state for all in-memory states within the server.

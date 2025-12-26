@@ -183,7 +183,7 @@ func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.Logo
 
 	origin := req.Header().Get("Origin")
 	// Clear access token cookie
-	resp.Header().Add("Set-Cookie", auth.GetAccessTokenCookie(ctx, s.store, s.licenseService, origin, "").String())
+	resp.Header().Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, "").String())
 	// Clear refresh token cookie
 	resp.Header().Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, "", 0).String())
 	return resp, nil
@@ -272,7 +272,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 	// 8. Set cookies and return
 	resp := connect.NewResponse(&v1pb.RefreshResponse{})
 	origin := req.Header().Get("Origin")
-	resp.Header().Add("Set-Cookie", auth.GetAccessTokenCookie(ctx, s.store, s.licenseService, origin, accessToken).String())
+	resp.Header().Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, accessToken).String())
 	resp.Header().Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, newRefreshToken, refreshTokenDuration).String())
 
 	return resp, nil
@@ -796,7 +796,7 @@ func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1
 			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
 		}
 		origin := req.Header().Get("Origin")
-		cookie := auth.GetAccessTokenCookie(ctx, s.store, s.licenseService, origin, token)
+		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, token)
 		resp.Header().Add("Set-Cookie", cookie.String())
 
 		// Issue refresh token for web login
