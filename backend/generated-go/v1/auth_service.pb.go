@@ -518,6 +518,80 @@ func (x *ExchangeTokenResponse) GetAccessToken() string {
 	return ""
 }
 
+// Request to refresh the access token.
+type RefreshRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RefreshRequest) Reset() {
+	*x = RefreshRequest{}
+	mi := &file_v1_auth_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RefreshRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RefreshRequest) ProtoMessage() {}
+
+func (x *RefreshRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_auth_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RefreshRequest.ProtoReflect.Descriptor instead.
+func (*RefreshRequest) Descriptor() ([]byte, []int) {
+	return file_v1_auth_service_proto_rawDescGZIP(), []int{8}
+}
+
+// Response from refreshing the access token.
+type RefreshResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RefreshResponse) Reset() {
+	*x = RefreshResponse{}
+	mi := &file_v1_auth_service_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RefreshResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RefreshResponse) ProtoMessage() {}
+
+func (x *RefreshResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_auth_service_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RefreshResponse.ProtoReflect.Descriptor instead.
+func (*RefreshResponse) Descriptor() ([]byte, []int) {
+	return file_v1_auth_service_proto_rawDescGZIP(), []int{9}
+}
+
 var File_v1_auth_service_proto protoreflect.FileDescriptor
 
 const file_v1_auth_service_proto_rawDesc = "" +
@@ -555,11 +629,14 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\":\n" +
 	"\x15ExchangeTokenResponse\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken2\xd6\x02\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"\x10\n" +
+	"\x0eRefreshRequest\"\x11\n" +
+	"\x0fRefreshResponse2\xbd\x03\n" +
 	"\vAuthService\x12a\n" +
 	"\x05Login\x12\x19.bytebase.v1.LoginRequest\x1a\x1a.bytebase.v1.LoginResponse\"!\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/auth/login\x12`\n" +
 	"\x06Logout\x12\x1a.bytebase.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\"\"\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/auth/logout\x12\x81\x01\n" +
-	"\rExchangeToken\x12!.bytebase.v1.ExchangeTokenRequest\x1a\".bytebase.v1.ExchangeTokenResponse\")\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/auth:exchangeTokenB\xa6\x01\n" +
+	"\rExchangeToken\x12!.bytebase.v1.ExchangeTokenRequest\x1a\".bytebase.v1.ExchangeTokenResponse\")\x80\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/v1/auth:exchangeToken\x12e\n" +
+	"\aRefresh\x12\x1b.bytebase.v1.RefreshRequest\x1a\x1c.bytebase.v1.RefreshResponse\"\x1f\x80\xea0\x01\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/v1/auth/refreshB\xa6\x01\n" +
 	"\x0fcom.bytebase.v1B\x10AuthServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -574,7 +651,7 @@ func file_v1_auth_service_proto_rawDescGZIP() []byte {
 	return file_v1_auth_service_proto_rawDescData
 }
 
-var file_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_v1_auth_service_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_v1_auth_service_proto_goTypes = []any{
 	(*LoginRequest)(nil),                  // 0: bytebase.v1.LoginRequest
 	(*IdentityProviderContext)(nil),       // 1: bytebase.v1.IdentityProviderContext
@@ -584,25 +661,29 @@ var file_v1_auth_service_proto_goTypes = []any{
 	(*LogoutRequest)(nil),                 // 5: bytebase.v1.LogoutRequest
 	(*ExchangeTokenRequest)(nil),          // 6: bytebase.v1.ExchangeTokenRequest
 	(*ExchangeTokenResponse)(nil),         // 7: bytebase.v1.ExchangeTokenResponse
-	(*User)(nil),                          // 8: bytebase.v1.User
-	(*emptypb.Empty)(nil),                 // 9: google.protobuf.Empty
+	(*RefreshRequest)(nil),                // 8: bytebase.v1.RefreshRequest
+	(*RefreshResponse)(nil),               // 9: bytebase.v1.RefreshResponse
+	(*User)(nil),                          // 10: bytebase.v1.User
+	(*emptypb.Empty)(nil),                 // 11: google.protobuf.Empty
 }
 var file_v1_auth_service_proto_depIdxs = []int32{
-	1, // 0: bytebase.v1.LoginRequest.idp_context:type_name -> bytebase.v1.IdentityProviderContext
-	2, // 1: bytebase.v1.IdentityProviderContext.oauth2_context:type_name -> bytebase.v1.OAuth2IdentityProviderContext
-	3, // 2: bytebase.v1.IdentityProviderContext.oidc_context:type_name -> bytebase.v1.OIDCIdentityProviderContext
-	8, // 3: bytebase.v1.LoginResponse.user:type_name -> bytebase.v1.User
-	0, // 4: bytebase.v1.AuthService.Login:input_type -> bytebase.v1.LoginRequest
-	5, // 5: bytebase.v1.AuthService.Logout:input_type -> bytebase.v1.LogoutRequest
-	6, // 6: bytebase.v1.AuthService.ExchangeToken:input_type -> bytebase.v1.ExchangeTokenRequest
-	4, // 7: bytebase.v1.AuthService.Login:output_type -> bytebase.v1.LoginResponse
-	9, // 8: bytebase.v1.AuthService.Logout:output_type -> google.protobuf.Empty
-	7, // 9: bytebase.v1.AuthService.ExchangeToken:output_type -> bytebase.v1.ExchangeTokenResponse
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	1,  // 0: bytebase.v1.LoginRequest.idp_context:type_name -> bytebase.v1.IdentityProviderContext
+	2,  // 1: bytebase.v1.IdentityProviderContext.oauth2_context:type_name -> bytebase.v1.OAuth2IdentityProviderContext
+	3,  // 2: bytebase.v1.IdentityProviderContext.oidc_context:type_name -> bytebase.v1.OIDCIdentityProviderContext
+	10, // 3: bytebase.v1.LoginResponse.user:type_name -> bytebase.v1.User
+	0,  // 4: bytebase.v1.AuthService.Login:input_type -> bytebase.v1.LoginRequest
+	5,  // 5: bytebase.v1.AuthService.Logout:input_type -> bytebase.v1.LogoutRequest
+	6,  // 6: bytebase.v1.AuthService.ExchangeToken:input_type -> bytebase.v1.ExchangeTokenRequest
+	8,  // 7: bytebase.v1.AuthService.Refresh:input_type -> bytebase.v1.RefreshRequest
+	4,  // 8: bytebase.v1.AuthService.Login:output_type -> bytebase.v1.LoginResponse
+	11, // 9: bytebase.v1.AuthService.Logout:output_type -> google.protobuf.Empty
+	7,  // 10: bytebase.v1.AuthService.ExchangeToken:output_type -> bytebase.v1.ExchangeTokenResponse
+	9,  // 11: bytebase.v1.AuthService.Refresh:output_type -> bytebase.v1.RefreshResponse
+	8,  // [8:12] is the sub-list for method output_type
+	4,  // [4:8] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_v1_auth_service_proto_init() }
@@ -624,7 +705,7 @@ func file_v1_auth_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_auth_service_proto_rawDesc), len(file_v1_auth_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
