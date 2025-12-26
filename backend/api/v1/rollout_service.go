@@ -419,10 +419,11 @@ func (s *RolloutService) TryCreateRollout(ctx context.Context, issueID int) {
 
 		// If no plan checks exist, treat as passing (same as old behavior)
 		if planCheckRun != nil {
-			// Check if plan checks are still running
-			if planCheckRun.Status == store.PlanCheckRunStatusRunning {
-				slog.Debug("plan checks still running, skipping rollout creation",
-					slog.Int("issue_id", issueID))
+			// Check if plan checks are in DONE status
+			if planCheckRun.Status != store.PlanCheckRunStatusDone {
+				slog.Debug("plan checks not in DONE status, skipping rollout creation",
+					slog.Int("issue_id", issueID),
+					slog.String("status", string(planCheckRun.Status)))
 				return
 			}
 
