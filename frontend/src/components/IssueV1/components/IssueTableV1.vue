@@ -66,7 +66,7 @@ import { projectOfIssue } from "../logic";
 import IssueLabelSelector, {
   getValidIssueLabels,
 } from "./IssueLabelSelector.vue";
-import IssueStatusIconWithTaskSummary from "./IssueStatusIconWithTaskSummary.vue";
+import IssueStatusIcon from "./IssueStatusIcon.vue";
 
 interface LocalState {
   selectedIssueNameList: Set<string>;
@@ -168,7 +168,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
         );
         return (
           <div class="flex items-center gap-x-2">
-            <IssueStatusIconWithTaskSummary issue={issue} />
+            <IssueStatusIcon issueStatus={issue.status} />
             <a
               href={issueUrl(issue)}
               class="flex items-center gap-x-2 select-none truncate"

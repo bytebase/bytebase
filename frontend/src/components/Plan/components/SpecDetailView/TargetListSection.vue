@@ -119,11 +119,11 @@ const project = computed(() => {
 });
 
 // Only allow editing in creation mode or if the plan is editable and not readonly.
-// An empty string for `plan.value.rollout` indicates that the plan is in a draft or uninitialized state,
+// An empty string for `plan.value.hasRollout` indicates that the plan is in a draft or uninitialized state,
 // which allows edits to be made.
 const allowEdit = computed(() => {
   if (readonly.value) return false;
-  return (isCreating.value || plan.value.rollout === "") && selectedSpec.value;
+  return (isCreating.value || !plan.value.hasRollout) && selectedSpec.value;
 });
 
 // Separate targets by type

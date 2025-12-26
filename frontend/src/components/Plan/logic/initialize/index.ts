@@ -16,6 +16,7 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import { getRolloutFromPlan } from "@/utils";
 import { emptyPlan } from "@/types/v1/issue/plan";
 import { createPlanSkeleton } from "./create";
 
@@ -145,14 +146,17 @@ export function useInitializePlan(
       // Fetch the plan using the issue's plan reference
       planResult = await planStore.fetchPlanByName(issueResult.plan);
 
-      // Fetch the associated rollout if it exists
-      if (issueResult.rollout) {
+      // Fetch the associated rollout (derive from plan name)
+      const rolloutName = getRolloutFromPlan(planResult.name);
+      try {
         const rolloutRequest = create(GetRolloutRequestSchema, {
-          name: issueResult.rollout,
+          name: rolloutName,
         });
         const newRollout =
           await rolloutServiceClientConnect.getRollout(rolloutRequest);
         rolloutResult = newRollout;
+      } catch {
+        // Rollout might not exist yet, that's ok
       }
     } else {
       // Direct plan ID
@@ -169,14 +173,17 @@ export function useInitializePlan(
         issueResult = newIssue;
       }
 
-      // If we have a plan, try to fetch the associated rollout if it exists
-      if (planResult.rollout) {
+      // If we have a plan, try to fetch the associated rollout (derive from plan name)
+      const rolloutName = getRolloutFromPlan(planResult.name);
+      try {
         const rolloutRequest = create(GetRolloutRequestSchema, {
-          name: planResult.rollout,
+          name: rolloutName,
         });
         const newRollout =
           await rolloutServiceClientConnect.getRollout(rolloutRequest);
         rolloutResult = newRollout;
+      } catch {
+        // Rollout might not exist yet, that's ok
       }
     }
 

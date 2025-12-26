@@ -129,7 +129,7 @@ export const usePlanAction = () => {
     // If no issue exists, show create issue action or close plan action.
     else if (plan.value.issue === "") {
       // If rollout exists, no actions are available.
-      if (plan.value.rollout !== "") {
+      if (plan.value.hasRollout) {
         return actions;
       }
 
@@ -213,7 +213,7 @@ export const usePlanAction = () => {
 
     // Check for rollout creation action
     // Only shown when issue exists, rollout doesn't, and all preconditions are met.
-    if (plan.value.rollout === "" && !isIssueOnly) {
+    if (!plan.value.hasRollout && !isIssueOnly) {
       const canCreateRollout = hasProjectPermissionV2(
         project.value,
         "bb.rollouts.create"

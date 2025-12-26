@@ -1105,7 +1105,6 @@
     "unfinished-resolved-issue-tips": "イシューは「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "some-tasks-are-not-executed-successfully": "(一部のタスクは正常に実行されませんでした)",
     "missing-sql-statement": "SQL ステートメントが欠落しています。",
-    "task-summary-tooltip": "{failed} 個のタスクが失敗しました",
     "data-export": {
       "options": "設定項目",
       "limits": "制限",

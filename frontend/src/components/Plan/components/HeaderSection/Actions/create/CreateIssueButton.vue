@@ -191,7 +191,6 @@ const doCreateIssue = async () => {
         plan: plan.value.name,
         status: IssueStatus.OPEN,
         type: getIssueTypeFromPlan(plan.value),
-        rollout: "",
       }),
     });
 

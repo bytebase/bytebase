@@ -108,7 +108,7 @@ const shouldShowEditButton = computed(() => {
   }
 
   // Check if any export tasks are running or completed
-  if (plan.value.rollout && rollout?.value) {
+  if (plan.value.hasRollout && rollout?.value) {
     const exportDataSpec = plan.value.specs.find(
       (spec) => spec.config?.case === "exportDataConfig"
     );

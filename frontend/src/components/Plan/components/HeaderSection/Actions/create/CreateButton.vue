@@ -169,7 +169,6 @@ const doCreateDataExportIssue = async () => {
       plan: createdPlan.name,
       status: IssueStatus.OPEN,
       type: Issue_Type.DATABASE_EXPORT,
-      rollout: "",
     }),
   });
   const createdIssue =

@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -33,15 +32,14 @@ func init() {
 
 // IssueMessage is the mssage for issues.
 type IssueMessage struct {
-	ProjectID       string
-	CreatorEmail    string
-	Title           string
-	Status          storepb.Issue_Status
-	Type            storepb.Issue_Type
-	Description     string
-	Payload         *storepb.Issue
-	PlanUID         *int64
-	TaskStatusCount map[string]int32
+	ProjectID    string
+	CreatorEmail string
+	Title        string
+	Status       storepb.Issue_Status
+	Type         storepb.Issue_Type
+	Description  string
+	Payload      *storepb.Issue
+	PlanUID      *int64
 
 	// The following fields are output only and not used for create().
 	UID       int
@@ -319,34 +317,9 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			issue.status,
 			issue.type,
 			COALESCE(plan.description, issue.description) AS description,
-			issue.payload,
-			COALESCE(task_run_status_count.status_count, '{}'::jsonb)
+			issue.payload
 		FROM ?
 		LEFT JOIN plan ON issue.plan_id = plan.id
-		LEFT JOIN LATERAL (
-			SELECT
-				jsonb_object_agg(t.status, t.count) AS status_count
-			FROM (
-				SELECT
-					t.status,
-					count(*) AS count
-				FROM (
-					SELECT
-						CASE COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE)
-							WHEN TRUE THEN 'SKIPPED'
-							ELSE latest_task_run.status
-						END AS status
-					FROM task
-					LEFT JOIN LATERAL(
-						SELECT COALESCE(
-							(SELECT task_run.status FROM task_run WHERE task_run.task_id = task.id ORDER BY task_run.id DESC LIMIT 1), 'NOT_STARTED'
-						) AS status
-					) AS latest_task_run ON TRUE
-					WHERE task.plan_id = plan.id
-				) AS t
-				GROUP BY t.status
-			) AS t
-		) AS task_run_status_count ON TRUE
 	`, from)
 	if where.Len() > 0 {
 		q.Space("WHERE ?", where)
@@ -382,7 +355,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			Payload: &storepb.Issue{},
 		}
 		var payload []byte
-		var taskRunStatusCount []byte
 		var statusString string
 		var typeString string
 		if err := rows.Scan(
@@ -397,7 +369,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			&typeString,
 			&issue.Description,
 			&payload,
-			&taskRunStatusCount,
 		); err != nil {
 			return nil, err
 		}
@@ -413,9 +384,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, issue.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal issue payload")
-		}
-		if err := json.Unmarshal(taskRunStatusCount, &issue.TaskStatusCount); err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal task run status count")
 		}
 		issues = append(issues, &issue)
 	}

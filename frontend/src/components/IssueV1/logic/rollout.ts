@@ -37,7 +37,7 @@ export const allowUserToEditStatementForTask = (
   if (issue.status !== IssueStatus.OPEN) {
     denyReasons.push("The issue is not open");
   }
-  if (issue.planEntity?.rollout) {
+  if (issue.planEntity?.hasRollout) {
     denyReasons.push("Cannot edit statement after rollout");
   }
 

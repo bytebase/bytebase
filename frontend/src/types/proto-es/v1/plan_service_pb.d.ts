@@ -283,15 +283,6 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
   issue: string;
 
   /**
-   * The rollout associated with the plan.
-   * Can be empty.
-   * Format: projects/{project}/rollouts/{rollout}
-   *
-   * @generated from field: string rollout = 4;
-   */
-  rollout: string;
-
-  /**
    * The title of the plan.
    *
    * @generated from field: string title = 5;

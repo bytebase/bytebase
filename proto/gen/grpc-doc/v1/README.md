@@ -35,7 +35,6 @@
     - [GrantRequest](#bytebase-v1-GrantRequest)
     - [Issue](#bytebase-v1-Issue)
     - [Issue.Approver](#bytebase-v1-Issue-Approver)
-    - [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry)
     - [IssueComment](#bytebase-v1-IssueComment)
     - [IssueComment.Approval](#bytebase-v1-IssueComment-Approval)
     - [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate)
@@ -1070,11 +1069,8 @@ Webhook integration type.
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan | [string](#string) |  | The plan associated with the issue. Can be empty. Format: projects/{project}/plans/{plan} |
-| rollout | [string](#string) |  | The rollout associated with the issue. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 | grant_request | [GrantRequest](#bytebase-v1-GrantRequest) |  | Used if the issue type is GRANT_REQUEST. |
-| releasers | [string](#string) | repeated | The releasers of the pending stage of the issue rollout, judging from the rollout policy. Format: - roles/workspaceOwner - roles/workspaceDBA - roles/projectOwner - roles/projectReleaser |
 | risk_level | [RiskLevel](#bytebase-v1-RiskLevel) |  | The risk level of the issue. |
-| task_status_count | [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry) | repeated | The status count of the issue. Keys are the following: - NOT_STARTED - SKIPPED - PENDING - RUNNING - DONE - FAILED - CANCELED |
 | labels | [string](#string) | repeated | Labels attached to the issue for categorization and filtering. |
 | approval_status | [Issue.ApprovalStatus](#bytebase-v1-Issue-ApprovalStatus) |  |  |
 | approval_status_error | [string](#string) |  | Only populated when approval_status == ERROR |
@@ -1094,22 +1090,6 @@ Approvers and their approval status for the issue.
 | ----- | ---- | ----- | ----------- |
 | status | [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status) |  | The new status. |
 | principal | [string](#string) |  | Format: users/hello@world.com |
-
-
-
-
-
-
-<a name="bytebase-v1-Issue-TaskStatusCountEntry"></a>
-
-### Issue.TaskStatusCountEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [int32](#int32) |  |  |
 
 
 
@@ -7531,7 +7511,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | name | [string](#string) |  | The name of the plan. `plan` is a system generated ID. Format: projects/{project}/plans/{plan} |
 | state | [State](#bytebase-v1-State) |  | The state of the plan. |
 | issue | [string](#string) |  | The issue associated with the plan. Can be empty. Format: projects/{project}/issues/{issue} |
-| rollout | [string](#string) |  | The rollout associated with the plan. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 | title | [string](#string) |  | The title of the plan. |
 | description | [string](#string) |  | The description of the plan. |
 | specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated | The deployment specs for the plan. |

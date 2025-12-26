@@ -1105,7 +1105,6 @@
     "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中部分任务并未成功执行。",
     "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
     "missing-sql-statement": "SQL 语句缺失。",
-    "task-summary-tooltip": "{failed} 个任务失败",
     "data-export": {
       "options": "配置项",
       "limits": "限制",

@@ -7,6 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -366,7 +367,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			// Convert and store new specs.
 			allSpecs := convertPlanSpecs(req.GetPlan().GetSpecs())
-			planUpdate.Specs = &allSpecs
+			config := proto.CloneOf(oldPlan.Config)
+			config.Specs = allSpecs
+			planUpdate.Config = config
 
 			// Trigger plan check runs.
 			planCheckRunsTrigger = true
@@ -862,9 +865,6 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	}
 	if plan.Config != nil {
 		p.HasRollout = plan.Config.HasRollout
-	}
-	if p.HasRollout {
-		p.Rollout = common.FormatRollout(plan.ProjectID, int(plan.UID))
 	}
 	planCheckRun, err := s.GetPlanCheckRun(ctx, int64(plan.UID))
 	if err != nil {

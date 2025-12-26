@@ -287,9 +287,6 @@ func (x *Plan) Equal(y *Plan) bool {
 	if x.Issue != y.Issue {
 		return false
 	}
-	if x.Rollout != y.Rollout {
-		return false
-	}
 	if x.Title != y.Title {
 		return false
 	}

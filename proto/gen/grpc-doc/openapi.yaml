@@ -10810,28 +10810,10 @@ components:
                         The plan associated with the issue.
                          Can be empty.
                          Format: projects/{project}/plans/{plan}
-                rollout:
-                    type: string
-                    description: |-
-                        The rollout associated with the issue.
-                         Can be empty.
-                         Format: projects/{project}/rollouts/{rollout}
                 grantRequest:
                     allOf:
                         - $ref: '#/components/schemas/GrantRequest'
                     description: Used if the issue type is GRANT_REQUEST.
-                releasers:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        The releasers of the pending stage of the issue rollout, judging
-                         from the rollout policy.
-                         Format:
-                         - roles/workspaceOwner
-                         - roles/workspaceDBA
-                         - roles/projectOwner
-                         - roles/projectReleaser
                 riskLevel:
                     enum:
                         - RISK_LEVEL_UNSPECIFIED
@@ -10841,21 +10823,6 @@ components:
                     type: string
                     description: The risk level of the issue.
                     format: enum
-                taskStatusCount:
-                    type: object
-                    additionalProperties:
-                        type: integer
-                        format: int32
-                    description: |-
-                        The status count of the issue.
-                         Keys are the following:
-                         - NOT_STARTED
-                         - SKIPPED
-                         - PENDING
-                         - RUNNING
-                         - DONE
-                         - FAILED
-                         - CANCELED
                 labels:
                     type: array
                     items:
@@ -11724,13 +11691,6 @@ components:
                         The issue associated with the plan.
                          Can be empty.
                          Format: projects/{project}/issues/{issue}
-                rollout:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The rollout associated with the plan.
-                         Can be empty.
-                         Format: projects/{project}/rollouts/{rollout}
                 title:
                     type: string
                     description: The title of the plan.

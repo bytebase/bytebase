@@ -318,7 +318,7 @@ const denyEditStatementReasons = computed(() => {
   const reasons: string[] = [];
 
   // Check if the plan has been rolled out.
-  if (plan.value.rollout) {
+  if (plan.value.hasRollout) {
     reasons.push(t("issue.error.statement-cannot-be-modified"));
   }
 
@@ -339,7 +339,7 @@ const shouldShowEditButton = computed(() => {
   if (editorState.isEditing.value) {
     return false;
   }
-  if (plan.value.rollout && rollout?.value) {
+  if (plan.value.hasRollout && rollout?.value) {
     const tasks = rollout.value.stages
       .flatMap((stage) => stage.tasks)
       .filter((task) => task.specId === selectedSpec.value.id);

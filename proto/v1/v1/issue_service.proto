@@ -415,36 +415,11 @@ message Issue {
   // Format: projects/{project}/plans/{plan}
   string plan = 11;
 
-  // The rollout associated with the issue.
-  // Can be empty.
-  // Format: projects/{project}/rollouts/{rollout}
-  string rollout = 12;
-
   // Used if the issue type is GRANT_REQUEST.
   GrantRequest grant_request = 13;
 
-  // The releasers of the pending stage of the issue rollout, judging
-  // from the rollout policy.
-  // Format:
-  // - roles/workspaceOwner
-  // - roles/workspaceDBA
-  // - roles/projectOwner
-  // - roles/projectReleaser
-  repeated string releasers = 14;
-
   // The risk level of the issue.
   RiskLevel risk_level = 15;
-
-  // The status count of the issue.
-  // Keys are the following:
-  // - NOT_STARTED
-  // - SKIPPED
-  // - PENDING
-  // - RUNNING
-  // - DONE
-  // - FAILED
-  // - CANCELED
-  map<string, int32> task_status_count = 16;
 
   // Labels attached to the issue for categorization and filtering.
   repeated string labels = 17;
