@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -53,14 +54,31 @@ func configureGrpcRouters(
 ) error {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
-	gatewayModifier := auth.GatewayResponseModifier{Store: stores, LicenseService: licenseService}
 	mux := grpcruntime.NewServeMux(
 		grpcruntime.WithMarshalerOption(grpcruntime.MIMEWildcard, &grpcruntime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{},
 			//nolint:forbidigo
 			UnmarshalOptions: protojson.UnmarshalOptions{},
 		}),
-		grpcruntime.WithForwardResponseOption(gatewayModifier.Modify),
+		// pass through request headers that need to be used by connect rpc handlers.
+		grpcruntime.WithIncomingHeaderMatcher(func(key string) (string, bool) {
+			switch strings.ToLower(key) {
+			// grpc-gateway hard codes authorization pass-through already, we do it again anyways.
+			// https://github.com/grpc-ecosystem/grpc-gateway/blob/2cca0efe61de30f05068b9e3b4eb4801b1b2c1aa/runtime/context.go#L160
+			case "authorization", "cookie", "origin":
+				return key, true
+			default:
+				return "", false
+			}
+		}),
+		grpcruntime.WithOutgoingHeaderMatcher(func(key string) (string, bool) {
+			switch strings.ToLower(key) {
+			case "set-cookie":
+				return key, true
+			default:
+				return "", false
+			}
+		}),
 		grpcruntime.WithRoutingErrorHandler(func(ctx context.Context, sm *grpcruntime.ServeMux, m grpcruntime.Marshaler, w http.ResponseWriter, r *http.Request, httpStatus int) {
 			err := &grpcruntime.HTTPStatusError{
 				HTTPStatus: httpStatus,

@@ -45,8 +45,6 @@ type LocalState = {
 };
 
 type SessionState = {
-  // How many times the user clicks the "load more" button.
-  page: number;
   // Help us to check if the session is outdated.
   updatedTs: number;
   pageSize: number;
@@ -99,7 +97,6 @@ const dataList = ref([]) as Ref<T[]>;
 const sessionState = useDynamicLocalStorage<SessionState>(
   computed(() => `${props.sessionKey}.${currentUser.value.name}`),
   {
-    page: 1,
     updatedTs: 0,
     pageSize: options.value[0].value,
   }
@@ -125,16 +122,9 @@ const fetchData = async (refresh = false) => {
 
   state.loading = true;
 
-  const isFirstFetch = state.paginationToken === "";
-  const expectedRowCount = isFirstFetch
-    ? // Load one or more page for the first fetch to restore the session
-      pageSize.value * sessionState.value.page
-    : // Always load one page if NOT the first fetch
-      pageSize.value;
-
   try {
     const { nextPageToken, list } = await props.fetchList({
-      pageSize: expectedRowCount,
+      pageSize: pageSize.value,
       pageToken: state.paginationToken,
       refresh,
     });
@@ -142,11 +132,6 @@ const fetchData = async (refresh = false) => {
       dataList.value = list;
     } else {
       dataList.value.push(...list);
-    }
-
-    if (!isFirstFetch && list.length === expectedRowCount) {
-      // If we didn't reach the end, memorize we've clicked the "load more" button.
-      sessionState.value.page++;
     }
 
     sessionState.value.updatedTs = Date.now();
@@ -160,7 +145,6 @@ const fetchData = async (refresh = false) => {
 
 const resetSession = () => {
   sessionState.value = {
-    page: 1,
     updatedTs: 0,
     pageSize: pageSize.value,
   };

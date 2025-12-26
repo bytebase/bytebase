@@ -13,21 +13,29 @@
       </template>
       <div class="max-w-xs">
         <div class="flex flex-col gap-y-1 max-h-64 overflow-y-auto">
-          <ApprovalCandidate
+          <UserNameCell
             v-for="user in users"
-            :key="user.email"
-            :candidate="`users/${user.email}`"
+            :key="user.name"
+            :user="user"
+            size="small"
+            :show-mfa-enabled="false"
+            :show-source="false"
+            :allow-edit="false"
           />
         </div>
       </div>
     </NPopover>
     <!-- Show user avatars when 3 or fewer users -->
     <div v-else class="flex flex-col items-start gap-1">
-      <UserView
+      <UserNameCell
         v-for="user in users"
-        :key="user.email"
+        :key="user.name"
         :user="user"
         size="tiny"
+        :show-mfa-enabled="false"
+        :show-source="false"
+        :allow-edit="false"
+        :show-email="false"
       />
     </div>
   </template>
@@ -37,9 +45,8 @@
 import { NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import UserView from "@/components/User/UserView.vue";
+import { UserNameCell } from "@/components/v2/Model/cells";
 import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
-import ApprovalCandidate from "./ApprovalCandidate.vue";
 
 const props = defineProps<{
   users: UserType[];

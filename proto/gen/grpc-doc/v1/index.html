@@ -301,10 +301,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Issue.TaskStatusCountEntry"><span class="badge">M</span>Issue.TaskStatusCountEntry</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.IssueComment"><span class="badge">M</span>IssueComment</a>
                 </li>
               
@@ -3699,15 +3695,6 @@ Format: projects/{project}/plans/{plan} </p></td>
                 </tr>
               
                 <tr>
-                  <td>rollout</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The rollout associated with the issue.
-Can be empty.
-Format: projects/{project}/rollouts/{rollout} </p></td>
-                </tr>
-              
-                <tr>
                   <td>grant_request</td>
                   <td><a href="#bytebase.v1.GrantRequest">GrantRequest</a></td>
                   <td></td>
@@ -3715,38 +3702,10 @@ Format: projects/{project}/rollouts/{rollout} </p></td>
                 </tr>
               
                 <tr>
-                  <td>releasers</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The releasers of the pending stage of the issue rollout, judging
-from the rollout policy.
-Format:
-- roles/workspaceOwner
-- roles/workspaceDBA
-- roles/projectOwner
-- roles/projectReleaser </p></td>
-                </tr>
-              
-                <tr>
                   <td>risk_level</td>
                   <td><a href="#bytebase.v1.RiskLevel">RiskLevel</a></td>
                   <td></td>
                   <td><p>The risk level of the issue. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>task_status_count</td>
-                  <td><a href="#bytebase.v1.Issue.TaskStatusCountEntry">Issue.TaskStatusCountEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>The status count of the issue.
-Keys are the following:
-- NOT_STARTED
-- SKIPPED
-- PENDING
-- RUNNING
-- DONE
-- FAILED
-- CANCELED </p></td>
                 </tr>
               
                 <tr>
@@ -3799,37 +3758,6 @@ Keys are the following:
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: users/hello@world.com </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.Issue.TaskStatusCountEntry">Issue.TaskStatusCountEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -8974,7 +8902,7 @@ Format: idps/{idp} </p></td>
                   <td>idp_context</td>
                   <td><a href="#bytebase.v1.IdentityProviderContext">IdentityProviderContext</a></td>
                   <td></td>
-                  <td><p>The idp_context is using to get the user information from identity provider. </p></td>
+                  <td><p>The idp_context is used to get the user information from identity provider. </p></td>
                 </tr>
               
                 <tr>
@@ -21240,15 +21168,6 @@ Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
                 <tr>
-                  <td>rollout</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The rollout associated with the plan.
-Can be empty.
-Format: projects/{project}/rollouts/{rollout} </p></td>
-                </tr>
-              
-                <tr>
                   <td>title</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -26558,7 +26477,7 @@ Permissions required: bb.roles.delete</p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the parent of the taskRuns.
+                  <td><p>The task name for the taskRuns.
 Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
 Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage. </p></td>
                 </tr>
@@ -26599,7 +26518,7 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRu
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the parent of the tasks.
+                  <td><p>The stage name for the tasks.
 Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
                 </tr>
               
@@ -26646,7 +26565,7 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the parent of the tasks.
+                  <td><p>The stage name for the tasks.
 Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
                 </tr>
               

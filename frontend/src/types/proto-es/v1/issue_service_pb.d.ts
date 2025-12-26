@@ -494,15 +494,6 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   plan: string;
 
   /**
-   * The rollout associated with the issue.
-   * Can be empty.
-   * Format: projects/{project}/rollouts/{rollout}
-   *
-   * @generated from field: string rollout = 12;
-   */
-  rollout: string;
-
-  /**
    * Used if the issue type is GRANT_REQUEST.
    *
    * @generated from field: bytebase.v1.GrantRequest grant_request = 13;
@@ -510,39 +501,11 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   grantRequest?: GrantRequest;
 
   /**
-   * The releasers of the pending stage of the issue rollout, judging
-   * from the rollout policy.
-   * Format:
-   * - roles/workspaceOwner
-   * - roles/workspaceDBA
-   * - roles/projectOwner
-   * - roles/projectReleaser
-   *
-   * @generated from field: repeated string releasers = 14;
-   */
-  releasers: string[];
-
-  /**
    * The risk level of the issue.
    *
    * @generated from field: bytebase.v1.RiskLevel risk_level = 15;
    */
   riskLevel: RiskLevel;
-
-  /**
-   * The status count of the issue.
-   * Keys are the following:
-   * - NOT_STARTED
-   * - SKIPPED
-   * - PENDING
-   * - RUNNING
-   * - DONE
-   * - FAILED
-   * - CANCELED
-   *
-   * @generated from field: map<string, int32> task_status_count = 16;
-   */
-  taskStatusCount: { [key: string]: number };
 
   /**
    * Labels attached to the issue for categorization and filtering.

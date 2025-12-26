@@ -91,6 +91,7 @@ service RolloutService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Skips multiple tasks in a rollout stage.
@@ -102,6 +103,7 @@ service RolloutService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Cancels multiple running task executions.
@@ -113,6 +115,7 @@ service RolloutService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   // Generates rollback SQL for a completed task run.
@@ -129,9 +132,12 @@ service RolloutService {
 }
 
 message BatchRunTasksRequest {
-  // The name of the parent of the tasks.
+  // The stage name for the tasks.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
-  string parent = 1;
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Stage"}
+  ];
   // The tasks to run.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
@@ -143,9 +149,12 @@ message BatchRunTasksRequest {
 message BatchRunTasksResponse {}
 
 message BatchSkipTasksRequest {
-  // The name of the parent of the tasks.
+  // The stage name for the tasks.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
-  string parent = 1;
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Stage"}
+  ];
   // The tasks to skip.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
@@ -157,10 +166,13 @@ message BatchSkipTasksRequest {
 message BatchSkipTasksResponse {}
 
 message BatchCancelTaskRunsRequest {
-  // The name of the parent of the taskRuns.
+  // The task name for the taskRuns.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   // Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
-  string parent = 1;
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Task"}
+  ];
   // The taskRuns to cancel.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   repeated string task_runs = 2;

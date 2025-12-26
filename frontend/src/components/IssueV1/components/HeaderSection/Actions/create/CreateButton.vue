@@ -124,9 +124,9 @@ const issueCreateErrorList = computed(() => {
   if (!issue.value.title.trim()) {
     errorList.push("Missing issue title");
   }
-  if (issue.value.rollout) {
+  if (issue.value.rolloutEntity) {
     if (
-      !issue.value.rolloutEntity?.stages.every((stage) => isValidStage(stage))
+      !issue.value.rolloutEntity.stages.every((stage) => isValidStage(stage))
     ) {
       errorList.push("Missing SQL statement in some stages");
     }
@@ -181,7 +181,6 @@ const doCreateIssue = async () => {
 
     const issueCreate = create(IssueSchema, {
       ...issue.value,
-      rollout: "",
     });
     const request = create(CreateIssueRequestSchema, {
       parent: issue.value.project,

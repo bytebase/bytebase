@@ -7060,7 +7060,7 @@ components:
           type: string
           title: parent
           description: |-
-            The name of the parent of the taskRuns.
+            The task name for the taskRuns.
              Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
              Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
         taskRuns:
@@ -7313,7 +7313,7 @@ components:
           type: string
           title: parent
           description: |-
-            The name of the parent of the tasks.
+            The stage name for the tasks.
              Format: projects/{project}/rollouts/{rollout}/stages/{stage}
         tasks:
           type: array
@@ -7341,7 +7341,7 @@ components:
           type: string
           title: parent
           description: |-
-            The name of the parent of the tasks.
+            The stage name for the tasks.
              Format: projects/{project}/rollouts/{rollout}/stages/{stage}
         tasks:
           type: array
@@ -10785,51 +10785,14 @@ components:
             The plan associated with the issue.
              Can be empty.
              Format: projects/{project}/plans/{plan}
-        rollout:
-          type: string
-          title: rollout
-          description: |-
-            The rollout associated with the issue.
-             Can be empty.
-             Format: projects/{project}/rollouts/{rollout}
         grantRequest:
           title: grant_request
           description: Used if the issue type is GRANT_REQUEST.
           $ref: '#/components/schemas/bytebase.v1.GrantRequest'
-        releasers:
-          type: array
-          items:
-            type: string
-          title: releasers
-          description: |-
-            The releasers of the pending stage of the issue rollout, judging
-             from the rollout policy.
-             Format:
-             - roles/workspaceOwner
-             - roles/workspaceDBA
-             - roles/projectOwner
-             - roles/projectReleaser
         riskLevel:
           title: risk_level
           description: The risk level of the issue.
           $ref: '#/components/schemas/bytebase.v1.RiskLevel'
-        taskStatusCount:
-          type: object
-          title: task_status_count
-          additionalProperties:
-            type: integer
-            title: value
-            format: int32
-          description: |-
-            The status count of the issue.
-             Keys are the following:
-             - NOT_STARTED
-             - SKIPPED
-             - PENDING
-             - RUNNING
-             - DONE
-             - FAILED
-             - CANCELED
         labels:
           type: array
           items:
@@ -10880,18 +10843,6 @@ components:
         - APPROVED
         - REJECTED
       description: The approval status of an approver.
-    bytebase.v1.Issue.TaskStatusCountEntry:
-      type: object
-      properties:
-        key:
-          type: string
-          title: key
-        value:
-          type: integer
-          title: value
-          format: int32
-      title: TaskStatusCountEntry
-      additionalProperties: false
     bytebase.v1.Issue.Type:
       type: string
       title: Type
@@ -12151,7 +12102,7 @@ components:
              Format: idps/{idp}
         idpContext:
           title: idp_context
-          description: The idp_context is using to get the user information from identity provider.
+          description: The idp_context is used to get the user information from identity provider.
           $ref: '#/components/schemas/bytebase.v1.IdentityProviderContext'
         otpCode:
           type: string
@@ -12614,13 +12565,6 @@ components:
             The issue associated with the plan.
              Can be empty.
              Format: projects/{project}/issues/{issue}
-        rollout:
-          type: string
-          title: rollout
-          description: |-
-            The rollout associated with the plan.
-             Can be empty.
-             Format: projects/{project}/rollouts/{rollout}
         title:
           type: string
           title: title

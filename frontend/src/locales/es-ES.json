@@ -219,6 +219,7 @@
     "resources": "Recursos",
     "closed": "Cerrado",
     "refresh": "Actualizar",
+    "reject": "Rechazar",
     "rollback": "Retroceder",
     "rows": {
       "self": "filas",
@@ -1104,7 +1105,6 @@
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "missing-sql-statement": "Sentencia SQL faltante.",
-    "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas",
     "data-export": {
       "options": "Opciones de exportación",
       "limits": "Límites",
@@ -1151,9 +1151,13 @@
       "description": "Las bases de datos seleccionadas presentan una desviación de esquema. Asegúrese de que la desviación sea la esperada y de que sea segura para su aplicación."
     },
     "review": {
+      "self": "Revisar",
       "approved": "Aprobado",
       "rejected": "Rechazado",
-      "under-review": "Bajo revisión"
+      "under-review": "Bajo revisión",
+      "comment-description": "Enviar comentarios generales sin aprobación",
+      "approve-description": "Enviar comentarios y aprobar este problema",
+      "reject-description": "Envíe comentarios y solicite cambios"
     },
     "approval": {
       "rejected-error": "Se ha rechazado la aprobación del problema.",
@@ -2708,7 +2712,6 @@
     },
     "issue-review": {
       "approve-issue": "¿Aprobar incidencia?",
-      "you": "Tú",
       "generating-approval-flow": "Generando flujo de aprobación",
       "approved-issue": "incidencia aprobada",
       "disallow-approve-reason": {
@@ -2720,6 +2723,7 @@
       "send-back-issue": "¿Devolver el problema?",
       "re-request-review": "Volver a solicitar revisión",
       "re-request-review-issue": "¿Volver a solicitar revisión?",
+      "re-request-review-success": "Revisión solicitada nuevamente con éxito",
       "sent-back-issue": "Problema devuelto",
       "re-requested-review": "revisión de problema nuevamente solicitada",
       "approved-by": "Aprobado por",

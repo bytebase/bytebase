@@ -41,7 +41,6 @@ export const createIssueFromPlan = async (project: string, plan: Plan) => {
     ...emptyIssue(),
     ...createdIssue,
     planEntity: plan,
-    rollout: createdRollout.name,
     rolloutEntity: createdRollout,
   };
   return composedIssue;

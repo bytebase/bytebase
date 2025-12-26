@@ -1,7 +1,4 @@
-export type IssueReviewAction =
-  | "ISSUE_REVIEW_APPROVE"
-  | "ISSUE_REVIEW_REJECT"
-  | "ISSUE_REVIEW_RE_REQUEST";
+export type IssueReviewAction = "ISSUE_REVIEW";
 
 export type IssueStatusAction =
   | "ISSUE_STATUS_CLOSE"
@@ -20,11 +17,11 @@ export type RolloutAction =
   | "ROLLOUT_START"
   | "ROLLOUT_CANCEL";
 
-// All unified actions
-export type UnifiedAction = IssueAction | PlanAction | RolloutAction;
+export type ExportAction = "EXPORT_DOWNLOAD";
 
-export interface ActionConfig {
-  action: UnifiedAction;
-  disabled?: boolean;
-  description?: string;
-}
+// All unified actions
+export type UnifiedAction =
+  | IssueAction
+  | PlanAction
+  | RolloutAction
+  | ExportAction;

@@ -52,18 +52,12 @@ import type {
 import DataExportButton from "@/components/DataExportButton.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import {
-  featureToRef,
-  useAuditLogStore,
-  useProjectV1Store,
-  useUserStore,
-} from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
+import { featureToRef, useAuditLogStore } from "@/store";
 import { type SearchAuditLogsParams } from "@/types";
 import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
 import { ExportFormat } from "@/types/proto-es/v1/common_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { extractProjectResourceName, type SearchParams } from "@/utils";
+import { type SearchParams } from "@/utils";
 
 interface LocalState {
   params: SearchParams;
@@ -89,7 +83,6 @@ const state = reactive<LocalState>({
 });
 const { t } = useI18n();
 const auditLogStore = useAuditLogStore();
-const projectStore = useProjectV1Store();
 const auditLogPagedTable = ref<ComponentExposed<typeof PagedTable<AuditLog>>>();
 const hasAuditLogFeature = featureToRef(PlanFeature.FEATURE_AUDIT_LOG);
 
@@ -112,16 +105,6 @@ const fetchAuditLog = async ({
     pageToken,
     pageSize,
   });
-  await projectStore.batchGetOrFetchProjects(
-    auditLogs.map((auditLog) => {
-      const projectResourceId = extractProjectResourceName(auditLog.name);
-      if (!projectResourceId) {
-        return "";
-      }
-      return `${projectNamePrefix}${projectResourceId}`;
-    })
-  );
-  await useUserStore().batchGetOrFetchUsers(auditLogs.map((log) => log.user));
   return { nextPageToken, list: auditLogs };
 };
 

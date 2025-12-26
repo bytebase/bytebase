@@ -5,7 +5,7 @@
     class="inline-flex items-center gap-x-1"
     :class="link && !plain && 'normal-link'"
   >
-    <NPerformantEllipsis>
+    <NPerformantEllipsis :line-clamp="1" :tooltip="true">
       <HighlightLabelText :text="projectV1Name(project)" :keyword="keyword" />
     </NPerformantEllipsis>
   </component>

@@ -8237,12 +8237,14 @@ components:
                     description: Metadata about the request context.
             description: Audit log entry recording system activity or API call.
         BatchCancelTaskRunsRequest:
+            required:
+                - parent
             type: object
             properties:
                 parent:
                     type: string
                     description: |-
-                        The name of the parent of the taskRuns.
+                        The task name for the taskRuns.
                          Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
                          Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
                 taskRuns:
@@ -8392,12 +8394,14 @@ components:
                     description: The parsed CEL expressions as AST.
             description: Response message for batch parsing CEL expressions.
         BatchRunTasksRequest:
+            required:
+                - parent
             type: object
             properties:
                 parent:
                     type: string
                     description: |-
-                        The name of the parent of the tasks.
+                        The stage name for the tasks.
                          Format: projects/{project}/rollouts/{rollout}/stages/{stage}
                 tasks:
                     type: array
@@ -8414,12 +8418,14 @@ components:
             type: object
             properties: {}
         BatchSkipTasksRequest:
+            required:
+                - parent
             type: object
             properties:
                 parent:
                     type: string
                     description: |-
-                        The name of the parent of the tasks.
+                        The stage name for the tasks.
                          Format: projects/{project}/rollouts/{rollout}/stages/{stage}
                 tasks:
                     type: array
@@ -10804,28 +10810,10 @@ components:
                         The plan associated with the issue.
                          Can be empty.
                          Format: projects/{project}/plans/{plan}
-                rollout:
-                    type: string
-                    description: |-
-                        The rollout associated with the issue.
-                         Can be empty.
-                         Format: projects/{project}/rollouts/{rollout}
                 grantRequest:
                     allOf:
                         - $ref: '#/components/schemas/GrantRequest'
                     description: Used if the issue type is GRANT_REQUEST.
-                releasers:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        The releasers of the pending stage of the issue rollout, judging
-                         from the rollout policy.
-                         Format:
-                         - roles/workspaceOwner
-                         - roles/workspaceDBA
-                         - roles/projectOwner
-                         - roles/projectReleaser
                 riskLevel:
                     enum:
                         - RISK_LEVEL_UNSPECIFIED
@@ -10835,21 +10823,6 @@ components:
                     type: string
                     description: The risk level of the issue.
                     format: enum
-                taskStatusCount:
-                    type: object
-                    additionalProperties:
-                        type: integer
-                        format: int32
-                    description: |-
-                        The status count of the issue.
-                         Keys are the following:
-                         - NOT_STARTED
-                         - SKIPPED
-                         - PENDING
-                         - RUNNING
-                         - DONE
-                         - FAILED
-                         - CANCELED
                 labels:
                     type: array
                     items:
@@ -11364,7 +11337,7 @@ components:
                 idpContext:
                     allOf:
                         - $ref: '#/components/schemas/IdentityProviderContext'
-                    description: The idp_context is using to get the user information from identity provider.
+                    description: The idp_context is used to get the user information from identity provider.
                 otpCode:
                     type: string
                     description: The otp_code is used to verify the user's identity by MFA.
@@ -11718,13 +11691,6 @@ components:
                         The issue associated with the plan.
                          Can be empty.
                          Format: projects/{project}/issues/{issue}
-                rollout:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The rollout associated with the plan.
-                         Can be empty.
-                         Format: projects/{project}/rollouts/{rollout}
                 title:
                     type: string
                     description: The title of the plan.

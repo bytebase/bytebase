@@ -593,10 +593,6 @@ type Plan struct {
 	// Can be empty.
 	// Format: projects/{project}/issues/{issue}
 	Issue string `protobuf:"bytes,3,opt,name=issue,proto3" json:"issue,omitempty"`
-	// The rollout associated with the plan.
-	// Can be empty.
-	// Format: projects/{project}/rollouts/{rollout}
-	Rollout string `protobuf:"bytes,4,opt,name=rollout,proto3" json:"rollout,omitempty"`
 	// The title of the plan.
 	Title string `protobuf:"bytes,5,opt,name=title,proto3" json:"title,omitempty"`
 	// The description of the plan.
@@ -667,13 +663,6 @@ func (x *Plan) GetState() State {
 func (x *Plan) GetIssue() string {
 	if x != nil {
 		return x.Issue
-	}
-	return ""
-}
-
-func (x *Plan) GetRollout() string {
-	if x != nil {
-		return x.Rollout
 	}
 	return ""
 }
@@ -1701,12 +1690,11 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xd4\x0e\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xb5\x0e\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
-	"\x05issue\x18\x03 \x01(\tB\x03\xe0A\x03R\x05issue\x12\x1d\n" +
-	"\arollout\x18\x04 \x01(\tB\x03\xe0A\x03R\arollout\x12\x1e\n" +
+	"\x05issue\x18\x03 \x01(\tB\x03\xe0A\x03R\x05issue\x12\x1e\n" +
 	"\x05title\x18\x05 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
 	"\vdescription\x18\x06 \x01(\tB\b\xbaH\x05r\x03\x18\x90NR\vdescription\x12,\n" +
 	"\x05specs\x18\a \x03(\v2\x16.bytebase.v1.Plan.SpecR\x05specs\x12\x1d\n" +

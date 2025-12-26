@@ -28,6 +28,7 @@ export interface SensitiveColumn {
 export interface AccessUser {
   type: "user" | "group";
   key: string;
+  member: string;
   group?: Group;
   user?: User;
   expirationTimestamp?: number;

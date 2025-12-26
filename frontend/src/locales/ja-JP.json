@@ -219,6 +219,7 @@
     "resources": "リソース",
     "closed": "閉まっている",
     "refresh": "リフレッシュ",
+    "reject": "拒否する",
     "rollback": "ロールバック",
     "rows": {
       "self": "行",
@@ -1104,7 +1105,6 @@
     "unfinished-resolved-issue-tips": "イシューは「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "some-tasks-are-not-executed-successfully": "(一部のタスクは正常に実行されませんでした)",
     "missing-sql-statement": "SQL ステートメントが欠落しています。",
-    "task-summary-tooltip": "{failed} 個のタスクが失敗しました",
     "data-export": {
       "options": "設定項目",
       "limits": "制限",
@@ -1151,9 +1151,13 @@
       "description": "選択したデータベースにはスキーマドリフトがあります。ドリフトが想定どおりであり、適用しても安全であることを確認してください。"
     },
     "review": {
+      "self": "レビュー",
       "approved": "承認された",
       "rejected": "拒否",
-      "under-review": "審査中"
+      "under-review": "審査中",
+      "comment-description": "承認なしで一般的なフィードバックを送信する",
+      "approve-description": "フィードバックを送信してこの問題を承認する",
+      "reject-description": "フィードバックを送信して変更をリクエストする"
     },
     "approval": {
       "rejected-error": "問題の承認が拒否されました。",
@@ -2708,7 +2712,6 @@
     },
     "issue-review": {
       "approve-issue": "イシューを承認しますか?",
-      "you": "あなた",
       "generating-approval-flow": "承認フローが生成されています",
       "approved-issue": "イシューを承認する",
       "disallow-approve-reason": {
@@ -2720,6 +2723,7 @@
       "send-back-issue": "イシューを却下しますか?",
       "re-request-review": "再度承認をリクエストする",
       "re-request-review-issue": "イシューの承認を再度リクエストしますか?",
+      "re-request-review-success": "レビューの再リクエストが完了しました",
       "sent-back-issue": "イシューを却下する",
       "re-requested-review": "イシューの承認を再度リクエストします",
       "approved-by": "承認者",

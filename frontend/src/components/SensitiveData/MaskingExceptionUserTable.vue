@@ -21,14 +21,14 @@ import { NDataTable, NDatePicker, NTooltip, useDialog } from "naive-ui";
 import type { VNodeChild } from "vue";
 import { computed, h, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouterLink, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import {
   DatabaseV1Name,
   InstanceV1Name,
   MiniActionButton,
 } from "@/components/v2";
-import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
+import { UserNameCell } from "@/components/v2/Model/cells";
 import {
   composePolicyBindings,
   extractGroupEmail,
@@ -57,7 +57,6 @@ import {
   batchConvertFromCELString,
   type ConditionExpression,
 } from "@/utils/issue/cel";
-import UserAvatar from "../User/UserAvatar.vue";
 import { type AccessUser } from "./types";
 
 interface LocalState {
@@ -206,7 +205,8 @@ const getAccessUsers = (
   const result: AccessUser[] = [];
   for (const member of exception.members) {
     const access: AccessUser = {
-      type: "user",
+      type: member.startsWith(groupBindingPrefix) ? "group" : "user",
+      member,
       key: `${member}:${expression}.${description}`,
       expirationTimestamp,
       rawExpression: expression,
@@ -217,16 +217,12 @@ const getAccessUsers = (
     };
 
     if (member.startsWith(groupBindingPrefix)) {
-      access.type = "group";
       access.group = groupStore.getGroupByIdentifier(member);
     } else {
-      access.type = "user";
       access.user = userStore.getUserByIdentifier(member);
     }
 
-    if (access.group || access.user) {
-      result.push(access);
-    }
+    result.push(access);
   }
 
   return result;
@@ -305,29 +301,20 @@ const accessTableColumns = computed(
         title: t("common.members"),
         resizable: true,
         render: (item: AccessUser) => {
-          if (item.type === "group") {
-            return <GroupNameCell group={item.group!} />;
+          if (item.group) {
+            return <GroupNameCell group={item.group} />;
+          } else if (item.user) {
+            return (
+              <UserNameCell
+                user={item.user}
+                size="small"
+                allowEdit={false}
+                showMfaEnabled={false}
+                showSource={false}
+              />
+            );
           }
-
-          return (
-            <div class="flex items-center gap-x-2">
-              <UserAvatar size="SMALL" user={item.user} />
-              <div class="flex flex-col">
-                <RouterLink
-                  to={{
-                    name: WORKSPACE_ROUTE_USER_PROFILE,
-                    params: {
-                      principalEmail: item.user!.email,
-                    },
-                  }}
-                  class="normal-link"
-                >
-                  {item.user!.title}
-                </RouterLink>
-                <span class="textinfolabel">{item.user!.email}</span>
-              </div>
-            </div>
-          );
+          return <span>{item.member}</span>;
         },
       },
       {

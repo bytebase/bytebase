@@ -219,6 +219,7 @@
     "resources": "Resources",
     "closed": "Closed",
     "refresh": "Refresh",
+    "reject": "Reject",
     "rollback": "Rollback",
     "rows": {
       "self": "rows",
@@ -1104,7 +1105,6 @@
     "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
     "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
     "missing-sql-statement": "SQL statement missing.",
-    "task-summary-tooltip": "{failed} task failed | {failed} tasks failed",
     "data-export": {
       "options": "Options",
       "limits": "Limits",
@@ -1151,9 +1151,13 @@
       "description": "The selected database(s) has schema drift. Please make sure the drift is expected and safe to apply."
     },
     "review": {
+      "self": "Review",
       "approved": "Approved",
       "rejected": "Rejected",
-      "under-review": "Under review"
+      "under-review": "Under review",
+      "comment-description": "Submit general feedback without approval",
+      "approve-description": "Submit feedback and approve this issue",
+      "reject-description": "Submit feedback and request changes"
     },
     "approval": {
       "rejected-error": "Issue approval has been rejected.",
@@ -2708,7 +2712,6 @@
     },
     "issue-review": {
       "approve-issue": "Approve issue?",
-      "you": "You",
       "generating-approval-flow": "Generating approval flow",
       "approved-issue": "approved issue",
       "disallow-approve-reason": {
@@ -2720,6 +2723,7 @@
       "send-back-issue": "Send back issue?",
       "re-request-review": "Re-request review",
       "re-request-review-issue": "Re-request review issue?",
+      "re-request-review-success": "Review re-requested successfully",
       "sent-back-issue": "Sent back issue",
       "re-requested-review": "re-requested issue review",
       "approved-by": "Approved by",

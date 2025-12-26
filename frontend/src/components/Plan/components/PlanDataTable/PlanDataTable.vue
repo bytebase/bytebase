@@ -50,7 +50,7 @@ const columnList = computed((): DataTableColumn<Plan>[] => {
       ellipsis: true,
       render: (plan) => {
         const showDraftTag =
-          enabledNewLayout.value && plan.issue === "" && plan.rollout === "";
+          enabledNewLayout.value && plan.issue === "" && !plan.hasRollout;
         const isDeleted = plan.state === State.DELETED;
         return (
           <div

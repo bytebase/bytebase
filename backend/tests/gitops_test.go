@@ -272,7 +272,6 @@ func TestGitOpsRollout(t *testing.T) {
 			Description: "Deploy release via GitOps workflow",
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 		},
 	}))
 	a.NoError(err)
@@ -497,7 +496,6 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 			Description: "Deploy 3-file release to test and prod via GitOps workflow",
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 		},
 	}))
 	a.NoError(err)
@@ -722,7 +720,6 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 			Description: "Apply original release to database",
 			Type:        v1pb.Issue_DATABASE_CHANGE,
 			Plan:        plan.Name,
-			Rollout:     rollout.Name,
 		},
 	}))
 	a.NoError(err)

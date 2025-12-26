@@ -30,7 +30,11 @@ import {
   GetRolloutRequestSchema,
   ListTaskRunsRequestSchema,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
+import {
+  extractProjectResourceName,
+  getRolloutFromPlan,
+  hasProjectPermissionV2,
+} from "@/utils";
 
 export interface ComposeIssueConfig {
   withPlan?: boolean;
@@ -76,10 +80,11 @@ const composeIssue = async (
       }
     }
   }
-  if (config.withRollout && issue.rollout) {
+  if (config.withRollout && issue.plan) {
+    const rolloutName = getRolloutFromPlan(issue.plan);
     if (hasProjectPermissionV2(projectEntity, "bb.rollouts.get")) {
       const request = create(GetRolloutRequestSchema, {
-        name: issue.rollout,
+        name: rolloutName,
       });
       const response = await rolloutServiceClientConnect.getRollout(request);
       issue.rolloutEntity = response;
@@ -87,7 +92,7 @@ const composeIssue = async (
 
     if (hasProjectPermissionV2(projectEntity, "bb.taskRuns.list")) {
       const request = create(ListTaskRunsRequestSchema, {
-        parent: `${issue.rollout}/stages/-/tasks/-`,
+        parent: `${rolloutName}/stages/-/tasks/-`,
       });
       const response = await rolloutServiceClientConnect.listTaskRuns(request);
       const taskRuns = response.taskRuns;
@@ -159,7 +164,6 @@ export const experimentalCreateIssueByPlan = async (
   const rolloutResponse =
     await rolloutServiceClientConnect.createRollout(rolloutRequest);
   const createdRollout = rolloutResponse;
-  createdIssue.rollout = createdRollout.name;
 
   return { createdPlan, createdIssue, createdRollout };
 };

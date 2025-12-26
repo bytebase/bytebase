@@ -7,6 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -366,7 +367,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			// Convert and store new specs.
 			allSpecs := convertPlanSpecs(req.GetPlan().GetSpecs())
-			planUpdate.Specs = &allSpecs
+			config := proto.CloneOf(oldPlan.Config)
+			config.Specs = allSpecs
+			planUpdate.Config = config
 
 			// Trigger plan check runs.
 			planCheckRunsTrigger = true
@@ -394,19 +397,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		}
 	}
 
-	if err := s.store.UpdatePlan(ctx, planUpdate); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
-	}
-
-	updatedPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &oldPlan.UID,
-		ProjectID: &oldPlan.ProjectID,
-	})
+	updatedPlan, err := s.store.UpdatePlan(ctx, planUpdate)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get updated plan %q: %v", req.Plan.Name, err))
-	}
-	if updatedPlan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("updated plan %q not found", req.Plan.Name))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
 	}
 
 	if planCheckRunsTrigger {
@@ -862,9 +855,6 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	}
 	if plan.Config != nil {
 		p.HasRollout = plan.Config.HasRollout
-	}
-	if p.HasRollout {
-		p.Rollout = common.FormatRollout(plan.ProjectID, int(plan.UID))
 	}
 	planCheckRun, err := s.GetPlanCheckRun(ctx, int64(plan.UID))
 	if err != nil {

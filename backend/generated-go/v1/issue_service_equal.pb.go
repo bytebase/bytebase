@@ -302,34 +302,11 @@ func (x *Issue) Equal(y *Issue) bool {
 	if x.Plan != y.Plan {
 		return false
 	}
-	if x.Rollout != y.Rollout {
-		return false
-	}
 	if !x.GrantRequest.Equal(y.GrantRequest) {
 		return false
 	}
-	if len(x.Releasers) != len(y.Releasers) {
-		return false
-	}
-	for i := 0; i < len(x.Releasers); i++ {
-		if x.Releasers[i] != y.Releasers[i] {
-			return false
-		}
-	}
 	if x.RiskLevel != y.RiskLevel {
 		return false
-	}
-	if len(x.TaskStatusCount) != len(y.TaskStatusCount) {
-		return false
-	}
-	for k := range x.TaskStatusCount {
-		_, ok := y.TaskStatusCount[k]
-		if !ok {
-			return false
-		}
-		if x.TaskStatusCount[k] != y.TaskStatusCount[k] {
-			return false
-		}
 	}
 	if len(x.Labels) != len(y.Labels) {
 		return false

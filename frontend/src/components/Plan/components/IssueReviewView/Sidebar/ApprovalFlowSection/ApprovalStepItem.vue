@@ -29,27 +29,40 @@
       </div>
       <div class="mt-1 text-sm text-gray-600">
         <template v-if="status === 'approved'">
-          <div class="flex items-center gap-1">
+          <div class="flex flex-col items-start gap-1">
             <span class="text-xs">{{
               $t("custom-approval.issue-review.approved-by")
             }}</span>
             <ApprovalUserView
               v-if="stepApprover"
               :candidate="stepApprover.principal"
-              size="tiny"
             />
           </div>
         </template>
         <template v-else-if="status === 'rejected'">
-          <div class="flex items-center gap-1">
-            <span class="text-xs">{{
-              $t("custom-approval.issue-review.rejected-by")
-            }}</span>
-            <ApprovalUserView
-              v-if="stepApprover"
-              :candidate="stepApprover.principal"
-              size="tiny"
-            />
+          <div class="flex flex-col gap-1">
+            <div class="flex flex-col items-start gap-1">
+              <span class="text-xs">{{
+                $t("custom-approval.issue-review.rejected-by")
+              }}</span>
+              <ApprovalUserView
+                v-if="stepApprover"
+                :candidate="stepApprover.principal"
+              />
+            </div>
+            <!-- Re-request review button for issue creator -->
+            <div v-if="canReRequest" class="mt-1">
+              <NButton
+                size="tiny"
+                :loading="reRequesting"
+                @click="handleReRequestReview"
+              >
+                <template #icon>
+                  <RotateCcwIcon class="w-3 h-3" />
+                </template>
+                {{ $t("custom-approval.issue-review.re-request-review") }}
+              </NButton>
+            </div>
           </div>
         </template>
         <template v-else-if="status === 'current'">
@@ -69,13 +82,17 @@
 </template>
 
 <script setup lang="ts">
+import { create } from "@bufbuild/protobuf";
 import { computedAsync } from "@vueuse/core";
 import { uniq } from "lodash-es";
-import { ThumbsUp, User, X } from "lucide-vue-next";
-import { NTimelineItem } from "naive-ui";
-import { computed, watchEffect } from "vue";
+import { RotateCcwIcon, ThumbsUp, User, X } from "lucide-vue-next";
+import { NButton, NTimelineItem } from "naive-ui";
+import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
+import { usePlanContext } from "@/components/Plan/logic";
+import { issueServiceClientConnect } from "@/grpcweb";
 import {
+  pushNotification,
   useCurrentProjectV1,
   useCurrentUserV1,
   useGroupStore,
@@ -90,7 +107,10 @@ import type {
   Issue,
   Issue_Approver,
 } from "@/types/proto-es/v1/issue_service_pb";
-import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  Issue_Approver_Status,
+  RequestIssueRequestSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { User as UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
   ensureUserFullName,
@@ -109,12 +129,53 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
+const { events } = usePlanContext();
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const roleStore = useRoleStore();
 const groupStore = useGroupStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const currentUserEmail = computed(() => currentUser.value.email);
+
+const reRequesting = ref(false);
+
+// Check if current user can re-request review (must be issue creator and step is rejected)
+const canReRequest = computed(() => {
+  const isCreator = props.issue.creator === `users/${currentUserEmail.value}`;
+  const stepIsRejected =
+    stepApprover.value?.status === Issue_Approver_Status.REJECTED;
+  return isCreator && stepIsRejected;
+});
+
+const handleReRequestReview = async () => {
+  if (reRequesting.value) return;
+
+  reRequesting.value = true;
+  try {
+    const request = create(RequestIssueRequestSchema, {
+      name: props.issue.name,
+    });
+    await issueServiceClientConnect.requestIssue(request);
+
+    // Emit event to trigger issue refresh
+    events.emit("perform-issue-review-action", { action: "ISSUE_REVIEW" });
+
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("custom-approval.issue-review.re-request-review-success"),
+    });
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.failed"),
+      description: String(error),
+    });
+  } finally {
+    reRequesting.value = false;
+  }
+};
 
 // Get the approver for this specific step
 const stepApprover = computed(
