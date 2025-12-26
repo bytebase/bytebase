@@ -237,9 +237,16 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
 	}
 
-	// 6. Mark old token as rotated (grace period starts)
-	if err := s.store.MarkWebRefreshTokenRotated(ctx, tokenHash); err != nil {
+	// 6. Atomically mark old token as rotated (grace period starts)
+	// If another request already rotated it, we're in a race - return success without new tokens
+	rotated, err := s.store.MarkWebRefreshTokenRotated(ctx, tokenHash)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to rotate refresh token"))
+	}
+	if !rotated {
+		// Another request already rotated this token - we're within grace period
+		// Return success but don't issue new tokens (the other request already did)
+		return connect.NewResponse(&v1pb.RefreshResponse{}), nil
 	}
 
 	// 7. Issue new tokens

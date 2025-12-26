@@ -62,22 +62,32 @@ func (s *Store) GetWebRefreshToken(ctx context.Context, tokenHash string) (*WebR
 	return msg, nil
 }
 
-func (s *Store) MarkWebRefreshTokenRotated(ctx context.Context, tokenHash string) error {
+// MarkWebRefreshTokenRotated atomically marks a token as rotated.
+// Returns true if the token was rotated (rotated_at was null), false if already rotated.
+// This prevents race conditions when multiple requests try to rotate the same token.
+func (s *Store) MarkWebRefreshTokenRotated(ctx context.Context, tokenHash string) (bool, error) {
 	q := qb.Q().Space(`
 		UPDATE web_refresh_token
 		SET rotated_at = NOW()
-		WHERE token_hash = ?
+		WHERE token_hash = ? AND rotated_at IS NULL
 	`, tokenHash)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrap(err, "failed to mark web refresh token as rotated")
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to mark web refresh token as rotated")
 	}
-	return nil
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get rows affected")
+	}
+
+	return rowsAffected > 0, nil
 }
 
 func (s *Store) DeleteWebRefreshToken(ctx context.Context, tokenHash string) error {
