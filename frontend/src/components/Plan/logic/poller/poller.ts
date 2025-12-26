@@ -108,11 +108,13 @@ export const provideResourcePoller = () => {
       },
       canInitialize: () => {
         if (!plan.value?.name) return false;
+        if (!plan.value.hasRollout) return false;
         const rolloutName = getRolloutFromPlan(plan.value.name);
         return isValidRolloutName(rolloutName);
       },
       initialize: async () => {
         if (!plan.value?.name) return;
+        if (!plan.value.hasRollout) return;
         const rolloutName = getRolloutFromPlan(plan.value.name);
         rollout.value = create(RolloutSchema, { name: rolloutName });
         await resourceStrategies.rollout.refresh();
