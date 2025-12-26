@@ -3040,7 +3040,7 @@ Context for identity provider authentication.
 | ----- | ---- | ----- | ----------- |
 | email | [string](#string) |  | User&#39;s email address. |
 | password | [string](#string) |  | User&#39;s password for authentication. |
-| web | [bool](#bool) |  | If web is set, we will set access token, refresh token, and user to the cookie. |
+| web | [bool](#bool) |  | If true, sets access token and refresh token as HTTP-only cookies instead of returning the token in the response body. Use for browser-based clients. |
 | idp_name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
 | idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is used to get the user information from identity provider. |
 | otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
@@ -3060,7 +3060,7 @@ Context for identity provider authentication.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| token | [string](#string) |  | Access token for authenticated requests. |
+| token | [string](#string) |  | Access token for authenticated requests. Only returned when web=false. For web=true, the token is set as an HTTP-only cookie. |
 | mfa_temp_token | [string](#string) | optional | Temporary token for MFA verification. |
 | require_reset_password | [bool](#bool) |  | Whether user must reset password before continuing. |
 | user | [User](#bytebase-v1-User) |  | The user from the successful login. |

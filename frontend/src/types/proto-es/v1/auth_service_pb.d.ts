@@ -31,7 +31,8 @@ export declare type LoginRequest = Message<"bytebase.v1.LoginRequest"> & {
   password: string;
 
   /**
-   * If web is set, we will set access token, refresh token, and user to the cookie.
+   * If true, sets access token and refresh token as HTTP-only cookies instead of
+   * returning the token in the response body. Use for browser-based clients.
    *
    * @generated from field: bool web = 3;
    */
@@ -160,6 +161,7 @@ export declare const OIDCIdentityProviderContextSchema: GenMessage<OIDCIdentityP
 export declare type LoginResponse = Message<"bytebase.v1.LoginResponse"> & {
   /**
    * Access token for authenticated requests.
+   * Only returned when web=false. For web=true, the token is set as an HTTP-only cookie.
    *
    * @generated from field: string token = 1;
    */

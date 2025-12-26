@@ -12131,7 +12131,9 @@ components:
         web:
           type: boolean
           title: web
-          description: If web is set, we will set access token, refresh token, and user to the cookie.
+          description: |-
+            If true, sets access token and refresh token as HTTP-only cookies instead of
+             returning the token in the response body. Use for browser-based clients.
         idpName:
           type: string
           title: idp_name
@@ -12165,7 +12167,9 @@ components:
         token:
           type: string
           title: token
-          description: Access token for authenticated requests.
+          description: |-
+            Access token for authenticated requests.
+             Only returned when web=false. For web=true, the token is set as an HTTP-only cookie.
         mfaTempToken:
           type: string
           title: mfa_temp_token
