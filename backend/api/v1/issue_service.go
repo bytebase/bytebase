@@ -37,6 +37,7 @@ type IssueService struct {
 	licenseService *enterprise.LicenseService
 	profile        *config.Profile
 	iamManager     *iam.Manager
+	rolloutService *RolloutService
 }
 
 type filterIssueMessage struct {
@@ -53,6 +54,7 @@ func NewIssueService(
 	licenseService *enterprise.LicenseService,
 	profile *config.Profile,
 	iamManager *iam.Manager,
+	rolloutService *RolloutService,
 ) *IssueService {
 	return &IssueService{
 		store:          store,
@@ -61,6 +63,7 @@ func NewIssueService(
 		licenseService: licenseService,
 		profile:        profile,
 		iamManager:     iamManager,
+		rolloutService: rolloutService,
 	}
 }
 
@@ -758,6 +761,11 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(project),
 		})
+
+		// Auto-create rollout if this approval completes the approval flow
+		go func() {
+			s.rolloutService.TryCreateRollout(ctx, issue.UID)
+		}()
 
 		// notify pipeline rollout
 		if err := func() error {
