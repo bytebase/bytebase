@@ -158,6 +158,7 @@ const columns = computed(
               user={binding.user ?? unknownUser()}
               onClickUser={props.onClickUser}
               allowEdit={false}
+              showMfaEnabled={false}
             />
           );
         },

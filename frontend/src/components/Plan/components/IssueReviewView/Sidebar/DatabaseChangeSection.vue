@@ -57,7 +57,7 @@
       </div>
     </div>
 
-    <NDivider class="!my-0" />
+    <NDivider class="my-0!" />
 
     <ChecksDrawer
       v-if="selectedResultStatus"

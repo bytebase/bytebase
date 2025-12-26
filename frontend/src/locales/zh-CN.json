@@ -2712,7 +2712,6 @@
     },
     "issue-review": {
       "approve-issue": "批准工单？",
-      "you": "你",
       "generating-approval-flow": "正在生成审批流",
       "approved-issue": "批准工单",
       "disallow-approve-reason": {

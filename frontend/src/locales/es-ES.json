@@ -2712,7 +2712,6 @@
     },
     "issue-review": {
       "approve-issue": "¿Aprobar incidencia?",
-      "you": "Tú",
       "generating-approval-flow": "Generando flujo de aprobación",
       "approved-issue": "incidencia aprobada",
       "disallow-approve-reason": {

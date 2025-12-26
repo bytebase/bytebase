@@ -2712,7 +2712,6 @@
     },
     "issue-review": {
       "approve-issue": "Approve issue?",
-      "you": "You",
       "generating-approval-flow": "Generating approval flow",
       "approved-issue": "approved issue",
       "disallow-approve-reason": {

@@ -29,27 +29,25 @@
       </div>
       <div class="mt-1 text-sm text-gray-600">
         <template v-if="status === 'approved'">
-          <div class="flex items-center gap-1">
+          <div class="flex flex-col items-start gap-1">
             <span class="text-xs">{{
               $t("custom-approval.issue-review.approved-by")
             }}</span>
             <ApprovalUserView
               v-if="stepApprover"
               :candidate="stepApprover.principal"
-              size="tiny"
             />
           </div>
         </template>
         <template v-else-if="status === 'rejected'">
           <div class="flex flex-col gap-1">
-            <div class="flex items-center gap-1">
+            <div class="flex flex-col items-start gap-1">
               <span class="text-xs">{{
                 $t("custom-approval.issue-review.rejected-by")
               }}</span>
               <ApprovalUserView
                 v-if="stepApprover"
                 :candidate="stepApprover.principal"
-                size="tiny"
               />
             </div>
             <!-- Re-request review button for issue creator -->

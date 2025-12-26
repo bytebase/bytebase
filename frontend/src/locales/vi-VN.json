@@ -2712,7 +2712,6 @@
     },
     "issue-review": {
       "approve-issue": "Phê duyệt vấn đề?",
-      "you": "Bạn",
       "generating-approval-flow": "Đang tạo quy trình phê duyệt",
       "approved-issue": "đã phê duyệt vấn đề",
       "disallow-approve-reason": {
