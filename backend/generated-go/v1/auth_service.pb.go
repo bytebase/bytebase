@@ -29,7 +29,8 @@ type LoginRequest struct {
 	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	// User's password for authentication.
 	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
-	// If web is set, we will set access token, refresh token, and user to the cookie.
+	// If true, sets access token and refresh token as HTTP-only cookies instead of
+	// returning the token in the response body. Use for browser-based clients.
 	Web bool `protobuf:"varint,3,opt,name=web,proto3" json:"web,omitempty"`
 	// The name of the identity provider.
 	// Format: idps/{idp}
@@ -312,6 +313,7 @@ func (x *OIDCIdentityProviderContext) GetCode() string {
 type LoginResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Access token for authenticated requests.
+	// Only returned when web=false. For web=true, the token is set as an HTTP-only cookie.
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	// Temporary token for MFA verification.
 	MfaTempToken *string `protobuf:"bytes,2,opt,name=mfa_temp_token,json=mfaTempToken,proto3,oneof" json:"mfa_temp_token,omitempty"`

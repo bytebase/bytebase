@@ -793,7 +793,6 @@ func (s *AuthService) generateLoginToken(ctx context.Context, user *store.UserMe
 // finalizeLogin builds the response, sets cookies if needed, and updates the user profile.
 func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1pb.LoginRequest], user *store.UserMessage, token string, requireResetPassword bool) (*connect.Response[v1pb.LoginResponse], error) {
 	response := &v1pb.LoginResponse{
-		Token:                token,
 		RequireResetPassword: requireResetPassword,
 	}
 	resp := connect.NewResponse(response)
@@ -821,6 +820,9 @@ func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1
 		}
 		refreshCookie := auth.GetRefreshTokenCookie(origin, refreshToken, refreshTokenDuration)
 		resp.Header().Add("Set-Cookie", refreshCookie.String())
+	} else {
+		// For non-web clients (CLI, API), return the token in the response body.
+		response.Token = token
 	}
 
 	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
