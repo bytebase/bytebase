@@ -249,7 +249,10 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						End:   &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance())},
+						End: &store.Position{
+							Line:   int32(t.line - t.aboveNonBlankLineDistance()),
+							Column: int32(t.getLastContentColumn()),
+						},
 						Empty: t.emptyStatement,
 						Range: &store.Range{
 							Start: int32(t.getByteOffset(int(startPos))),
@@ -275,7 +278,10 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 						Line:   int32(startLine),
 						Column: int32(startColumn),
 					},
-					End:   &store.Position{Line: int32(t.line)},
+					End: &store.Position{
+						Line:   int32(t.line),
+						Column: int32(t.getColumn()),
+					},
 					Empty: t.emptyStatement,
 					Range: &store.Range{
 						Start: int32(t.getByteOffset(int(startPos))),
@@ -308,7 +314,10 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
 						Line:   int32(startLine),
 						Column: int32(startColumn),
 					},
-					End:   &store.Position{Line: int32(t.line)},
+					End: &store.Position{
+						Line:   int32(t.line),
+						Column: int32(t.getColumn()),
+					},
 					Empty: false,
 					Range: &store.Range{
 						Start: int32(t.getByteOffset(int(startPos))),
@@ -737,12 +746,28 @@ func (t *Tokenizer) skipToNewLine() {
 // getColumn returns the 1-based column position of the current cursor.
 // Per the proto spec, the first character of a line is column 1.
 func (t *Tokenizer) getColumn() int {
-	for i := int(t.cursor) - 1; i >= 0; i-- {
+	return t.getColumnAt(t.cursor)
+}
+
+// getColumnAt returns the 1-based column position at a specific rune position.
+func (t *Tokenizer) getColumnAt(pos uint) int {
+	for i := int(pos) - 1; i >= 0; i-- {
 		if t.buffer[i] == '\n' {
-			return int(t.cursor) - i // 1-based: first char after newline is column 1
+			return int(pos) - i // 1-based: first char after newline is column 1
 		}
 	}
-	return int(t.cursor) + 1 // 1-based: first char of first line is column 1
+	return int(pos) + 1 // 1-based: first char of first line is column 1
+}
+
+// getLastContentColumn returns the 1-based column after the last non-blank character.
+// Used for EOF case where we need exclusive end position.
+func (t *Tokenizer) getLastContentColumn() int {
+	for i := int(t.cursor) - 1; i >= 0; i-- {
+		if !emptyRune(t.buffer[i]) && t.buffer[i] != eofRune {
+			return t.getColumnAt(uint(i)) + 1 // Exclusive: position after last content char
+		}
+	}
+	return 1
 }
 
 func (t *Tokenizer) pos() uint {

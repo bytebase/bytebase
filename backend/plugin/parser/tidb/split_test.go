@@ -23,7 +23,7 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT 1;",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					End:      &storepb.Position{Line: 1},
+					End:      &storepb.Position{Line: 1, Column: 10}, // After semicolon (1-based exclusive)
 					Range:    &storepb.Range{Start: 0, End: 9},
 					Empty:    false,
 				},
@@ -37,7 +37,7 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT\n  1;",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					End:      &storepb.Position{Line: 2},
+					End:      &storepb.Position{Line: 2, Column: 5}, // After semicolon on line 2
 					Range:    &storepb.Range{Start: 0, End: 11},
 					Empty:    false,
 				},
@@ -51,7 +51,7 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT 1;",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					End:      &storepb.Position{Line: 1},
+					End:      &storepb.Position{Line: 1, Column: 10},
 					Range:    &storepb.Range{Start: 0, End: 9},
 					Empty:    false,
 				},
@@ -59,7 +59,7 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT 2;",
 					BaseLine: 1,
 					Start:    &storepb.Position{Line: 2, Column: 1},
-					End:      &storepb.Position{Line: 2},
+					End:      &storepb.Position{Line: 2, Column: 10},
 					Range:    &storepb.Range{Start: 10, End: 19},
 					Empty:    false,
 				},
@@ -73,8 +73,8 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT '中文';",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					// Column is 1-based character offset: S(1) E(2) L(3) E(4) C(5) T(6) ' '(7) '(8) 中(9) 文(10) '(11) ;(12) = 12 chars
-					End:   &storepb.Position{Line: 1},
+					// Column is 1-based exclusive: S(1)..;(12), after = 13
+					End:   &storepb.Position{Line: 1, Column: 13},
 					Range: &storepb.Range{Start: 0, End: 16}, // byte length: 8 + 3 + 3 + 2 = 16
 					Empty: false,
 				},
@@ -88,8 +88,8 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT '🎉';",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					// Column is 1-based character offset: S(1) E(2) L(3) E(4) C(5) T(6) ' '(7) '(8) 🎉(9) '(10) ;(11) = 11 chars
-					End:   &storepb.Position{Line: 1},
+					// Column is 1-based exclusive: S(1)..;(11), after = 12
+					End:   &storepb.Position{Line: 1, Column: 12},
 					Range: &storepb.Range{Start: 0, End: 14}, // byte length: 8 + 4 + 2 = 14
 					Empty: false,
 				},
@@ -103,8 +103,8 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT\n  '中文';",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					End:      &storepb.Position{Line: 2},
-					Range:    &storepb.Range{Start: 0, End: 18}, // 7 + 3 + 3 + 3 + 2 = 18
+					End:      &storepb.Position{Line: 2, Column: 8}, // After semicolon on line 2
+					Range:    &storepb.Range{Start: 0, End: 18},     // 7 + 3 + 3 + 3 + 2 = 18
 					Empty:    false,
 				},
 			},
@@ -117,15 +117,15 @@ func TestSplitSQL(t *testing.T) {
 					Text:     "SELECT '中';",
 					BaseLine: 0,
 					Start:    &storepb.Position{Line: 1, Column: 1},
-					End:      &storepb.Position{Line: 1},
-					Range:    &storepb.Range{Start: 0, End: 13}, // 8 + 3 + 2 = 13
+					End:      &storepb.Position{Line: 1, Column: 12}, // After semicolon
+					Range:    &storepb.Range{Start: 0, End: 13},      // 8 + 3 + 2 = 13
 					Empty:    false,
 				},
 				{
 					Text:     "SELECT '文';",
 					BaseLine: 1,
 					Start:    &storepb.Position{Line: 2, Column: 1},
-					End:      &storepb.Position{Line: 2},
+					End:      &storepb.Position{Line: 2, Column: 12},
 					Range:    &storepb.Range{Start: 14, End: 27},
 					Empty:    false,
 				},
@@ -138,9 +138,9 @@ func TestSplitSQL(t *testing.T) {
 				{
 					Text:     "SELECT '中';",
 					BaseLine: 0,
-					Start:    &storepb.Position{Line: 1, Column: 3}, // starts after 2 spaces (1-based: column 3)
-					End:      &storepb.Position{Line: 1},
-					Range:    &storepb.Range{Start: 2, End: 15}, // 2 + 8 + 3 + 2 = 15
+					Start:    &storepb.Position{Line: 1, Column: 3},  // starts after 2 spaces (1-based: column 3)
+					End:      &storepb.Position{Line: 1, Column: 14}, // 2 leading spaces + 11 chars + 1 = 14
+					Range:    &storepb.Range{Start: 2, End: 15},      // 2 + 8 + 3 + 2 = 15
 					Empty:    false,
 				},
 			},
