@@ -141,9 +141,6 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 	if accessTokenStr == "" {
 		return nil, nil, errs.New("access token not found")
 	}
-	if _, ok := in.stateCfg.ExpireCache.Get(accessTokenStr); ok {
-		return nil, nil, errs.New("access token expired")
-	}
 
 	claims := &claimsMessage{}
 	if _, err := jwt.ParseWithClaims(accessTokenStr, claims, func(t *jwt.Token) (any, error) {
