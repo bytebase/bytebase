@@ -77,13 +77,15 @@ const RefreshTokenCookieName = "refresh-token"
 
 // GetRefreshTokenCookie creates a cookie for the refresh token.
 // token="" => unset (clears cookie)
+// Path is "/" to allow logout to delete the token from database.
+// Security is maintained via HttpOnly, Secure, and SameSite=Strict.
 func GetRefreshTokenCookie(origin, token string, duration time.Duration) *http.Cookie {
 	if token == "" {
 		return &http.Cookie{
 			Name:    RefreshTokenCookieName,
 			Value:   "",
 			Expires: time.Unix(0, 0),
-			Path:    "/bytebase.v1.AuthService/Refresh",
+			Path:    "/",
 		}
 	}
 	isHTTPS := strings.HasPrefix(origin, "https")
@@ -91,7 +93,7 @@ func GetRefreshTokenCookie(origin, token string, duration time.Duration) *http.C
 		Name:     RefreshTokenCookieName,
 		Value:    token,
 		MaxAge:   int(duration.Seconds()),
-		Path:     "/bytebase.v1.AuthService/Refresh",
+		Path:     "/",
 		HttpOnly: true,
 		Secure:   isHTTPS,
 		SameSite: http.SameSiteStrictMode,
