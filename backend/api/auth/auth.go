@@ -293,57 +293,6 @@ func audienceContains(audience jwt.ClaimStrings, token string) bool {
 	return slices.Contains(audience, token)
 }
 
-type claimsMessage struct {
-	Name string `json:"name"`
-	jwt.RegisteredClaims
-}
-
-// GenerateAPIToken generates an API token.
-func GenerateAPIToken(userEmail string, mode common.ReleaseMode, secret string) (string, error) {
-	expirationTime := time.Now().Add(apiTokenDuration)
-	return generateToken(userEmail, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
-}
-
-// GenerateAccessToken generates an access token for web.
-func GenerateAccessToken(userEmail string, mode common.ReleaseMode, secret string, tokenDuration time.Duration) (string, error) {
-	expirationTime := time.Now().Add(tokenDuration)
-	return generateToken(userEmail, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
-}
-
-// GenerateMFATempToken generates a temporary token for MFA.
-func GenerateMFATempToken(userEmail string, mode common.ReleaseMode, secret string, tokenDuration time.Duration) (string, error) {
-	expirationTime := time.Now().Add(tokenDuration)
-	return generateToken(userEmail, fmt.Sprintf(MFATempTokenAudienceFmt, mode), expirationTime, []byte(secret))
-}
-
-// Pay attention to this function. It holds the main JWT token generation logic.
-func generateToken(userEmail string, aud string, expirationTime time.Time, secret []byte) (string, error) {
-	// Create the JWT claims, which includes the user email and expiry time.
-	claims := &claimsMessage{
-		Name: userEmail,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Audience: jwt.ClaimStrings{aud},
-			// In JWT, the expiry time is expressed as unix milliseconds.
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    issuer,
-			Subject:   userEmail,
-		},
-	}
-
-	// Declare the token with the HS256 algorithm used for signing, and the claims.
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token.Header["kid"] = keyID
-
-	// Create the JWT string.
-	tokenString, err := token.SignedString(secret)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
-}
-
 func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	methodTokens := strings.Split(fullMethod, "/")
 	if len(methodTokens) != 3 {
