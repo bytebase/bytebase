@@ -41,6 +41,8 @@ const (
 	// AuthServiceExchangeTokenProcedure is the fully-qualified name of the AuthService's ExchangeToken
 	// RPC.
 	AuthServiceExchangeTokenProcedure = "/bytebase.v1.AuthService/ExchangeToken"
+	// AuthServiceRefreshProcedure is the fully-qualified name of the AuthService's Refresh RPC.
+	AuthServiceRefreshProcedure = "/bytebase.v1.AuthService/Refresh"
 )
 
 // AuthServiceClient is a client for the bytebase.v1.AuthService service.
@@ -55,6 +57,9 @@ type AuthServiceClient interface {
 	// Used by CI/CD pipelines with Workload Identity Federation.
 	// Permissions required: None (validates via OIDC token)
 	ExchangeToken(context.Context, *connect.Request[v1.ExchangeTokenRequest]) (*connect.Response[v1.ExchangeTokenResponse], error)
+	// Refreshes the access token using the refresh token cookie.
+	// Permissions required: None (validates via refresh token cookie)
+	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
 }
 
 // NewAuthServiceClient constructs a client for the bytebase.v1.AuthService service. By default, it
@@ -86,6 +91,12 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(authServiceMethods.ByName("ExchangeToken")),
 			connect.WithClientOptions(opts...),
 		),
+		refresh: connect.NewClient[v1.RefreshRequest, v1.RefreshResponse](
+			httpClient,
+			baseURL+AuthServiceRefreshProcedure,
+			connect.WithSchema(authServiceMethods.ByName("Refresh")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -94,6 +105,7 @@ type authServiceClient struct {
 	login         *connect.Client[v1.LoginRequest, v1.LoginResponse]
 	logout        *connect.Client[v1.LogoutRequest, emptypb.Empty]
 	exchangeToken *connect.Client[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse]
+	refresh       *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
 }
 
 // Login calls bytebase.v1.AuthService.Login.
@@ -111,6 +123,11 @@ func (c *authServiceClient) ExchangeToken(ctx context.Context, req *connect.Requ
 	return c.exchangeToken.CallUnary(ctx, req)
 }
 
+// Refresh calls bytebase.v1.AuthService.Refresh.
+func (c *authServiceClient) Refresh(ctx context.Context, req *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error) {
+	return c.refresh.CallUnary(ctx, req)
+}
+
 // AuthServiceHandler is an implementation of the bytebase.v1.AuthService service.
 type AuthServiceHandler interface {
 	// Authenticates a user and returns access tokens.
@@ -123,6 +140,9 @@ type AuthServiceHandler interface {
 	// Used by CI/CD pipelines with Workload Identity Federation.
 	// Permissions required: None (validates via OIDC token)
 	ExchangeToken(context.Context, *connect.Request[v1.ExchangeTokenRequest]) (*connect.Response[v1.ExchangeTokenResponse], error)
+	// Refreshes the access token using the refresh token cookie.
+	// Permissions required: None (validates via refresh token cookie)
+	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
 }
 
 // NewAuthServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -150,6 +170,12 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(authServiceMethods.ByName("ExchangeToken")),
 		connect.WithHandlerOptions(opts...),
 	)
+	authServiceRefreshHandler := connect.NewUnaryHandler(
+		AuthServiceRefreshProcedure,
+		svc.Refresh,
+		connect.WithSchema(authServiceMethods.ByName("Refresh")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case AuthServiceLoginProcedure:
@@ -158,6 +184,8 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 			authServiceLogoutHandler.ServeHTTP(w, r)
 		case AuthServiceExchangeTokenProcedure:
 			authServiceExchangeTokenHandler.ServeHTTP(w, r)
+		case AuthServiceRefreshProcedure:
+			authServiceRefreshHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -177,4 +205,8 @@ func (UnimplementedAuthServiceHandler) Logout(context.Context, *connect.Request[
 
 func (UnimplementedAuthServiceHandler) ExchangeToken(context.Context, *connect.Request[v1.ExchangeTokenRequest]) (*connect.Response[v1.ExchangeTokenResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.ExchangeToken is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.Refresh is not implemented"))
 }

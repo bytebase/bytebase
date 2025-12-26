@@ -56,6 +56,8 @@ const (
 	errMsgInvalidRecoveryCode = "invalid recovery code"
 	errMsgTooManyPassword     = "too many failed login attempts, please try again later" // Will be used for password rate limiting
 	errMsgTooManyMFA          = "too many failed MFA attempts, please try again later"
+
+	refreshTokenGracePeriod = 30 * time.Second
 )
 
 var (
@@ -83,6 +85,14 @@ func NewAuthService(store *store.Store, secret string, licenseService *enterpris
 		stateCfg:       stateCfg,
 		iamManager:     iamManager,
 	}
+}
+
+// GetRefreshTokenDuration returns the configured refresh token duration or default.
+func GetRefreshTokenDuration(_ context.Context, _ *store.Store, _ *enterprise.LicenseService) time.Duration {
+	// TODO: Add refresh_token_duration field to WorkspaceProfileSetting proto
+	// and implement workspace setting-based configuration similar to GetTokenDuration.
+	// For now, use a fixed 30-day duration.
+	return 30 * 24 * time.Hour
 }
 
 // Login is the auth login method including SSO.
@@ -168,11 +178,110 @@ func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.Logo
 	}
 	s.stateCfg.ExpireCache.Add(accessTokenStr, true)
 
+	// Delete refresh token from database if present
+	if refreshToken := auth.GetRefreshTokenFromCookie(req.Header()); refreshToken != "" {
+		if err := s.store.DeleteWebRefreshToken(ctx, auth.HashToken(refreshToken)); err != nil {
+			slog.Error("failed to delete refresh token on logout", log.BBError(err))
+		}
+	}
+
 	resp := connect.NewResponse(&emptypb.Empty{})
 
 	origin := req.Header().Get("Origin")
+	// Clear access token cookie
 	cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, "")
 	resp.Header().Add("Set-Cookie", cookie.String())
+	// Clear refresh token cookie
+	resp.Header().Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, "", 0).String())
+	return resp, nil
+}
+
+// Refresh exchanges a refresh token for new access and refresh tokens.
+func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.RefreshRequest]) (*connect.Response[v1pb.RefreshResponse], error) {
+	// 1. Extract refresh token from cookie
+	refreshToken := auth.GetRefreshTokenFromCookie(req.Header())
+	if refreshToken == "" {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("refresh token not found"))
+	}
+
+	// 2. Look up in database
+	tokenHash := auth.HashToken(refreshToken)
+	stored, err := s.store.GetWebRefreshToken(ctx, tokenHash)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get refresh token"))
+	}
+	if stored == nil {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid refresh token"))
+	}
+
+	// 3. Check expiration
+	if time.Now().After(stored.ExpiresAt) {
+		if err := s.store.DeleteWebRefreshToken(ctx, tokenHash); err != nil {
+			slog.Error("failed to delete expired refresh token", log.BBError(err))
+		}
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("refresh token expired"))
+	}
+
+	// 4. Check if already rotated (grace period)
+	if stored.RotatedAt != nil {
+		if time.Since(*stored.RotatedAt) > refreshTokenGracePeriod {
+			if err := s.store.DeleteWebRefreshToken(ctx, tokenHash); err != nil {
+				slog.Error("failed to delete rotated refresh token", log.BBError(err))
+			}
+			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("refresh token already used"))
+		}
+		// Within grace period - return success but don't issue new tokens
+		return connect.NewResponse(&v1pb.RefreshResponse{}), nil
+	}
+
+	// 5. Get user
+	user, err := s.store.GetUserByEmail(ctx, stored.UserEmail)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get user"))
+	}
+	if user == nil || user.MemberDeleted {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("user not found"))
+	}
+
+	// 6. Atomically mark old token as rotated (grace period starts)
+	// If another request already rotated it, we're in a race - return success without new tokens
+	rotated, err := s.store.MarkWebRefreshTokenRotated(ctx, tokenHash)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to rotate refresh token"))
+	}
+	if !rotated {
+		// Another request already rotated this token - we're within grace period
+		// Return success but don't issue new tokens (the other request already did)
+		return connect.NewResponse(&v1pb.RefreshResponse{}), nil
+	}
+
+	// 7. Issue new tokens
+	accessTokenDuration := auth.GetTokenDuration(ctx, s.store, s.licenseService)
+	accessToken, err := auth.GenerateAccessToken(user.Email, s.profile.Mode, s.secret, accessTokenDuration)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate access token"))
+	}
+
+	refreshTokenDuration := GetRefreshTokenDuration(ctx, s.store, s.licenseService)
+	newRefreshToken, err := auth.GenerateOpaqueToken()
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate refresh token"))
+	}
+
+	if err := s.store.CreateWebRefreshToken(ctx, &store.WebRefreshTokenMessage{
+		TokenHash: auth.HashToken(newRefreshToken),
+		UserEmail: user.Email,
+		ExpiresAt: time.Now().Add(refreshTokenDuration),
+	}); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create refresh token"))
+	}
+
+	// 8. Set cookies and return
+	resp := connect.NewResponse(&v1pb.RefreshResponse{})
+	origin := req.Header().Get("Origin")
+	resp.Header().Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, accessToken).String())
+	resp.Header().Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, newRefreshToken, refreshTokenDuration).String())
+
 	return resp, nil
 }
 
@@ -696,6 +805,22 @@ func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1
 		origin := req.Header().Get("Origin")
 		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, token)
 		resp.Header().Add("Set-Cookie", cookie.String())
+
+		// Issue refresh token for web login
+		refreshToken, err := auth.GenerateOpaqueToken()
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate refresh token"))
+		}
+		refreshTokenDuration := GetRefreshTokenDuration(ctx, s.store, s.licenseService)
+		if err := s.store.CreateWebRefreshToken(ctx, &store.WebRefreshTokenMessage{
+			TokenHash: auth.HashToken(refreshToken),
+			UserEmail: user.Email,
+			ExpiresAt: time.Now().Add(refreshTokenDuration),
+		}); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create refresh token"))
+		}
+		refreshCookie := auth.GetRefreshTokenCookie(origin, refreshToken, refreshTokenDuration)
+		resp.Header().Add("Set-Cookie", refreshCookie.String())
 	}
 
 	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{

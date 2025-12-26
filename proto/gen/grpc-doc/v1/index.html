@@ -818,6 +818,14 @@
                   <a href="#bytebase.v1.OIDCIdentityProviderContext"><span class="badge">M</span>OIDCIdentityProviderContext</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.RefreshRequest"><span class="badge">M</span>RefreshRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RefreshResponse"><span class="badge">M</span>RefreshResponse</a>
+                </li>
+              
               
               
               
@@ -9033,6 +9041,20 @@ Format: idps/{idp} </p></td>
 
         
       
+        <h3 id="bytebase.v1.RefreshRequest">RefreshRequest</h3>
+        <p>Request to refresh the access token.</p>
+
+        
+
+        
+      
+        <h3 id="bytebase.v1.RefreshResponse">RefreshResponse</h3>
+        <p>Response from refreshing the access token.</p>
+
+        
+
+        
+      
 
       
 
@@ -9070,6 +9092,14 @@ Permissions required: None</p></td>
                 <td><p>Exchanges an external OIDC token for a Bytebase access token.
 Used by CI/CD pipelines with Workload Identity Federation.
 Permissions required: None (validates via OIDC token)</p></td>
+              </tr>
+            
+              <tr>
+                <td>Refresh</td>
+                <td><a href="#bytebase.v1.RefreshRequest">RefreshRequest</a></td>
+                <td><a href="#bytebase.v1.RefreshResponse">RefreshResponse</a></td>
+                <td><p>Refreshes the access token using the refresh token cookie.
+Permissions required: None (validates via refresh token cookie)</p></td>
               </tr>
             
           </tbody>
@@ -9116,6 +9146,16 @@ Permissions required: None (validates via OIDC token)</p></td>
                 <td>ExchangeToken</td>
                 <td>POST</td>
                 <td>/v1/auth:exchangeToken</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>Refresh</td>
+                <td>POST</td>
+                <td>/v1/auth/refresh</td>
                 <td>*</td>
               </tr>
               

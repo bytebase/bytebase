@@ -1,20 +1,28 @@
 import { t } from "@/plugins/i18n";
-import { Issue_ApprovalStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { ActionDefinition } from "../types";
 
 export const ROLLOUT_CREATE: ActionDefinition = {
   id: "ROLLOUT_CREATE",
   label: () => t("issue.create-rollout"),
   buttonType: "default",
-  category: "primary",
+  // Primary when ready, secondary (dropdown) when warnings exist
+  category: (ctx) =>
+    ctx.rolloutCreationWarnings.hasAny ? "secondary" : "primary",
   priority: 55,
 
-  isVisible: (ctx) =>
-    !ctx.isIssueOnly &&
-    !ctx.plan.hasRollout &&
-    ctx.issue !== undefined &&
-    ctx.permissions.createRollout &&
-    ctx.rolloutPreconditionsMet,
+  isVisible: (ctx) => {
+    if (ctx.isIssueOnly) return false;
+    if (ctx.plan.hasRollout) return false;
+    if (!ctx.issue) return false;
+    if (!ctx.permissions.createRollout) return false;
+
+    // Hide when require_*=true and condition not met
+    if (!ctx.issueApproved && ctx.project.requireIssueApproval) return false;
+    if (ctx.validation.planChecksFailed && ctx.project.requirePlanCheckNoError)
+      return false;
+
+    return true;
+  },
 
   isDisabled: () => false,
   disabledReason: () => undefined,
@@ -31,15 +39,9 @@ export const ROLLOUT_START: ActionDefinition = {
 
   isVisible: (ctx) => {
     if (!ctx.rollout) return false;
-    if (
-      ctx.approvalStatus !== Issue_ApprovalStatus.APPROVED &&
-      ctx.approvalStatus !== Issue_ApprovalStatus.SKIPPED
-    ) {
-      return false;
-    }
+    if (!ctx.issueApproved) return false;
     if (!ctx.hasDatabaseCreateOrExportTasks) return false;
     if (!ctx.hasStartableTasks) return false;
-
     return ctx.permissions.runTasks;
   },
 
@@ -58,14 +60,8 @@ export const ROLLOUT_CANCEL: ActionDefinition = {
 
   isVisible: (ctx) => {
     if (!ctx.rollout) return false;
-    if (
-      ctx.approvalStatus !== Issue_ApprovalStatus.APPROVED &&
-      ctx.approvalStatus !== Issue_ApprovalStatus.SKIPPED
-    ) {
-      return false;
-    }
+    if (!ctx.issueApproved) return false;
     if (!ctx.hasRunningTasks) return false;
-
     return ctx.permissions.runTasks;
   },
 

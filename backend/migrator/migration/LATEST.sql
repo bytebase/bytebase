@@ -550,6 +550,18 @@ CREATE INDEX idx_oauth2_authorization_code_expires_at ON oauth2_authorization_co
 CREATE INDEX idx_oauth2_refresh_token_expires_at ON oauth2_refresh_token(expires_at);
 CREATE INDEX idx_oauth2_client_last_active_at ON oauth2_client(last_active_at);
 
+-- Web refresh tokens for session management
+CREATE TABLE web_refresh_token (
+    token_hash  TEXT PRIMARY KEY,
+    user_email  TEXT NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
+    expires_at  TIMESTAMPTZ NOT NULL,
+    rotated_at  TIMESTAMPTZ
+);
+
+CREATE INDEX idx_web_refresh_token_user_email ON web_refresh_token(user_email);
+CREATE INDEX idx_web_refresh_token_expires_at ON web_refresh_token(expires_at);
+CREATE INDEX idx_web_refresh_token_rotated_at ON web_refresh_token(rotated_at) WHERE rotated_at IS NOT NULL;
+
 -- Default bytebase system account id is 1.
 INSERT INTO principal (id, type, name, email, password_hash) VALUES (1, 'SYSTEM_BOT', 'Bytebase', 'support@bytebase.com', '');
 

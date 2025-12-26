@@ -382,6 +382,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/google.protobuf.Empty'
+  /bytebase.v1.AuthService/Refresh:
+    post:
+      tags:
+        - bytebase.v1.AuthService
+      summary: 'Refreshes the access token using the refresh token cookie.  Permissions required: None (validates via refresh token cookie)'
+      description: |-
+        Refreshes the access token using the refresh token cookie.
+         Permissions required: None (validates via refresh token cookie)
+      operationId: bytebase.v1.AuthService.Refresh
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.RefreshRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.RefreshResponse'
   /bytebase.v1.CelService/BatchDeparse:
     post:
       tags:
@@ -13738,6 +13776,16 @@ components:
         Range represents a span within a text or sequence.
          Whether the indices are byte offsets or character indices depends on the context.
          Check the documentation of the field using Range for specific semantics.
+    bytebase.v1.RefreshRequest:
+      type: object
+      title: RefreshRequest
+      additionalProperties: false
+      description: Request to refresh the access token.
+    bytebase.v1.RefreshResponse:
+      type: object
+      title: RefreshResponse
+      additionalProperties: false
+      description: Response from refreshing the access token.
     bytebase.v1.RejectIssueRequest:
       type: object
       properties:

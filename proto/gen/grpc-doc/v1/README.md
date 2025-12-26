@@ -170,6 +170,8 @@
     - [LogoutRequest](#bytebase-v1-LogoutRequest)
     - [OAuth2IdentityProviderContext](#bytebase-v1-OAuth2IdentityProviderContext)
     - [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext)
+    - [RefreshRequest](#bytebase-v1-RefreshRequest)
+    - [RefreshResponse](#bytebase-v1-RefreshResponse)
   
     - [AuthService](#bytebase-v1-AuthService)
   
@@ -3107,6 +3109,26 @@ OpenID Connect authentication context.
 
 
 
+
+<a name="bytebase-v1-RefreshRequest"></a>
+
+### RefreshRequest
+Request to refresh the access token.
+
+
+
+
+
+
+<a name="bytebase-v1-RefreshResponse"></a>
+
+### RefreshResponse
+Response from refreshing the access token.
+
+
+
+
+
  
 
  
@@ -3124,6 +3146,7 @@ AuthService handles user authentication operations.
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Authenticates a user and returns access tokens. Permissions required: None |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Logs out the current user session. Permissions required: None |
 | ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse) | Exchanges an external OIDC token for a Bytebase access token. Used by CI/CD pipelines with Workload Identity Federation. Permissions required: None (validates via OIDC token) |
+| Refresh | [RefreshRequest](#bytebase-v1-RefreshRequest) | [RefreshResponse](#bytebase-v1-RefreshResponse) | Refreshes the access token using the refresh token cookie. Permissions required: None (validates via refresh token cookie) |
 
  
 

@@ -31,7 +31,7 @@ import TransactionModeSection from "./TransactionModeSection";
 import { provideTransactionModeSettingContext } from "./TransactionModeSection/context";
 
 const { project } = useCurrentProjectV1();
-const { isCreating, plan, events, issue, rollout, readonly } = usePlanContext();
+const { isCreating, plan, events, issue, readonly } = usePlanContext();
 const { selectedSpec } = useSelectedSpec();
 
 const {
@@ -43,7 +43,6 @@ const {
   selectedSpec,
   isCreating,
   issue,
-  rollout,
   readonly,
 });
 
@@ -56,7 +55,6 @@ const {
   selectedSpec,
   isCreating,
   issue,
-  rollout,
   readonly,
 });
 
@@ -69,7 +67,6 @@ const {
   selectedSpec,
   isCreating,
   issue,
-  rollout,
   readonly,
 });
 
@@ -80,7 +77,6 @@ const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
     selectedSpec,
     isCreating,
     issue,
-    rollout,
     readonly,
   });
 
@@ -91,7 +87,6 @@ const { shouldShow: shouldShowPreBackupSection, events: preBackupEvents } =
     selectedSpec,
     isCreating,
     issue,
-    rollout,
     readonly,
   });
 

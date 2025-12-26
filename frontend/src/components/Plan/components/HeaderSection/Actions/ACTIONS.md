@@ -41,7 +41,7 @@ interface ActionDefinition {
   id: UnifiedActionType;
   label: (ctx: ActionContext) => string;
   buttonType: "primary" | "success" | "default";
-  category: "primary" | "secondary";
+  category: ActionCategory | ((ctx: ActionContext) => ActionCategory); // Can be dynamic
   priority: number;  // Lower = higher priority
   isVisible: (ctx: ActionContext) => boolean;
   isDisabled: (ctx: ActionContext) => boolean;
@@ -154,16 +154,28 @@ interface ActionDefinition {
 
 ### Rollout Actions
 
-#### `ROLLOUT_CREATE` (Primary, Priority: 55)
+#### `ROLLOUT_CREATE` (Primary/Secondary, Priority: 55)
 **Label**: "Create Rollout"
 
-**Description**: Creates a rollout from the approved issue.
+**Description**: Creates a rollout from the issue. Shows as primary action when ready, moves to dropdown when conditions aren't met.
 
 **Visibility**:
 - Plan has no rollout attached
 - Issue exists
 - User has `bb.rollouts.create` permission
-- Rollout preconditions met (approval status, plan checks)
+- If `requireIssueApproval=true` AND issue not APPROVED/SKIPPED → hidden
+- If `requirePlanCheckNoError=true` AND plan checks failed → hidden
+
+**Category Logic**:
+- **Primary** (main button): When all conditions are met (no warnings)
+- **Secondary** (dropdown): When warnings exist (require_*=false but conditions not met)
+
+**Warning Panel** (shown when clicking from dropdown):
+- `requireIssueApproval=false` AND approval not APPROVED/SKIPPED → shows approval flow section
+- Plan checks are running → shows running message
+- `requirePlanCheckNoError=false` AND plan checks failed → shows plan check status
+
+When warnings exist, user must check "Bypass stage requirements" checkbox to proceed.
 
 ---
 
@@ -205,6 +217,27 @@ interface ActionDefinition {
 - Plan is an export plan
 - Export archive is ready
 - User is the issue creator
+
+---
+
+## Warning Behavior
+
+### Rollout Creation Category and Warnings
+
+The ROLLOUT_CREATE button visibility and category depend on project settings and current state:
+
+| Condition | Result |
+|-----------|--------|
+| `requireIssueApproval=true` + not approved | **Hidden** |
+| `requirePlanCheckNoError=true` + checks failed | **Hidden** |
+| `requireIssueApproval=false` + not approved | Secondary (dropdown) with warning |
+| `requirePlanCheckNoError=false` + checks failed | Secondary (dropdown) with warning |
+| Plan checks running | Secondary (dropdown) with warning |
+| All conditions met | Primary (main button) |
+
+### Task Execution Warnings
+
+Task execution (RUN/SKIP/CANCEL) always shows **warnings** for approval and plan check issues, never errors. Users can bypass these warnings to proceed.
 
 ---
 

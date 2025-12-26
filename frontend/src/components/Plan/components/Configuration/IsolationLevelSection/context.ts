@@ -9,9 +9,6 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import { type Plan, type Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { flattenTaskV1List } from "@/utils";
 import type { IsolationLevel } from "../../StatementSection/directiveUtils";
 
 export const KEY = Symbol(
@@ -32,12 +29,11 @@ export const provideIsolationLevelSettingContext = (refs: {
   plan: Ref<Plan>;
   selectedSpec: Ref<Plan_Spec | undefined>;
   issue?: Ref<Issue | undefined>;
-  rollout?: Ref<Rollout | undefined>;
   readonly?: Ref<boolean>;
 }) => {
   const databaseStore = useDatabaseV1Store();
 
-  const { isCreating, plan, selectedSpec, issue, rollout, readonly } = refs;
+  const { isCreating, plan, selectedSpec, issue, readonly } = refs;
 
   const events = new Emittery<{
     update: never;
@@ -84,23 +80,13 @@ export const provideIsolationLevelSettingContext = (refs: {
       return true;
     }
 
-    // If issue is not open, disallow
-    if (issue?.value && issue.value.status !== IssueStatus.OPEN) {
+    // Disallow changes if the plan has started rollout.
+    if (plan.value.hasRollout) {
       return false;
     }
 
-    const tasks = flattenTaskV1List(rollout?.value) || [];
-    // If any task is running/done/etc, disallow
-    if (
-      tasks.some((task) => {
-        return [
-          Task_Status.PENDING,
-          Task_Status.RUNNING,
-          Task_Status.DONE,
-          Task_Status.SKIPPED,
-        ].includes(task.status);
-      })
-    ) {
+    // If issue is not open, disallow
+    if (issue?.value && issue.value.status !== IssueStatus.OPEN) {
       return false;
     }
 

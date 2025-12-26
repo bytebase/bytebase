@@ -8,13 +8,7 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { IssueStatus } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { Rollout, Task } from "@/types/proto-es/v1/rollout_service_pb";
-import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  flattenTaskV1List,
-  hasProjectPermissionV2,
-  isNullOrUndefined,
-} from "@/utils";
+import { hasProjectPermissionV2, isNullOrUndefined } from "@/utils";
 import { GHOST_AVAILABLE_ENGINES, getGhostEnabledForSpec } from "./common";
 
 export const KEY = Symbol(
@@ -30,24 +24,13 @@ export const provideGhostSettingContext = (refs: {
   project: Ref<Project>;
   plan: Ref<Plan>;
   selectedSpec: Ref<Plan_Spec | undefined>;
-  selectedTask?: Ref<Task | undefined>;
   issue?: Ref<Issue | undefined>;
-  rollout?: Ref<Rollout | undefined>;
   readonly?: Ref<boolean>;
 }) => {
   const currentUser = useCurrentUserV1();
   const databaseStore = useDatabaseV1Store();
 
-  const {
-    isCreating,
-    project,
-    plan,
-    selectedSpec,
-    selectedTask,
-    issue,
-    rollout,
-    readonly,
-  } = refs;
+  const { isCreating, project, plan, selectedSpec, issue, readonly } = refs;
 
   const events = new Emittery<{
     update: never;
@@ -78,33 +61,18 @@ export const provideGhostSettingContext = (refs: {
       return false;
     }
 
-    // Allow toggle pre-backup when creating.
+    // Allow toggle gh-ost when creating.
     if (isCreating.value) {
       return true;
     }
 
-    // If issue is not open, disallow.
-    if (issue?.value && issue.value.status !== IssueStatus.OPEN) {
+    // Disallow changes if the plan has started rollout.
+    if (unref(plan).hasRollout) {
       return false;
     }
 
-    let task: Task | undefined;
-    if (selectedTask?.value) {
-      task = selectedTask.value;
-    } else if (rollout?.value) {
-      const tasks = flattenTaskV1List(rollout.value);
-      task = tasks.find((t) => t.specId === selectedSpec.value?.id);
-    }
-    // If task of the spec is running/done/etc..., disallow.
-    if (
-      task &&
-      [
-        Task_Status.PENDING,
-        Task_Status.RUNNING,
-        Task_Status.DONE,
-        Task_Status.SKIPPED,
-      ].includes(task.status)
-    ) {
+    // If issue is not open, disallow.
+    if (issue?.value && issue.value.status !== IssueStatus.OPEN) {
       return false;
     }
 
@@ -131,7 +99,6 @@ export const provideGhostSettingContext = (refs: {
   const context = {
     isCreating,
     selectedSpec,
-    selectedTask,
     plan,
     shouldShow,
     allowChange,

@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -34,6 +35,7 @@ type Scheduler struct {
 	executorMap    map[storepb.Task_Type]Executor
 	profile        *config.Profile
 	licenseService *enterprise.LicenseService
+	dbFactory      *dbfactory.DBFactory
 }
 
 // NewScheduler will create a new scheduler.
@@ -43,6 +45,7 @@ func NewScheduler(
 	webhookManager *webhook.Manager,
 	profile *config.Profile,
 	licenseService *enterprise.LicenseService,
+	dbFactory *dbfactory.DBFactory,
 ) *Scheduler {
 	return &Scheduler{
 		store:          store,
@@ -51,6 +54,7 @@ func NewScheduler(
 		profile:        profile,
 		executorMap:    map[storepb.Task_Type]Executor{},
 		licenseService: licenseService,
+		dbFactory:      dbFactory,
 	}
 }
 
@@ -70,6 +74,11 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	go s.ListenTaskSkippedOrDone(ctx)
+
+	// Start rollout creator component
+	rolloutCreator := NewRolloutCreator(s.store, s.stateCfg, s.dbFactory)
+	wg.Add(1)
+	go rolloutCreator.Run(ctx, wg, s.stateCfg.RolloutCreationChan)
 
 	// Start three independent schedulers
 	wg.Add(3)

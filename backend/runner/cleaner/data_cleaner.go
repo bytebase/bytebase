@@ -15,6 +15,7 @@ const (
 	cleanupInterval              = 1 * time.Hour
 	exportArchiveRetentionPeriod = 24 * time.Hour
 	oauth2ClientRetentionPeriod  = 30 * 24 * time.Hour // 30 days of inactivity
+	refreshTokenGracePeriod      = 30 * time.Second    // Grace period for rotated refresh tokens
 )
 
 // DataCleaner periodically cleans up expired data from the database.
@@ -52,6 +53,7 @@ func (c *DataCleaner) Run(ctx context.Context, wg *sync.WaitGroup) {
 func (c *DataCleaner) cleanup(ctx context.Context) {
 	c.cleanupExportArchives(ctx)
 	c.cleanupOAuth2Data(ctx)
+	c.cleanupWebRefreshTokens(ctx)
 }
 
 func (c *DataCleaner) cleanupExportArchives(ctx context.Context) {
@@ -86,5 +88,21 @@ func (c *DataCleaner) cleanupOAuth2Data(ctx context.Context) {
 		slog.Error("Failed to clean up inactive OAuth2 clients", log.BBError(err))
 	} else if rowsAffected > 0 {
 		slog.Info("Cleaned up inactive OAuth2 clients", slog.Int64("count", rowsAffected))
+	}
+}
+
+func (c *DataCleaner) cleanupWebRefreshTokens(ctx context.Context) {
+	// Clean up expired web refresh tokens
+	if rowsAffected, err := c.store.DeleteExpiredWebRefreshTokens(ctx); err != nil {
+		slog.Error("Failed to clean up expired web refresh tokens", log.BBError(err))
+	} else if rowsAffected > 0 {
+		slog.Info("Cleaned up expired web refresh tokens", slog.Int64("count", rowsAffected))
+	}
+
+	// Clean up rotated tokens past grace period
+	if rowsAffected, err := c.store.DeleteRotatedWebRefreshTokens(ctx, refreshTokenGracePeriod); err != nil {
+		slog.Error("Failed to clean up rotated web refresh tokens", log.BBError(err))
+	} else if rowsAffected > 0 {
+		slog.Info("Cleaned up rotated web refresh tokens", slog.Int64("count", rowsAffected))
 	}
 }
