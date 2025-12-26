@@ -3,10 +3,6 @@ package state
 
 import (
 	"sync"
-
-	lru "github.com/hashicorp/golang-lru/v2"
-
-	"github.com/pkg/errors"
 )
 
 // State is the state for all in-memory states within the server.
@@ -45,15 +41,9 @@ type State struct {
 
 	// RolloutCreationChan is the channel for automatic rollout creation.
 	RolloutCreationChan chan int64
-
-	ExpireCache *lru.Cache[string, bool]
 }
 
 func New() (*State, error) {
-	expireCache, err := lru.New[string, bool](128)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create auth expire cache")
-	}
 	return &State{
 		InstanceOutstandingConnections: &resourceLimiter{connections: map[string]int{}},
 		RolloutOutstandingTasks:        &resourceLimiter{connections: map[string]int{}},
@@ -61,7 +51,6 @@ func New() (*State, error) {
 		PlanCheckTickleChan:            make(chan int, 1000),
 		TaskRunTickleChan:              make(chan int, 1000),
 		RolloutCreationChan:            make(chan int64, 100),
-		ExpireCache:                    expireCache,
 	}, nil
 }
 

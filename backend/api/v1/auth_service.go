@@ -172,12 +172,6 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 
 // Logout is the auth logout method.
 func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.LogoutRequest]) (*connect.Response[emptypb.Empty], error) {
-	accessTokenStr, err := auth.GetTokenFromHeaders(req.Header())
-	if err != nil {
-		return nil, connect.NewError(connect.CodeUnauthenticated, err)
-	}
-	s.stateCfg.ExpireCache.Add(accessTokenStr, true)
-
 	// Delete refresh token from database if present
 	if refreshToken := auth.GetRefreshTokenFromCookie(req.Header()); refreshToken != "" {
 		if err := s.store.DeleteWebRefreshToken(ctx, auth.HashToken(refreshToken)); err != nil {
@@ -189,8 +183,7 @@ func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.Logo
 
 	origin := req.Header().Get("Origin")
 	// Clear access token cookie
-	cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, "")
-	resp.Header().Add("Set-Cookie", cookie.String())
+	resp.Header().Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, "").String())
 	// Clear refresh token cookie
 	resp.Header().Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, "", 0).String())
 	return resp, nil
