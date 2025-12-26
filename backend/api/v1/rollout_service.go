@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -334,6 +336,141 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	s.stateCfg.TaskRunTickleChan <- 0
 
 	return connect.NewResponse(rolloutV1), nil
+}
+
+// TryCreateRollout attempts to create a rollout if all conditions are met.
+// This function is called asynchronously after approval or plan check completion.
+// It checks approval and plan check conditions before calling CreateRollout.
+func (s *RolloutService) TryCreateRollout(ctx context.Context, issueID int) {
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{UID: &issueID})
+	if err != nil {
+		slog.Error("failed to get issue for rollout creation",
+			slog.Int("issue_id", issueID),
+			log.BBError(err))
+		return
+	}
+	if issue == nil {
+		slog.Debug("issue not found for rollout creation", slog.Int("issue_id", issueID))
+		return
+	}
+
+	if issue.PlanUID == nil {
+		slog.Debug("issue has no plan, skipping rollout creation", slog.Int("issue_id", issueID))
+		return
+	}
+
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: issue.PlanUID})
+	if err != nil {
+		slog.Error("failed to get plan for rollout creation",
+			slog.Int("plan_id", int(*issue.PlanUID)),
+			log.BBError(err))
+		return
+	}
+	if plan == nil {
+		slog.Debug("plan not found for rollout creation", slog.Int("plan_id", int(*issue.PlanUID)))
+		return
+	}
+
+	// Idempotency: skip if rollout already exists
+	if plan.Config != nil && plan.Config.HasRollout {
+		slog.Debug("rollout already exists, skipping creation",
+			slog.Int("issue_id", issueID),
+			slog.Int("plan_id", int(*issue.PlanUID)))
+		return
+	}
+
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
+	if err != nil {
+		slog.Error("failed to get project for rollout creation",
+			slog.String("project_id", plan.ProjectID),
+			log.BBError(err))
+		return
+	}
+	if project == nil {
+		slog.Error("project not found for rollout creation", slog.String("project_id", plan.ProjectID))
+		return
+	}
+
+	// Check approval condition
+	if project.Setting != nil && project.Setting.RequireIssueApproval {
+		approved, err := utils.CheckIssueApproved(issue)
+		if err != nil {
+			slog.Error("failed to check if the issue is approved",
+				slog.Int("issue_id", issueID),
+				log.BBError(err))
+			return
+		}
+		if !approved {
+			slog.Debug("issue not approved yet, skipping rollout creation",
+				slog.Int("issue_id", issueID))
+			return
+		}
+	}
+
+	// Check plan check condition
+	if project.Setting != nil && project.Setting.RequirePlanCheckNoError {
+		planCheckRun, err := s.store.GetPlanCheckRun(ctx, *issue.PlanUID)
+		if err != nil {
+			slog.Error("failed to get plan check run for rollout creation",
+				slog.Int("plan_id", int(*issue.PlanUID)),
+				log.BBError(err))
+			return
+		}
+
+		// If no plan checks exist, treat as passing (same as old behavior)
+		if planCheckRun != nil {
+			// Check if plan checks are still running
+			if planCheckRun.Status == store.PlanCheckRunStatusRunning {
+				slog.Debug("plan checks still running, skipping rollout creation",
+					slog.Int("issue_id", issueID))
+				return
+			}
+
+			// Check for ERROR-level results
+			if planCheckRun.Result != nil {
+				for _, result := range planCheckRun.Result.Results {
+					if result.Status == storepb.Advice_ERROR {
+						slog.Debug("plan checks have errors, skipping rollout creation",
+							slog.Int("issue_id", issueID))
+						return
+					}
+				}
+			}
+		}
+	}
+
+	// All conditions met - create the rollout
+	slog.Info("auto-creating rollout",
+		slog.Int("issue_id", issueID),
+		slog.Int("plan_id", int(*issue.PlanUID)))
+
+	projectID := common.FormatProject(plan.ProjectID)
+	planName := common.FormatPlan(plan.ProjectID, *issue.PlanUID)
+
+	_, err = s.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
+		Parent: projectID,
+		Rollout: &v1pb.Rollout{
+			Plan: planName,
+		},
+	}))
+
+	if err != nil {
+		// If rollout already exists, this is not an error (race condition handled)
+		if connect.CodeOf(err) == connect.CodeAlreadyExists {
+			slog.Debug("rollout already exists (race condition), ignoring",
+				slog.Int("issue_id", issueID))
+			return
+		}
+		slog.Error("failed to auto-create rollout",
+			slog.Int("issue_id", issueID),
+			slog.Int("plan_id", int(*issue.PlanUID)),
+			log.BBError(err))
+		return
+	}
+
+	slog.Info("successfully auto-created rollout",
+		slog.Int("issue_id", issueID),
+		slog.Int("plan_id", int(*issue.PlanUID)))
 }
 
 // ListTaskRuns lists rollout task runs.
