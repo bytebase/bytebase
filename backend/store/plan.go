@@ -221,8 +221,8 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	return plans, nil
 }
 
-// UpdatePlan updates an existing plan.
-func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error {
+// UpdatePlan updates an existing plan and returns the updated plan.
+func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*PlanMessage, error) {
 	set := []string{"updated_at = ?"}
 	args := []any{time.Now()}
 
@@ -241,35 +241,52 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) error 
 	if v := patch.Config; v != nil {
 		config, err := protojson.Marshal(v)
 		if err != nil {
-			return errors.Wrapf(err, "failed to marshal plan config")
+			return nil, errors.Wrapf(err, "failed to marshal plan config")
 		}
 		set = append(set, "config = ?")
 		args = append(args, config)
 	}
 
 	args = append(args, patch.UID)
-	q := qb.Q().Space(fmt.Sprintf("UPDATE plan SET %s WHERE id = ?", strings.Join(set, ", ")), args...)
+	q := qb.Q().Space(fmt.Sprintf("UPDATE plan SET %s WHERE id = ? RETURNING id, creator, created_at, updated_at, project, name, description, config, deleted", strings.Join(set, ", ")), args...)
 
 	query, finalArgs, err := q.ToSQL()
 	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
+		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to begin transaction")
+		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.ExecContext(ctx, query, finalArgs...); err != nil {
-		return errors.Wrapf(err, "failed to update plan")
+	plan := PlanMessage{
+		Config: &storepb.PlanConfig{},
+	}
+	var config []byte
+	if err := tx.QueryRowContext(ctx, query, finalArgs...).Scan(
+		&plan.UID,
+		&plan.Creator,
+		&plan.CreatedAt,
+		&plan.UpdatedAt,
+		&plan.ProjectID,
+		&plan.Name,
+		&plan.Description,
+		&config,
+		&plan.Deleted,
+	); err != nil {
+		return nil, errors.Wrapf(err, "failed to update plan")
+	}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal plan config")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit transaction")
+		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
-	return nil
+	return &plan, nil
 }
 
 // GetListPlanFilter parses a CEL filter expression into a query builder query for listing plans.
