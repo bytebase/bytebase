@@ -232,6 +232,11 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
 	}
 
+	// Idempotency check: prevent duplicate rollout creation
+	if plan.Config != nil && plan.Config.HasRollout {
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("rollout already exists for plan %s", request.GetRollout().GetPlan()))
+	}
+
 	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.dbFactory, plan.Config.GetSpecs(), project.ResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
