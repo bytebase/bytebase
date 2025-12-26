@@ -8,6 +8,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common/log"
 )
 
@@ -55,7 +56,7 @@ func (s *Service) handleRevoke(c echo.Context) error {
 
 	// Try to revoke as refresh token
 	// RFC 7009 says to return 200 even if token is invalid, but we log errors for debugging
-	tokenHash := hashToken(req.Token)
+	tokenHash := auth.HashToken(req.Token)
 	if err := s.store.DeleteOAuth2RefreshToken(ctx, tokenHash); err != nil {
 		slog.Warn("failed to delete OAuth2 refresh token during revocation", log.BBError(err))
 	}

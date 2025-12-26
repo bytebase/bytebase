@@ -16,6 +16,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -94,44 +95,37 @@ func (s *Service) handleGetClient(c echo.Context) error {
 	})
 }
 
-func generateRandomString(length int) (string, error) {
-	bytes := make([]byte, length)
+func generateClientID() (string, error) {
+	// Use 24 bytes for client ID (shorter than refresh tokens)
+	bytes := make([]byte, 24)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
-	return base64.RawURLEncoding.EncodeToString(bytes), nil
-}
-
-func generateClientID() (string, error) {
-	random, err := generateRandomString(24)
-	if err != nil {
-		return "", err
-	}
-	return clientIDPrefix + random, nil
+	return clientIDPrefix + base64.RawURLEncoding.EncodeToString(bytes), nil
 }
 
 func generateClientSecret() (string, error) {
-	random, err := generateRandomString(32)
+	token, err := auth.GenerateOpaqueToken()
 	if err != nil {
 		return "", err
 	}
-	return clientSecretPrefix + random, nil
+	return clientSecretPrefix + token, nil
 }
 
 func generateAuthCode() (string, error) {
-	random, err := generateRandomString(32)
+	token, err := auth.GenerateOpaqueToken()
 	if err != nil {
 		return "", err
 	}
-	return authCodePrefix + random, nil
+	return authCodePrefix + token, nil
 }
 
 func generateRefreshToken() (string, error) {
-	random, err := generateRandomString(32)
+	token, err := auth.GenerateOpaqueToken()
 	if err != nil {
 		return "", err
 	}
-	return refreshTokenPrefix + random, nil
+	return refreshTokenPrefix + token, nil
 }
 
 func hashSecret(secret string) (string, error) {
@@ -144,11 +138,6 @@ func hashSecret(secret string) (string, error) {
 
 func verifySecret(hash, secret string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(secret)) == nil
-}
-
-func hashToken(token string) string {
-	hash := sha256.Sum256([]byte(token))
-	return base64.RawURLEncoding.EncodeToString(hash[:])
 }
 
 func verifyPKCE(codeVerifier, codeChallenge, method string) bool {
