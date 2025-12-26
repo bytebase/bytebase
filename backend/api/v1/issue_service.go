@@ -37,7 +37,7 @@ type IssueService struct {
 	licenseService *enterprise.LicenseService
 	profile        *config.Profile
 	iamManager     *iam.Manager
-	rolloutService *RolloutService
+	rolloutService utils.RolloutServiceInterface
 }
 
 type filterIssueMessage struct {
@@ -54,7 +54,7 @@ func NewIssueService(
 	licenseService *enterprise.LicenseService,
 	profile *config.Profile,
 	iamManager *iam.Manager,
-	rolloutService *RolloutService,
+	rolloutService utils.RolloutServiceInterface,
 ) *IssueService {
 	return &IssueService{
 		store:          store,
@@ -835,7 +835,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 			// Use a fresh context with timeout to avoid being affected by request cancellation
 			rolloutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			s.rolloutService.TryCreateRollout(rolloutCtx, issue.UID)
+			utils.TryCreateRollout(rolloutCtx, s.store, s.rolloutService, issue.UID)
 		}()
 	}
 

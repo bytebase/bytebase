@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 const (
@@ -22,9 +23,7 @@ const (
 )
 
 // NewScheduler creates a new plan check scheduler.
-func NewScheduler(s *store.Store, licenseService *enterprise.LicenseService, stateCfg *state.State, executor *CombinedExecutor, rolloutService interface {
-	TryCreateRollout(ctx context.Context, issueID int)
-}) *Scheduler {
+func NewScheduler(s *store.Store, licenseService *enterprise.LicenseService, stateCfg *state.State, executor *CombinedExecutor, rolloutService utils.RolloutServiceInterface) *Scheduler {
 	return &Scheduler{
 		store:          s,
 		licenseService: licenseService,
@@ -40,9 +39,7 @@ type Scheduler struct {
 	licenseService *enterprise.LicenseService
 	stateCfg       *state.State
 	executor       *CombinedExecutor
-	rolloutService interface {
-		TryCreateRollout(ctx context.Context, issueID int)
-	}
+	rolloutService utils.RolloutServiceInterface
 }
 
 // Run runs the scheduler.
@@ -152,7 +149,7 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, planCheckRun *stor
 			// Use a fresh context with timeout to avoid being affected by request cancellation
 			rolloutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
-			s.rolloutService.TryCreateRollout(rolloutCtx, issue.UID)
+			utils.TryCreateRollout(rolloutCtx, s.store, s.rolloutService, issue.UID)
 		}()
 	}
 }
