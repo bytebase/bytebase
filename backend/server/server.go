@@ -24,7 +24,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	rolloutcomponent "github.com/bytebase/bytebase/backend/component/rollout"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -195,7 +194,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.taskScheduler.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 
 	// Start rollout creator component
-	rolloutCreator := rolloutcomponent.NewRolloutCreator(stores, s.stateCfg, s.dbFactory)
+	rolloutCreator := taskrun.NewRolloutCreator(stores, s.stateCfg, s.dbFactory)
 	s.runnerWG.Add(1)
 	go rolloutCreator.Run(ctx, &s.runnerWG, s.stateCfg.RolloutCreationChan)
 
