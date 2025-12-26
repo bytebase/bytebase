@@ -589,16 +589,6 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
 	}
 	planUID = &plan.UID
-	// Rollout is now virtual and derived from Plan.
-	if request.Issue.Rollout != "" {
-		_, rolloutID, err := common.GetProjectIDRolloutID(request.Issue.Rollout)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
-		}
-		if int64(rolloutID) != plan.UID {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("rollout ID %d does not match plan ID %d", rolloutID, plan.UID))
-		}
-	}
 
 	issueCreateMessage := &store.IssueMessage{
 		ProjectID:    project.ResourceID,

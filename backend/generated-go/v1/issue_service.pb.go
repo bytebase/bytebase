@@ -1112,10 +1112,6 @@ type Issue struct {
 	// Can be empty.
 	// Format: projects/{project}/plans/{plan}
 	Plan string `protobuf:"bytes,11,opt,name=plan,proto3" json:"plan,omitempty"`
-	// The rollout associated with the issue.
-	// Can be empty.
-	// Format: projects/{project}/rollouts/{rollout}
-	Rollout string `protobuf:"bytes,12,opt,name=rollout,proto3" json:"rollout,omitempty"`
 	// Used if the issue type is GRANT_REQUEST.
 	GrantRequest *GrantRequest `protobuf:"bytes,13,opt,name=grant_request,json=grantRequest,proto3" json:"grant_request,omitempty"`
 	// The risk level of the issue.
@@ -1232,13 +1228,6 @@ func (x *Issue) GetUpdateTime() *timestamppb.Timestamp {
 func (x *Issue) GetPlan() string {
 	if x != nil {
 		return x.Plan
-	}
-	return ""
-}
-
-func (x *Issue) GetRollout() string {
-	if x != nil {
-		return x.Rollout
 	}
 	return ""
 }
@@ -2197,8 +2186,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x13RequestIssueRequest\x12.\n" +
 	"\x04name\x18\x01 \x01(\tB\x1a\xe0A\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x04name\x12\x18\n" +
-	"\acomment\x18\x02 \x01(\tR\acomment\"\x83\n" +
-	"\n" +
+	"\acomment\x18\x02 \x01(\tR\acomment\"\xe9\t\n" +
 	"\x05Issue\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
 	"\x05title\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
@@ -2213,8 +2201,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\vupdate_time\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"updateTime\x12\x12\n" +
-	"\x04plan\x18\v \x01(\tR\x04plan\x12\x18\n" +
-	"\arollout\x18\f \x01(\tR\arollout\x12>\n" +
+	"\x04plan\x18\v \x01(\tR\x04plan\x12>\n" +
 	"\rgrant_request\x18\r \x01(\v2\x19.bytebase.v1.GrantRequestR\fgrantRequest\x125\n" +
 	"\n" +
 	"risk_level\x18\x0f \x01(\x0e2\x16.bytebase.v1.RiskLevelR\triskLevel\x12\x16\n" +

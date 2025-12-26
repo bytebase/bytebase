@@ -82,7 +82,7 @@ const showDraftTag = computed(() => {
     !isCreating.value &&
     isValidPlanName(plan.value.name) &&
     !plan.value.issue &&
-    !plan.value.rollout
+    !plan.value.hasRollout
   );
 });
 

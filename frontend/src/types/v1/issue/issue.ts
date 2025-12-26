@@ -1,10 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import {
-  EMPTY_PROJECT_NAME,
-  EMPTY_ROLLOUT_NAME,
-  UNKNOWN_PROJECT_NAME,
-  UNKNOWN_ROLLOUT_NAME,
-} from "@/types";
+import { EMPTY_PROJECT_NAME, UNKNOWN_PROJECT_NAME } from "@/types";
 import type {
   Issue,
   Issue_ApprovalStatus,
@@ -35,7 +30,6 @@ export const emptyIssue = (): ComposedIssue => {
   return {
     ...createProto(IssueSchema, {
       name: EMPTY_ISSUE_NAME,
-      rollout: EMPTY_ROLLOUT_NAME,
       type: Issue_Type.DATABASE_CHANGE,
     }),
     planEntity: undefined,
@@ -50,7 +44,6 @@ export const unknownIssue = (): ComposedIssue => {
   return {
     ...createProto(IssueSchema, {
       name: UNKNOWN_ISSUE_NAME,
-      rollout: UNKNOWN_ROLLOUT_NAME,
       type: Issue_Type.DATABASE_CHANGE,
     }),
     planEntity: undefined,

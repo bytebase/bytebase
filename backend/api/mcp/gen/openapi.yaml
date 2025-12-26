@@ -10785,13 +10785,6 @@ components:
             The plan associated with the issue.
              Can be empty.
              Format: projects/{project}/plans/{plan}
-        rollout:
-          type: string
-          title: rollout
-          description: |-
-            The rollout associated with the issue.
-             Can be empty.
-             Format: projects/{project}/rollouts/{rollout}
         grantRequest:
           title: grant_request
           description: Used if the issue type is GRANT_REQUEST.
@@ -12572,13 +12565,6 @@ components:
             The issue associated with the plan.
              Can be empty.
              Format: projects/{project}/issues/{issue}
-        rollout:
-          type: string
-          title: rollout
-          description: |-
-            The rollout associated with the plan.
-             Can be empty.
-             Format: projects/{project}/rollouts/{rollout}
         title:
           type: string
           title: title

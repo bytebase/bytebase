@@ -85,7 +85,6 @@ const composedIssue = computed(() => {
   composedIssue.plan = unref(plan).name;
   composedIssue.planEntity = unref(plan);
   if (rollout?.value) {
-    composedIssue.rollout = rollout.value.name;
     composedIssue.rolloutEntity = rollout.value;
   }
   return composedIssue;

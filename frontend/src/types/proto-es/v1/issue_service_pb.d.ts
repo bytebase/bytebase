@@ -494,15 +494,6 @@ export declare type Issue = Message<"bytebase.v1.Issue"> & {
   plan: string;
 
   /**
-   * The rollout associated with the issue.
-   * Can be empty.
-   * Format: projects/{project}/rollouts/{rollout}
-   *
-   * @generated from field: string rollout = 12;
-   */
-  rollout: string;
-
-  /**
    * Used if the issue type is GRANT_REQUEST.
    *
    * @generated from field: bytebase.v1.GrantRequest grant_request = 13;

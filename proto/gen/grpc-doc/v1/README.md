@@ -1069,7 +1069,6 @@ Webhook integration type.
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan | [string](#string) |  | The plan associated with the issue. Can be empty. Format: projects/{project}/plans/{plan} |
-| rollout | [string](#string) |  | The rollout associated with the issue. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 | grant_request | [GrantRequest](#bytebase-v1-GrantRequest) |  | Used if the issue type is GRANT_REQUEST. |
 | risk_level | [RiskLevel](#bytebase-v1-RiskLevel) |  | The risk level of the issue. |
 | labels | [string](#string) | repeated | Labels attached to the issue for categorization and filtering. |
@@ -7512,7 +7511,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | name | [string](#string) |  | The name of the plan. `plan` is a system generated ID. Format: projects/{project}/plans/{plan} |
 | state | [State](#bytebase-v1-State) |  | The state of the plan. |
 | issue | [string](#string) |  | The issue associated with the plan. Can be empty. Format: projects/{project}/issues/{issue} |
-| rollout | [string](#string) |  | The rollout associated with the plan. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 | title | [string](#string) |  | The title of the plan. |
 | description | [string](#string) |  | The description of the plan. |
 | specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated | The deployment specs for the plan. |

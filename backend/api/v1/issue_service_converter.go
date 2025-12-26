@@ -100,10 +100,6 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 	if issue.PlanUID != nil {
 		issueV1.Plan = common.FormatPlan(issue.ProjectID, *issue.PlanUID)
 	}
-	// Rollout uses PlanUID as ID.
-	if issue.PlanUID != nil {
-		issueV1.Rollout = common.FormatRollout(issue.ProjectID, int(*issue.PlanUID))
-	}
 
 	approval := issuePayload.GetApproval()
 	issueV1.RiskLevel = convertToIssueRiskLevel(issuePayload.GetRiskLevel())

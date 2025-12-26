@@ -415,11 +415,6 @@ message Issue {
   // Format: projects/{project}/plans/{plan}
   string plan = 11;
 
-  // The rollout associated with the issue.
-  // Can be empty.
-  // Format: projects/{project}/rollouts/{rollout}
-  string rollout = 12;
-
   // Used if the issue type is GRANT_REQUEST.
   GrantRequest grant_request = 13;
 
