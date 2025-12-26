@@ -762,11 +762,6 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 			Project: webhook.NewProject(project),
 		})
 
-		// Auto-create rollout if this approval completes the approval flow
-		go func() {
-			s.rolloutService.TryCreateRollout(ctx, issue.UID)
-		}()
-
 		// notify pipeline rollout
 		if err := func() error {
 			if issue.PlanUID == nil {
@@ -826,6 +821,14 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
 	}
+
+	// Auto-create rollout if this approval completes the approval flow
+	if issueV1.ApprovalStatus == v1pb.Issue_APPROVED {
+		go func() {
+			s.rolloutService.TryCreateRollout(ctx, issue.UID)
+		}()
+	}
+
 	return connect.NewResponse(issueV1), nil
 }
 
