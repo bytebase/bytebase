@@ -166,7 +166,7 @@ func (s *Service) handleRefreshTokenGrant(c echo.Context, client *store.OAuth2Cl
 		return oauth2Error(c, http.StatusBadRequest, "invalid_request", "refresh_token is required")
 	}
 
-	tokenHash := hashToken(req.RefreshToken)
+	tokenHash := auth.HashToken(req.RefreshToken)
 	refreshToken, err := s.store.GetOAuth2RefreshToken(ctx, tokenHash)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to lookup refresh token")
@@ -226,7 +226,7 @@ func (s *Service) issueTokens(c echo.Context, client *store.OAuth2ClientMessage,
 
 		// Store refresh token
 		if _, err := s.store.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
-			TokenHash: hashToken(refreshTokenStr),
+			TokenHash: auth.HashToken(refreshTokenStr),
 			ClientID:  client.ClientID,
 			UserEmail: userEmail,
 			ExpiresAt: now.Add(refreshTokenExpiry),
