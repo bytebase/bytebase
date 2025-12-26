@@ -307,25 +307,12 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	// Update plan to set hasRollout to true
 	config := proto.CloneOf(plan.Config)
 	config.HasRollout = true
-	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
+	rollout, err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
 		UID:    planID,
 		Config: config,
-	}); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan hasRollout, error: %v", err))
-	}
-
-	// getRolloutWithTasks inlined
-	// re-fetch plan to get latest state (e.g. hasRollout config)
-	rollout, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &planID, // planID is already int64
-		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
-	}
-	if rollout == nil {
-		// Should not happen as we just created tasks for it
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", planID, projectID))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan hasRollout, error: %v", err))
 	}
 
 	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
