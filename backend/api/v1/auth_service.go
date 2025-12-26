@@ -88,138 +88,34 @@ func NewAuthService(store *store.Store, secret string, licenseService *enterpris
 // Login is the auth login method including SSO.
 func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.LoginRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
-	var loginUser *store.UserMessage
-	mfaSecondLogin := request.MfaTempToken != nil && *request.MfaTempToken != ""
-	loginViaIDP := request.GetIdpName() != ""
+	mfaSecondLogin := request.GetMfaTempToken() != ""
 
-	response := &v1pb.LoginResponse{}
-	resp := connect.NewResponse(response)
-	if !mfaSecondLogin {
-		var err error
-		if loginViaIDP {
-			loginUser, err = s.getOrCreateUserWithIDP(ctx, request)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			loginUser, err = s.getAndVerifyUser(ctx, request)
-			if err != nil {
-				return nil, err
-			}
-			// Reset password restriction only works for end user with email & password login.
-			response.RequireResetPassword = s.needResetPassword(ctx, loginUser)
-		}
-	} else {
-		userEmail, err := auth.GetUserEmailFromMFATempToken(*request.MfaTempToken, s.profile.Mode, s.secret)
-		if err != nil {
-			return nil, err
-		}
-		user, err := s.store.GetUserByEmail(ctx, userEmail)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user, error"))
-		}
-		if user == nil {
-			return nil, invalidCredentialsError
-		}
-
-		// Check if user is locked out due to too many failed MFA attempts.
-		if err := s.checkMFALockout(ctx, user.Email); err != nil {
-			return nil, err
-		}
-
-		if request.OtpCode != nil {
-			if err := challengeMFACode(user, *request.OtpCode); err != nil {
-				return nil, err
-			}
-		} else if request.RecoveryCode != nil {
-			if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("OTP or recovery code is required for MFA"))
-		}
-		loginUser = user
-	}
-
-	if loginUser.MemberDeleted {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user has been deactivated by administrators"))
-	}
-
-	setting, err := s.store.GetWorkspaceProfileSetting(ctx)
+	// 1. Authenticate user (password, IDP, or MFA completion)
+	loginUser, requireResetPassword, err := s.authenticateLogin(ctx, request)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting, error"))
+		return nil, err
 	}
-	isWorkspaceAdmin, err := isUserWorkspaceAdmin(ctx, s.store, loginUser)
+
+	// 2. Post-auth checks (deleted, domain, license)
+	if err := s.validateLoginPermissions(ctx, loginUser, request); err != nil {
+		return nil, err
+	}
+
+	// 3. Check if MFA challenge needed (returns early with temp token)
+	if resp, err := s.checkMFARequired(loginUser, mfaSecondLogin); err != nil {
+		return nil, err
+	} else if resp != nil {
+		return resp, nil
+	}
+
+	// 4. Generate appropriate token
+	token, err := s.generateLoginToken(ctx, loginUser)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check user roles, error"))
-	}
-	if !isWorkspaceAdmin && loginUser.Type == storepb.PrincipalType_END_USER && !mfaSecondLogin {
-		// Disallow password signin for end users.
-		if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err == nil {
-			if setting.DisallowPasswordSignin && !loginViaIDP {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
-			}
-		}
-
-		// Check domain restriction for end users.
-		if err := validateEmailWithDomains(ctx, s.licenseService, s.store, loginUser.Email, false, false); err != nil {
-			return nil, err
-		}
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate access token"))
 	}
 
-	tokenDuration := auth.GetTokenDuration(ctx, s.store, s.licenseService)
-	userMFAEnabled := loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != ""
-	// We only allow MFA login (2-step) when the feature is enabled and user has enabled MFA.
-	if s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TWO_FA) == nil && !mfaSecondLogin && userMFAEnabled {
-		mfaTempToken, err := auth.GenerateMFATempToken(loginUser.Email, s.profile.Mode, s.secret, mfaTempTokenDuration)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate MFA temp token"))
-		}
-		return connect.NewResponse(&v1pb.LoginResponse{
-			MfaTempToken: &mfaTempToken,
-		}), nil
-	}
-
-	switch loginUser.Type {
-	case storepb.PrincipalType_END_USER:
-		token, err := auth.GenerateAccessToken(loginUser.Email, s.profile.Mode, s.secret, tokenDuration)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate API access token"))
-		}
-		response.Token = token
-	case storepb.PrincipalType_SERVICE_ACCOUNT:
-		token, err := auth.GenerateAPIToken(loginUser.Email, s.profile.Mode, s.secret)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate API access token"))
-		}
-		response.Token = token
-	default:
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user type %s cannot login", loginUser.Type))
-	}
-
-	if request.Web {
-		// Only allow end users to use web login, not service accounts.
-		if loginUser.Type != storepb.PrincipalType_END_USER {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
-		}
-
-		origin := req.Header().Get("Origin")
-		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, response.Token)
-		resp.Header().Add("Set-Cookie", cookie.String())
-	}
-
-	if _, err := s.store.UpdateUser(ctx, loginUser, &store.UpdateUserMessage{
-		Profile: &storepb.UserProfile{
-			LastLoginTime:          timestamppb.Now(),
-			LastChangePasswordTime: loginUser.Profile.GetLastChangePasswordTime(),
-		},
-	}); err != nil {
-		slog.Error("failed to update user profile", log.BBError(err), slog.String("user", loginUser.Email))
-	}
-
-	response.User = convertToUser(ctx, s.iamManager, loginUser)
-
-	return resp, nil
+	// 5. Build response and finalize
+	return s.finalizeLogin(ctx, req, loginUser, token, requireResetPassword)
 }
 
 func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage) bool {
@@ -652,6 +548,167 @@ func (s *AuthService) syncUserGroups(ctx context.Context, user *store.UserMessag
 	}
 
 	return nil
+}
+
+// authenticateLogin handles all authentication paths: password, IDP, or MFA completion.
+// Returns the authenticated user and whether password reset is required.
+func (s *AuthService) authenticateLogin(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, bool, error) {
+	mfaSecondLogin := request.GetMfaTempToken() != ""
+
+	if mfaSecondLogin {
+		user, err := s.completeMFALogin(ctx, request)
+		return user, false, err
+	}
+
+	if request.GetIdpName() != "" {
+		user, err := s.getOrCreateUserWithIDP(ctx, request)
+		return user, false, err
+	}
+
+	user, err := s.getAndVerifyUser(ctx, request)
+	if err != nil {
+		return nil, false, err
+	}
+	requireResetPassword := s.needResetPassword(ctx, user)
+	return user, requireResetPassword, nil
+}
+
+// completeMFALogin validates MFA temp token and verifies OTP or recovery code.
+func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
+	userEmail, err := auth.GetUserEmailFromMFATempToken(*request.MfaTempToken, s.profile.Mode, s.secret)
+	if err != nil {
+		return nil, err
+	}
+	user, err := s.store.GetUserByEmail(ctx, userEmail)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user, error"))
+	}
+	if user == nil {
+		return nil, invalidCredentialsError
+	}
+
+	if err := s.checkMFALockout(ctx, user.Email); err != nil {
+		return nil, err
+	}
+
+	if request.OtpCode != nil {
+		if err := challengeMFACode(user, *request.OtpCode); err != nil {
+			return nil, err
+		}
+	} else if request.RecoveryCode != nil {
+		if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("OTP or recovery code is required for MFA"))
+	}
+	return user, nil
+}
+
+// validateLoginPermissions checks if the user is allowed to login.
+func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.UserMessage, request *v1pb.LoginRequest) error {
+	if user.MemberDeleted {
+		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user has been deactivated by administrators"))
+	}
+
+	isWorkspaceAdmin, err := isUserWorkspaceAdmin(ctx, s.store, user)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check user roles, error"))
+	}
+
+	// Skip restrictions for workspace admins and service accounts
+	if isWorkspaceAdmin || user.Type != storepb.PrincipalType_END_USER {
+		return nil
+	}
+
+	// Skip restrictions for MFA second login (already validated in first step)
+	mfaSecondLogin := request.GetMfaTempToken() != ""
+	if mfaSecondLogin {
+		return nil
+	}
+
+	loginViaIDP := request.GetIdpName() != ""
+
+	// Check disallow password signin
+	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err == nil {
+		setting, err := s.store.GetWorkspaceProfileSetting(ctx)
+		if err != nil {
+			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting, error"))
+		}
+		if setting.DisallowPasswordSignin && !loginViaIDP {
+			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
+		}
+	}
+
+	// Check domain restriction
+	return validateEmailWithDomains(ctx, s.licenseService, s.store, user.Email, false, false)
+}
+
+// checkMFARequired checks if MFA is required and returns a response with temp token if so.
+// Returns (nil, nil) if MFA is not required or already completed.
+func (s *AuthService) checkMFARequired(user *store.UserMessage, mfaSecondLogin bool) (*connect.Response[v1pb.LoginResponse], error) {
+	if mfaSecondLogin {
+		return nil, nil
+	}
+
+	userMFAEnabled := user.MFAConfig != nil && user.MFAConfig.OtpSecret != ""
+	mfaFeatureEnabled := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TWO_FA) == nil
+	if !mfaFeatureEnabled || !userMFAEnabled {
+		return nil, nil
+	}
+
+	mfaTempToken, err := auth.GenerateMFATempToken(user.Email, s.profile.Mode, s.secret, mfaTempTokenDuration)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate MFA temp token"))
+	}
+
+	return connect.NewResponse(&v1pb.LoginResponse{
+		MfaTempToken: &mfaTempToken,
+	}), nil
+}
+
+// generateLoginToken generates the appropriate token based on user type.
+func (s *AuthService) generateLoginToken(ctx context.Context, user *store.UserMessage) (string, error) {
+	tokenDuration := auth.GetTokenDuration(ctx, s.store, s.licenseService)
+
+	switch user.Type {
+	case storepb.PrincipalType_END_USER:
+		return auth.GenerateAccessToken(user.Email, s.profile.Mode, s.secret, tokenDuration)
+	case storepb.PrincipalType_SERVICE_ACCOUNT:
+		return auth.GenerateAPIToken(user.Email, s.profile.Mode, s.secret)
+	default:
+		return "", connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user type %s cannot login", user.Type))
+	}
+}
+
+// finalizeLogin builds the response, sets cookies if needed, and updates the user profile.
+func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1pb.LoginRequest], user *store.UserMessage, token string, requireResetPassword bool) (*connect.Response[v1pb.LoginResponse], error) {
+	response := &v1pb.LoginResponse{
+		Token:                token,
+		RequireResetPassword: requireResetPassword,
+	}
+	resp := connect.NewResponse(response)
+
+	if req.Msg.Web {
+		if user.Type != storepb.PrincipalType_END_USER {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
+		}
+		origin := req.Header().Get("Origin")
+		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, origin, token)
+		resp.Header().Add("Set-Cookie", cookie.String())
+	}
+
+	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
+		Profile: &storepb.UserProfile{
+			LastLoginTime:          timestamppb.Now(),
+			LastChangePasswordTime: user.Profile.GetLastChangePasswordTime(),
+		},
+	}); err != nil {
+		slog.Error("failed to update user profile", log.BBError(err), slog.String("user", user.Email))
+	}
+
+	response.User = convertToUser(ctx, s.iamManager, user)
+	return resp, nil
 }
 
 // ExchangeToken exchanges an external OIDC token for a Bytebase access token.
