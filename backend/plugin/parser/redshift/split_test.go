@@ -1,4 +1,4 @@
-package doris
+package redshift
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestSplitDorisSQLStatements(t *testing.T) {
+func TestSplitSQL(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -29,7 +29,7 @@ func TestSplitDorisSQLStatements(t *testing.T) {
 			},
 		},
 		{
-			name:      "multiple statements on one line",
+			name:      "multiple statements",
 			statement: "SELECT 1; SELECT 2;",
 			want: []base.Statement{
 				{
@@ -93,12 +93,15 @@ func TestSplitDorisSQLStatements(t *testing.T) {
 				got := list[i]
 				require.Equal(t, want.Text, got.Text, "Text mismatch at index %d", i)
 				require.Equal(t, want.BaseLine, got.BaseLine, "BaseLine mismatch at index %d", i)
+
 				require.NotNil(t, got.Start, "Start should not be nil at index %d", i)
 				require.Equal(t, want.Start.Line, got.Start.Line, "Start.Line mismatch at index %d", i)
 				require.Equal(t, want.Start.Column, got.Start.Column, "Start.Column mismatch at index %d", i)
+
 				require.NotNil(t, got.End, "End should not be nil at index %d", i)
 				require.Equal(t, want.End.Line, got.End.Line, "End.Line mismatch at index %d", i)
 				require.Equal(t, want.End.Column, got.End.Column, "End.Column mismatch at index %d", i)
+
 				if want.Range != nil {
 					require.Equal(t, want.Range.Start, got.Range.Start, "Range.Start mismatch at index %d", i)
 					require.Equal(t, want.Range.End, got.Range.End, "Range.End mismatch at index %d", i)
