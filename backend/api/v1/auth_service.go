@@ -180,7 +180,9 @@ func (s *AuthService) Logout(ctx context.Context, req *connect.Request[v1pb.Logo
 
 	// Delete refresh token from database if present
 	if refreshToken := auth.GetRefreshTokenFromCookie(req.Header()); refreshToken != "" {
-		_ = s.store.DeleteWebRefreshToken(ctx, auth.HashToken(refreshToken))
+		if err := s.store.DeleteWebRefreshToken(ctx, auth.HashToken(refreshToken)); err != nil {
+			slog.Error("failed to delete refresh token on logout", log.BBError(err))
+		}
 	}
 
 	resp := connect.NewResponse(&emptypb.Empty{})
@@ -214,14 +216,18 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 
 	// 3. Check expiration
 	if time.Now().After(stored.ExpiresAt) {
-		_ = s.store.DeleteWebRefreshToken(ctx, tokenHash)
+		if err := s.store.DeleteWebRefreshToken(ctx, tokenHash); err != nil {
+			slog.Error("failed to delete expired refresh token", log.BBError(err))
+		}
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("refresh token expired"))
 	}
 
 	// 4. Check if already rotated (grace period)
 	if stored.RotatedAt != nil {
 		if time.Since(*stored.RotatedAt) > refreshTokenGracePeriod {
-			_ = s.store.DeleteWebRefreshToken(ctx, tokenHash)
+			if err := s.store.DeleteWebRefreshToken(ctx, tokenHash); err != nil {
+				slog.Error("failed to delete rotated refresh token", log.BBError(err))
+			}
 			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("refresh token already used"))
 		}
 		// Within grace period - return success but don't issue new tokens
