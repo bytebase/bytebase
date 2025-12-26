@@ -1,59 +1,40 @@
 <template>
   <CreateButton v-if="isCreating" />
-  <template v-else>
-    <!-- Show CreateIssueButton when ISSUE_CREATE is the primary action -->
-    <template v-if="showCreateIssueButton">
-      <div class="flex items-center gap-x-2">
-        <CreateIssueButton />
-        <!-- Secondary actions dropdown -->
-        <UnifiedActionGroup
-          v-if="secondaryActions.length > 0"
-          :secondary-actions="secondaryActions"
-          :disabled="actionsDisabled"
-          :disabled-tooltip="disabledTooltip"
-          @perform-action="handlePerformAction"
-        />
-      </div>
-    </template>
+  <div v-else class="flex items-center gap-x-2">
+    <!-- Rollout ready link for database change issues -->
+    <RolloutReadyLink v-if="shouldShowRolloutReadyLink" />
 
-    <!-- Show IssueReviewButton when review actions are available -->
-    <template v-else-if="showReviewButton">
-      <div class="flex items-center gap-x-2">
-        <IssueReviewButton
-          :can-approve="canApprove"
-          :can-reject="canReject"
-          :disabled="actionsDisabled"
-          :disabled-tooltip="disabledTooltip"
-        />
-        <!-- Secondary actions dropdown (excluding review actions) -->
-        <UnifiedActionGroup
-          v-if="nonReviewSecondaryActions.length > 0"
-          :secondary-actions="nonReviewSecondaryActions"
-          :disabled="actionsDisabled"
-          :disabled-tooltip="disabledTooltip"
-          @perform-action="handlePerformAction"
-        />
-      </div>
-    </template>
+    <!-- Primary action: special components for specific actions -->
+    <CreateIssueButton v-if="primaryAction?.id === 'ISSUE_CREATE'" />
+    <IssueReviewButton
+      v-else-if="primaryAction?.id === 'ISSUE_REVIEW'"
+      :can-approve="context.permissions.canApprove"
+      :can-reject="context.permissions.canReject"
+      :disabled="isActionDisabled(primaryAction)"
+    />
+    <ExportArchiveDownloadAction
+      v-else-if="primaryAction?.id === 'EXPORT_DOWNLOAD'"
+    />
+    <ActionButton
+      v-else-if="primaryAction"
+      :action="primaryAction"
+      :context="context"
+      :disabled="isActionDisabled(primaryAction)"
+      :disabled-reason="getDisabledReason(primaryAction)"
+      @execute="handlePerformAction"
+    />
 
-    <!-- Show unified actions for other plan states -->
-    <template v-else>
-      <UnifiedActionGroup
-        :primary-action="primaryAction"
-        :secondary-actions="secondaryActions"
-        :disabled="actionsDisabled"
-        :disabled-tooltip="disabledTooltip"
-        @perform-action="handlePerformAction"
-      />
-    </template>
-
-    <!-- Panels -->
-    <template v-if="issue">
-      <IssueStatusActionPanel
-        :action="pendingStatusAction"
-        @close="pendingStatusAction = undefined"
-      />
-    </template>
+    <!-- Secondary actions dropdown -->
+    <ActionDropdown
+      v-if="secondaryActions.length > 0"
+      :actions="secondaryActions"
+      :context="context"
+      :global-disabled="globalDisabled"
+      :global-disabled-reason="globalDisabledReason"
+      :is-action-disabled="isActionDisabled"
+      :get-disabled-reason="getDisabledReason"
+      @execute="handlePerformAction"
+    />
 
     <!-- Rollout Action Panel -->
     <template v-if="rollout && rolloutStage">
@@ -71,7 +52,7 @@
         @confirm="handleRolloutActionConfirm"
       />
     </template>
-  </template>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -80,37 +61,36 @@ import { useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { usePlanContext } from "@/components/Plan/logic";
+import { usePlanContext, useRolloutReadyLink } from "@/components/Plan/logic";
 import { useResourcePoller } from "@/components/Plan/logic/poller";
-import { useEditorState } from "@/components/Plan/logic/useEditorState";
 import TaskRolloutActionPanel from "@/components/RolloutV1/components/TaskRolloutActionPanel.vue";
-import { rolloutServiceClientConnect } from "@/grpcweb";
+import {
+  issueServiceClientConnect,
+  rolloutServiceClientConnect,
+} from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
+  BatchUpdateIssuesStatusRequestSchema,
+  IssueStatus,
+} from "@/types/proto-es/v1/issue_service_pb";
+import {
   CreateRolloutRequestSchema,
   Task_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  extractProjectResourceName,
-  extractRolloutUID,
-  isValidIssueName,
-  isValidPlanName,
-} from "@/utils";
+import { extractProjectResourceName, extractRolloutUID } from "@/utils";
 import { CreateButton, CreateIssueButton } from "./create";
-import { IssueStatusActionPanel } from "./panels";
-import {
-  type ActionConfig,
-  IssueReviewButton,
-  type IssueStatusAction,
-  type PlanAction,
-  type RolloutAction,
-  type UnifiedAction,
-  UnifiedActionGroup,
-  usePlanAction,
-} from "./unified";
+import { ExportArchiveDownloadAction } from "./export";
+import RolloutReadyLink from "./RolloutReadyLink.vue";
+import { ActionButton, ActionDropdown, useActionRegistry } from "./registry";
+import type {
+  IssueStatusAction,
+  RolloutAction,
+  UnifiedAction,
+} from "./registry/types";
+import { IssueReviewButton } from "./unified";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -119,32 +99,35 @@ const resourcePoller = useResourcePoller();
 const { project } = useCurrentProjectV1();
 const { isCreating, plan, issue, rollout, events } = usePlanContext();
 const planStore = usePlanStore();
-const editorState = useEditorState();
-const { availableActions, canApprove, canReject } = usePlanAction();
 const creatingRollout = ref(false);
+const { shouldShow: shouldShowRolloutReadyLink } = useRolloutReadyLink();
 
-// Computed property for actions disabled state.
-const actionsDisabled = computed(() => {
-  return editorState.isEditing.value;
+// Use the action registry
+const {
+  context,
+  primaryAction,
+  secondaryActions,
+  isActionDisabled,
+  getDisabledReason,
+} = useActionRegistry();
+
+// Global disabled state (for dropdown)
+const globalDisabled = computed(() => {
+  if (!primaryAction.value) return false;
+  return isActionDisabled(primaryAction.value);
 });
 
-// Tooltip message for disabled state.
-const disabledTooltip = computed(() => {
-  if (editorState.isEditing.value) {
-    return t("plan.editor.save-changes-before-continuing");
-  }
-  return "";
+const globalDisabledReason = computed(() => {
+  if (!primaryAction.value) return undefined;
+  return getDisabledReason(primaryAction.value);
 });
 
 // Panel visibility state
-const pendingStatusAction = ref<IssueStatusAction | undefined>(undefined);
 const pendingRolloutAction = ref<RolloutAction | undefined>(undefined);
 
 // Get the stage that contains database creation or export tasks
 const rolloutStage = computed(() => {
   if (!rollout.value) return undefined;
-
-  // Find the first stage with database creation or export tasks
   return rollout.value.stages.find((stage) =>
     stage.tasks.some(
       (task) =>
@@ -154,94 +137,12 @@ const rolloutStage = computed(() => {
   );
 });
 
-// Issue-only mode: when viewing an issue without a valid plan (legacy issues)
-const isIssueOnly = computed(() => {
-  return (
-    !isValidPlanName(plan.value.name) && isValidIssueName(issue.value?.name)
-  );
-});
-
-// Check if we should show CreateIssueButton instead of UnifiedActionGroup
-const showCreateIssueButton = computed(() => {
-  // Show CreateIssueButton when ISSUE_CREATE is available and not issue-only
-  return !isIssueOnly.value && availableActions.value.includes("ISSUE_CREATE");
-});
-
-// Show the unified review button when ISSUE_REVIEW is available
-const showReviewButton = computed(() => {
-  return availableActions.value.includes("ISSUE_REVIEW");
-});
-
-// Secondary actions excluding review action (for when review button is shown)
-const nonReviewSecondaryActions = computed((): ActionConfig[] => {
-  return secondaryActions.value.filter(
-    (config) => config.action !== "ISSUE_REVIEW"
-  );
-});
-
-const primaryAction = computed((): ActionConfig | undefined => {
-  const actions = availableActions.value;
-
-  // PLAN_REOPEN is primary when plan is deleted (skip for issue-only)
-  if (!isIssueOnly.value && actions.includes("PLAN_REOPEN")) {
-    return { action: "PLAN_REOPEN" };
-  }
-
-  // ISSUE_STATUS_REOPEN is primary when issue is closed or done
-  if (actions.includes("ISSUE_STATUS_REOPEN")) {
-    return { action: "ISSUE_STATUS_REOPEN" };
-  }
-
-  // ISSUE_REVIEW is handled by IssueReviewButton, not UnifiedActionGroup
-  // So we skip it here and let showReviewButton handle it
-
-  // ISSUE_STATUS_RESOLVE is primary when issue can be resolved
-  if (actions.includes("ISSUE_STATUS_RESOLVE")) {
-    return { action: "ISSUE_STATUS_RESOLVE" };
-  }
-
-  // ROLLOUT_CREATE is primary when issue exists but rollout doesn't
-  if (actions.includes("ROLLOUT_CREATE")) {
-    return { action: "ROLLOUT_CREATE" };
-  }
-
-  // Rollout actions as primary actions (high priority for force rollout scenarios)
-  if (actions.includes("ROLLOUT_START")) {
-    return { action: "ROLLOUT_START" };
-  }
-
-  return undefined;
-});
-
-const secondaryActions = computed((): ActionConfig[] => {
-  const actions = availableActions.value;
-  const secondary: ActionConfig[] = [];
-
-  // ISSUE_REVIEW is handled by IssueReviewButton, not in secondary actions
-  if (actions.includes("ROLLOUT_CREATE")) {
-    secondary.push({ action: "ROLLOUT_CREATE" });
-  }
-  if (actions.includes("ROLLOUT_CANCEL")) {
-    secondary.push({ action: "ROLLOUT_CANCEL" });
-  }
-  if (actions.includes("ISSUE_STATUS_CLOSE")) {
-    secondary.push({ action: "ISSUE_STATUS_CLOSE" });
-  }
-  // Skip PLAN_CLOSE for issue-only cases
-  if (!isIssueOnly.value && actions.includes("PLAN_CLOSE")) {
-    secondary.push({ action: "PLAN_CLOSE" });
-  }
-
-  return secondary;
-});
-
 const handlePerformAction = async (action: UnifiedAction) => {
   switch (action) {
-    // ISSUE_REVIEW is handled directly by IssueReviewButton
     case "ISSUE_STATUS_CLOSE":
     case "ISSUE_STATUS_REOPEN":
     case "ISSUE_STATUS_RESOLVE":
-      pendingStatusAction.value = action as IssueStatusAction;
+      await handleIssueStatusChange(action as IssueStatusAction);
       break;
     case "PLAN_CLOSE":
       await handlePlanStateChange("PLAN_CLOSE");
@@ -259,7 +160,56 @@ const handlePerformAction = async (action: UnifiedAction) => {
   }
 };
 
-const handlePlanStateChange = async (action: PlanAction) => {
+const handleIssueStatusChange = async (action: IssueStatusAction) => {
+  const issueValue = issue?.value;
+  if (!issueValue) return;
+
+  const actionConfig = {
+    ISSUE_STATUS_CLOSE: {
+      title: t("common.close"),
+      content: t("issue.status-transition.modal.close"),
+      status: IssueStatus.CANCELED,
+    },
+    ISSUE_STATUS_REOPEN: {
+      title: t("common.reopen"),
+      content: t("issue.status-transition.modal.reopen"),
+      status: IssueStatus.OPEN,
+    },
+    ISSUE_STATUS_RESOLVE: {
+      title: t("issue.batch-transition.resolve"),
+      content: t("issue.status-transition.modal.resolve"),
+      status: IssueStatus.DONE,
+    },
+  }[action];
+
+  const d = dialog.warning({
+    title: actionConfig.title,
+    content: actionConfig.content,
+    positiveText: actionConfig.title,
+    negativeText: t("common.cancel"),
+    onPositiveClick: async () => {
+      d.loading = true;
+      try {
+        const request = create(BatchUpdateIssuesStatusRequestSchema, {
+          parent: project.value.name,
+          issues: [issueValue.name],
+          status: actionConfig.status,
+        });
+        await issueServiceClientConnect.batchUpdateIssuesStatus(request);
+        events.emit("perform-issue-status-action", { action });
+      } catch (error) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("common.failed"),
+          description: String(error),
+        });
+      }
+    },
+  });
+};
+
+const handlePlanStateChange = async (action: "PLAN_CLOSE" | "PLAN_REOPEN") => {
   if (!plan?.value) return;
 
   const isClosing = action === "PLAN_CLOSE";
@@ -280,7 +230,6 @@ const handlePlanStateChange = async (action: PlanAction) => {
         await planStore.updatePlan({ ...plan.value, state: newState }, [
           "state",
         ]);
-        // The plan context should automatically refresh and redirect or update the UI.
         await resourcePoller.refreshResources();
       } catch (error) {
         pushNotification({
@@ -314,7 +263,6 @@ const handleCreateRollout = async () => {
       title: t("common.created"),
     });
 
-    // Redirect to rollout page
     router.push({
       name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
       params: {
@@ -335,8 +283,6 @@ const handleCreateRollout = async () => {
 };
 
 const handleRolloutActionConfirm = () => {
-  // The TaskRolloutActionPanel handles the actual execution
-  // We just need to emit status change to refresh the UI
   events.emit("status-changed", { eager: true });
   pendingRolloutAction.value = undefined;
 };

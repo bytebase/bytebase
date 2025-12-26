@@ -146,17 +146,18 @@ export function useInitializePlan(
       // Fetch the plan using the issue's plan reference
       planResult = await planStore.fetchPlanByName(issueResult.plan);
 
-      // Fetch the associated rollout (derive from plan name)
-      const rolloutName = getRolloutFromPlan(planResult.name);
-      try {
-        const rolloutRequest = create(GetRolloutRequestSchema, {
-          name: rolloutName,
-        });
-        const newRollout =
-          await rolloutServiceClientConnect.getRollout(rolloutRequest);
-        rolloutResult = newRollout;
-      } catch {
-        // Rollout might not exist yet, that's ok
+      if (planResult.hasRollout) {
+        try {
+          const rolloutName = getRolloutFromPlan(planResult.name);
+          const rolloutRequest = create(GetRolloutRequestSchema, {
+            name: rolloutName,
+          });
+          const newRollout =
+            await rolloutServiceClientConnect.getRollout(rolloutRequest);
+          rolloutResult = newRollout;
+        } catch {
+          // Rollout might not exist yet, that's ok
+        }
       }
     } else {
       // Direct plan ID
@@ -173,17 +174,18 @@ export function useInitializePlan(
         issueResult = newIssue;
       }
 
-      // If we have a plan, try to fetch the associated rollout (derive from plan name)
-      const rolloutName = getRolloutFromPlan(planResult.name);
-      try {
-        const rolloutRequest = create(GetRolloutRequestSchema, {
-          name: rolloutName,
-        });
-        const newRollout =
-          await rolloutServiceClientConnect.getRollout(rolloutRequest);
-        rolloutResult = newRollout;
-      } catch {
-        // Rollout might not exist yet, that's ok
+      if (planResult.hasRollout) {
+        try {
+          const rolloutName = getRolloutFromPlan(planResult.name);
+          const rolloutRequest = create(GetRolloutRequestSchema, {
+            name: rolloutName,
+          });
+          const newRollout =
+            await rolloutServiceClientConnect.getRollout(rolloutRequest);
+          rolloutResult = newRollout;
+        } catch {
+          // Rollout might not exist yet, that's ok
+        }
       }
     }
 

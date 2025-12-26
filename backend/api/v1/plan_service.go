@@ -397,19 +397,9 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		}
 	}
 
-	if err := s.store.UpdatePlan(ctx, planUpdate); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
-	}
-
-	updatedPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &oldPlan.UID,
-		ProjectID: &oldPlan.ProjectID,
-	})
+	updatedPlan, err := s.store.UpdatePlan(ctx, planUpdate)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get updated plan %q: %v", req.Plan.Name, err))
-	}
-	if updatedPlan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("updated plan %q not found", req.Plan.Name))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan %q: %v", req.Plan.Name, err))
 	}
 
 	if planCheckRunsTrigger {

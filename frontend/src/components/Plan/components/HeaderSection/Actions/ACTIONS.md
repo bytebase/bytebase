@@ -2,18 +2,61 @@
 
 This document describes all available actions in the Plan Header section, including visibility rules, permissions, and disabled states.
 
-## Overview
+## Architecture
 
-Actions are displayed in the Plan Header based on the current state of the plan, issue, and rollout. Actions are divided into:
+The action system uses a **Registry Pattern** for maintainability and type safety.
 
-- **Primary Actions**: Displayed as prominent buttons (usually blue or green)
-- **Secondary Actions**: Displayed in the dropdown menu (three-dot menu)
+### Core Components
+
+```
+Actions/
+├── registry/                    # Action Registry (source of truth)
+│   ├── types.ts                 # ActionContext, ActionDefinition interfaces
+│   ├── context.ts               # buildActionContext() - context builder
+│   ├── useActionRegistry.ts     # Main composable
+│   ├── actions/
+│   │   ├── plan.ts              # PLAN_CLOSE, PLAN_REOPEN
+│   │   ├── issue.ts             # ISSUE_CREATE, ISSUE_REVIEW, ISSUE_STATUS_*
+│   │   └── rollout.ts           # ROLLOUT_CREATE, ROLLOUT_START, ROLLOUT_CANCEL
+│   └── components/
+│       ├── ActionButton.vue     # Single action button
+│       └── ActionDropdown.vue   # Secondary actions dropdown
+├── unified/                     # Legacy components (compatibility layer)
+│   ├── UnifiedActionGroup.vue   # Button group with dropdown
+│   └── IssueReviewButton.vue    # Special review popover
+└── Actions.vue                  # Main orchestrator
+```
+
+### Key Concepts
+
+**ActionContext**: Single reactive object containing all state needed for action decisions:
+- Entities: plan, issue, rollout, project
+- Derived flags: isIssueOnly, isExportPlan, isCreator
+- Permissions: updatePlan, createIssue, updateIssue, createRollout, runTasks
+- Validation: hasEmptySpec, planChecksRunning, planChecksFailed
+
+**ActionDefinition**: Declarative action with pure functions:
+```typescript
+interface ActionDefinition {
+  id: UnifiedActionType;
+  label: (ctx: ActionContext) => string;
+  buttonType: "primary" | "success" | "default";
+  category: "primary" | "secondary";
+  priority: number;  // Lower = higher priority
+  isVisible: (ctx: ActionContext) => boolean;
+  isDisabled: (ctx: ActionContext) => boolean;
+  disabledReason: (ctx: ActionContext) => string | undefined;
+  executeType: ExecuteType;
+}
+```
+
+---
 
 ## Action Types
 
 ### Plan Actions
 
-#### `ISSUE_CREATE` (Primary)
+#### `ISSUE_CREATE` (Primary, Priority: 5)
 **Label**: "Ready for review"
 
 **Description**: Creates an issue from the plan and initiates the approval workflow.
@@ -29,85 +72,51 @@ Actions are displayed in the Plan Header based on the current state of the plan,
 - Plan checks are currently running
 - Plan checks failed and SQL review is enforced (`project.enforceSqlReview`)
 
-**Disabled Tooltip**:
-- "Missing statement"
-- "Plan checks are running"
-- "Some task checks didn't pass" (when SQL review enforced)
-
 ---
 
-#### `PLAN_CLOSE` (Secondary)
+#### `PLAN_CLOSE` (Secondary, Priority: 100)
 **Label**: "Close"
 
 **Description**: Closes (archives) the plan.
 
 **Visibility**:
-- Plan has no issue attached (`plan.issue === ""`)
-- Plan has no rollout attached (`plan.rollout === ""`)
+- Plan has no issue attached
+- Plan has no rollout attached
 - Plan is in ACTIVE state
 - User is the plan creator OR has `bb.plans.update` permission
 
 ---
 
-#### `PLAN_REOPEN` (Primary)
+#### `PLAN_REOPEN` (Primary, Priority: 10)
 **Label**: "Reopen"
 
 **Description**: Reopens a closed (archived) plan.
 
 **Visibility**:
-- Plan has no issue attached (`plan.issue === ""`)
-- Plan has no rollout attached (`plan.rollout === ""`)
+- Plan has no issue attached
+- Plan has no rollout attached
 - Plan is in DELETED state
 - User is the plan creator OR has `bb.plans.update` permission
 
 ---
 
-### Issue Review Actions
+### Issue Review Action
 
-#### `ISSUE_REVIEW_APPROVE` (Primary)
-**Label**: "Approve"
+#### `ISSUE_REVIEW` (Primary, Priority: 30)
+**Label**: "Review"
 
-**Description**: Approves the current approval step.
-
-**Visibility**:
-- Issue exists and is OPEN
-- Issue approval status is PENDING or REJECTED (not yet approved)
-- User is in the current approval step's candidate list
-
-**Notes**:
-- When issue has been rejected, only APPROVE action is shown (no REJECT)
-- Approval flow is determined by the approval template roles
-
----
-
-#### `ISSUE_REVIEW_REJECT` (Secondary)
-**Label**: "Send back"
-
-**Description**: Rejects the current approval step and sends the issue back.
+**Description**: Opens the unified review popover for approve/reject/comment.
 
 **Visibility**:
 - Issue exists and is OPEN
-- Issue approval status is PENDING (not yet approved)
-- Issue has NOT been rejected yet
-- User is in the current approval step's candidate list
-
----
-
-#### `ISSUE_REVIEW_RE_REQUEST` (Primary)
-**Label**: "Re-request review"
-
-**Description**: Re-requests approval after the issue was rejected.
-
-**Visibility**:
-- Issue exists and is OPEN
-- Issue has been rejected (at least one approver has REJECTED status)
-- User is the issue creator
+- Issue approval status is not APPROVED or SKIPPED
+- User is a candidate for the current approval step (canApprove or canReject)
 
 ---
 
 ### Issue Status Actions
 
-#### `ISSUE_STATUS_RESOLVE` (Primary)
+#### `ISSUE_STATUS_RESOLVE` (Primary, Priority: 50)
 **Label**: "Resolve"
 
 **Description**: Marks the issue as resolved (DONE).
@@ -120,18 +129,19 @@ Actions are displayed in the Plan Header based on the current state of the plan,
 
 ---
 
-#### `ISSUE_STATUS_CLOSE` (Secondary)
+#### `ISSUE_STATUS_CLOSE` (Secondary, Priority: 90)
 **Label**: "Close"
 
 **Description**: Closes the issue without resolving it (CANCELED).
 
 **Visibility**:
 - Issue exists and is OPEN
+- No rollout exists (can't close after rollout starts)
 - User has `bb.issues.update` permission
 
 ---
 
-#### `ISSUE_STATUS_REOPEN` (Primary)
+#### `ISSUE_STATUS_REOPEN` (Primary, Priority: 20)
 **Label**: "Reopen"
 
 **Description**: Reopens a closed or resolved issue.
@@ -144,7 +154,20 @@ Actions are displayed in the Plan Header based on the current state of the plan,
 
 ### Rollout Actions
 
-#### `ROLLOUT_START` (Primary)
+#### `ROLLOUT_CREATE` (Primary, Priority: 55)
+**Label**: "Create Rollout"
+
+**Description**: Creates a rollout from the approved issue.
+
+**Visibility**:
+- Plan has no rollout attached
+- Issue exists
+- User has `bb.rollouts.create` permission
+- Rollout preconditions met (approval status, plan checks)
+
+---
+
+#### `ROLLOUT_START` (Primary, Priority: 60)
 **Label**:
 - "Export" (for export data issues)
 - "Rollout" (for other issues)
@@ -152,32 +175,36 @@ Actions are displayed in the Plan Header based on the current state of the plan,
 **Description**: Starts or retries tasks in the rollout.
 
 **Visibility**:
-- Issue exists and is OPEN
+- Rollout exists
 - Issue approval status is APPROVED or SKIPPED
-- Rollout has at least one DATABASE_CREATE or DATABASE_EXPORT task
-- At least one task is in NOT_STARTED, FAILED, or CANCELED status
-- **Permission**:
-  - For DATABASE_EXPORT issues: User must be the issue creator
-  - For other issues: User must have `bb.taskRuns.create` permission OR match roles in environment rollout policy
-
-**Notes**:
-- For DATABASE_EXPORT issues, only the creator can export data (security restriction)
-- For other issues, the two-tier permission check applies:
-  1. Users with `bb.taskRuns.create` permission can always rollout
-  2. OR users with matching roles in the environment rollout policy can rollout
+- Has DATABASE_CREATE or DATABASE_EXPORT tasks
+- At least one task is startable (NOT_STARTED, FAILED, or CANCELED)
+- **Permission**: User has `bb.taskRuns.create` permission OR is creator (for exports)
 
 ---
 
-#### `ROLLOUT_CANCEL` (Secondary)
+#### `ROLLOUT_CANCEL` (Secondary, Priority: 80)
 **Label**: "Cancel"
 
 **Description**: Cancels running or pending tasks.
 
 **Visibility**:
-- Issue exists and is OPEN
+- Rollout exists
 - Issue approval status is APPROVED or SKIPPED
 - At least one task is in PENDING or RUNNING status
 - **Permission**: Same as ROLLOUT_START
+
+---
+
+#### `EXPORT_DOWNLOAD` (Primary, Priority: 0)
+**Label**: "Download"
+
+**Description**: Downloads completed export archive.
+
+**Visibility**:
+- Plan is an export plan
+- Export archive is ready
+- User is the issue creator
 
 ---
 
@@ -191,22 +218,21 @@ All actions are disabled when:
 
 ## Action Priority Order
 
-When multiple actions are available, they are prioritized as follows:
+Actions are sorted by priority (lower number = higher priority). The first visible primary action is shown as the main button.
 
-### Primary Actions (first match wins):
-1. `ISSUE_CREATE` - Create issue from plan
-2. `PLAN_REOPEN` - Reopen deleted plan
-3. `ISSUE_STATUS_REOPEN` - Reopen closed/done issue
-4. `ISSUE_REVIEW_APPROVE` - Approve current step
-5. `ISSUE_REVIEW_RE_REQUEST` - Re-request review after rejection
-6. `ISSUE_STATUS_RESOLVE` - Resolve completed issue
-7. `ROLLOUT_START` - Start/retry tasks
-
-### Secondary Actions (all matching actions shown):
-1. `ISSUE_REVIEW_REJECT` - Reject current approval step
-2. `ROLLOUT_CANCEL` - Cancel running tasks
-3. `ISSUE_STATUS_CLOSE` - Close issue
-4. `PLAN_CLOSE` - Close plan
+| Priority | Action | Category |
+|----------|--------|----------|
+| 0 | EXPORT_DOWNLOAD | primary |
+| 5 | ISSUE_CREATE | primary |
+| 10 | PLAN_REOPEN | primary |
+| 20 | ISSUE_STATUS_REOPEN | primary |
+| 30 | ISSUE_REVIEW | primary |
+| 50 | ISSUE_STATUS_RESOLVE | primary |
+| 55 | ROLLOUT_CREATE | primary |
+| 60 | ROLLOUT_START | primary |
+| 80 | ROLLOUT_CANCEL | secondary |
+| 90 | ISSUE_STATUS_CLOSE | secondary |
+| 100 | PLAN_CLOSE | secondary |
 
 ---
 
@@ -220,42 +246,57 @@ When multiple actions are available, they are prioritized as follows:
 - `bb.issues.update`: Close, reopen, or resolve issues
 
 ### Rollout Permissions
-- `bb.taskRuns.create`: Run rollout tasks (for non-export issues)
+- `bb.rollouts.create`: Create rollouts
+- `bb.taskRuns.create`: Run rollout tasks
 - **Issue creator**: Run export tasks (for DATABASE_EXPORT issues)
-- **Environment rollout policy roles**: Run tasks based on role matching
 
 ### Approval Permissions
 - **Approval template roles**: Approve or reject based on current approval step
 
 ---
 
-## Special Cases
+## Usage
 
-### Plan Actions Without Issue/Rollout
-Plan actions (PLAN_CLOSE, PLAN_REOPEN, ISSUE_CREATE) are only available when:
-- No issue is attached to the plan
-- No rollout is attached to the plan
+### Using the Action Registry
 
-**Rationale**: Once an issue or rollout is created, the plan enters a workflow state where plan-level actions are no longer appropriate. Users should interact with the issue/rollout instead.
+```typescript
+import { useActionRegistry } from "./registry";
 
-### Export Data Issues
-- Export button is labeled "Export" instead of "Rollout"
-- Only the issue creator can start the export (security restriction)
-- Export button shows only when approval is APPROVED or SKIPPED (not during review)
+const {
+  context,           // Reactive ActionContext
+  primaryAction,     // First visible primary action
+  secondaryActions,  // All visible secondary actions
+  isActionDisabled,  // Check if action is disabled
+  getDisabledReason, // Get disabled tooltip
+  executeAction,     // Execute action by ID
+} = useActionRegistry();
+```
 
-### Environment Rollout Policy
-When a user lacks `bb.taskRuns.create` permission, the system checks the environment rollout policy:
-1. Gets the database's effective environment
-2. Checks if a rollout policy exists for that environment
-3. If no policy exists: Allow rollout (no restrictions)
-4. If policy exists: Check if user has any of the required roles in the policy
+### Adding a New Action
 
-This allows fine-grained control over who can rollout tasks in specific environments.
+1. Define the action in the appropriate file (`registry/actions/*.ts`):
+```typescript
+export const MY_NEW_ACTION: ActionDefinition = {
+  id: "MY_NEW_ACTION",
+  label: () => t("my-action.label"),
+  buttonType: "primary",
+  category: "primary",
+  priority: 45,
+  isVisible: (ctx) => /* visibility logic */,
+  isDisabled: (ctx) => /* disabled logic */,
+  disabledReason: (ctx) => /* reason or undefined */,
+  executeType: "immediate",
+};
+```
+
+2. Add to the actions array in the same file
+3. Add the type to `registry/types.ts`
+4. Handle execution in `Actions.vue` if needed
 
 ---
 
 ## Implementation Files
 
-- **Actions.vue**: Main action logic and visibility rules (frontend/src/components/Plan/components/HeaderSection/Actions/Actions.vue)
-- **UnifiedActionGroup.vue**: Action button rendering (frontend/src/components/Plan/components/HeaderSection/Actions/unified/UnifiedActionGroup.vue)
-- **taskPermissions.ts**: Rollout permission checks (frontend/src/components/Plan/components/RolloutView/taskPermissions.ts)
+- **registry/**: Action registry (source of truth)
+- **Actions.vue**: Main orchestrator
+- **unified/**: Legacy components (compatibility layer)
