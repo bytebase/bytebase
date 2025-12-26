@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -210,21 +209,12 @@ func (s *Service) issueTokens(c echo.Context, client *store.OAuth2ClientMessage,
 	ctx := c.Request().Context()
 
 	// Generate access token (JWT)
-	now := time.Now()
-	claims := jwt.MapClaims{
-		"iss":       "bytebase",
-		"sub":       userEmail,
-		"aud":       auth.OAuth2AccessTokenAudience,
-		"exp":       now.Add(accessTokenExpiry).Unix(),
-		"iat":       now.Unix(),
-		"client_id": client.ClientID,
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token.Header["kid"] = "v1"
-	accessToken, err := token.SignedString([]byte(s.secret))
+	accessToken, err := auth.GenerateOAuth2AccessToken(userEmail, client.ClientID, s.secret, accessTokenExpiry)
 	if err != nil {
 		return oauth2Error(c, http.StatusInternalServerError, "server_error", "failed to generate access token")
 	}
+
+	now := time.Now()
 
 	// Generate refresh token if allowed
 	var refreshTokenStr string
