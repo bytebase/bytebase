@@ -32,17 +32,9 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
         // omit specified errors
       } else {
         if (code === Code.Unauthenticated && req.method.name !== "Login") {
-          // Don't retry refresh endpoint failures
+          // Don't retry refresh endpoint failures - just propagate error
+          // The caller (refreshTokens catch block) will handle the notification
           if (req.method.name === "Refresh") {
-            authStore.unauthenticatedOccurred = true;
-            if (authStore.isLoggedIn) {
-              pushNotification({
-                module: "bytebase",
-                style: "WARN",
-                title: t("auth.token-expired-title"),
-                description: t("auth.token-expired-description"),
-              });
-            }
             throw error;
           }
 
