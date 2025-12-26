@@ -1,7 +1,6 @@
 package store
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -9,11 +8,6 @@ import (
 )
 
 func TestGetListPlanFilter(t *testing.T) {
-	// Create a minimal store instance for testing
-	// Note: Some tests will be limited without a full database connection
-	s := &Store{}
-	ctx := context.Background()
-
 	tests := []struct {
 		name        string
 		filter      string
@@ -204,7 +198,7 @@ func TestGetListPlanFilter(t *testing.T) {
 				t.Skip("Test requires database connection")
 			}
 
-			q, err := s.GetListPlanFilter(ctx, tt.filter)
+			q, err := GetListPlanFilter(tt.filter)
 
 			if tt.wantErr {
 				require.Error(t, err)

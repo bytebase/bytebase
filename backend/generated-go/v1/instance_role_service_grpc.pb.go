@@ -19,7 +19,6 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	InstanceRoleService_GetInstanceRole_FullMethodName   = "/bytebase.v1.InstanceRoleService/GetInstanceRole"
 	InstanceRoleService_ListInstanceRoles_FullMethodName = "/bytebase.v1.InstanceRoleService/ListInstanceRoles"
 )
 
@@ -29,9 +28,6 @@ const (
 //
 // InstanceRoleService manages database roles within instances.
 type InstanceRoleServiceClient interface {
-	// Gets a database role from an instance.
-	// Permissions required: bb.instanceRoles.get
-	GetInstanceRole(ctx context.Context, in *GetInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error)
 	// Lists all database roles in an instance.
 	// Permissions required: bb.instanceRoles.list
 	ListInstanceRoles(ctx context.Context, in *ListInstanceRolesRequest, opts ...grpc.CallOption) (*ListInstanceRolesResponse, error)
@@ -43,16 +39,6 @@ type instanceRoleServiceClient struct {
 
 func NewInstanceRoleServiceClient(cc grpc.ClientConnInterface) InstanceRoleServiceClient {
 	return &instanceRoleServiceClient{cc}
-}
-
-func (c *instanceRoleServiceClient) GetInstanceRole(ctx context.Context, in *GetInstanceRoleRequest, opts ...grpc.CallOption) (*InstanceRole, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(InstanceRole)
-	err := c.cc.Invoke(ctx, InstanceRoleService_GetInstanceRole_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *instanceRoleServiceClient) ListInstanceRoles(ctx context.Context, in *ListInstanceRolesRequest, opts ...grpc.CallOption) (*ListInstanceRolesResponse, error) {
@@ -71,9 +57,6 @@ func (c *instanceRoleServiceClient) ListInstanceRoles(ctx context.Context, in *L
 //
 // InstanceRoleService manages database roles within instances.
 type InstanceRoleServiceServer interface {
-	// Gets a database role from an instance.
-	// Permissions required: bb.instanceRoles.get
-	GetInstanceRole(context.Context, *GetInstanceRoleRequest) (*InstanceRole, error)
 	// Lists all database roles in an instance.
 	// Permissions required: bb.instanceRoles.list
 	ListInstanceRoles(context.Context, *ListInstanceRolesRequest) (*ListInstanceRolesResponse, error)
@@ -87,9 +70,6 @@ type InstanceRoleServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedInstanceRoleServiceServer struct{}
 
-func (UnimplementedInstanceRoleServiceServer) GetInstanceRole(context.Context, *GetInstanceRoleRequest) (*InstanceRole, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetInstanceRole not implemented")
-}
 func (UnimplementedInstanceRoleServiceServer) ListInstanceRoles(context.Context, *ListInstanceRolesRequest) (*ListInstanceRolesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListInstanceRoles not implemented")
 }
@@ -112,24 +92,6 @@ func RegisterInstanceRoleServiceServer(s grpc.ServiceRegistrar, srv InstanceRole
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&InstanceRoleService_ServiceDesc, srv)
-}
-
-func _InstanceRoleService_GetInstanceRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetInstanceRoleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InstanceRoleServiceServer).GetInstanceRole(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: InstanceRoleService_GetInstanceRole_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceRoleServiceServer).GetInstanceRole(ctx, req.(*GetInstanceRoleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _InstanceRoleService_ListInstanceRoles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -157,10 +119,6 @@ var InstanceRoleService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "bytebase.v1.InstanceRoleService",
 	HandlerType: (*InstanceRoleServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "GetInstanceRole",
-			Handler:    _InstanceRoleService_GetInstanceRole_Handler,
-		},
 		{
 			MethodName: "ListInstanceRoles",
 			Handler:    _InstanceRoleService_ListInstanceRoles_Handler,

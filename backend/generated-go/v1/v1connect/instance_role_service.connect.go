@@ -33,9 +33,6 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// InstanceRoleServiceGetInstanceRoleProcedure is the fully-qualified name of the
-	// InstanceRoleService's GetInstanceRole RPC.
-	InstanceRoleServiceGetInstanceRoleProcedure = "/bytebase.v1.InstanceRoleService/GetInstanceRole"
 	// InstanceRoleServiceListInstanceRolesProcedure is the fully-qualified name of the
 	// InstanceRoleService's ListInstanceRoles RPC.
 	InstanceRoleServiceListInstanceRolesProcedure = "/bytebase.v1.InstanceRoleService/ListInstanceRoles"
@@ -43,9 +40,6 @@ const (
 
 // InstanceRoleServiceClient is a client for the bytebase.v1.InstanceRoleService service.
 type InstanceRoleServiceClient interface {
-	// Gets a database role from an instance.
-	// Permissions required: bb.instanceRoles.get
-	GetInstanceRole(context.Context, *connect.Request[v1.GetInstanceRoleRequest]) (*connect.Response[v1.InstanceRole], error)
 	// Lists all database roles in an instance.
 	// Permissions required: bb.instanceRoles.list
 	ListInstanceRoles(context.Context, *connect.Request[v1.ListInstanceRolesRequest]) (*connect.Response[v1.ListInstanceRolesResponse], error)
@@ -62,12 +56,6 @@ func NewInstanceRoleServiceClient(httpClient connect.HTTPClient, baseURL string,
 	baseURL = strings.TrimRight(baseURL, "/")
 	instanceRoleServiceMethods := v1.File_v1_instance_role_service_proto.Services().ByName("InstanceRoleService").Methods()
 	return &instanceRoleServiceClient{
-		getInstanceRole: connect.NewClient[v1.GetInstanceRoleRequest, v1.InstanceRole](
-			httpClient,
-			baseURL+InstanceRoleServiceGetInstanceRoleProcedure,
-			connect.WithSchema(instanceRoleServiceMethods.ByName("GetInstanceRole")),
-			connect.WithClientOptions(opts...),
-		),
 		listInstanceRoles: connect.NewClient[v1.ListInstanceRolesRequest, v1.ListInstanceRolesResponse](
 			httpClient,
 			baseURL+InstanceRoleServiceListInstanceRolesProcedure,
@@ -79,13 +67,7 @@ func NewInstanceRoleServiceClient(httpClient connect.HTTPClient, baseURL string,
 
 // instanceRoleServiceClient implements InstanceRoleServiceClient.
 type instanceRoleServiceClient struct {
-	getInstanceRole   *connect.Client[v1.GetInstanceRoleRequest, v1.InstanceRole]
 	listInstanceRoles *connect.Client[v1.ListInstanceRolesRequest, v1.ListInstanceRolesResponse]
-}
-
-// GetInstanceRole calls bytebase.v1.InstanceRoleService.GetInstanceRole.
-func (c *instanceRoleServiceClient) GetInstanceRole(ctx context.Context, req *connect.Request[v1.GetInstanceRoleRequest]) (*connect.Response[v1.InstanceRole], error) {
-	return c.getInstanceRole.CallUnary(ctx, req)
 }
 
 // ListInstanceRoles calls bytebase.v1.InstanceRoleService.ListInstanceRoles.
@@ -95,9 +77,6 @@ func (c *instanceRoleServiceClient) ListInstanceRoles(ctx context.Context, req *
 
 // InstanceRoleServiceHandler is an implementation of the bytebase.v1.InstanceRoleService service.
 type InstanceRoleServiceHandler interface {
-	// Gets a database role from an instance.
-	// Permissions required: bb.instanceRoles.get
-	GetInstanceRole(context.Context, *connect.Request[v1.GetInstanceRoleRequest]) (*connect.Response[v1.InstanceRole], error)
 	// Lists all database roles in an instance.
 	// Permissions required: bb.instanceRoles.list
 	ListInstanceRoles(context.Context, *connect.Request[v1.ListInstanceRolesRequest]) (*connect.Response[v1.ListInstanceRolesResponse], error)
@@ -110,12 +89,6 @@ type InstanceRoleServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewInstanceRoleServiceHandler(svc InstanceRoleServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	instanceRoleServiceMethods := v1.File_v1_instance_role_service_proto.Services().ByName("InstanceRoleService").Methods()
-	instanceRoleServiceGetInstanceRoleHandler := connect.NewUnaryHandler(
-		InstanceRoleServiceGetInstanceRoleProcedure,
-		svc.GetInstanceRole,
-		connect.WithSchema(instanceRoleServiceMethods.ByName("GetInstanceRole")),
-		connect.WithHandlerOptions(opts...),
-	)
 	instanceRoleServiceListInstanceRolesHandler := connect.NewUnaryHandler(
 		InstanceRoleServiceListInstanceRolesProcedure,
 		svc.ListInstanceRoles,
@@ -124,8 +97,6 @@ func NewInstanceRoleServiceHandler(svc InstanceRoleServiceHandler, opts ...conne
 	)
 	return "/bytebase.v1.InstanceRoleService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case InstanceRoleServiceGetInstanceRoleProcedure:
-			instanceRoleServiceGetInstanceRoleHandler.ServeHTTP(w, r)
 		case InstanceRoleServiceListInstanceRolesProcedure:
 			instanceRoleServiceListInstanceRolesHandler.ServeHTTP(w, r)
 		default:
@@ -136,10 +107,6 @@ func NewInstanceRoleServiceHandler(svc InstanceRoleServiceHandler, opts ...conne
 
 // UnimplementedInstanceRoleServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedInstanceRoleServiceHandler struct{}
-
-func (UnimplementedInstanceRoleServiceHandler) GetInstanceRole(context.Context, *connect.Request[v1.GetInstanceRoleRequest]) (*connect.Response[v1.InstanceRole], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceRoleService.GetInstanceRole is not implemented"))
-}
 
 func (UnimplementedInstanceRoleServiceHandler) ListInstanceRoles(context.Context, *connect.Request[v1.ListInstanceRolesRequest]) (*connect.Response[v1.ListInstanceRolesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceRoleService.ListInstanceRoles is not implemented"))

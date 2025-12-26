@@ -148,7 +148,7 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 		Offset:     &offset.offset,
 		HasRollout: &hasRollout,
 	}
-	if err := s.buildRolloutFindWithFilter(ctx, findPlan, request.Filter); err != nil {
+	if err := buildRolloutFindWithFilter(findPlan, request.Filter); err != nil {
 		return nil, err
 	}
 	plans, err := s.store.ListPlans(ctx, findPlan)
@@ -185,12 +185,12 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 }
 
 // buildRolloutFindWithFilter builds the filter for rollout find.
-func (s *RolloutService) buildRolloutFindWithFilter(ctx context.Context, planFind *store.FindPlanMessage, filter string) error {
+func buildRolloutFindWithFilter(planFind *store.FindPlanMessage, filter string) error {
 	if filter == "" {
 		return nil
 	}
 
-	filterQ, err := s.store.GetListRolloutFilter(ctx, filter)
+	filterQ, err := store.GetListRolloutFilter(filter)
 	if err != nil {
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	}

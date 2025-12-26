@@ -6,7 +6,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
@@ -15,21 +14,14 @@ import (
 // InstanceRoleService implements the database role service.
 type InstanceRoleService struct {
 	v1connect.UnimplementedInstanceRoleServiceHandler
-	store     *store.Store
-	dbFactory *dbfactory.DBFactory
+	store *store.Store
 }
 
 // NewInstanceRoleService creates a new InstanceRoleService.
-func NewInstanceRoleService(store *store.Store, dbFactory *dbfactory.DBFactory) *InstanceRoleService {
+func NewInstanceRoleService(store *store.Store) *InstanceRoleService {
 	return &InstanceRoleService{
-		store:     store,
-		dbFactory: dbFactory,
+		store: store,
 	}
-}
-
-// GetInstanceRole gets an role.
-func (*InstanceRoleService) GetInstanceRole(_ context.Context, _ *connect.Request[v1pb.GetInstanceRoleRequest]) (*connect.Response[v1pb.InstanceRole], error) {
-	return connect.NewResponse(&v1pb.InstanceRole{}), nil
 }
 
 // ListInstanceRoles retrieves the list of roles for a given instance.

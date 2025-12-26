@@ -11,26 +11,6 @@ import type { Message } from "@bufbuild/protobuf";
 export declare const file_v1_instance_role_service: GenFile;
 
 /**
- * @generated from message bytebase.v1.GetInstanceRoleRequest
- */
-export declare type GetInstanceRoleRequest = Message<"bytebase.v1.GetInstanceRoleRequest"> & {
-  /**
-   * The name of the role to retrieve.
-   * Format: instances/{instance}/roles/{role name}
-   * The role name is the unique name for the role.
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
-};
-
-/**
- * Describes the message bytebase.v1.GetInstanceRoleRequest.
- * Use `create(GetInstanceRoleRequestSchema)` to create a new message.
- */
-export declare const GetInstanceRoleRequestSchema: GenMessage<GetInstanceRoleRequest>;
-
-/**
  * @generated from message bytebase.v1.ListInstanceRolesRequest
  */
 export declare type ListInstanceRolesRequest = Message<"bytebase.v1.ListInstanceRolesRequest"> & {
@@ -170,17 +150,6 @@ export declare const InstanceRoleSchema: GenMessage<InstanceRole>;
  * @generated from service bytebase.v1.InstanceRoleService
  */
 export declare const InstanceRoleService: GenService<{
-  /**
-   * Gets a database role from an instance.
-   * Permissions required: bb.instanceRoles.get
-   *
-   * @generated from rpc bytebase.v1.InstanceRoleService.GetInstanceRole
-   */
-  getInstanceRole: {
-    methodKind: "unary";
-    input: typeof GetInstanceRoleRequestSchema;
-    output: typeof InstanceRoleSchema;
-  },
   /**
    * Lists all database roles in an instance.
    * Permissions required: bb.instanceRoles.list

@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"sync"
-	"time"
 
 	"google.golang.org/protobuf/proto"
 
@@ -48,12 +47,8 @@ func (rc *RolloutCreator) Run(ctx context.Context, wg *sync.WaitGroup, rolloutCr
 }
 
 // tryCreateRollout attempts to create a rollout for the given plan.
-func (rc *RolloutCreator) tryCreateRollout(_ context.Context, planID int64) {
-	// Use background context with timeout to avoid being affected by request cancellation
-	rolloutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	plan, err := rc.store.GetPlan(rolloutCtx, &store.FindPlanMessage{UID: &planID})
+func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, planID int64) {
+	plan, err := rc.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
 		slog.Error("failed to get plan for rollout creation",
 			slog.Int("plan_id", int(planID)),
@@ -72,7 +67,7 @@ func (rc *RolloutCreator) tryCreateRollout(_ context.Context, planID int64) {
 		return
 	}
 
-	issue, err := rc.store.GetIssue(rolloutCtx, &store.FindIssueMessage{PlanUID: &planID})
+	issue, err := rc.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planID})
 	if err != nil {
 		slog.Error("failed to get issue for rollout creation",
 			slog.Int("plan_id", int(planID)),
@@ -84,7 +79,7 @@ func (rc *RolloutCreator) tryCreateRollout(_ context.Context, planID int64) {
 		return
 	}
 
-	project, err := rc.store.GetProject(rolloutCtx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
+	project, err := rc.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
 	if err != nil {
 		slog.Error("failed to get project for rollout creation",
 			slog.String("project_id", plan.ProjectID),
@@ -111,7 +106,7 @@ func (rc *RolloutCreator) tryCreateRollout(_ context.Context, planID int64) {
 	}
 
 	// Check plan check status (must have no errors)
-	planCheckRun, err := rc.store.GetPlanCheckRun(rolloutCtx, planID)
+	planCheckRun, err := rc.store.GetPlanCheckRun(ctx, planID)
 	if err != nil {
 		slog.Error("failed to get plan check run for rollout creation",
 			slog.Int("plan_id", int(planID)),
@@ -145,7 +140,7 @@ func (rc *RolloutCreator) tryCreateRollout(_ context.Context, planID int64) {
 	slog.Info("auto-creating rollout", slog.Int("plan_id", int(planID)))
 
 	// Get pipeline create (tasks to create)
-	pipelineCreate, err := apiv1.GetPipelineCreate(rolloutCtx, rc.store, plan.Config.GetSpecs(), project.ResourceID)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, rc.store, plan.Config.GetSpecs(), project.ResourceID)
 	if err != nil {
 		slog.Error("failed to get pipeline create for rollout creation",
 			slog.Int("plan_id", int(planID)),
@@ -154,7 +149,7 @@ func (rc *RolloutCreator) tryCreateRollout(_ context.Context, planID int64) {
 	}
 
 	// Create rollout tasks
-	_, err = rc.store.CreateRolloutTasks(rolloutCtx, planID, pipelineCreate)
+	_, err = rc.store.CreateRolloutTasks(ctx, planID, pipelineCreate)
 	if err != nil {
 		slog.Error("failed to create rollout tasks",
 			slog.Int("plan_id", int(planID)),
@@ -165,7 +160,7 @@ func (rc *RolloutCreator) tryCreateRollout(_ context.Context, planID int64) {
 	// Update plan to set hasRollout to true
 	config := proto.CloneOf(plan.Config)
 	config.HasRollout = true
-	_, err = rc.store.UpdatePlan(rolloutCtx, &store.UpdatePlanMessage{
+	_, err = rc.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
 		UID:    planID,
 		Config: config,
 	})

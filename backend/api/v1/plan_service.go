@@ -156,7 +156,7 @@ func (s *PlanService) SearchPlans(ctx context.Context, request *connect.Request[
 	if projectID != "-" {
 		find.ProjectID = &projectID
 	}
-	filterQ, err := s.store.GetListPlanFilter(ctx, req.Filter)
+	filterQ, err := store.GetListPlanFilter(req.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}

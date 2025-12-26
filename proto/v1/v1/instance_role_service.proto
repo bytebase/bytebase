@@ -12,15 +12,6 @@ option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 // InstanceRoleService manages database roles within instances.
 service InstanceRoleService {
-  // Gets a database role from an instance.
-  // Permissions required: bb.instanceRoles.get
-  rpc GetInstanceRole(GetInstanceRoleRequest) returns (InstanceRole) {
-    option (google.api.http) = {get: "/v1/{name=instances/*/roles/*}"};
-    option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.instanceRoles.get";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   // Lists all database roles in an instance.
   // Permissions required: bb.instanceRoles.list
   rpc ListInstanceRoles(ListInstanceRolesRequest) returns (ListInstanceRolesResponse) {
@@ -29,16 +20,6 @@ service InstanceRoleService {
     option (bytebase.v1.permission) = "bb.instanceRoles.list";
     option (bytebase.v1.auth_method) = IAM;
   }
-}
-
-message GetInstanceRoleRequest {
-  // The name of the role to retrieve.
-  // Format: instances/{instance}/roles/{role name}
-  // The role name is the unique name for the role.
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/InstanceRole"}
-  ];
 }
 
 message ListInstanceRolesRequest {

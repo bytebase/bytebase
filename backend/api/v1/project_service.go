@@ -575,7 +575,7 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	iamPolicy, err := convertToV1IamPolicy(ctx, s.store, policy)
+	iamPolicy, err := convertToV1IamPolicy(policy)
 	if err != nil {
 		return nil, err
 	}
@@ -618,7 +618,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("IAM Policy must have at least one binding with %s", common.ProjectOwner))
 	}
 
-	policy, err := convertToStoreIamPolicy(ctx, s.store, req.Msg.Policy)
+	policy, err := convertToStoreIamPolicy(req.Msg.Policy)
 	if err != nil {
 		return nil, err
 	}
@@ -653,7 +653,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		setServiceData(p)
 	}
 
-	iamPolicy, err := convertToV1IamPolicy(ctx, s.store, iamPolicyMessage)
+	iamPolicy, err := convertToV1IamPolicy(iamPolicyMessage)
 	if err != nil {
 		return nil, err
 	}

@@ -2805,40 +2805,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/instances/{instance}/roles/{role}:
-        get:
-            tags:
-                - InstanceRoleService
-            description: |-
-                Gets a database role from an instance.
-                 Permissions required: bb.instanceRoles.get
-            operationId: InstanceRoleService_GetInstanceRole
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: role
-                  in: path
-                  description: The role id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/InstanceRole'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}:addDataSource:
         post:
             tags:
