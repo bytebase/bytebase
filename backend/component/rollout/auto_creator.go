@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -19,16 +20,11 @@ import (
 // RolloutCreator handles automatic rollout creation.
 type RolloutCreator struct {
 	store          *store.Store
-	rolloutService RolloutService
-}
-
-// RolloutService defines the interface for rollout operations.
-type RolloutService interface {
-	CreateRollout(ctx context.Context, req *connect.Request[v1pb.CreateRolloutRequest]) (*connect.Response[v1pb.Rollout], error)
+	rolloutService *apiv1.RolloutService
 }
 
 // NewRolloutCreator creates a new rollout creator.
-func NewRolloutCreator(store *store.Store, rolloutService RolloutService) *RolloutCreator {
+func NewRolloutCreator(store *store.Store, rolloutService *apiv1.RolloutService) *RolloutCreator {
 	return &RolloutCreator{
 		store:          store,
 		rolloutService: rolloutService,
