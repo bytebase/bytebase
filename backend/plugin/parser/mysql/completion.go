@@ -1235,7 +1235,7 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 
 	start := 0
 	for i, sql := range list {
-		// sql.End uses 1-based line and column
+		// Both caretLine and End.Line are 1-based
 		sqlEndLine := int(sql.End.GetLine())
 		sqlEndColumn := int(sql.End.GetColumn())
 		if sqlEndLine > caretLine || (sqlEndLine == caretLine && sqlEndColumn >= caretOffset) {

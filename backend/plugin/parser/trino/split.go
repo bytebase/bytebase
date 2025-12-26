@@ -1,8 +1,6 @@
 package trino
 
 import (
-	"strings"
-
 	"github.com/antlr4-go/antlr/v4"
 	trinoparser "github.com/bytebase/parser/trino"
 
@@ -28,76 +26,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 
 func splitByTokenizer(statement string) ([]base.Statement, error) {
 	t := tokenizer.NewTokenizer(statement)
-	list, err := t.SplitStandardMultiSQL()
-	if err != nil {
-		return nil, err
-	}
-
-	// The tokenizer doesn't provide accurate position information.
-	// We need to manually calculate positions based on the text.
-	lines := strings.Split(statement, "\n")
-	lineStarts := make([]int, len(lines))
-	pos := 0
-	for i, line := range lines {
-		lineStarts[i] = pos
-		pos += len(line) + 1 // +1 for newline
-	}
-
-	currentPos := 0
-	for i := range list {
-		if list[i].Empty {
-			continue
-		}
-
-		// Find the start position
-		startIdx := strings.Index(statement[currentPos:], list[i].Text)
-		if startIdx == -1 {
-			continue
-		}
-		startIdx += currentPos
-
-		// Calculate line and column for start
-		startLine, startCol := 0, 0
-		for j, lineStart := range lineStarts {
-			if startIdx < lineStart {
-				break
-			}
-			startLine = j
-			startCol = startIdx - lineStart
-		}
-
-		// Calculate end position
-		endIdx := startIdx + len(list[i].Text)
-		endLine, endCol := 0, 0
-		for j, lineStart := range lineStarts {
-			if endIdx <= lineStart {
-				break
-			}
-			endLine = j
-			endCol = endIdx - lineStart
-		}
-		// If we're exactly at the start of a new line, we're at the end of the previous line
-		if endCol == 0 && endLine > 0 {
-			endLine--
-			if endLine < len(lines) {
-				endCol = len(lines[endLine])
-			}
-		}
-
-		list[i].Start = &storepb.Position{
-			Line:   int32(startLine),
-			Column: int32(startCol),
-		}
-		list[i].End = &storepb.Position{
-			Line:   int32(endLine),
-			Column: int32(endCol),
-		}
-		list[i].BaseLine = startLine
-
-		currentPos = endIdx
-	}
-
-	return list, nil
+	return t.SplitStandardMultiSQL()
 }
 
 func splitByParser(statement string) ([]base.Statement, error) {
@@ -133,7 +62,6 @@ func splitByParser(statement string) ([]base.Statement, error) {
 	var result []base.Statement
 	tokens := stream.GetAllTokens()
 
-	byteOffset := 0
 	// Walk through all statements
 	for _, stmts := range tree.AllStatements() {
 		if stmts == nil {
@@ -183,31 +111,32 @@ func splitByParser(statement string) ([]base.Statement, error) {
 
 		// Get the text including any trailing semicolon
 		text := stream.GetTextFromInterval(antlr.NewInterval(startIdx, finalEndIdx))
-		stmtByteLength := len(text)
 
-		// Calculate proper end position
+		// Calculate proper end position (1-based exclusive per proto spec)
 		endToken := tokens[finalEndIdx]
-		endLine := endToken.GetLine() - 1
-		endColumn := endToken.GetColumn() + len(endToken.GetText())
+
+		// Use actual token positions for Range instead of cumulative offset
+		// GetStart() returns byte offset of first character, GetStop() returns byte offset of last character
+		rangeStart := firstDefaultToken.GetStart()
+		rangeEnd := endToken.GetStop() + 1 // exclusive end
 
 		result = append(result, base.Statement{
 			Text:     text,
 			BaseLine: firstToken.GetLine() - 1,
 			Range: &storepb.Range{
-				Start: int32(byteOffset),
-				End:   int32(byteOffset + stmtByteLength),
+				Start: int32(rangeStart),
+				End:   int32(rangeEnd),
 			},
 			Start: &storepb.Position{
-				Line:   int32(firstDefaultToken.GetLine() - 1),
-				Column: int32(firstDefaultToken.GetColumn()),
+				Line:   int32(firstDefaultToken.GetLine()),       // 1-based (ANTLR line is already 1-based)
+				Column: int32(firstDefaultToken.GetColumn() + 1), // 1-based (ANTLR column is 0-based)
 			},
 			End: &storepb.Position{
-				Line:   int32(endLine),
-				Column: int32(endColumn),
+				Line:   int32(endToken.GetLine()),                                 // 1-based
+				Column: int32(endToken.GetColumn() + len(endToken.GetText()) + 1), // 1-based exclusive
 			},
 			Empty: false,
 		})
-		byteOffset += stmtByteLength
 	}
 
 	return result, nil

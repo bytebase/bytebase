@@ -416,14 +416,15 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.Statement{
-					Text: text,
-					End: &store.Position{
-						Line: int32(t.line - 1), // Convert to 0-based.
-					},
-					// TODO(zp/position): fix column, use bytes instead of rune.
+					Text:     text,
+					BaseLine: firstStatementLine - 1, // 0-based line of first token
 					Start: &store.Position{
-						Line:   int32(firstStatementLine - 1), // Convert to 0-based.
+						Line:   int32(firstStatementLine), // 1-based per proto spec
 						Column: int32(firstStatementColumn),
+					},
+					End: &store.Position{
+						Line:   int32(t.line),        // 1-based per proto spec
+						Column: int32(t.getColumn()), // 1-based exclusive (after semicolon)
 					},
 					Empty: t.emptyStatement,
 					Range: &store.Range{
@@ -444,25 +445,19 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.Statement, error) {
 			s := t.getString(startPos, t.pos())
 			if !emptyString(s) {
 				if t.f == nil {
+					// For EOF case, we need to find the position of the last content character.
+					// The cursor might be past all content (on blank lines or at EOF).
+					endLine := t.line - t.aboveNonBlankLineDistance()
 					res = append(res, base.Statement{
-						Text: s,
-						// Consider this text:
-						// CREATE TABLE t(
-						//   a int
-						// )
-						//
-						// EOF line
-						//
-						// Our current location is the EOF line.
-						// The line t.line is the line of ')',
-						// but we want to get the line of last line of the SQL
-						// which means the line of ')'.
-						// So we need minus the aboveNonBlankLineDistance.
-						End: &store.Position{Line: int32(t.line - t.aboveNonBlankLineDistance() - 1)},
-						// TODO(zp/position): fix column, use bytes instead of rune.
+						Text:     s,
+						BaseLine: firstStatementLine - 1, // 0-based line of first token
 						Start: &store.Position{
-							Line:   int32(firstStatementLine - 1), // Convert to 0-based.
+							Line:   int32(firstStatementLine), // 1-based per proto spec
 							Column: int32(firstStatementColumn),
+						},
+						End: &store.Position{
+							Line:   int32(endLine),                  // 1-based per proto spec
+							Column: int32(t.getLastContentColumn()), // 1-based exclusive
 						},
 						Empty: t.emptyStatement,
 						Range: &store.Range{

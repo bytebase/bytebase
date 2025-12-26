@@ -96,7 +96,7 @@ func TestCompletion(t *testing.T) {
 		if record {
 			tests[i].Want = filteredResult
 		} else {
-			a.Equalf(t.Want, filteredResult, t.Input, "Case %02d: %s", i, t.Description)
+			a.Equalf(t.Want, filteredResult, "Case %02d: %s", i, t.Input)
 		}
 	}
 
