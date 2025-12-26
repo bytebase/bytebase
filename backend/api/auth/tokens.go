@@ -31,7 +31,6 @@ func HashToken(token string) string {
 
 // claimsMessage is the JWT claims structure for web authentication tokens.
 type claimsMessage struct {
-	Name string `json:"name"`
 	jwt.RegisteredClaims
 }
 
@@ -62,7 +61,6 @@ func GenerateMFATempToken(userEmail string, mode common.ReleaseMode, secret stri
 // generateToken creates a JWT token for web authentication.
 func generateToken(userEmail string, aud string, expirationTime time.Time, secret []byte) (string, error) {
 	claims := &claimsMessage{
-		Name: userEmail,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Audience:  jwt.ClaimStrings{aud},
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
@@ -90,7 +88,6 @@ func generateOAuth2Token(userEmail, clientID, aud string, expirationTime time.Ti
 	claims := &oauth2ClaimsMessage{
 		ClientID: clientID,
 		claimsMessage: claimsMessage{
-			Name: userEmail,
 			RegisteredClaims: jwt.RegisteredClaims{
 				Audience:  jwt.ClaimStrings{aud},
 				ExpiresAt: jwt.NewNumericDate(expirationTime),
