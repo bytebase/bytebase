@@ -15,7 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 const (
@@ -23,13 +22,12 @@ const (
 )
 
 // NewScheduler creates a new plan check scheduler.
-func NewScheduler(s *store.Store, licenseService *enterprise.LicenseService, stateCfg *state.State, executor *CombinedExecutor, rolloutService utils.RolloutServiceInterface) *Scheduler {
+func NewScheduler(s *store.Store, licenseService *enterprise.LicenseService, stateCfg *state.State, executor *CombinedExecutor) *Scheduler {
 	return &Scheduler{
 		store:          s,
 		licenseService: licenseService,
 		stateCfg:       stateCfg,
 		executor:       executor,
-		rolloutService: rolloutService,
 	}
 }
 
@@ -39,7 +37,6 @@ type Scheduler struct {
 	licenseService *enterprise.LicenseService
 	stateCfg       *state.State
 	executor       *CombinedExecutor
-	rolloutService utils.RolloutServiceInterface
 }
 
 // Run runs the scheduler.
@@ -137,20 +134,8 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, planCheckRun *stor
 			log.BBError(err))
 		return
 	}
-	if issue != nil {
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					slog.Error("panic in TryCreateRollout after plan check",
-						slog.Int("issue_id", issue.UID),
-						slog.Any("panic", r))
-				}
-			}()
-			// Use a fresh context with timeout to avoid being affected by request cancellation
-			rolloutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cancel()
-			utils.TryCreateRollout(rolloutCtx, s.store, s.rolloutService, issue.UID)
-		}()
+	if issue != nil && issue.PlanUID != nil {
+		s.stateCfg.RolloutCreationChan <- planCheckRun.PlanUID
 	}
 }
 

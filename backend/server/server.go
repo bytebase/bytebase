@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	rolloutcomponent "github.com/bytebase/bytebase/backend/component/rollout"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -194,11 +195,16 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.taskScheduler.Register(storepb.Task_DATABASE_EXPORT, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 	s.taskScheduler.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 
-	// Create rollout service (needed by both plan check scheduler and gRPC routes)
+	// Create rollout service (needed by rollout creator and gRPC routes)
 	rolloutService := apiv1.NewRolloutService(stores, sheetManager, s.licenseService, s.dbFactory, s.stateCfg, s.webhookManager, profile, s.iamManager)
 
+	// Create rollout creator component
+	rolloutCreator := rolloutcomponent.NewRolloutCreator(stores, rolloutService)
+	s.runnerWG.Add(1)
+	go rolloutCreator.Run(ctx, &s.runnerWG, s.stateCfg.RolloutCreationChan)
+
 	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory, s.licenseService)
-	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg, combinedExecutor, rolloutService)
+	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg, combinedExecutor)
 
 	// Data cleaner
 	s.dataCleaner = cleaner.NewDataCleaner(stores)

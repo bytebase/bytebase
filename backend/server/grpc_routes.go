@@ -106,7 +106,7 @@ func configureGrpcRouters(
 	reviewConfigService := apiv1.NewReviewConfigService(stores, licenseService)
 	revisionService := apiv1.NewRevisionService(stores)
 	roleService := apiv1.NewRoleService(stores, iamManager, licenseService)
-	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager, rolloutService)
+	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager)
 	settingService := apiv1.NewSettingService(stores, profile, licenseService, stateCfg)
 	sheetService := apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile)
 	sqlService := apiv1.NewSQLService(stores, sheetManager, schemaSyncer, dbFactory, licenseService, profile, iamManager)

@@ -43,6 +43,9 @@ type State struct {
 	// TaskRunTickleChan is the tickler for task run scheduler.
 	TaskRunTickleChan chan int
 
+	// RolloutCreationChan is the channel for automatic rollout creation.
+	RolloutCreationChan chan int64
+
 	ExpireCache *lru.Cache[string, bool]
 }
 
@@ -57,6 +60,7 @@ func New() (*State, error) {
 		TaskSkippedOrDoneChan:          make(chan int, 1000),
 		PlanCheckTickleChan:            make(chan int, 1000),
 		TaskRunTickleChan:              make(chan int, 1000),
+		RolloutCreationChan:            make(chan int64, 100),
 		ExpireCache:                    expireCache,
 	}, nil
 }
