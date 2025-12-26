@@ -51,6 +51,7 @@ func configureGrpcRouters(
 	iamManager *iam.Manager,
 	secret string,
 	sampleInstanceManager *sampleinstance.Manager,
+	rolloutService *apiv1.RolloutService,
 ) error {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
@@ -105,7 +106,6 @@ func configureGrpcRouters(
 	reviewConfigService := apiv1.NewReviewConfigService(stores, licenseService)
 	revisionService := apiv1.NewRevisionService(stores)
 	roleService := apiv1.NewRoleService(stores, iamManager, licenseService)
-	rolloutService := apiv1.NewRolloutService(stores, sheetManager, licenseService, dbFactory, stateCfg, webhookManager, profile, iamManager)
 	issueService := apiv1.NewIssueService(stores, webhookManager, stateCfg, licenseService, profile, iamManager, rolloutService)
 	settingService := apiv1.NewSettingService(stores, profile, licenseService, stateCfg)
 	sheetService := apiv1.NewSheetService(stores, sheetManager, licenseService, iamManager, profile)

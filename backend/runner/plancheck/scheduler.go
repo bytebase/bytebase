@@ -22,12 +22,15 @@ const (
 )
 
 // NewScheduler creates a new plan check scheduler.
-func NewScheduler(s *store.Store, licenseService *enterprise.LicenseService, stateCfg *state.State, executor *CombinedExecutor) *Scheduler {
+func NewScheduler(s *store.Store, licenseService *enterprise.LicenseService, stateCfg *state.State, executor *CombinedExecutor, rolloutService interface {
+	TryCreateRollout(ctx context.Context, issueID int)
+}) *Scheduler {
 	return &Scheduler{
 		store:          s,
 		licenseService: licenseService,
 		stateCfg:       stateCfg,
 		executor:       executor,
+		rolloutService: rolloutService,
 	}
 }
 
@@ -37,6 +40,9 @@ type Scheduler struct {
 	licenseService *enterprise.LicenseService
 	stateCfg       *state.State
 	executor       *CombinedExecutor
+	rolloutService interface {
+		TryCreateRollout(ctx context.Context, issueID int)
+	}
 }
 
 // Run runs the scheduler.
@@ -123,6 +129,31 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, planCheckRun *stor
 		planCheckRun.UID,
 	); err != nil {
 		slog.Error("failed to mark plan check run done", log.BBError(err))
+		return
+	}
+
+	// Auto-create rollout if plan checks pass
+	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planCheckRun.PlanUID})
+	if err != nil {
+		slog.Error("failed to get issue for rollout creation after plan check",
+			slog.Int("plan_id", int(planCheckRun.PlanUID)),
+			log.BBError(err))
+		return
+	}
+	if issue != nil {
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Error("panic in TryCreateRollout after plan check",
+						slog.Int("issue_id", issue.UID),
+						slog.Any("panic", r))
+				}
+			}()
+			// Use a fresh context with timeout to avoid being affected by request cancellation
+			rolloutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			s.rolloutService.TryCreateRollout(rolloutCtx, issue.UID)
+		}()
 	}
 }
 
