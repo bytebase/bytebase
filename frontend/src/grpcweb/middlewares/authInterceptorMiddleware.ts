@@ -38,13 +38,11 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
             throw error;
           }
 
-          // Try to refresh the token
+          // Try to refresh - catch ONLY refresh failures
           try {
             await refreshTokens();
-            // Retry the original request
-            return await next(req);
           } catch {
-            // Refresh failed, show login notification
+            // Refresh itself failed - auth is broken
             authStore.unauthenticatedOccurred = true;
             if (authStore.isLoggedIn) {
               pushNotification({
@@ -54,6 +52,31 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
                 description: t("auth.token-expired-description"),
               });
             }
+            throw error;
+          }
+
+          // Refresh succeeded - retry the original request
+          try {
+            return await next(req);
+          } catch (retryError) {
+            // Retry failed - check if it's also an auth error
+            if (
+              retryError instanceof ConnectError &&
+              retryError.code === Code.Unauthenticated
+            ) {
+              // New token also invalid (edge case) - auth is broken
+              authStore.unauthenticatedOccurred = true;
+              if (authStore.isLoggedIn) {
+                pushNotification({
+                  module: "bytebase",
+                  style: "WARN",
+                  title: t("auth.token-expired-title"),
+                  description: t("auth.token-expired-description"),
+                });
+              }
+            }
+            // Throw retry error (not original) - let other handlers deal with it
+            throw retryError;
           }
         } else if (code === Code.PermissionDenied) {
           router.push({ name: "error.403" });
