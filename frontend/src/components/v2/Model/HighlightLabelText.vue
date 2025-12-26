@@ -1,5 +1,5 @@
 <template>
-  <span v-if="!keyword.trim()" v-bind="$attrs">{{ text }}</span>
+  <span v-if="!keyword?.trim()" v-bind="$attrs">{{ text }}</span>
   <!-- eslint-disable-next-line vue/no-v-html -->
   <span v-else v-bind="$attrs" v-html="html" />
 </template>
@@ -11,13 +11,13 @@ import { getHighlightHTMLByRegExp } from "@/utils";
 
 const props = defineProps<{
   text: string;
-  keyword: string;
+  keyword?: string;
 }>();
 
 const html = computed(() => {
   return getHighlightHTMLByRegExp(
     escape(props.text),
-    escape(props.keyword.trim()),
+    escape(props.keyword?.trim() ?? ""),
     false /* !caseSensitive */
   );
 });

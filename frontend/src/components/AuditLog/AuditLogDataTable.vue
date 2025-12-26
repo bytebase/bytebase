@@ -18,14 +18,15 @@ import { ExternalLinkIcon } from "lucide-vue-next";
 import { type DataTableColumn, NButton, NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import BBAvatar from "@/bbkit/BBAvatar.vue";
-import { useProjectV1Store, useUserStore } from "@/store";
+import { ProjectV1Name } from "@/components/v2";
+import { UserLink } from "@/components/v2/Model/cells";
 import {
+  extractUserId,
   getProjectIdRolloutUidStageUid,
   projectNamePrefix,
   rolloutNamePrefix,
 } from "@/store/modules/v1/common";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import { emptyProject, getDateForPbTimestampProtoEs } from "@/types";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import type { AuditLog } from "@/types/proto-es/v1/audit_log_service_pb";
 import {
@@ -68,8 +69,6 @@ const props = withDefaults(
 );
 
 const { t } = useI18n();
-const projectStore = useProjectV1Store();
-const userStore = useUserStore();
 
 const columnList = computed((): AuditDataTableColumn[] => {
   return (
@@ -77,7 +76,11 @@ const columnList = computed((): AuditDataTableColumn[] => {
       {
         key: "created-ts",
         title: t("audit-log.table.created-ts"),
-        width: 240,
+        width: 220,
+        resizable: true,
+        ellipsis: {
+          tooltip: true,
+        },
         render: (auditLog) =>
           dayjs(getDateForPbTimestampProtoEs(auditLog.createTime)).format(
             "YYYY-MM-DD HH:mm:ss Z"
@@ -85,24 +88,27 @@ const columnList = computed((): AuditDataTableColumn[] => {
       },
       {
         key: "severity",
-        width: 96,
+        width: 60,
         title: t("audit-log.table.level"),
         render: (auditLog) => AuditLog_Severity[auditLog.severity],
       },
       {
         key: "project",
-        width: 96,
+        width: 120,
         title: t("common.project"),
+        resizable: true,
         hide: !props.showProject,
         render: (auditLog) => {
           const projectResourceId = extractProjectResourceName(auditLog.name);
           if (!projectResourceId) {
             return <span>-</span>;
           }
-          const project = projectStore.getProjectByName(
-            `${projectNamePrefix}${projectResourceId}`
-          );
-          return <span>{project.title}</span>;
+          const mockProject = {
+            ...emptyProject(),
+            name: `${projectNamePrefix}${projectResourceId}`,
+            title: projectResourceId,
+          };
+          return <ProjectV1Name project={mockProject} />;
         },
       },
       {
@@ -110,23 +116,22 @@ const columnList = computed((): AuditDataTableColumn[] => {
         resizable: true,
         width: 256,
         title: t("audit-log.table.method"),
+        ellipsis: {
+          tooltip: true,
+        },
         render: (auditLog) => auditLog.method,
       },
       {
         key: "actor",
-        width: 128,
+        width: 180,
         title: t("audit-log.table.actor"),
+        resizable: true,
         render: (auditLog) => {
-          const user = userStore.getUserByIdentifier(auditLog.user);
-          if (!user) {
+          if (!auditLog.user) {
             return <span>-</span>;
           }
-          return (
-            <div class="flex flex-row items-center overflow-hidden gap-x-1">
-              <BBAvatar size="SMALL" username={user.title} />
-              <span class="truncate">{user.title}</span>
-            </div>
-          );
+          const email = extractUserId(auditLog.user);
+          return <UserLink title={email} email={email} />;
         },
       },
       {

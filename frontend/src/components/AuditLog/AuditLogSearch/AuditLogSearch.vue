@@ -18,18 +18,15 @@
 <script lang="tsx" setup>
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBAvatar } from "@/bbkit";
 import AdvancedSearch, { TimeRange } from "@/components/AdvancedSearch";
 import type {
   ScopeOption,
   ValueOption,
 } from "@/components/AdvancedSearch/types";
-import SystemBotTag from "@/components/misc/SystemBotTag.vue";
-import YouTag from "@/components/misc/YouTag.vue";
 import { ProjectV1Name } from "@/components/v2";
+import { UserNameCell } from "@/components/v2/Model/cells";
 import { ALL_METHODS_WITH_AUDIT } from "@/grpcweb/methods";
-import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
+import { useProjectV1Store, useUserStore } from "@/store";
 import { AuditLog_Severity } from "@/types/proto-es/v1/audit_log_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
@@ -46,7 +43,6 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const me = useCurrentUserV1();
 const userStore = useUserStore();
 const projectStore = useProjectV1Store();
 const showTimeRange = ref(false);
@@ -124,18 +120,15 @@ const scopeOptions = computed((): ScopeOption[] => {
                 value: user.email,
                 keywords: [user.email, user.title],
                 render: () => {
-                  const children = [
-                    <BBAvatar size="TINY" username={user.title} />,
-                    <span>{user.title}</span>,
-                  ];
-                  if (user.name === me.value.name) {
-                    children.push(<YouTag />);
-                  }
-                  if (user.name === SYSTEM_BOT_USER_NAME) {
-                    children.push(<SystemBotTag />);
-                  }
                   return (
-                    <div class="flex items-center gap-x-1">{children}</div>
+                    <UserNameCell
+                      user={user}
+                      size="small"
+                      allowEdit={false}
+                      showMfaEnabled={false}
+                      showSource={false}
+                      showEmail={false}
+                    />
                   );
                 },
               };

@@ -693,6 +693,8 @@ const tryCreateOrUpdateUser = async () => {
       title: t("common.created"),
     });
     emit("close");
+  } catch {
+    // nothing
   } finally {
     state.isRequesting = false;
   }

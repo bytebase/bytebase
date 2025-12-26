@@ -7,37 +7,26 @@
         <div class="flex flex-row items-center gap-x-1">
           <div :class="isDeleted ? 'line-through' : ''">
             <HighlightLabelText
-              v-if="permissionStore.onlyWorkspaceMember"
-              class="truncate max-w-[10em]"
+              v-if="onClickUser"
+              class="truncate max-w-40"
               :keyword="keyword"
               :text="user.title"
+              @click="onClickUser(user, $event)"
             />
-            <template v-else>
-              <HighlightLabelText
-                v-if="onClickUser || !link"
-                :class="['truncate max-w-40', link ? 'normal-link' : '']"
-                :keyword="keyword"
-                :text="user.title"
-                @click="onClickUser ? onClickUser(user, $event) : null"
-              />
-              <router-link
-                v-else
-                :to="`/users/${user.email}`"
-                class="normal-link truncate max-w-[10em]"
-              >
-                <HighlightLabelText
-                :keyword="keyword"
-                  :text="user.title"
-                />
-              </router-link>
-            </template>
+            <UserLink
+              v-else
+              :keyword="keyword"
+              :title="user.title"
+              :email="user.email"
+              :link="link"
+            />
           </div>
           <slot name="suffix">
           </slot>
           <NTag v-if="isDeleted" :size="tagSize" type="error" round>
             {{$t("common.deleted")}}
           </NTag>
-          <NTag v-if="user.profile?.source" :size="tagSize" round type="primary">
+          <NTag v-if="user.profile?.source && showSource" :size="tagSize" round type="primary">
             {{ user.profile.source }}
           </NTag>
           <YouTag v-if="currentUserV1.name === user.name" :size="tagSize"/>
@@ -50,14 +39,19 @@
             v-if="user.userType === UserType.WORKLOAD_IDENTITY"
             :size="tagSize"
           />
-          <NTag v-if="user.mfaEnabled" :size="tagSize" type="success" round>
+          <NTag v-if="user.mfaEnabled && showMfaEnabled" :size="tagSize" type="success" round>
             {{ $t("two-factor.enabled") }}
           </NTag>
         </div>
         <slot name="footer">
-          <span v-if="user.name !== SYSTEM_BOT_USER_NAME" class="textinfolabel">
+          <NEllipsis
+            v-if="user.name !== SYSTEM_BOT_USER_NAME && showEmail"
+            class="textinfolabel"
+            :line-clamp="1"
+            :tooltip="true"
+          >
             {{ user.email }}
-          </span>
+          </NEllipsis>
         </slot>
       </div>
       <div
@@ -92,7 +86,7 @@
 
 <script lang="ts" setup>
 import { ReplyIcon } from "lucide-vue-next";
-import { NButton, NTag } from "naive-ui";
+import { NButton, NEllipsis, NTag } from "naive-ui";
 import { computed } from "vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
@@ -100,22 +94,33 @@ import WorkloadIdentityTag from "@/components/misc/WorkloadIdentityTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { CopyButton, HighlightLabelText } from "@/components/v2";
-import { useCurrentUserV1, usePermissionStore } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import UserLink from "./UserLink.vue";
 
 const props = withDefaults(
   defineProps<{
     user: User;
     allowEdit?: boolean;
     keyword?: string;
-    size?: "small" | "medium";
+    size?: "tiny" | "small" | "medium";
     link?: boolean;
+    showSource?: boolean;
+    showMfaEnabled?: boolean;
+    showEmail?: boolean;
     onClickUser?: (user: User, event: MouseEvent) => void;
   }>(),
-  { allowEdit: true, size: "medium", link: true, keyword: "" }
+  {
+    allowEdit: true,
+    size: "medium",
+    link: true,
+    showSource: true,
+    showMfaEnabled: true,
+    showEmail: true,
+  }
 );
 
 defineEmits<{
@@ -123,7 +128,6 @@ defineEmits<{
 }>();
 
 const currentUserV1 = useCurrentUserV1();
-const permissionStore = usePermissionStore();
 
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
@@ -132,16 +136,20 @@ const hasPermission = computed(() => {
 const isDeleted = computed(() => props.user.state === State.DELETED);
 
 const tagSize = computed(() => {
-  if (props.size === "small") {
+  if (props.size === "tiny") {
     return "tiny";
   }
   return "small";
 });
 
 const avatarSize = computed(() => {
-  if (props.size === "small") {
-    return "SMALL";
+  switch (props.size) {
+    case "tiny":
+      return "TINY";
+    case "small":
+      return "SMALL";
+    default:
+      return "NORMAL";
   }
-  return "NORMAL";
 });
 </script>

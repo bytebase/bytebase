@@ -131,6 +131,9 @@ const customLabel = (user: User, keyword: string) => {
     <UserNameCell
       user={user}
       allowEdit={false}
+      showMfaEnabled={false}
+      showSource={false}
+      showEmail={false}
       link={false}
       size="small"
       keyword={keyword}
@@ -142,7 +145,6 @@ const customLabel = (user: User, keyword: string) => {
             (<HighlightLabelText keyword={keyword} text={user.email} />)
           </span>
         ),
-        footer: () => <div />,
       }}
     </UserNameCell>
   );

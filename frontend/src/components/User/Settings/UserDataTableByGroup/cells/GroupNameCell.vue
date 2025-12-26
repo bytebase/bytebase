@@ -3,7 +3,11 @@
     <UsersIcon v-if="showIcon" class="w-8" />
     <div>
       <div class="flex items-center gap-x-2">
-        <div :class="deleted ? 'line-through' : ''">
+        <NEllipsis
+          :line-clamp="1"
+          :tooltip="true"
+          :class="deleted ? 'line-through' : ''"
+        >
           <router-link
             v-if="allowGetGroup && link"
             :to="{
@@ -25,33 +29,38 @@
             :text="group.title"
             :keyword="keyword"
           />
-        </div>
+        </NEllipsis>
         <NTag v-if="deleted" size="small" round type="error">
           {{ $t("common.deleted") }}
         </NTag>
-        <NTag v-if="group.source" size="small" round type="primary">
+        <NTag v-else-if="group.source" size="small" round type="primary">
           {{ group.source }}
         </NTag>
-        <span class="font-normal text-control-light">
+        <span v-if="showMember" class="font-normal text-control-light">
           {{
             `(${$t("settings.members.groups.n-members", { n: group.members.length })})`
           }}
         </span>
         <UserRolesCell v-if="role" :role="role" />
       </div>
-      <HighlightLabelText
+      <NEllipsis
         v-if="showEmail && group.email"
-        class="textinfolabel text-sm"
-        :text="group.email"
-        :keyword="keyword"
-      />
+        :line-clamp="1"
+        :tooltip="true"
+      >
+        <HighlightLabelText
+          class="textinfolabel text-sm"
+          :text="group.email"
+          :keyword="keyword"
+        />
+      </NEllipsis>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { UsersIcon } from "lucide-vue-next";
-import { NTag } from "naive-ui";
+import { NEllipsis, NTag } from "naive-ui";
 import { computed } from "vue";
 import UserRolesCell from "@/components/Member/MemberDataTable/cells/UserRolesCell.vue";
 import type { MemberRole } from "@/components/Member/types";
@@ -67,6 +76,7 @@ const props = withDefaults(
     role?: MemberRole;
     showIcon?: boolean;
     showEmail?: boolean;
+    showMember?: boolean;
     link?: boolean;
     deleted?: boolean;
     keyword?: string;
@@ -77,7 +87,7 @@ const props = withDefaults(
     role: undefined,
     link: true,
     deleted: false,
-    keyword: "",
+    showMember: true,
   }
 );
 

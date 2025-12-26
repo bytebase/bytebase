@@ -102,6 +102,7 @@ const columns = computed(() => {
             user={row.member.user ?? unknownUser()}
             onClickUser={props.onClickUser}
             allowEdit={false}
+            showMfaEnabled={false}
           />
         );
       },

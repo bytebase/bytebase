@@ -1,69 +1,41 @@
 <template>
-  <div class="flex flex-row items-center shrink gap-x-2">
-    <UserAvatar :user="user" />
-
-    <div class="flex flex-row items-center">
-      <div class="flex flex-col">
-        <div class="flex flex-row items-center gap-x-2">
-          <span
-            v-if="onClickUser"
-            class="normal-link truncate max-w-40"
-            @click="onClickUser(user, $event)"
-          >
-            {{ user.title }}
-          </span>
-          <span
-            v-else-if="permissionStore.onlyWorkspaceMember"
-            class="truncate max-w-[10em]"
-          >
-            {{ user.title }}
-          </span>
-          <router-link v-else :to="`/users/${user.email}`" class="normal-link">
-            {{ user.title }}
-          </router-link>
-          <YouTag v-if="currentUserV1.name === user.name" />
-          <SystemBotTag v-if="user.name === SYSTEM_BOT_USER_NAME" />
-          <ServiceAccountTag
-            v-if="user.userType === UserType.SERVICE_ACCOUNT"
-          />
-          <NTag
-            v-if="role"
-            size="small"
-            round
-            :type="role === GroupMember_Role.OWNER ? 'primary' : 'default'"
-          >
-            {{
-              (() => {
-                switch (role) {
-                  case GroupMember_Role.OWNER:
-                    return $t("settings.members.groups.form.role.owner");
-                  case GroupMember_Role.MEMBER:
-                    return $t("settings.members.groups.form.role.member");
-                  default:
-                    return "ROLE UNRECOGNIZED";
-                }
-              })()
-            }}
-          </NTag>
-        </div>
-        <span v-if="user.name !== SYSTEM_BOT_USER_NAME" class="textlabel">
-          {{ user.email }}
-        </span>
-      </div>
-    </div>
-  </div>
+  <UserNameCell
+    :allow-edit="false"
+    :show-mfa-enabled="false"
+    :show-source="false"
+    :user="user"
+    :on-click-user="onClickUser"
+  >
+    <template #suffix>
+      <NTag
+        v-if="role"
+        size="small"
+        round
+        class="mx-1"
+        :type="role === GroupMember_Role.OWNER ? 'primary' : 'default'"
+      >
+        {{
+          (() => {
+            switch (role) {
+              case GroupMember_Role.OWNER:
+                return $t("settings.members.groups.form.role.owner");
+              case GroupMember_Role.MEMBER:
+                return $t("settings.members.groups.form.role.member");
+              default:
+                return "ROLE UNRECOGNIZED";
+            }
+          })()
+        }}
+      </NTag>
+    </template>
+  </UserNameCell>
 </template>
 
 <script lang="ts" setup>
 import { NTag } from "naive-ui";
-import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
-import SystemBotTag from "@/components/misc/SystemBotTag.vue";
-import YouTag from "@/components/misc/YouTag.vue";
-import UserAvatar from "@/components/User/UserAvatar.vue";
-import { useCurrentUserV1, usePermissionStore } from "@/store";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
+import { UserNameCell } from "@/components/v2/Model/cells";
 import { GroupMember_Role } from "@/types/proto-es/v1/group_service_pb";
-import { type User, UserType } from "@/types/proto-es/v1/user_service_pb";
+import { type User } from "@/types/proto-es/v1/user_service_pb";
 
 withDefaults(
   defineProps<{
@@ -76,11 +48,4 @@ withDefaults(
     onClickUser: undefined,
   }
 );
-
-defineEmits<{
-  (event: "reset-service-key", user: User): void;
-}>();
-
-const currentUserV1 = useCurrentUserV1();
-const permissionStore = usePermissionStore();
 </script>
