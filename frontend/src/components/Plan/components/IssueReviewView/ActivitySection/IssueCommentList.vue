@@ -116,8 +116,9 @@ const fetchIssueComments = async () => {
 
 watchEffect(fetchIssueComments);
 
-// Refresh comments when a review action is performed (approve/reject/re-request)
+// Refresh comments when a review or status action is performed
 events.on("perform-issue-review-action", fetchIssueComments);
+events.on("perform-issue-status-action", fetchIssueComments);
 
 const issueComments = computed(() => {
   if (!issueName.value) return [];
