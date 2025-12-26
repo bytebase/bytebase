@@ -232,7 +232,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
 	}
 
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, s.dbFactory, plan.Config.GetSpecs(), project.ResourceID)
+	pipelineCreate, err := GetPipelineCreate(ctx, s.store, plan.Config.GetSpecs(), project.ResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
 	}
@@ -1010,7 +1010,7 @@ func isChangeDatabasePlan(specs []*storepb.PlanConfig_Spec) bool {
 }
 
 // GetPipelineCreate gets a pipeline create message from a plan.
-func GetPipelineCreate(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, specs []*storepb.PlanConfig_Spec, projectID string) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, specs []*storepb.PlanConfig_Spec, projectID string) (*store.PipelineMessage, error) {
 	// Step 1 - transform database group specs.
 	// Re-evaluate database groups live to pick up newly created databases.
 	transformedSpecs, err := applyDatabaseGroupSpecTransformations(ctx, s, specs, projectID)
@@ -1021,7 +1021,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, dbFactory *dbfactory
 	// Step 2 - convert all task creates.
 	var taskCreates []*store.TaskMessage
 	for _, spec := range transformedSpecs {
-		tcs, err := getTaskCreatesFromSpec(ctx, s, dbFactory, spec)
+		tcs, err := getTaskCreatesFromSpec(ctx, s, spec)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get task creates from spec")
 		}

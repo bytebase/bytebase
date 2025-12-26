@@ -5,18 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"log/slog"
-
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -67,10 +62,10 @@ func applyDatabaseGroupSpecTransformations(ctx context.Context, s *store.Store, 
 	return result, nil
 }
 
-func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec) ([]*store.TaskMessage, error) {
 	switch config := spec.Config.(type) {
 	case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
-		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, dbFactory, spec, config.CreateDatabaseConfig)
+		return getTaskCreatesFromCreateDatabaseConfig(ctx, s, spec, config.CreateDatabaseConfig)
 	case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
 		return getTaskCreatesFromChangeDatabaseConfig(ctx, s, spec, config.ChangeDatabaseConfig)
 	case *storepb.PlanConfig_Spec_ExportDataConfig:
@@ -80,7 +75,7 @@ func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, dbFactory *dbfa
 	return nil, errors.Errorf("invalid spec config type %T", spec.Config)
 }
 
-func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig) ([]*store.TaskMessage, error) {
+func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_CreateDatabaseConfig) ([]*store.TaskMessage, error) {
 	if c.Database == "" {
 		return nil, errors.Errorf("database name is required")
 	}
@@ -137,21 +132,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			// For MySQL, we need to use different case of DatabaseName depends on the variable `lower_case_table_names`.
 			// https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
-			// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
-			driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
-			if err != nil {
-				slog.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", log.BBError(err), slog.String("instance", instance.ResourceID))
-				break
-			}
-			defer driver.Close(ctx)
-			var lowerCaseTableNames int
-			var unused any
-			db := driver.GetDB()
-			if err := db.QueryRowContext(ctx, "SHOW VARIABLES LIKE 'lower_case_table_names'").Scan(&unused, &lowerCaseTableNames); err != nil {
-				slog.Warn("failed to get lower_case_table_names for instance %q", log.BBError(err), slog.String("instance", instance.ResourceID))
-				break
-			}
-			if lowerCaseTableNames == 1 {
+			if !store.IsObjectCaseSensitive(instance) {
 				databaseName = strings.ToLower(databaseName)
 			}
 		default:
