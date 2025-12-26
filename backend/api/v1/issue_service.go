@@ -825,7 +825,17 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	// Auto-create rollout if this approval completes the approval flow
 	if issueV1.ApprovalStatus == v1pb.Issue_APPROVED {
 		go func() {
-			s.rolloutService.TryCreateRollout(ctx, issue.UID)
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Error("panic in TryCreateRollout",
+						slog.Int("issue_id", issue.UID),
+						slog.Any("panic", r))
+				}
+			}()
+			// Use a fresh context with timeout to avoid being affected by request cancellation
+			rolloutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			s.rolloutService.TryCreateRollout(rolloutCtx, issue.UID)
 		}()
 	}
 
