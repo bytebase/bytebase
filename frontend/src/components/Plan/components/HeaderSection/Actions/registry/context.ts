@@ -210,17 +210,26 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
     [Task_Status.PENDING, Task_Status.RUNNING].includes(task.status)
   );
 
-  // Compute rollout preconditions
+  // Compute approval status
   const issueApproved =
     issue?.approvalStatus === Issue_ApprovalStatus.APPROVED ||
     issue?.approvalStatus === Issue_ApprovalStatus.SKIPPED;
 
-  const { requireIssueApproval, requirePlanCheckNoError } = project;
-  const issueReady = !requireIssueApproval || issueApproved;
-  const planCheckReady =
-    !requirePlanCheckNoError ||
-    (!hasRunningPlanChecks && planCheckStatus !== Advice_Level.ERROR);
-  const rolloutPreconditionsMet = issueReady && planCheckReady;
+  // Compute rollout creation warnings
+  // These flags indicate when ROLLOUT_CREATE should show in dropdown with warnings
+  // Warnings only apply when require_*=false; when require_*=true, button is hidden instead
+  const warnApprovalNotReady = !project.requireIssueApproval && !issueApproved;
+  const warnPlanChecksRunning = hasRunningPlanChecks;
+  const warnPlanChecksFailed =
+    !project.requirePlanCheckNoError && planCheckStatus === Advice_Level.ERROR;
+
+  const rolloutCreationWarnings = {
+    approvalNotReady: warnApprovalNotReady,
+    planChecksRunning: warnPlanChecksRunning,
+    planChecksFailed: warnPlanChecksFailed,
+    hasAny:
+      warnApprovalNotReady || warnPlanChecksRunning || warnPlanChecksFailed,
+  };
 
   return {
     plan,
@@ -236,6 +245,7 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
     isIssueOnly,
     isExportPlan,
     isCreator,
+    issueApproved,
     exportArchiveReady: computeExportArchiveReady(
       rollout,
       taskRuns,
@@ -246,7 +256,7 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
     hasDatabaseCreateOrExportTasks,
     hasStartableTasks,
     hasRunningTasks,
-    rolloutPreconditionsMet,
+    rolloutCreationWarnings,
 
     permissions,
     validation,

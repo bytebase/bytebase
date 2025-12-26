@@ -63,23 +63,34 @@ export interface ActionContext {
   isIssueOnly: boolean;
   isExportPlan: boolean;
   isCreator: boolean;
+  issueApproved: boolean; // approval is APPROVED or SKIPPED
   exportArchiveReady: boolean;
   allTasksFinished: boolean;
   hasDatabaseCreateOrExportTasks: boolean;
   hasStartableTasks: boolean;
   hasRunningTasks: boolean;
-  rolloutPreconditionsMet: boolean;
+
+  // Warning flags for rollout creation (button moves to dropdown when hasAny=true)
+  // Note: When require_*=true and condition not met, button is HIDDEN (not a warning)
+  rolloutCreationWarnings: {
+    approvalNotReady: boolean; // require_issue_approval=false AND not approved
+    planChecksRunning: boolean; // plan checks currently running
+    planChecksFailed: boolean; // require_plan_check_no_error=false AND checks failed
+    hasAny: boolean; // convenience: true if any warning is active
+  };
 
   // Grouped
   permissions: ActionPermissions;
   validation: ActionValidation;
 }
 
+export type ActionCategory = "primary" | "secondary";
+
 export interface ActionDefinition {
   id: UnifiedAction;
   label: (ctx: ActionContext) => string;
   buttonType: "primary" | "success" | "default";
-  category: "primary" | "secondary";
+  category: ActionCategory | ((ctx: ActionContext) => ActionCategory);
   priority: number;
 
   isVisible: (ctx: ActionContext) => boolean;

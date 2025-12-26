@@ -52,6 +52,14 @@
         @confirm="handleRolloutActionConfirm"
       />
     </template>
+
+    <!-- Rollout Create Panel -->
+    <RolloutCreatePanel
+      :show="showRolloutCreatePanel"
+      :context="context"
+      @close="showRolloutCreatePanel = false"
+      @confirm="showRolloutCreatePanel = false"
+    />
   </div>
 </template>
 
@@ -81,7 +89,7 @@ import {
   Task_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractProjectResourceName, extractRolloutUID } from "@/utils";
-import { CreateButton, CreateIssueButton } from "./create";
+import { CreateButton, CreateIssueButton, RolloutCreatePanel } from "./create";
 import { ExportArchiveDownloadAction } from "./export";
 import RolloutReadyLink from "./RolloutReadyLink.vue";
 import { ActionButton, ActionDropdown, useActionRegistry } from "./registry";
@@ -124,6 +132,12 @@ const globalDisabledReason = computed(() => {
 
 // Panel visibility state
 const pendingRolloutAction = ref<RolloutAction | undefined>(undefined);
+const showRolloutCreatePanel = ref(false);
+
+// Helper to check if rollout creation has warnings
+const hasRolloutCreationWarnings = computed(
+  () => context.value.rolloutCreationWarnings.hasAny
+);
 
 // Get the stage that contains database creation or export tasks
 const rolloutStage = computed(() => {
@@ -151,7 +165,12 @@ const handlePerformAction = async (action: UnifiedAction) => {
       await handlePlanStateChange("PLAN_REOPEN");
       break;
     case "ROLLOUT_CREATE":
-      await handleCreateRollout();
+      // Show panel if there are warnings; otherwise create immediately
+      if (hasRolloutCreationWarnings.value) {
+        showRolloutCreatePanel.value = true;
+      } else {
+        await handleCreateRollout();
+      }
       break;
     case "ROLLOUT_START":
     case "ROLLOUT_CANCEL":
