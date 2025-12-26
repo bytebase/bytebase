@@ -38,7 +38,7 @@ func (s *WorkspaceService) GetIamPolicy(ctx context.Context, _ *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find iam policy"))
 	}
 
-	v1Policy, err := convertToV1IamPolicy(ctx, s.store, policy)
+	v1Policy, err := convertToV1IamPolicy(policy)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 
-	iamPolicy, err := convertToStoreIamPolicy(ctx, s.store, request.Policy)
+	iamPolicy, err := convertToStoreIamPolicy(request.Policy)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		setServiceData(p)
 	}
 
-	v1Policy, err := convertToV1IamPolicy(ctx, s.store, policy)
+	v1Policy, err := convertToV1IamPolicy(policy)
 	if err != nil {
 		return nil, err
 	}

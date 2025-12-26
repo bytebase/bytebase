@@ -214,7 +214,7 @@ func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*Pipel
 }
 
 // GetListRolloutFilter parses a CEL filter expression into a query builder query for listing rollouts.
-func (s *Store) GetListRolloutFilter(_ context.Context, filter string) (*qb.Query, error) { // nolint:revive
+func GetListRolloutFilter(filter string) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}

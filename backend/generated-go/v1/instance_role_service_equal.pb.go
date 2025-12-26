@@ -3,19 +3,6 @@
 
 package v1
 
-func (x *GetInstanceRoleRequest) Equal(y *GetInstanceRoleRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Name != y.Name {
-		return false
-	}
-	return true
-}
-
 func (x *ListInstanceRolesRequest) Equal(y *ListInstanceRolesRequest) bool {
 	if x == y {
 		return true

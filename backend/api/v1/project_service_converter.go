@@ -1,9 +1,7 @@
 package v1
 
 import (
-	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -13,7 +11,6 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -159,33 +156,23 @@ func convertToV1WebhookType(tp storepb.WebhookType) v1pb.WebhookType {
 	}
 }
 
-func convertToV1MemberInBinding(_ context.Context, _ *store.Store, member string) string {
+func convertToV1MemberInBinding(member string) string {
 	if strings.HasPrefix(member, common.UserNamePrefix) {
-		email, err := common.GetUserEmail(member)
-		if err != nil {
-			slog.Error("failed to get user email from member", slog.String("member", member), log.BBError(err))
-			return ""
-		}
-		return fmt.Sprintf("%s%s", common.UserBindingPrefix, email)
+		return common.UserBindingPrefix + strings.TrimPrefix(member, common.UserNamePrefix)
 	} else if strings.HasPrefix(member, common.GroupPrefix) {
-		email, err := common.GetGroupEmail(member)
-		if err != nil {
-			slog.Error("failed to parse group email from member", slog.String("member", member), log.BBError(err))
-			return ""
-		}
-		return fmt.Sprintf("%s%s", common.GroupBindingPrefix, email)
+		return common.GroupBindingPrefix + strings.TrimPrefix(member, common.GroupPrefix)
 	}
 	// handle allUsers.
 	return member
 }
 
-func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *store.IamPolicyMessage) (*v1pb.IamPolicy, error) {
+func convertToV1IamPolicy(iamPolicy *store.IamPolicyMessage) (*v1pb.IamPolicy, error) {
 	var bindings []*v1pb.Binding
 
 	for _, binding := range iamPolicy.Policy.Bindings {
 		var members []string
 		for _, member := range binding.Members {
-			memberInBinding := convertToV1MemberInBinding(ctx, stores, member)
+			memberInBinding := convertToV1MemberInBinding(member)
 			if memberInBinding == "" {
 				continue
 			}
@@ -226,13 +213,13 @@ func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *s
 	}, nil
 }
 
-func convertToStoreIamPolicy(ctx context.Context, stores *store.Store, iamPolicy *v1pb.IamPolicy) (*storepb.IamPolicy, error) {
+func convertToStoreIamPolicy(iamPolicy *v1pb.IamPolicy) (*storepb.IamPolicy, error) {
 	var bindings []*storepb.Binding
 
 	for _, binding := range iamPolicy.Bindings {
 		var members []string
 		for _, member := range utils.Uniq(binding.Members) {
-			storeMember, err := convertToStoreIamPolicyMember(ctx, stores, member)
+			storeMember, err := convertToStoreIamPolicyMember(member)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert iam member with error"))
 			}
@@ -262,17 +249,10 @@ func convertToStoreIamPolicy(ctx context.Context, stores *store.Store, iamPolicy
 	}, nil
 }
 
-func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, member string) (string, error) {
+func convertToStoreIamPolicyMember(member string) (string, error) {
 	if strings.HasPrefix(member, common.UserBindingPrefix) {
 		email := strings.TrimPrefix(member, common.UserBindingPrefix)
-		user, err := stores.GetUserByEmail(ctx, email)
-		if err != nil {
-			return "", connect.NewError(connect.CodeInternal, err)
-		}
-		if user == nil {
-			return "", connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", member))
-		}
-		return common.FormatUserEmail(user.Email), nil
+		return common.FormatUserEmail(email), nil
 	} else if strings.HasPrefix(member, common.GroupBindingPrefix) {
 		email := strings.TrimPrefix(member, common.GroupBindingPrefix)
 		return common.FormatGroupEmail(email), nil

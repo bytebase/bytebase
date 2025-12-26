@@ -1,7 +1,6 @@
 package store
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -9,9 +8,6 @@ import (
 )
 
 func TestGetListRolloutFilter(t *testing.T) {
-	s := &Store{}
-	ctx := context.Background()
-
 	// The subquery used for update_time filtering
 	updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.task_id = task.id WHERE task.plan_id = plan.id), plan.created_at)`
 
@@ -143,7 +139,7 @@ func TestGetListRolloutFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			q, err := s.GetListRolloutFilter(ctx, tt.filter)
+			q, err := GetListRolloutFilter(tt.filter)
 
 			if tt.wantErr {
 				require.Error(t, err)

@@ -675,9 +675,9 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 
 	switch format {
 	case v1pb.GetDatabaseSDLSchemaRequest_SINGLE_FILE:
-		return s.getSingleFileSDL(ctx, database.Engine, metadata)
+		return s.getSingleFileSDL(database.Engine, metadata)
 	case v1pb.GetDatabaseSDLSchemaRequest_MULTI_FILE:
-		return s.getMultiFileSDL(ctx, database.Engine, metadata, databaseName)
+		return s.getMultiFileSDL(database.Engine, metadata)
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported SDL format: %v", format))
 	}
@@ -1126,7 +1126,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 	}
 }
 
-func (*DatabaseService) getSingleFileSDL(_ context.Context, engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+func (*DatabaseService) getSingleFileSDL(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
 	sdlText, err := schema.GetDatabaseDefinition(engine, schema.GetDefinitionContext{
 		SkipBackupSchema: true,
 		SDLFormat:        true,
@@ -1141,7 +1141,7 @@ func (*DatabaseService) getSingleFileSDL(_ context.Context, engine storepb.Engin
 	}), nil
 }
 
-func (*DatabaseService) getMultiFileSDL(_ context.Context, engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata, _ string) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+func (*DatabaseService) getMultiFileSDL(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
 	// Get multi-file schema from schema package
 	result, err := schema.GetMultiFileDatabaseDefinition(engine, schema.GetDefinitionContext{
 		SkipBackupSchema: true,

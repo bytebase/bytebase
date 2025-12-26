@@ -216,7 +216,6 @@
     - [DatabaseGroupService](#bytebase-v1-DatabaseGroupService)
   
 - [v1/instance_role_service.proto](#v1_instance_role_service-proto)
-    - [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest)
     - [InstanceRole](#bytebase-v1-InstanceRole)
     - [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest)
     - [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse)
@@ -3667,21 +3666,6 @@ DatabaseGroupService manages database groups for organizing databases by criteri
 
 
 
-<a name="bytebase-v1-GetInstanceRoleRequest"></a>
-
-### GetInstanceRoleRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the role to retrieve. Format: instances/{instance}/roles/{role name} The role name is the unique name for the role. |
-
-
-
-
-
-
 <a name="bytebase-v1-InstanceRole"></a>
 
 ### InstanceRole
@@ -3751,7 +3735,6 @@ InstanceRoleService manages database roles within instances.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetInstanceRole | [GetInstanceRoleRequest](#bytebase-v1-GetInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) | Gets a database role from an instance. Permissions required: bb.instanceRoles.get |
 | ListInstanceRoles | [ListInstanceRolesRequest](#bytebase-v1-ListInstanceRolesRequest) | [ListInstanceRolesResponse](#bytebase-v1-ListInstanceRolesResponse) | Lists all database roles in an instance. Permissions required: bb.instanceRoles.list |
 
  

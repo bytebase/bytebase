@@ -991,10 +991,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.v1.GetInstanceRoleRequest"><span class="badge">M</span>GetInstanceRoleRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.InstanceRole"><span class="badge">M</span>InstanceRole</a>
                 </li>
               
@@ -10329,32 +10325,6 @@ Permissions required: bb.databaseGroups.delete</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.v1.GetInstanceRoleRequest">GetInstanceRoleRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the role to retrieve.
-Format: instances/{instance}/roles/{role name}
-The role name is the unique name for the role. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.InstanceRole">InstanceRole</h3>
         <p>InstanceRole is the API message for instance role.</p>
 
@@ -10520,14 +10490,6 @@ If this field is omitted, there are no subsequent pages. </p></td>
           <tbody>
             
               <tr>
-                <td>GetInstanceRole</td>
-                <td><a href="#bytebase.v1.GetInstanceRoleRequest">GetInstanceRoleRequest</a></td>
-                <td><a href="#bytebase.v1.InstanceRole">InstanceRole</a></td>
-                <td><p>Gets a database role from an instance.
-Permissions required: bb.instanceRoles.get</p></td>
-              </tr>
-            
-              <tr>
                 <td>ListInstanceRoles</td>
                 <td><a href="#bytebase.v1.ListInstanceRolesRequest">ListInstanceRolesRequest</a></td>
                 <td><a href="#bytebase.v1.ListInstanceRolesResponse">ListInstanceRolesResponse</a></td>
@@ -10552,16 +10514,6 @@ Permissions required: bb.instanceRoles.list</p></td>
               </tr>
             </thead>
             <tbody>
-            
-              
-              
-              <tr>
-                <td>GetInstanceRole</td>
-                <td>GET</td>
-                <td>/v1/{name=instances/*/roles/*}</td>
-                <td></td>
-              </tr>
-              
             
               
               

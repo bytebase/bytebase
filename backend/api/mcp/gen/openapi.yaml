@@ -1753,44 +1753,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.IdentityProvider'
-  /bytebase.v1.InstanceRoleService/GetInstanceRole:
-    post:
-      tags:
-        - bytebase.v1.InstanceRoleService
-      summary: 'Gets a database role from an instance.  Permissions required: bb.instanceRoles.get'
-      description: |-
-        Gets a database role from an instance.
-         Permissions required: bb.instanceRoles.get
-      operationId: bytebase.v1.InstanceRoleService.GetInstanceRole
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.GetInstanceRoleRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.InstanceRole'
   /bytebase.v1.InstanceRoleService/ListInstanceRoles:
     post:
       tags:
@@ -10024,18 +9986,6 @@ components:
             The name of the instance to retrieve.
              Format: instances/{instance}
       title: GetInstanceRequest
-      additionalProperties: false
-    bytebase.v1.GetInstanceRoleRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          title: name
-          description: |-
-            The name of the role to retrieve.
-             Format: instances/{instance}/roles/{role name}
-             The role name is the unique name for the role.
-      title: GetInstanceRoleRequest
       additionalProperties: false
     bytebase.v1.GetIssueRequest:
       type: object

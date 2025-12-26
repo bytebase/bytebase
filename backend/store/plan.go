@@ -290,7 +290,7 @@ func (s *Store) UpdatePlan(ctx context.Context, patch *UpdatePlanMessage) (*Plan
 }
 
 // GetListPlanFilter parses a CEL filter expression into a query builder query for listing plans.
-func (s *Store) GetListPlanFilter(_ context.Context, filter string) (*qb.Query, error) { // nolint:revive
+func GetListPlanFilter(filter string) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
 	}

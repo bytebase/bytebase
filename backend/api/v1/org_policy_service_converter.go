@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"context"
-
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
 
@@ -236,12 +234,12 @@ func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) *v1pb.Mas
 	}
 }
 
-func (s *OrgPolicyService) convertToStorePBMaskingExemptionPolicyPayload(ctx context.Context, policy *v1pb.MaskingExemptionPolicy) (*storepb.MaskingExemptionPolicy, error) {
+func convertToStorePBMaskingExemptionPolicyPayload(policy *v1pb.MaskingExemptionPolicy) (*storepb.MaskingExemptionPolicy, error) {
 	var exemptions []*storepb.MaskingExemptionPolicy_Exemption
 	for _, exemption := range policy.Exemptions {
 		var members []string
 		for _, v1Member := range exemption.Members {
-			member, err := convertToStoreIamPolicyMember(ctx, s.store, v1Member)
+			member, err := convertToStoreIamPolicyMember(v1Member)
 			if err != nil {
 				return nil, err
 			}
@@ -263,12 +261,12 @@ func (s *OrgPolicyService) convertToStorePBMaskingExemptionPolicyPayload(ctx con
 	}, nil
 }
 
-func (s *OrgPolicyService) convertToV1PBMaskingExemptionPolicyPayload(ctx context.Context, policy *storepb.MaskingExemptionPolicy) *v1pb.MaskingExemptionPolicy {
+func convertToV1PBMaskingExemptionPolicyPayload(policy *storepb.MaskingExemptionPolicy) *v1pb.MaskingExemptionPolicy {
 	var exemptions []*v1pb.MaskingExemptionPolicy_Exemption
 	for _, exemption := range policy.Exemptions {
 		var members []string
 		for _, storeMember := range exemption.Members {
-			memberInBinding := convertToV1MemberInBinding(ctx, s.store, storeMember)
+			memberInBinding := convertToV1MemberInBinding(storeMember)
 			if memberInBinding == "" {
 				continue
 			}

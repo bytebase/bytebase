@@ -89,7 +89,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 		}
 	}
 
-	v1AuditLogs := convertToAuditLogs(ctx, s.store, auditLogs)
+	v1AuditLogs := convertToAuditLogs(auditLogs)
 	return connect.NewResponse(&v1pb.SearchAuditLogsResponse{
 		AuditLogs:     v1AuditLogs,
 		NextPageToken: nextPageToken,
@@ -156,7 +156,7 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *connect.
 	return connect.NewResponse(&v1pb.ExportAuditLogsResponse{Content: content, NextPageToken: searchAuditLogsResult.Msg.NextPageToken}), nil
 }
 
-func convertToAuditLogs(_ context.Context, _ *store.Store, auditLogs []*store.AuditLog) []*v1pb.AuditLog {
+func convertToAuditLogs(auditLogs []*store.AuditLog) []*v1pb.AuditLog {
 	var ls []*v1pb.AuditLog
 	for _, log := range auditLogs {
 		ls = append(ls, convertToAuditLog(log))
