@@ -99,50 +99,46 @@ func (rc *RolloutCreator) tryCreateRollout(_ context.Context, planID int64) {
 		return
 	}
 
-	// Check approval condition
-	if project.Setting != nil && project.Setting.RequireIssueApproval {
-		approved, err := utils.CheckIssueApproved(issue)
-		if err != nil {
-			slog.Error("failed to check if the issue is approved",
-				slog.Int("plan_id", int(planID)),
-				log.BBError(err))
-			return
-		}
-		if !approved {
-			slog.Debug("issue not approved yet, skipping rollout creation",
-				slog.Int("plan_id", int(planID)))
-			return
-		}
+	// Check approval status (must be approved)
+	approved, err := utils.CheckIssueApproved(issue)
+	if err != nil {
+		slog.Error("failed to check if the issue is approved",
+			slog.Int("plan_id", int(planID)),
+			log.BBError(err))
+		return
+	}
+	if !approved {
+		slog.Debug("issue not approved, skipping rollout creation",
+			slog.Int("plan_id", int(planID)))
+		return
 	}
 
-	// Check plan check condition
-	if project.Setting != nil && project.Setting.RequirePlanCheckNoError {
-		planCheckRun, err := rc.store.GetPlanCheckRun(rolloutCtx, planID)
-		if err != nil {
-			slog.Error("failed to get plan check run for rollout creation",
+	// Check plan check status (must have no errors)
+	planCheckRun, err := rc.store.GetPlanCheckRun(rolloutCtx, planID)
+	if err != nil {
+		slog.Error("failed to get plan check run for rollout creation",
+			slog.Int("plan_id", int(planID)),
+			log.BBError(err))
+		return
+	}
+
+	// If plan checks exist, they must be DONE with no errors
+	if planCheckRun != nil {
+		// Check if plan checks are in DONE status
+		if planCheckRun.Status != store.PlanCheckRunStatusDone {
+			slog.Debug("plan checks not in DONE status, skipping rollout creation",
 				slog.Int("plan_id", int(planID)),
-				log.BBError(err))
+				slog.String("status", string(planCheckRun.Status)))
 			return
 		}
 
-		// If no plan checks exist, treat as passing
-		if planCheckRun != nil {
-			// Check if plan checks are in DONE status
-			if planCheckRun.Status != store.PlanCheckRunStatusDone {
-				slog.Debug("plan checks not in DONE status, skipping rollout creation",
-					slog.Int("plan_id", int(planID)),
-					slog.String("status", string(planCheckRun.Status)))
-				return
-			}
-
-			// Check for ERROR-level results
-			if planCheckRun.Result != nil {
-				for _, result := range planCheckRun.Result.Results {
-					if result.Status == storepb.Advice_ERROR {
-						slog.Debug("plan checks have errors, skipping rollout creation",
-							slog.Int("plan_id", int(planID)))
-						return
-					}
+		// Check for ERROR-level results
+		if planCheckRun.Result != nil {
+			for _, result := range planCheckRun.Result.Results {
+				if result.Status == storepb.Advice_ERROR {
+					slog.Debug("plan checks have errors, skipping rollout creation",
+						slog.Int("plan_id", int(planID)))
+					return
 				}
 			}
 		}
