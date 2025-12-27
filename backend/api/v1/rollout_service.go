@@ -232,12 +232,12 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
 	}
 
-	pipelineCreate, err := GetPipelineCreate(ctx, s.store, plan.Config.GetSpecs(), project.ResourceID)
+	tasks, err := GetPipelineCreate(ctx, s.store, plan.Config.GetSpecs(), project.ResourceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
 	}
 	if isChangeDatabasePlan(plan.Config.GetSpecs()) {
-		pipelineCreate, err = getPipelineCreateToTargetStage(ctx, s.store, pipelineCreate, request.Target)
+		tasks, err = getPipelineCreateToTargetStage(ctx, s.store, tasks, request.Target)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to filter stages with stageId, error: %v", err))
 		}
@@ -268,7 +268,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		}
 
 		newTasks := []*store.TaskMessage{}
-		for _, taskCreate := range pipelineCreate.Tasks {
+		for _, taskCreate := range tasks {
 			k := taskKey{
 				instance: taskCreate.InstanceID,
 				sheet:    taskCreate.Payload.GetSheetSha256(),
@@ -303,7 +303,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
+	tasks, err = s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks, error: %v", err))
 	}
@@ -337,18 +337,17 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
-	pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
-		ID:        &rolloutID,
+	rolloutID64 := int64(rolloutID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
+		UID:       &rolloutID64,
 		ProjectID: &projectID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout, error: %v", err))
 	}
-	if pipeline == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("pipeline %d not found in project %s", rolloutID, projectID))
+	if plan == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
 	}
-
-	rolloutID64 := int64(rolloutID)
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 		PlanUID:     &rolloutID64,
 		Environment: maybeStageID,
@@ -376,16 +375,13 @@ func CreateRolloutAndPendingTasks(
 	issue *store.IssueMessage,
 	project *store.ProjectMessage,
 ) error {
-	planID := plan.UID
-
-	// Get pipeline create (tasks to create)
-	pipelineCreate, err := GetPipelineCreate(ctx, s, plan.Config.GetSpecs(), project.ResourceID)
+	tasks, err := GetPipelineCreate(ctx, s, plan.Config.GetSpecs(), project.ResourceID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get pipeline create for rollout creation")
 	}
 
 	// Create rollout tasks
-	tasks, err := s.CreateRolloutTasks(ctx, planID, pipelineCreate)
+	tasks, err = s.CreateRolloutTasks(ctx, plan.UID, tasks)
 	if err != nil {
 		return errors.Wrap(err, "failed to create rollout tasks")
 	}
@@ -394,7 +390,7 @@ func CreateRolloutAndPendingTasks(
 	config := proto.CloneOf(plan.Config)
 	config.HasRollout = true
 	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:    planID,
+		UID:    plan.UID,
 		Config: config,
 	})
 	if err != nil {
@@ -474,27 +470,27 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	pipeline, err := s.store.GetPipeline(ctx, &store.PipelineFind{
-		ID:        &rolloutID,
+	rolloutID64 := int64(rolloutID)
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
+		UID:       &rolloutID64,
 		ProjectID: &projectID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout, error: %v", err))
 	}
-	if pipeline == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("pipeline %d not found in project %s", rolloutID, projectID))
+	if plan == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
 	}
 
-	pipelineID64 := int64(pipeline.ID)
 	taskRun, err := s.store.GetTaskRunV1(ctx, &store.FindTaskRunMessage{
 		UID:     &taskRunUID,
-		PlanUID: &pipelineID64,
+		PlanUID: &rolloutID64,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task run, error: %v", err))
 	}
 	if taskRun == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %d not found in pipeline %d", taskRunUID, pipeline.ID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %d not found in rollout %d", taskRunUID, rolloutID))
 	}
 
 	taskRunV1, err := convertToTaskRun(ctx, s.store, s.stateCfg, taskRun)
@@ -1097,7 +1093,7 @@ func isChangeDatabasePlan(specs []*storepb.PlanConfig_Spec) bool {
 }
 
 // GetPipelineCreate gets a pipeline create message from a plan.
-func GetPipelineCreate(ctx context.Context, s *store.Store, specs []*storepb.PlanConfig_Spec, projectID string) (*store.PipelineMessage, error) {
+func GetPipelineCreate(ctx context.Context, s *store.Store, specs []*storepb.PlanConfig_Spec, projectID string) ([]*store.TaskMessage, error) {
 	// Step 1 - transform database group specs.
 	// Re-evaluate database groups live to pick up newly created databases.
 	transformedSpecs, err := applyDatabaseGroupSpecTransformations(ctx, s, specs, projectID)
@@ -1115,20 +1111,16 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, specs []*storepb.Pla
 		taskCreates = append(taskCreates, tcs...)
 	}
 
-	return &store.PipelineMessage{
-		ProjectID: projectID,
-		Tasks:     taskCreates,
-	}, nil
+	return taskCreates, nil
 }
 
 // filter pipelineCreate.Tasks using targetEnvironmentID.
-func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, pipelineCreate *store.PipelineMessage, targetEnvironment *string) (*store.PipelineMessage, error) {
+func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, tasks []*store.TaskMessage, targetEnvironment *string) ([]*store.TaskMessage, error) {
 	if targetEnvironment == nil {
-		return pipelineCreate, nil
+		return tasks, nil
 	}
 	if *targetEnvironment == "" {
-		pipelineCreate.Tasks = nil
-		return pipelineCreate, nil
+		return nil, nil
 	}
 	targetEnvironmentID, err := common.GetEnvironmentID(*targetEnvironment)
 	if err != nil {
@@ -1160,13 +1152,12 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, pipelin
 
 	// Filter tasks to only include those in allowed environments
 	filteredTasks := []*store.TaskMessage{}
-	for _, task := range pipelineCreate.Tasks {
+	for _, task := range tasks {
 		if allowedEnvironments[task.Environment] {
 			filteredTasks = append(filteredTasks, task)
 		}
 	}
-	pipelineCreate.Tasks = filteredTasks
-	return pipelineCreate, nil
+	return filteredTasks, nil
 }
 
 func GetValidRolloutPolicyForEnvironment(ctx context.Context, stores *store.Store, environment string) (*storepb.RolloutPolicy, error) {

@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 	"time"
 
@@ -11,32 +10,13 @@ import (
 	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// PipelineMessage is the message for pipelines.
-type PipelineMessage struct {
-	ProjectID string
-	Tasks     []*TaskMessage
-	// Output only.
-	ID int
-}
-
-// PipelineFind is the API message for finding pipelines.
-type PipelineFind struct {
-	ID        *int
-	ProjectID *string
-
-	Limit   *int
-	Offset  *int
-	FilterQ *qb.Query
-}
-
 // CreateRolloutTasks creates tasks for a plan.
-func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline *PipelineMessage) ([]*TaskMessage, error) {
+func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")
@@ -71,7 +51,7 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline 
 
 	var taskCreateList []*TaskMessage
 
-	for _, taskCreate := range pipeline.Tasks {
+	for _, taskCreate := range tasks {
 		k := taskKey{
 			instance: taskCreate.InstanceID,
 			sheet:    taskCreate.Payload.GetSheetSha256(),
@@ -103,93 +83,6 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline 
 	}
 
 	return []*TaskMessage{}, nil
-}
-
-// GetPipeline gets the pipeline.
-func (s *Store) GetPipeline(ctx context.Context, find *PipelineFind) (*PipelineMessage, error) {
-	pipelines, err := s.ListPipelines(ctx, find)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(pipelines) == 0 {
-		return nil, nil
-	} else if len(pipelines) > 1 {
-		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d pipelines, expect 1", len(pipelines))}
-	}
-	pipeline := pipelines[0]
-	return pipeline, nil
-}
-
-// GetPipelineByID gets the pipeline by ID.
-func (s *Store) GetPipelineByID(ctx context.Context, id int) (*PipelineMessage, error) {
-	return s.GetPipeline(ctx, &PipelineFind{ID: &id})
-}
-
-// ListPipelines lists pipelines.
-func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*PipelineMessage, error) {
-	q := qb.Q().Space(`
-		SELECT
-			plan.id,
-			plan.project
-		FROM plan
-		WHERE TRUE
-	`)
-
-	if filterQ := find.FilterQ; filterQ != nil {
-		q.And("?", filterQ)
-	}
-	if v := find.ID; v != nil {
-		q.And("plan.id = ?", *v)
-	}
-	if v := find.ProjectID; v != nil {
-		q.And("plan.project = ?", *v)
-	}
-
-	q.Space("ORDER BY plan.id DESC")
-	if v := find.Limit; v != nil {
-		q.Space("LIMIT ?", *v)
-	}
-	if v := find.Offset; v != nil {
-		q.Space("OFFSET ?", *v)
-	}
-
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var pipelines []*PipelineMessage
-	for rows.Next() {
-		var pipeline PipelineMessage
-		if err := rows.Scan(
-			&pipeline.ID,
-			&pipeline.ProjectID,
-		); err != nil {
-			return nil, err
-		}
-		pipelines = append(pipelines, &pipeline)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return pipelines, nil
 }
 
 // GetListRolloutFilter parses a CEL filter expression into a query builder query for listing rollouts.
