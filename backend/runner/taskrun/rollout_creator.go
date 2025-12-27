@@ -5,11 +5,10 @@ import (
 	"log/slog"
 	"sync"
 
-	"google.golang.org/protobuf/proto"
-
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -18,15 +17,17 @@ import (
 // RolloutCreator handles automatic rollout creation.
 // nolint:revive
 type RolloutCreator struct {
-	store    *store.Store
-	stateCfg *state.State
+	store          *store.Store
+	stateCfg       *state.State
+	webhookManager *webhook.Manager
 }
 
 // NewRolloutCreator creates a new rollout creator.
-func NewRolloutCreator(store *store.Store, stateCfg *state.State) *RolloutCreator {
+func NewRolloutCreator(store *store.Store, stateCfg *state.State, webhookManager *webhook.Manager) *RolloutCreator {
 	return &RolloutCreator{
-		store:    store,
-		stateCfg: stateCfg,
+		store:          store,
+		stateCfg:       stateCfg,
+		webhookManager: webhookManager,
 	}
 }
 
@@ -139,33 +140,9 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, planID int64) {
 	// All conditions met - create the rollout
 	slog.Info("auto-creating rollout", slog.Int("plan_id", int(planID)))
 
-	// Get pipeline create (tasks to create)
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, rc.store, plan.Config.GetSpecs(), project.ResourceID)
-	if err != nil {
-		slog.Error("failed to get pipeline create for rollout creation",
-			slog.Int("plan_id", int(planID)),
-			log.BBError(err))
-		return
-	}
-
-	// Create rollout tasks
-	_, err = rc.store.CreateRolloutTasks(ctx, planID, pipelineCreate)
-	if err != nil {
-		slog.Error("failed to create rollout tasks",
-			slog.Int("plan_id", int(planID)),
-			log.BBError(err))
-		return
-	}
-
-	// Update plan to set hasRollout to true
-	config := proto.CloneOf(plan.Config)
-	config.HasRollout = true
-	_, err = rc.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:    planID,
-		Config: config,
-	})
-	if err != nil {
-		slog.Error("failed to update plan hasRollout",
+	// Create rollout and pending tasks
+	if err := apiv1.CreateRolloutAndPendingTasks(ctx, rc.store, rc.webhookManager, plan, issue, project); err != nil {
+		slog.Error("failed to create rollout and pending tasks",
 			slog.Int("plan_id", int(planID)),
 			log.BBError(err))
 		return

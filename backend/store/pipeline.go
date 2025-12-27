@@ -22,13 +22,7 @@ type PipelineMessage struct {
 	ProjectID string
 	Tasks     []*TaskMessage
 	// Output only.
-	ID        int
-	Creator   string
-	CreatedAt time.Time
-	// The UpdatedAt is a latest time of task/taskRun updates.
-	// If there are no tasks, it will be the same as CreatedAt.
-	UpdatedAt time.Time
-	IssueID   *int
+	ID int
 }
 
 // PipelineFind is the API message for finding pipelines.
@@ -42,21 +36,19 @@ type PipelineFind struct {
 }
 
 // CreateRolloutTasks creates tasks for a plan.
-func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline *PipelineMessage) (int64, error) {
+func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline *PipelineMessage) ([]*TaskMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to begin tx")
+		return nil, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
-
-	invalidateCacheF := func() {}
 
 	// Check existing tasks to avoid duplicates
 	existingTasks, err := s.listTasksTx(ctx, tx, &TaskFind{
 		PlanID: &planUID,
 	})
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to list existing tasks")
+		return nil, errors.Wrapf(err, "failed to list existing tasks")
 	}
 
 	type taskKey struct {
@@ -96,17 +88,21 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline 
 	}
 
 	if len(taskCreateList) > 0 {
-		if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
-			return 0, errors.Wrap(err, "failed to create tasks")
+		tasks, err := s.createTasks(ctx, tx, taskCreateList...)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create tasks")
 		}
+		if err := tx.Commit(); err != nil {
+			return nil, errors.Wrapf(err, "failed to commit tx")
+		}
+		return tasks, nil
 	}
 
 	if err := tx.Commit(); err != nil {
-		return 0, errors.Wrapf(err, "failed to commit tx")
+		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
-	invalidateCacheF()
 
-	return planUID, nil
+	return []*TaskMessage{}, nil
 }
 
 // GetPipeline gets the pipeline.
@@ -135,21 +131,8 @@ func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*Pipel
 	q := qb.Q().Space(`
 		SELECT
 			plan.id,
-			plan.creator,
-			plan.created_at,
-			plan.project,
-			issue.id,
-			COALESCE(
-				(
-					SELECT MAX(task_run.updated_at)
-					FROM task
-					JOIN task_run ON task_run.task_id = task.id
-					WHERE task.plan_id = plan.id
-				),
-				plan.created_at
-			) AS updated_at
+			plan.project
 		FROM plan
-		LEFT JOIN issue ON issue.plan_id = plan.id
 		WHERE TRUE
 	`)
 
@@ -193,11 +176,7 @@ func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*Pipel
 		var pipeline PipelineMessage
 		if err := rows.Scan(
 			&pipeline.ID,
-			&pipeline.Creator,
-			&pipeline.CreatedAt,
 			&pipeline.ProjectID,
-			&pipeline.IssueID,
-			&pipeline.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

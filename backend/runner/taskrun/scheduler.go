@@ -76,13 +76,9 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	go s.ListenTaskSkippedOrDone(ctx)
 
 	// Start rollout creator component
-	rolloutCreator := NewRolloutCreator(s.store, s.stateCfg)
-	wg.Add(1)
-	go rolloutCreator.Run(ctx, wg, s.stateCfg.RolloutCreationChan)
-
-	// Start three independent schedulers
+	rolloutCreator := NewRolloutCreator(s.store, s.stateCfg, s.webhookManager)
 	wg.Add(3)
-	go s.runAutoRolloutScheduler(ctx, wg)
+	go rolloutCreator.Run(ctx, wg, s.stateCfg.RolloutCreationChan)
 	go s.runPendingTaskRunsScheduler(ctx, wg)
 	go s.runRunningTaskRunsScheduler(ctx, wg)
 
