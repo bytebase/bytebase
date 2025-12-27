@@ -27,40 +27,17 @@ func BuildSummaryMarkdown(w *world.World) string {
 
 func buildOutputStagesMarkdown(w *world.World, sb *strings.Builder) {
 	if w.IsRollout && w.Rollout != nil {
-		pendingStages := w.PendingStages
 		rollout := w.Rollout
-		// build a table of stage and status in GitHub flavored markdown.
-		// The stages come from the aggregated result of pendingStages and rollout.Stages.
-		// pendingStages are the stages to be rolled out at the beginning of the execution,
-		// they may or may not have been executed (depending on the targetStage input).
-		// rollout.Stages are the stages that have been executed, and the stage status is
-		// an aggregated status from stage tasks.
 
-		// Combine stages from rollout.Stages and pendingStages, deduplicating
-		allStages := []string{}
-		seenStages := make(map[string]bool)
-
-		// First add all stages from rollout.Stages
-		for _, stage := range rollout.Stages {
-			if !seenStages[stage.Environment] {
-				allStages = append(allStages, stage.Environment)
-				seenStages[stage.Environment] = true
-			}
-		}
-
-		// Then append pendingStages that aren't already in the list
-		for _, stage := range pendingStages {
-			if !seenStages[stage] {
-				allStages = append(allStages, stage)
-				seenStages[stage] = true
-			}
-		}
-
-		// Check if there are any stages to display
-		if len(allStages) == 0 {
+		if len(rollout.Stages) == 0 {
 			sb.WriteString("\n### Rollout Stages\n\n")
 			sb.WriteString("_No stages to display. The rollout may not have any stages._\n\n")
 			return
+		}
+
+		allStages := []string{}
+		for _, stage := range rollout.Stages {
+			allStages = append(allStages, stage.Environment)
 		}
 
 		// Create a map of stage environment to Stage object for quick lookup

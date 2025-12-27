@@ -51,8 +51,7 @@ type World struct {
 		Rollout      string                     `json:"rollout,omitempty"`
 		CheckResults *v1pb.CheckReleaseResponse `json:"checkResults,omitempty"`
 	}
-	PendingStages []string
-	Rollout       *v1pb.Rollout
+	Rollout *v1pb.Rollout
 }
 
 func NewWorld() *World {

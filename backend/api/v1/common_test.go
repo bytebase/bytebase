@@ -198,15 +198,6 @@ func TestIsValidateOnlyRequest(t *testing.T) {
 			},
 			want: true,
 		},
-		{
-			name: "CreateRolloutRequest with validate_only=false",
-			request: &v1pb.CreateRolloutRequest{
-				Parent:       "projects/test",
-				Rollout:      &v1pb.Rollout{},
-				ValidateOnly: false,
-			},
-			want: false,
-		},
 	}
 
 	for _, test := range tests {

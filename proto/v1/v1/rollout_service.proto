@@ -246,15 +246,11 @@ message CreateRolloutRequest {
   // The rollout to create.
   Rollout rollout = 2 [(google.api.field_behavior) = REQUIRED];
 
-  // Create the rollout and the stages up to the target stage.
+  // Create the rollout only for the specified target.
   // Format: environments/{environment}
   // If unspecified, all stages are created.
   // If set to "", no stages are created.
   optional string target = 3;
-
-  // If set, validate the request and preview the rollout, but
-  // do not actually create it.
-  bool validate_only = 4;
 }
 
 message ListTaskRunsRequest {

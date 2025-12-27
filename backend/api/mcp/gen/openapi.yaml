@@ -8210,17 +8210,11 @@ components:
           type: string
           title: target
           description: |-
-            Create the rollout and the stages up to the target stage.
+            Create the rollout only for the specified target.
              Format: environments/{environment}
              If unspecified, all stages are created.
              If set to "", no stages are created.
           nullable: true
-        validateOnly:
-          type: boolean
-          title: validate_only
-          description: |-
-            If set, validate the request and preview the rollout, but
-             do not actually create it.
       title: CreateRolloutRequest
       additionalProperties: false
     bytebase.v1.CreateSheetRequest:
