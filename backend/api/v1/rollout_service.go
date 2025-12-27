@@ -243,7 +243,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		}
 	}
 	if request.ValidateOnly {
-		// Filter out tasks that already exist (same logic as CreateRolloutTasks)
+		// Filter out tasks that already exist (same logic as CreateTasks)
 		existingTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list existing tasks, error: %v", err))
@@ -381,7 +381,7 @@ func CreateRolloutAndPendingTasks(
 	}
 
 	// Create rollout tasks
-	tasks, err = s.CreateRolloutTasks(ctx, plan.UID, tasks)
+	tasks, err = s.CreateTasks(ctx, plan.UID, tasks)
 	if err != nil {
 		return errors.Wrap(err, "failed to create rollout tasks")
 	}
