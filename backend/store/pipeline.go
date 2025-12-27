@@ -22,13 +22,7 @@ type PipelineMessage struct {
 	ProjectID string
 	Tasks     []*TaskMessage
 	// Output only.
-	ID        int
-	Creator   string
-	CreatedAt time.Time
-	// The UpdatedAt is a latest time of task/taskRun updates.
-	// If there are no tasks, it will be the same as CreatedAt.
-	UpdatedAt time.Time
-	IssueID   *int
+	ID int
 }
 
 // PipelineFind is the API message for finding pipelines.
@@ -48,8 +42,6 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline 
 		return nil, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
-
-	invalidateCacheF := func() {}
 
 	// Check existing tasks to avoid duplicates
 	existingTasks, err := s.listTasksTx(ctx, tx, &TaskFind{
@@ -103,14 +95,12 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline 
 		if err := tx.Commit(); err != nil {
 			return nil, errors.Wrapf(err, "failed to commit tx")
 		}
-		invalidateCacheF()
 		return tasks, nil
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
-	invalidateCacheF()
 
 	return []*TaskMessage{}, nil
 }
@@ -141,21 +131,8 @@ func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*Pipel
 	q := qb.Q().Space(`
 		SELECT
 			plan.id,
-			plan.creator,
-			plan.created_at,
-			plan.project,
-			issue.id,
-			COALESCE(
-				(
-					SELECT MAX(task_run.updated_at)
-					FROM task
-					JOIN task_run ON task_run.task_id = task.id
-					WHERE task.plan_id = plan.id
-				),
-				plan.created_at
-			) AS updated_at
+			plan.project
 		FROM plan
-		LEFT JOIN issue ON issue.plan_id = plan.id
 		WHERE TRUE
 	`)
 
@@ -199,11 +176,7 @@ func (s *Store) ListPipelines(ctx context.Context, find *PipelineFind) ([]*Pipel
 		var pipeline PipelineMessage
 		if err := rows.Scan(
 			&pipeline.ID,
-			&pipeline.Creator,
-			&pipeline.CreatedAt,
 			&pipeline.ProjectID,
-			&pipeline.IssueID,
-			&pipeline.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
