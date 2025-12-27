@@ -42,10 +42,10 @@ type PipelineFind struct {
 }
 
 // CreateRolloutTasks creates tasks for a plan.
-func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline *PipelineMessage) (int64, error) {
+func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline *PipelineMessage) ([]*TaskMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to begin tx")
+		return nil, errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
 
@@ -56,7 +56,7 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline 
 		PlanID: &planUID,
 	})
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to list existing tasks")
+		return nil, errors.Wrapf(err, "failed to list existing tasks")
 	}
 
 	type taskKey struct {
@@ -96,17 +96,23 @@ func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, pipeline 
 	}
 
 	if len(taskCreateList) > 0 {
-		if _, err := s.createTasks(ctx, tx, taskCreateList...); err != nil {
-			return 0, errors.Wrap(err, "failed to create tasks")
+		tasks, err := s.createTasks(ctx, tx, taskCreateList...)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create tasks")
 		}
+		if err := tx.Commit(); err != nil {
+			return nil, errors.Wrapf(err, "failed to commit tx")
+		}
+		invalidateCacheF()
+		return tasks, nil
 	}
 
 	if err := tx.Commit(); err != nil {
-		return 0, errors.Wrapf(err, "failed to commit tx")
+		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 	invalidateCacheF()
 
-	return planUID, nil
+	return []*TaskMessage{}, nil
 }
 
 // GetPipeline gets the pipeline.

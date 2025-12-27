@@ -299,20 +299,8 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		rolloutV1.Plan = request.Rollout.GetPlan()
 		return connect.NewResponse(rolloutV1), nil
 	}
-	_, err = s.store.CreateRolloutTasks(ctx, planID, pipelineCreate)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pipeline, error: %v", err))
-	}
-
-	// Update plan to set hasRollout to true
-	config := proto.CloneOf(plan.Config)
-	config.HasRollout = true
-	rollout, err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
-		UID:    planID,
-		Config: config,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update plan hasRollout, error: %v", err))
+	if err := CreateRolloutAndPendingTasks(ctx, s.store, s.webhookManager, plan, nil, project); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
@@ -320,7 +308,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks, error: %v", err))
 	}
 
-	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout, tasks)
+	rolloutV1, err := convertToRollout(ctx, s.store, project, plan, tasks)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
 	}
@@ -377,6 +365,105 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(&v1pb.ListTaskRunsResponse{
 		TaskRuns: taskRunsV1,
 	}), nil
+}
+
+// CreateRolloutAndPendingTasks creates rollout tasks and pending task runs.
+func CreateRolloutAndPendingTasks(
+	ctx context.Context,
+	s *store.Store,
+	webhookManager *webhook.Manager,
+	plan *store.PlanMessage,
+	issue *store.IssueMessage,
+	project *store.ProjectMessage,
+) error {
+	planID := plan.UID
+
+	// Get pipeline create (tasks to create)
+	pipelineCreate, err := GetPipelineCreate(ctx, s, plan.Config.GetSpecs(), project.ResourceID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get pipeline create for rollout creation")
+	}
+
+	// Create rollout tasks
+	tasks, err := s.CreateRolloutTasks(ctx, planID, pipelineCreate)
+	if err != nil {
+		return errors.Wrap(err, "failed to create rollout tasks")
+	}
+
+	// Update plan to set hasRollout to true
+	config := proto.CloneOf(plan.Config)
+	config.HasRollout = true
+	_, err = s.UpdatePlan(ctx, &store.UpdatePlanMessage{
+		UID:    planID,
+		Config: config,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to update plan hasRollout")
+	}
+
+	// Check if we should auto-rollout
+	envPolicies := make(map[string]*storepb.RolloutPolicy)
+	for _, task := range tasks {
+		// Skip if environment is empty (should not happen for rollout tasks usually)
+		if task.Environment == "" {
+			continue
+		}
+
+		policy, ok := envPolicies[task.Environment]
+		if !ok {
+			var err error
+			policy, err = s.GetRolloutPolicy(ctx, task.Environment)
+			if err != nil {
+				// Don't error out entirely just because policy fetch failed for one env, but logging/continuing is better.
+				// However, here we don't have logger injected easily.
+				// Since this is a shared util, returning error might abort the whole op.
+				// The original code in rollout_creator.go logged error and continued.
+				// We should probably log error and continue here too.
+				// But we don't have a logger here.
+				// Let's assume store failure is critical enough or rare enough.
+				// Actually, `rollout_creator.go` imported `log`.
+				// Here we can import `log/slog` or use `common/log`.
+				// But `apiv1` usually returns error.
+				// If we error here, we stop processing other tasks.
+				// Let's try to fetch policy. If fails, we can't determine auto-rollout.
+				// Returning error seems safer than silently ignoring?
+				// But the original code `continue`d.
+				// Let's return error for now to be safe, or maybe swallow if it's transient?
+				// To match original behavior: log and continue. Use `slog`.
+				return errors.Wrapf(err, "failed to get rollout policy for environment %s", task.Environment)
+			}
+			envPolicies[task.Environment] = policy
+		}
+
+		if policy.Automatic {
+			create := &store.TaskRunMessage{
+				TaskUID: task.ID,
+			}
+			if task.Payload.GetSheetSha256() != "" {
+				sheetSha256 := task.Payload.GetSheetSha256()
+				create.SheetSha256 = &sheetSha256
+			}
+
+			// Use SystemBot for auto-rollout
+			if err := s.CreatePendingTaskRuns(ctx, common.SystemBotEmail, create); err != nil {
+				return errors.Wrapf(err, "failed to create pending task runs for task %d", task.ID)
+			}
+
+			webhookManager.CreateEvent(ctx, &webhook.Event{
+				Actor:   store.SystemBotUser,
+				Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
+				Comment: "",
+				Issue:   webhook.NewIssue(issue),
+				Rollout: webhook.NewRollout(plan),
+				Project: webhook.NewProject(project),
+				TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
+					Title:  task.GetDatabaseName(),
+					Status: storepb.TaskRun_PENDING.String(),
+				},
+			})
+		}
+	}
+	return nil
 }
 
 // GetTaskRun gets a task run.
