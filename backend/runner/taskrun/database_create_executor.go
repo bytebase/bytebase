@@ -10,9 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/component/state"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -20,13 +18,11 @@ import (
 )
 
 // NewDatabaseCreateExecutor creates a database create task executor.
-func NewDatabaseCreateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, stateCfg *state.State, profile *config.Profile) Executor {
+func NewDatabaseCreateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer) Executor {
 	return &DatabaseCreateExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
 		schemaSyncer: schemaSyncer,
-		stateCfg:     stateCfg,
-		profile:      profile,
 	}
 }
 
@@ -35,8 +31,6 @@ type DatabaseCreateExecutor struct {
 	store        *store.Store
 	dbFactory    *dbfactory.DBFactory
 	schemaSyncer *schemasync.Syncer
-	stateCfg     *state.State
-	profile      *config.Profile
 }
 
 // RunOnce will run the database create task executor once.

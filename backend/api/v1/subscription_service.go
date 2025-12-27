@@ -11,24 +11,20 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 // SubscriptionService implements the subscription service.
 type SubscriptionService struct {
 	v1connect.UnimplementedSubscriptionServiceHandler
-	store          *store.Store
 	profile        *config.Profile
 	licenseService *enterprise.LicenseService
 }
 
 // NewSubscriptionService creates a new SubscriptionService.
 func NewSubscriptionService(
-	store *store.Store,
 	profile *config.Profile,
 	licenseService *enterprise.LicenseService) *SubscriptionService {
 	return &SubscriptionService{
-		store:          store,
 		profile:        profile,
 		licenseService: licenseService,
 	}

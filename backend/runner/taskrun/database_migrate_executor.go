@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	"github.com/bytebase/bytebase/backend/component/state"
-	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
@@ -32,11 +31,10 @@ import (
 )
 
 // NewDatabaseMigrateExecutor creates a database migration task executor.
-func NewDatabaseMigrateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license *enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
+func NewDatabaseMigrateExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &DatabaseMigrateExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
-		license:      license,
 		stateCfg:     stateCfg,
 		schemaSyncer: schemaSyncer,
 		profile:      profile,
@@ -47,7 +45,6 @@ func NewDatabaseMigrateExecutor(store *store.Store, dbFactory *dbfactory.DBFacto
 type DatabaseMigrateExecutor struct {
 	store        *store.Store
 	dbFactory    *dbfactory.DBFactory
-	license      *enterprise.LicenseService
 	stateCfg     *state.State
 	schemaSyncer *schemasync.Syncer
 	profile      *config.Profile

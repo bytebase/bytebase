@@ -12,7 +12,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/state"
-	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -22,21 +21,19 @@ const (
 )
 
 // NewScheduler creates a new plan check scheduler.
-func NewScheduler(s *store.Store, licenseService *enterprise.LicenseService, stateCfg *state.State, executor *CombinedExecutor) *Scheduler {
+func NewScheduler(s *store.Store, stateCfg *state.State, executor *CombinedExecutor) *Scheduler {
 	return &Scheduler{
-		store:          s,
-		licenseService: licenseService,
-		stateCfg:       stateCfg,
-		executor:       executor,
+		store:    s,
+		stateCfg: stateCfg,
+		executor: executor,
 	}
 }
 
 // Scheduler is the plan check run scheduler.
 type Scheduler struct {
-	store          *store.Store
-	licenseService *enterprise.LicenseService
-	stateCfg       *state.State
-	executor       *CombinedExecutor
+	store    *store.Store
+	stateCfg *state.State
+	executor *CombinedExecutor
 }
 
 // Run runs the scheduler.

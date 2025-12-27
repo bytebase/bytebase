@@ -22,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/qb"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -71,18 +70,16 @@ type AuthService struct {
 	secret         string
 	licenseService *enterprise.LicenseService
 	profile        *config.Profile
-	stateCfg       *state.State
 	iamManager     *iam.Manager
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(store *store.Store, secret string, licenseService *enterprise.LicenseService, profile *config.Profile, stateCfg *state.State, iamManager *iam.Manager) *AuthService {
+func NewAuthService(store *store.Store, secret string, licenseService *enterprise.LicenseService, profile *config.Profile, iamManager *iam.Manager) *AuthService {
 	return &AuthService{
 		store:          store,
 		secret:         secret,
 		licenseService: licenseService,
 		profile:        profile,
-		stateCfg:       stateCfg,
 		iamManager:     iamManager,
 	}
 }

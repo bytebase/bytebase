@@ -21,11 +21,9 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/export"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -44,31 +42,25 @@ import (
 type SQLService struct {
 	v1connect.UnimplementedSQLServiceHandler
 	store          *store.Store
-	sheetManager   *sheet.Manager
 	schemaSyncer   *schemasync.Syncer
 	dbFactory      *dbfactory.DBFactory
 	licenseService *enterprise.LicenseService
-	profile        *config.Profile
 	iamManager     *iam.Manager
 }
 
 // NewSQLService creates a SQLService.
 func NewSQLService(
 	store *store.Store,
-	sheetManager *sheet.Manager,
 	schemaSyncer *schemasync.Syncer,
 	dbFactory *dbfactory.DBFactory,
 	licenseService *enterprise.LicenseService,
-	profile *config.Profile,
 	iamManager *iam.Manager,
 ) *SQLService {
 	return &SQLService{
 		store:          store,
-		sheetManager:   sheetManager,
 		schemaSyncer:   schemaSyncer,
 		dbFactory:      dbFactory,
 		licenseService: licenseService,
-		profile:        profile,
 		iamManager:     iamManager,
 	}
 }

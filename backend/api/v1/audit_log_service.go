@@ -12,7 +12,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
 	"github.com/bytebase/bytebase/backend/component/export"
-	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -23,14 +22,12 @@ import (
 type AuditLogService struct {
 	v1connect.UnimplementedAuditLogServiceHandler
 	store          *store.Store
-	iamManager     *iam.Manager
 	licenseService *enterprise.LicenseService
 }
 
-func NewAuditLogService(store *store.Store, iamManager *iam.Manager, licenseService *enterprise.LicenseService) *AuditLogService {
+func NewAuditLogService(store *store.Store, licenseService *enterprise.LicenseService) *AuditLogService {
 	return &AuditLogService{
 		store:          store,
-		iamManager:     iamManager,
 		licenseService: licenseService,
 	}
 }

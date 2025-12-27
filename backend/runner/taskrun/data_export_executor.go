@@ -18,38 +18,29 @@ import (
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/export"
-	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 // NewDataExportExecutor creates a data export task executor.
-func NewDataExportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license *enterprise.LicenseService, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
+func NewDataExportExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, license *enterprise.LicenseService) Executor {
 	return &DataExportExecutor{
-		store:        store,
-		dbFactory:    dbFactory,
-		license:      license,
-		stateCfg:     stateCfg,
-		schemaSyncer: schemaSyncer,
-		profile:      profile,
+		store:     store,
+		dbFactory: dbFactory,
+		license:   license,
 	}
 }
 
 // DataExportExecutor is the data export task executor.
 type DataExportExecutor struct {
-	store        *store.Store
-	dbFactory    *dbfactory.DBFactory
-	license      *enterprise.LicenseService
-	stateCfg     *state.State
-	schemaSyncer *schemasync.Syncer
-	profile      *config.Profile
+	store     *store.Store
+	dbFactory *dbfactory.DBFactory
+	license   *enterprise.LicenseService
 }
 
 // RunOnce will run the data export task executor once.

@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -18,15 +17,13 @@ import (
 // DatabaseCatalogService implements the database catalog service.
 type DatabaseCatalogService struct {
 	v1connect.UnimplementedDatabaseCatalogServiceHandler
-	store          *store.Store
-	licenseService *enterprise.LicenseService
+	store *store.Store
 }
 
 // NewDatabaseCatalogService creates a new DatabaseCatalogService.
-func NewDatabaseCatalogService(store *store.Store, licenseService *enterprise.LicenseService) *DatabaseCatalogService {
+func NewDatabaseCatalogService(store *store.Store) *DatabaseCatalogService {
 	return &DatabaseCatalogService{
-		store:          store,
-		licenseService: licenseService,
+		store: store,
 	}
 }
 

@@ -11,7 +11,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 
-	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -25,22 +24,19 @@ func NewStatementAdviseExecutor(
 	store *store.Store,
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
-	licenseService *enterprise.LicenseService,
 ) Executor {
 	return &StatementAdviseExecutor{
-		store:          store,
-		sheetManager:   sheetManager,
-		dbFactory:      dbFactory,
-		licenseService: licenseService,
+		store:        store,
+		sheetManager: sheetManager,
+		dbFactory:    dbFactory,
 	}
 }
 
 // StatementAdviseExecutor is the plan check statement advise executor.
 type StatementAdviseExecutor struct {
-	store          *store.Store
-	sheetManager   *sheet.Manager
-	dbFactory      *dbfactory.DBFactory
-	licenseService *enterprise.LicenseService
+	store        *store.Store
+	sheetManager *sheet.Manager
+	dbFactory    *dbfactory.DBFactory
 }
 
 // RunForTarget runs the statement advise check for a single target.

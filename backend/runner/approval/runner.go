@@ -19,8 +19,6 @@ import (
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -33,19 +31,15 @@ import (
 // Runner is the runner for finding approval templates for issues.
 type Runner struct {
 	store          *store.Store
-	sheetManager   *sheet.Manager
-	dbFactory      *dbfactory.DBFactory
 	stateCfg       *state.State
 	webhookManager *webhook.Manager
 	licenseService *enterprise.LicenseService
 }
 
 // NewRunner creates a new runner.
-func NewRunner(store *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService) *Runner {
+func NewRunner(store *store.Store, stateCfg *state.State, webhookManager *webhook.Manager, licenseService *enterprise.LicenseService) *Runner {
 	return &Runner{
 		store:          store,
-		sheetManager:   sheetManager,
-		dbFactory:      dbFactory,
 		stateCfg:       stateCfg,
 		webhookManager: webhookManager,
 		licenseService: licenseService,

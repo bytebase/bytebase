@@ -16,7 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
+
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -35,7 +35,6 @@ type IssueService struct {
 	webhookManager *webhook.Manager
 	stateCfg       *state.State
 	licenseService *enterprise.LicenseService
-	profile        *config.Profile
 	iamManager     *iam.Manager
 }
 
@@ -51,7 +50,6 @@ func NewIssueService(
 	webhookManager *webhook.Manager,
 	stateCfg *state.State,
 	licenseService *enterprise.LicenseService,
-	profile *config.Profile,
 	iamManager *iam.Manager,
 ) *IssueService {
 	return &IssueService{
@@ -59,7 +57,6 @@ func NewIssueService(
 		webhookManager: webhookManager,
 		stateCfg:       stateCfg,
 		licenseService: licenseService,
-		profile:        profile,
 		iamManager:     iamManager,
 	}
 }

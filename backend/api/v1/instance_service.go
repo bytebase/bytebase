@@ -14,9 +14,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/component/iam"
+
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
-	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -32,23 +31,19 @@ type InstanceService struct {
 	store                 *store.Store
 	profile               *config.Profile
 	licenseService        *enterprise.LicenseService
-	stateCfg              *state.State
 	dbFactory             *dbfactory.DBFactory
 	schemaSyncer          *schemasync.Syncer
-	iamManager            *iam.Manager
 	sampleInstanceManager *sampleinstance.Manager
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager, sampleInstanceManager *sampleinstance.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleInstanceManager *sampleinstance.Manager) *InstanceService {
 	return &InstanceService{
 		store:                 store,
 		profile:               profile,
 		licenseService:        licenseService,
-		stateCfg:              stateCfg,
 		dbFactory:             dbFactory,
 		schemaSyncer:          schemaSyncer,
-		iamManager:            iamManager,
 		sampleInstanceManager: sampleInstanceManager,
 	}
 }
