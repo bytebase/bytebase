@@ -125,18 +125,20 @@ func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *
 		if task == nil {
 			return nil, errors.Errorf("task %v not found", taskUID)
 		}
-		pipeline, err := s.GetPipelineByID(ctx, int(task.PlanID))
+		plan, err := s.GetPlan(ctx, &store.FindPlanMessage{
+			UID: &task.PlanID,
+		})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get pipeline %v", task.PlanID)
+			return nil, errors.Wrapf(err, "failed to get plan %v", task.PlanID)
 		}
-		if pipeline == nil {
-			return nil, errors.Errorf("pipeline %d not found", task.PlanID)
+		if plan == nil {
+			return nil, errors.Errorf("plan %d not found", task.PlanID)
 		}
 		stageID := common.FormatStageID(task.Environment)
 		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
 			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task_{
 				Task: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task{
-					Task: common.FormatTask(pipeline.ProjectID, int(task.PlanID), stageID, task.ID),
+					Task: common.FormatTask(plan.ProjectID, int(task.PlanID), stageID, task.ID),
 				},
 			},
 		}, nil

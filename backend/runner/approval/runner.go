@@ -487,13 +487,13 @@ func (r *Runner) buildCELVariablesForDatabaseChange(ctx context.Context, issue *
 	}
 
 	// Build CEL variables for each task
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, plan.Config.GetSpecs(), issue.ProjectID)
+	tasks, err := apiv1.GetPipelineCreate(ctx, r.store, plan.Config.GetSpecs(), issue.ProjectID)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to get pipeline create")
 	}
 
 	var celVarsList []map[string]any
-	for _, task := range pipelineCreate.Tasks {
+	for _, task := range tasks {
 		instance, err := r.store.GetInstance(ctx, &store.FindInstanceMessage{
 			ResourceID: &task.InstanceID,
 		})
@@ -601,13 +601,13 @@ func (r *Runner) buildCELVariablesForDataExport(ctx context.Context, issue *stor
 		return nil, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, r.store, plan.Config.GetSpecs(), issue.ProjectID)
+	tasks, err := apiv1.GetPipelineCreate(ctx, r.store, plan.Config.GetSpecs(), issue.ProjectID)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to get pipeline create")
 	}
 
 	var celVarsList []map[string]any
-	for _, task := range pipelineCreate.Tasks {
+	for _, task := range tasks {
 		if task.Type != storepb.Task_DATABASE_EXPORT {
 			continue
 		}
