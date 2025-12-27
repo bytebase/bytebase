@@ -163,7 +163,8 @@ func (s *Store) FindBlockingTaskByVersion(ctx context.Context, planUID int64, in
 	return nil, nil
 }
 
-func (*Store) createTasks(ctx context.Context, txn *sql.Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
+// createTasksTx creates tasks in a transaction.
+func (*Store) createTasksTx(ctx context.Context, txn *sql.Tx, creates ...*TaskMessage) ([]*TaskMessage, error) {
 	var (
 		planIDs      []int64
 		instances    []string
@@ -616,7 +617,7 @@ func (s *Store) CreateTasks(ctx context.Context, planUID int64, tasks []*TaskMes
 	}
 
 	if len(taskCreateList) > 0 {
-		tasks, err := s.createTasks(ctx, tx, taskCreateList...)
+		tasks, err := s.createTasksTx(ctx, tx, taskCreateList...)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create tasks")
 		}
