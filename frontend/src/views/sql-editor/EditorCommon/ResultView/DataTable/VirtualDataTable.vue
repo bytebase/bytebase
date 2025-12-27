@@ -212,7 +212,7 @@
 <script lang="ts" setup>
 import { useWindowSize, watchDebounced } from "@vueuse/core";
 import { NPerformantEllipsis, NVirtualList } from "naive-ui";
-import { nextTick, ref } from "vue";
+import { nextTick, onMounted, onUnmounted, ref } from "vue";
 import { type ComposedDatabase, DEBOUNCE_SEARCH_DELAY } from "@/types";
 import { type QueryRow } from "@/types/proto-es/v1/sql_service_pb";
 import { type SearchParams } from "@/utils";
@@ -349,6 +349,35 @@ watchDebounced(
   },
   { debounce: DEBOUNCE_SEARCH_DELAY }
 );
+
+// Handle shift+wheel for horizontal scrolling
+// Use capture phase to intercept before NVirtualList handles it
+const handleWheel = (event: WheelEvent) => {
+  const container = containerRef.value;
+  if (!container) return;
+
+  // Only handle shift+wheel when there's horizontal overflow
+  const hasHorizontalOverflow = container.scrollWidth > container.clientWidth;
+  if (!event.shiftKey || !hasHorizontalOverflow) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  container.scrollLeft += event.deltaY || event.deltaX;
+};
+
+onMounted(() => {
+  // Use capture phase to intercept before NVirtualList
+  containerRef.value?.addEventListener("wheel", handleWheel, {
+    passive: false,
+    capture: true,
+  });
+});
+
+onUnmounted(() => {
+  containerRef.value?.removeEventListener("wheel", handleWheel, {
+    capture: true,
+  });
+});
 
 defineExpose({
   scrollTo: (index: number) =>
