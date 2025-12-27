@@ -1,7 +1,6 @@
 package store
 
 import (
-	"context"
 	"strings"
 	"time"
 
@@ -14,76 +13,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
-
-// CreateRolloutTasks creates tasks for a plan.
-func (s *Store) CreateRolloutTasks(ctx context.Context, planUID int64, tasks []*TaskMessage) ([]*TaskMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-
-	// Check existing tasks to avoid duplicates
-	existingTasks, err := s.listTasksTx(ctx, tx, &TaskFind{
-		PlanID: &planUID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list existing tasks")
-	}
-
-	type taskKey struct {
-		instance string
-		database string
-		sheet    string
-	}
-
-	createdTasks := map[taskKey]struct{}{}
-	for _, task := range existingTasks {
-		k := taskKey{
-			instance: task.InstanceID,
-			sheet:    task.Payload.GetSheetSha256(),
-		}
-		if task.DatabaseName != nil {
-			k.database = *task.DatabaseName
-		}
-		createdTasks[k] = struct{}{}
-	}
-
-	var taskCreateList []*TaskMessage
-
-	for _, taskCreate := range tasks {
-		k := taskKey{
-			instance: taskCreate.InstanceID,
-			sheet:    taskCreate.Payload.GetSheetSha256(),
-		}
-		if taskCreate.DatabaseName != nil {
-			k.database = *taskCreate.DatabaseName
-		}
-
-		if _, ok := createdTasks[k]; ok {
-			continue
-		}
-		taskCreate.PlanID = planUID
-		taskCreateList = append(taskCreateList, taskCreate)
-	}
-
-	if len(taskCreateList) > 0 {
-		tasks, err := s.createTasks(ctx, tx, taskCreateList...)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create tasks")
-		}
-		if err := tx.Commit(); err != nil {
-			return nil, errors.Wrapf(err, "failed to commit tx")
-		}
-		return tasks, nil
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
-	}
-
-	return []*TaskMessage{}, nil
-}
 
 // GetListRolloutFilter parses a CEL filter expression into a query builder query for listing rollouts.
 func GetListRolloutFilter(filter string) (*qb.Query, error) {
