@@ -174,9 +174,6 @@ func (x *CreateRolloutRequest) Equal(y *CreateRolloutRequest) bool {
 	if p, q := x.Target, y.Target; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}
-	if x.ValidateOnly != y.ValidateOnly {
-		return false
-	}
 	return true
 }
 

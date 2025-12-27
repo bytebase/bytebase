@@ -319,18 +319,6 @@ func TestGitOpsRollout(t *testing.T) {
 	a.NotNil(rolloutResp2)
 	a.Equal(rollout.Name, rolloutResp2.Msg.Name)
 
-	// Call CreateRollout with ValidateOnly on the finished plan.
-	// the rollout should contain zero stages.
-	rolloutResp3, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
-		Parent: project.Name,
-		Rollout: &v1pb.Rollout{
-			Plan: plan.Name,
-		},
-		ValidateOnly: true,
-	}))
-	a.NoError(err)
-	a.NotNil(rolloutResp3)
-	a.Empty(rolloutResp3.Msg.Stages)
 }
 
 // TestGitOpsRolloutMultiTarget tests a more complex GitOps scenario:
@@ -595,18 +583,6 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	a.NotNil(rolloutResp2)
 	a.Equal(rollout.Name, rolloutResp2.Msg.Name)
 
-	// Call CreateRollout with ValidateOnly on the finished plan.
-	// the rollout should contain zero stages.
-	rolloutResp3, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
-		Parent: project.Name,
-		Rollout: &v1pb.Rollout{
-			Plan: plan.Name,
-		},
-		ValidateOnly: true,
-	}))
-	a.NoError(err)
-	a.NotNil(rolloutResp3)
-	a.Empty(rolloutResp3.Msg.Stages)
 }
 
 // TestGitOpsCheckAppliedButChanged tests that CheckRelease detects files that have been applied but with different content.

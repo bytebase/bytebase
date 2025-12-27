@@ -193,10 +193,6 @@ func buildRolloutFindWithFilter(planFind *store.FindPlanMessage, filter string) 
 // CreateRollout creates a rollout from plan.
 func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request[v1pb.CreateRolloutRequest]) (*connect.Response[v1pb.Rollout], error) {
 	request := req.Msg
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
-	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -228,68 +224,12 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
 	}
 	if isChangeDatabasePlan(plan.Config.GetSpecs()) {
-		tasks, err = getPipelineCreateToTargetStage(ctx, s.store, tasks, request.Target)
+		tasks, err = filterTasksByStage(ctx, s.store, tasks, request.Target)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to filter stages with stageId, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to filter tasks with stage id, error: %v", err))
 		}
 	}
-	if request.ValidateOnly {
-		// Filter out tasks that already exist (same logic as CreateTasks)
-		existingTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list existing tasks, error: %v", err))
-		}
 
-		type taskKey struct {
-			instance string
-			database string
-			sheet    string
-		}
-
-		createdTasks := map[taskKey]struct{}{}
-		for _, task := range existingTasks {
-			k := taskKey{
-				instance: task.InstanceID,
-				sheet:    task.Payload.GetSheetSha256(),
-			}
-			if task.DatabaseName != nil {
-				k.database = *task.DatabaseName
-			}
-			createdTasks[k] = struct{}{}
-		}
-
-		newTasks := []*store.TaskMessage{}
-		for _, taskCreate := range tasks {
-			k := taskKey{
-				instance: taskCreate.InstanceID,
-				sheet:    taskCreate.Payload.GetSheetSha256(),
-			}
-			if taskCreate.DatabaseName != nil {
-				k.database = *taskCreate.DatabaseName
-			}
-
-			if _, ok := createdTasks[k]; ok {
-				continue
-			}
-			newTasks = append(newTasks, taskCreate)
-		}
-
-		// Construct a dummy plan for preview.
-		previewPlan := &store.PlanMessage{
-			UID:       planID,
-			Name:      plan.Name,
-			Creator:   user.Email,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-			ProjectID: project.ResourceID,
-		}
-		rolloutV1, err := convertToRollout(ctx, s.store, project, previewPlan, newTasks)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
-		}
-		rolloutV1.Plan = request.Rollout.GetPlan()
-		return connect.NewResponse(rolloutV1), nil
-	}
 	if err := CreateRolloutAndPendingTasks(ctx, s.store, s.webhookManager, plan, nil, project); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -1106,7 +1046,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, specs []*storepb.Pla
 }
 
 // filter pipelineCreate.Tasks using targetEnvironmentID.
-func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, tasks []*store.TaskMessage, targetEnvironment *string) ([]*store.TaskMessage, error) {
+func filterTasksByStage(ctx context.Context, s *store.Store, tasks []*store.TaskMessage, targetEnvironment *string) ([]*store.TaskMessage, error) {
 	if targetEnvironment == nil {
 		return tasks, nil
 	}
@@ -1118,33 +1058,10 @@ func getPipelineCreateToTargetStage(ctx context.Context, s *store.Store, tasks [
 		return nil, errors.Wrapf(err, "failed to get environment id from %q", *targetEnvironment)
 	}
 
-	// Get live environment order
-	environments, err := s.GetEnvironment(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get environments")
-	}
-	var environmentOrder []string
-	for _, env := range environments.GetEnvironments() {
-		environmentOrder = append(environmentOrder, env.Id)
-	}
-
-	// Build a set of allowed environments up to and including the target
-	allowedEnvironments := make(map[string]bool)
-	for _, environmentID := range environmentOrder {
-		allowedEnvironments[environmentID] = true
-		if environmentID == targetEnvironmentID {
-			break
-		}
-	}
-
-	if !allowedEnvironments[targetEnvironmentID] {
-		return nil, errors.Errorf("environment %q not found", targetEnvironmentID)
-	}
-
 	// Filter tasks to only include those in allowed environments
 	filteredTasks := []*store.TaskMessage{}
 	for _, task := range tasks {
-		if allowedEnvironments[task.Environment] {
+		if task.Environment == targetEnvironmentID {
 			filteredTasks = append(filteredTasks, task)
 		}
 	}

@@ -268,7 +268,7 @@ export declare type CreateRolloutRequest = Message<"bytebase.v1.CreateRolloutReq
   rollout?: Rollout;
 
   /**
-   * Create the rollout and the stages up to the target stage.
+   * Create the rollout only for the specified target.
    * Format: environments/{environment}
    * If unspecified, all stages are created.
    * If set to "", no stages are created.
@@ -276,14 +276,6 @@ export declare type CreateRolloutRequest = Message<"bytebase.v1.CreateRolloutReq
    * @generated from field: optional string target = 3;
    */
   target?: string;
-
-  /**
-   * If set, validate the request and preview the rollout, but
-   * do not actually create it.
-   *
-   * @generated from field: bool validate_only = 4;
-   */
-  validateOnly: boolean;
 };
 
 /**

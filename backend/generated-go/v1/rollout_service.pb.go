@@ -962,14 +962,11 @@ type CreateRolloutRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The rollout to create.
 	Rollout *Rollout `protobuf:"bytes,2,opt,name=rollout,proto3" json:"rollout,omitempty"`
-	// Create the rollout and the stages up to the target stage.
+	// Create the rollout only for the specified target.
 	// Format: environments/{environment}
 	// If unspecified, all stages are created.
 	// If set to "", no stages are created.
-	Target *string `protobuf:"bytes,3,opt,name=target,proto3,oneof" json:"target,omitempty"`
-	// If set, validate the request and preview the rollout, but
-	// do not actually create it.
-	ValidateOnly  bool `protobuf:"varint,4,opt,name=validate_only,json=validateOnly,proto3" json:"validate_only,omitempty"`
+	Target        *string `protobuf:"bytes,3,opt,name=target,proto3,oneof" json:"target,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1023,13 +1020,6 @@ func (x *CreateRolloutRequest) GetTarget() string {
 		return *x.Target
 	}
 	return ""
-}
-
-func (x *CreateRolloutRequest) GetValidateOnly() bool {
-	if x != nil {
-		return x.ValidateOnly
-	}
-	return false
 }
 
 type ListTaskRunsRequest struct {
@@ -3612,13 +3602,12 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x06filter\x18\x04 \x01(\tR\x06filter\"p\n" +
 	"\x14ListRolloutsResponse\x120\n" +
 	"\brollouts\x18\x01 \x03(\v2\x14.bytebase.v1.RolloutR\brollouts\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xce\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xa9\x01\n" +
 	"\x14CreateRolloutRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x123\n" +
 	"\arollout\x18\x02 \x01(\v2\x14.bytebase.v1.RolloutB\x03\xe0A\x02R\arollout\x12\x1b\n" +
-	"\x06target\x18\x03 \x01(\tH\x00R\x06target\x88\x01\x01\x12#\n" +
-	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnlyB\t\n" +
+	"\x06target\x18\x03 \x01(\tH\x00R\x06target\x88\x01\x01B\t\n" +
 	"\a_target\"H\n" +
 	"\x13ListTaskRunsRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
