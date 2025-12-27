@@ -318,7 +318,6 @@ func TestGitOpsRollout(t *testing.T) {
 	a.NoError(err)
 	a.NotNil(rolloutResp2)
 	a.Equal(rollout.Name, rolloutResp2.Msg.Name)
-
 }
 
 // TestGitOpsRolloutMultiTarget tests a more complex GitOps scenario:
@@ -582,7 +581,6 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	a.NoError(err)
 	a.NotNil(rolloutResp2)
 	a.Equal(rollout.Name, rolloutResp2.Msg.Name)
-
 }
 
 // TestGitOpsCheckAppliedButChanged tests that CheckRelease detects files that have been applied but with different content.

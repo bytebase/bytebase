@@ -224,13 +224,13 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get pipeline create, error: %v", err))
 	}
 	if isChangeDatabasePlan(plan.Config.GetSpecs()) {
-		tasks, err = filterTasksByStage(ctx, s.store, tasks, request.Target)
+		tasks, err = filterTasksByStage(tasks, request.Target)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to filter tasks with stage id, error: %v", err))
 		}
 	}
 
-	if err := CreateRolloutAndPendingTasks(ctx, s.store, s.webhookManager, plan, nil, project); err != nil {
+	if err := CreateRolloutAndPendingTasks(ctx, s.store, s.webhookManager, plan, nil, project, tasks); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -305,10 +305,14 @@ func CreateRolloutAndPendingTasks(
 	plan *store.PlanMessage,
 	issue *store.IssueMessage,
 	project *store.ProjectMessage,
+	tasks []*store.TaskMessage,
 ) error {
-	tasks, err := GetPipelineCreate(ctx, s, plan.Config.GetSpecs(), project.ResourceID)
-	if err != nil {
-		return errors.Wrap(err, "failed to get pipeline create for rollout creation")
+	var err error
+	if tasks == nil {
+		tasks, err = GetPipelineCreate(ctx, s, plan.Config.GetSpecs(), project.ResourceID)
+		if err != nil {
+			return errors.Wrap(err, "failed to get pipeline create for rollout creation")
+		}
 	}
 
 	// Create rollout tasks
@@ -1046,7 +1050,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, specs []*storepb.Pla
 }
 
 // filter pipelineCreate.Tasks using targetEnvironmentID.
-func filterTasksByStage(ctx context.Context, s *store.Store, tasks []*store.TaskMessage, targetEnvironment *string) ([]*store.TaskMessage, error) {
+func filterTasksByStage(tasks []*store.TaskMessage, targetEnvironment *string) ([]*store.TaskMessage, error) {
 	if targetEnvironment == nil {
 		return tasks, nil
 	}
