@@ -16,7 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/state"
+
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -36,7 +36,6 @@ type SettingService struct {
 	store          *store.Store
 	profile        *config.Profile
 	licenseService *enterprise.LicenseService
-	stateCfg       *state.State
 }
 
 // NewSettingService creates a new setting service.
@@ -44,13 +43,11 @@ func NewSettingService(
 	store *store.Store,
 	profile *config.Profile,
 	licenseService *enterprise.LicenseService,
-	stateCfg *state.State,
 ) *SettingService {
 	return &SettingService{
 		store:          store,
 		profile:        profile,
 		licenseService: licenseService,
-		stateCfg:       stateCfg,
 	}
 }
 

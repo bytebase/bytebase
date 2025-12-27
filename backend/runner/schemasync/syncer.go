@@ -19,10 +19,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/component/state"
-	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -40,13 +37,10 @@ const (
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, profile *config.Profile, stateCfg *state.State, licenseService *enterprise.LicenseService) *Syncer {
+func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory) *Syncer {
 	return &Syncer{
-		store:          stores,
-		dbFactory:      dbFactory,
-		profile:        profile,
-		stateCfg:       stateCfg,
-		licenseService: licenseService,
+		store:     stores,
+		dbFactory: dbFactory,
 	}
 }
 
@@ -56,9 +50,6 @@ type Syncer struct {
 
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
-	profile         *config.Profile
-	stateCfg        *state.State
-	licenseService  *enterprise.LicenseService
 	databaseSyncMap sync.Map // map[string]*store.DatabaseMessage
 }
 

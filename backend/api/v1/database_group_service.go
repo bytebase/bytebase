@@ -9,8 +9,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -22,17 +20,13 @@ import (
 type DatabaseGroupService struct {
 	v1connect.UnimplementedDatabaseGroupServiceHandler
 	store          *store.Store
-	profile        *config.Profile
-	iamManager     *iam.Manager
 	licenseService *enterprise.LicenseService
 }
 
 // NewDatabaseGroupService creates a new DatabaseGroupService.
-func NewDatabaseGroupService(store *store.Store, profile *config.Profile, iamManager *iam.Manager, licenseService *enterprise.LicenseService) *DatabaseGroupService {
+func NewDatabaseGroupService(store *store.Store, licenseService *enterprise.LicenseService) *DatabaseGroupService {
 	return &DatabaseGroupService{
 		store:          store,
-		profile:        profile,
-		iamManager:     iamManager,
 		licenseService: licenseService,
 	}
 }

@@ -21,7 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/state"
+
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -34,21 +34,17 @@ import (
 type UserService struct {
 	v1connect.UnimplementedUserServiceHandler
 	store          *store.Store
-	secret         string
 	licenseService *enterprise.LicenseService
 	profile        *config.Profile
-	stateCfg       *state.State
 	iamManager     *iam.Manager
 }
 
 // NewUserService creates a new UserService.
-func NewUserService(store *store.Store, secret string, licenseService *enterprise.LicenseService, profile *config.Profile, stateCfg *state.State, iamManager *iam.Manager) *UserService {
+func NewUserService(store *store.Store, licenseService *enterprise.LicenseService, profile *config.Profile, iamManager *iam.Manager) *UserService {
 	return &UserService{
 		store:          store,
-		secret:         secret,
 		licenseService: licenseService,
 		profile:        profile,
-		stateCfg:       stateCfg,
 		iamManager:     iamManager,
 	}
 }

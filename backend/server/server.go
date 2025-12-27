@@ -184,17 +184,17 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Configure echo server.
 	s.echoServer = echo.New()
 
-	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.profile, s.stateCfg, s.licenseService)
-	s.approvalRunner = approval.NewRunner(stores, sheetManager, s.dbFactory, s.stateCfg, s.webhookManager, s.licenseService)
+	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory)
+	s.approvalRunner = approval.NewRunner(stores, s.stateCfg, s.webhookManager, s.licenseService)
 
-	s.taskScheduler = taskrun.NewScheduler(stores, s.stateCfg, s.webhookManager, profile, s.licenseService, s.dbFactory)
-	s.taskScheduler.Register(storepb.Task_DATABASE_CREATE, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer, s.stateCfg, profile))
-	s.taskScheduler.Register(storepb.Task_DATABASE_MIGRATE, taskrun.NewDatabaseMigrateExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskScheduler.Register(storepb.Task_DATABASE_EXPORT, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-	s.taskScheduler.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
+	s.taskScheduler = taskrun.NewScheduler(stores, s.stateCfg, s.webhookManager, profile)
+	s.taskScheduler.Register(storepb.Task_DATABASE_CREATE, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer))
+	s.taskScheduler.Register(storepb.Task_DATABASE_MIGRATE, taskrun.NewDatabaseMigrateExecutor(stores, s.dbFactory, s.stateCfg, s.schemaSyncer, profile))
+	s.taskScheduler.Register(storepb.Task_DATABASE_EXPORT, taskrun.NewDataExportExecutor(stores, s.dbFactory, s.licenseService))
+	s.taskScheduler.Register(storepb.Task_DATABASE_SDL, taskrun.NewSchemaDeclareExecutor(stores, s.dbFactory, s.stateCfg, s.schemaSyncer, profile))
 
-	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory, s.licenseService)
-	s.planCheckScheduler = plancheck.NewScheduler(stores, s.licenseService, s.stateCfg, combinedExecutor)
+	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory)
+	s.planCheckScheduler = plancheck.NewScheduler(stores, s.stateCfg, combinedExecutor)
 
 	// Data cleaner
 	s.dataCleaner = cleaner.NewDataCleaner(stores)

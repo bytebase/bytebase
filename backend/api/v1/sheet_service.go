@@ -7,10 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/sheet"
-	"github.com/bytebase/bytebase/backend/enterprise"
+
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
@@ -19,21 +16,13 @@ import (
 // SheetService implements the sheet service.
 type SheetService struct {
 	v1connect.UnimplementedSheetServiceHandler
-	store          *store.Store
-	sheetManager   *sheet.Manager
-	licenseService *enterprise.LicenseService
-	iamManager     *iam.Manager
-	profile        *config.Profile
+	store *store.Store
 }
 
 // NewSheetService creates a new SheetService.
-func NewSheetService(store *store.Store, sheetManager *sheet.Manager, licenseService *enterprise.LicenseService, iamManager *iam.Manager, profile *config.Profile) *SheetService {
+func NewSheetService(store *store.Store) *SheetService {
 	return &SheetService{
-		store:          store,
-		sheetManager:   sheetManager,
-		licenseService: licenseService,
-		iamManager:     iamManager,
-		profile:        profile,
+		store: store,
 	}
 }
 

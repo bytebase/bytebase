@@ -14,13 +14,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
-	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -34,25 +31,19 @@ import (
 type RolloutService struct {
 	v1connect.UnimplementedRolloutServiceHandler
 	store          *store.Store
-	sheetManager   *sheet.Manager
-	licenseService *enterprise.LicenseService
 	dbFactory      *dbfactory.DBFactory
 	stateCfg       *state.State
 	webhookManager *webhook.Manager
-	profile        *config.Profile
 	iamManager     *iam.Manager
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, sheetManager *sheet.Manager, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, iamManager *iam.Manager) *RolloutService {
 	return &RolloutService{
 		store:          store,
-		sheetManager:   sheetManager,
-		licenseService: licenseService,
 		dbFactory:      dbFactory,
 		stateCfg:       stateCfg,
 		webhookManager: webhookManager,
-		profile:        profile,
 		iamManager:     iamManager,
 	}
 }

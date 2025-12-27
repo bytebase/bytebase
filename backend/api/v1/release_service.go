@@ -14,8 +14,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/sheet"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -28,20 +28,17 @@ type ReleaseService struct {
 	store        *store.Store
 	sheetManager *sheet.Manager
 	dbFactory    *dbfactory.DBFactory
-	iamManager   *iam.Manager
 }
 
 func NewReleaseService(
 	store *store.Store,
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
-	iamManager *iam.Manager,
 ) *ReleaseService {
 	return &ReleaseService{
 		store:        store,
 		sheetManager: sheetManager,
 		dbFactory:    dbFactory,
-		iamManager:   iamManager,
 	}
 }
 

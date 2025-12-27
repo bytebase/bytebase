@@ -23,7 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/enterprise"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -34,10 +34,9 @@ import (
 // ProjectService implements the project service.
 type ProjectService struct {
 	v1connect.UnimplementedProjectServiceHandler
-	store          *store.Store
-	profile        *config.Profile
-	iamManager     *iam.Manager
-	licenseService *enterprise.LicenseService
+	store      *store.Store
+	profile    *config.Profile
+	iamManager *iam.Manager
 }
 
 // NewProjectService creates a new ProjectService.
@@ -45,13 +44,11 @@ func NewProjectService(
 	store *store.Store,
 	profile *config.Profile,
 	iamManager *iam.Manager,
-	licenseService *enterprise.LicenseService,
 ) *ProjectService {
 	return &ProjectService{
-		store:          store,
-		profile:        profile,
-		iamManager:     iamManager,
-		licenseService: licenseService,
+		store:      store,
+		profile:    profile,
+		iamManager: iamManager,
 	}
 }
 

@@ -6,17 +6,15 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
-	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 // CombinedExecutor processes all plan check types.
 type CombinedExecutor struct {
-	store          *store.Store
-	sheetManager   *sheet.Manager
-	dbFactory      *dbfactory.DBFactory
-	licenseService *enterprise.LicenseService
+	store        *store.Store
+	sheetManager *sheet.Manager
+	dbFactory    *dbfactory.DBFactory
 }
 
 // NewCombinedExecutor creates a combined executor.
@@ -24,13 +22,11 @@ func NewCombinedExecutor(
 	store *store.Store,
 	sheetManager *sheet.Manager,
 	dbFactory *dbfactory.DBFactory,
-	licenseService *enterprise.LicenseService,
 ) *CombinedExecutor {
 	return &CombinedExecutor{
-		store:          store,
-		sheetManager:   sheetManager,
-		dbFactory:      dbFactory,
-		licenseService: licenseService,
+		store:        store,
+		sheetManager: sheetManager,
+		dbFactory:    dbFactory,
 	}
 }
 
@@ -80,10 +76,9 @@ func (e *CombinedExecutor) runCheck(ctx context.Context, target *storepb.PlanChe
 
 func (e *CombinedExecutor) runStatementAdvise(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
 	executor := &StatementAdviseExecutor{
-		store:          e.store,
-		sheetManager:   e.sheetManager,
-		dbFactory:      e.dbFactory,
-		licenseService: e.licenseService,
+		store:        e.store,
+		sheetManager: e.sheetManager,
+		dbFactory:    e.dbFactory,
 	}
 	return executor.RunForTarget(ctx, target)
 }

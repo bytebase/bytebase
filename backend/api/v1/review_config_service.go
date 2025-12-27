@@ -11,7 +11,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -22,15 +21,13 @@ import (
 // ReviewConfigService implements the review config service.
 type ReviewConfigService struct {
 	v1connect.UnimplementedReviewConfigServiceHandler
-	store          *store.Store
-	licenseService *enterprise.LicenseService
+	store *store.Store
 }
 
 // NewReviewConfigService creates a new ReviewConfigService.
-func NewReviewConfigService(store *store.Store, licenseService *enterprise.LicenseService) *ReviewConfigService {
+func NewReviewConfigService(store *store.Store) *ReviewConfigService {
 	return &ReviewConfigService{
-		store:          store,
-		licenseService: licenseService,
+		store: store,
 	}
 }
 

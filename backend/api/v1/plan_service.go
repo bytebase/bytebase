@@ -12,12 +12,9 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/dbfactory"
+
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/state"
-	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -27,25 +24,17 @@ import (
 // PlanService represents a service for managing plan.
 type PlanService struct {
 	v1connect.UnimplementedPlanServiceHandler
-	store          *store.Store
-	sheetManager   *sheet.Manager
-	licenseService *enterprise.LicenseService
-	dbFactory      *dbfactory.DBFactory
-	stateCfg       *state.State
-	profile        *config.Profile
-	iamManager     *iam.Manager
+	store      *store.Store
+	stateCfg   *state.State
+	iamManager *iam.Manager
 }
 
 // NewPlanService returns a plan service instance.
-func NewPlanService(store *store.Store, sheetManager *sheet.Manager, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile *config.Profile, iamManager *iam.Manager) *PlanService {
+func NewPlanService(store *store.Store, stateCfg *state.State, iamManager *iam.Manager) *PlanService {
 	return &PlanService{
-		store:          store,
-		sheetManager:   sheetManager,
-		licenseService: licenseService,
-		dbFactory:      dbFactory,
-		stateCfg:       stateCfg,
-		profile:        profile,
-		iamManager:     iamManager,
+		store:      store,
+		stateCfg:   stateCfg,
+		iamManager: iamManager,
 	}
 }
 
