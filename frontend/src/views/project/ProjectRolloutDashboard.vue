@@ -38,17 +38,13 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
-import { useI18n } from "vue-i18n";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import type { ScopeOption } from "@/components/AdvancedSearch/types";
 import UpdatedTimeRange from "@/components/AdvancedSearch/UpdatedTimeRange.vue";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import RolloutDataTable from "@/components/Rollout/RolloutDataTable.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
-import {
-  useProjectByName,
-  useRolloutStore,
-} from "@/store";
+import { useProjectByName, useRolloutStore } from "@/store";
 import {
   buildRolloutFindBySearchParams,
   type RolloutFind,
@@ -73,7 +69,6 @@ const props = defineProps<{
   projectId: string;
 }>();
 
-const { t } = useI18n();
 const { project } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
