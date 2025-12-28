@@ -156,10 +156,7 @@ export const experimentalCreateIssueByPlan = async (
     await issueServiceClientConnect.createIssue(issueRequest);
   const createdIssue = newCreatedIssue;
   const rolloutRequest = create(CreateRolloutRequestSchema, {
-    parent: project.name,
-    rollout: {
-      plan: createdPlan.name,
-    },
+    parent: createdPlan.name,
   });
   const rolloutResponse =
     await rolloutServiceClientConnect.createRollout(rolloutRequest);

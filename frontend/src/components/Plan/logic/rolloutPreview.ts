@@ -213,7 +213,7 @@ function createStage(
   const envId = environment.replace("environments/", "") || "-";
 
   return create(StageSchema, {
-    name: `${projectName}/rollouts/-/stages/${envId}`,
+    name: `${projectName}/plans/-/rollout/stages/${envId}`,
     id: envId,
     environment: environment || "environments/-",
     tasks: tasks.map((t, index) => createTask(t, envId, projectName, index)),
@@ -227,7 +227,7 @@ function createTask(
   index: number
 ): Task {
   return create(TaskSchema, {
-    name: `${projectName}/rollouts/-/stages/${stageId}/tasks/${index}`,
+    name: `${projectName}/plans/-/rollout/stages/${stageId}/tasks/${index}`,
     specId: taskCreate.specId,
     status: Task_Status.NOT_STARTED,
     type: taskCreate.type,

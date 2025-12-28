@@ -189,10 +189,7 @@ const doCreateIssue = async () => {
     const createdIssue = await issueServiceClientConnect.createIssue(request);
 
     const rolloutRequest = create(CreateRolloutRequestSchema, {
-      parent: issue.value.project,
-      rollout: {
-        plan: createdPlan.name,
-      },
+      parent: createdPlan.name,
     });
     await rolloutServiceClientConnect.createRollout(rolloutRequest);
 

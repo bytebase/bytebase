@@ -5,8 +5,8 @@ import type { Rollout } from "./proto-es/v1/rollout_service_pb";
 import { RolloutSchema } from "./proto-es/v1/rollout_service_pb";
 import { EMPTY_PROJECT_NAME, UNKNOWN_PROJECT_NAME } from "./v1/project";
 
-export const EMPTY_ROLLOUT_NAME = `${EMPTY_PROJECT_NAME}/rollouts/${EMPTY_ID}`;
-export const UNKNOWN_ROLLOUT_NAME = `${UNKNOWN_PROJECT_NAME}/rollouts/${UNKNOWN_ID}`;
+export const EMPTY_ROLLOUT_NAME = `${EMPTY_PROJECT_NAME}/plans/${EMPTY_ID}/rollout`;
+export const UNKNOWN_ROLLOUT_NAME = `${UNKNOWN_PROJECT_NAME}/plans/${UNKNOWN_ID}/rollout`;
 
 export const emptyRollout = (): Rollout => {
   return createProto(RolloutSchema, {

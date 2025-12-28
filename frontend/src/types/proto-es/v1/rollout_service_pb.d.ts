@@ -18,7 +18,7 @@ export declare const file_v1_rollout_service: GenFile;
 export declare type BatchRunTasksRequest = Message<"bytebase.v1.BatchRunTasksRequest"> & {
   /**
    * The stage name for the tasks.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
    *
    * @generated from field: string parent = 1;
    */
@@ -26,7 +26,7 @@ export declare type BatchRunTasksRequest = Message<"bytebase.v1.BatchRunTasksReq
 
   /**
    * The tasks to run.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
    *
    * @generated from field: repeated string tasks = 2;
    */
@@ -64,7 +64,7 @@ export declare const BatchRunTasksResponseSchema: GenMessage<BatchRunTasksRespon
 export declare type BatchSkipTasksRequest = Message<"bytebase.v1.BatchSkipTasksRequest"> & {
   /**
    * The stage name for the tasks.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
    *
    * @generated from field: string parent = 1;
    */
@@ -72,7 +72,7 @@ export declare type BatchSkipTasksRequest = Message<"bytebase.v1.BatchSkipTasksR
 
   /**
    * The tasks to skip.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
    *
    * @generated from field: repeated string tasks = 2;
    */
@@ -110,8 +110,8 @@ export declare const BatchSkipTasksResponseSchema: GenMessage<BatchSkipTasksResp
 export declare type BatchCancelTaskRunsRequest = Message<"bytebase.v1.BatchCancelTaskRunsRequest"> & {
   /**
    * The task name for the taskRuns.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-   * Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
+   * Use `projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/-` to cancel task runs under the same stage.
    *
    * @generated from field: string parent = 1;
    */
@@ -119,7 +119,7 @@ export declare type BatchCancelTaskRunsRequest = Message<"bytebase.v1.BatchCance
 
   /**
    * The taskRuns to cancel.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
    * @generated from field: repeated string task_runs = 2;
    */
@@ -150,7 +150,8 @@ export declare const BatchCancelTaskRunsResponseSchema: GenMessage<BatchCancelTa
 export declare type GetRolloutRequest = Message<"bytebase.v1.GetRolloutRequest"> & {
   /**
    * The name of the rollout to retrieve.
-   * Format: projects/{project}/rollouts/{rollout}
+   * This is the rollout resource name, which is the plan name plus /rollout suffix.
+   * Format: projects/{project}/plans/{plan}/rollout
    *
    * @generated from field: string name = 1;
    */
@@ -253,19 +254,12 @@ export declare const ListRolloutsResponseSchema: GenMessage<ListRolloutsResponse
  */
 export declare type CreateRolloutRequest = Message<"bytebase.v1.CreateRolloutRequest"> & {
   /**
-   * The parent project where this rollout will be created.
-   * Format: projects/{project}
+   * The parent plan for which this rollout will be created.
+   * Format: projects/{project}/plans/{plan}
    *
    * @generated from field: string parent = 1;
    */
   parent: string;
-
-  /**
-   * The rollout to create.
-   *
-   * @generated from field: bytebase.v1.Rollout rollout = 2;
-   */
-  rollout?: Rollout;
 
   /**
    * Create the rollout only for the specified target.
@@ -289,9 +283,9 @@ export declare const CreateRolloutRequestSchema: GenMessage<CreateRolloutRequest
  */
 export declare type ListTaskRunsRequest = Message<"bytebase.v1.ListTaskRunsRequest"> & {
   /**
-   * The parent, which owns this collection of plans.
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-   * Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-" to list all taskRuns from a rollout.
+   * The parent, which owns this collection of taskRuns.
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
+   * Use "projects/{project}/plans/{plan}/rollout/stages/-/tasks/-" to list all taskRuns from a rollout.
    *
    * @generated from field: string parent = 1;
    */
@@ -327,7 +321,7 @@ export declare const ListTaskRunsResponseSchema: GenMessage<ListTaskRunsResponse
  */
 export declare type GetTaskRunRequest = Message<"bytebase.v1.GetTaskRunRequest"> & {
   /**
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
    * @generated from field: string name = 1;
    */
@@ -345,8 +339,7 @@ export declare const GetTaskRunRequestSchema: GenMessage<GetTaskRunRequest>;
  */
 export declare type GetTaskRunLogRequest = Message<"bytebase.v1.GetTaskRunLogRequest"> & {
   /**
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-   * TODO(d): check the resource_reference.
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
    * @generated from field: string parent = 1;
    */
@@ -365,7 +358,7 @@ export declare const GetTaskRunLogRequestSchema: GenMessage<GetTaskRunLogRequest
 export declare type Rollout = Message<"bytebase.v1.Rollout"> & {
   /**
    * The resource name of the rollout.
-   * Format: projects/{project}/rollouts/{rollout}
+   * Format: projects/{project}/plans/{plan}/rollout
    *
    * @generated from field: string name = 1;
    */
@@ -431,7 +424,7 @@ export declare const RolloutSchema: GenMessage<Rollout>;
  */
 export declare type Stage = Message<"bytebase.v1.Stage"> & {
   /**
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
    * Use "-" for {stage} when the stage has no environment or deleted environment.
    *
    * @generated from field: string name = 1;
@@ -474,7 +467,7 @@ export declare const StageSchema: GenMessage<Stage>;
  */
 export declare type Task = Message<"bytebase.v1.Task"> & {
   /**
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
    *
    * @generated from field: string name = 1;
    */
@@ -482,7 +475,6 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
 
   /**
    * A UUID4 string that uniquely identifies the Spec.
-   * Could be empty if the rollout of the task does not have an associating plan.
    *
    * @generated from field: string spec_id = 2;
    */
@@ -829,7 +821,7 @@ export declare const Task_TypeSchema: GenEnum<Task_Type>;
  */
 export declare type TaskRun = Message<"bytebase.v1.TaskRun"> & {
   /**
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
    * @generated from field: string name = 1;
    */
@@ -1106,7 +1098,7 @@ export declare const TaskRun_SchedulerInfo_WaitingCauseSchema: GenMessage<TaskRu
  */
 export declare type TaskRun_SchedulerInfo_WaitingCause_Task = Message<"bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task"> & {
   /**
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
    *
    * @generated from field: string task = 1;
    */
@@ -1207,7 +1199,7 @@ export declare const TaskRun_ExportArchiveStatusSchema: GenEnum<TaskRun_ExportAr
  */
 export declare type TaskRunLog = Message<"bytebase.v1.TaskRunLog"> & {
   /**
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log
    *
    * @generated from field: string name = 1;
    */
@@ -1795,7 +1787,7 @@ export declare const GetTaskRunSessionRequestSchema: GenMessage<GetTaskRunSessio
  */
 export declare type TaskRunSession = Message<"bytebase.v1.TaskRunSession"> & {
   /**
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session
    *
    * @generated from field: string name = 1;
    */
@@ -2011,7 +2003,7 @@ export declare const PreviewTaskRunRollbackResponseSchema: GenMessage<PreviewTas
  */
 export declare const RolloutService: GenService<{
   /**
-   * Retrieves a rollout by name.
+   * Retrieves a rollout by its plan name.
    * Permissions required: bb.rollouts.get
    *
    * @generated from rpc bytebase.v1.RolloutService.GetRollout
@@ -2033,7 +2025,7 @@ export declare const RolloutService: GenService<{
     output: typeof ListRolloutsResponseSchema;
   },
   /**
-   * Creates a new rollout from a plan.
+   * Creates a new rollout for a plan.
    * Permissions required: bb.rollouts.create
    *
    * @generated from rpc bytebase.v1.RolloutService.CreateRollout

@@ -38,6 +38,7 @@ import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractProjectResourceName,
+  extractRolloutUID,
   extractSchemaVersionFromTask,
   humanizeTs,
 } from "@/utils";
@@ -129,7 +130,7 @@ const getTaskRouteParams = (task: Task) => {
   const stage = stageMap.value.get(task.name);
   if (!stage) return null;
 
-  const rolloutId = rollout.value.name.split("/").pop();
+  const rolloutId = extractRolloutUID(rollout.value.name);
   const stageId = stage.name.split("/").pop();
   const taskId = task.name.split("/").pop();
 

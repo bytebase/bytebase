@@ -71,6 +71,7 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractProjectResourceName,
+  extractRolloutUID,
   extractTaskUID,
   flattenTaskV1List,
 } from "@/utils";
@@ -266,10 +267,14 @@ const getTaskRouteParams = (taskRun: TaskRun) => {
   const task = getTaskForTaskRun(taskRun);
   if (!task) return null;
 
-  // Extract IDs from task name (format: projects/xxx/rollouts/yyy/stages/zzz/tasks/aaa)
+  // Extract IDs from task name (format: projects/xxx/plans/yyy/rollout/stages/zzz/tasks/aaa)
+
   const taskParts = task.name.split("/");
-  const rolloutId = rollout.value.name.split("/").pop();
+
+  const rolloutId = extractRolloutUID(rollout.value.name);
+
   const stageIndex = taskParts.indexOf("stages");
+
   const taskIndex = taskParts.indexOf("tasks");
 
   if (stageIndex === -1 || taskIndex === -1) return null;

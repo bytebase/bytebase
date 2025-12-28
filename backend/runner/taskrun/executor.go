@@ -159,7 +159,7 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		sheet:       sheet,
 		task:        task,
 		version:     schemaVersion,
-		taskRunName: common.FormatTaskRun(plan.ProjectID, int(task.PlanID), task.Environment, task.ID, taskRunUID),
+		taskRunName: common.FormatTaskRun(plan.ProjectID, task.PlanID, task.Environment, task.ID, taskRunUID),
 		taskRunUID:  taskRunUID,
 	}
 

@@ -56,7 +56,7 @@ func (ctl *controller) createDatabase(ctx context.Context, project *v1pb.Project
 	if err != nil {
 		return err
 	}
-	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: planResp.Msg.Name}}))
+	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: planResp.Msg.Name}))
 	if err != nil {
 		return err
 	}

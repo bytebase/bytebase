@@ -38,13 +38,13 @@ const (
 //
 // RolloutService manages the execution of deployment plans.
 type RolloutServiceClient interface {
-	// Retrieves a rollout by name.
+	// Retrieves a rollout by its plan name.
 	// Permissions required: bb.rollouts.get
 	GetRollout(ctx context.Context, in *GetRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	// Lists rollouts in a project.
 	// Permissions required: bb.rollouts.list
 	ListRollouts(ctx context.Context, in *ListRolloutsRequest, opts ...grpc.CallOption) (*ListRolloutsResponse, error)
-	// Creates a new rollout from a plan.
+	// Creates a new rollout for a plan.
 	// Permissions required: bb.rollouts.create
 	CreateRollout(ctx context.Context, in *CreateRolloutRequest, opts ...grpc.CallOption) (*Rollout, error)
 	// Lists task run executions for a task.
@@ -197,13 +197,13 @@ func (c *rolloutServiceClient) PreviewTaskRunRollback(ctx context.Context, in *P
 //
 // RolloutService manages the execution of deployment plans.
 type RolloutServiceServer interface {
-	// Retrieves a rollout by name.
+	// Retrieves a rollout by its plan name.
 	// Permissions required: bb.rollouts.get
 	GetRollout(context.Context, *GetRolloutRequest) (*Rollout, error)
 	// Lists rollouts in a project.
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *ListRolloutsRequest) (*ListRolloutsResponse, error)
-	// Creates a new rollout from a plan.
+	// Creates a new rollout for a plan.
 	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *CreateRolloutRequest) (*Rollout, error)
 	// Lists task run executions for a task.

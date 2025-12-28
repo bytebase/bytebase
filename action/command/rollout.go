@@ -136,10 +136,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 func runAndWaitForRollout(ctx context.Context, w *world.World, client *Client, planName string) error {
 	// create rollout with all stages created
 	rollout, err := client.CreateRollout(ctx, &v1pb.CreateRolloutRequest{
-		Parent: w.Project,
-		Rollout: &v1pb.Rollout{
-			Plan: planName,
-		},
+		Parent: planName,
 		Target: nil, // all stages
 	})
 	if err != nil {

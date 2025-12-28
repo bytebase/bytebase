@@ -4764,9 +4764,9 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Creates a new rollout from a plan.  Permissions required: bb.rollouts.create'
+      summary: 'Creates a new rollout for a plan.  Permissions required: bb.rollouts.create'
       description: |-
-        Creates a new rollout from a plan.
+        Creates a new rollout for a plan.
          Permissions required: bb.rollouts.create
       operationId: bytebase.v1.RolloutService.CreateRollout
       parameters:
@@ -4802,9 +4802,9 @@ paths:
     post:
       tags:
         - bytebase.v1.RolloutService
-      summary: 'Retrieves a rollout by name.  Permissions required: bb.rollouts.get'
+      summary: 'Retrieves a rollout by its plan name.  Permissions required: bb.rollouts.get'
       description: |-
-        Retrieves a rollout by name.
+        Retrieves a rollout by its plan name.
          Permissions required: bb.rollouts.get
       operationId: bytebase.v1.RolloutService.GetRollout
       parameters:
@@ -7061,8 +7061,8 @@ components:
           title: parent
           description: |-
             The task name for the taskRuns.
-             Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-             Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
+             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
+             Use `projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/-` to cancel task runs under the same stage.
         taskRuns:
           type: array
           items:
@@ -7070,7 +7070,7 @@ components:
           title: task_runs
           description: |-
             The taskRuns to cancel.
-             Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
       title: BatchCancelTaskRunsRequest
       additionalProperties: false
     bytebase.v1.BatchCancelTaskRunsResponse:
@@ -7314,7 +7314,7 @@ components:
           title: parent
           description: |-
             The stage name for the tasks.
-             Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
         tasks:
           type: array
           items:
@@ -7322,7 +7322,7 @@ components:
           title: tasks
           description: |-
             The tasks to run.
-             Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
         runTime:
           title: run_time
           description: The task run should run after run_time.
@@ -7342,7 +7342,7 @@ components:
           title: parent
           description: |-
             The stage name for the tasks.
-             Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
         tasks:
           type: array
           items:
@@ -7350,7 +7350,7 @@ components:
           title: tasks
           description: |-
             The tasks to skip.
-             Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
         reason:
           type: string
           title: reason
@@ -8200,12 +8200,8 @@ components:
           type: string
           title: parent
           description: |-
-            The parent project where this rollout will be created.
-             Format: projects/{project}
-        rollout:
-          title: rollout
-          description: The rollout to create.
-          $ref: '#/components/schemas/bytebase.v1.Rollout'
+            The parent plan for which this rollout will be created.
+             Format: projects/{project}/plans/{plan}
         target:
           type: string
           title: target
@@ -10095,7 +10091,8 @@ components:
           title: name
           description: |-
             The name of the rollout to retrieve.
-             Format: projects/{project}/rollouts/{rollout}
+             This is the rollout resource name, which is the plan name plus /rollout suffix.
+             Format: projects/{project}/plans/{plan}/rollout
       title: GetRolloutRequest
       additionalProperties: false
     bytebase.v1.GetSchemaStringRequest:
@@ -10191,9 +10188,7 @@ components:
         parent:
           type: string
           title: parent
-          description: |-
-            Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-             TODO(d): check the resource_reference.
+          description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
       title: GetTaskRunLogRequest
       additionalProperties: false
     bytebase.v1.GetTaskRunRequest:
@@ -10202,7 +10197,7 @@ components:
         name:
           type: string
           title: name
-          description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
+          description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
       title: GetTaskRunRequest
       additionalProperties: false
     bytebase.v1.GetTaskRunSessionRequest:
@@ -11974,9 +11969,9 @@ components:
           type: string
           title: parent
           description: |-
-            The parent, which owns this collection of plans.
-             Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-             Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-" to list all taskRuns from a rollout.
+            The parent, which owns this collection of taskRuns.
+             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
+             Use "projects/{project}/plans/{plan}/rollout/stages/-/tasks/-" to list all taskRuns from a rollout.
       title: ListTaskRunsRequest
       additionalProperties: false
     bytebase.v1.ListTaskRunsResponse:
@@ -14082,7 +14077,7 @@ components:
           title: name
           description: |-
             The resource name of the rollout.
-             Format: projects/{project}/rollouts/{rollout}
+             Format: projects/{project}/plans/{plan}/rollout
         plan:
           type: string
           title: plan
@@ -14852,7 +14847,7 @@ components:
              Supported filters:
              - creator: the plan creator full name in "users/{email or id}" format, support "==" operator.
              - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
-             - has_pipeline: the plan has pipeline or not, support "==" operator, the value should be "true" or "false".
+             - has_rollout: the plan has rollout or not, support "==" operator, the value should be "true" or "false".
              - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
              - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
              - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
@@ -15364,7 +15359,7 @@ components:
           type: string
           title: name
           description: |-
-            Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+            Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
              Use "-" for {stage} when the stage has no environment or deleted environment.
         id:
           type: string
@@ -15858,13 +15853,11 @@ components:
             name:
               type: string
               title: name
-              description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}'
+              description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}'
             specId:
               type: string
               title: spec_id
-              description: |-
-                A UUID4 string that uniquely identifies the Spec.
-                 Could be empty if the rollout of the task does not have an associating plan.
+              description: A UUID4 string that uniquely identifies the Spec.
             status:
               title: status
               description: Status is the status of the task.
@@ -16087,7 +16080,7 @@ components:
         name:
           type: string
           title: name
-          description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
+          description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
         creator:
           type: string
           title: creator
@@ -16258,7 +16251,7 @@ components:
         task:
           type: string
           title: task
-          description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}'
+          description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}'
       title: Task
       additionalProperties: false
       description: Information about a blocking task.
@@ -16278,7 +16271,7 @@ components:
         name:
           type: string
           title: name
-          description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log'
+          description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log'
         entries:
           type: array
           items:
@@ -16551,7 +16544,7 @@ components:
             name:
               type: string
               title: name
-              description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session'
+              description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session'
         - oneOf:
             - properties:
                 postgres:
