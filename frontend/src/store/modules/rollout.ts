@@ -23,7 +23,6 @@ export interface RolloutFind {
   project: string;
   taskType?: Task_Type | Task_Type[];
   query?: string;
-  creator?: string;
   updatedTsAfter?: number;
   updatedTsBefore?: number;
 }
@@ -37,9 +36,6 @@ export const buildRolloutFilter = (find: RolloutFind): string => {
     } else {
       filter.push(`task_type == "${Task_Type[find.taskType]}"`);
     }
-  }
-  if (find.creator) {
-    filter.push(`creator == "${find.creator}"`);
   }
   if (find.updatedTsAfter) {
     filter.push(
@@ -67,7 +63,6 @@ export const buildRolloutFindBySearchParams = (
     query: params.query,
     updatedTsAfter: updatedTsRange?.[0],
     updatedTsBefore: updatedTsRange?.[1],
-    creator: getValueFromSearchParams(params, "creator", "users/"),
   };
   return filter;
 };

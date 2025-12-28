@@ -1,7 +1,6 @@
 package store
 
 import (
-	"strings"
 	"time"
 
 	"github.com/google/cel-go/cel"
@@ -49,12 +48,6 @@ func GetListRolloutFilter(filter string) (*qb.Query, error) {
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {
-				case "creator":
-					creatorEmail := strings.TrimPrefix(value.(string), "users/")
-					if creatorEmail == "" {
-						return nil, errors.New("invalid empty creator identifier")
-					}
-					return qb.Q().Space("plan.creator = ?", creatorEmail), nil
 				case "task_type":
 					taskType, ok := value.(string)
 					if !ok {

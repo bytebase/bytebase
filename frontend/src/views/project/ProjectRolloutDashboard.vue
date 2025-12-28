@@ -36,41 +36,30 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, h, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useI18n } from "vue-i18n";
-import BBAvatar from "@/bbkit/BBAvatar.vue";
 import AdvancedSearch from "@/components/AdvancedSearch";
-import type {
-  ScopeOption,
-  ValueOption,
-} from "@/components/AdvancedSearch/types";
+import type { ScopeOption } from "@/components/AdvancedSearch/types";
 import UpdatedTimeRange from "@/components/AdvancedSearch/UpdatedTimeRange.vue";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
-import SystemBotTag from "@/components/misc/SystemBotTag.vue";
-import YouTag from "@/components/misc/YouTag.vue";
 import RolloutDataTable from "@/components/Rollout/RolloutDataTable.vue";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
 import {
-  useCurrentUserV1,
   useProjectByName,
   useRolloutStore,
-  useUserStore,
 } from "@/store";
 import {
   buildRolloutFindBySearchParams,
   type RolloutFind,
 } from "@/store/modules/rollout";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
 import {
   type Rollout,
   Task_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import {
   extractProjectResourceName,
-  getDefaultPagination,
   type SearchParams,
   type SearchScope,
   type SearchScopeId,
@@ -85,13 +74,11 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const me = useCurrentUserV1();
 const { project } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
 
 const rolloutStore = useRolloutStore();
-const userStore = useUserStore();
 const rolloutPagedTable = ref<ComponentExposed<typeof PagedTable<Rollout>>>();
 
 const readonlyScopes = computed((): SearchScope[] => {
@@ -116,76 +103,15 @@ watch(
 );
 
 const supportedScopes = computed(() => {
-  const supportedScopes: SearchScopeId[] = ["creator", "updated"];
+  const supportedScopes: SearchScopeId[] = ["updated"];
   return supportedScopes;
 });
 
 // Custom scope options for rollouts that includes creator functionality
 const scopeOptions = computed((): ScopeOption[] => {
-  const commonOptions = useCommonSearchScopeOptions(
-    supportedScopes.value.filter((id) => id !== "creator")
-  );
+  const commonOptions = useCommonSearchScopeOptions(supportedScopes.value);
 
-  const renderSpan = (text: string) => h("span", text);
-
-  const searchPrincipalSearchValueOptions = (userTypes: UserType[]) => {
-    return ({
-      keyword,
-      nextPageToken,
-    }: {
-      keyword: string;
-      nextPageToken?: string;
-    }) =>
-      userStore
-        .fetchUserList({
-          pageToken: nextPageToken,
-          pageSize: getDefaultPagination(),
-          filter: {
-            types: userTypes,
-            query: keyword,
-          },
-        })
-        .then((resp) => ({
-          nextPageToken: resp.nextPageToken,
-          options: resp.users.map<ValueOption>((user) => {
-            return {
-              value: user.email,
-              keywords: [user.email, user.title],
-              bot: user.name === SYSTEM_BOT_USER_NAME,
-              render: () => {
-                const children = [
-                  h(BBAvatar, { size: "TINY", username: user.title }),
-                  renderSpan(user.title),
-                ];
-                if (user.name === me.value.name) {
-                  children.push(h(YouTag));
-                }
-                if (user.name === SYSTEM_BOT_USER_NAME) {
-                  children.push(h(SystemBotTag));
-                }
-                return h(
-                  "div",
-                  { class: "flex items-center gap-x-1" },
-                  children
-                );
-              },
-            };
-          }),
-        }));
-  };
-
-  const creatorOption: ScopeOption = {
-    id: "creator",
-    title: t("issue.advanced-search.scope.creator.title"),
-    description: t("issue.advanced-search.scope.creator.description"),
-    search: searchPrincipalSearchValueOptions([
-      UserType.USER,
-      UserType.SERVICE_ACCOUNT,
-      UserType.SYSTEM_BOT,
-    ]),
-  };
-
-  return [...commonOptions.value, creatorOption];
+  return [...commonOptions.value];
 });
 
 const rolloutSearchParams = computed(() => {
