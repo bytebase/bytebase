@@ -21,7 +21,7 @@ import {
 
 export interface RolloutFind {
   project: string;
-  taskType?: Task_Type | Task_Type[];
+  taskType?: Task_Type[];
   query?: string;
   updatedTsAfter?: number;
   updatedTsBefore?: number;
@@ -29,11 +29,8 @@ export interface RolloutFind {
 
 export const buildRolloutFilter = (find: RolloutFind): string => {
   const filter: string[] = [];
-  if (find.taskType) {
-    const taskTypes = Array.isArray(find.taskType)
-      ? find.taskType
-      : [find.taskType];
-    const types = taskTypes.map((t) => `"${Task_Type[t]}"`).join(", ");
+  if (find.taskType && find.taskType.length > 0) {
+    const types = find.taskType.map((t) => `"${Task_Type[t]}"`).join(", ");
     filter.push(`task_type in [${types}]`);
   }
   if (find.updatedTsAfter) {
