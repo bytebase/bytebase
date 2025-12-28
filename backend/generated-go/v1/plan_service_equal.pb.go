@@ -37,53 +37,13 @@ func (x *ListPlansRequest) Equal(y *ListPlansRequest) bool {
 	if x.PageToken != y.PageToken {
 		return false
 	}
-	return true
-}
-
-func (x *ListPlansResponse) Equal(y *ListPlansResponse) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if len(x.Plans) != len(y.Plans) {
-		return false
-	}
-	for i := 0; i < len(x.Plans); i++ {
-		if !x.Plans[i].Equal(y.Plans[i]) {
-			return false
-		}
-	}
-	if x.NextPageToken != y.NextPageToken {
-		return false
-	}
-	return true
-}
-
-func (x *SearchPlansRequest) Equal(y *SearchPlansRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Parent != y.Parent {
-		return false
-	}
-	if x.PageSize != y.PageSize {
-		return false
-	}
-	if x.PageToken != y.PageToken {
-		return false
-	}
 	if x.Filter != y.Filter {
 		return false
 	}
 	return true
 }
 
-func (x *SearchPlansResponse) Equal(y *SearchPlansResponse) bool {
+func (x *ListPlansResponse) Equal(y *ListPlansResponse) bool {
 	if x == y {
 		return true
 	}

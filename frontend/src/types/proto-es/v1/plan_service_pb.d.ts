@@ -65,6 +65,31 @@ export declare type ListPlansRequest = Message<"bytebase.v1.ListPlansRequest"> &
    * @generated from field: string page_token = 3;
    */
   pageToken: string;
+
+  /**
+   * Filter is used to filter plans returned in the list.
+   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+   *
+   * Supported filters:
+   * - creator: the plan creator full name in "users/{email or id}" format, support "==" operator.
+   * - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
+   * - has_rollout: the plan has rollout or not, support "==" operator, the value should be "true" or "false".
+   * - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
+   * - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
+   * - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
+   * - state: the plan state, support "==" operator, the value should be "ACTIVE" or "DELETED".
+   *
+   * For example:
+   * creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
+   * has_pipeline == false && has_issue == true
+   * title == "My Plan"
+   * title.matches("database migration")
+   * spec_type == "change_database_config"
+   * state == "ACTIVE"
+   *
+   * @generated from field: string filter = 4;
+   */
+  filter: string;
 };
 
 /**
@@ -98,98 +123,6 @@ export declare type ListPlansResponse = Message<"bytebase.v1.ListPlansResponse">
  * Use `create(ListPlansResponseSchema)` to create a new message.
  */
 export declare const ListPlansResponseSchema: GenMessage<ListPlansResponse>;
-
-/**
- * @generated from message bytebase.v1.SearchPlansRequest
- */
-export declare type SearchPlansRequest = Message<"bytebase.v1.SearchPlansRequest"> & {
-  /**
-   * The parent, which owns this collection of plans.
-   * Format: projects/{project}
-   * Use "projects/-" to list all plans from all projects.
-   *
-   * @generated from field: string parent = 1;
-   */
-  parent: string;
-
-  /**
-   * The maximum number of plans to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 10 plans will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   *
-   * @generated from field: int32 page_size = 2;
-   */
-  pageSize: number;
-
-  /**
-   * A page token, received from a previous `SearchPlans` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `SearchPlans` must match
-   * the call that provided the page token.
-   *
-   * @generated from field: string page_token = 3;
-   */
-  pageToken: string;
-
-  /**
-   * Filter is used to filter plans returned in the list.
-   * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-   *
-   * Supported filters:
-   * - creator: the plan creator full name in "users/{email or id}" format, support "==" operator.
-   * - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
-   * - has_rollout: the plan has rollout or not, support "==" operator, the value should be "true" or "false".
-   * - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
-   * - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
-   * - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
-   * - state: the plan state, support "==" operator, the value should be "ACTIVE" or "DELETED".
-   *
-   * For example:
-   * creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
-   * has_pipeline == false && has_issue == true
-   * title == "My Plan"
-   * title.matches("database migration")
-   * spec_type == "change_database_config"
-   * state == "ACTIVE"
-   *
-   * @generated from field: string filter = 4;
-   */
-  filter: string;
-};
-
-/**
- * Describes the message bytebase.v1.SearchPlansRequest.
- * Use `create(SearchPlansRequestSchema)` to create a new message.
- */
-export declare const SearchPlansRequestSchema: GenMessage<SearchPlansRequest>;
-
-/**
- * @generated from message bytebase.v1.SearchPlansResponse
- */
-export declare type SearchPlansResponse = Message<"bytebase.v1.SearchPlansResponse"> & {
-  /**
-   * The plans from the specified request.
-   *
-   * @generated from field: repeated bytebase.v1.Plan plans = 1;
-   */
-  plans: Plan[];
-
-  /**
-   * A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   *
-   * @generated from field: string next_page_token = 2;
-   */
-  nextPageToken: string;
-};
-
-/**
- * Describes the message bytebase.v1.SearchPlansResponse.
- * Use `create(SearchPlansResponseSchema)` to create a new message.
- */
-export declare const SearchPlansResponseSchema: GenMessage<SearchPlansResponse>;
 
 /**
  * @generated from message bytebase.v1.CreatePlanRequest
@@ -891,17 +824,6 @@ export declare const PlanService: GenService<{
     methodKind: "unary";
     input: typeof ListPlansRequestSchema;
     output: typeof ListPlansResponseSchema;
-  },
-  /**
-   * Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
-   * Permissions required: bb.plans.get
-   *
-   * @generated from rpc bytebase.v1.PlanService.SearchPlans
-   */
-  searchPlans: {
-    methodKind: "unary";
-    input: typeof SearchPlansRequestSchema;
-    output: typeof SearchPlansResponseSchema;
   },
   /**
    * Creates a new deployment plan.

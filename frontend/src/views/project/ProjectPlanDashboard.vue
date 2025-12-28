@@ -262,7 +262,7 @@ const fetchPlanList = async ({
   pageToken: string;
   pageSize: number;
 }) => {
-  const { nextPageToken, plans } = await planStore.searchPlans({
+  const { nextPageToken, plans } = await planStore.listPlans({
     find: mergedPlanFind.value,
     pageSize,
     pageToken,

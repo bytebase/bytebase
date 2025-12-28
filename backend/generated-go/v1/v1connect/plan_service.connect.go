@@ -37,8 +37,6 @@ const (
 	PlanServiceGetPlanProcedure = "/bytebase.v1.PlanService/GetPlan"
 	// PlanServiceListPlansProcedure is the fully-qualified name of the PlanService's ListPlans RPC.
 	PlanServiceListPlansProcedure = "/bytebase.v1.PlanService/ListPlans"
-	// PlanServiceSearchPlansProcedure is the fully-qualified name of the PlanService's SearchPlans RPC.
-	PlanServiceSearchPlansProcedure = "/bytebase.v1.PlanService/SearchPlans"
 	// PlanServiceCreatePlanProcedure is the fully-qualified name of the PlanService's CreatePlan RPC.
 	PlanServiceCreatePlanProcedure = "/bytebase.v1.PlanService/CreatePlan"
 	// PlanServiceUpdatePlanProcedure is the fully-qualified name of the PlanService's UpdatePlan RPC.
@@ -62,9 +60,6 @@ type PlanServiceClient interface {
 	// Lists deployment plans in a project.
 	// Permissions required: bb.plans.list
 	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
-	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
-	// Permissions required: bb.plans.get
-	SearchPlans(context.Context, *connect.Request[v1.SearchPlansRequest]) (*connect.Response[v1.SearchPlansResponse], error)
 	// Creates a new deployment plan.
 	// Permissions required: bb.plans.create
 	CreatePlan(context.Context, *connect.Request[v1.CreatePlanRequest]) (*connect.Response[v1.Plan], error)
@@ -106,12 +101,6 @@ func NewPlanServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(planServiceMethods.ByName("ListPlans")),
 			connect.WithClientOptions(opts...),
 		),
-		searchPlans: connect.NewClient[v1.SearchPlansRequest, v1.SearchPlansResponse](
-			httpClient,
-			baseURL+PlanServiceSearchPlansProcedure,
-			connect.WithSchema(planServiceMethods.ByName("SearchPlans")),
-			connect.WithClientOptions(opts...),
-		),
 		createPlan: connect.NewClient[v1.CreatePlanRequest, v1.Plan](
 			httpClient,
 			baseURL+PlanServiceCreatePlanProcedure,
@@ -149,7 +138,6 @@ func NewPlanServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 type planServiceClient struct {
 	getPlan            *connect.Client[v1.GetPlanRequest, v1.Plan]
 	listPlans          *connect.Client[v1.ListPlansRequest, v1.ListPlansResponse]
-	searchPlans        *connect.Client[v1.SearchPlansRequest, v1.SearchPlansResponse]
 	createPlan         *connect.Client[v1.CreatePlanRequest, v1.Plan]
 	updatePlan         *connect.Client[v1.UpdatePlanRequest, v1.Plan]
 	getPlanCheckRun    *connect.Client[v1.GetPlanCheckRunRequest, v1.PlanCheckRun]
@@ -165,11 +153,6 @@ func (c *planServiceClient) GetPlan(ctx context.Context, req *connect.Request[v1
 // ListPlans calls bytebase.v1.PlanService.ListPlans.
 func (c *planServiceClient) ListPlans(ctx context.Context, req *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error) {
 	return c.listPlans.CallUnary(ctx, req)
-}
-
-// SearchPlans calls bytebase.v1.PlanService.SearchPlans.
-func (c *planServiceClient) SearchPlans(ctx context.Context, req *connect.Request[v1.SearchPlansRequest]) (*connect.Response[v1.SearchPlansResponse], error) {
-	return c.searchPlans.CallUnary(ctx, req)
 }
 
 // CreatePlan calls bytebase.v1.PlanService.CreatePlan.
@@ -205,9 +188,6 @@ type PlanServiceHandler interface {
 	// Lists deployment plans in a project.
 	// Permissions required: bb.plans.list
 	ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error)
-	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
-	// Permissions required: bb.plans.get
-	SearchPlans(context.Context, *connect.Request[v1.SearchPlansRequest]) (*connect.Response[v1.SearchPlansResponse], error)
 	// Creates a new deployment plan.
 	// Permissions required: bb.plans.create
 	CreatePlan(context.Context, *connect.Request[v1.CreatePlanRequest]) (*connect.Response[v1.Plan], error)
@@ -243,12 +223,6 @@ func NewPlanServiceHandler(svc PlanServiceHandler, opts ...connect.HandlerOption
 		PlanServiceListPlansProcedure,
 		svc.ListPlans,
 		connect.WithSchema(planServiceMethods.ByName("ListPlans")),
-		connect.WithHandlerOptions(opts...),
-	)
-	planServiceSearchPlansHandler := connect.NewUnaryHandler(
-		PlanServiceSearchPlansProcedure,
-		svc.SearchPlans,
-		connect.WithSchema(planServiceMethods.ByName("SearchPlans")),
 		connect.WithHandlerOptions(opts...),
 	)
 	planServiceCreatePlanHandler := connect.NewUnaryHandler(
@@ -287,8 +261,6 @@ func NewPlanServiceHandler(svc PlanServiceHandler, opts ...connect.HandlerOption
 			planServiceGetPlanHandler.ServeHTTP(w, r)
 		case PlanServiceListPlansProcedure:
 			planServiceListPlansHandler.ServeHTTP(w, r)
-		case PlanServiceSearchPlansProcedure:
-			planServiceSearchPlansHandler.ServeHTTP(w, r)
 		case PlanServiceCreatePlanProcedure:
 			planServiceCreatePlanHandler.ServeHTTP(w, r)
 		case PlanServiceUpdatePlanProcedure:
@@ -314,10 +286,6 @@ func (UnimplementedPlanServiceHandler) GetPlan(context.Context, *connect.Request
 
 func (UnimplementedPlanServiceHandler) ListPlans(context.Context, *connect.Request[v1.ListPlansRequest]) (*connect.Response[v1.ListPlansResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.PlanService.ListPlans is not implemented"))
-}
-
-func (UnimplementedPlanServiceHandler) SearchPlans(context.Context, *connect.Request[v1.SearchPlansRequest]) (*connect.Response[v1.SearchPlansResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.PlanService.SearchPlans is not implemented"))
 }
 
 func (UnimplementedPlanServiceHandler) CreatePlan(context.Context, *connect.Request[v1.CreatePlanRequest]) (*connect.Response[v1.Plan], error) {

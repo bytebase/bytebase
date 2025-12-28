@@ -3159,44 +3159,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.RunPlanChecksResponse'
-  /bytebase.v1.PlanService/SearchPlans:
-    post:
-      tags:
-        - bytebase.v1.PlanService
-      summary: 'Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.  Permissions required: bb.plans.get'
-      description: |-
-        Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
-         Permissions required: bb.plans.get
-      operationId: bytebase.v1.PlanService.SearchPlans
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.SearchPlansRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.SearchPlansResponse'
   /bytebase.v1.PlanService/UpdatePlan:
     post:
       tags:
@@ -11657,6 +11619,29 @@ components:
 
              When paginating, all other parameters provided to `ListPlans` must match
              the call that provided the page token.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            Filter is used to filter plans returned in the list.
+             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+             Supported filters:
+             - creator: the plan creator full name in "users/{email or id}" format, support "==" operator.
+             - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
+             - has_rollout: the plan has rollout or not, support "==" operator, the value should be "true" or "false".
+             - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
+             - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
+             - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
+             - state: the plan state, support "==" operator, the value should be "ACTIVE" or "DELETED".
+
+             For example:
+             creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
+             has_pipeline == false && has_issue == true
+             title == "My Plan"
+             title.matches("database migration")
+             spec_type == "change_database_config"
+             state == "ACTIVE"
       title: ListPlansRequest
       additionalProperties: false
     bytebase.v1.ListPlansResponse:
@@ -14808,76 +14793,6 @@ components:
             A token, which can be sent as `page_token` to retrieve the next page.
              If this field is omitted, there are no subsequent pages.
       title: SearchIssuesResponse
-      additionalProperties: false
-    bytebase.v1.SearchPlansRequest:
-      type: object
-      properties:
-        parent:
-          type: string
-          title: parent
-          description: |-
-            The parent, which owns this collection of plans.
-             Format: projects/{project}
-             Use "projects/-" to list all plans from all projects.
-        pageSize:
-          type: integer
-          title: page_size
-          format: int32
-          description: |-
-            The maximum number of plans to return. The service may return fewer than
-             this value.
-             If unspecified, at most 10 plans will be returned.
-             The maximum value is 1000; values above 1000 will be coerced to 1000.
-        pageToken:
-          type: string
-          title: page_token
-          description: |-
-            A page token, received from a previous `SearchPlans` call.
-             Provide this to retrieve the subsequent page.
-
-             When paginating, all other parameters provided to `SearchPlans` must match
-             the call that provided the page token.
-        filter:
-          type: string
-          title: filter
-          description: |-
-            Filter is used to filter plans returned in the list.
-             The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-             Supported filters:
-             - creator: the plan creator full name in "users/{email or id}" format, support "==" operator.
-             - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
-             - has_rollout: the plan has rollout or not, support "==" operator, the value should be "true" or "false".
-             - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
-             - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
-             - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
-             - state: the plan state, support "==" operator, the value should be "ACTIVE" or "DELETED".
-
-             For example:
-             creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
-             has_pipeline == false && has_issue == true
-             title == "My Plan"
-             title.matches("database migration")
-             spec_type == "change_database_config"
-             state == "ACTIVE"
-      title: SearchPlansRequest
-      additionalProperties: false
-    bytebase.v1.SearchPlansResponse:
-      type: object
-      properties:
-        plans:
-          type: array
-          items:
-            $ref: '#/components/schemas/bytebase.v1.Plan'
-          title: plans
-          description: The plans from the specified request.
-        nextPageToken:
-          type: string
-          title: next_page_token
-          description: |-
-            A token, which can be sent as `page_token` to retrieve the next page.
-             If this field is omitted, there are no subsequent pages.
-      title: SearchPlansResponse
       additionalProperties: false
     bytebase.v1.SearchProjectsRequest:
       type: object

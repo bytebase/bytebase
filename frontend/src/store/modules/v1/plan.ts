@@ -6,7 +6,7 @@ import { planServiceClientConnect } from "@/grpcweb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import {
   GetPlanRequestSchema,
-  SearchPlansRequestSchema,
+  ListPlansRequestSchema,
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
@@ -92,17 +92,17 @@ export type ListPlanParams = {
 };
 
 export const usePlanStore = defineStore("plan", () => {
-  const searchPlans = async ({ find, pageSize, pageToken }: ListPlanParams) => {
-    const request = create(SearchPlansRequestSchema, {
+  const listPlans = async ({ find, pageSize, pageToken }: ListPlanParams) => {
+    const request = create(ListPlansRequestSchema, {
       parent: find.project,
       filter: buildPlanFilter(find),
       pageSize,
       pageToken,
     });
     const { plans, nextPageToken } =
-      await planServiceClientConnect.searchPlans(request);
+      await planServiceClientConnect.listPlans(request);
     // Prepare creator for the plans.
-    const users = uniq(plans.map((plan) => plan.creator));
+    const users = uniq(plans.map((plan: Plan) => plan.creator));
     await useUserStore().batchGetOrFetchUsers(users);
     return {
       nextPageToken: nextPageToken,
@@ -131,7 +131,7 @@ export const usePlanStore = defineStore("plan", () => {
   };
 
   return {
-    searchPlans,
+    listPlans,
     fetchPlanByName,
     updatePlan,
   };

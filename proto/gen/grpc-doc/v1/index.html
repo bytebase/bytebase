@@ -1960,14 +1960,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SearchPlansRequest"><span class="badge">M</span>SearchPlansRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SearchPlansResponse"><span class="badge">M</span>SearchPlansResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.UpdatePlanRequest"><span class="badge">M</span>UpdatePlanRequest</a>
                 </li>
               
@@ -21087,6 +21079,31 @@ When paginating, all other parameters provided to `ListPlans` must match
 the call that provided the page token. </p></td>
                 </tr>
               
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Filter is used to filter plans returned in the list.
+The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
+
+Supported filters:
+- creator: the plan creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator.
+- create_time: the plan create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
+- has_rollout: the plan has rollout or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
+- has_issue: the plan has issue or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
+- title: the plan title, support &#34;==&#34; operator for exact match and &#34;.matches()&#34; operator for case-insensitive substring match.
+- spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34;, &#34;change_database_config&#34;, or &#34;export_data_config&#34;.
+- state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;.
+
+For example:
+creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34;
+has_pipeline == false &amp;&amp; has_issue == true
+title == &#34;My Plan&#34;
+title.matches(&#34;database migration&#34;)
+spec_type == &#34;change_database_config&#34;
+state == &#34;ACTIVE&#34; </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -21760,110 +21777,6 @@ If not set, all specs in the plan will be used. </p></td>
 
         
       
-        <h3 id="bytebase.v1.SearchPlansRequest">SearchPlansRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent, which owns this collection of plans.
-Format: projects/{project}
-Use &#34;projects/-&#34; to list all plans from all projects. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of plans to return. The service may return fewer than
-this value.
-If unspecified, at most 10 plans will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `SearchPlans` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `SearchPlans` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Filter is used to filter plans returned in the list.
-The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
-
-Supported filters:
-- creator: the plan creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator.
-- create_time: the plan create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
-- has_rollout: the plan has rollout or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
-- has_issue: the plan has issue or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
-- title: the plan title, support &#34;==&#34; operator for exact match and &#34;.matches()&#34; operator for case-insensitive substring match.
-- spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34;, &#34;change_database_config&#34;, or &#34;export_data_config&#34;.
-- state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;.
-
-For example:
-creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34;
-has_pipeline == false &amp;&amp; has_issue == true
-title == &#34;My Plan&#34;
-title.matches(&#34;database migration&#34;)
-spec_type == &#34;change_database_config&#34;
-state == &#34;ACTIVE&#34; </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SearchPlansResponse">SearchPlansResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>plans</td>
-                  <td><a href="#bytebase.v1.Plan">Plan</a></td>
-                  <td>repeated</td>
-                  <td><p>The plans from the specified request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.UpdatePlanRequest">UpdatePlanRequest</h3>
         <p></p>
 
@@ -22013,14 +21926,6 @@ Permissions required: bb.plans.list</p></td>
               </tr>
             
               <tr>
-                <td>SearchPlans</td>
-                <td><a href="#bytebase.v1.SearchPlansRequest">SearchPlansRequest</a></td>
-                <td><a href="#bytebase.v1.SearchPlansResponse">SearchPlansResponse</a></td>
-                <td><p>Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter &amp; query.
-Permissions required: bb.plans.get</p></td>
-              </tr>
-            
-              <tr>
                 <td>CreatePlan</td>
                 <td><a href="#bytebase.v1.CreatePlanRequest">CreatePlanRequest</a></td>
                 <td><a href="#bytebase.v1.Plan">Plan</a></td>
@@ -22096,16 +22001,6 @@ Permissions required: bb.planCheckRuns.run</p></td>
                 <td>GET</td>
                 <td>/v1/{parent=projects/*}/plans</td>
                 <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>SearchPlans</td>
-                <td>POST</td>
-                <td>/v1/{parent=projects/*}/plans:search</td>
-                <td>*</td>
               </tr>
               
             
