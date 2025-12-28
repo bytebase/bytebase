@@ -30,12 +30,11 @@ export interface RolloutFind {
 export const buildRolloutFilter = (find: RolloutFind): string => {
   const filter: string[] = [];
   if (find.taskType) {
-    if (Array.isArray(find.taskType)) {
-      const types = find.taskType.map((t) => `"${Task_Type[t]}"`).join(", ");
-      filter.push(`task_type in [${types}]`);
-    } else {
-      filter.push(`task_type == "${Task_Type[find.taskType]}"`);
-    }
+    const taskTypes = Array.isArray(find.taskType)
+      ? find.taskType
+      : [find.taskType];
+    const types = taskTypes.map((t) => `"${Task_Type[t]}"`).join(", ");
+    filter.push(`task_type in [${types}]`);
   }
   if (find.updatedTsAfter) {
     filter.push(

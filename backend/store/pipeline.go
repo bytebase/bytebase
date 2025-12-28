@@ -46,19 +46,8 @@ func GetListRolloutFilter(filter string) (*qb.Query, error) {
 				}
 				return qb.Q().Space("(?)", q), nil
 			case celoperators.Equals:
-				variable, value := getVariableAndValueFromExpr(expr)
+				variable, _ := getVariableAndValueFromExpr(expr)
 				switch variable {
-				case "task_type":
-					taskType, ok := value.(string)
-					if !ok {
-						return nil, errors.Errorf("task_type value must be a string")
-					}
-					if _, ok := v1pb.Task_Type_value[taskType]; !ok {
-						return nil, errors.Errorf("invalid task_type value: %s", taskType)
-					}
-					v1TaskType := v1pb.Task_Type(v1pb.Task_Type_value[taskType])
-					storeTaskType := convertV1ToStoreTaskType(v1TaskType)
-					return qb.Q().Space("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ?)", storeTaskType.String()), nil
 				default:
 					return nil, errors.Errorf("unsupported variable %q", variable)
 				}

@@ -9485,9 +9485,9 @@ RoleService manages workspace roles and permissions.
 When paginating, all other parameters provided to `ListRollouts` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter rollouts returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filters: - creator: the rollout creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - update_time: rollout update time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - task_type: the task type, support &#34;==&#34; and &#34;in&#34; operators, check the Task.Type enum for the values.
+Supported filters: - update_time: rollout update time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - task_type: the task type, support &#34;in&#34; operator, check the Task.Type enum for the values.
 
-For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type == &#34;DATABASE_MIGRATE&#34; task_type in [&#34;DATABASE_MIGRATE&#34;, &#34;DATABASE_EXPORT&#34;] |
+For example: update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type in [&#34;DATABASE_MIGRATE&#34;, &#34;DATABASE_EXPORT&#34;] |
 
 
 
