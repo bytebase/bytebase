@@ -155,12 +155,12 @@ func (s *Scheduler) scheduleRunningTaskRun(ctx context.Context, taskRun *store.T
 		return errors.Errorf("project %v not found", plan.ProjectID)
 	}
 
-	rolloutID := strconv.FormatInt(plan.UID, 10)
+	planID := strconv.FormatInt(plan.UID, 10)
 	maxRunningTaskRunsPerRollout := int(project.Setting.GetParallelTasksPerRollout())
 	if maxRunningTaskRunsPerRollout <= 0 {
 		maxRunningTaskRunsPerRollout = defaultRolloutMaxRunningTaskRuns
 	}
-	if s.stateCfg.RolloutOutstandingTasks.Increment(rolloutID+"/"+task.InstanceID, maxRunningTaskRunsPerRollout) {
+	if s.stateCfg.RolloutOutstandingTasks.Increment(planID+"/"+task.InstanceID, maxRunningTaskRunsPerRollout) {
 		s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
 			ReportTime: timestamppb.Now(),
 			WaitingCause: &storepb.SchedulerInfo_WaitingCause{
@@ -176,7 +176,7 @@ func (s *Scheduler) scheduleRunningTaskRun(ctx context.Context, taskRun *store.T
 	revertRolloutConnectionsIncrement := true
 	defer func() {
 		if revertRolloutConnectionsIncrement {
-			s.stateCfg.RolloutOutstandingTasks.Decrement(rolloutID + "/" + task.InstanceID)
+			s.stateCfg.RolloutOutstandingTasks.Decrement(planID + "/" + task.InstanceID)
 		}
 	}()
 

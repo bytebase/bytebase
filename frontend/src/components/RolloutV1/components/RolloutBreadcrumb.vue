@@ -1,5 +1,5 @@
 <template>
-  <nav v-if="rolloutUID" class="inline-flex items-center text-sm">
+  <nav v-if="planID" class="inline-flex items-center text-sm">
     <template v-for="(item, index) in breadcrumbItems" :key="index">
       <span v-if="index > 0" class="mx-2 text-gray-400 font-mono">/</span>
       <RouterLink
@@ -31,8 +31,8 @@ import { useEnvironmentV1Store } from "@/store";
 import {
   extractIssueUID,
   extractPlanUID,
+  extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractRolloutUID,
 } from "@/utils";
 
 interface BreadcrumbItem {
@@ -61,9 +61,9 @@ const issueUID = computed(() => {
   return extractIssueUID(issue.value.name);
 });
 
-const rolloutUID = computed(() => {
+const planID = computed(() => {
   if (!rollout.value?.name) return "";
-  return extractRolloutUID(rollout.value.name);
+  return extractPlanUIDFromRolloutName(rollout.value.name);
 });
 
 // Route params for stage/task views
@@ -114,10 +114,10 @@ const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
 
   // Rollout - clickable when viewing task detail
   items.push({
-    label: `${t("common.rollout")} #${rolloutUID.value}`,
+    label: `${t("common.rollout")} #${planID.value}`,
     route: {
       name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-      params: { projectId: projectId.value, rolloutId: rolloutUID.value },
+      params: { projectId: projectId.value, planId: planID.value },
     },
     clickable: hasTask,
   });
@@ -130,7 +130,7 @@ const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
         name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
         params: {
           projectId: projectId.value,
-          rolloutId: rolloutUID.value,
+          planId: planID.value,
           stageId: stageId.value,
         },
       },

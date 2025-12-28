@@ -31,9 +31,10 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   databaseForTask,
+  extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractRolloutUID,
   extractSchemaVersionFromTask,
+  extractStageNameFromTaskName,
   extractStageUID,
   extractTaskUID,
   issueV1Slug,
@@ -58,8 +59,8 @@ const link = computed(() => {
       name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
       params: {
         projectId: extractProjectResourceName(task.name),
-        rolloutId: extractRolloutUID(task.name),
-        stageId: extractStageUID(task.name),
+        planId: extractPlanUIDFromRolloutName(task.name),
+        stageId: extractStageUID(extractStageNameFromTaskName(task.name)),
         taskId: extractTaskUID(task.name),
       },
     };

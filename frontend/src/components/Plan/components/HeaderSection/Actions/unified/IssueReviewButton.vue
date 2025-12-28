@@ -182,8 +182,8 @@ import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
 import { Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractIssueUID,
+  extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractRolloutUID,
   flattenTaskV1List,
 } from "@/utils";
 
@@ -363,7 +363,7 @@ const handlePostActionNavigation = (
           name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
           params: {
             projectId: extractProjectResourceName(issueValue.name),
-            rolloutId: extractRolloutUID(rolloutValue.name),
+            planId: extractPlanUIDFromRolloutName(rolloutValue.name),
           },
         });
       });

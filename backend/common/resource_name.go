@@ -255,8 +255,8 @@ func GetProjectIDPlanIDFromPlanCheckRun(name string) (string, int64, error) {
 	return projectID, int64(planID), nil
 }
 
-// GetProjectIDRolloutID returns the project ID and rollout ID (which is plan ID) from a resource name.
-func GetProjectIDRolloutID(name string) (string, int64, error) {
+// GetProjectIDPlanIDFromRolloutName returns the project ID and plan ID from a resource name.
+func GetProjectIDPlanIDFromRolloutName(name string) (string, int64, error) {
 	if !strings.HasSuffix(name, "/rollout") {
 		return "", 0, errors.Errorf("invalid rollout name %q, expected suffix /rollout", name)
 	}
@@ -264,8 +264,8 @@ func GetProjectIDRolloutID(name string) (string, int64, error) {
 	return GetProjectIDPlanID(planName)
 }
 
-// GetProjectIDRolloutIDMaybeStageID returns the project ID, rollout ID, and maybe stage ID from a resource name.
-func GetProjectIDRolloutIDMaybeStageID(name string) (string, int64, *string, error) {
+// GetProjectIDPlanIDMaybeStageID returns the project ID, plan ID, and maybe stage ID from a resource name.
+func GetProjectIDPlanIDMaybeStageID(name string) (string, int64, *string, error) {
 	parts := strings.Split(name, "/rollout")
 	if len(parts) != 2 {
 		return "", 0, nil, errors.Errorf("invalid rollout stage name %q", name)
@@ -289,8 +289,8 @@ func GetProjectIDRolloutIDMaybeStageID(name string) (string, int64, *string, err
 	return projectID, planID, maybeStageID, nil
 }
 
-// GetProjectIDRolloutIDStageIDMaybeTaskID returns the project ID, rollout ID, and maybe stage ID and maybe task ID from a resource name.
-func GetProjectIDRolloutIDStageIDMaybeTaskID(name string) (string, int64, string, *int, error) {
+// GetProjectIDPlanIDStageIDMaybeTaskID returns the project ID, plan ID, and maybe stage ID and maybe task ID from a resource name.
+func GetProjectIDPlanIDStageIDMaybeTaskID(name string) (string, int64, string, *int, error) {
 	parts := strings.Split(name, "/rollout")
 	if len(parts) != 2 {
 		return "", 0, "", nil, errors.Errorf("invalid rollout task name %q", name)
@@ -319,8 +319,8 @@ func GetProjectIDRolloutIDStageIDMaybeTaskID(name string) (string, int64, string
 	return projectID, planID, stageID, maybeTaskID, nil
 }
 
-// GetProjectIDRolloutIDMaybeStageIDMaybeTaskID returns the project ID, rollout ID, and maybe stage ID and maybe task ID from a resource name.
-func GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(name string) (string, int64, *string, *int, error) {
+// GetProjectIDPlanIDMaybeStageIDMaybeTaskID returns the project ID, plan ID, and maybe stage ID and maybe task ID from a resource name.
+func GetProjectIDPlanIDMaybeStageIDMaybeTaskID(name string) (string, int64, *string, *int, error) {
 	parts := strings.Split(name, "/rollout")
 	if len(parts) != 2 {
 		return "", 0, nil, nil, errors.Errorf("invalid rollout task name %q", name)
@@ -352,8 +352,8 @@ func GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(name string) (string, int64, *
 	return projectID, planID, maybeStageID, maybeTaskID, nil
 }
 
-// GetProjectIDRolloutIDStageIDTaskID returns the project ID, rollout ID, stage ID, and task ID from a resource name.
-func GetProjectIDRolloutIDStageIDTaskID(name string) (string, int64, string, int, error) {
+// GetProjectIDPlanIDStageIDTaskID returns the project ID, plan ID, stage ID, and task ID from a resource name.
+func GetProjectIDPlanIDStageIDTaskID(name string) (string, int64, string, int, error) {
 	parts := strings.Split(name, "/rollout")
 	if len(parts) != 2 {
 		return "", 0, "", 0, errors.Errorf("invalid rollout task name %q", name)
@@ -378,8 +378,8 @@ func GetProjectIDRolloutIDStageIDTaskID(name string) (string, int64, string, int
 	return projectID, planID, stageID, taskID, nil
 }
 
-// GetProjectIDRolloutIDStageIDTaskIDTaskRunID returns the project ID, rollout ID, stage ID, task ID and task run ID from a resource name.
-func GetProjectIDRolloutIDStageIDTaskIDTaskRunID(name string) (string, int64, string, int, int, error) {
+// GetProjectIDPlanIDStageIDTaskIDTaskRunID returns the project ID, plan ID, stage ID, task ID and task run ID from a resource name.
+func GetProjectIDPlanIDStageIDTaskIDTaskRunID(name string) (string, int64, string, int, int, error) {
 	parts := strings.Split(name, "/rollout")
 	if len(parts) != 2 {
 		return "", 0, "", 0, 0, errors.Errorf("invalid rollout task run name %q", name)

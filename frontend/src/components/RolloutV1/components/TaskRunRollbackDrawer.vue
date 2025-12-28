@@ -157,8 +157,8 @@ import { SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   databaseForTask,
   extractPlanUID,
+  extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractRolloutUID,
   hasProjectPermissionV2,
 } from "@/utils";
 import TaskTable from "./TaskTable.vue";
@@ -323,8 +323,8 @@ const handleConfirm = async () => {
     // Create the plan
     const plan = create(PlanSchema, {
       name: `${project.value.name}/plans/${uuidv4()}`,
-      title: `Rollback for rollout#${extractRolloutUID(props.rollout.name)}`,
-      description: `This plan is created to rollback ${rollbackPreviews.value.length} task(s) in rollout #${extractRolloutUID(props.rollout.name)}`,
+      title: `Rollback for rollout#${extractPlanUIDFromRolloutName(props.rollout.name)}`,
+      description: `This plan is created to rollback ${rollbackPreviews.value.length} task(s) in rollout #${extractPlanUIDFromRolloutName(props.rollout.name)}`,
       specs,
     });
 

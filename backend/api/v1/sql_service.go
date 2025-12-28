@@ -870,27 +870,27 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 
 func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
 	// Try to parse as rollout name first (more specific), then fallback to stage name
-	var rolloutID int64
+	var planID int64
 	var projectID string
 	var err error
-	projectID, rolloutID, err = common.GetProjectIDRolloutID(requestName)
+	projectID, planID, err = common.GetProjectIDPlanIDFromRolloutName(requestName)
 	if err != nil {
 		// If rollout parsing fails, try parsing as stage name
-		projectID, rolloutID, _, err = common.GetProjectIDRolloutIDMaybeStageID(requestName)
+		projectID, planID, _, err = common.GetProjectIDPlanIDMaybeStageID(requestName)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse request name as rollout or stage: %v", err))
 		}
 	}
 
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &rolloutID,
 		ProjectID: &projectID,
+		UID:       &planID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get rollout: %v", err))
 	}
 	if plan == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", planID, projectID))
 	}
 
 	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &plan.UID})

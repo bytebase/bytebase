@@ -80,7 +80,10 @@ import { rolloutServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { extractProjectResourceName, extractRolloutUID } from "@/utils";
+import {
+  extractPlanUIDFromRolloutName,
+  extractProjectResourceName,
+} from "@/utils";
 import type { ActionContext } from "../registry/types";
 
 const props = defineProps<{
@@ -163,7 +166,7 @@ const handleConfirm = async () => {
       name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
       params: {
         projectId: extractProjectResourceName(project.value.name),
-        rolloutId: extractRolloutUID(createdRollout.name),
+        planId: extractPlanUIDFromRolloutName(createdRollout.name),
       },
     });
   } catch (error) {

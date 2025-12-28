@@ -26,7 +26,7 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import { flattenTaskV1List } from "./issue";
 
-export const extractRolloutUID = (name: string) => {
+export const extractPlanUIDFromRolloutName = (name: string) => {
   const pattern = /(?:^|\/)plans\/([^/]+)\/rollout(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";

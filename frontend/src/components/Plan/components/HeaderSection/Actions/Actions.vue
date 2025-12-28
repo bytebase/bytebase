@@ -88,7 +88,10 @@ import {
   CreateRolloutRequestSchema,
   Task_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
-import { extractProjectResourceName, extractRolloutUID } from "@/utils";
+import {
+  extractPlanUIDFromRolloutName,
+  extractProjectResourceName,
+} from "@/utils";
 import { CreateButton, CreateIssueButton, RolloutCreatePanel } from "./create";
 import { ExportArchiveDownloadAction } from "./export";
 import RolloutReadyLink from "./RolloutReadyLink.vue";
@@ -283,7 +286,7 @@ const handleCreateRollout = async () => {
       name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
       params: {
         projectId: extractProjectResourceName(project.value.name),
-        rolloutId: extractRolloutUID(createdRollout.name),
+        planId: extractPlanUIDFromRolloutName(createdRollout.name),
       },
     });
   } catch (error) {

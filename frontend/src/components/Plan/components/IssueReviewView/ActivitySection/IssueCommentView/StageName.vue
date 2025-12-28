@@ -18,8 +18,8 @@ import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL } from "@/router/dashboard
 import { useEnvironmentV1Store } from "@/store";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractRolloutUID,
   extractStageUID,
 } from "@/utils";
 
@@ -36,7 +36,7 @@ const link = computed(() => {
     name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
     params: {
       projectId: extractProjectResourceName(stage.name),
-      rolloutId: extractRolloutUID(stage.name),
+      planId: extractPlanUIDFromRolloutName(stage.name),
       stageId: extractStageUID(stage.name),
     },
   };

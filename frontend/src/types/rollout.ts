@@ -1,5 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { getProjectNameRolloutId } from "@/store/modules/v1/common";
+import { getProjectNamePlanIdFromRolloutName } from "@/store/modules/v1/common";
 import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import type { Rollout } from "./proto-es/v1/rollout_service_pb";
 import { RolloutSchema } from "./proto-es/v1/rollout_service_pb";
@@ -22,7 +22,7 @@ export const unknownRollout = (): Rollout => {
 
 export const isValidRolloutName = (name: unknown): name is string => {
   if (typeof name !== "string") return false;
-  const [projectName, rolloutName] = getProjectNameRolloutId(name);
+  const [projectName, rolloutName] = getProjectNamePlanIdFromRolloutName(name);
   return Boolean(
     projectName &&
       projectName !== String(UNKNOWN_ID) &&
