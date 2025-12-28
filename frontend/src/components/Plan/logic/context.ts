@@ -11,7 +11,7 @@ import type {
 } from "../components/HeaderSection/Actions/unified";
 
 export type PlanEvents = Emittery<{
-  "status-changed": { eager?: boolean };
+  "status-changed": { eager: boolean };
   "perform-issue-review-action": {
     action: IssueReviewAction;
   };

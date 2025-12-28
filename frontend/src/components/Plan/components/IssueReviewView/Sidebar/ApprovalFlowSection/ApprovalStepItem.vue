@@ -134,7 +134,6 @@ const { project } = useCurrentProjectV1();
 // Try to get plan context, fallback to issue context if not available (legacy layout)
 const planContext = tryUsePlanContext();
 const issueContext = planContext ? undefined : useIssueContext();
-const events = planContext ? planContext.events : issueContext?.events;
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const roleStore = useRoleStore();
@@ -161,10 +160,12 @@ const handleReRequestReview = async () => {
       name: props.issue.name,
     });
     await issueServiceClientConnect.requestIssue(request);
-
     // Emit event to trigger issue refresh
-    // biome-ignore lint/suspicious/noExplicitAny: This union type is too complex for TypeScript to infer correctly here
-    (events as any)?.emit("status-changed", { eager: true });
+    if (planContext) {
+      planContext.events.emit("status-changed", { eager: true });
+    } else {
+      issueContext?.events.emit("status-changed", { eager: true });
+    }
 
     pushNotification({
       module: "bytebase",
