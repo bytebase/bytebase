@@ -49,6 +49,10 @@ export const usePlanContext = () => {
   return context;
 };
 
+export const tryUsePlanContext = () => {
+  return inject(KEY);
+};
+
 export const usePlanContextWithIssue = () => {
   const context = inject(KEY)!;
   if (!context.issue.value) {

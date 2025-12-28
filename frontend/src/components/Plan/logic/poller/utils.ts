@@ -61,9 +61,14 @@ export const refreshRollout = async (
   const rolloutRequest = create(GetRolloutRequestSchema, {
     name: rolloutName,
   });
-  const newRollout =
-    await rolloutServiceClientConnect.getRollout(rolloutRequest);
-  rollout.value = newRollout;
+  try {
+    const newRollout =
+      await rolloutServiceClientConnect.getRollout(rolloutRequest);
+    rollout.value = newRollout;
+  } catch (error) {
+    console.error("Failed to refresh rollout", error);
+    // Rollout might not exist yet
+  }
 };
 
 export const refreshIssue = async (
@@ -105,6 +110,10 @@ export const refreshTaskRuns = async (
   const request = create(ListTaskRunsRequestSchema, {
     parent,
   });
-  const response = await rolloutServiceClientConnect.listTaskRuns(request);
-  taskRuns.value = response.taskRuns;
+  try {
+    const response = await rolloutServiceClientConnect.listTaskRuns(request);
+    taskRuns.value = response.taskRuns;
+  } catch (error) {
+    console.error("Failed to refresh task runs", error);
+  }
 };

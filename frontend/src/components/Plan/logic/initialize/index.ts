@@ -153,8 +153,10 @@ export function useInitializePlan(
           const newRollout =
             await rolloutServiceClientConnect.getRollout(rolloutRequest);
           rolloutResult = newRollout;
-        } catch {
+        } catch (error) {
+          console.error("Failed to fetch rollout:", error);
           // Rollout might not exist yet, that's ok
+          rolloutResult = undefined;
         }
       }
     } else {
@@ -181,8 +183,10 @@ export function useInitializePlan(
           const newRollout =
             await rolloutServiceClientConnect.getRollout(rolloutRequest);
           rolloutResult = newRollout;
-        } catch {
+        } catch (error) {
+          console.error("Failed to fetch rollout:", error);
           // Rollout might not exist yet, that's ok
+          rolloutResult = undefined;
         }
       }
     }

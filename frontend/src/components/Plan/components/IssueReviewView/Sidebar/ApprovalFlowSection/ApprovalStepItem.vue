@@ -89,7 +89,8 @@ import { RotateCcwIcon, ThumbsUp, User, X } from "lucide-vue-next";
 import { NButton, NTimelineItem } from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { usePlanContext } from "@/components/Plan/logic";
+import { useIssueContext } from "@/components/IssueV1";
+import { tryUsePlanContext } from "@/components/Plan/logic";
 import { issueServiceClientConnect } from "@/grpcweb";
 import {
   pushNotification,
@@ -129,7 +130,11 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
-const { events } = usePlanContext();
+
+// Try to get plan context, fallback to issue context if not available (legacy layout)
+const planContext = tryUsePlanContext();
+const issueContext = planContext ? undefined : useIssueContext();
+const events = planContext ? planContext.events : issueContext?.events;
 const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const roleStore = useRoleStore();
@@ -158,7 +163,7 @@ const handleReRequestReview = async () => {
     await issueServiceClientConnect.requestIssue(request);
 
     // Emit event to trigger issue refresh
-    events.emit("perform-issue-review-action", { action: "ISSUE_REVIEW" });
+    events?.emit("perform-issue-review-action", { action: "ISSUE_REVIEW" });
 
     pushNotification({
       module: "bytebase",
