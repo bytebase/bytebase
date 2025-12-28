@@ -44,7 +44,7 @@ import { useBodyLayoutContext } from "@/layouts/common";
 
 const props = defineProps<{
   projectId: string;
-  rolloutId: string;
+  planId: string;
 }>();
 
 const { t } = useI18n();
@@ -58,9 +58,9 @@ const {
   isInitializing,
 } = useInitializePlan(
   toRef(props, "projectId"),
-  undefined, // planId - not used for rollout routes
+  toRef(props, "planId"), // planId
   undefined, // issueId - not used for rollout routes
-  toRef(props, "rolloutId")
+  undefined // legacyRolloutId - deprecated, using planId
 );
 const planBaseContext = useBasePlanContext({
   isCreating,
@@ -114,3 +114,4 @@ const documentTitle = computed(() => {
 
 useTitle(documentTitle);
 </script>
+```

@@ -45,7 +45,10 @@ import { useCurrentProjectV1 } from "@/store";
 import { pushNotification } from "@/store/modules/notification";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { extractProjectResourceName, extractRolloutUID } from "@/utils";
+import {
+  extractPlanUIDFromRolloutName,
+  extractProjectResourceName,
+} from "@/utils";
 import { useStageSelection } from "./composables/useStageSelection";
 import { useTaskInstancePreload } from "./composables/useTaskInstancePreload";
 import StageContentView from "./StageContentView.vue";
@@ -86,13 +89,13 @@ watch(
     if (isReady && stage && !currentRouteStageId) {
       // Auto-selected a stage but no stageId in route, navigate to it
       const stageId = stage.name.split("/").pop();
-      const rolloutId = extractRolloutUID(rollout.value.name);
+      const planId = extractPlanUIDFromRolloutName(rollout.value.name);
 
       router.replace({
         name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
         params: {
           projectId: extractProjectResourceName(project.value.name),
-          rolloutId: rolloutId || "_",
+          planId: planId || "_",
           stageId: stageId || "_",
         },
       });
@@ -103,14 +106,15 @@ watch(
 
 const handleStageSelect = (stage: Stage) => {
   // Navigate to the proper stage route
+  // Navigate to the proper stage route
   const stageId = stage.name.split("/").pop();
-  const rolloutId = extractRolloutUID(rollout.value.name);
+  const planId = extractPlanUIDFromRolloutName(rollout.value.name);
 
   router.push({
     name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.value.name),
-      rolloutId: rolloutId || "_",
+      planId: planId || "_",
       stageId: stageId || "_",
     },
   });

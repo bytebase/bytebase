@@ -89,7 +89,9 @@ export const getProjectNamePlanIdPlanCheckRunId = (name: string): string[] => {
   return [tokens[0], tokens[1], tokens[2]];
 };
 
-export const getProjectIdRolloutUidStageUid = (name: string): string[] => {
+export const getProjectIdPlanUidStageUidFromRolloutName = (
+  name: string
+): string[] => {
   const parts = name.split("/rollout");
   if (parts.length !== 2) {
     return ["", "", ""];
@@ -110,7 +112,7 @@ export const getProjectIdRolloutUidStageUid = (name: string): string[] => {
   return [projectId, planId, suffixParts[2]];
 };
 
-export const getProjectIdRolloutUidStageUidTaskUid = (
+export const getProjectIdPlanUidStageUidTaskUidFromRolloutName = (
   name: string
 ): string[] => {
   const parts = name.split("/rollout");
@@ -243,7 +245,7 @@ export const getProjectNameReleaseId = (name: string): string[] => {
   return tokens;
 };
 
-export const getProjectNameRolloutId = (name: string): string[] => {
+export const getProjectNamePlanIdFromRolloutName = (name: string): string[] => {
   if (!name.endsWith("/rollout")) {
     return ["", ""];
   }

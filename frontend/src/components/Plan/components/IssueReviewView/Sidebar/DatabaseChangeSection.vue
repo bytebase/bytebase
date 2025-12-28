@@ -77,7 +77,11 @@ import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL } from "@/router/dashboard
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
-import { extractProjectResourceName, getStageStatus } from "@/utils";
+import {
+  extractPlanUIDFromRolloutName,
+  extractProjectResourceName,
+  getStageStatus,
+} from "@/utils";
 import { usePlanCheckStatus, usePlanContext } from "../../../logic";
 import ChecksDrawer from "../../ChecksView/ChecksDrawer.vue";
 import PlanCheckStatusCount from "../../PlanCheckStatusCount.vue";
@@ -101,16 +105,16 @@ const getEnvironmentEntity = (environmentName: string) => {
 const navigateToStage = (stageName: string) => {
   if (!rollout?.value) return;
 
-  const rolloutId = rollout.value.name.split("/").pop();
+  const planId = extractPlanUIDFromRolloutName(rollout.value.name);
   const stageId = stageName.split("/").pop();
 
-  if (!rolloutId || !stageId) return;
+  if (!planId || !stageId) return;
 
   router.push({
     name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.value.name),
-      rolloutId,
+      planId,
       stageId,
     },
   });

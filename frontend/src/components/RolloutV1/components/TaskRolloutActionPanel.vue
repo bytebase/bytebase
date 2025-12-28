@@ -272,7 +272,7 @@ import {
   usePolicyByParentAndType,
 } from "@/store";
 import {
-  getProjectIdRolloutUidStageUidTaskUid,
+  getProjectIdPlanUidStageUidTaskUidFromRolloutName,
   projectNamePrefix,
   rolloutNamePrefix,
   stageNamePrefix,
@@ -781,11 +781,11 @@ const cancelTasks = async () => {
   // Group tasks by stage first
   const tasksByStage = new Map<string, Task[]>();
   for (const task of eligibleTasks.value) {
-    // Extract stage name from task path: projects/{projectId}/rollouts/{rolloutId}/stages/{stageId}/tasks/...
-    const [projectId, rolloutId, stageId] =
-      getProjectIdRolloutUidStageUidTaskUid(task.name);
-    if (projectId && rolloutId && stageId) {
-      const stageName = `${projectNamePrefix}${projectId}/${rolloutNamePrefix}${rolloutId}/${stageNamePrefix}${stageId}`;
+    // Extract stage name from task path: projects/{projectId}/plans/{planId}/rollout/stages/{stageId}/tasks/...
+    const [projectId, planId, stageId] =
+      getProjectIdPlanUidStageUidTaskUidFromRolloutName(task.name);
+    if (projectId && planId && stageId) {
+      const stageName = `${projectNamePrefix}${projectId}/${rolloutNamePrefix}${planId}/${stageNamePrefix}${stageId}`;
       if (!tasksByStage.has(stageName)) {
         tasksByStage.set(stageName, []);
       }

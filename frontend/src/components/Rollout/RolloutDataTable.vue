@@ -29,8 +29,8 @@ import type {
   Task_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractRolloutUID,
   getStageStatus,
   stringifyTaskStatus,
 } from "@/utils";
@@ -69,7 +69,7 @@ const columnList = computed(
           return (
             <div class={`flex items-center overflow-hidden gap-x-2`}>
               <div class="whitespace-nowrap text-control opacity-60">
-                {extractRolloutUID(rollout.name)}
+                {extractPlanUIDFromRolloutName(rollout.name)}
               </div>
               {rollout.title ? (
                 <NPerformantEllipsis class="truncate">
@@ -193,7 +193,7 @@ const rowProps = (rollout: Rollout) => {
         name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
         params: {
           projectId: extractProjectResourceName(rollout.name),
-          rolloutId: extractRolloutUID(rollout.name),
+          planId: extractPlanUIDFromRolloutName(rollout.name),
         },
       };
       if (e.ctrlKey || e.metaKey) {

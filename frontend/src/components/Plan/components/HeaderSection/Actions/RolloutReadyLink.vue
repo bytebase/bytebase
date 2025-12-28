@@ -3,7 +3,7 @@
     <NButton icon-placement="right" quaternary>
       <TaskStatus :status="rolloutStatus" size="tiny" />
       <span class="mx-1">{{ $t("common.rollout") }}</span>
-      <span>#{{ rolloutUID }}</span>
+      <span>#{{ planID }}</span>
       <template #icon>
         <ArrowUpRightIcon class="opacity-60" />
       </template>
@@ -20,8 +20,8 @@ import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractRolloutUID,
   getRolloutStatus,
 } from "@/utils";
 
@@ -32,16 +32,16 @@ const rolloutStatus = computed(() => {
   return getRolloutStatus(rollout.value);
 });
 
-const rolloutUID = computed(() => {
+const planID = computed(() => {
   if (!rollout.value?.name) return "";
-  return extractRolloutUID(rollout.value.name);
+  return extractPlanUIDFromRolloutName(rollout.value.name);
 });
 
 const rolloutRoute = computed(() => ({
   name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
   params: {
     projectId: extractProjectResourceName(plan.value.name),
-    rolloutId: extractRolloutUID(rollout.value?.name ?? ""),
+    planId: extractPlanUIDFromRolloutName(rollout.value?.name ?? ""),
   },
 }));
 </script>

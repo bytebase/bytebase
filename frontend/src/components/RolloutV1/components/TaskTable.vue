@@ -32,14 +32,15 @@ import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { useRolloutViewContext } from "@/components/RolloutV1/logic/context";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentProjectV1, useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractRolloutUID,
   extractSchemaVersionFromTask,
+  extractStageNameFromTaskName,
   humanizeTs,
 } from "@/utils";
 
@@ -63,7 +64,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
-const { project } = useCurrentProjectV1();
 const { rollout, mergedStages } = useRolloutViewContext();
 const { taskRuns } = usePlanContextWithRollout();
 
@@ -130,11 +130,11 @@ const getTaskRouteParams = (task: Task) => {
   const stage = stageMap.value.get(task.name);
   if (!stage) return null;
 
-  const rolloutId = extractRolloutUID(rollout.value.name);
+  const planId = extractPlanUIDFromRolloutName(rollout.value.name);
   const stageId = stage.name.split("/").pop();
   const taskId = task.name.split("/").pop();
 
-  return { rolloutId, stageId, taskId };
+  return { planId, stageId, taskId };
 };
 
 // Row click handler
@@ -144,9 +144,9 @@ const handleRowClick = (task: Task) => {
     router.push({
       name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
       params: {
-        projectId: extractProjectResourceName(project.value.name),
-        rolloutId: params.rolloutId,
-        stageId: params.stageId || "_", // Use placeholder for empty stageId
+        projectId: extractProjectResourceName(task.name),
+        planId: extractPlanUIDFromRolloutName(task.name),
+        stageId: extractStageNameFromTaskName(task.name),
         taskId: params.taskId,
       },
     });

@@ -22,7 +22,7 @@ import { ProjectV1Name } from "@/components/v2";
 import { UserLink } from "@/components/v2/Model/cells";
 import {
   extractUserId,
-  getProjectIdRolloutUidStageUid,
+  getProjectIdPlanUidStageUidFromRolloutName,
   projectNamePrefix,
   rolloutNamePrefix,
 } from "@/store/modules/v1/common";
@@ -256,11 +256,12 @@ const getViewLink = (auditLog: AuditLog): string | null => {
       if (!name) {
         return null;
       }
-      const [projectId, rolloutId, _] = getProjectIdRolloutUidStageUid(name);
-      if (!projectId || !rolloutId) {
+      const [projectId, planId, _] =
+        getProjectIdPlanUidStageUidFromRolloutName(name);
+      if (!projectId || !planId) {
         return null;
       }
-      return `${projectNamePrefix}${projectId}/${rolloutNamePrefix}${rolloutId}`;
+      return `${projectNamePrefix}${projectId}/${rolloutNamePrefix}${planId}`;
     }
   }
   return null;

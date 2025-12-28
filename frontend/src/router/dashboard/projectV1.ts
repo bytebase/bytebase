@@ -81,7 +81,7 @@ const issueRoutes: RouteRecordRaw[] = [
 
 const rolloutRoutes: RouteRecordRaw[] = [
   {
-    path: "rollouts/:rolloutId",
+    path: "rollouts/:planId",
     component: () => import("@/views/project/RolloutLayout.vue"),
     props: true,
     meta: {

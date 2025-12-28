@@ -168,7 +168,7 @@ import TaskRunTable from "./TaskRunTable.vue";
 import TaskStatusActions from "./TaskStatusActions.vue";
 
 const props = defineProps<{
-  rolloutId: string;
+  planId: string;
   stageId: string;
   taskId: string;
 }>();

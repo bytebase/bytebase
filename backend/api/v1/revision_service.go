@@ -193,7 +193,7 @@ func (s *RevisionService) createRevisions(
 	var createdRevisions []*v1pb.Revision
 	for i, revision := range revisions {
 		if revision.TaskRun != "" {
-			projectID, rolloutID, stageID, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(revision.TaskRun)
+			projectID, planID, stageID, taskID, taskRunID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(revision.TaskRun)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to get taskRun from %q", revision.TaskRun))
 			}
@@ -205,7 +205,7 @@ func (s *RevisionService) createRevisions(
 				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", revision.TaskRun))
 			}
 			if taskRun.ProjectID != projectID ||
-				taskRun.PlanUID != rolloutID ||
+				taskRun.PlanUID != planID ||
 				taskRun.Environment != formatEnvironmentFromStageID(stageID) ||
 				taskRun.TaskUID != taskID {
 				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("taskRun %q not found", revision.TaskRun))

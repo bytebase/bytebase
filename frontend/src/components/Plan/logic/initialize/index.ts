@@ -28,10 +28,10 @@ export function useInitializePlan(
   projectId: MaybeRef<string>,
   planId: MaybeRef<string | undefined>,
   issueId: MaybeRef<string | undefined>,
-  rolloutId?: MaybeRef<string | undefined>
+  legacyRolloutId?: MaybeRef<string | undefined>
 ) {
   const isCreating = computed(() => {
-    const id = unref(planId) || unref(issueId) || unref(rolloutId);
+    const id = unref(planId) || unref(issueId) || unref(legacyRolloutId);
     return id?.toLowerCase() === "create";
   });
 
@@ -44,9 +44,9 @@ export function useInitializePlan(
       if (uid > 0) return String(uid);
       return String(UNKNOWN_ID);
     }
-    // Otherwise, if rolloutId is provided, we'll fetch the plan from the rollout
-    if (unref(rolloutId)) {
-      const id = unref(rolloutId)!;
+    // Otherwise, if legacyRolloutId is provided, we'll fetch the plan from the rollout
+    if (unref(legacyRolloutId)) {
+      const id = unref(legacyRolloutId)!;
       if (id.toLowerCase() === "create") return String(EMPTY_ID);
       // For rollout-based initialization, return a special marker
       return `rollout:${id}`;
@@ -85,9 +85,9 @@ export function useInitializePlan(
       );
     } else if (uid.startsWith("rollout:")) {
       // Fetch plan from rollout
-      const rolloutUid = uid.substring(8);
+      const planUid = uid.substring(8);
       const rolloutRequest = create(GetRolloutRequestSchema, {
-        name: `${projectNamePrefix}${projectId}/plans/${rolloutUid}/rollout`,
+        name: `${projectNamePrefix}${projectId}/plans/${planUid}/rollout`,
       });
 
       const newRollout =
@@ -95,9 +95,7 @@ export function useInitializePlan(
       rolloutResult = newRollout;
 
       if (!rolloutResult.plan) {
-        throw new Error(
-          `Rollout ${rolloutUid} does not have an associated plan`
-        );
+        throw new Error(`Rollout ${planUid} does not have an associated plan`);
       }
 
       // Fetch the plan using the rollout's plan reference
@@ -155,8 +153,10 @@ export function useInitializePlan(
           const newRollout =
             await rolloutServiceClientConnect.getRollout(rolloutRequest);
           rolloutResult = newRollout;
-        } catch {
+        } catch (error) {
+          console.error("Failed to fetch rollout:", error);
           // Rollout might not exist yet, that's ok
+          rolloutResult = undefined;
         }
       }
     } else {
@@ -183,8 +183,10 @@ export function useInitializePlan(
           const newRollout =
             await rolloutServiceClientConnect.getRollout(rolloutRequest);
           rolloutResult = newRollout;
-        } catch {
+        } catch (error) {
+          console.error("Failed to fetch rollout:", error);
           // Rollout might not exist yet, that's ok
+          rolloutResult = undefined;
         }
       }
     }

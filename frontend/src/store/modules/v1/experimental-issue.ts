@@ -86,17 +86,28 @@ const composeIssue = async (
       const request = create(GetRolloutRequestSchema, {
         name: rolloutName,
       });
-      const response = await rolloutServiceClientConnect.getRollout(request);
-      issue.rolloutEntity = response;
+      try {
+        const response = await rolloutServiceClientConnect.getRollout(request);
+        issue.rolloutEntity = response;
+      } catch (e) {
+        // Rollout might not exist yet
+        console.error(e);
+      }
     }
 
     if (hasProjectPermissionV2(projectEntity, "bb.taskRuns.list")) {
       const request = create(ListTaskRunsRequestSchema, {
         parent: `${rolloutName}/stages/-/tasks/-`,
       });
-      const response = await rolloutServiceClientConnect.listTaskRuns(request);
-      const taskRuns = response.taskRuns;
-      issue.rolloutTaskRunList = taskRuns;
+      try {
+        const response =
+          await rolloutServiceClientConnect.listTaskRuns(request);
+        const taskRuns = response.taskRuns;
+        issue.rolloutTaskRunList = taskRuns;
+      } catch (e) {
+        // Rollout might not exist yet
+        console.error(e);
+      }
     }
   }
 

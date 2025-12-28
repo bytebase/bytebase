@@ -235,8 +235,8 @@ import { taskRunNamePrefix, useSheetV1Store } from "@/store";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractRolloutUID,
   extractStageNameFromTaskName,
   extractStageUID,
   extractTaskUID,
@@ -304,7 +304,7 @@ const handleActionConfirm = () => {
 
 const taskDetailRoute = computed(() => {
   const projectName = extractProjectResourceName(props.task.name);
-  const rolloutId = extractRolloutUID(props.task.name);
+  const planId = extractPlanUIDFromRolloutName(props.task.name);
   const stageName = extractStageNameFromTaskName(props.task.name);
   const stageId = extractStageUID(stageName);
   const taskId = extractTaskUID(props.task.name);
@@ -313,7 +313,7 @@ const taskDetailRoute = computed(() => {
     name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
     params: {
       projectId: projectName,
-      rolloutId: rolloutId || "-",
+      planId: planId || "-",
       stageId: stageId || "-",
       taskId: taskId || "-",
     },

@@ -143,7 +143,11 @@ export const useRolloutByName = (name: MaybeRef<string>) => {
       const cached = store.getRolloutByName(name);
       if (!isValidRolloutName(cached.name)) {
         ready.value = false;
-        await store.fetchRolloutByName(name);
+        try {
+          await store.fetchRolloutByName(name);
+        } catch {
+          // ignore
+        }
         ready.value = true;
       }
     },

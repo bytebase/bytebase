@@ -70,8 +70,8 @@ import {
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractPlanUIDFromRolloutName,
   extractProjectResourceName,
-  extractRolloutUID,
   extractTaskUID,
   flattenTaskV1List,
 } from "@/utils";
@@ -271,7 +271,7 @@ const getTaskRouteParams = (taskRun: TaskRun) => {
 
   const taskParts = task.name.split("/");
 
-  const rolloutId = extractRolloutUID(rollout.value.name);
+  const planId = extractPlanUIDFromRolloutName(rollout.value.name);
 
   const stageIndex = taskParts.indexOf("stages");
 
@@ -282,7 +282,7 @@ const getTaskRouteParams = (taskRun: TaskRun) => {
   const stageId = taskParts[stageIndex + 1];
   const taskId = taskParts[taskIndex + 1];
 
-  return { rolloutId, stageId, taskId };
+  return { planId, stageId, taskId };
 };
 
 // Get database for selected task run
@@ -301,7 +301,7 @@ const navigateToTaskDetail = (taskRun: TaskRun) => {
       name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
       params: {
         projectId: extractProjectResourceName(project.value.name),
-        rolloutId: params.rolloutId,
+        planId: params.planId,
         stageId: params.stageId || "_", // Use placeholder for empty stageId
         taskId: params.taskId,
       },
