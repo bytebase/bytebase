@@ -163,7 +163,7 @@ const handleReRequestReview = async () => {
     await issueServiceClientConnect.requestIssue(request);
 
     // Emit event to trigger issue refresh
-    events?.emit("perform-issue-review-action", { action: "ISSUE_REVIEW" });
+    (events as any)?.emit("status-changed", { eager: true });
 
     pushNotification({
       module: "bytebase",
