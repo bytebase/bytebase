@@ -197,10 +197,7 @@ func TestDatabaseGroup(t *testing.T) {
 
 	// CreateRollout is now idempotent and will automatically pick up the new database.
 	rollout2Resp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
-		Parent: project.Name,
-		Rollout: &v1pb.Rollout{
-			Plan: plan.Name,
-		},
+		Parent: plan.Name,
 		Target: nil, // set to nil to create all stages and tasks.
 	}))
 	a.NoError(err)

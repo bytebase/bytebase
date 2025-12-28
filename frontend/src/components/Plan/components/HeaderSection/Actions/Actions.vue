@@ -268,10 +268,7 @@ const handleCreateRollout = async () => {
   creatingRollout.value = true;
   try {
     const request = create(CreateRolloutRequestSchema, {
-      parent: project.value.name,
-      rollout: {
-        plan: plan.value.name,
-      },
+      parent: plan.value.name,
     });
     const createdRollout =
       await rolloutServiceClientConnect.createRollout(request);

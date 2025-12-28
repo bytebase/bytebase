@@ -168,9 +168,6 @@ func (x *CreateRolloutRequest) Equal(y *CreateRolloutRequest) bool {
 	if x.Parent != y.Parent {
 		return false
 	}
-	if !x.Rollout.Equal(y.Rollout) {
-		return false
-	}
 	if p, q := x.Target, y.Target; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
 		return false
 	}

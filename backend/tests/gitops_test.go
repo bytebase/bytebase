@@ -255,10 +255,7 @@ func TestGitOpsRollout(t *testing.T) {
 
 	// Step 3: Create a rollout from the plan.
 	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
-		Parent: project.Name,
-		Rollout: &v1pb.Rollout{
-			Plan: plan.Name,
-		},
+		Parent: plan.Name,
 	}))
 	a.NoError(err)
 	a.NotNil(rolloutResp)
@@ -310,10 +307,7 @@ func TestGitOpsRollout(t *testing.T) {
 	// Call CreateRollout on the finished plan.
 	// the rollout name is the same as the rollout created above.
 	rolloutResp2, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
-		Parent: project.Name,
-		Rollout: &v1pb.Rollout{
-			Plan: plan.Name,
-		},
+		Parent: plan.Name,
 	}))
 	a.NoError(err)
 	a.NotNil(rolloutResp2)
@@ -466,10 +460,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 
 	// Step 3: Create a rollout from the plan.
 	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
-		Parent: project.Name,
-		Rollout: &v1pb.Rollout{
-			Plan: plan.Name,
-		},
+		Parent: plan.Name,
 	}))
 	a.NoError(err)
 	a.NotNil(rolloutResp)
@@ -573,10 +564,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	// Call CreateRollout on the finished plan.
 	// the rollout name is the same as the rollout created above.
 	rolloutResp2, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
-		Parent: project.Name,
-		Rollout: &v1pb.Rollout{
-			Plan: plan.Name,
-		},
+		Parent: plan.Name,
 	}))
 	a.NoError(err)
 	a.NotNil(rolloutResp2)
@@ -679,10 +667,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	plan := planResp.Msg
 
 	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
-		Parent: project.Name,
-		Rollout: &v1pb.Rollout{
-			Plan: plan.Name,
-		},
+		Parent: plan.Name,
 	}))
 	a.NoError(err)
 	rollout := rolloutResp.Msg

@@ -24,7 +24,7 @@
           <TaskStatus :status="task.status" :size="isExpanded ? 'large' : 'small'" />
           <RouterLink
             v-if="!readonly"
-            :to="`/${task.name}`"
+            :to="taskDetailRoute"
             class="shrink-0 hover:opacity-80 transition-opacity"
           >
             <DatabaseDisplay
@@ -153,7 +153,7 @@
             <span class="text-sm font-medium text-gray-700">{{ t("common.statement") }}</span>
             <RouterLink
               v-if="!readonly"
-              :to="`/${task.name}`"
+              :to="taskDetailRoute"
             >
             <NButton text icon-placement="right" size="tiny" type="info">
               <template #icon>
@@ -230,10 +230,18 @@ import Timestamp from "@/components/misc/Timestamp.vue";
 import { usePlanContextWithRollout } from "@/components/Plan";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
+import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
 import { taskRunNamePrefix, useSheetV1Store } from "@/store";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { sheetNameOfTaskV1 } from "@/utils";
+import {
+  extractProjectResourceName,
+  extractRolloutUID,
+  extractStageNameFromTaskName,
+  extractStageUID,
+  extractTaskUID,
+  sheetNameOfTaskV1,
+} from "@/utils";
 import { useTaskActions } from "./composables/useTaskActions";
 import { useTaskDisplay } from "./composables/useTaskDisplay";
 import { useTaskRunLogSummary } from "./composables/useTaskRunLogSummary";
@@ -293,6 +301,24 @@ const {
 const handleActionConfirm = () => {
   events.emit("status-changed", { eager: true });
 };
+
+const taskDetailRoute = computed(() => {
+  const projectName = extractProjectResourceName(props.task.name);
+  const rolloutId = extractRolloutUID(props.task.name);
+  const stageName = extractStageNameFromTaskName(props.task.name);
+  const stageId = extractStageUID(stageName);
+  const taskId = extractTaskUID(props.task.name);
+
+  return {
+    name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+    params: {
+      projectId: projectName,
+      rolloutId: rolloutId || "-",
+      stageId: stageId || "-",
+      taskId: taskId || "-",
+    },
+  };
+});
 
 const { loading, displayedStatement, isStatementTruncated } = useTaskStatement(
   () => props.task,

@@ -87,7 +87,7 @@ export function useInitializePlan(
       // Fetch plan from rollout
       const rolloutUid = uid.substring(8);
       const rolloutRequest = create(GetRolloutRequestSchema, {
-        name: `${projectNamePrefix}${projectId}/rollouts/${rolloutUid}`,
+        name: `${projectNamePrefix}${projectId}/plans/${rolloutUid}/rollout`,
       });
 
       const newRollout =

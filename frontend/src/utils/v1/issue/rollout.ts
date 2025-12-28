@@ -27,7 +27,7 @@ import {
 import { flattenTaskV1List } from "./issue";
 
 export const extractRolloutUID = (name: string) => {
-  const pattern = /(?:^|\/)rollouts\/([^/]+)(?:$|\/)/;
+  const pattern = /(?:^|\/)plans\/([^/]+)\/rollout(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
 };
@@ -81,8 +81,8 @@ export const taskV1Slug = (task: Task): string => {
 
 /**
  * Extracts the stage resource name from a task resource name.
- * Task name format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
- * Returns: projects/{project}/rollouts/{rollout}/stages/{stage}
+ * Task name format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
+ * Returns: projects/{project}/plans/{plan}/rollout/stages/{stage}
  */
 export const extractStageNameFromTaskName = (taskName: string): string => {
   const pattern = /^(.+\/stages\/[^/]+)\/tasks\/[^/]+$/;

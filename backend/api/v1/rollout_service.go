@@ -66,9 +66,8 @@ func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1
 	}
 
 	// getRolloutWithTasks inlined
-	rolloutID64 := int64(rolloutID)
 	rollout, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &rolloutID64,
+		UID:       &rolloutID,
 		ProjectID: &projectID,
 	})
 	if err != nil {
@@ -82,7 +81,7 @@ func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &rolloutID64})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &rolloutID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks, error: %v", err))
 	}
@@ -193,7 +192,7 @@ func buildRolloutFindWithFilter(planFind *store.FindPlanMessage, filter string) 
 // CreateRollout creates a rollout from plan.
 func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request[v1pb.CreateRolloutRequest]) (*connect.Response[v1pb.Rollout], error) {
 	request := req.Msg
-	projectID, err := common.GetProjectID(request.Parent)
+	projectID, planID, err := common.GetProjectIDPlanID(request.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -207,10 +206,6 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
 	}
 
-	_, planID, err := common.GetProjectIDPlanID(request.GetRollout().GetPlan())
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &projectID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
@@ -268,9 +263,8 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
 	}
 
-	rolloutID64 := int64(rolloutID)
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &rolloutID64,
+		UID:       &rolloutID,
 		ProjectID: &projectID,
 	})
 	if err != nil {
@@ -280,7 +274,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", rolloutID, projectID))
 	}
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-		PlanUID:     &rolloutID64,
+		PlanUID:     &rolloutID,
 		Environment: maybeStageID,
 		TaskUID:     maybeTaskID,
 	})
@@ -405,9 +399,8 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	rolloutID64 := int64(rolloutID)
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &rolloutID64,
+		UID:       &rolloutID,
 		ProjectID: &projectID,
 	})
 	if err != nil {
@@ -419,7 +412,7 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1
 
 	taskRun, err := s.store.GetTaskRunV1(ctx, &store.FindTaskRunMessage{
 		UID:     &taskRunUID,
-		PlanUID: &rolloutID64,
+		PlanUID: &rolloutID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get task run, error: %v", err))
@@ -604,10 +597,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	// Rollout ID is Plan ID
-	rolloutID64 := int64(rolloutID)
 	// Verify plan exists instead of pipeline
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &rolloutID64,
+		UID:       &rolloutID,
 		ProjectID: &projectID,
 	})
 	if err != nil {
@@ -618,7 +610,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		PlanUID:   &rolloutID64,
+		PlanUID:   &rolloutID,
 		ProjectID: &projectID,
 	})
 	if err != nil {
@@ -649,7 +641,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	// Get all tasks in the same environment
-	stageToRunTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &rolloutID64, Environment: &environmentToRun})
+	stageToRunTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &rolloutID, Environment: &environmentToRun})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list tasks, error: %v", err))
 	}
@@ -742,9 +734,8 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	}
 
 	// Rollout ID is Plan ID
-	rolloutID64 := int64(rolloutID)
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &rolloutID64,
+		UID:       &rolloutID,
 		ProjectID: &projectID,
 	})
 	if err != nil {
@@ -755,14 +746,14 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	}
 
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		PlanUID:   &rolloutID64,
+		PlanUID:   &rolloutID,
 		ProjectID: &projectID,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find issue, error: %v", err))
 	}
 
-	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &rolloutID64})
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &rolloutID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list tasks, error: %v", err))
 	}
@@ -850,9 +841,8 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	// Rollout ID is Plan ID
-	rolloutID64 := int64(rolloutID)
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &rolloutID64,
+		UID:       &rolloutID,
 		ProjectID: &projectID,
 	})
 	if err != nil {
@@ -863,7 +853,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		PlanUID:   &rolloutID64,
+		PlanUID:   &rolloutID,
 		ProjectID: &projectID,
 	})
 	if err != nil {

@@ -167,8 +167,7 @@ func (stc *sdlTestContext) executeSDLRolloutWithResult(t *testing.T, database *v
 
 	// Create rollout
 	rolloutResp, err := stc.ctl.rolloutServiceClient.CreateRollout(stc.ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
-		Parent:  stc.ctl.project.Name,
-		Rollout: &v1pb.Rollout{Plan: plan.Name},
+		Parent: plan.Name,
 	}))
 	if err != nil {
 		return nil, err

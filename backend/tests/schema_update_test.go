@@ -418,7 +418,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 	}))
 	a.NoError(err)
 	issue := issueResp.Msg
-	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: ctl.project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}}))
+	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: plan.Name}))
 	a.NoError(err)
 	rollout := rolloutResp.Msg
 

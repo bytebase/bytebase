@@ -15,10 +15,10 @@ option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 // RolloutService manages the execution of deployment plans.
 service RolloutService {
-  // Retrieves a rollout by name.
+  // Retrieves a rollout by its plan name.
   // Permissions required: bb.rollouts.get
   rpc GetRollout(GetRolloutRequest) returns (Rollout) {
-    option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*}"};
+    option (google.api.http) = {get: "/v1/{name=projects/*/plans/*/rollout}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.rollouts.get";
     option (bytebase.v1.auth_method) = IAM;
@@ -33,14 +33,14 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Creates a new rollout from a plan.
+  // Creates a new rollout for a plan.
   // Permissions required: bb.rollouts.create
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
-      post: "/v1/{parent=projects/*}/rollouts"
-      body: "rollout"
+      post: "/v1/{parent=projects/*/plans/*}/rollout"
+      body: "*"
     };
-    option (google.api.method_signature) = "parent,rollout";
+    option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.rollouts.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
@@ -49,7 +49,7 @@ service RolloutService {
   // Lists task run executions for a task.
   // Permissions required: bb.taskRuns.list
   rpc ListTaskRuns(ListTaskRunsRequest) returns (ListTaskRunsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns"};
+    option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*}/taskRuns"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
@@ -58,7 +58,7 @@ service RolloutService {
   // Retrieves a task run by name.
   // Permissions required: bb.taskRuns.list
   rpc GetTaskRun(GetTaskRunRequest) returns (TaskRun) {
-    option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}"};
+    option (google.api.http) = {get: "/v1/{name=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
@@ -67,7 +67,7 @@ service RolloutService {
   // Retrieves execution logs for a task run.
   // Permissions required: bb.taskRuns.list
   rpc GetTaskRunLog(GetTaskRunLogRequest) returns (TaskRunLog) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log"};
+    option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}/log"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
@@ -76,7 +76,7 @@ service RolloutService {
   // Retrieves database session information for a running task.
   // Permissions required: bb.taskRuns.list
   rpc GetTaskRunSession(GetTaskRunSessionRequest) returns (TaskRunSession) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/session"};
+    option (google.api.http) = {get: "/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}/session"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
@@ -86,7 +86,7 @@ service RolloutService {
   // Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
   rpc BatchRunTasks(BatchRunTasksRequest) returns (BatchRunTasksResponse) {
     option (google.api.http) = {
-      post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun"
+      post: "/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchRun"
       body: "*"
     };
     option (google.api.method_signature) = "parent";
@@ -98,7 +98,7 @@ service RolloutService {
   // Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
   rpc BatchSkipTasks(BatchSkipTasksRequest) returns (BatchSkipTasksResponse) {
     option (google.api.http) = {
-      post: "/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip"
+      post: "/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchSkip"
       body: "*"
     };
     option (google.api.method_signature) = "parent";
@@ -110,7 +110,7 @@ service RolloutService {
   // Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
   rpc BatchCancelTaskRuns(BatchCancelTaskRunsRequest) returns (BatchCancelTaskRunsResponse) {
     option (google.api.http) = {
-      post: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel"
+      post: "/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*}/taskRuns:batchCancel"
       body: "*"
     };
     option (google.api.method_signature) = "parent";
@@ -122,7 +122,7 @@ service RolloutService {
   // Permissions required: bb.taskRuns.list
   rpc PreviewTaskRunRollback(PreviewTaskRunRollbackRequest) returns (PreviewTaskRunRollbackResponse) {
     option (google.api.http) = {
-      post: "/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}:previewRollback"
+      post: "/v1/{name=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}:previewRollback"
       body: "*"
     };
     option (google.api.method_signature) = "name";
@@ -133,13 +133,13 @@ service RolloutService {
 
 message BatchRunTasksRequest {
   // The stage name for the tasks.
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Stage"}
   ];
   // The tasks to run.
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
 
   // The task run should run after run_time.
@@ -150,13 +150,13 @@ message BatchRunTasksResponse {}
 
 message BatchSkipTasksRequest {
   // The stage name for the tasks.
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Stage"}
   ];
   // The tasks to skip.
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
   repeated string tasks = 2;
 
   // The reason for skipping the tasks.
@@ -167,14 +167,14 @@ message BatchSkipTasksResponse {}
 
 message BatchCancelTaskRunsRequest {
   // The task name for the taskRuns.
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-  // Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
+  // Use `projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/-` to cancel task runs under the same stage.
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Task"}
   ];
   // The taskRuns to cancel.
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   repeated string task_runs = 2;
 }
 
@@ -182,7 +182,8 @@ message BatchCancelTaskRunsResponse {}
 
 message GetRolloutRequest {
   // The name of the rollout to retrieve.
-  // Format: projects/{project}/rollouts/{rollout}
+  // This is the rollout resource name, which is the plan name plus /rollout suffix.
+  // Format: projects/{project}/plans/{plan}/rollout
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Rollout"}
@@ -236,15 +237,12 @@ message ListRolloutsResponse {
 }
 
 message CreateRolloutRequest {
-  // The parent project where this rollout will be created.
-  // Format: projects/{project}
+  // The parent plan for which this rollout will be created.
+  // Format: projects/{project}/plans/{plan}
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+    (google.api.resource_reference) = {type: "bytebase.com/Plan"}
   ];
-
-  // The rollout to create.
-  Rollout rollout = 2 [(google.api.field_behavior) = REQUIRED];
 
   // Create the rollout only for the specified target.
   // Format: environments/{environment}
@@ -254,9 +252,9 @@ message CreateRolloutRequest {
 }
 
 message ListTaskRunsRequest {
-  // The parent, which owns this collection of plans.
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-  // Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-" to list all taskRuns from a rollout.
+  // The parent, which owns this collection of taskRuns.
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
+  // Use "projects/{project}/plans/{plan}/rollout/stages/-/tasks/-" to list all taskRuns from a rollout.
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Task"}
@@ -269,7 +267,7 @@ message ListTaskRunsResponse {
 }
 
 message GetTaskRunRequest {
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/TaskRun"}
@@ -277,8 +275,7 @@ message GetTaskRunRequest {
 }
 
 message GetTaskRunLogRequest {
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-  // TODO(d): check the resource_reference.
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/TaskRun"}
@@ -288,11 +285,11 @@ message GetTaskRunLogRequest {
 message Rollout {
   option (google.api.resource) = {
     type: "bytebase.com/Rollout"
-    pattern: "projects/{project}/rollouts/{rollout}"
+    pattern: "projects/{project}/plans/{plan}/rollout"
   };
 
   // The resource name of the rollout.
-  // Format: projects/{project}/rollouts/{rollout}
+  // Format: projects/{project}/plans/{plan}/rollout
   string name = 1;
 
   // The plan that this rollout is based on.
@@ -304,7 +301,7 @@ message Rollout {
   string title = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Stages and thus tasks of the rollout.
-  repeated Stage stages = 4;
+  repeated Stage stages = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Format: users/hello@world.com
   string creator = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -321,10 +318,10 @@ message Rollout {
 message Stage {
   option (google.api.resource) = {
     type: "bytebase.com/Stage"
-    pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}"
+    pattern: "projects/{project}/plans/{plan}/rollout/stages/{stage}"
   };
 
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
   // Use "-" for {stage} when the stage has no environment or deleted environment.
   string name = 1;
 
@@ -344,14 +341,13 @@ message Stage {
 message Task {
   option (google.api.resource) = {
     type: "bytebase.com/Task"
-    pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}"
+    pattern: "projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}"
   };
 
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
   string name = 1;
 
   // A UUID4 string that uniquely identifies the Spec.
-  // Could be empty if the rollout of the task does not have an associating plan.
   string spec_id = 2;
 
   enum Status {
@@ -463,10 +459,10 @@ message Task {
 message TaskRun {
   option (google.api.resource) = {
     type: "bytebase.com/TaskRun"
-    pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}"
+    pattern: "projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}"
   };
 
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string name = 1;
 
   // Format: users/hello@world.com
@@ -563,7 +559,7 @@ message TaskRun {
       }
       // Information about a blocking task.
       message Task {
-        // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+        // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
         string task = 1;
       }
     }
@@ -584,10 +580,10 @@ message TaskRun {
 message TaskRunLog {
   option (google.api.resource) = {
     type: "bytebase.com/TaskRunLog"
-    pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log"
+    pattern: "projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log"
   };
 
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log
   string name = 1;
 
   // The log entries for this task run.
@@ -767,10 +763,10 @@ message GetTaskRunSessionRequest {
 message TaskRunSession {
   option (google.api.resource) = {
     type: "bytebase.com/TaskRunSession"
-    pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session"
+    pattern: "projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session"
   };
 
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session
   string name = 1;
 
   // Database-specific session information.

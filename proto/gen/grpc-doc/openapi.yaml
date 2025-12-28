@@ -4674,6 +4674,483 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/plans/{plan}/rollout:
+        get:
+            tags:
+                - RolloutService
+            description: |-
+                Retrieves a rollout by its plan name.
+                 Permissions required: bb.rollouts.get
+            operationId: RolloutService_GetRollout
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: plan
+                  in: path
+                  description: The plan id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Rollout'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - RolloutService
+            description: |-
+                Creates a new rollout for a plan.
+                 Permissions required: bb.rollouts.create
+            operationId: RolloutService_CreateRollout
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: plan
+                  in: path
+                  description: The plan id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateRolloutRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Rollout'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/plans/{plan}/rollout/{rollout}/*/tasks:batchRun:
+        post:
+            tags:
+                - RolloutService
+            description: |-
+                Executes multiple tasks in a rollout stage.
+                 Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+            operationId: RolloutService_BatchRunTasks
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: plan
+                  in: path
+                  description: The plan id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BatchRunTasksRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchRunTasksResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/plans/{plan}/rollout/{rollout}/*/tasks:batchSkip:
+        post:
+            tags:
+                - RolloutService
+            description: |-
+                Skips multiple tasks in a rollout stage.
+                 Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+            operationId: RolloutService_BatchSkipTasks
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: plan
+                  in: path
+                  description: The plan id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BatchSkipTasksRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchSkipTasksResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/plans/{plan}/rollout/{rollout}/*/{*}/*/taskRuns:
+        get:
+            tags:
+                - RolloutService
+            description: |-
+                Lists task run executions for a task.
+                 Permissions required: bb.taskRuns.list
+            operationId: RolloutService_ListTaskRuns
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: plan
+                  in: path
+                  description: The plan id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+                - name: '*'
+                  in: path
+                  description: The * id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListTaskRunsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/plans/{plan}/rollout/{rollout}/*/{*}/*/taskRuns:batchCancel:
+        post:
+            tags:
+                - RolloutService
+            description: |-
+                Cancels multiple running task executions.
+                 Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
+            operationId: RolloutService_BatchCancelTaskRuns
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: plan
+                  in: path
+                  description: The plan id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+                - name: '*'
+                  in: path
+                  description: The * id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BatchCancelTaskRunsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchCancelTaskRunsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/plans/{plan}/rollout/{rollout}/*/{*}/*/{*}/*:
+        get:
+            tags:
+                - RolloutService
+            description: |-
+                Retrieves a task run by name.
+                 Permissions required: bb.taskRuns.list
+            operationId: RolloutService_GetTaskRun
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: plan
+                  in: path
+                  description: The plan id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+                - name: '*'
+                  in: path
+                  description: The * id.
+                  required: true
+                  schema:
+                    type: string
+                - name: '*'
+                  in: path
+                  description: The * id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskRun'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/plans/{plan}/rollout/{rollout}/*/{*}/*/{*}/*/log:
+        get:
+            tags:
+                - RolloutService
+            description: |-
+                Retrieves execution logs for a task run.
+                 Permissions required: bb.taskRuns.list
+            operationId: RolloutService_GetTaskRunLog
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: plan
+                  in: path
+                  description: The plan id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+                - name: '*'
+                  in: path
+                  description: The * id.
+                  required: true
+                  schema:
+                    type: string
+                - name: '*'
+                  in: path
+                  description: The * id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskRunLog'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/plans/{plan}/rollout/{rollout}/*/{*}/*/{*}/*/session:
+        get:
+            tags:
+                - RolloutService
+            description: |-
+                Retrieves database session information for a running task.
+                 Permissions required: bb.taskRuns.list
+            operationId: RolloutService_GetTaskRunSession
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: plan
+                  in: path
+                  description: The plan id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+                - name: '*'
+                  in: path
+                  description: The * id.
+                  required: true
+                  schema:
+                    type: string
+                - name: '*'
+                  in: path
+                  description: The * id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskRunSession'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/plans/{plan}/rollout/{rollout}/*/{*}/*/{*}/*:previewRollback:
+        post:
+            tags:
+                - RolloutService
+            description: |-
+                Generates rollback SQL for a completed task run.
+                 Permissions required: bb.taskRuns.list
+            operationId: RolloutService_PreviewTaskRunRollback
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: plan
+                  in: path
+                  description: The plan id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+                - name: '*'
+                  in: path
+                  description: The * id.
+                  required: true
+                  schema:
+                    type: string
+                - name: '*'
+                  in: path
+                  description: The * id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PreviewTaskRunRollbackRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PreviewTaskRunRollbackResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/plans/{plan}:runPlanChecks:
         post:
             tags:
@@ -5339,486 +5816,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ListRolloutsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        post:
-            tags:
-                - RolloutService
-            description: |-
-                Creates a new rollout from a plan.
-                 Permissions required: bb.rollouts.create
-            operationId: RolloutService_CreateRollout
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: target
-                  in: query
-                  description: |-
-                    Create the rollout only for the specified target.
-                     Format: environments/{environment}
-                     If unspecified, all stages are created.
-                     If set to "", no stages are created.
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Rollout'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Rollout'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/rollouts/{rollout}:
-        get:
-            tags:
-                - RolloutService
-            description: |-
-                Retrieves a rollout by name.
-                 Permissions required: bb.rollouts.get
-            operationId: RolloutService_GetRollout
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: rollout
-                  in: path
-                  description: The rollout id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Rollout'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns:
-        get:
-            tags:
-                - RolloutService
-            description: |-
-                Lists task run executions for a task.
-                 Permissions required: bb.taskRuns.list
-            operationId: RolloutService_ListTaskRuns
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: rollout
-                  in: path
-                  description: The rollout id.
-                  required: true
-                  schema:
-                    type: string
-                - name: stage
-                  in: path
-                  description: The stage id.
-                  required: true
-                  schema:
-                    type: string
-                - name: task
-                  in: path
-                  description: The task id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListTaskRunsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}:
-        get:
-            tags:
-                - RolloutService
-            description: |-
-                Retrieves a task run by name.
-                 Permissions required: bb.taskRuns.list
-            operationId: RolloutService_GetTaskRun
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: rollout
-                  in: path
-                  description: The rollout id.
-                  required: true
-                  schema:
-                    type: string
-                - name: stage
-                  in: path
-                  description: The stage id.
-                  required: true
-                  schema:
-                    type: string
-                - name: task
-                  in: path
-                  description: The task id.
-                  required: true
-                  schema:
-                    type: string
-                - name: taskRun
-                  in: path
-                  description: The taskRun id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/TaskRun'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log:
-        get:
-            tags:
-                - RolloutService
-            description: |-
-                Retrieves execution logs for a task run.
-                 Permissions required: bb.taskRuns.list
-            operationId: RolloutService_GetTaskRunLog
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: rollout
-                  in: path
-                  description: The rollout id.
-                  required: true
-                  schema:
-                    type: string
-                - name: stage
-                  in: path
-                  description: The stage id.
-                  required: true
-                  schema:
-                    type: string
-                - name: task
-                  in: path
-                  description: The task id.
-                  required: true
-                  schema:
-                    type: string
-                - name: taskRun
-                  in: path
-                  description: The taskRun id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/TaskRunLog'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session:
-        get:
-            tags:
-                - RolloutService
-            description: |-
-                Retrieves database session information for a running task.
-                 Permissions required: bb.taskRuns.list
-            operationId: RolloutService_GetTaskRunSession
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: rollout
-                  in: path
-                  description: The rollout id.
-                  required: true
-                  schema:
-                    type: string
-                - name: stage
-                  in: path
-                  description: The stage id.
-                  required: true
-                  schema:
-                    type: string
-                - name: task
-                  in: path
-                  description: The task id.
-                  required: true
-                  schema:
-                    type: string
-                - name: taskRun
-                  in: path
-                  description: The taskRun id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/TaskRunSession'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}:previewRollback:
-        post:
-            tags:
-                - RolloutService
-            description: |-
-                Generates rollback SQL for a completed task run.
-                 Permissions required: bb.taskRuns.list
-            operationId: RolloutService_PreviewTaskRunRollback
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: rollout
-                  in: path
-                  description: The rollout id.
-                  required: true
-                  schema:
-                    type: string
-                - name: stage
-                  in: path
-                  description: The stage id.
-                  required: true
-                  schema:
-                    type: string
-                - name: task
-                  in: path
-                  description: The task id.
-                  required: true
-                  schema:
-                    type: string
-                - name: taskRun
-                  in: path
-                  description: The taskRun id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/PreviewTaskRunRollbackRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/PreviewTaskRunRollbackResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns:batchCancel:
-        post:
-            tags:
-                - RolloutService
-            description: |-
-                Cancels multiple running task executions.
-                 Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
-            operationId: RolloutService_BatchCancelTaskRuns
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: rollout
-                  in: path
-                  description: The rollout id.
-                  required: true
-                  schema:
-                    type: string
-                - name: stage
-                  in: path
-                  description: The stage id.
-                  required: true
-                  schema:
-                    type: string
-                - name: task
-                  in: path
-                  description: The task id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/BatchCancelTaskRunsRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BatchCancelTaskRunsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks:batchRun:
-        post:
-            tags:
-                - RolloutService
-            description: |-
-                Executes multiple tasks in a rollout stage.
-                 Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
-            operationId: RolloutService_BatchRunTasks
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: rollout
-                  in: path
-                  description: The rollout id.
-                  required: true
-                  schema:
-                    type: string
-                - name: stage
-                  in: path
-                  description: The stage id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/BatchRunTasksRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BatchRunTasksResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks:batchSkip:
-        post:
-            tags:
-                - RolloutService
-            description: |-
-                Skips multiple tasks in a rollout stage.
-                 Permissions required: bb.taskRuns.create (or issue creator for data export issues, or user with rollout policy role for the environment)
-            operationId: RolloutService_BatchSkipTasks
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: rollout
-                  in: path
-                  description: The rollout id.
-                  required: true
-                  schema:
-                    type: string
-                - name: stage
-                  in: path
-                  description: The stage id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/BatchSkipTasksRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/BatchSkipTasksResponse'
                 default:
                     description: Default error response
                     content:
@@ -8231,15 +8228,15 @@ components:
                     type: string
                     description: |-
                         The task name for the taskRuns.
-                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-                         Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage.
+                         Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
+                         Use `projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/-` to cancel task runs under the same stage.
                 taskRuns:
                     type: array
                     items:
                         type: string
                     description: |-
                         The taskRuns to cancel.
-                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+                         Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
         BatchCancelTaskRunsResponse:
             type: object
             properties: {}
@@ -8388,14 +8385,14 @@ components:
                     type: string
                     description: |-
                         The stage name for the tasks.
-                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+                         Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
                 tasks:
                     type: array
                     items:
                         type: string
                     description: |-
                         The tasks to run.
-                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+                         Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
                 runTime:
                     type: string
                     description: The task run should run after run_time.
@@ -8412,14 +8409,14 @@ components:
                     type: string
                     description: |-
                         The stage name for the tasks.
-                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+                         Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
                 tasks:
                     type: array
                     items:
                         type: string
                     description: |-
                         The tasks to skip.
-                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+                         Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
                 reason:
                     type: string
                     description: The reason for skipping the tasks.
@@ -8983,6 +8980,23 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/Revision'
                     description: The revision to create.
+        CreateRolloutRequest:
+            required:
+                - parent
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: |-
+                        The parent plan for which this rollout will be created.
+                         Format: projects/{project}/plans/{plan}
+                target:
+                    type: string
+                    description: |-
+                        Create the rollout only for the specified target.
+                         Format: environments/{environment}
+                         If unspecified, all stages are created.
+                         If set to "", no stages are created.
         CreateSheetRequest:
             required:
                 - parent
@@ -12820,7 +12834,7 @@ components:
                     type: string
                     description: |-
                         The resource name of the rollout.
-                         Format: projects/{project}/rollouts/{rollout}
+                         Format: projects/{project}/plans/{plan}/rollout
                 plan:
                     type: string
                     description: |-
@@ -12833,6 +12847,7 @@ components:
                         The title of the rollout, inherited from the associated plan.
                          This field is output only and cannot be directly set.
                 stages:
+                    readOnly: true
                     type: array
                     items:
                         $ref: '#/components/schemas/Stage'
@@ -13438,7 +13453,7 @@ components:
                          Supported filters:
                          - creator: the plan creator full name in "users/{email or id}" format, support "==" operator.
                          - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
-                         - has_pipeline: the plan has pipeline or not, support "==" operator, the value should be "true" or "false".
+                         - has_rollout: the plan has rollout or not, support "==" operator, the value should be "true" or "false".
                          - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
                          - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
                          - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
@@ -13793,7 +13808,7 @@ components:
                 name:
                     type: string
                     description: |-
-                        Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+                        Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
                          Use "-" for {stage} when the stage has no environment or deleted environment.
                 id:
                     readOnly: true
@@ -14168,12 +14183,10 @@ components:
             properties:
                 name:
                     type: string
-                    description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}'
+                    description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}'
                 specId:
                     type: string
-                    description: |-
-                        A UUID4 string that uniquely identifies the Spec.
-                         Could be empty if the rollout of the task does not have an associating plan.
+                    description: A UUID4 string that uniquely identifies the Spec.
                 status:
                     enum:
                         - STATUS_UNSPECIFIED
@@ -14272,7 +14285,7 @@ components:
             properties:
                 name:
                     type: string
-                    description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
+                    description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
                 creator:
                     type: string
                     description: 'Format: users/hello@world.com'
@@ -14347,7 +14360,7 @@ components:
             properties:
                 name:
                     type: string
-                    description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log'
+                    description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log'
                 entries:
                     type: array
                     items:
@@ -14543,7 +14556,7 @@ components:
             properties:
                 name:
                     type: string
-                    description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session'
+                    description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session'
                 postgres:
                     allOf:
                         - $ref: '#/components/schemas/TaskRunSession_Postgres'
@@ -15001,7 +15014,7 @@ components:
             properties:
                 task:
                     type: string
-                    description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}'
+                    description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}'
             description: Information about a blocking task.
         Webhook:
             required:

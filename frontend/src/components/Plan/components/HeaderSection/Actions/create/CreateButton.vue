@@ -176,10 +176,7 @@ const doCreateDataExportIssue = async () => {
 
   // Create the rollout
   const rolloutRequest = create(CreateRolloutRequestSchema, {
-    parent: project.value.name,
-    rollout: {
-      plan: createdPlan.name,
-    },
+    parent: createdPlan.name,
   });
   await rolloutServiceClientConnect.createRollout(rolloutRequest);
 

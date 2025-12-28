@@ -21,6 +21,7 @@ import Timestamp from "@/components/misc/Timestamp.vue";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { EnvironmentV1Name } from "@/components/v2";
+import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
 import { useEnvironmentV1Store } from "@/store";
 import type {
   Rollout,
@@ -28,6 +29,7 @@ import type {
   Task_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractProjectResourceName,
   extractRolloutUID,
   getStageStatus,
   stringifyTaskStatus,
@@ -187,11 +189,18 @@ const rowProps = (rollout: Rollout) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
-      const url = `/${rollout.name}`;
+      const routeParams = {
+        name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+        params: {
+          projectId: extractProjectResourceName(rollout.name),
+          rolloutId: extractRolloutUID(rollout.name),
+        },
+      };
       if (e.ctrlKey || e.metaKey) {
-        window.open(url, "_blank");
+        const routeData = router.resolve(routeParams);
+        window.open(routeData.href, "_blank");
       } else {
-        router.push(url);
+        router.push(routeParams);
       }
     },
   };

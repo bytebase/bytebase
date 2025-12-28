@@ -870,7 +870,7 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 
 func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) (*v1pb.ExportResponse, error) {
 	// Try to parse as rollout name first (more specific), then fallback to stage name
-	var rolloutID int
+	var rolloutID int64
 	var projectID string
 	var err error
 	projectID, rolloutID, err = common.GetProjectIDRolloutID(requestName)
@@ -882,9 +882,8 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, requestName string) 
 		}
 	}
 
-	rolloutID64 := int64(rolloutID)
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{
-		UID:       &rolloutID64,
+		UID:       &rolloutID,
 		ProjectID: &projectID,
 	})
 	if err != nil {

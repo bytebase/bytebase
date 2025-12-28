@@ -85,8 +85,7 @@ func TestBatchRunTasks_Idempotent(t *testing.T) {
 
 	// Create a rollout
 	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
-		Parent:  ctl.project.Name,
-		Rollout: &v1pb.Rollout{Plan: plan.Name},
+		Parent: plan.Name,
 	}))
 	a.NoError(err)
 	rollout := rolloutResp.Msg

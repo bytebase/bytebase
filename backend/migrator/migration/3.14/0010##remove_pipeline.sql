@@ -17,7 +17,7 @@ DELETE FROM task WHERE plan_id IS NULL;
 
 ALTER TABLE task ALTER COLUMN plan_id SET NOT NULL;
 
--- Backfill taskRun in changelog payload to use plan ID instead of pipeline ID
+-- Backfill taskRun in changelog payload to use plan ID and new resource naming scheme
 UPDATE changelog
 SET payload = jsonb_set(
     payload,
@@ -26,7 +26,7 @@ SET payload = jsonb_set(
         replace(
             payload->>'taskRun',
             '/rollouts/' || pipeline.id || '/',
-            '/rollouts/' || plan.id || '/'
+            '/plans/' || plan.id || '/rollout/'
         )
     )
 )
@@ -34,7 +34,7 @@ FROM plan, pipeline
 WHERE plan.pipeline_id = pipeline.id
 AND changelog.payload->>'taskRun' LIKE '%/rollouts/' || pipeline.id || '/%';
 
--- Backfill taskRun in revision payload to use plan ID instead of pipeline ID
+-- Backfill taskRun in revision payload to use plan ID and new resource naming scheme
 UPDATE revision
 SET payload = jsonb_set(
     payload,
@@ -43,7 +43,7 @@ SET payload = jsonb_set(
         replace(
             payload->>'taskRun',
             '/rollouts/' || pipeline.id || '/',
-            '/rollouts/' || plan.id || '/'
+            '/plans/' || plan.id || '/rollout/'
         )
     )
 )

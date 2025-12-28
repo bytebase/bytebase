@@ -21810,7 +21810,7 @@ The syntax and semantics of CEL are documented at https://github.com/google/cel-
 Supported filters:
 - creator: the plan creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator.
 - create_time: the plan create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
-- has_pipeline: the plan has pipeline or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
+- has_rollout: the plan has rollout or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
 - has_issue: the plan has issue or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;.
 - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.matches()&#34; operator for case-insensitive substring match.
 - spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34;, &#34;change_database_config&#34;, or &#34;export_data_config&#34;.
@@ -26472,8 +26472,8 @@ Permissions required: bb.roles.delete</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The task name for the taskRuns.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage. </p></td>
+Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
+Use `projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/-` to cancel task runs under the same stage. </p></td>
                 </tr>
               
                 <tr>
@@ -26481,7 +26481,7 @@ Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel tas
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>The taskRuns to cancel.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
+Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
                 </tr>
               
             </tbody>
@@ -26513,7 +26513,7 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRu
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The stage name for the tasks.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
+Format: projects/{project}/plans/{plan}/rollout/stages/{stage} </p></td>
                 </tr>
               
                 <tr>
@@ -26521,7 +26521,7 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>The tasks to run.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
+Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} </p></td>
                 </tr>
               
                 <tr>
@@ -26560,7 +26560,7 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The stage name for the tasks.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
+Format: projects/{project}/plans/{plan}/rollout/stages/{stage} </p></td>
                 </tr>
               
                 <tr>
@@ -26568,7 +26568,7 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage} </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>The tasks to skip.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
+Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} </p></td>
                 </tr>
               
                 <tr>
@@ -26606,15 +26606,8 @@ Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent project where this rollout will be created.
-Format: projects/{project} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rollout</td>
-                  <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                  <td></td>
-                  <td><p>The rollout to create. </p></td>
+                  <td><p>The parent plan for which this rollout will be created.
+Format: projects/{project}/plans/{plan} </p></td>
                 </tr>
               
                 <tr>
@@ -26649,7 +26642,8 @@ If set to &#34;&#34;, no stages are created. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the rollout to retrieve.
-Format: projects/{project}/rollouts/{rollout} </p></td>
+This is the rollout resource name, which is the plan name plus /rollout suffix.
+Format: projects/{project}/plans/{plan}/rollout </p></td>
                 </tr>
               
             </tbody>
@@ -26673,8 +26667,7 @@ Format: projects/{project}/rollouts/{rollout} </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-TODO(d): check the resource_reference. </p></td>
+                  <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
                 </tr>
               
             </tbody>
@@ -26698,7 +26691,7 @@ TODO(d): check the resource_reference. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
+                  <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
                 </tr>
               
             </tbody>
@@ -26843,9 +26836,9 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent, which owns this collection of plans.
-Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
-Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-&#34; to list all taskRuns from a rollout. </p></td>
+                  <td><p>The parent, which owns this collection of taskRuns.
+Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
+Use &#34;projects/{project}/plans/{plan}/rollout/stages/-/tasks/-&#34; to list all taskRuns from a rollout. </p></td>
                 </tr>
               
             </tbody>
@@ -26942,7 +26935,7 @@ Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-&#34; to list all
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The resource name of the rollout.
-Format: projects/{project}/rollouts/{rollout} </p></td>
+Format: projects/{project}/plans/{plan}/rollout </p></td>
                 </tr>
               
                 <tr>
@@ -27018,7 +27011,7 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}
+                  <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}
 Use &#34;-&#34; for {stage} when the stage has no environment or deleted environment. </p></td>
                 </tr>
               
@@ -27067,15 +27060,14 @@ Format: environments/{environment} for valid environments, or &#34;environments/
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
+                  <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} </p></td>
                 </tr>
               
                 <tr>
                   <td>spec_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>A UUID4 string that uniquely identifies the Spec.
-Could be empty if the rollout of the task does not have an associating plan. </p></td>
+                  <td><p>A UUID4 string that uniquely identifies the Spec. </p></td>
                 </tr>
               
                 <tr>
@@ -27318,7 +27310,7 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
+                  <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
                 </tr>
               
                 <tr>
@@ -27613,7 +27605,7 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>task</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
+                  <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} </p></td>
                 </tr>
               
             </tbody>
@@ -27637,7 +27629,7 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log </p></td>
+                  <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log </p></td>
                 </tr>
               
                 <tr>
@@ -28107,7 +28099,7 @@ Example: For &#34;SELECT 你好;&#34; in a UTF-8 sheet, range [0, 13) represents
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session </p></td>
+                  <td><p>Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session </p></td>
                 </tr>
               
                 <tr>
@@ -28610,7 +28602,7 @@ Use payload DatabaseUpdate.</p></td>
                 <td>GetRollout</td>
                 <td><a href="#bytebase.v1.GetRolloutRequest">GetRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                <td><p>Retrieves a rollout by name.
+                <td><p>Retrieves a rollout by its plan name.
 Permissions required: bb.rollouts.get</p></td>
               </tr>
             
@@ -28626,7 +28618,7 @@ Permissions required: bb.rollouts.list</p></td>
                 <td>CreateRollout</td>
                 <td><a href="#bytebase.v1.CreateRolloutRequest">CreateRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
-                <td><p>Creates a new rollout from a plan.
+                <td><p>Creates a new rollout for a plan.
 Permissions required: bb.rollouts.create</p></td>
               </tr>
             
@@ -28717,7 +28709,7 @@ Permissions required: bb.taskRuns.list</p></td>
               <tr>
                 <td>GetRollout</td>
                 <td>GET</td>
-                <td>/v1/{name=projects/*/rollouts/*}</td>
+                <td>/v1/{name=projects/*/plans/*/rollout}</td>
                 <td></td>
               </tr>
               
@@ -28737,8 +28729,8 @@ Permissions required: bb.taskRuns.list</p></td>
               <tr>
                 <td>CreateRollout</td>
                 <td>POST</td>
-                <td>/v1/{parent=projects/*}/rollouts</td>
-                <td>rollout</td>
+                <td>/v1/{parent=projects/*/plans/*}/rollout</td>
+                <td>*</td>
               </tr>
               
             
@@ -28747,7 +28739,7 @@ Permissions required: bb.taskRuns.list</p></td>
               <tr>
                 <td>ListTaskRuns</td>
                 <td>GET</td>
-                <td>/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns</td>
+                <td>/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*}/taskRuns</td>
                 <td></td>
               </tr>
               
@@ -28757,7 +28749,7 @@ Permissions required: bb.taskRuns.list</p></td>
               <tr>
                 <td>GetTaskRun</td>
                 <td>GET</td>
-                <td>/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}</td>
+                <td>/v1/{name=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}</td>
                 <td></td>
               </tr>
               
@@ -28767,7 +28759,7 @@ Permissions required: bb.taskRuns.list</p></td>
               <tr>
                 <td>GetTaskRunLog</td>
                 <td>GET</td>
-                <td>/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log</td>
+                <td>/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}/log</td>
                 <td></td>
               </tr>
               
@@ -28777,7 +28769,7 @@ Permissions required: bb.taskRuns.list</p></td>
               <tr>
                 <td>GetTaskRunSession</td>
                 <td>GET</td>
-                <td>/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/session</td>
+                <td>/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}/session</td>
                 <td></td>
               </tr>
               
@@ -28787,7 +28779,7 @@ Permissions required: bb.taskRuns.list</p></td>
               <tr>
                 <td>BatchRunTasks</td>
                 <td>POST</td>
-                <td>/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchRun</td>
+                <td>/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchRun</td>
                 <td>*</td>
               </tr>
               
@@ -28797,7 +28789,7 @@ Permissions required: bb.taskRuns.list</p></td>
               <tr>
                 <td>BatchSkipTasks</td>
                 <td>POST</td>
-                <td>/v1/{parent=projects/*/rollouts/*/stages/*}/tasks:batchSkip</td>
+                <td>/v1/{parent=projects/*/plans/*/rollout/stages/*}/tasks:batchSkip</td>
                 <td>*</td>
               </tr>
               
@@ -28807,7 +28799,7 @@ Permissions required: bb.taskRuns.list</p></td>
               <tr>
                 <td>BatchCancelTaskRuns</td>
                 <td>POST</td>
-                <td>/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns:batchCancel</td>
+                <td>/v1/{parent=projects/*/plans/*/rollout/stages/*/tasks/*}/taskRuns:batchCancel</td>
                 <td>*</td>
               </tr>
               
@@ -28817,7 +28809,7 @@ Permissions required: bb.taskRuns.list</p></td>
               <tr>
                 <td>PreviewTaskRunRollback</td>
                 <td>POST</td>
-                <td>/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}:previewRollback</td>
+                <td>/v1/{name=projects/*/plans/*/rollout/stages/*/tasks/*/taskRuns/*}:previewRollback</td>
                 <td>*</td>
               </tr>
               

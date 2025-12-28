@@ -52,7 +52,7 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 		return nil, nil, nil, errors.Wrapf(err, "failed to create issue")
 	}
 	issue := issueResp.Msg
-	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}}))
+	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: plan.Name}))
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to create rollout")
 	}

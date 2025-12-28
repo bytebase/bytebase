@@ -70,13 +70,13 @@ const (
 
 // RolloutServiceClient is a client for the bytebase.v1.RolloutService service.
 type RolloutServiceClient interface {
-	// Retrieves a rollout by name.
+	// Retrieves a rollout by its plan name.
 	// Permissions required: bb.rollouts.get
 	GetRollout(context.Context, *connect.Request[v1.GetRolloutRequest]) (*connect.Response[v1.Rollout], error)
 	// Lists rollouts in a project.
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error)
-	// Creates a new rollout from a plan.
+	// Creates a new rollout for a plan.
 	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
 	// Lists task run executions for a task.
@@ -257,13 +257,13 @@ func (c *rolloutServiceClient) PreviewTaskRunRollback(ctx context.Context, req *
 
 // RolloutServiceHandler is an implementation of the bytebase.v1.RolloutService service.
 type RolloutServiceHandler interface {
-	// Retrieves a rollout by name.
+	// Retrieves a rollout by its plan name.
 	// Permissions required: bb.rollouts.get
 	GetRollout(context.Context, *connect.Request[v1.GetRolloutRequest]) (*connect.Response[v1.Rollout], error)
 	// Lists rollouts in a project.
 	// Permissions required: bb.rollouts.list
 	ListRollouts(context.Context, *connect.Request[v1.ListRolloutsRequest]) (*connect.Response[v1.ListRolloutsResponse], error)
-	// Creates a new rollout from a plan.
+	// Creates a new rollout for a plan.
 	// Permissions required: bb.rollouts.create
 	CreateRollout(context.Context, *connect.Request[v1.CreateRolloutRequest]) (*connect.Response[v1.Rollout], error)
 	// Lists task run executions for a task.

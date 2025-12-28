@@ -75,6 +75,11 @@ export const getProjectName = (name: string): string => {
   return projectId;
 };
 
+export const getProjectNamePlanId = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [projectNamePrefix, planNamePrefix]);
+  return [tokens[0], tokens[1]];
+};
+
 export const getProjectNamePlanIdPlanCheckRunId = (name: string): string[] => {
   const tokens = getNameParentTokens(name, [
     projectNamePrefix,
@@ -85,24 +90,50 @@ export const getProjectNamePlanIdPlanCheckRunId = (name: string): string[] => {
 };
 
 export const getProjectIdRolloutUidStageUid = (name: string): string[] => {
-  const tokens = getNameParentTokens(name, [
-    projectNamePrefix,
-    rolloutNamePrefix,
-    stageNamePrefix,
-  ]);
-  return [tokens[0], tokens[1], tokens[2]];
+  const parts = name.split("/rollout");
+  if (parts.length !== 2) {
+    return ["", "", ""];
+  }
+
+  const [projectId, planId] = getProjectNamePlanId(parts[0]);
+  if (!projectId || !planId) {
+    return ["", "", ""];
+  }
+
+  // parts[1] is /stages/{s}
+  // split results in ["", "stages", "s"]
+  const suffixParts = parts[1].split("/");
+  if (suffixParts.length !== 3 || suffixParts[1] + "/" !== stageNamePrefix) {
+    return ["", "", ""];
+  }
+
+  return [projectId, planId, suffixParts[2]];
 };
 
 export const getProjectIdRolloutUidStageUidTaskUid = (
   name: string
 ): string[] => {
-  const tokens = getNameParentTokens(name, [
-    projectNamePrefix,
-    rolloutNamePrefix,
-    stageNamePrefix,
-    taskNamePrefix,
-  ]);
-  return [tokens[0], tokens[1], tokens[2], tokens[3]];
+  const parts = name.split("/rollout");
+  if (parts.length !== 2) {
+    return ["", "", "", ""];
+  }
+
+  const [projectId, planId] = getProjectNamePlanId(parts[0]);
+  if (!projectId || !planId) {
+    return ["", "", "", ""];
+  }
+
+  // parts[1] is /stages/{s}/tasks/{t}
+  // split results in ["", "stages", "s", "tasks", "t"]
+  const suffixParts = parts[1].split("/");
+  if (
+    suffixParts.length !== 5 ||
+    suffixParts[1] + "/" !== stageNamePrefix ||
+    suffixParts[3] + "/" !== taskNamePrefix
+  ) {
+    return ["", "", "", ""];
+  }
+  return [projectId, planId, suffixParts[2], suffixParts[4]];
 };
 
 export const getWorksheetId = (name: string): string => {
@@ -213,14 +244,11 @@ export const getProjectNameReleaseId = (name: string): string[] => {
 };
 
 export const getProjectNameRolloutId = (name: string): string[] => {
-  const tokens = getNameParentTokens(name, [
-    projectNamePrefix,
-    rolloutNamePrefix,
-  ]);
-  if (tokens.length !== 2) {
+  if (!name.endsWith("/rollout")) {
     return ["", ""];
   }
-  return tokens;
+  const planName = name.slice(0, -"/rollout".length);
+  return getProjectNamePlanId(planName);
 };
 
 export const isDatabaseName = (name: string): boolean => {

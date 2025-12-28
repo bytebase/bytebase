@@ -90,7 +90,7 @@ const generateRolloutFromPlan = async (
 
   // Touch UIDs for each object for local referencing
   rollout.plan = plan.name;
-  rollout.name = `${params.project.name}/rollouts/${nextUID()}`;
+  rollout.name = `${params.project.name}/plans/${nextUID()}/rollout`;
   rollout.stages.forEach((stage) => {
     // Use environment ID as stage ID
     const environmentID = extractEnvironmentResourceName(stage.environment);

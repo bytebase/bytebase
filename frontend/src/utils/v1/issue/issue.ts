@@ -31,9 +31,7 @@ export const isValidIssueName = (name: string | undefined) => {
 };
 
 export const getRolloutFromPlan = (planName: string): string => {
-  // Rollout uses PlanUID as ID, so we convert:
-  // projects/{project}/plans/{plan} -> projects/{project}/rollouts/{plan}
-  return planName.replace("/plans/", "/rollouts/");
+  return `${planName}/rollout`;
 };
 
 export const flattenTaskV1List = (rollout: Rollout | undefined) => {

@@ -39,7 +39,7 @@ func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.Stat
 func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
 	stageID := common.FormatStageID(taskRun.Environment)
 	t := &v1pb.TaskRun{
-		Name:          common.FormatTaskRun(taskRun.ProjectID, int(taskRun.PlanUID), stageID, taskRun.TaskUID, taskRun.ID),
+		Name:          common.FormatTaskRun(taskRun.ProjectID, taskRun.PlanUID, stageID, taskRun.TaskUID, taskRun.ID),
 		Creator:       common.FormatUserEmail(taskRun.CreatorEmail),
 		CreateTime:    timestamppb.New(taskRun.CreatedAt),
 		UpdateTime:    timestamppb.New(taskRun.UpdatedAt),
@@ -138,7 +138,7 @@ func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *
 		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
 			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task_{
 				Task: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task{
-					Task: common.FormatTask(plan.ProjectID, int(task.PlanID), stageID, task.ID),
+					Task: common.FormatTask(plan.ProjectID, task.PlanID, stageID, task.ID),
 				},
 			},
 		}, nil
@@ -200,7 +200,7 @@ func convertToTaskRunPriorBackupDetail(priorBackupDetail *storepb.PriorBackupDet
 
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PlanMessage, tasks []*store.TaskMessage) (*v1pb.Rollout, error) {
 	rolloutV1 := &v1pb.Rollout{
-		Name:       common.FormatRollout(project.ResourceID, int(rollout.UID)),
+		Name:       common.FormatRollout(project.ResourceID, rollout.UID),
 		Plan:       "",
 		Title:      "",
 		Stages:     nil,
@@ -269,7 +269,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		if len(tasks) > 0 {
 			stageID := common.FormatStageID(environment)
 			stages = append(stages, &v1pb.Stage{
-				Name:        common.FormatStage(project.ResourceID, int(rollout.UID), stageID),
+				Name:        common.FormatStage(project.ResourceID, rollout.UID, stageID),
 				Id:          stageID,
 				Environment: common.FormatEnvironment(stageID),
 				Tasks:       tasks,
@@ -283,7 +283,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 			stageID := common.FormatStageID(environment)
 			stages = append([]*v1pb.Stage{
 				{
-					Name:        common.FormatStage(project.ResourceID, int(rollout.UID), stageID),
+					Name:        common.FormatStage(project.ResourceID, rollout.UID, stageID),
 					Id:          stageID,
 					Environment: common.FormatEnvironment(stageID),
 					Tasks:       tasks,
@@ -324,7 +324,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	}
 	stageID := common.FormatStageID(task.Environment)
 	v1pbTask := &v1pb.Task{
-		Name:          common.FormatTask(project.ResourceID, int(task.PlanID), stageID, task.ID),
+		Name:          common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
 		Type:          convertToTaskType(task),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
@@ -369,7 +369,7 @@ func convertToTaskFromSchemaUpdate(project *store.ProjectMessage, task *store.Ta
 
 	stageID := common.FormatStageID(task.Environment)
 	v1pbTask := &v1pb.Task{
-		Name:          common.FormatTask(project.ResourceID, int(task.PlanID), stageID, task.ID),
+		Name:          common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
 		SpecId:        task.Payload.GetSpecId(),
 		Type:          convertToTaskType(task),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
@@ -409,7 +409,7 @@ func convertToTaskFromDatabaseDataExport(project *store.ProjectMessage, task *st
 	}
 	stageID := common.FormatStageID(task.Environment)
 	v1pbTask := &v1pb.Task{
-		Name:    common.FormatTask(project.ResourceID, int(task.PlanID), stageID, task.ID),
+		Name:    common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
 		SpecId:  task.Payload.GetSpecId(),
 		Type:    convertToTaskType(task),
 		Status:  convertToTaskStatus(task.LatestTaskRunStatus, false),

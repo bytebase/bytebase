@@ -7756,7 +7756,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 When paginating, all other parameters provided to `SearchPlans` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter plans returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filters: - creator: the plan creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - create_time: the plan create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - has_pipeline: the plan has pipeline or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - has_issue: the plan has issue or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.matches()&#34; operator for case-insensitive substring match. - spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34;, &#34;change_database_config&#34;, or &#34;export_data_config&#34;. - state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;.
+Supported filters: - creator: the plan creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - create_time: the plan create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - has_rollout: the plan has rollout or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - has_issue: the plan has issue or not, support &#34;==&#34; operator, the value should be &#34;true&#34; or &#34;false&#34;. - title: the plan title, support &#34;==&#34; operator for exact match and &#34;.matches()&#34; operator for case-insensitive substring match. - spec_type: the plan spec config type, support &#34;==&#34; operator, the value should be &#34;create_database_config&#34;, &#34;change_database_config&#34;, or &#34;export_data_config&#34;. - state: the plan state, support &#34;==&#34; operator, the value should be &#34;ACTIVE&#34; or &#34;DELETED&#34;.
 
 For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; has_pipeline == false &amp;&amp; has_issue == true title == &#34;My Plan&#34; title.matches(&#34;database migration&#34;) spec_type == &#34;change_database_config&#34; state == &#34;ACTIVE&#34; |
 
@@ -9360,8 +9360,8 @@ RoleService manages workspace roles and permissions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The task name for the taskRuns. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use `projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/-` to cancel task runs under the same stage. |
-| task_runs | [string](#string) | repeated | The taskRuns to cancel. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+| parent | [string](#string) |  | The task name for the taskRuns. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} Use `projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/-` to cancel task runs under the same stage. |
+| task_runs | [string](#string) | repeated | The taskRuns to cancel. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 
 
 
@@ -9386,8 +9386,8 @@ RoleService manages workspace roles and permissions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The stage name for the tasks. Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
-| tasks | [string](#string) | repeated | The tasks to run. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| parent | [string](#string) |  | The stage name for the tasks. Format: projects/{project}/plans/{plan}/rollout/stages/{stage} |
+| tasks | [string](#string) | repeated | The tasks to run. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} |
 | run_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The task run should run after run_time. |
 
 
@@ -9413,8 +9413,8 @@ RoleService manages workspace roles and permissions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The stage name for the tasks. Format: projects/{project}/rollouts/{rollout}/stages/{stage} |
-| tasks | [string](#string) | repeated | The tasks to skip. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| parent | [string](#string) |  | The stage name for the tasks. Format: projects/{project}/plans/{plan}/rollout/stages/{stage} |
+| tasks | [string](#string) | repeated | The tasks to skip. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} |
 | reason | [string](#string) |  | The reason for skipping the tasks. |
 
 
@@ -9440,8 +9440,7 @@ RoleService manages workspace roles and permissions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent project where this rollout will be created. Format: projects/{project} |
-| rollout | [Rollout](#bytebase-v1-Rollout) |  | The rollout to create. |
+| parent | [string](#string) |  | The parent plan for which this rollout will be created. Format: projects/{project}/plans/{plan} |
 | target | [string](#string) | optional | Create the rollout only for the specified target. Format: environments/{environment} If unspecified, all stages are created. If set to &#34;&#34;, no stages are created. |
 
 
@@ -9457,7 +9456,7 @@ RoleService manages workspace roles and permissions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the rollout to retrieve. Format: projects/{project}/rollouts/{rollout} |
+| name | [string](#string) |  | The name of the rollout to retrieve. This is the rollout resource name, which is the plan name plus /rollout suffix. Format: projects/{project}/plans/{plan}/rollout |
 
 
 
@@ -9472,7 +9471,7 @@ RoleService manages workspace roles and permissions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} TODO(d): check the resource_reference. |
+| parent | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 
 
 
@@ -9487,7 +9486,7 @@ RoleService manages workspace roles and permissions.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 
 
 
@@ -9557,7 +9556,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-&#34; to list all taskRuns from a rollout. |
+| parent | [string](#string) |  | The parent, which owns this collection of taskRuns. Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} Use &#34;projects/{project}/plans/{plan}/rollout/stages/-/tasks/-&#34; to list all taskRuns from a rollout. |
 
 
 
@@ -9617,7 +9616,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The resource name of the rollout. Format: projects/{project}/rollouts/{rollout} |
+| name | [string](#string) |  | The resource name of the rollout. Format: projects/{project}/plans/{plan}/rollout |
 | plan | [string](#string) |  | The plan that this rollout is based on. Format: projects/{project}/plans/{plan} |
 | title | [string](#string) |  | The title of the rollout, inherited from the associated plan. This field is output only and cannot be directly set. |
 | stages | [Stage](#bytebase-v1-Stage) | repeated | Stages and thus tasks of the rollout. |
@@ -9639,7 +9638,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage} Use &#34;-&#34; for {stage} when the stage has no environment or deleted environment. |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage} Use &#34;-&#34; for {stage} when the stage has no environment or deleted environment. |
 | id | [string](#string) |  | id is the environment id of the stage. e.g., &#34;prod&#34;. Use &#34;-&#34; when the stage has no environment or deleted environment. |
 | environment | [string](#string) |  | environment is the environment of the stage. Format: environments/{environment} for valid environments, or &#34;environments/-&#34; for stages without environment or with deleted environments. |
 | tasks | [Task](#bytebase-v1-Task) | repeated | The tasks within this stage. |
@@ -9657,8 +9656,8 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; update_time &
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
-| spec_id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. Could be empty if the rollout of the task does not have an associating plan. |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} |
+| spec_id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
 | status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. |
 | skipped_reason | [string](#string) |  | The reason why the task was skipped. |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
@@ -9738,7 +9737,7 @@ Payload for updating a database schema.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -9849,7 +9848,7 @@ Information about a blocking task.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| task | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| task | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task} |
 
 
 
@@ -9864,7 +9863,7 @@ Information about a blocking task.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log |
 | entries | [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry) | repeated | The log entries for this task run. |
 
 
@@ -10058,7 +10057,7 @@ Transaction control operation details.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session |
+| name | [string](#string) |  | Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/session |
 | postgres | [TaskRunSession.Postgres](#bytebase-v1-TaskRunSession-Postgres) |  | PostgreSQL session information. |
 
 
@@ -10233,9 +10232,9 @@ RolloutService manages the execution of deployment plans.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Retrieves a rollout by name. Permissions required: bb.rollouts.get |
+| GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Retrieves a rollout by its plan name. Permissions required: bb.rollouts.get |
 | ListRollouts | [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest) | [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse) | Lists rollouts in a project. Permissions required: bb.rollouts.list |
-| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Creates a new rollout from a plan. Permissions required: bb.rollouts.create |
+| CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) | Creates a new rollout for a plan. Permissions required: bb.rollouts.create |
 | ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) | Lists task run executions for a task. Permissions required: bb.taskRuns.list |
 | GetTaskRun | [GetTaskRunRequest](#bytebase-v1-GetTaskRunRequest) | [TaskRun](#bytebase-v1-TaskRun) | Retrieves a task run by name. Permissions required: bb.taskRuns.list |
 | GetTaskRunLog | [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest) | [TaskRunLog](#bytebase-v1-TaskRunLog) | Retrieves execution logs for a task run. Permissions required: bb.taskRuns.list |

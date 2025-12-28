@@ -140,7 +140,7 @@ export declare type SearchPlansRequest = Message<"bytebase.v1.SearchPlansRequest
    * Supported filters:
    * - creator: the plan creator full name in "users/{email or id}" format, support "==" operator.
    * - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
-   * - has_pipeline: the plan has pipeline or not, support "==" operator, the value should be "true" or "false".
+   * - has_rollout: the plan has rollout or not, support "==" operator, the value should be "true" or "false".
    * - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
    * - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
    * - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
