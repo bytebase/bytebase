@@ -21,7 +21,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	PlanService_GetPlan_FullMethodName            = "/bytebase.v1.PlanService/GetPlan"
 	PlanService_ListPlans_FullMethodName          = "/bytebase.v1.PlanService/ListPlans"
-	PlanService_SearchPlans_FullMethodName        = "/bytebase.v1.PlanService/SearchPlans"
 	PlanService_CreatePlan_FullMethodName         = "/bytebase.v1.PlanService/CreatePlan"
 	PlanService_UpdatePlan_FullMethodName         = "/bytebase.v1.PlanService/UpdatePlan"
 	PlanService_GetPlanCheckRun_FullMethodName    = "/bytebase.v1.PlanService/GetPlanCheckRun"
@@ -41,9 +40,6 @@ type PlanServiceClient interface {
 	// Lists deployment plans in a project.
 	// Permissions required: bb.plans.list
 	ListPlans(ctx context.Context, in *ListPlansRequest, opts ...grpc.CallOption) (*ListPlansResponse, error)
-	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
-	// Permissions required: bb.plans.get
-	SearchPlans(ctx context.Context, in *SearchPlansRequest, opts ...grpc.CallOption) (*SearchPlansResponse, error)
 	// Creates a new deployment plan.
 	// Permissions required: bb.plans.create
 	CreatePlan(ctx context.Context, in *CreatePlanRequest, opts ...grpc.CallOption) (*Plan, error)
@@ -84,16 +80,6 @@ func (c *planServiceClient) ListPlans(ctx context.Context, in *ListPlansRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPlansResponse)
 	err := c.cc.Invoke(ctx, PlanService_ListPlans_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *planServiceClient) SearchPlans(ctx context.Context, in *SearchPlansRequest, opts ...grpc.CallOption) (*SearchPlansResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SearchPlansResponse)
-	err := c.cc.Invoke(ctx, PlanService_SearchPlans_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -162,9 +148,6 @@ type PlanServiceServer interface {
 	// Lists deployment plans in a project.
 	// Permissions required: bb.plans.list
 	ListPlans(context.Context, *ListPlansRequest) (*ListPlansResponse, error)
-	// Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
-	// Permissions required: bb.plans.get
-	SearchPlans(context.Context, *SearchPlansRequest) (*SearchPlansResponse, error)
 	// Creates a new deployment plan.
 	// Permissions required: bb.plans.create
 	CreatePlan(context.Context, *CreatePlanRequest) (*Plan, error)
@@ -196,9 +179,6 @@ func (UnimplementedPlanServiceServer) GetPlan(context.Context, *GetPlanRequest) 
 }
 func (UnimplementedPlanServiceServer) ListPlans(context.Context, *ListPlansRequest) (*ListPlansResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPlans not implemented")
-}
-func (UnimplementedPlanServiceServer) SearchPlans(context.Context, *SearchPlansRequest) (*SearchPlansResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method SearchPlans not implemented")
 }
 func (UnimplementedPlanServiceServer) CreatePlan(context.Context, *CreatePlanRequest) (*Plan, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreatePlan not implemented")
@@ -268,24 +248,6 @@ func _PlanService_ListPlans_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PlanServiceServer).ListPlans(ctx, req.(*ListPlansRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _PlanService_SearchPlans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchPlansRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PlanServiceServer).SearchPlans(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PlanService_SearchPlans_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlanServiceServer).SearchPlans(ctx, req.(*SearchPlansRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -394,10 +356,6 @@ var PlanService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPlans",
 			Handler:    _PlanService_ListPlans_Handler,
-		},
-		{
-			MethodName: "SearchPlans",
-			Handler:    _PlanService_SearchPlans_Handler,
 		},
 		{
 			MethodName: "CreatePlan",

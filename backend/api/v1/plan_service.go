@@ -85,6 +85,15 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 		Offset:    &offset.offset,
 		ProjectID: &projectID,
 	}
+
+	if req.Filter != "" {
+		filterQ, err := store.GetListPlanFilter(req.Filter)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		find.FilterQ = filterQ
+	}
+
 	plans, err := s.store.ListPlans(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list plans, error: %v", err))
@@ -105,72 +114,6 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 	}
 
 	return connect.NewResponse(&v1pb.ListPlansResponse{
-		Plans:         convertedPlans,
-		NextPageToken: nextPageToken,
-	}), nil
-}
-
-// SearchPlans searches plans.
-func (s *PlanService) SearchPlans(ctx context.Context, request *connect.Request[v1pb.SearchPlansRequest]) (*connect.Response[v1pb.SearchPlansResponse], error) {
-	req := request.Msg
-	projectID, err := common.GetProjectID(req.Parent)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-	projectIDsFilter, err := getProjectIDsSearchFilter(ctx, user, iam.PermissionPlansGet, s.iamManager, s.store)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get projectIDs, error: %v", err))
-	}
-
-	offset, err := parseLimitAndOffset(&pageSize{
-		token:   req.PageToken,
-		limit:   int(req.PageSize),
-		maximum: 1000,
-	})
-	if err != nil {
-		return nil, err
-	}
-	limitPlusOne := offset.limit + 1
-
-	find := &store.FindPlanMessage{
-		Limit:      &limitPlusOne,
-		Offset:     &offset.offset,
-		ProjectIDs: projectIDsFilter,
-	}
-	if projectID != "-" {
-		find.ProjectID = &projectID
-	}
-	filterQ, err := store.GetListPlanFilter(req.Filter)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	find.FilterQ = filterQ
-
-	plans, err := s.store.ListPlans(ctx, find)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list plans, error: %v", err))
-	}
-
-	var nextPageToken string
-	// has more pages
-	if len(plans) == limitPlusOne {
-		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get next page token, error: %v", err))
-		}
-		plans = plans[:offset.limit]
-	}
-
-	convertedPlans, err := convertToPlans(ctx, s.store, plans)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to plans, error: %v", err))
-	}
-
-	return connect.NewResponse(&v1pb.SearchPlansResponse{
 		Plans:         convertedPlans,
 		NextPageToken: nextPageToken,
 	}), nil
