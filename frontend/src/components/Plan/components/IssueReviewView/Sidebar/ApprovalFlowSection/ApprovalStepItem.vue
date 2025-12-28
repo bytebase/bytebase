@@ -163,6 +163,7 @@ const handleReRequestReview = async () => {
     await issueServiceClientConnect.requestIssue(request);
 
     // Emit event to trigger issue refresh
+    // biome-ignore lint/suspicious/noExplicitAny: This union type is too complex for TypeScript to infer correctly here
     (events as any)?.emit("status-changed", { eager: true });
 
     pushNotification({
