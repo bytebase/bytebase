@@ -45,12 +45,6 @@ func GetListRolloutFilter(filter string) (*qb.Query, error) {
 					q.And("?", qq)
 				}
 				return qb.Q().Space("(?)", q), nil
-			case celoperators.Equals:
-				variable, _ := getVariableAndValueFromExpr(expr)
-				switch variable {
-				default:
-					return nil, errors.Errorf("unsupported variable %q", variable)
-				}
 			case celoperators.In:
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {
@@ -92,7 +86,6 @@ func GetListRolloutFilter(filter string) (*qb.Query, error) {
 				if err != nil {
 					return nil, errors.Errorf("failed to parse time %v, error: %v", value, err)
 				}
-				// Use the same subquery as in ListPipelines SELECT to compute updated_at
 				updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.task_id = task.id WHERE task.plan_id = plan.id), plan.created_at)`
 				if functionName == celoperators.GreaterEquals {
 					return qb.Q().Space(updatedAtSubquery+" >= ?", t), nil

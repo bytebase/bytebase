@@ -81,7 +81,7 @@ func TestGetListRolloutFilter(t *testing.T) {
 		},
 		{
 			name:        "unsupported variable",
-			filter:      `unsupported == "value"`,
+			filter:      `unsupported in ["value"]`,
 			wantErr:     true,
 			errContains: "unsupported variable",
 		},
