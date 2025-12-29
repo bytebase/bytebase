@@ -17,7 +17,7 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { usePlanContext } from "@/components/Plan/logic";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractPlanUIDFromRolloutName,
@@ -38,7 +38,7 @@ const planID = computed(() => {
 });
 
 const rolloutRoute = computed(() => ({
-  name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+  name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
   params: {
     projectId: extractProjectResourceName(plan.value.name),
     planId: extractPlanUIDFromRolloutName(rollout.value?.name ?? ""),

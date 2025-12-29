@@ -21,7 +21,7 @@ import Timestamp from "@/components/misc/Timestamp.vue";
 import { TASK_STATUS_FILTERS } from "@/components/Plan/constants/task";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { EnvironmentV1Name } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { useEnvironmentV1Store } from "@/store";
 import type {
   Rollout,
@@ -190,7 +190,7 @@ const rowProps = (rollout: Rollout) => {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
       const routeParams = {
-        name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+        name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
         params: {
           projectId: extractProjectResourceName(rollout.name),
           planId: extractPlanUIDFromRolloutName(rollout.name),

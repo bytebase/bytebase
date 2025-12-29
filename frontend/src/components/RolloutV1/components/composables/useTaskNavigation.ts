@@ -1,5 +1,5 @@
 import { useRouter } from "vue-router";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK } from "@/router/dashboard/projectV1";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractPlanUIDFromRolloutName,
@@ -25,7 +25,7 @@ export const useTaskNavigation = () => {
     const taskId = extractTaskUID(task.name);
 
     router.push({
-      name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
       params: {
         projectId: projectName,
         planId: planId || "-",

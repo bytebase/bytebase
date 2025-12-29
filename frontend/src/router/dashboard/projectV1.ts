@@ -30,9 +30,9 @@ export const PROJECT_V1_ROUTE_EXPORT_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.exp
 export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.release`;
 export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
 export const PROJECT_V1_ROUTE_ROLLOUTS = `${PROJECT_V1_ROUTE_DASHBOARD}.rollout`;
-export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUTS}.detail`;
-export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUT_DETAIL}.stage.detail`;
-export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL}.task.detail`;
+export const PROJECT_V1_ROUTE_PLAN_ROLLOUT = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.rollout`;
+export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE = `${PROJECT_V1_ROUTE_PLAN_ROLLOUT}.stage`;
+export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK = `${PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE}.task`;
 
 const issueRoutes: RouteRecordRaw[] = [
   {
@@ -79,9 +79,10 @@ const issueRoutes: RouteRecordRaw[] = [
   },
 ];
 
+// Rollout routes - nested under plans/:planId/rollout
 const rolloutRoutes: RouteRecordRaw[] = [
   {
-    path: "rollouts/:planId",
+    path: "plans/:planId/rollout",
     component: () => import("@/views/project/RolloutLayout.vue"),
     props: true,
     meta: {
@@ -95,7 +96,7 @@ const rolloutRoutes: RouteRecordRaw[] = [
         children: [
           {
             path: "",
-            name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+            name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
             component: () =>
               import("@/components/RolloutV1/components/RolloutView.vue"),
             props: true,
@@ -105,7 +106,7 @@ const rolloutRoutes: RouteRecordRaw[] = [
           },
           {
             path: "stages/:stageId",
-            name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+            name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
             component: () =>
               import("@/components/RolloutV1/components/RolloutView.vue"),
             props: true,
@@ -115,7 +116,7 @@ const rolloutRoutes: RouteRecordRaw[] = [
           },
           {
             path: "stages/:stageId/tasks/:taskId",
-            name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+            name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
             component: () =>
               import("@/components/RolloutV1/components/TaskView.vue"),
             props: true,
