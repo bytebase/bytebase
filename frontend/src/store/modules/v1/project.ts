@@ -121,6 +121,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     pageToken?: string;
     silent?: boolean;
     filter?: ProjectFilter;
+    orderBy?: string;
   }): Promise<{
     projects: Project[];
     nextPageToken?: string;
@@ -140,6 +141,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
           ...params,
           pageToken,
           filter: getListProjectFilter(params.filter ?? {}),
+          orderBy: params.orderBy,
           showDeleted: params.filter?.state === State.DELETED ? true : false,
         });
         const connectResponse = await projectServiceClientConnect.listProjects(
@@ -155,6 +157,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
           ...params,
           pageToken,
           filter: getListProjectFilter(params.filter ?? {}),
+          orderBy: params.orderBy,
           showDeleted: params.filter?.state === State.DELETED ? true : false,
         });
         const connectResponse =

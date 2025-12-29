@@ -109,6 +109,18 @@ export declare type ListProjectsRequest = Message<"bytebase.v1.ListProjectsReque
    * @generated from field: string filter = 4;
    */
   filter: string;
+
+  /**
+   * The order by of projects.
+   * Support title. The default sorting order is ascending.
+   * For example:
+   * - order_by = "title"
+   * - order_by = "title desc"
+   * - order_by = "title asc"
+   *
+   * @generated from field: string order_by = 5;
+   */
+  orderBy: string;
 };
 
 /**
@@ -204,6 +216,18 @@ export declare type SearchProjectsRequest = Message<"bytebase.v1.SearchProjectsR
    * @generated from field: string page_token = 4;
    */
   pageToken: string;
+
+  /**
+   * The order by of projects.
+   * Support title. The default sorting order is ascending.
+   * For example:
+   * - order_by = "title"
+   * - order_by = "title desc"
+   * - order_by = "title asc"
+   *
+   * @generated from field: string order_by = 5;
+   */
+  orderBy: string;
 };
 
 /**

@@ -265,7 +265,14 @@ type ListProjectsRequest struct {
 	// Filter the project.
 	// Check filter for SearchProjectsRequest for details.
 	// Supports filtering by name, resource_id, state, and labels (e.g., labels.environment == "production").
-	Filter        string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
+	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
+	// The order by of projects.
+	// Support title. The default sorting order is ascending.
+	// For example:
+	// - order_by = "title"
+	// - order_by = "title desc"
+	// - order_by = "title asc"
+	OrderBy       string `protobuf:"bytes,5,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -324,6 +331,13 @@ func (x *ListProjectsRequest) GetShowDeleted() bool {
 func (x *ListProjectsRequest) GetFilter() string {
 	if x != nil {
 		return x.Filter
+	}
+	return ""
+}
+
+func (x *ListProjectsRequest) GetOrderBy() string {
+	if x != nil {
+		return x.OrderBy
 	}
 	return ""
 }
@@ -422,7 +436,14 @@ type SearchProjectsRequest struct {
 	//
 	// When paginating, all other parameters provided to `SearchProjects` must match
 	// the call that provided the page token.
-	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	PageToken string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// The order by of projects.
+	// Support title. The default sorting order is ascending.
+	// For example:
+	// - order_by = "title"
+	// - order_by = "title desc"
+	// - order_by = "title asc"
+	OrderBy       string `protobuf:"bytes,5,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -481,6 +502,13 @@ func (x *SearchProjectsRequest) GetPageSize() int32 {
 func (x *SearchProjectsRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
+	}
+	return ""
+}
+
+func (x *SearchProjectsRequest) GetOrderBy() string {
+	if x != nil {
+		return x.OrderBy
 	}
 	return ""
 }
@@ -1579,22 +1607,24 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05names\x18\x01 \x03(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x05names\"L\n" +
 	"\x18BatchGetProjectsResponse\x120\n" +
-	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\"\x8c\x01\n" +
+	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\"\xa7\x01\n" +
 	"\x13ListProjectsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x02 \x01(\tR\tpageToken\x12!\n" +
 	"\fshow_deleted\x18\x03 \x01(\bR\vshowDeleted\x12\x16\n" +
-	"\x06filter\x18\x04 \x01(\tR\x06filter\"p\n" +
+	"\x06filter\x18\x04 \x01(\tR\x06filter\x12\x19\n" +
+	"\border_by\x18\x05 \x01(\tR\aorderBy\"p\n" +
 	"\x14ListProjectsResponse\x120\n" +
 	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8e\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xa9\x01\n" +
 	"\x15SearchProjectsRequest\x12!\n" +
 	"\fshow_deleted\x18\x01 \x01(\bR\vshowDeleted\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x04 \x01(\tR\tpageToken\"r\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\x12\x19\n" +
+	"\border_by\x18\x05 \x01(\tR\aorderBy\"r\n" +
 	"\x16SearchProjectsResponse\x120\n" +
 	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"j\n" +

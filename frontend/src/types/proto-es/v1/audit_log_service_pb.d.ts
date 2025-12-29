@@ -47,7 +47,7 @@ export declare type SearchAuditLogsRequest = Message<"bytebase.v1.SearchAuditLog
 
   /**
    * The order by of the log.
-   * Only support order by create_time.
+   * Only support order by create_time. The default sorting order is ascending.
    * For example:
    *  - order_by = "create_time asc"
    *  - order_by = "create_time desc"
@@ -129,7 +129,7 @@ export declare type ExportAuditLogsRequest = Message<"bytebase.v1.ExportAuditLog
 
   /**
    * The order by of the log.
-   * Only support order by create_time.
+   * Only support order by create_time. The default sorting order is ascending.
    * For example:
    *  - order_by = "create_time asc"
    *  - order_by = "create_time desc"

@@ -3,14 +3,16 @@
     ref="auditPagedTable"
     :session-key="`bb.page-audit-log-table.settings-audit-log-v1-table.${parent}`"
     :fetch-list="fetchAuditLog"
+    :order-keys="['create_time']"
   >
-    <template #table="{ list, loading }">
+    <template #table="{ list, loading, sorters, onSortersUpdate }">
       <AuditLogDataTable
         :key="`audit-log-table.${parent}`"
         :audit-log-list="list"
         :show-project="false"
         :loading="loading"
-        v-model:sorters="sorters"
+        :sorters="sorters"
+        @update:sorters="onSortersUpdate"
       />
     </template>
   </PagedTable>
@@ -18,8 +20,7 @@
 
 <script lang="tsx" setup>
 import dayjs from "dayjs";
-import { type DataTableSortState } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 // https://github.com/vuejs/language-tools/issues/3206
 import type { ComponentExposed } from "vue-component-type-helpers";
 import AuditLogDataTable from "@/components/AuditLog/AuditLogDataTable.vue";
@@ -41,44 +42,27 @@ const props = defineProps<{
 const auditLogStore = useAuditLogStore();
 const auditPagedTable = ref<ComponentExposed<typeof PagedTable<AuditLog>>>();
 
-const sorters = ref<DataTableSortState[]>([
-  {
-    columnKey: "create_time",
-    order: false,
-    sorter: true,
-  },
-]);
-
-const orderBy = computed(() => {
-  return sorters.value
-    .filter((sorter) => sorter.order)
-    .map((sorter) => {
-      const key = sorter.columnKey.toString();
-      const order = sorter.order == "ascend" ? "asc" : "desc";
-      return `${key} ${order}`;
-    })
-    .join(", ");
-});
-
 const fetchAuditLog = async ({
   pageToken,
   pageSize,
+  orderBy,
 }: {
   pageToken: string;
   pageSize: number;
+  orderBy?: string;
 }) => {
   const { nextPageToken, auditLogs } = await auditLogStore.fetchAuditLogs({
     pageToken,
     pageSize,
     parent: props.parent,
     filter: props.filter,
-    orderBy: orderBy.value,
+    orderBy,
   });
   return { nextPageToken, list: auditLogs };
 };
 
 watch(
-  () => [props.filter, props.parent, orderBy.value],
+  [() => props.filter, () => props.parent],
   () => auditPagedTable.value?.refresh(),
   { deep: true }
 );
@@ -103,7 +87,7 @@ const handleExport = async ({
         search: {
           parent: props.parent,
           filter: props.filter,
-          orderBy: orderBy.value,
+          // TODO(ed): how to support order by?
           pageSize: 5000, // The maximum page size is 5000
           pageToken,
         },

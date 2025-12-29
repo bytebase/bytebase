@@ -1,6 +1,12 @@
 <template>
   <div class="flex flex-col gap-y-4">
-    <slot name="table" :list="dataList" :loading="state.loading" />
+    <slot
+      name="table"
+      :list="dataList"
+      :loading="state.loading"
+      :sorters="sorters"
+      :on-sorters-update="onSortersUpdate"
+    />
 
     <div :class="['flex items-center justify-end gap-x-2', footerClass]">
       <div class="flex items-center gap-x-2">
@@ -34,7 +40,7 @@
 <script lang="ts" setup generic="T extends { name: string }">
 import { useDebounceFn } from "@vueuse/core";
 import { sortBy, uniq } from "lodash-es";
-import { NButton, NSelect } from "naive-ui";
+import { type DataTableSortState, NButton, NSelect } from "naive-ui";
 import { computed, type Ref, reactive, ref, watch } from "vue";
 import { useAuthStore, useCurrentUserV1 } from "@/store";
 import { getDefaultPagination, useDynamicLocalStorage } from "@/utils";
@@ -61,12 +67,15 @@ const props = withDefaults(
       pageSize: number;
       pageToken: string;
       refresh?: boolean;
+      orderBy?: string;
     }) => Promise<{ nextPageToken?: string; list: T[] }>;
+    orderKeys?: string[];
   }>(),
   {
     hideLoadMore: false,
     footerClass: "",
     debounce: 500,
+    orderKeys: () => [],
   }
 );
 
@@ -76,6 +85,47 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore();
 const currentUser = useCurrentUserV1();
+const sorters = ref<DataTableSortState[]>(
+  props.orderKeys.map((key) => ({
+    columnKey: key,
+    order: false,
+    sorter: true,
+  }))
+);
+
+const onSortersUpdate = (
+  sortStates: DataTableSortState[] | DataTableSortState | null
+) => {
+  if (!sortStates) {
+    // TODO(ed): should reset the sorters?
+    return;
+  }
+  let states: DataTableSortState[] = [];
+  if (Array.isArray(sortStates)) {
+    states = sortStates;
+  } else {
+    states = [sortStates];
+  }
+  for (const sortState of states) {
+    const sorterIndex = sorters.value.findIndex(
+      (s) => s.columnKey === sortState.columnKey
+    );
+    if (sorterIndex >= 0) {
+      sorters.value[sorterIndex] = sortState;
+    }
+  }
+};
+
+const orderBy = computed(() => {
+  return sorters.value
+    .filter((sorter) => sorter.order)
+    .map((sorter) => {
+      const key = sorter.columnKey.toString();
+      const order = sorter.order == "ascend" ? "asc" : "desc";
+      return `${key} ${order}`;
+    })
+    .join(", ");
+});
 
 const options = computed(() => {
   const defaultPageSize = getDefaultPagination();
@@ -127,6 +177,7 @@ const fetchData = async (refresh = false) => {
       pageSize: pageSize.value,
       pageToken: state.paginationToken,
       refresh,
+      orderBy: orderBy.value,
     });
     if (refresh) {
       dataList.value = list;
@@ -176,6 +227,11 @@ watch(
 watch(
   () => dataList.value,
   (list) => emit("list:update", list)
+);
+
+watch(
+  () => orderBy.value,
+  () => refresh()
 );
 
 const updateCache = (data: T[]) => {

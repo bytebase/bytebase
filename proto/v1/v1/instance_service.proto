@@ -232,8 +232,9 @@ message ListInstancesRequest {
   string filter = 4;
 
   // The order by of instances.
-  // Support title, environment
+  // Support title, environment. The default sorting order is ascending.
   // For example:
+  // - order_by = "title"
   // - order_by = "title desc"
   // - order_by = "title desc, environment asc"
   string order_by = 5;

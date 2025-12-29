@@ -3,8 +3,9 @@
     ref="projectPagedTable"
     :session-key="sessionKey"
     :fetch-list="fetchProjects"
+    :order-keys="['title']"
   >
-    <template #table="{ list, loading }">
+    <template #table="{ list, loading, sorters, onSortersUpdate }">
       <ProjectV1Table
         v-bind="$attrs"
         :loading="loading"
@@ -13,7 +14,9 @@
         :show-selection="showSelection"
         :show-labels="showLabels"
         :keyword="filter.query"
+        :sorters="sorters"
         @update:selected-project-names="updateSelectedProjectNames"
+        @update:sorters="onSortersUpdate"
       />
     </template>
   </PagedTable>
@@ -63,14 +66,17 @@ defineExpose({ refresh });
 const fetchProjects = async ({
   pageToken,
   pageSize,
+  orderBy,
 }: {
   pageToken: string;
   pageSize: number;
+  orderBy?: string;
 }) => {
   const { nextPageToken, projects } = await projectStore.fetchProjectList({
     pageToken,
     pageSize,
     filter: props.filter,
+    orderBy,
   });
   return {
     nextPageToken: nextPageToken ?? "",

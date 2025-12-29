@@ -160,8 +160,9 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
 
   /**
    * The order by of databases.
-   * Support name, project, instance
+   * Support name, project, instance. The default sorting order is ascending.
    * For example:
+   * - order_by = "name" - order by name ascending
    * - order_by = "name desc"
    * - order_by = "name desc, project asc"
    *

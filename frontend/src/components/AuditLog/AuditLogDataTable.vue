@@ -26,6 +26,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectV1Name } from "@/components/v2";
 import { UserLink } from "@/components/v2/Model/cells";
+import { mapSorterStatus } from "@/components/v2/Model/utils";
 import {
   extractUserId,
   getProjectIdPlanUidStageUidFromRolloutName,
@@ -82,7 +83,7 @@ defineEmits<{
 const { t } = useI18n();
 
 const columnList = computed((): AuditDataTableColumn[] => {
-  return (
+  const columns: AuditDataTableColumn[] = (
     [
       {
         key: "create_time",
@@ -229,26 +230,8 @@ const columnList = computed((): AuditDataTableColumn[] => {
         },
       },
     ] as AuditDataTableColumn[]
-  )
-    .filter((column) => !column.hide)
-    .map((column) => {
-      if (props.sorters === undefined || column.type) {
-        return column;
-      }
-      const sorterIndex = props.sorters.findIndex(
-        (s) => s.columnKey === column.key.toString()
-      );
-      if (sorterIndex < 0) {
-        return column;
-      }
-      return {
-        ...column,
-        sorter: {
-          multiple: sorterIndex,
-        },
-        sortOrder: props.sorters[sorterIndex].order,
-      };
-    });
+  ).filter((column) => !column.hide);
+  return mapSorterStatus(columns, props.sorters);
 });
 
 const getViewLink = (auditLog: AuditLog): string | null => {

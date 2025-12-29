@@ -13,12 +13,17 @@
     :row-props="rowProps"
     :paginate-single-page="false"
     @update:checked-row-keys="updateSelectedProjects"
+    @update:sorter="$emit('update:sorters', $event)"
   />
 </template>
 
 <script lang="tsx" setup>
 import { CheckIcon } from "lucide-vue-next";
-import { type DataTableColumn, NDataTable } from "naive-ui";
+import {
+  type DataTableColumn,
+  type DataTableSortState,
+  NDataTable,
+} from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -29,6 +34,7 @@ import { getProjectName } from "@/store/modules/v1/common";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
+import { mapSorterStatus } from "./utils";
 
 type ProjectDataTableColumn = DataTableColumn<Project> & {
   hide?: boolean;
@@ -49,6 +55,7 @@ const props = withDefaults(
     showSelection?: boolean;
     // Whether to show labels column (hidden in dropdowns for cleaner UI)
     showLabels?: boolean;
+    sorters?: DataTableSortState[];
   }>(),
   {
     bordered: true,
@@ -63,6 +70,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "row-click", project: Project): void;
   (event: "update:selected-project-names", projectNames: string[]): void;
+  (event: "update:sorters", sorters: DataTableSortState[]): void;
 }>();
 
 const { t } = useI18n();
@@ -81,7 +89,7 @@ const updateSelectedProjects = (checkedRowKeys: (string | number)[]) => {
 };
 
 const columnList = computed((): ProjectDataTableColumn[] => {
-  return (
+  const columns: ProjectDataTableColumn[] = (
     [
       {
         key: "selection",
@@ -150,6 +158,7 @@ const columnList = computed((): ProjectDataTableColumn[] => {
       },
     ] as ProjectDataTableColumn[]
   ).filter((column) => !column.hide);
+  return mapSorterStatus(columns, props.sorters);
 });
 
 const rowProps = (project: Project) => {

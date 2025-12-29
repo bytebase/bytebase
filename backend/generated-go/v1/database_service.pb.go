@@ -821,8 +821,9 @@ type ListDatabasesRequest struct {
 	// Show deleted database if specified.
 	ShowDeleted bool `protobuf:"varint,5,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
 	// The order by of databases.
-	// Support name, project, instance
+	// Support name, project, instance. The default sorting order is ascending.
 	// For example:
+	// - order_by = "name" - order by name ascending
 	// - order_by = "name desc"
 	// - order_by = "name desc, project asc"
 	OrderBy       string `protobuf:"bytes,6,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`

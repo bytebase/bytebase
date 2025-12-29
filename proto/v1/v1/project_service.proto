@@ -224,6 +224,14 @@ message ListProjectsRequest {
   // Check filter for SearchProjectsRequest for details.
   // Supports filtering by name, resource_id, state, and labels (e.g., labels.environment == "production").
   string filter = 4;
+
+  // The order by of projects.
+  // Support title. The default sorting order is ascending.
+  // For example:
+  // - order_by = "title"
+  // - order_by = "title desc"
+  // - order_by = "title asc"
+  string order_by = 5;
 }
 
 message ListProjectsResponse {
@@ -277,6 +285,14 @@ message SearchProjectsRequest {
   // When paginating, all other parameters provided to `SearchProjects` must match
   // the call that provided the page token.
   string page_token = 4;
+
+  // The order by of projects.
+  // Support title. The default sorting order is ascending.
+  // For example:
+  // - order_by = "title"
+  // - order_by = "title desc"
+  // - order_by = "title asc"
+  string order_by = 5;
 }
 
 message SearchProjectsResponse {

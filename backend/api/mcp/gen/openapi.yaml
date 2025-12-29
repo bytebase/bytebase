@@ -9460,7 +9460,7 @@ components:
           title: order_by
           description: |-
             The order by of the log.
-             Only support order by create_time.
+             Only support order by create_time. The default sorting order is ascending.
              For example:
               - order_by = "create_time asc"
               - order_by = "create_time desc"
@@ -11218,8 +11218,9 @@ components:
           title: order_by
           description: |-
             The order by of databases.
-             Support name, project, instance
+             Support name, project, instance. The default sorting order is ascending.
              For example:
+             - order_by = "name" - order by name ascending
              - order_by = "name desc"
              - order_by = "name desc, project asc"
       title: ListDatabasesRequest
@@ -11466,8 +11467,9 @@ components:
           title: order_by
           description: |-
             The order by of instances.
-             Support title, environment
+             Support title, environment. The default sorting order is ascending.
              For example:
+             - order_by = "title"
              - order_by = "title desc"
              - order_by = "title desc, environment asc"
       title: ListInstancesRequest
@@ -11742,6 +11744,16 @@ components:
             Filter the project.
              Check filter for SearchProjectsRequest for details.
              Supports filtering by name, resource_id, state, and labels (e.g., labels.environment == "production").
+        orderBy:
+          type: string
+          title: order_by
+          description: |-
+            The order by of projects.
+             Support title. The default sorting order is ascending.
+             For example:
+             - order_by = "title"
+             - order_by = "title desc"
+             - order_by = "title asc"
       title: ListProjectsRequest
       additionalProperties: false
     bytebase.v1.ListProjectsResponse:
@@ -12952,7 +12964,7 @@ components:
         - FEATURE_DATA_CLASSIFICATION
         - FEATURE_SCIM
         - FEATURE_DIRECTORY_SYNC
-        - FEATURE_TOKEN_DURATION_CONTROL
+        - FEATURE_SIGN_IN_FREQUENCY_CONTROL
         - FEATURE_EXTERNAL_SECRET_MANAGER
         - FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
         - FEATURE_PROJECT_MANAGEMENT
@@ -14079,6 +14091,12 @@ components:
           description: |-
             The resource name of the rollout.
              Format: projects/{project}/plans/{plan}/rollout
+        plan:
+          type: string
+          title: plan
+          description: |-
+            The plan that this rollout is based on.
+             Format: projects/{project}/plans/{plan}
         title:
           type: string
           title: title
@@ -14091,12 +14109,22 @@ components:
             $ref: '#/components/schemas/bytebase.v1.Stage'
           title: stages
           description: Stages and thus tasks of the rollout.
+        creator:
+          type: string
+          title: creator
+          description: 'Format: users/hello@world.com'
         createTime:
           title: create_time
           $ref: '#/components/schemas/google.protobuf.Timestamp'
         updateTime:
           title: update_time
           $ref: '#/components/schemas/google.protobuf.Timestamp'
+        issue:
+          type: string
+          title: issue
+          description: |-
+            The issue associated with the rollout. Could be empty.
+             Format: projects/{project}/issues/{issue}
       title: Rollout
       additionalProperties: false
     bytebase.v1.RolloutPolicy:
@@ -14697,7 +14725,7 @@ components:
           title: order_by
           description: |-
             The order by of the log.
-             Only support order by create_time.
+             Only support order by create_time. The default sorting order is ascending.
              For example:
               - order_by = "create_time asc"
               - order_by = "create_time desc"
@@ -14847,6 +14875,16 @@ components:
 
              When paginating, all other parameters provided to `SearchProjects` must match
              the call that provided the page token.
+        orderBy:
+          type: string
+          title: order_by
+          description: |-
+            The order by of projects.
+             Support title. The default sorting order is ascending.
+             For example:
+             - order_by = "title"
+             - order_by = "title desc"
+             - order_by = "title asc"
       title: SearchProjectsRequest
       additionalProperties: false
     bytebase.v1.SearchProjectsResponse:
