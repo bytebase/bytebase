@@ -14089,12 +14089,6 @@ components:
         updateTime:
           title: update_time
           $ref: '#/components/schemas/google.protobuf.Timestamp'
-        issue:
-          type: string
-          title: issue
-          description: |-
-            The issue associated with the rollout. Could be empty.
-             Format: projects/{project}/issues/{issue}
       title: Rollout
       additionalProperties: false
     bytebase.v1.RolloutPolicy:

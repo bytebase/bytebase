@@ -221,14 +221,6 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 	rolloutV1.Plan = common.FormatPlan(project.ResourceID, rollout.UID)
 	rolloutV1.Title = rollout.Name
 
-	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &rollout.UID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", rollout.UID)
-	}
-	if issue != nil {
-		rolloutV1.Issue = common.FormatIssue(project.ResourceID, issue.UID)
-	}
-
 	// Get live environment order
 	environments, err := s.GetEnvironment(ctx)
 	if err != nil {
