@@ -129,7 +129,7 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 	}
 
 	// Validate audience
-	if !audienceContains(claims.Audience, fmt.Sprintf(auth.AccessTokenAudienceFmt, s.profile.Mode)) {
+	if !audienceContains(claims.Audience, auth.AccessTokenAudience) {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "invalid token audience")
 	}
 
