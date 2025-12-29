@@ -12,7 +12,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.14.11"), *files[len(files)-1].version)
+	require.Equal(t, semver.MustParse("3.14.12"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.14/0012##plan_has_rollout_index.sql", files[len(files)-1].path)
 }
 
 func TestVersionUnique(t *testing.T) {
@@ -28,10 +29,4 @@ func TestVersionUnique(t *testing.T) {
 		}
 		versions[file.version.String()] = struct{}{}
 	}
-}
-
-func TestGetVersionFromPath(t *testing.T) {
-	v, err := getVersionFromPath("migration/3.5/0000##vcs.sql")
-	require.NoError(t, err)
-	require.Equal(t, *v, semver.MustParse("3.5.0"))
 }

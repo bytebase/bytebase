@@ -97,7 +97,16 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 		defer cancel()
 		s.stateCfg.RunningPlanCheckRunsCancelFunc.Store(planCheckRun.UID, cancel)
 
-		results, err := s.executor.Run(ctxWithCancel, planCheckRun.Config)
+		var results []*storepb.PlanCheckRunResult_Result
+		var err error
+		for _, target := range planCheckRun.Config.Targets {
+			targetResults, targetErr := s.executor.RunForTarget(ctxWithCancel, target)
+			if targetErr != nil {
+				err = targetErr
+				break
+			}
+			results = append(results, targetResults...)
+		}
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				s.markPlanCheckRunCanceled(ctx, planCheckRun, err.Error())

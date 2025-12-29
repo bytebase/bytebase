@@ -120,17 +120,7 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 	}
 	limitPlusOne := offset.limit + 1
 
-	// ListRollouts should list Plans that have tasks (rollouts).
-	// We use ListPlans but we need to filter those with tasks.
-	// Previously ListPipelines did this.
-	// Let's us ListPlans with has_pipeline=true (which now means has tasks).
-	// But `store.PipelineFind` is still used in code?
-	// Let's assume ListPipelines now returns Plan-like PipelineMessages.
-	// I need to convert them to PlanMessage.
-
-	// BUT, `ListPipelines` returns `[]*PipelineMessage`.
-	// I should probably switch to `ListPlans`.
-
+	// Filter plans to only those with rollouts (tasks).
 	hasRollout := true
 	findPlan := &store.FindPlanMessage{
 		ProjectID:  &projectID,

@@ -27,7 +27,7 @@ export * from "./util";
 export function useInitializePlan(
   projectId: MaybeRef<string>,
   planId: MaybeRef<string | undefined>,
-  issueId: MaybeRef<string | undefined>,
+  issueId?: MaybeRef<string | undefined>,
   legacyRolloutId?: MaybeRef<string | undefined>
 ) {
   const isCreating = computed(() => {
