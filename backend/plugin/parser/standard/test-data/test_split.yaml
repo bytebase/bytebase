@@ -1,8 +1,3 @@
-# Core test cases for Standard SQL statement splitting
-
-# =============================================================================
-# Single Statement
-# =============================================================================
 - description: "simple single statement"
   input: "SELECT 1;"
   result:
@@ -13,9 +8,6 @@
       range: {start: 0, end: 9}
       empty: false
 
-# =============================================================================
-# Multi-line Statement
-# =============================================================================
 - description: "multi-line statement"
   input: "SELECT\n  1;"
   result:
@@ -26,9 +18,6 @@
       range: {start: 0, end: 11}
       empty: false
 
-# =============================================================================
-# Multiple Statements
-# =============================================================================
 - description: "multiple statements"
   input: "SELECT 1;\nSELECT 2;"
   result:
@@ -45,9 +34,6 @@
       range: {start: 10, end: 19}
       empty: false
 
-# =============================================================================
-# Multi-byte Unicode Characters
-# =============================================================================
 - description: "multi-byte characters - Chinese"
   input: "SELECT '中文';"
   result:

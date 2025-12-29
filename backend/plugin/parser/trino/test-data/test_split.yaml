@@ -1,8 +1,3 @@
-# Core test cases for Trino statement splitting
-
-# =============================================================================
-# Multiple Statements
-# =============================================================================
 - description: "multiple statements same line"
   input: "SELECT * FROM users; SELECT * FROM orders;"
   result:
@@ -19,9 +14,6 @@
       range: {start: 21, end: 42}
       empty: false
 
-# =============================================================================
-# Unicode Characters
-# =============================================================================
 - description: "unicode in table names"
   input: "SELECT * FROM 表名; INSERT INTO 表 VALUES (1);"
   result:

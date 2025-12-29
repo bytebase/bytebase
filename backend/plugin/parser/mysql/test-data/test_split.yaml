@@ -1,8 +1,3 @@
-# Core test cases for MySQL statement splitting
-
-# =============================================================================
-# DELIMITER Command and Stored Procedures
-# =============================================================================
 - description: "DELIMITER with stored procedure"
   input: "\n\t\t\tDELIMITER ;;\n\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\tBEGIN\n\t\t\t\tDECLARE x INT;\n\t\t\t\tSET x = 0;\n\t\t\t\tlabel1: WHILE x < p1 DO\n\t\t\t\t\tSET x = x + 1;\n\t\t\t\tEND WHILE label1;\n\t\t\tEND;;\n\t\t\tDELIMITER ;\n\t\t\tCALL dorepeat(1000);\n\t\t\tSELECT x;\n\t\t\t"
   result:
@@ -31,9 +26,6 @@
       range: {start: 227, end: 231}
       empty: true
 
-# =============================================================================
-# Multiple Statements
-# =============================================================================
 - description: "escaped double quote in string"
   input: "select * from t;select \"\\\"\" where true;"
   result:
@@ -50,9 +42,6 @@
       range: {start: 16, end: 39}
       empty: false
 
-# =============================================================================
-# Comments
-# =============================================================================
 - description: "comments only creates empty statement"
   input: "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n"
   result:
@@ -101,9 +90,6 @@
       range: {start: 34, end: 54}
       empty: false
 
-# =============================================================================
-# Function with BEGIN/END
-# =============================================================================
 - description: "function with BEGIN END block"
   input: "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\nBEGIN\n\n\t\t   DECLARE income INT;\n\n\t\t   SET income = 0;\n\n\t\t   label1: WHILE income <= 3000 DO\n\t\t\t SET income = income + starting_value;\n\t\t   END WHILE label1;\n\n\t\t   RETURN income;\n\n\t\tEND ;"
   result:
@@ -114,9 +100,6 @@
       range: {start: 0, end: 268}
       empty: false
 
-# =============================================================================
-# Leading Whitespace
-# =============================================================================
 - description: "multiple statements with leading whitespace and no trailing semicolon"
   input: "    CREATE TABLE t(a int); CREATE TABLE t1(a int)"
   result:
@@ -133,9 +116,6 @@
       range: {start: 26, end: 49}
       empty: false
 
-# =============================================================================
-# Backtick Identifiers with Escaped Strings
-# =============================================================================
 - description: "backtick identifiers with escaped strings"
   input: "CREATE TABLE `tech_Book`(id int, name varchar(255));\nINSERT INTO `tech_Book` VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');"
   result:
@@ -152,9 +132,6 @@
       range: {start: 52, end: 131}
       empty: false
 
-# =============================================================================
-# Hash Comments (MySQL-specific)
-# =============================================================================
 - description: "block comment, line comment, and hash comment"
   input: "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');\n\t\t\t\t\t\t# this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');"
   result:
@@ -177,9 +154,6 @@
       range: {start: 223, end: 335}
       empty: false
 
-# =============================================================================
-# Stored Procedures with Various Constructs
-# =============================================================================
 - description: "procedure with REPEAT and hash comment"
   input: "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;\n\t\t\t\t\t\tCALL dorepeat(1000);\n\t\t\t\t\t\tSELECT @x;\n\t\t\t\t\t\t"
   result:
@@ -236,9 +210,6 @@
       range: {start: 255, end: 262}
       empty: true
 
-# =============================================================================
-# Windows Line Endings (CRLF)
-# =============================================================================
 - description: "CRLF line endings"
   input: "CREATE TABLE t\r\n(a int);\r\nCREATE TABLE t1(b int);"
   result:
@@ -255,9 +226,6 @@
       range: {start: 24, end: 49}
       empty: false
 
-# =============================================================================
-# Unicode Characters
-# =============================================================================
 - description: "unicode in table names"
   input: "SELECT * FROM 表名; INSERT INTO 表 VALUES (1);"
   result:

@@ -1,8 +1,3 @@
-# Core test cases for PartiQL statement splitting
-
-# =============================================================================
-# Multiple DML Statements
-# =============================================================================
 - description: "multiple DML statements"
   input: "DELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money';\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money'};\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money02'};\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money03'};\n\tDELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money02'"
   result:

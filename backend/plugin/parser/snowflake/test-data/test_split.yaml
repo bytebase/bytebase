@@ -1,8 +1,3 @@
-# Core test cases for Snowflake statement splitting
-
-# =============================================================================
-# Multiple Statements
-# =============================================================================
 - description: "multiple statements on multiple lines"
   input: "SELECT * FROM users;\n\tSELECT * FROM orders;\n\tSELECT * FROM products;"
   result:
@@ -25,9 +20,6 @@
       range: {start: 43, end: 68}
       empty: false
 
-# =============================================================================
-# Single Statement
-# =============================================================================
 - description: "single statement"
   input: "SELECT * FROM users;"
   result:

@@ -1,8 +1,3 @@
-# Core test cases for PL/SQL statement splitting
-
-# =============================================================================
-# Multiple Statements
-# =============================================================================
 - description: "multiple SELECT statements"
   input: "SELECT * FROM t1; SELECT * FROM t2"
   result:
@@ -35,9 +30,6 @@
       range: {start: 26, end: 56}
       empty: false
 
-# =============================================================================
-# Forward Slash (/) Statement Separator
-# =============================================================================
 - description: "procedure with forward slash separator"
   input: "CREATE OR REPLACE PROCEDURE test_proc IS\nBEGIN\n    CALL DBMS_OUTPUT.PUT_LINE('Hello');\nEND;\n/"
   result:
@@ -90,9 +82,6 @@
       range: {start: 0, end: 49}
       empty: false
 
-# =============================================================================
-# Complex Statements
-# =============================================================================
 - description: "ALTER TABLE with PARTITION"
   input: "ALTER TABLE DATA.TEST\nMODIFY PARTITION BY RANGE (TXN_DATE)\nINTERVAL (NUMTODSINTERVAL(1, 'DAY'))\n(\n\tPARTITION TEST_PO VALUES LESS THAN (\n\t\tTO_DATE('2000-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')\n\t)\n)\nONLINE;"
   result:
@@ -103,9 +92,6 @@
       range: {start: 0, end: 233}
       empty: false
 
-# =============================================================================
-# CALL Statement
-# =============================================================================
 - description: "CALL procedure"
   input: "CALL my_procedure()"
   result:
@@ -116,9 +102,6 @@
       range: {start: 0, end: 19}
       empty: false
 
-# =============================================================================
-# DROP TABLESPACE
-# =============================================================================
 - description: "DROP TABLESPACE with CASCADE CONSTRAINTS"
   input: "DROP TABLESPACE xxx INCLUDING CONTENTS CASCADE CONSTRAINTS"
   result:
@@ -129,9 +112,6 @@
       range: {start: 0, end: 58}
       empty: false
 
-# =============================================================================
-# Error Cases
-# =============================================================================
 - description: "DROP TABLESPACE CASCADE alone should error"
   input: "DROP TABLESPACE xxx CASCADE"
   error: "Syntax error at line 1:28 \nrelated text: DROP TABLESPACE xxx CASCADE;"

@@ -1,8 +1,3 @@
-# Core test cases for CosmosDB statement splitting
-
-# =============================================================================
-# Single Statement
-# =============================================================================
 - description: "single SELECT statement"
   input: "SELECT * FROM c"
   result:
@@ -23,9 +18,6 @@
       range: {start: 0, end: 46}
       empty: false
 
-# =============================================================================
-# Multi-line Statement
-# =============================================================================
 - description: "multi-line SELECT"
   input: "SELECT\n  * FROM c"
   result:

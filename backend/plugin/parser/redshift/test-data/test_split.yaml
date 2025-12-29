@@ -1,8 +1,3 @@
-# Core test cases for Redshift statement splitting
-
-# =============================================================================
-# Single Statement
-# =============================================================================
 - description: "simple single statement"
   input: "SELECT 1;"
   result:
@@ -13,9 +8,6 @@
       range: {start: 0, end: 9}
       empty: false
 
-# =============================================================================
-# Multiple Statements
-# =============================================================================
 - description: "multiple statements"
   input: "SELECT 1; SELECT 2;"
   result:
@@ -48,9 +40,6 @@
       range: {start: 9, end: 19}
       empty: false
 
-# =============================================================================
-# Multi-line Statement
-# =============================================================================
 - description: "multi-line statement"
   input: "SELECT\n  1;"
   result:
