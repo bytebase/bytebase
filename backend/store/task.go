@@ -56,6 +56,7 @@ type TaskFind struct {
 
 	// Related fields
 	PlanID       *int64
+	PlanIDs      *[]int64
 	Environment  *string
 	InstanceID   *string
 	DatabaseName *string
@@ -290,6 +291,9 @@ func (*Store) listTasksTx(ctx context.Context, txn *sql.Tx, find *TaskFind) ([]*
 	}
 	if v := find.PlanID; v != nil {
 		q.Space("AND task.plan_id = ?", *v)
+	}
+	if v := find.PlanIDs; v != nil {
+		q.Space("AND task.plan_id = ANY(?)", *v)
 	}
 	if v := find.Environment; v != nil {
 		q.Space("AND task.environment = ?", *v)
