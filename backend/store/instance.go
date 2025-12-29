@@ -227,19 +227,8 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 
 func (s *Store) listInstanceImpl(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	where := qb.Q().Space("TRUE")
-	from := qb.Q().Space("instance")
-	needsDistinct := false
 	if filterQ := find.FilterQ; filterQ != nil {
 		where.And("?", filterQ)
-		filterSQL, _, _ := filterQ.ToSQL()
-		if hasHostPortFilter(filterSQL) {
-			from.Space("CROSS JOIN jsonb_array_elements(instance.metadata -> 'dataSources') AS ds")
-			needsDistinct = true
-		}
-		if strings.Contains(filterSQL, "db.project") {
-			from.Space("LEFT JOIN db ON db.instance = instance.resource_id")
-			needsDistinct = true
-		}
 	}
 	if v := find.ResourceID; v != nil {
 		where.And("instance.resource_id = ?", *v)
@@ -257,14 +246,9 @@ func (s *Store) listInstanceImpl(ctx context.Context, txn *sql.Tx, find *FindIns
 			instance.environment,
 			instance.deleted,
 			instance.metadata
-		FROM ?
+		FROM instance
 		WHERE ?
-	`, from, where)
-
-	// Use GROUP BY to deduplicate when JOINs create duplicate rows
-	if needsDistinct {
-		q.Space("GROUP BY instance.resource_id, instance.environment, instance.deleted, instance.metadata")
-	}
+	`, where)
 
 	if len(find.OrderByKeys) > 0 {
 		orderBy := []string{}
@@ -325,10 +309,6 @@ func (s *Store) listInstanceImpl(ctx context.Context, txn *sql.Tx, find *FindIns
 	}
 
 	return instanceMessages, nil
-}
-
-func hasHostPortFilter(where string) bool {
-	return strings.Contains(where, "ds ->> 'host'") || strings.Contains(where, "ds ->> 'port'")
 }
 
 // GetActivatedInstanceCount gets the number of activated instances.
@@ -826,15 +806,21 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 			engine := convertEngine(v1pb.Engine(v1Engine))
 			return qb.Q().Space("instance.metadata->>'engine' = ?", engine), nil
 		case "host":
-			return qb.Q().Space("ds ->> 'host' = ?", value.(string)), nil
+			return qb.Q().Space(
+				`instance.metadata -> 'dataSources' @> jsonb_build_array(jsonb_build_object('host', ?))`,
+				value.(string)), nil
 		case "port":
-			return qb.Q().Space("ds ->> 'port' = ?", value.(string)), nil
+			return qb.Q().Space(
+				`instance.metadata -> 'dataSources' @> jsonb_build_array(jsonb_build_object('port', ?))`,
+				value.(string)), nil
 		case "project":
 			projectID, err := common.GetProjectID(value.(string))
 			if err != nil {
 				return nil, errors.Errorf("invalid project filter %q", value)
 			}
-			return qb.Q().Space("db.project = ?", projectID), nil
+			return qb.Q().Space(
+				`EXISTS (SELECT 1 FROM db WHERE db.instance = instance.resource_id AND db.project = ?)`,
+				projectID), nil
 		default:
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}
