@@ -32,7 +32,11 @@
   "[yaml]": {
     "editor.autoIndent": "advanced"
   },
-  "i18n-ally.localesPaths": ["frontend/src/locales"],
+  "i18n-ally.localesPaths": [
+    "frontend/src/locales",
+    "frontend/src/locales/sql-review",
+    "frontend/src/locales/subscription"
+  ],
   "i18n-ally.enabledParsers": ["json"],
   "i18n-ally.keystyle": "nested",
   "i18n-ally.sourceLanguage": "en-US",
@@ -40,17 +44,11 @@
   "i18n-ally.editor.preferEditor": true,
   "i18n-ally.enabledFrameworks": ["vue"],
   "i18n-ally.parserOptions": {},
-  "go.lintOnSave": "off",
-  "go.lintTool": "staticcheck",
-  "go.languageServerFlags": [
-      "-rpc.trace"
-  ],
-  "go.toolsManagement.checkForUpdates": "off",
   "gopls": {
+    "ui.semanticTokens": true
   },
   "go.testTimeout": "300s",
   "workbench.editor.enablePreview": false,
-  "go.survey.prompt": false,
-  "go.vetOnSave": "off",
-  "eslint.codeActionsOnSave.mode": "problems"
+  "eslint.codeActionsOnSave.mode": "problems",
+  "typescript.tsdk": "frontend/node_modules/typescript/lib"
 }
