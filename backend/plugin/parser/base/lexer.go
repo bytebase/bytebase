@@ -104,17 +104,20 @@ func SplitSQLByLexer(stream *antlr.CommonTokenStream, semiTokenType int, stateme
 			// Get the position of the first default channel token for Start position
 			antlrPosition := FirstDefaultChannelTokenPosition(buf)
 
+			// Use the last token in the buffer for End position (not EOF token when at end of stream)
+			lastToken := buf[len(buf)-1]
 			sqls = append(sqls, Statement{
 				Text:     bufStr.String(),
 				BaseLine: buf[0].GetLine() - 1, // BaseLine is the offset of the first token
 				Range: &storepb.Range{
 					Start: int32(buf[0].GetStart()),
-					End:   int32(buf[len(buf)-1].GetStop() + 1),
+					End:   int32(lastToken.GetStop() + 1),
 				},
-				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-					Line:   int32(token.GetLine()),
-					Column: int32(token.GetColumn()),
-				}, statement),
+				End: common.ConvertANTLRTokenToExclusiveEndPosition(
+					int32(lastToken.GetLine()),
+					int32(lastToken.GetColumn()),
+					lastToken.GetText(),
+				),
 				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: empty,
 			})
