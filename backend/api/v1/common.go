@@ -72,35 +72,6 @@ func validateLabels(labels map[string]string) error {
 	return nil
 }
 
-type orderByKey struct {
-	key      string
-	isAscend bool
-}
-
-func parseOrderBy(orderBy string) ([]orderByKey, error) {
-	if orderBy == "" {
-		return nil, nil
-	}
-
-	var result []orderByKey
-	re := regexp.MustCompile(`(\w+)\s*(asc|desc)?`)
-	matches := re.FindAllStringSubmatch(orderBy, -1)
-	for _, match := range matches {
-		if len(match) > 3 {
-			return nil, errors.Errorf("invalid order by %q", orderBy)
-		}
-		key := orderByKey{
-			key:      match[1],
-			isAscend: true,
-		}
-		if len(match) == 3 && match[2] == "desc" {
-			key.isAscend = false
-		}
-		result = append(result, key)
-	}
-	return result, nil
-}
-
 type Expression struct {
 	Key      string
 	Operator OperatorType

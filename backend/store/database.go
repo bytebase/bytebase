@@ -68,9 +68,10 @@ type FindDatabaseMessage struct {
 	// This is used for existing tasks with archived databases.
 	ShowDeleted bool
 
-	FilterQ *qb.Query
-	Limit   *int
-	Offset  *int
+	FilterQ     *qb.Query
+	Limit       *int
+	Offset      *int
+	OrderByKeys []*OrderByKey
 }
 
 // GetDatabase gets a database.
@@ -167,8 +168,17 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 			instance.metadata->>'engine'
 		FROM ?
 		WHERE ?
-		ORDER BY db.project, db.instance, db.name
 	`, from, where)
+
+	if len(find.OrderByKeys) > 0 {
+		orderBy := []string{}
+		for _, v := range find.OrderByKeys {
+			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
+		}
+		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
+	} else {
+		q.Space("ORDER BY db.project, db.instance, db.name")
+	}
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
@@ -716,4 +726,35 @@ func GetListDatabaseFilter(filter string) (*qb.Query, error) {
 		return nil, err
 	}
 	return qb.Q().Space("(?)", filterQ), nil
+}
+
+func GetDatabaseOrders(orderBy string) ([]*OrderByKey, error) {
+	keys, err := parseOrderBy(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	orderByKeys := []*OrderByKey{}
+	for _, orderByKey := range keys {
+		switch orderByKey.Key {
+		case "name":
+			orderByKeys = append(orderByKeys, &OrderByKey{
+				Key:       "db.name",
+				SortOrder: orderByKey.SortOrder,
+			})
+		case "instance":
+			orderByKeys = append(orderByKeys, &OrderByKey{
+				Key:       "db.instance",
+				SortOrder: orderByKey.SortOrder,
+			})
+		case "project":
+			orderByKeys = append(orderByKeys, &OrderByKey{
+				Key:       "db.project",
+				SortOrder: orderByKey.SortOrder,
+			})
+		default:
+			return nil, errors.Errorf(`invalid order key "%v"`, orderByKey.Key)
+		}
+	}
+	return orderByKeys, nil
 }

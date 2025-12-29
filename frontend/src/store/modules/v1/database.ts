@@ -186,6 +186,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     parent: string;
     filter?: DatabaseFilter;
     skipCacheRemoval?: boolean;
+    orderBy?: string;
   }): Promise<{
     databases: ComposedDatabase[];
     nextPageToken: string;
@@ -201,6 +202,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       parent: params.parent,
       pageSize: params.pageSize,
       pageToken: params.pageToken,
+      orderBy: params.orderBy,
       showDeleted: params.filter?.showDeleted,
       filter: getListDatabaseFilter(params.filter ?? {}),
     });
