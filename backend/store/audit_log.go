@@ -234,16 +234,17 @@ func GetAuditLogOrders(orderBy string) ([]*OrderByKey, error) {
 		return nil, err
 	}
 
-	for _, orderByKey := range keys {
-		if orderByKey.Key != "create_time" {
-			return nil, errors.Errorf(`invalid order key "%v"`, orderByKey.Key)
-		}
-		return []*OrderByKey{
-			{
-				Key:       "created_at",
-				SortOrder: orderByKey.SortOrder,
-			},
-		}, nil
+	if len(keys) == 0 {
+		return nil, nil
 	}
-	return nil, nil
+	if len(keys) > 1 || keys[0].Key != "create_time" {
+		return nil, errors.Errorf(`only support order by "create_time"`)
+	}
+
+	return []*OrderByKey{
+		{
+			Key:       "created_at",
+			SortOrder: keys[0].SortOrder,
+		},
+	}, nil
 }
