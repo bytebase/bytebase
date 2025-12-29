@@ -196,7 +196,15 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				oldSetting.Require_2Fa = payload.Require_2Fa
-			case "value.workspace_profile.token_duration":
+			case "value.workspace_profile.access_token_duration":
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+					return nil, connect.NewError(connect.CodePermissionDenied, err)
+				}
+				if payload.AccessTokenDuration != nil && payload.AccessTokenDuration.Seconds > 0 && payload.AccessTokenDuration.AsDuration() < time.Minute {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("access token duration should be at least one minute"))
+				}
+				oldSetting.AccessTokenDuration = payload.AccessTokenDuration
+			case "value.workspace_profile.refresh_token_duration":
 				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
