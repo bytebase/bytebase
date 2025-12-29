@@ -5,7 +5,7 @@
       <span class="mr-2">{{
         $t("settings.general.workspace.access-token-duration.self")
       }}</span>
-      <FeatureBadge :feature="PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL" />
+      <FeatureBadge :feature="PlanFeature.FEATURE_TOKEN_DURATION_CONTROL" />
     </p>
     <p class="text-sm text-gray-400 mt-1">
       {{ $t("settings.general.workspace.access-token-duration.description") }}
@@ -48,7 +48,7 @@
       <span class="mr-2">{{
         $t("settings.general.workspace.refresh-token-duration.self")
       }}</span>
-      <FeatureBadge :feature="PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL" />
+      <FeatureBadge :feature="PlanFeature.FEATURE_TOKEN_DURATION_CONTROL" />
     </p>
     <p class="text-sm text-gray-400 mt-1">
       {{ $t("settings.general.workspace.refresh-token-duration.description") }}
@@ -90,7 +90,7 @@
       <span class="mr-2">{{
         $t("settings.general.workspace.inactive-session-timeout.self")
       }}</span>
-      <FeatureBadge :feature="PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL" />
+      <FeatureBadge :feature="PlanFeature.FEATURE_TOKEN_DURATION_CONTROL" />
     </p>
     <p class="text-sm text-gray-400 mt-1">
       {{
@@ -123,7 +123,7 @@
   </div>
 
   <FeatureModal
-    :feature="PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL"
+    :feature="PlanFeature.FEATURE_TOKEN_DURATION_CONTROL"
     :open="state.showFeatureModal"
     @cancel="state.showFeatureModal = false"
   />
@@ -219,7 +219,7 @@ const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(getInitialState());
 
 const hasSecureTokenFeature = featureToRef(
-  PlanFeature.FEATURE_SIGN_IN_FREQUENCY_CONTROL
+  PlanFeature.FEATURE_TOKEN_DURATION_CONTROL
 );
 
 const allowChangeSetting = computed(() => {

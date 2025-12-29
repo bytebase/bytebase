@@ -45,7 +45,7 @@ func GetAccessTokenDuration(ctx context.Context, store *store.Store, licenseServ
 	accessTokenDuration := DefaultAccessTokenDuration
 
 	// If the sign-in frequency control feature is not enabled, return default duration
-	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
 		return accessTokenDuration
 	}
 
@@ -65,7 +65,7 @@ func GetRefreshTokenDuration(ctx context.Context, store *store.Store, licenseSer
 	refreshTokenDuration := DefaultRefreshTokenDuration
 
 	// If the sign-in frequency control feature is not enabled, return default duration
-	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
 		return refreshTokenDuration
 	}
 

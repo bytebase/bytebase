@@ -272,9 +272,9 @@
         "title": "目录同步",
         "desc": "将用户和组从 Entra ID 同步到 Bytebase。"
       },
-      "FEATURE_SIGN_IN_FREQUENCY_CONTROL": {
-        "title": "登录频率控制",
-        "desc": "配置用户必须重新进行身份验证的频率。"
+      "FEATURE_TOKEN_DURATION_CONTROL": {
+        "title": "令牌时长控制",
+        "desc": "配置访问令牌和刷新令牌的有效时长。"
       },
       "FEATURE_EXTERNAL_SECRET_MANAGER": {
         "title": "外部密钥管理器",
