@@ -56,12 +56,7 @@ const {
   rollout,
   taskRuns,
   isInitializing,
-} = useInitializePlan(
-  toRef(props, "projectId"),
-  toRef(props, "planId"), // planId
-  undefined, // issueId - not used for rollout routes
-  undefined // legacyRolloutId - deprecated, using planId
-);
+} = useInitializePlan(toRef(props, "projectId"), toRef(props, "planId"));
 const planBaseContext = useBasePlanContext({
   isCreating,
   plan,
@@ -114,4 +109,3 @@ const documentTitle = computed(() => {
 
 useTitle(documentTitle);
 </script>
-```

@@ -30,32 +30,30 @@ func NewCombinedExecutor(
 	}
 }
 
-// Run runs all checks for the given config.
-func (e *CombinedExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
+// RunForTarget runs all checks for the given target.
+func (e *CombinedExecutor) RunForTarget(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) ([]*storepb.PlanCheckRunResult_Result, error) {
 	var allResults []*storepb.PlanCheckRunResult_Result
 
-	for _, target := range config.Targets {
-		for _, checkType := range target.Types {
-			results, err := e.runCheck(ctx, target, checkType)
-			if err != nil {
-				// Add error result for this target/type, continue to next
-				allResults = append(allResults, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.Advice_ERROR,
-					Target:  target.Target,
-					Type:    checkType,
-					Title:   "Check failed",
-					Content: err.Error(),
-					Code:    common.Internal.Int32(),
-				})
-				continue
-			}
-			// Tag results with target info
-			for _, r := range results {
-				r.Target = target.Target
-				r.Type = checkType
-			}
-			allResults = append(allResults, results...)
+	for _, checkType := range target.Types {
+		results, err := e.runCheck(ctx, target, checkType)
+		if err != nil {
+			// Add error result for this target/type, continue to next
+			allResults = append(allResults, &storepb.PlanCheckRunResult_Result{
+				Status:  storepb.Advice_ERROR,
+				Target:  target.Target,
+				Type:    checkType,
+				Title:   "Check failed",
+				Content: err.Error(),
+				Code:    common.Internal.Int32(),
+			})
+			continue
 		}
+		// Tag results with target info
+		for _, r := range results {
+			r.Target = target.Target
+			r.Type = checkType
+		}
+		allResults = append(allResults, results...)
 	}
 
 	return allResults, nil

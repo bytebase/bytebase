@@ -8,6 +8,6 @@ import (
 
 // Executor is the plan check executor.
 type Executor interface {
-	// Run will be called periodically by the plan check scheduler
-	Run(ctx context.Context, config *storepb.PlanCheckRunConfig) (results []*storepb.PlanCheckRunResult_Result, err error)
+	// RunForTarget will be called periodically by the plan check scheduler for each target
+	RunForTarget(ctx context.Context, target *storepb.PlanCheckRunConfig_CheckTarget) (results []*storepb.PlanCheckRunResult_Result, err error)
 }

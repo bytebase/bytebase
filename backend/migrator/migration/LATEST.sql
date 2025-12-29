@@ -206,6 +206,7 @@ CREATE TABLE plan (
 );
 
 CREATE INDEX idx_plan_project ON plan(project);
+CREATE INDEX idx_plan_config_has_rollout ON plan ((config->>'hasRollout'));
 
 ALTER SEQUENCE plan_id_seq RESTART WITH 101;
 

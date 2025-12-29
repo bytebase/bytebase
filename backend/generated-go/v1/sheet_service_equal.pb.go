@@ -84,9 +84,6 @@ func (x *Sheet) Equal(y *Sheet) bool {
 	if x.Name != y.Name {
 		return false
 	}
-	if x.Title != y.Title {
-		return false
-	}
 	if string(x.Content) != string(y.Content) {
 		return false
 	}
