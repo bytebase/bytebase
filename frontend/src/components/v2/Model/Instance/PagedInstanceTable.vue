@@ -75,7 +75,6 @@ const fetchInstances = async ({
   pageToken: string;
   pageSize: number;
 }) => {
-  console.log("orderBy.value", orderBy.value)
   const { nextPageToken, instances } = await instanceStore.fetchInstanceList({
     pageToken,
     pageSize,

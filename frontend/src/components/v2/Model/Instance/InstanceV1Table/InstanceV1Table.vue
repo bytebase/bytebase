@@ -24,7 +24,12 @@ import {
   ChevronUpIcon,
   ExternalLinkIcon,
 } from "lucide-vue-next";
-import { type DataTableColumn, type DataTableSortState, NButton, NDataTable } from "naive-ui";
+import {
+  type DataTableColumn,
+  type DataTableSortState,
+  NButton,
+  NDataTable,
+} from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -204,33 +209,26 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     render: (instance) => (instance.activation ? "Y" : ""),
   };
 
-  return [
-    SELECTION,
-    NAME,
-    ENVIRONMENT,
-    ADDRESS,
-    LABELS,
-    EXTERNAL_LINK,
-    LICENSE,
-  ].filter((column) => !column.hide)
-  .map((column) => {
-    if (props.sorters === undefined || column.type) {
-      return column;
-    }
-    const sorterIndex = props.sorters.findIndex(
-      (s) => s.columnKey === column.key.toString()
-    );
-    if (sorterIndex < 0) {
-      return column;
-    }
-    return {
-      ...column,
-      sorter: {
-        multiple: sorterIndex,
-      },
-      sortOrder: props.sorters[sorterIndex].order,
-    };
-  });
+  return [SELECTION, NAME, ENVIRONMENT, ADDRESS, LABELS, EXTERNAL_LINK, LICENSE]
+    .filter((column) => !column.hide)
+    .map((column) => {
+      if (props.sorters === undefined || column.type) {
+        return column;
+      }
+      const sorterIndex = props.sorters.findIndex(
+        (s) => s.columnKey === column.key.toString()
+      );
+      if (sorterIndex < 0) {
+        return column;
+      }
+      return {
+        ...column,
+        sorter: {
+          multiple: sorterIndex,
+        },
+        sortOrder: props.sorters[sorterIndex].order,
+      };
+    });
 });
 
 const handleDataSourceToggle = (e: MouseEvent, instance: Instance) => {

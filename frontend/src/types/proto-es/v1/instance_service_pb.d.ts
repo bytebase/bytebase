@@ -107,7 +107,7 @@ export declare type ListInstancesRequest = Message<"bytebase.v1.ListInstancesReq
 
   /**
    * The order by of instances.
-   * Support name, environment
+   * Support title, environment
    * For example:
    * - order_by = "title desc"
    * - order_by = "title desc, environment asc"
