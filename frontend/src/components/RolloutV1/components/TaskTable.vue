@@ -30,7 +30,6 @@ import Timestamp from "@/components/misc/Timestamp.vue";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import { useRolloutViewContext } from "@/components/RolloutV1/logic/context";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
@@ -64,8 +63,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
-const { rollout, mergedStages } = useRolloutViewContext();
-const { taskRuns } = usePlanContextWithRollout();
+const { rollout, taskRuns } = usePlanContextWithRollout();
 
 const taskList = computed(() => {
   if (props.taskStatusFilter.length === 0) {
@@ -88,7 +86,7 @@ const handleSelectionChange = (selectedKeys: Array<string | number>) => {
   emit("update:selected-tasks", selectedTasks);
 };
 
-const stages = computed(() => mergedStages.value);
+const stages = computed(() => rollout.value.stages);
 
 // Virtual scroll configuration
 const virtualScrollEnabled = computed(() => taskList.value.length > 100);

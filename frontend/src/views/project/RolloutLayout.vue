@@ -29,7 +29,7 @@
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
 import { NSpin } from "naive-ui";
-import { computed, ref, toRef } from "vue";
+import { computed, ref, toRef, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   providePlanContext,
@@ -41,6 +41,8 @@ import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
 import RolloutBreadcrumb from "@/components/RolloutV1/components/RolloutBreadcrumb.vue";
 import { useBodyLayoutContext } from "@/layouts/common";
+import { usePolicyV1Store } from "@/store";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 
 const props = defineProps<{
   projectId: string;
@@ -63,22 +65,25 @@ const planBaseContext = useBasePlanContext({
   issue,
 });
 const containerRef = ref<HTMLElement>();
+const policyStore = usePolicyV1Store();
 
-const ready = computed(() => {
-  // Ready when we have a rollout and initialization is complete
-  return !!rollout.value && !isInitializing.value;
-});
+const ready = computed(() => !!rollout.value && !isInitializing.value);
 
-const title = computed(() => {
-  // Use issue title if available, otherwise plan title
-  if (issue.value?.title) {
-    return issue.value.title;
+// Prefetch rollout policies for all stages
+watchEffect(() => {
+  if (!rollout.value) return;
+  for (const stage of rollout.value.stages) {
+    if (stage.environment) {
+      policyStore
+        .getOrFetchPolicyByParentAndType({
+          parentPath: stage.environment,
+          policyType: PolicyType.ROLLOUT_POLICY,
+        })
+        .catch(() => {});
+    }
   }
-  if (plan.value?.title) {
-    return plan.value.title;
-  }
-  return "";
 });
+const title = computed(() => issue.value?.title || plan.value?.title || "");
 
 providePlanContext({
   isCreating,
@@ -92,20 +97,14 @@ providePlanContext({
 
 provideSidebarContext(containerRef);
 
-const { overrideMainContainerClass } = useBodyLayoutContext();
+useBodyLayoutContext().overrideMainContainerClass("py-0! px-0!");
 
-overrideMainContainerClass("py-0! px-0!");
-
-const documentTitle = computed(() => {
-  if (ready.value && rollout.value) {
-    // Use plan title if available, otherwise rollout name
-    if (plan.value?.title) {
+useTitle(
+  computed(() => {
+    if (ready.value && plan.value?.title) {
       return plan.value.title;
     }
-    return t("common.rollout");
-  }
-  return t("common.loading");
-});
-
-useTitle(documentTitle);
+    return ready.value ? t("common.rollout") : t("common.loading");
+  })
+);
 </script>

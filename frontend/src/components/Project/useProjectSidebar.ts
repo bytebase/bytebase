@@ -222,15 +222,11 @@ export const useProjectSidebar = (project: MaybeRef<Project>) => {
 
   const checkIsActive = (item: SidebarItem) => {
     const { name: current } = route;
-
+    const currentRoute = current?.toString() ?? "";
     const isActiveRoute =
-      item.path === current?.toString() ||
-      current?.toString().startsWith(`${item.path}.`);
+      item.path === currentRoute || currentRoute.startsWith(`${item.path}.`);
 
-    if (isActiveRoute) {
-      return true;
-    }
-    return false;
+    return isActiveRoute;
   };
 
   const activeSidebar = computed(() => {
