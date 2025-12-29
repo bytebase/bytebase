@@ -114,35 +114,6 @@ func (s *IssueService) getIssueFind(
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {
-				case "instance":
-					instanceResourceID, err := common.GetInstanceID(value.(string))
-					if err != nil {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid instance resource id "%s": %v`, value, err.Error()))
-					}
-					issueFind.InstanceResourceID = &instanceResourceID
-				case "database":
-					databaseResourceName, ok := value.(string)
-					if !ok {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse database value %v to string", value))
-					}
-					instanceID, databaseName, err := common.GetInstanceDatabaseID(databaseResourceName)
-					if err != nil {
-						return "", connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to parse %q", databaseResourceName))
-					}
-					issueFind.InstanceID = &instanceID
-					issueFind.DatabaseName = &databaseName
-				case "environment":
-					environment, ok := value.(string)
-					if !ok {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse value %v to string", value))
-					}
-					if environment != "" {
-						environmentID, err := common.GetEnvironmentID(environment)
-						if err != nil {
-							return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid environment filter %q", value))
-						}
-						issueFind.EnvironmentID = &environmentID
-					}
 				case "status":
 					issueStatus, err := convertToAPIIssueStatus(v1pb.IssueStatus(v1pb.IssueStatus_value[value.(string)]))
 					if err != nil {
@@ -155,20 +126,6 @@ func (s *IssueService) getIssueFind(
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to convert to issue type, err: %v", err))
 					}
 					issueFind.Types = &[]storepb.Issue_Type{issueType}
-				case "task_type":
-					taskType, ok := value.(string)
-					if !ok {
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`"task_type" should be string`))
-					}
-					switch taskType {
-					case "DDL", "DML":
-						// DDL and DML are both DATABASE_MIGRATE tasks
-						issueFind.TaskTypes = &[]storepb.Task_Type{
-							storepb.Task_DATABASE_MIGRATE,
-						}
-					default:
-						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unknown value %q`, value))
-					}
 				case "labels":
 					issueFind.LabelList = append(issueFind.LabelList, value.(string))
 				case "approval_status":

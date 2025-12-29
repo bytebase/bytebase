@@ -1,12 +1,5 @@
-import {
-  environmentNamePrefix,
-  instanceNamePrefix,
-  projectNamePrefix,
-  useDatabaseV1Store,
-  userNamePrefix,
-} from "@/store";
+import { projectNamePrefix, userNamePrefix } from "@/store";
 import type { IssueFilter } from "@/types";
-import { unknownDatabase } from "@/types";
 import {
   Issue_ApprovalStatus,
   IssueStatus,
@@ -24,15 +17,6 @@ export const buildIssueFilterBySearchParams = (
 ) => {
   const { query } = params;
   const projectScope = getValueFromSearchParams(params, "project");
-  const databaseScope = getValueFromSearchParams(params, "database");
-
-  let database = "";
-  if (databaseScope) {
-    const db = useDatabaseV1Store().getDatabaseByName(databaseScope);
-    if (db.name !== unknownDatabase().name) {
-      database = db.name;
-    }
-  }
 
   const createdTsRange = getTsRangeFromSearchParams(params, "created");
   const labels = getValuesFromSearchParams(params, "issue-label");
@@ -41,8 +25,6 @@ export const buildIssueFilterBySearchParams = (
   const filter: IssueFilter = {
     ...defaultFilter,
     query,
-    instance: getValueFromSearchParams(params, "instance", instanceNamePrefix),
-    database,
     project: `${projectNamePrefix}${projectScope || "-"}`,
     createdTsAfter: createdTsRange?.[0],
     createdTsBefore: createdTsRange?.[1],
@@ -61,11 +43,6 @@ export const buildIssueFilterBySearchParams = (
       (status) => IssueStatus[status as keyof typeof IssueStatus]
     ),
     labels,
-    environment: getValueFromSearchParams(
-      params,
-      "environment",
-      environmentNamePrefix
-    ),
   };
   return filter;
 };

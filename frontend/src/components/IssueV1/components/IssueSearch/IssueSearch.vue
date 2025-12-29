@@ -84,12 +84,9 @@ const allowedScopes = computed((): SearchScopeId[] => {
     "creator",
     "current-approver",
     "approval",
-    "instance",
-    "database",
     "status",
     "issue-label",
     "project",
-    "environment",
   ];
 });
 

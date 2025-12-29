@@ -56,9 +56,6 @@ export const unknownIssue = (): ComposedIssue => {
 
 export interface IssueFilter {
   project: string;
-  instance?: string;
-  database?: string;
-  environment?: string;
   query: string;
   creator?: string;
   currentApprover?: string;

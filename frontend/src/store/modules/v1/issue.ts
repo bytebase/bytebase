@@ -68,15 +68,6 @@ export const buildIssueFilter = (find: IssueFilter): string => {
   if (find.type) {
     filter.push(`type == "${Issue_Type[find.type]}"`);
   }
-  if (find.instance) {
-    filter.push(`instance == "${find.instance}"`);
-  }
-  if (find.database) {
-    filter.push(`database == "${find.database}"`);
-  }
-  if (find.environment) {
-    filter.push(`environment == "${find.environment}"`);
-  }
   if (find.labels && find.labels.length > 0) {
     filter.push(`labels in [${find.labels.map((l) => `"${l}"`).join(",")}]`);
   }
