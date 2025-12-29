@@ -144,13 +144,30 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 		plans = plans[:offset.limit]
 	}
 
+	// Batch load all tasks for all plans to avoid N+1 queries
+	planIDs := make([]int64, len(plans))
+	for i, plan := range plans {
+		planIDs[i] = plan.UID
+	}
+	var allTasks []*store.TaskMessage
+	if len(planIDs) > 0 {
+		var err error
+		allTasks, err = s.store.ListTasks(ctx, &store.TaskFind{PlanIDs: &planIDs})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list tasks, error: %v", err))
+		}
+	}
+
+	// Group tasks by plan ID
+	tasksByPlanID := make(map[int64][]*store.TaskMessage)
+	for _, task := range allTasks {
+		tasksByPlanID[task.PlanID] = append(tasksByPlanID[task.PlanID], task)
+	}
+
+	// Convert plans and their tasks to rollouts
 	rollouts := []*v1pb.Rollout{}
 	for _, plan := range plans {
-		tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &plan.UID})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list tasks for plan %d, error: %v", plan.UID, err))
-		}
-
+		tasks := tasksByPlanID[plan.UID]
 		rollout, err := convertToRollout(ctx, s.store, project, plan, tasks)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
