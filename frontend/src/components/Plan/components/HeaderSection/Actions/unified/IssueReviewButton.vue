@@ -167,7 +167,7 @@ import { usePlanContext } from "@/components/Plan/logic";
 import { issueServiceClientConnect } from "@/grpcweb";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT,
 } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
@@ -360,7 +360,7 @@ const handlePostActionNavigation = (
 
       nextTick(() => {
         router.push({
-          name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+          name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
           params: {
             projectId: extractProjectResourceName(issueValue.name),
             planId: extractPlanUIDFromRolloutName(rolloutValue.name),

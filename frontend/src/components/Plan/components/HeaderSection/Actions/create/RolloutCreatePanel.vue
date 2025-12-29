@@ -77,7 +77,7 @@ import { ApprovalFlowSection } from "@/components/Plan/components/IssueReviewVie
 import PlanCheckStatusCount from "@/components/Plan/components/PlanCheckStatusCount.vue";
 import { usePlanContext } from "@/components/Plan/logic";
 import { rolloutServiceClientConnect } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { pushNotification } from "@/store";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -163,7 +163,7 @@ const handleConfirm = async () => {
     emit("confirm");
 
     router.push({
-      name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
       params: {
         projectId: extractProjectResourceName(project.value.name),
         planId: extractPlanUIDFromRolloutName(createdRollout.name),

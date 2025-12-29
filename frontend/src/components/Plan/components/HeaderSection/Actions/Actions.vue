@@ -76,7 +76,7 @@ import {
   issueServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT } from "@/router/dashboard/projectV1";
 import { pushNotification, useCurrentProjectV1 } from "@/store";
 import { usePlanStore } from "@/store/modules/v1/plan";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -283,7 +283,7 @@ const handleCreateRollout = async () => {
     });
 
     router.push({
-      name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
       params: {
         projectId: extractProjectResourceName(project.value.name),
         planId: extractPlanUIDFromRolloutName(createdRollout.name),

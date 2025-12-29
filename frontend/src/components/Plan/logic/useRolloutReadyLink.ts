@@ -1,9 +1,9 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import {
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "@/router/dashboard/projectV1";
 import {
   Issue_ApprovalStatus,
@@ -14,9 +14,9 @@ import { Task_Status, Task_Type } from "@/types/proto-es/v1/rollout_service_pb";
 import { usePlanContext } from "./context";
 
 const ROLLOUT_ROUTES = new Set([
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 ]);
 
 const ACTIONABLE_TASK_STATUSES = new Set([

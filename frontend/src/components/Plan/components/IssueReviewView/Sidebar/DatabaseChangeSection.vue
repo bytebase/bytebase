@@ -73,7 +73,7 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { EnvironmentV1Name } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useEnvironmentV1Store } from "@/store";
 import { Issue_Type } from "@/types/proto-es/v1/issue_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
@@ -111,7 +111,7 @@ const navigateToStage = (stageName: string) => {
   if (!planId || !stageId) return;
 
   router.push({
-    name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
     params: {
       projectId: extractProjectResourceName(project.value.name),
       planId,

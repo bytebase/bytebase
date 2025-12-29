@@ -40,7 +40,7 @@ import BBSpin from "@/bbkit/BBSpin.vue";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import { useRolloutViewContext } from "@/components/RolloutV1/logic/context";
 import { rolloutServiceClientConnect } from "@/grpcweb";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1 } from "@/store";
 import { pushNotification } from "@/store/modules/notification";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
@@ -92,7 +92,7 @@ watch(
       const planId = extractPlanUIDFromRolloutName(rollout.value.name);
 
       router.replace({
-        name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+        name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
         params: {
           projectId: extractProjectResourceName(project.value.name),
           planId: planId || "_",
@@ -111,7 +111,7 @@ const handleStageSelect = (stage: Stage) => {
   const planId = extractPlanUIDFromRolloutName(rollout.value.name);
 
   router.push({
-    name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
     params: {
       projectId: extractProjectResourceName(project.value.name),
       planId: planId || "_",
