@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -173,27 +172,12 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 		)
 	}
 
-	// Try to parse subject as integer ID (old tokens), otherwise treat as email (new tokens and OAuth2)
-	var user *store.UserMessage
-	var err error
-	if principalID, parseErr := strconv.Atoi(claims.Subject); parseErr == nil {
-		// Old token with numeric ID as subject
-		user, err = in.store.GetUserByID(ctx, principalID)
-		if err != nil {
-			return nil, nil, errs.Errorf("failed to find user ID %q in the access token", principalID)
-		}
-		if user == nil {
-			return nil, nil, errs.Errorf("user ID %q not exists in the access token", principalID)
-		}
-	} else {
-		// New token with email as subject (includes OAuth2 tokens)
-		user, err = in.store.GetUserByEmail(ctx, claims.Subject)
-		if err != nil {
-			return nil, nil, errs.Errorf("failed to find user email %q in the access token", claims.Subject)
-		}
-		if user == nil {
-			return nil, nil, errs.Errorf("user email %q not exists in the access token", claims.Subject)
-		}
+	user, err := in.store.GetUserByEmail(ctx, claims.Subject)
+	if err != nil {
+		return nil, nil, errs.Errorf("failed to find user %q in the access token", claims.Subject)
+	}
+	if user == nil {
+		return nil, nil, errs.Errorf("user %q not exists in the access token", claims.Subject)
 	}
 	if user.MemberDeleted {
 		return nil, nil, errs.Errorf("user ID %q has been deactivated by administrators", user.ID)
