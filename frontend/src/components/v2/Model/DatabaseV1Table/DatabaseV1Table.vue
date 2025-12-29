@@ -14,11 +14,16 @@
     @update:checked-row-keys="
       (val) => $emit('update:selected-database-names', val as string[])
     "
+    @update:sorter="$emit('update:sorters', $event)"
   />
 </template>
 
 <script setup lang="tsx">
-import { type DataTableColumn, NDataTable } from "naive-ui";
+import {
+  type DataTableColumn,
+  type DataTableSortState,
+  NDataTable,
+} from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
@@ -62,6 +67,7 @@ const props = withDefaults(
           defaultPageSize: number;
           disabled: boolean;
         };
+    sorters?: DataTableSortState[];
   }>(),
   {
     mode: "ALL",
@@ -77,6 +83,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (event: "update:selected-database-names", val: string[]): void;
+  (event: "update:sorters", sorters: DataTableSortState[]): void;
 }>();
 
 const { t } = useI18n();
@@ -96,7 +103,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     },
   };
   const NAME: DatabaseDataTableColumn = {
-    key: "title",
+    key: "name",
     title: t("common.name"),
     resizable: true,
     render: (data) => {
@@ -188,9 +195,31 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     ["PROJECT_SHORT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE, ADDRESS]],
   ]);
 
-  return [SELECTION, ...(columnsMap.get(props.mode) || [])].filter(
-    (column) => !column.hide
-  );
+  return (
+    [
+      SELECTION,
+      ...(columnsMap.get(props.mode) || []),
+    ] as DatabaseDataTableColumn[]
+  )
+    .filter((column) => !column.hide)
+    .map((column) => {
+      if (props.sorters === undefined || column.type) {
+        return column;
+      }
+      const sorterIndex = props.sorters.findIndex(
+        (s) => s.columnKey === column.key.toString()
+      );
+      if (sorterIndex < 0) {
+        return column;
+      }
+      return {
+        ...column,
+        sorter: {
+          multiple: sorterIndex,
+        },
+        sortOrder: props.sorters[sorterIndex].order,
+      };
+    });
 });
 
 const rowProps = (database: ComposedDatabase) => {

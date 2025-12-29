@@ -14,13 +14,16 @@
         :database-list="list"
         :keyword="filter.query"
         :row-click="handleDatabaseClick"
+        :sorters="sorters"
+        @update:sorters="onSorterUpdate"
       />
     </template>
   </PagedTable>
 </template>
 
 <script setup lang="tsx">
-import { ref, watch } from "vue";
+import { type DataTableSortState } from "naive-ui";
+import { computed, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import { useRouter } from "vue-router";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
@@ -55,6 +58,46 @@ const router = useRouter();
 const databasePagedTable =
   ref<ComponentExposed<typeof PagedTable<ComposedDatabase>>>();
 
+const sorters = ref<DataTableSortState[]>([
+  {
+    columnKey: "name",
+    order: false,
+    sorter: true,
+  },
+  {
+    columnKey: "project",
+    order: false,
+    sorter: true,
+  },
+  {
+    columnKey: "instance",
+    order: false,
+    sorter: true,
+  },
+]);
+
+const onSorterUpdate = (sortStates: DataTableSortState[]) => {
+  for (const sortState of sortStates) {
+    const sorterIndex = sorters.value.findIndex(
+      (s) => s.columnKey === sortState.columnKey
+    );
+    if (sorterIndex >= 0) {
+      sorters.value[sorterIndex] = sortState;
+    }
+  }
+};
+
+const orderBy = computed(() => {
+  return sorters.value
+    .filter((sorter) => sorter.order)
+    .map((sorter) => {
+      const key = sorter.columnKey.toString();
+      const order = sorter.order == "ascend" ? "asc" : "desc";
+      return `${key} ${order}`;
+    })
+    .join(", ");
+});
+
 const fetchDatabases = async ({
   pageToken,
   pageSize,
@@ -69,6 +112,7 @@ const fetchDatabases = async ({
     pageSize,
     parent: props.parent,
     filter: props.filter,
+    orderBy: orderBy.value,
     // Skip cache removal when refresh is false (loading more data).
     skipCacheRemoval: !refresh,
   });
@@ -79,7 +123,7 @@ const fetchDatabases = async ({
 };
 
 watch(
-  () => [props.filter, props.parent],
+  () => [props.filter, props.parent, orderBy.value],
   () => databasePagedTable.value?.refresh(),
   { deep: true }
 );

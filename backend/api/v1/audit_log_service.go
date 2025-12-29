@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	"github.com/bytebase/bytebase/backend/component/export"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -44,10 +43,10 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 	// Apply retention-based filtering based on the plan
 	retentionCutoff := s.licenseService.GetAuditLogRetentionCutoff()
 	if retentionCutoff != nil {
-		filterQ = applyRetentionFilter(filterQ, retentionCutoff)
+		filterQ = store.ApplyRetentionFilter(filterQ, retentionCutoff)
 	}
 
-	orderByKeys, err := getSearchAuditLogsOrderByKeys(request.Msg.OrderBy)
+	orderByKeys, err := store.GetAuditLogOrders(request.Msg.OrderBy)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -63,7 +62,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 	limitPlusOne := offset.limit + 1
 
 	var project *string
-	if request.Msg.Parent != "" {
+	if request.Msg.Parent != "" && request.Msg.Parent != "projects/-" {
 		project = &request.Msg.Parent
 	}
 	auditLogFind := &store.AuditLogFind{
@@ -200,50 +199,4 @@ func convertToAuditLogSeverity(s storepb.AuditLog_Severity) v1pb.AuditLog_Severi
 	default:
 		return v1pb.AuditLog_SEVERITY_UNSPECIFIED
 	}
-}
-
-func getSearchAuditLogsOrderByKeys(orderBy string) ([]store.OrderByKey, error) {
-	keys, err := parseOrderBy(orderBy)
-	if err != nil {
-		return nil, err
-	}
-
-	orderByKeys := []store.OrderByKey{}
-	for _, orderByKey := range keys {
-		key := ""
-		if orderByKey.key == "create_time" {
-			key = "created_at"
-		}
-		if key == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid order by key %v", orderByKey.key))
-		}
-
-		sortOrder := store.ASC
-		if !orderByKey.isAscend {
-			sortOrder = store.DESC
-		}
-		orderByKeys = append(orderByKeys, store.OrderByKey{
-			Key:       key,
-			SortOrder: sortOrder,
-		})
-	}
-	return orderByKeys, nil
-}
-
-// applyRetentionFilter merges retention-based filtering with user-provided filters.
-func applyRetentionFilter(userFilterQ *qb.Query, cutoff *time.Time) *qb.Query {
-	if cutoff == nil {
-		return userFilterQ
-	}
-
-	retentionQ := qb.Q().Space("created_at >= ?", *cutoff)
-	if userFilterQ == nil {
-		return qb.Q().Space("(?)", retentionQ)
-	}
-
-	// Combine with existing filter using AND
-	q := qb.Q()
-	q.Space("?", userFilterQ)
-	q.And("?", retentionQ)
-	return qb.Q().Space("(?)", q)
 }

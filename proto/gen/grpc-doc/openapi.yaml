@@ -1283,6 +1283,16 @@ paths:
                   description: Show deleted database if specified.
                   schema:
                     type: boolean
+                - name: orderBy
+                  in: query
+                  description: |-
+                    The order by of databases.
+                     Support name, project, instance
+                     For example:
+                     - order_by = "name desc"
+                     - order_by = "name desc, project asc"
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -3846,6 +3856,16 @@ paths:
                   description: Show deleted database if specified.
                   schema:
                     type: boolean
+                - name: orderBy
+                  in: query
+                  description: |-
+                    The order by of databases.
+                     Support name, project, instance
+                     For example:
+                     - order_by = "name desc"
+                     - order_by = "name desc, project asc"
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -7545,6 +7565,16 @@ paths:
                   description: Show deleted database if specified.
                   schema:
                     type: boolean
+                - name: orderBy
+                  in: query
+                  description: |-
+                    The order by of databases.
+                     Support name, project, instance
+                     For example:
+                     - order_by = "name desc"
+                     - order_by = "name desc, project asc"
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK

@@ -11213,6 +11213,15 @@ components:
           type: boolean
           title: show_deleted
           description: Show deleted database if specified.
+        orderBy:
+          type: string
+          title: order_by
+          description: |-
+            The order by of databases.
+             Support name, project, instance
+             For example:
+             - order_by = "name desc"
+             - order_by = "name desc, project asc"
       title: ListDatabasesRequest
       additionalProperties: false
     bytebase.v1.ListDatabasesResponse:

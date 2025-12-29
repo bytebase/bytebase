@@ -819,7 +819,13 @@ type ListDatabasesRequest struct {
 	// environment == "environments/prod" && name.matches("employee")
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	// Show deleted database if specified.
-	ShowDeleted   bool `protobuf:"varint,5,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
+	ShowDeleted bool `protobuf:"varint,5,opt,name=show_deleted,json=showDeleted,proto3" json:"show_deleted,omitempty"`
+	// The order by of databases.
+	// Support name, project, instance
+	// For example:
+	// - order_by = "name desc"
+	// - order_by = "name desc, project asc"
+	OrderBy       string `protobuf:"bytes,6,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -887,6 +893,13 @@ func (x *ListDatabasesRequest) GetShowDeleted() bool {
 		return x.ShowDeleted
 	}
 	return false
+}
+
+func (x *ListDatabasesRequest) GetOrderBy() string {
+	if x != nil {
+		return x.OrderBy
+	}
+	return ""
 }
 
 type ListDatabasesResponse struct {
@@ -5635,14 +5648,15 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x05names\x18\x02 \x03(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x05names\"P\n" +
 	"\x19BatchGetDatabasesResponse\x123\n" +
-	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\"\xc4\x01\n" +
+	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\"\xdf\x01\n" +
 	"\x14ListDatabasesRequest\x125\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\x12\x15bytebase.com/DatabaseR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\x12\x16\n" +
 	"\x06filter\x18\x04 \x01(\tR\x06filter\x12!\n" +
-	"\fshow_deleted\x18\x05 \x01(\bR\vshowDeleted\"t\n" +
+	"\fshow_deleted\x18\x05 \x01(\bR\vshowDeleted\x12\x19\n" +
+	"\border_by\x18\x06 \x01(\tR\aorderBy\"t\n" +
 	"\x15ListDatabasesResponse\x123\n" +
 	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb1\x01\n" +

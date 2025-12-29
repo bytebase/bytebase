@@ -157,6 +157,17 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * @generated from field: bool show_deleted = 5;
    */
   showDeleted: boolean;
+
+  /**
+   * The order by of databases.
+   * Support name, project, instance
+   * For example:
+   * - order_by = "name desc"
+   * - order_by = "name desc, project asc"
+   *
+   * @generated from field: string order_by = 6;
+   */
+  orderBy: string;
 };
 
 /**
