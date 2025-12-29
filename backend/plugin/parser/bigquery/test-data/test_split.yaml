@@ -1,0 +1,33 @@
+# Core test cases for BigQuery statement splitting
+
+# =============================================================================
+# Single Statement
+# =============================================================================
+- description: "single statement without semicolon"
+  input: "SELECT 1"
+  result:
+    - text: "SELECT 1"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 9}
+      range: {start: 0, end: 8}
+      empty: false
+
+# =============================================================================
+# Multiple Statements
+# =============================================================================
+- description: "multiple statements multi-line"
+  input: "SELECT 1;\n SELECT\n 33;"
+  result:
+    - text: "SELECT 1;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 10}
+      range: {start: 0, end: 9}
+      empty: false
+    - text: "\n SELECT\n 33;"
+      baseline: 0
+      start: {line: 2, column: 2}
+      end: {line: 3, column: 5}
+      range: {start: 9, end: 22}
+      empty: false

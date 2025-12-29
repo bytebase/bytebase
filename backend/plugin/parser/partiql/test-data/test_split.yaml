@@ -1,0 +1,38 @@
+# Core test cases for PartiQL statement splitting
+
+# =============================================================================
+# Multiple DML Statements
+# =============================================================================
+- description: "multiple DML statements"
+  input: "DELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money';\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money'};\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money02'};\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money03'};\n\tDELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money02'"
+  result:
+    - text: "DELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money';"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 71}
+      range: {start: 0, end: 70}
+      empty: false
+    - text: "\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money'};"
+      baseline: 0
+      start: {line: 2, column: 2}
+      end: {line: 2, column: 131}
+      range: {start: 70, end: 201}
+      empty: false
+    - text: "\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money02'};"
+      baseline: 1
+      start: {line: 3, column: 2}
+      end: {line: 3, column: 133}
+      range: {start: 201, end: 334}
+      empty: false
+    - text: "\n\tINSERT INTO Music VALUE {'AlbumTitle': 'The Dark Side of the Moon', 'Artist': 'Pink Floyd', 'Awards': 300, 'SongTitle': 'Money03'};"
+      baseline: 2
+      start: {line: 4, column: 2}
+      end: {line: 4, column: 133}
+      range: {start: 334, end: 467}
+      empty: false
+    - text: "\n\tDELETE FROM Music WHERE Artist = 'Pink Floyd' AND SongTitle = 'Money02'"
+      baseline: 3
+      start: {line: 5, column: 2}
+      end: {line: 5, column: 73}
+      range: {start: 467, end: 540}
+      empty: false

@@ -1,0 +1,95 @@
+# Core test cases for Standard SQL statement splitting
+
+# =============================================================================
+# Single Statement
+# =============================================================================
+- description: "simple single statement"
+  input: "SELECT 1;"
+  result:
+    - text: "SELECT 1;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 10}
+      range: {start: 0, end: 9}
+      empty: false
+
+# =============================================================================
+# Multi-line Statement
+# =============================================================================
+- description: "multi-line statement"
+  input: "SELECT\n  1;"
+  result:
+    - text: "SELECT\n  1;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 2, column: 5}
+      range: {start: 0, end: 11}
+      empty: false
+
+# =============================================================================
+# Multiple Statements
+# =============================================================================
+- description: "multiple statements"
+  input: "SELECT 1;\nSELECT 2;"
+  result:
+    - text: "SELECT 1;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 10}
+      range: {start: 0, end: 9}
+      empty: false
+    - text: "SELECT 2;"
+      baseline: 1
+      start: {line: 2, column: 1}
+      end: {line: 2, column: 10}
+      range: {start: 10, end: 19}
+      empty: false
+
+# =============================================================================
+# Multi-byte Unicode Characters
+# =============================================================================
+- description: "multi-byte characters - Chinese"
+  input: "SELECT '中文';"
+  result:
+    - text: "SELECT '中文';"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 13}
+      range: {start: 0, end: 16}
+      empty: false
+
+- description: "multi-byte characters - emoji"
+  input: "SELECT '🎉';"
+  result:
+    - text: "SELECT '🎉';"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 12}
+      range: {start: 0, end: 14}
+      empty: false
+
+- description: "multi-byte on second line"
+  input: "SELECT\n  '中文';"
+  result:
+    - text: "SELECT\n  '中文';"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 2, column: 8}
+      range: {start: 0, end: 18}
+      empty: false
+
+- description: "multiple statements with multi-byte on separate lines"
+  input: "SELECT '中';\nSELECT '文';"
+  result:
+    - text: "SELECT '中';"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 12}
+      range: {start: 0, end: 13}
+      empty: false
+    - text: "SELECT '文';"
+      baseline: 1
+      start: {line: 2, column: 1}
+      end: {line: 2, column: 12}
+      range: {start: 14, end: 27}
+      empty: false
