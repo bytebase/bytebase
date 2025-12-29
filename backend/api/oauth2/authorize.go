@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -129,30 +128,16 @@ func (s *Service) handleAuthorizePost(c echo.Context) error {
 	}
 
 	// Validate audience
-	if !audienceContains(claims.Audience, fmt.Sprintf(auth.AccessTokenAudienceFmt, s.profile.Mode)) {
+	if !audienceContains(claims.Audience, auth.AccessTokenAudience) {
 		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "invalid token audience")
 	}
 
-	// Try to parse subject as integer ID (old tokens), otherwise treat as email (new tokens)
-	var user *store.UserMessage
-	if principalID, parseErr := strconv.Atoi(claims.Subject); parseErr == nil {
-		// Old token with numeric ID as subject
-		user, err = s.store.GetUserByID(ctx, principalID)
-		if err != nil {
-			return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "failed to find user")
-		}
-		if user == nil {
-			return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "user not found")
-		}
-	} else {
-		// New token with email as subject
-		user, err = s.store.GetUserByEmail(ctx, claims.Subject)
-		if err != nil {
-			return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "failed to find user")
-		}
-		if user == nil {
-			return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "user not found")
-		}
+	user, err := s.store.GetUserByEmail(ctx, claims.Subject)
+	if err != nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "failed to find user")
+	}
+	if user == nil {
+		return oauth2ErrorRedirect(c, redirectURI, state, "access_denied", "user not found")
 	}
 
 	// Generate authorization code

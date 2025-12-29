@@ -4,12 +4,9 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-
-	"github.com/bytebase/bytebase/backend/common"
 )
 
 // GenerateOpaqueToken creates a cryptographically random opaque token.
@@ -41,21 +38,21 @@ type oauth2ClaimsMessage struct {
 }
 
 // GenerateAPIToken generates an API token.
-func GenerateAPIToken(userEmail string, mode common.ReleaseMode, secret string) (string, error) {
+func GenerateAPIToken(userEmail string, secret string) (string, error) {
 	expirationTime := time.Now().Add(apiTokenDuration)
-	return generateToken(userEmail, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(userEmail, AccessTokenAudience, expirationTime, []byte(secret))
 }
 
 // GenerateAccessToken generates an access token for web.
-func GenerateAccessToken(userEmail string, mode common.ReleaseMode, secret string, tokenDuration time.Duration) (string, error) {
+func GenerateAccessToken(userEmail string, secret string, tokenDuration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(tokenDuration)
-	return generateToken(userEmail, fmt.Sprintf(AccessTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(userEmail, AccessTokenAudience, expirationTime, []byte(secret))
 }
 
 // GenerateMFATempToken generates a temporary token for MFA.
-func GenerateMFATempToken(userEmail string, mode common.ReleaseMode, secret string, tokenDuration time.Duration) (string, error) {
+func GenerateMFATempToken(userEmail string, secret string, tokenDuration time.Duration) (string, error) {
 	expirationTime := time.Now().Add(tokenDuration)
-	return generateToken(userEmail, fmt.Sprintf(MFATempTokenAudienceFmt, mode), expirationTime, []byte(secret))
+	return generateToken(userEmail, MFATempTokenAudience, expirationTime, []byte(secret))
 }
 
 // generateToken creates a JWT token for web authentication.
