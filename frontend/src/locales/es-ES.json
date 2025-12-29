@@ -984,6 +984,14 @@
           "title": "Proyecto",
           "description": "Filtrar por proyecto"
         },
+        "instance": {
+          "title": "Instancia",
+          "description": "Filtrar por instancia"
+        },
+        "environment": {
+          "title": "Ambiente",
+          "description": "Filtrar por entorno"
+        },
         "creator": {
           "title": "Creador",
           "description": "Búsqueda por creador"

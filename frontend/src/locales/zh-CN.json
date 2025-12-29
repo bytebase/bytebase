@@ -984,6 +984,14 @@
           "title": "项目",
           "description": "根据项目过滤"
         },
+        "instance": {
+          "title": "实例",
+          "description": "根据实例过滤"
+        },
+        "environment": {
+          "title": "环境",
+          "description": "根据环境过滤"
+        },
         "creator": {
           "title": "创建人",
           "description": "根据创建人搜索"

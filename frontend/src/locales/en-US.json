@@ -984,6 +984,14 @@
           "title": "Project",
           "description": "Filter by project"
         },
+        "instance": {
+          "title": "Instance",
+          "description": "Filter by instance"
+        },
+        "environment": {
+          "title": "Environment",
+          "description": "Filter by environment"
+        },
         "creator": {
           "title": "Creator",
           "description": "Search by the creator"
