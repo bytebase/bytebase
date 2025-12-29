@@ -25,7 +25,7 @@ import { projectOfIssue } from "@/components/IssueV1/logic";
 import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
 } from "@/router/dashboard/projectV1";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -56,7 +56,7 @@ const link = computed(() => {
 
   if (enabledNewLayout.value) {
     return {
-      name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
       params: {
         projectId: extractProjectResourceName(task.name),
         planId: extractPlanUIDFromRolloutName(task.name),

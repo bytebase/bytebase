@@ -60,7 +60,7 @@ import TaskRunStatusIcon from "@/components/IssueV1/components/TaskRunSection/Ta
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import TaskRunComment from "@/components/RolloutV1/components/TaskRunComment.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1, useDatabaseV1Store } from "@/store";
 import { useTaskRunLogStore } from "@/store/modules/v1/taskRunLog";
 import { getDateForPbTimestampProtoEs } from "@/types";
@@ -298,7 +298,7 @@ const navigateToTaskDetail = (taskRun: TaskRun) => {
   const params = getTaskRouteParams(taskRun);
   if (params) {
     router.push({
-      name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
       params: {
         projectId: extractProjectResourceName(project.value.name),
         planId: params.planId,

@@ -14,7 +14,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE } from "@/router/dashboard/projectV1";
 import { useEnvironmentV1Store } from "@/store";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import {
@@ -33,7 +33,7 @@ const link = computed(() => {
   const { stage } = props;
 
   return {
-    name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
     params: {
       projectId: extractProjectResourceName(stage.name),
       planId: extractPlanUIDFromRolloutName(stage.name),

@@ -30,7 +30,7 @@ func TestWriteOutputJSON_StringFieldsOnly(t *testing.T) {
 	w.Output = outputFile
 	w.OutputMap.Release = "projects/test/releases/123"
 	w.OutputMap.Plan = "projects/test/plans/456"
-	w.OutputMap.Rollout = "projects/test/rollouts/789"
+	w.OutputMap.Rollout = "projects/test/plans/789/rollout"
 
 	err := writeOutputJSON(w)
 	require.NoError(t, err)
@@ -46,7 +46,7 @@ func TestWriteOutputJSON_StringFieldsOnly(t *testing.T) {
 
 	require.Equal(t, "projects/test/releases/123", result["release"])
 	require.Equal(t, "projects/test/plans/456", result["plan"])
-	require.Equal(t, "projects/test/rollouts/789", result["rollout"])
+	require.Equal(t, "projects/test/plans/789/rollout", result["rollout"])
 	require.NotContains(t, result, "checkResults")
 }
 
@@ -152,7 +152,7 @@ func TestWriteOutputJSON_AllFieldsPopulated(t *testing.T) {
 	w.Output = outputFile
 	w.OutputMap.Release = "projects/test/releases/123"
 	w.OutputMap.Plan = "projects/test/plans/456"
-	w.OutputMap.Rollout = "projects/test/rollouts/789"
+	w.OutputMap.Rollout = "projects/test/plans/789/rollout"
 	w.OutputMap.CheckResults = &v1pb.CheckReleaseResponse{
 		Results: []*v1pb.CheckReleaseResponse_CheckResult{
 			{
@@ -179,7 +179,7 @@ func TestWriteOutputJSON_AllFieldsPopulated(t *testing.T) {
 	// Verify all fields are present
 	require.Equal(t, "projects/test/releases/123", result["release"])
 	require.Equal(t, "projects/test/plans/456", result["plan"])
-	require.Equal(t, "projects/test/rollouts/789", result["rollout"])
+	require.Equal(t, "projects/test/plans/789/rollout", result["rollout"])
 	require.Contains(t, result, "checkResults")
 
 	// Verify CheckResults structure

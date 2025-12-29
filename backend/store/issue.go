@@ -59,13 +59,10 @@ type UpdateIssueMessage struct {
 
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
-	UID        *int
-	ProjectID  *string
-	ProjectIDs *[]string
-	PlanUID    *int64
-	// PipelineID is deprecated, use PlanUID.
-	// To support pagination, we add into creatorEmail.
-	// Only principleID or one of the following three fields can be set.
+	UID             *int
+	ProjectID       *string
+	ProjectIDs      *[]string
+	PlanUID         *int64
 	CreatorID       *string
 	CreatedAtBefore *time.Time
 	CreatedAtAfter  *time.Time

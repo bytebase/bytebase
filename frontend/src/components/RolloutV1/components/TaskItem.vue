@@ -230,7 +230,7 @@ import Timestamp from "@/components/misc/Timestamp.vue";
 import { usePlanContextWithRollout } from "@/components/Plan";
 import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK } from "@/router/dashboard/projectV1";
 import { taskRunNamePrefix, useSheetV1Store } from "@/store";
 import type { Stage, Task } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
@@ -310,7 +310,7 @@ const taskDetailRoute = computed(() => {
   const taskId = extractTaskUID(props.task.name);
 
   return {
-    name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+    name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
     params: {
       projectId: projectName,
       planId: planId || "-",

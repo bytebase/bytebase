@@ -89,7 +89,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		// TODO(steven): Remove the slug dependency when the legacy issue page is removed.
 		link = fmt.Sprintf("%s/projects/%s/issues/%s-%d", externalURL, e.Project.ResourceID, slug.Make(e.Issue.Title), e.Issue.UID)
 	} else if e.Rollout != nil {
-		link = fmt.Sprintf("%s/projects/%s/rollouts/%d", externalURL, e.Project.ResourceID, e.Rollout.UID)
+		link = fmt.Sprintf("%s/projects/%s/plans/%d/rollout", externalURL, e.Project.ResourceID, e.Rollout.UID)
 	}
 	switch e.Type {
 	case storepb.Activity_ISSUE_CREATE:

@@ -203,13 +203,11 @@ export declare type ListRolloutsRequest = Message<"bytebase.v1.ListRolloutsReque
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * Supported filters:
-   * - creator: the rollout creator full name in "users/{email or id}" format, support "==" operator.
    * - update_time: rollout update time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
-   * - task_type: the task type, support "==" and "in" operators, check the Task.Type enum for the values.
+   * - task_type: the task type, support "in" operator, check the Task.Type enum for the values.
    *
    * For example:
-   * creator == "users/ed@bytebase.com" && update_time >= "2025-01-02T15:04:05Z07:00"
-   * task_type == "DATABASE_MIGRATE"
+   * update_time >= "2025-01-02T15:04:05Z07:00"
    * task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]
    *
    * @generated from field: string filter = 4;

@@ -31,7 +31,7 @@ import DatabaseDisplay from "@/components/Plan/components/common/DatabaseDisplay
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import { useRolloutViewContext } from "@/components/RolloutV1/logic/context";
-import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Task } from "@/types/proto-es/v1/rollout_service_pb";
@@ -142,7 +142,7 @@ const handleRowClick = (task: Task) => {
   const params = getTaskRouteParams(task);
   if (params) {
     router.push({
-      name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
       params: {
         projectId: extractProjectResourceName(task.name),
         planId: extractPlanUIDFromRolloutName(task.name),

@@ -24,8 +24,8 @@ import { usePlanContext } from "@/components/Plan/logic";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
-  PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+  PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
 } from "@/router/dashboard/projectV1";
 import { useEnvironmentV1Store } from "@/store";
 import {
@@ -116,7 +116,7 @@ const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
   items.push({
     label: `${t("common.rollout")} #${planID.value}`,
     route: {
-      name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
       params: { projectId: projectId.value, planId: planID.value },
     },
     clickable: hasTask,
@@ -127,7 +127,7 @@ const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
     items.push({
       label: stageTitle.value,
       route: {
-        name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_STAGE_DETAIL,
+        name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
         params: {
           projectId: projectId.value,
           planId: planID.value,

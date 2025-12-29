@@ -1,7 +1,6 @@
 package store
 
 import (
-	"strings"
 	"time"
 
 	"github.com/google/cel-go/cel"
@@ -46,29 +45,6 @@ func GetListRolloutFilter(filter string) (*qb.Query, error) {
 					q.And("?", qq)
 				}
 				return qb.Q().Space("(?)", q), nil
-			case celoperators.Equals:
-				variable, value := getVariableAndValueFromExpr(expr)
-				switch variable {
-				case "creator":
-					creatorEmail := strings.TrimPrefix(value.(string), "users/")
-					if creatorEmail == "" {
-						return nil, errors.New("invalid empty creator identifier")
-					}
-					return qb.Q().Space("plan.creator = ?", creatorEmail), nil
-				case "task_type":
-					taskType, ok := value.(string)
-					if !ok {
-						return nil, errors.Errorf("task_type value must be a string")
-					}
-					if _, ok := v1pb.Task_Type_value[taskType]; !ok {
-						return nil, errors.Errorf("invalid task_type value: %s", taskType)
-					}
-					v1TaskType := v1pb.Task_Type(v1pb.Task_Type_value[taskType])
-					storeTaskType := convertV1ToStoreTaskType(v1TaskType)
-					return qb.Q().Space("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ?)", storeTaskType.String()), nil
-				default:
-					return nil, errors.Errorf("unsupported variable %q", variable)
-				}
 			case celoperators.In:
 				variable, value := getVariableAndValueFromExpr(expr)
 				switch variable {
@@ -110,7 +86,6 @@ func GetListRolloutFilter(filter string) (*qb.Query, error) {
 				if err != nil {
 					return nil, errors.Errorf("failed to parse time %v, error: %v", value, err)
 				}
-				// Use the same subquery as in ListPipelines SELECT to compute updated_at
 				updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.task_id = task.id WHERE task.plan_id = plan.id), plan.created_at)`
 				if functionName == celoperators.GreaterEquals {
 					return qb.Q().Space(updatedAtSubquery+" >= ?", t), nil

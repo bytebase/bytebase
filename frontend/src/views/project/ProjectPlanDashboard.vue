@@ -246,7 +246,7 @@ const mergedPlanFind = computed(() => {
     : // Default find for legacy layout.
       {
         hasIssue: false,
-        hasPipeline: false,
+        hasRollout: false,
       };
   return buildPlanFindBySearchParams(planSearchParams.value, {
     // Only show change database plans.

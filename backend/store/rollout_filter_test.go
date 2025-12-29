@@ -27,20 +27,6 @@ func TestGetListRolloutFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "creator filter",
-			filter:   `creator == "users/test@example.com"`,
-			wantSQL:  "(plan.creator = $1)",
-			wantArgs: []any{"test@example.com"},
-			wantErr:  false,
-		},
-		{
-			name:     "task_type equals filter",
-			filter:   `task_type == "DATABASE_MIGRATE"`,
-			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = $1))",
-			wantArgs: []any{"DATABASE_MIGRATE"},
-			wantErr:  false,
-		},
-		{
 			name:     "task_type in filter",
 			filter:   `task_type in ["DATABASE_MIGRATE", "DATABASE_SDL"]`,
 			wantSQL:  "(EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY($1)))",
@@ -79,9 +65,9 @@ func TestGetListRolloutFilter(t *testing.T) {
 		},
 		{
 			name:    "AND condition with task_type and update_time",
-			filter:  `task_type == "DATABASE_MIGRATE" && update_time >= "2024-01-01T00:00:00Z"`,
-			wantSQL: "((EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = $1) AND " + updatedAtSubquery + " >= $2))",
-			wantArgs: []any{"DATABASE_MIGRATE", func() time.Time {
+			filter:  `task_type in ["DATABASE_MIGRATE"] && update_time >= "2024-01-01T00:00:00Z"`,
+			wantSQL: "((EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY($1)) AND " + updatedAtSubquery + " >= $2))",
+			wantArgs: []any{[]string{"DATABASE_MIGRATE"}, func() time.Time {
 				ts, _ := time.Parse(time.RFC3339, "2024-01-01T00:00:00Z")
 				return ts
 			}()},
@@ -95,13 +81,13 @@ func TestGetListRolloutFilter(t *testing.T) {
 		},
 		{
 			name:        "unsupported variable",
-			filter:      `unsupported == "value"`,
+			filter:      `unsupported in ["value"]`,
 			wantErr:     true,
 			errContains: "unsupported variable",
 		},
 		{
 			name:        "invalid task_type value",
-			filter:      `task_type == "INVALID_TYPE"`,
+			filter:      `task_type in ["INVALID_TYPE"]`,
 			wantErr:     true,
 			errContains: "invalid task_type value",
 		},
@@ -118,14 +104,8 @@ func TestGetListRolloutFilter(t *testing.T) {
 			errContains: `">=" and "<=" are only supported for "update_time"`,
 		},
 		{
-			name:        "empty creator identifier",
-			filter:      `creator == "users/"`,
-			wantErr:     true,
-			errContains: "invalid empty creator identifier",
-		},
-		{
 			name:        "task_type with non-string value",
-			filter:      `task_type == 123`,
+			filter:      `task_type in [123]`,
 			wantErr:     true,
 			errContains: "task_type value must be a string",
 		},
