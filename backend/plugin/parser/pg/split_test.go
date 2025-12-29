@@ -371,3 +371,9 @@ func TestPGSplitMultiSQL(t *testing.T) {
 		require.Equal(t, test.want, resData{res, errStr}, test.statement)
 	}
 }
+
+func TestPGSplitSQL(t *testing.T) {
+	base.RunSplitTests(t, "test-data/test_split.yaml", base.SplitTestOptions{
+		SplitFunc: SplitSQL,
+	})
+}

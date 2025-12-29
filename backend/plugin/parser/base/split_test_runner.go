@@ -52,11 +52,11 @@ type SplitTestOptions struct {
 
 // loadTestCases loads test cases from a YAML file.
 // The path is relative to the caller's directory.
-func loadTestCases(t *testing.T, relativePath string) []SplitTestCase {
+func loadTestCases(t *testing.T, relativePath string, callerDepth int) []SplitTestCase {
 	t.Helper()
 
 	// Get the caller's file path to resolve relative paths
-	_, callerFile, _, ok := runtime.Caller(1)
+	_, callerFile, _, ok := runtime.Caller(callerDepth)
 	require.True(t, ok, "failed to get caller info")
 
 	callerDir := filepath.Dir(callerFile)
@@ -109,7 +109,8 @@ func RunSplitTests(t *testing.T, testDataPath string, opts SplitTestOptions) {
 
 	require.NotNil(t, opts.SplitFunc, "SplitFunc is required")
 
-	testCases := loadTestCases(t, testDataPath)
+	// Caller depth 2: skip loadTestCases (1) and RunSplitTests (2) to get the actual test function
+	testCases := loadTestCases(t, testDataPath, 2)
 	require.NotEmpty(t, testCases, "no test cases found in %s", testDataPath)
 
 	for _, tc := range testCases {

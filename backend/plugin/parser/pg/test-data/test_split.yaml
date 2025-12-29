@@ -1,0 +1,120 @@
+# Core test cases for PostgreSQL statement splitting
+
+# =============================================================================
+# Single Statement
+# =============================================================================
+- description: "single statement with semicolon"
+  input: "SELECT * FROM users;"
+  result:
+    - text: "SELECT * FROM users;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 21}
+      range: {start: 0, end: 20}
+      empty: false
+
+- description: "single statement without semicolon"
+  input: "SELECT * FROM users"
+  result:
+    - text: "SELECT * FROM users"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 20}
+      range: {start: 0, end: 19}
+      empty: false
+
+# =============================================================================
+# Multiple Statements
+# =============================================================================
+- description: "multiple statements same line"
+  input: "SELECT 1; SELECT 2;"
+  result:
+    - text: "SELECT 1;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 10}
+      range: {start: 0, end: 9}
+      empty: false
+    - text: " SELECT 2;"
+      baseline: 0
+      start: {line: 1, column: 11}
+      end: {line: 1, column: 20}
+      range: {start: 9, end: 19}
+      empty: false
+
+# =============================================================================
+# Leading Whitespace
+# =============================================================================
+- description: "leading whitespace preserved"
+  input: "    SELECT 1;  SELECT 2;"
+  result:
+    - text: "    SELECT 1;"
+      baseline: 0
+      start: {line: 1, column: 5}
+      end: {line: 1, column: 14}
+      range: {start: 0, end: 13}
+      empty: false
+    - text: "  SELECT 2;"
+      baseline: 0
+      start: {line: 1, column: 16}
+      end: {line: 1, column: 25}
+      range: {start: 13, end: 24}
+      empty: false
+
+# =============================================================================
+# Unicode Characters
+# =============================================================================
+- description: "unicode in table name and values"
+  input: "SELECT * FROM 表名; INSERT INTO 表 VALUES (1);"
+  result:
+    - text: "SELECT * FROM 表名;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 18}
+      range: {start: 0, end: 21}
+      empty: false
+    - text: " INSERT INTO 表 VALUES (1);"
+      baseline: 0
+      start: {line: 1, column: 19}
+      end: {line: 1, column: 44}
+      range: {start: 21, end: 49}
+      empty: false
+
+# =============================================================================
+# PostgreSQL: Dollar-Quoted Strings
+# =============================================================================
+- description: "simple dollar-quoted string"
+  input: "SELECT $$hello; world$$;"
+  result:
+    - text: "SELECT $$hello; world$$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 25}
+      range: {start: 0, end: 24}
+      empty: false
+
+- description: "tagged dollar-quoted string"
+  input: "SELECT $tag$hello; world$tag$;"
+  result:
+    - text: "SELECT $tag$hello; world$tag$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 31}
+      range: {start: 0, end: 30}
+      empty: false
+
+- description: "dollar-quote does not split on internal semicolon"
+  input: "SELECT $$a;b$$; SELECT 2;"
+  result:
+    - text: "SELECT $$a;b$$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 16}
+      range: {start: 0, end: 15}
+      empty: false
+    - text: " SELECT 2;"
+      baseline: 0
+      start: {line: 1, column: 17}
+      end: {line: 1, column: 26}
+      range: {start: 15, end: 25}
+      empty: false
