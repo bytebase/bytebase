@@ -197,7 +197,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				}
 				oldSetting.Require_2Fa = payload.Require_2Fa
 			case "value.workspace_profile.access_token_duration":
-				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				if payload.AccessTokenDuration != nil && payload.AccessTokenDuration.Seconds > 0 && payload.AccessTokenDuration.AsDuration() < time.Minute {
@@ -205,7 +205,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				}
 				oldSetting.AccessTokenDuration = payload.AccessTokenDuration
 			case "value.workspace_profile.refresh_token_duration":
-				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				if payload.RefreshTokenDuration != nil && payload.RefreshTokenDuration.Seconds > 0 && payload.RefreshTokenDuration.AsDuration() < time.Hour {
@@ -213,7 +213,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 				}
 				oldSetting.RefreshTokenDuration = payload.RefreshTokenDuration
 			case "value.workspace_profile.inactive_session_timeout":
-				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+				if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL); err != nil {
 					return nil, connect.NewError(connect.CodePermissionDenied, err)
 				}
 				oldSetting.InactiveSessionTimeout = payload.InactiveSessionTimeout

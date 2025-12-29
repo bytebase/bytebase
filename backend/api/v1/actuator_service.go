@@ -239,7 +239,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanFeatu
 		features = append(features, v1pb.PlanFeature_FEATURE_TWO_FA)
 	}
 	if setting.GetRefreshTokenDuration().GetSeconds() > 0 && float64(setting.GetRefreshTokenDuration().GetSeconds()) != auth.DefaultRefreshTokenDuration.Seconds() {
-		features = append(features, v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL)
+		features = append(features, v1pb.PlanFeature_FEATURE_TOKEN_DURATION_CONTROL)
 	}
 	if setting.GetAnnouncement().GetText() != "" {
 		features = append(features, v1pb.PlanFeature_FEATURE_DASHBOARD_ANNOUNCEMENT)

@@ -272,9 +272,9 @@
         "title": "Directory sync",
         "desc": "Sync users and groups from Entra ID to Bytebase."
       },
-      "FEATURE_SIGN_IN_FREQUENCY_CONTROL": {
-        "title": "Sign-in frequency control",
-        "desc": "Configure how often users must re-authenticate."
+      "FEATURE_TOKEN_DURATION_CONTROL": {
+        "title": "Token duration control",
+        "desc": "Configure access token and refresh token durations."
       },
       "FEATURE_EXTERNAL_SECRET_MANAGER": {
         "title": "External secret manager",
