@@ -290,10 +290,6 @@ message Rollout {
   // Format: projects/{project}/plans/{plan}/rollout
   string name = 1;
 
-  // The plan that this rollout is based on.
-  // Format: projects/{project}/plans/{plan}
-  string plan = 2 [(google.api.field_behavior) = REQUIRED];
-
   // The title of the rollout, inherited from the associated plan.
   // This field is output only and cannot be directly set.
   string title = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -301,16 +297,9 @@ message Rollout {
   // Stages and thus tasks of the rollout.
   repeated Stage stages = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Format: users/hello@world.com
-  string creator = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Timestamp update_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The issue associated with the rollout. Could be empty.
-  // Format: projects/{project}/issues/{issue}
-  string issue = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message Stage {

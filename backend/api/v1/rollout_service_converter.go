@@ -198,109 +198,82 @@ func convertToTaskRunPriorBackupDetail(priorBackupDetail *storepb.PriorBackupDet
 	}
 }
 
-func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PlanMessage, tasks []*store.TaskMessage) (*v1pb.Rollout, error) {
+func convertToRollout(project *store.ProjectMessage, plan *store.PlanMessage, tasks []*store.TaskMessage, environmentOrderMap map[string]int) (*v1pb.Rollout, error) {
+	// Calculate rollout times.
+	// CreateTime: When the rollout/plan was created.
+	// UpdateTime: Latest task update time (which reflects the latest task run update).
+	createTime := plan.CreatedAt
+	updateTime := plan.UpdatedAt
+	for _, task := range tasks {
+		// task.UpdatedAt is the updated_at of latest task run for this task.
+		if task.UpdatedAt != nil && task.UpdatedAt.After(updateTime) {
+			updateTime = *task.UpdatedAt
+		}
+	}
+
 	rolloutV1 := &v1pb.Rollout{
-		Name:       common.FormatRollout(project.ResourceID, rollout.UID),
-		Plan:       "",
-		Title:      "",
+		Name:       common.FormatRollout(project.ResourceID, plan.UID),
+		Title:      plan.Name,
 		Stages:     nil,
-		CreateTime: timestamppb.New(rollout.CreatedAt),
-		UpdateTime: timestamppb.New(rollout.UpdatedAt),
-	}
-
-	creator, err := s.GetUserByEmail(ctx, rollout.Creator)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get rollout creator")
-	}
-	// For preview rollout, creator could be nil.
-	if creator != nil {
-		rolloutV1.Creator = common.FormatUserEmail(creator.Email)
-	}
-
-	// Rollout is Plan.
-	rolloutV1.Plan = common.FormatPlan(project.ResourceID, rollout.UID)
-	rolloutV1.Title = rollout.Name
-
-	issue, err := s.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &rollout.UID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", rollout.UID)
-	}
-	if issue != nil {
-		rolloutV1.Issue = common.FormatIssue(project.ResourceID, issue.UID)
-	}
-
-	// Get live environment order
-	environments, err := s.GetEnvironment(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var environmentOrder []string
-	for _, env := range environments.GetEnvironments() {
-		environmentOrder = append(environmentOrder, env.Id)
+		CreateTime: timestamppb.New(createTime),
+		UpdateTime: timestamppb.New(updateTime),
 	}
 
 	// Group tasks by environment.
-	if tasks == nil {
-		var err error
-		tasks, err = s.ListTasks(ctx, &store.TaskFind{PlanID: &rollout.UID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list tasks")
-		}
+	tasksByEnv := make(map[string][]*store.TaskMessage)
+	for _, task := range tasks {
+		tasksByEnv[task.Environment] = append(tasksByEnv[task.Environment], task)
 	}
 
-	// Sort tasks by ID
-	slices.SortFunc(tasks, func(a, b *store.TaskMessage) int {
-		return a.ID - b.ID
+	// Collect environments that have tasks and are in the environment order map.
+	var envs []string
+	for env := range tasksByEnv {
+		if _, exists := environmentOrderMap[env]; exists {
+			envs = append(envs, env)
+		}
+	}
+	// Sort environments by their order.
+	slices.SortFunc(envs, func(a, b string) int {
+		return environmentOrderMap[a] - environmentOrderMap[b]
 	})
 
-	tasksByEnv := map[string][]*v1pb.Task{}
-	for _, task := range tasks {
-		rolloutTask, err := convertToTask(ctx, s, project, task)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert task"))
-		}
-
-		tasksByEnv[task.Environment] = append(tasksByEnv[task.Environment], rolloutTask)
-	}
-
+	// Create stages for known environments only.
 	var stages []*v1pb.Stage
-	for _, environment := range environmentOrder {
-		tasks := tasksByEnv[environment]
-		if len(tasks) > 0 {
-			stageID := common.FormatStageID(environment)
-			stages = append(stages, &v1pb.Stage{
-				Name:        common.FormatStage(project.ResourceID, rollout.UID, stageID),
-				Id:          stageID,
-				Environment: common.FormatEnvironment(stageID),
-				Tasks:       tasks,
-			})
-		}
-		delete(tasksByEnv, environment)
-	}
+	for _, env := range envs {
+		stageID := common.FormatStageID(env)
+		envTasks := tasksByEnv[env]
+		// Sort tasks by ID within each stage.
+		slices.SortFunc(envTasks, func(a, b *store.TaskMessage) int {
+			return a.ID - b.ID
+		})
 
-	for environment, tasks := range tasksByEnv {
-		if len(tasks) > 0 {
-			stageID := common.FormatStageID(environment)
-			stages = append([]*v1pb.Stage{
-				{
-					Name:        common.FormatStage(project.ResourceID, rollout.UID, stageID),
-					Id:          stageID,
-					Environment: common.FormatEnvironment(stageID),
-					Tasks:       tasks,
-				},
-			}, stages...)
+		// Convert tasks to v1pb.Task.
+		var v1Tasks []*v1pb.Task
+		for _, task := range envTasks {
+			v1Task, err := convertToTask(project, task)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert task"))
+			}
+			v1Tasks = append(v1Tasks, v1Task)
 		}
+
+		stages = append(stages, &v1pb.Stage{
+			Name:        common.FormatStage(project.ResourceID, plan.UID, stageID),
+			Id:          stageID,
+			Environment: common.FormatEnvironment(stageID),
+			Tasks:       v1Tasks,
+		})
 	}
 
 	rolloutV1.Stages = stages
 	return rolloutV1, nil
 }
 
-func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
+func convertToTask(project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	//exhaustive:enforce
 	switch task.Type {
 	case storepb.Task_DATABASE_CREATE:
-		return convertToTaskFromDatabaseCreate(ctx, s, project, task)
+		return convertToTaskFromDatabaseCreate(project, task)
 	case storepb.Task_DATABASE_MIGRATE:
 		// All DATABASE_MIGRATE tasks are treated as schema updates (DDL or GHOST)
 		return convertToTaskFromSchemaUpdate(project, task)
@@ -315,13 +288,7 @@ func convertToTask(ctx context.Context, s *store.Store, project *store.ProjectMe
 	}
 }
 
-func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
-	instance, err := s.GetInstance(ctx, &store.FindInstanceMessage{
-		ResourceID: &task.InstanceID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance %s", task.InstanceID)
-	}
+func convertToTaskFromDatabaseCreate(project *store.ProjectMessage, task *store.TaskMessage) (*v1pb.Task, error) {
 	stageID := common.FormatStageID(task.Environment)
 	v1pbTask := &v1pb.Task{
 		Name:          common.FormatTask(project.ResourceID, task.PlanID, stageID, task.ID),
@@ -329,7 +296,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		Type:          convertToTaskType(task),
 		Status:        convertToTaskStatus(task.LatestTaskRunStatus, task.Payload.GetSkipped()),
 		SkippedReason: task.Payload.GetSkippedReason(),
-		Target:        common.FormatInstance(instance.ResourceID),
+		Target:        common.FormatInstance(task.InstanceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
 				Project:      "",

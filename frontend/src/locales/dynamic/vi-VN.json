@@ -272,9 +272,9 @@
         "title": "Đồng bộ thư mục",
         "desc": "Đồng bộ người dùng và nhóm từ Entra ID vào Bytebase."
       },
-      "FEATURE_SIGN_IN_FREQUENCY_CONTROL": {
-        "title": "Kiểm soát tần suất đăng nhập",
-        "desc": "Cấu hình tần suất người dùng phải xác thực lại."
+      "FEATURE_TOKEN_DURATION_CONTROL": {
+        "title": "Kiểm soát thời lượng token",
+        "desc": "Cấu hình thời lượng token truy cập và token làm mới."
       },
       "FEATURE_EXTERNAL_SECRET_MANAGER": {
         "title": "Trình quản lý bí mật bên ngoài",

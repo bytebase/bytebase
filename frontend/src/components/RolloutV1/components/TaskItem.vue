@@ -272,11 +272,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const {
-  taskRuns: allTaskRuns,
-  readonly: contextReadonly,
-  events,
-} = usePlanContextWithRollout();
+const { taskRuns: allTaskRuns, events } = usePlanContextWithRollout();
 
 // Task actions (Run/Skip/Cancel)
 const {
@@ -293,8 +289,7 @@ const {
   closeActionPanel,
 } = useTaskActions(
   () => props.task,
-  () => props.stage,
-  { readonly: () => props.readonly || contextReadonly.value }
+  () => props.stage
 );
 
 // Handle action confirmed - trigger data refresh

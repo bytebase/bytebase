@@ -363,14 +363,6 @@ export declare type Rollout = Message<"bytebase.v1.Rollout"> & {
   name: string;
 
   /**
-   * The plan that this rollout is based on.
-   * Format: projects/{project}/plans/{plan}
-   *
-   * @generated from field: string plan = 2;
-   */
-  plan: string;
-
-  /**
    * The title of the rollout, inherited from the associated plan.
    * This field is output only and cannot be directly set.
    *
@@ -386,13 +378,6 @@ export declare type Rollout = Message<"bytebase.v1.Rollout"> & {
   stages: Stage[];
 
   /**
-   * Format: users/hello@world.com
-   *
-   * @generated from field: string creator = 5;
-   */
-  creator: string;
-
-  /**
    * @generated from field: google.protobuf.Timestamp create_time = 6;
    */
   createTime?: Timestamp;
@@ -401,14 +386,6 @@ export declare type Rollout = Message<"bytebase.v1.Rollout"> & {
    * @generated from field: google.protobuf.Timestamp update_time = 7;
    */
   updateTime?: Timestamp;
-
-  /**
-   * The issue associated with the rollout. Could be empty.
-   * Format: projects/{project}/issues/{issue}
-   *
-   * @generated from field: string issue = 8;
-   */
-  issue: string;
 };
 
 /**

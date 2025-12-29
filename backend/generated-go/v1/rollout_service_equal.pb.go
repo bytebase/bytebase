@@ -241,9 +241,6 @@ func (x *Rollout) Equal(y *Rollout) bool {
 	if x.Name != y.Name {
 		return false
 	}
-	if x.Plan != y.Plan {
-		return false
-	}
 	if x.Title != y.Title {
 		return false
 	}
@@ -255,16 +252,10 @@ func (x *Rollout) Equal(y *Rollout) bool {
 			return false
 		}
 	}
-	if x.Creator != y.Creator {
-		return false
-	}
 	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
 	if p, q := x.UpdateTime, y.UpdateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
-		return false
-	}
-	if x.Issue != y.Issue {
 		return false
 	}
 	return true

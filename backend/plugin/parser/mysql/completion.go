@@ -1236,9 +1236,15 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 	start := 0
 	for i, sql := range list {
 		// Both caretLine and End.Line are 1-based
+		// End.Column is 1-based exclusive (points after the last character)
+		// caretOffset is 0-based
 		sqlEndLine := int(sql.End.GetLine())
 		sqlEndColumn := int(sql.End.GetColumn())
-		if sqlEndLine > caretLine || (sqlEndLine == caretLine && sqlEndColumn >= caretOffset) {
+		// Use > for End.Column comparison because it's exclusive (points after last char)
+		// A 0-based offset of N corresponds to 1-based position N+1
+		// Exclusive End.Column of N means last char is at 1-based position N-1 (0-based N-2)
+		// So caret is in this statement if: sqlEndColumn > caretOffset+1, i.e., sqlEndColumn > caretOffset
+		if sqlEndLine > caretLine || (sqlEndLine == caretLine && sqlEndColumn > caretOffset) {
 			start = i
 			if i == 0 {
 				// The caret is in the first SQL statement, so we don't need to skip any SQL statements.
@@ -1250,7 +1256,9 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 			if caretLine == previousSQLEndLine {
 				// The caret is in the same line as the last line of the previous SQL statement.
 				// We need to adjust the caret offset.
-				newCaretOffset = caretOffset - previousSQLEndColumn
+				// previousSQLEndColumn is 1-based exclusive, caretOffset is 0-based
+				// New offset = caretOffset - (previousSQLEndColumn - 1) = caretOffset - previousSQLEndColumn + 1
+				newCaretOffset = caretOffset - previousSQLEndColumn + 1
 			}
 			break
 		}

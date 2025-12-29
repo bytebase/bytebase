@@ -81,10 +81,11 @@ func splitByParser(statement string, lexer *parser.RedshiftLexer, stream *antlr.
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
 			},
-			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(tokens[pos].GetLine()),
-				Column: int32(tokens[pos].GetColumn()),
-			}, statement),
+			End: common.ConvertANTLRTokenToExclusiveEndPosition(
+				int32(tokens[pos].GetLine()),
+				int32(tokens[pos].GetColumn()),
+				tokens[pos].GetText(),
+			),
 			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:pos+1], parser.RedshiftParserSEMI),
 		})
@@ -107,10 +108,11 @@ func splitByParser(statement string, lexer *parser.RedshiftLexer, stream *antlr.
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
 			},
-			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(tokens[eofPos-1].GetLine()),
-				Column: int32(tokens[eofPos-1].GetColumn()),
-			}, statement),
+			End: common.ConvertANTLRTokenToExclusiveEndPosition(
+				int32(tokens[eofPos-1].GetLine()),
+				int32(tokens[eofPos-1].GetColumn()),
+				tokens[eofPos-1].GetText(),
+			),
 			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:eofPos], parser.RedshiftParserSEMI),
 		})
@@ -215,10 +217,11 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
 			},
-			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(tokens[pos].GetLine()),
-				Column: int32(tokens[pos].GetColumn()),
-			}, statement),
+			End: common.ConvertANTLRTokenToExclusiveEndPosition(
+				int32(tokens[pos].GetLine()),
+				int32(tokens[pos].GetColumn()),
+				tokens[pos].GetText(),
+			),
 			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:pos+1], parser.RedshiftParserSEMI),
 		})
@@ -241,10 +244,11 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
 			},
-			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(tokens[eofPos-1].GetLine()),
-				Column: int32(tokens[eofPos-1].GetColumn()),
-			}, statement),
+			End: common.ConvertANTLRTokenToExclusiveEndPosition(
+				int32(tokens[eofPos-1].GetLine()),
+				int32(tokens[eofPos-1].GetColumn()),
+				tokens[eofPos-1].GetText(),
+			),
 			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:eofPos], parser.RedshiftParserSEMI),
 		})

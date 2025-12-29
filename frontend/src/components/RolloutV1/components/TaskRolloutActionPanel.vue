@@ -251,7 +251,7 @@ import {
   NTooltip,
   NVirtualList,
 } from "naive-ui";
-import { computed, ref, watchEffect } from "vue";
+import { computed, ref, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import CommonDrawer from "@/components/IssueV1/components/Panel/CommonDrawer.vue";
@@ -330,6 +330,23 @@ const runTimeInMS = ref<number | undefined>(undefined);
 const bypassPolicyChecks = ref(false);
 const { statusSummary: planCheckStatus } = usePlanCheckStatus(plan);
 
+// Cache permission check result to prevent flickering during poller refetches.
+// Re-check only when the panel opens (show changes from false to true).
+const canRolloutPermission = ref(true);
+watch(
+  () => props.show,
+  (show) => {
+    if (show) {
+      // Check permission when panel opens
+      canRolloutPermission.value = canRolloutTasks(
+        props.target.stage.tasks || [],
+        issue.value
+      );
+    }
+  },
+  { immediate: true }
+);
+
 // Check issue approval status using the review context
 const issueApprovalStatus = computed(() => {
   if (!issue?.value) {
@@ -398,7 +415,8 @@ const validationErrors = computed(() => {
   const errors: string[] = [];
 
   // Permission errors - always block rollout
-  if (!canRolloutTasks(eligibleTasks.value, issue.value)) {
+  // Use cached permission to prevent flickering during poller refetches
+  if (!canRolloutPermission.value) {
     // Special message for data export issues when user is not the creator
     if (
       issue.value &&

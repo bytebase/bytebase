@@ -86,7 +86,17 @@ func (s *RolloutService) GetRollout(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks, error: %v", err))
 	}
 
-	rolloutV1, err := convertToRollout(ctx, s.store, project, plan, tasks)
+	// Get environment order.
+	environments, err := s.store.GetEnvironment(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get environments, error: %v", err))
+	}
+	environmentOrderMap := make(map[string]int)
+	for i, env := range environments.GetEnvironments() {
+		environmentOrderMap[env.Id] = i
+	}
+
+	rolloutV1, err := convertToRollout(project, plan, tasks, environmentOrderMap)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
 	}
@@ -144,14 +154,41 @@ func (s *RolloutService) ListRollouts(ctx context.Context, req *connect.Request[
 		plans = plans[:offset.limit]
 	}
 
+	// Batch load all tasks for all plans to avoid N+1 queries
+	planIDs := make([]int64, len(plans))
+	for i, plan := range plans {
+		planIDs[i] = plan.UID
+	}
+	var allTasks []*store.TaskMessage
+	if len(planIDs) > 0 {
+		var err error
+		allTasks, err = s.store.ListTasks(ctx, &store.TaskFind{PlanIDs: &planIDs})
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list tasks, error: %v", err))
+		}
+	}
+
+	// Group tasks by plan ID
+	tasksByPlanID := make(map[int64][]*store.TaskMessage)
+	for _, task := range allTasks {
+		tasksByPlanID[task.PlanID] = append(tasksByPlanID[task.PlanID], task)
+	}
+
+	// Get environment order once for all rollouts.
+	environments, err := s.store.GetEnvironment(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get environments, error: %v", err))
+	}
+	environmentOrderMap := make(map[string]int)
+	for i, env := range environments.GetEnvironments() {
+		environmentOrderMap[env.Id] = i
+	}
+
+	// Convert plans and their tasks to rollouts
 	rollouts := []*v1pb.Rollout{}
 	for _, plan := range plans {
-		tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &plan.UID})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list tasks for plan %d, error: %v", plan.UID, err))
-		}
-
-		rollout, err := convertToRollout(ctx, s.store, project, plan, tasks)
+		tasks := tasksByPlanID[plan.UID]
+		rollout, err := convertToRollout(project, plan, tasks, environmentOrderMap)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
 		}
@@ -224,7 +261,17 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get tasks, error: %v", err))
 	}
 
-	rolloutV1, err := convertToRollout(ctx, s.store, project, plan, tasks)
+	// Get environment order.
+	environments, err := s.store.GetEnvironment(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get environments, error: %v", err))
+	}
+	environmentOrderMap := make(map[string]int)
+	for i, env := range environments.GetEnvironments() {
+		environmentOrderMap[env.Id] = i
+	}
+
+	rolloutV1, err := convertToRollout(project, plan, tasks, environmentOrderMap)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to rollout, error: %v", err))
 	}

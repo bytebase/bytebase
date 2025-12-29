@@ -1,0 +1,357 @@
+- description: "single statement with semicolon"
+  input: "SELECT * FROM users;"
+  result:
+    - text: "SELECT * FROM users;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 21}
+      range: {start: 0, end: 20}
+      empty: false
+
+- description: "single statement without semicolon"
+  input: "SELECT * FROM users"
+  result:
+    - text: "SELECT * FROM users"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 20}
+      range: {start: 0, end: 19}
+      empty: false
+
+- description: "multiple statements same line"
+  input: "SELECT 1; SELECT 2;"
+  result:
+    - text: "SELECT 1;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 10}
+      range: {start: 0, end: 9}
+      empty: false
+    - text: " SELECT 2;"
+      baseline: 0
+      start: {line: 1, column: 11}
+      end: {line: 1, column: 20}
+      range: {start: 9, end: 19}
+      empty: false
+
+- description: "leading whitespace preserved"
+  input: "    SELECT 1;  SELECT 2;"
+  result:
+    - text: "    SELECT 1;"
+      baseline: 0
+      start: {line: 1, column: 5}
+      end: {line: 1, column: 14}
+      range: {start: 0, end: 13}
+      empty: false
+    - text: "  SELECT 2;"
+      baseline: 0
+      start: {line: 1, column: 16}
+      end: {line: 1, column: 25}
+      range: {start: 13, end: 24}
+      empty: false
+
+- description: "unicode in table name and values"
+  input: "SELECT * FROM 表名; INSERT INTO 表 VALUES (1);"
+  result:
+    - text: "SELECT * FROM 表名;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 18}
+      range: {start: 0, end: 21}
+      empty: false
+    - text: " INSERT INTO 表 VALUES (1);"
+      baseline: 0
+      start: {line: 1, column: 19}
+      end: {line: 1, column: 44}
+      range: {start: 21, end: 49}
+      empty: false
+
+- description: "simple dollar-quoted string"
+  input: "SELECT $$hello; world$$;"
+  result:
+    - text: "SELECT $$hello; world$$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 25}
+      range: {start: 0, end: 24}
+      empty: false
+
+- description: "tagged dollar-quoted string"
+  input: "SELECT $tag$hello; world$tag$;"
+  result:
+    - text: "SELECT $tag$hello; world$tag$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 31}
+      range: {start: 0, end: 30}
+      empty: false
+
+- description: "dollar-quote does not split on internal semicolon"
+  input: "SELECT $$a;b$$; SELECT 2;"
+  result:
+    - text: "SELECT $$a;b$$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 16}
+      range: {start: 0, end: 15}
+      empty: false
+    - text: " SELECT 2;"
+      baseline: 0
+      start: {line: 1, column: 17}
+      end: {line: 1, column: 26}
+      range: {start: 15, end: 25}
+      empty: false
+
+- description: "CRLF line endings"
+  input: "SELECT 1;\r\nSELECT 2;"
+  result:
+    - text: "SELECT 1;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 10}
+      range: {start: 0, end: 9}
+      empty: false
+    - text: "\r\nSELECT 2;"
+      baseline: 0
+      start: {line: 2, column: 1}
+      end: {line: 2, column: 10}
+      range: {start: 9, end: 20}
+      empty: false
+
+- description: "multi-line with CRLF"
+  input: "CREATE TABLE t\r\n(a int);\r\nCREATE TABLE t1(b int);"
+  result:
+    - text: "CREATE TABLE t\r\n(a int);"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 2, column: 9}
+      range: {start: 0, end: 24}
+      empty: false
+    - text: "\r\nCREATE TABLE t1(b int);"
+      baseline: 1
+      start: {line: 3, column: 1}
+      end: {line: 3, column: 24}
+      range: {start: 24, end: 49}
+      empty: false
+
+- description: "procedure with dollar-quoted body"
+  input: |-
+    CREATE PROCEDURE insert_data(a varchar(50))
+    LANGUAGE SQL
+    AS $$
+      INSERT INTO tbl VALUES ('test;value');
+    $$;
+    SELECT 1;
+  result:
+    - text: "CREATE PROCEDURE insert_data(a varchar(50))\nLANGUAGE SQL\nAS $$\n  INSERT INTO tbl VALUES ('test;value');\n$$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 5, column: 4}
+      range: {start: 0, end: 107}
+      empty: false
+    - text: "\nSELECT 1;"
+      baseline: 4
+      start: {line: 6, column: 1}
+      end: {line: 6, column: 10}
+      range: {start: 107, end: 117}
+      empty: false
+
+- description: "function with tagged dollar-quote"
+  input: |-
+    CREATE FUNCTION get_data()
+    RETURNS TEXT
+    AS $func$
+      SELECT 'value with $$ inside';
+    $func$;
+    SELECT 2;
+  result:
+    - text: "CREATE FUNCTION get_data()\nRETURNS TEXT\nAS $func$\n  SELECT 'value with $$ inside';\n$func$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 5, column: 8}
+      range: {start: 0, end: 90}
+      empty: false
+    - text: "\nSELECT 2;"
+      baseline: 4
+      start: {line: 6, column: 1}
+      end: {line: 6, column: 10}
+      range: {start: 90, end: 100}
+      empty: false
+
+- description: "comments only creates empty statement"
+  input: "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n\t\t\t"
+  result:
+    - text: "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n\t\t\t"
+      baseline: 0
+      start: {line: 3, column: 4}
+      end: {line: 3, column: 4}
+      range: {start: 0, end: 42}
+      empty: true
+
+- description: "statement followed by trailing comment"
+  input: "select * from t;\n\t\t\t/* sdfasdf */"
+  result:
+    - text: "select * from t;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 17}
+      range: {start: 0, end: 16}
+      empty: false
+    - text: "\n\t\t\t/* sdfasdf */"
+      baseline: 0
+      start: {line: 2, column: 17}
+      end: {line: 2, column: 17}
+      range: {start: 16, end: 33}
+      empty: true
+
+- description: "statement then empty comment statement then statement"
+  input: "select * from t;\n\t\t\t/* sdfasdf */;\n\t\t\tselect * from t;"
+  result:
+    - text: "select * from t;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 17}
+      range: {start: 0, end: 16}
+      empty: false
+    - text: "\n\t\t\t/* sdfasdf */;"
+      baseline: 0
+      start: {line: 2, column: 17}
+      end: {line: 2, column: 18}
+      range: {start: 16, end: 34}
+      empty: true
+    - text: "\n\t\t\tselect * from t;"
+      baseline: 1
+      start: {line: 3, column: 4}
+      end: {line: 3, column: 20}
+      range: {start: 34, end: 54}
+      empty: false
+
+- description: "double-quoted identifiers with special characters"
+  input: "CREATE TABLE \"tech_Book\"(id int, name varchar(255));\n\t\t\t\t\t\tINSERT INTO \"tech_Book\" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;\"ka');"
+  result:
+    - text: "CREATE TABLE \"tech_Book\"(id int, name varchar(255));"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 53}
+      range: {start: 0, end: 52}
+      empty: false
+    - text: "\n\t\t\t\t\t\tINSERT INTO \"tech_Book\" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;\"ka');"
+      baseline: 0
+      start: {line: 2, column: 7}
+      end: {line: 2, column: 83}
+      range: {start: 52, end: 135}
+      empty: false
+
+- description: "block comment and inline comment with statement"
+  input: "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE \"tech_Book\"(id int, name varchar(255));\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO \"tech_Book\" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;\"ka');"
+  result:
+    - text: "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE \"tech_Book\"(id int, name varchar(255));"
+      baseline: 0
+      start: {line: 3, column: 7}
+      end: {line: 3, column: 79}
+      range: {start: 0, end: 112}
+      empty: false
+    - text: "\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO \"tech_Book\" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;\"ka');"
+      baseline: 2
+      start: {line: 5, column: 7}
+      end: {line: 5, column: 83}
+      range: {start: 112, end: 225}
+      empty: false
+
+- description: "unterminated single quote"
+  input: "INSERT INTO t VALUES ('klajfas)"
+  result:
+    - text: "INSERT INTO t VALUES ('klajfas)"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 32}
+      range: {start: 0, end: 31}
+      empty: false
+
+- description: "unterminated double quote"
+  input: "INSERT INTO \"t VALUES ('klajfas)"
+  result:
+    - text: "INSERT INTO \"t VALUES ('klajfas)"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 33}
+      range: {start: 0, end: 32}
+      empty: false
+
+- description: "unterminated block comment"
+  input: "/*INSERT INTO \"t VALUES ('klajfas)"
+  result:
+    - text: "/*INSERT INTO \"t VALUES ('klajfas)"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 35}
+      range: {start: 0, end: 34}
+      empty: false
+
+- description: "unterminated dollar quote"
+  input: "$$INSERT INTO \"t VALUES ('klajfas)"
+  result:
+    - text: "$$INSERT INTO \"t VALUES ('klajfas)"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 35}
+      range: {start: 0, end: 34}
+      empty: false
+
+- description: "complex procedure with comments and escapes inside dollar-quote"
+  input: "CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))\n\t\t\t\t\t\tLANGUAGE SQL\n\t\t\t\t\t\tAS $$\n\t\t\t\t\t\t/*this is the comment */\n\t\t\t\t\t\tINSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lk\\\\jasdflkasdf\"asdklf\\\\');\n\t\t\t\t\t\t-- this is the comment\n\t\t\t\t\t\tINSERT INTO tbl VALUES ('fasf_bkdjlfa');\n\t\t\t\t\t\t$$;\n\t\t\t\t\t\tCREATE TABLE t(a int);"
+  result:
+    - text: "CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))\n\t\t\t\t\t\tLANGUAGE SQL\n\t\t\t\t\t\tAS $$\n\t\t\t\t\t\t/*this is the comment */\n\t\t\t\t\t\tINSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lk\\\\jasdflkasdf\"asdklf\\\\');\n\t\t\t\t\t\t-- this is the comment\n\t\t\t\t\t\tINSERT INTO tbl VALUES ('fasf_bkdjlfa');\n\t\t\t\t\t\t$$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 8, column: 10}
+      range: {start: 0, end: 303}
+      empty: false
+    - text: "\n\t\t\t\t\t\tCREATE TABLE t(a int);"
+      baseline: 7
+      start: {line: 9, column: 7}
+      end: {line: 9, column: 29}
+      range: {start: 303, end: 332}
+      empty: false
+
+- description: "procedure with tagged dollar-quote containing nested dollar signs"
+  input: "CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))\n\t\t\t\t\t\tLANGUAGE SQL\n\t\t\t\t\t\tAS $tag_name$\n\t\t\t\t\t\t/*this is the comment */\n\t\t\t\t\t\tINSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lkjasdflkasdf\"asdklf');\n\t\t\t\t\t\t-- this is the comment\n\t\t\t\t\t\tINSERT INTO tbl VALUES ('fasf_bkdjlfa');\n\t\t\t\t\t\t$tag_name$;\n\t\t\t\t\t\tCREATE TABLE t(a int);"
+  result:
+    - text: "CREATE PROCEDURE insert_data(a varchar(50), b varchar(50))\n\t\t\t\t\t\tLANGUAGE SQL\n\t\t\t\t\t\tAS $tag_name$\n\t\t\t\t\t\t/*this is the comment */\n\t\t\t\t\t\tINSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lkjasdflkasdf\"asdklf');\n\t\t\t\t\t\t-- this is the comment\n\t\t\t\t\t\tINSERT INTO tbl VALUES ('fasf_bkdjlfa');\n\t\t\t\t\t\t$tag_name$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 8, column: 18}
+      range: {start: 0, end: 315}
+      empty: false
+    - text: "\n\t\t\t\t\t\tCREATE TABLE t(a int);"
+      baseline: 7
+      start: {line: 9, column: 7}
+      end: {line: 9, column: 29}
+      range: {start: 315, end: 344}
+      empty: false
+
+- description: "multiple statements with leading whitespace and no trailing semicolon"
+  input: "    CREATE TABLE t(a int); CREATE TABLE t1(a int)"
+  result:
+    - text: "    CREATE TABLE t(a int);"
+      baseline: 0
+      start: {line: 1, column: 5}
+      end: {line: 1, column: 27}
+      range: {start: 0, end: 26}
+      empty: false
+    - text: " CREATE TABLE t1(a int)"
+      baseline: 0
+      start: {line: 1, column: 28}
+      end: {line: 1, column: 50}
+      range: {start: 26, end: 49}
+      empty: false
+
+- description: "complex INSERT with escaped strings and special characters"
+  input: "INSERT INTO \"public\".\"table\"(\"id\",\"content\")\n\t\t\tVALUES\n\t\t\t(12,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),\n\t\t\t(133,'knuandfan public table id'';create table t(a int, b int);set @text=''\\\\\\\\kdaminxkljasdfiebkla.unkonwn''+''abcdef.xyz\\\\''; local xxxyy.abcddd.mysql @text;------- '),\n\t\t\t(1444,'table t xyz abc a''a\\\\\\\\\\\\\\\\''b\"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\\\');"
+  result:
+    - text: "INSERT INTO \"public\".\"table\"(\"id\",\"content\")\n\t\t\tVALUES\n\t\t\t(12,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),\n\t\t\t(133,'knuandfan public table id'';create table t(a int, b int);set @text=''\\\\\\\\kdaminxkljasdfiebkla.unkonwn''+''abcdef.xyz\\\\''; local xxxyy.abcddd.mysql @text;------- '),\n\t\t\t(1444,'table t xyz abc a''a\\\\\\\\\\\\\\\\''b\"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\\\');"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 5, column: 93}
+      range: {start: 0, end: 400}
+      empty: false

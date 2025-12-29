@@ -1,0 +1,243 @@
+- description: "DELIMITER with stored procedure"
+  input: "\n\t\t\tDELIMITER ;;\n\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\tBEGIN\n\t\t\t\tDECLARE x INT;\n\t\t\t\tSET x = 0;\n\t\t\t\tlabel1: WHILE x < p1 DO\n\t\t\t\t\tSET x = x + 1;\n\t\t\t\tEND WHILE label1;\n\t\t\tEND;;\n\t\t\tDELIMITER ;\n\t\t\tCALL dorepeat(1000);\n\t\t\tSELECT x;\n\t\t\t"
+  result:
+    - text: "\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\tBEGIN\n\t\t\t\tDECLARE x INT;\n\t\t\t\tSET x = 0;\n\t\t\t\tlabel1: WHILE x < p1 DO\n\t\t\t\t\tSET x = x + 1;\n\t\t\t\tEND WHILE label1;\n\t\t\tEND;"
+      baseline: 2
+      start: {line: 3, column: 4}
+      end: {line: 10, column: 9}
+      range: {start: 17, end: 175}
+      empty: false
+    - text: "\t\t\tCALL dorepeat(1000);"
+      baseline: 11
+      start: {line: 12, column: 4}
+      end: {line: 12, column: 24}
+      range: {start: 191, end: 214}
+      empty: false
+    - text: "\n\t\t\tSELECT x;"
+      baseline: 11
+      start: {line: 13, column: 4}
+      end: {line: 13, column: 13}
+      range: {start: 214, end: 227}
+      empty: false
+    - text: "\n\t\t\t"
+      baseline: 12
+      start: {line: 14, column: 4}
+      end: {line: 14, column: 4}
+      range: {start: 227, end: 231}
+      empty: true
+
+- description: "escaped double quote in string"
+  input: "select * from t;select \"\\\"\" where true;"
+  result:
+    - text: "select * from t;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 17}
+      range: {start: 0, end: 16}
+      empty: false
+    - text: "select \"\\\"\" where true;"
+      baseline: 0
+      start: {line: 1, column: 17}
+      end: {line: 1, column: 40}
+      range: {start: 16, end: 39}
+      empty: false
+
+- description: "comments only creates empty statement"
+  input: "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n"
+  result:
+    - text: "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n"
+      baseline: 0
+      start: {line: 3, column: 1}
+      end: {line: 2, column: 24}
+      range: {start: 0, end: 39}
+      empty: true
+
+- description: "statement followed by trailing block comment"
+  input: "select * from t;\n\t\t\t/* sdfasdf */"
+  result:
+    - text: "select * from t;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 17}
+      range: {start: 0, end: 16}
+      empty: false
+    - text: "\n\t\t\t/* sdfasdf */"
+      baseline: 0
+      start: {line: 2, column: 17}
+      end: {line: 2, column: 17}
+      range: {start: 16, end: 33}
+      empty: true
+
+- description: "statement then empty comment statement then statement"
+  input: "select * from t;\n\t\t\t/* sdfasdf */;\n\t\t\tselect * from t;"
+  result:
+    - text: "select * from t;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 17}
+      range: {start: 0, end: 16}
+      empty: false
+    - text: "\n\t\t\t/* sdfasdf */;"
+      baseline: 0
+      start: {line: 2, column: 17}
+      end: {line: 2, column: 18}
+      range: {start: 16, end: 34}
+      empty: true
+    - text: "\n\t\t\tselect * from t;"
+      baseline: 1
+      start: {line: 3, column: 4}
+      end: {line: 3, column: 20}
+      range: {start: 34, end: 54}
+      empty: false
+
+- description: "function with BEGIN END block"
+  input: "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\nBEGIN\n\n\t\t   DECLARE income INT;\n\n\t\t   SET income = 0;\n\n\t\t   label1: WHILE income <= 3000 DO\n\t\t\t SET income = income + starting_value;\n\t\t   END WHILE label1;\n\n\t\t   RETURN income;\n\n\t\tEND ;"
+  result:
+    - text: "CREATE DEFINER=`root`@`%` FUNCTION `CalcIncome`( starting_value INT ) RETURNS int\nBEGIN\n\n\t\t   DECLARE income INT;\n\n\t\t   SET income = 0;\n\n\t\t   label1: WHILE income <= 3000 DO\n\t\t\t SET income = income + starting_value;\n\t\t   END WHILE label1;\n\n\t\t   RETURN income;\n\n\t\tEND ;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 14, column: 8}
+      range: {start: 0, end: 268}
+      empty: false
+
+- description: "multiple statements with leading whitespace and no trailing semicolon"
+  input: "    CREATE TABLE t(a int); CREATE TABLE t1(a int)"
+  result:
+    - text: "    CREATE TABLE t(a int);"
+      baseline: 0
+      start: {line: 1, column: 5}
+      end: {line: 1, column: 27}
+      range: {start: 0, end: 26}
+      empty: false
+    - text: " CREATE TABLE t1(a int)"
+      baseline: 0
+      start: {line: 1, column: 28}
+      end: {line: 1, column: 50}
+      range: {start: 26, end: 49}
+      empty: false
+
+- description: "backtick identifiers with escaped strings"
+  input: "CREATE TABLE `tech_Book`(id int, name varchar(255));\nINSERT INTO `tech_Book` VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');"
+  result:
+    - text: "CREATE TABLE `tech_Book`(id int, name varchar(255));"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 53}
+      range: {start: 0, end: 52}
+      empty: false
+    - text: "\nINSERT INTO `tech_Book` VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');"
+      baseline: 0
+      start: {line: 2, column: 1}
+      end: {line: 2, column: 79}
+      range: {start: 52, end: 131}
+      empty: false
+
+- description: "block comment, line comment, and hash comment"
+  input: "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');\n\t\t\t\t\t\t# this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');"
+  result:
+    - text: "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE tech_Book(id int, name varchar(255));"
+      baseline: 0
+      start: {line: 3, column: 7}
+      end: {line: 3, column: 77}
+      range: {start: 0, end: 110}
+      empty: false
+    - text: "\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');"
+      baseline: 2
+      start: {line: 5, column: 7}
+      end: {line: 5, column: 83}
+      range: {start: 110, end: 223}
+      empty: false
+    - text: "\n\t\t\t\t\t\t# this is the comment.\n\t\t\t\t\t\tINSERT INTO tech_Book VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\\'jdfl;\"ka');"
+      baseline: 4
+      start: {line: 7, column: 7}
+      end: {line: 7, column: 83}
+      range: {start: 223, end: 335}
+      empty: false
+
+- description: "procedure with REPEAT and hash comment"
+  input: "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;\n\t\t\t\t\t\tCALL dorepeat(1000);\n\t\t\t\t\t\tSELECT @x;\n\t\t\t\t\t\t"
+  result:
+    - text: "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;"
+      baseline: 0
+      start: {line: 2, column: 7}
+      end: {line: 7, column: 8}
+      range: {start: 0, end: 181}
+      empty: false
+    - text: "\n\t\t\t\t\t\tCALL dorepeat(1000);"
+      baseline: 6
+      start: {line: 8, column: 7}
+      end: {line: 8, column: 27}
+      range: {start: 181, end: 208}
+      empty: false
+    - text: "\n\t\t\t\t\t\tSELECT @x;"
+      baseline: 7
+      start: {line: 9, column: 7}
+      end: {line: 9, column: 17}
+      range: {start: 208, end: 225}
+      empty: false
+    - text: "\n\t\t\t\t\t\t"
+      baseline: 8
+      start: {line: 10, column: 7}
+      end: {line: 10, column: 7}
+      range: {start: 225, end: 232}
+      empty: true
+
+- description: "procedure with block comment inside"
+  input: "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\t/* This is a comment */\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;\n\t\t\t\t\t\tCALL dorepeat(1000);\n\t\t\t\t\t\tSELECT @x;\n\t\t\t\t\t\t"
+  result:
+    - text: "# test for defining stored programs\n\t\t\t\t\t\tCREATE PROCEDURE dorepeat(p1 INT)\n\t\t\t\t\t\t/* This is a comment */\n\t\t\t\t\t\tBEGIN\n\t\t\t\t\t\t\tSET @x = 0;\n\t\t\t\t\t\t\tREPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT;\n\t\t\t\t\t\tEND\n\t\t\t\t\t\t;"
+      baseline: 0
+      start: {line: 2, column: 7}
+      end: {line: 8, column: 8}
+      range: {start: 0, end: 211}
+      empty: false
+    - text: "\n\t\t\t\t\t\tCALL dorepeat(1000);"
+      baseline: 7
+      start: {line: 9, column: 7}
+      end: {line: 9, column: 27}
+      range: {start: 211, end: 238}
+      empty: false
+    - text: "\n\t\t\t\t\t\tSELECT @x;"
+      baseline: 8
+      start: {line: 10, column: 7}
+      end: {line: 10, column: 17}
+      range: {start: 238, end: 255}
+      empty: false
+    - text: "\n\t\t\t\t\t\t"
+      baseline: 9
+      start: {line: 11, column: 7}
+      end: {line: 11, column: 7}
+      range: {start: 255, end: 262}
+      empty: true
+
+- description: "CRLF line endings"
+  input: "CREATE TABLE t\r\n(a int);\r\nCREATE TABLE t1(b int);"
+  result:
+    - text: "CREATE TABLE t\r\n(a int);"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 2, column: 9}
+      range: {start: 0, end: 24}
+      empty: false
+    - text: "\r\nCREATE TABLE t1(b int);"
+      baseline: 1
+      start: {line: 3, column: 1}
+      end: {line: 3, column: 24}
+      range: {start: 24, end: 49}
+      empty: false
+
+- description: "unicode in table names"
+  input: "SELECT * FROM 表名; INSERT INTO 表 VALUES (1);"
+  result:
+    - text: "SELECT * FROM 表名;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 18}
+      range: {start: 0, end: 21}
+      empty: false
+    - text: " INSERT INTO 表 VALUES (1);"
+      baseline: 0
+      start: {line: 1, column: 19}
+      end: {line: 1, column: 44}
+      range: {start: 21, end: 49}
+      empty: false

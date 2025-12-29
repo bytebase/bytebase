@@ -100,10 +100,11 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				Start: int32(byteOffset),
 				End:   int32(byteOffset + stmtByteLength),
 			},
-			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(tokens[endPos].GetLine()),
-				Column: int32(tokens[endPos].GetColumn()),
-			}, statement),
+			End: common.ConvertANTLRTokenToExclusiveEndPosition(
+				int32(tokens[endPos].GetLine()),
+				int32(tokens[endPos].GetColumn()),
+				tokens[endPos].GetText(),
+			),
 			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 			Empty: base.IsEmpty(tokens[start:endPos+1], parser.GoogleSQLLexerSEMI_SYMBOL),
 		})

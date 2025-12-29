@@ -17,7 +17,8 @@ type Statement struct {
 
 	// Start is the inclusive start position of the SQL in the original SQL (1-based).
 	Start *storepb.Position
-	// End is the inclusive end position of the SQL in the original SQL (1-based).
+	// End is the exclusive end position of the SQL in the original SQL (1-based).
+	// It points to the position AFTER the last character of the statement.
 	End *storepb.Position
 
 	// Range is the byte offset range of the SQL in the original SQL.

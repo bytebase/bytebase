@@ -38,7 +38,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import BBSpin from "@/bbkit/BBSpin.vue";
 import { usePlanContextWithRollout } from "@/components/Plan/logic";
-import { useRolloutViewContext } from "@/components/RolloutV1/logic/context";
+import { useRolloutPreview } from "@/components/RolloutV1/logic";
 import { rolloutServiceClientConnect } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE } from "@/router/dashboard/projectV1";
 import { useCurrentProjectV1 } from "@/store";
@@ -46,6 +46,7 @@ import { pushNotification } from "@/store/modules/notification";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractPlanNameFromRolloutName,
   extractPlanUIDFromRolloutName,
   extractProjectResourceName,
 } from "@/utils";
@@ -60,9 +61,12 @@ const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const { project } = useCurrentProjectV1();
-const { events } = usePlanContextWithRollout();
-
-const { rollout, mergedStages, ready } = useRolloutViewContext();
+const { rollout, plan, events } = usePlanContextWithRollout();
+const { ready, mergedStages } = useRolloutPreview(
+  rollout,
+  plan,
+  project.value.name
+);
 
 const routeStageId = computed(() => route.params.stageId as string | undefined);
 
@@ -87,10 +91,8 @@ watch(
   () => [selectedStage.value, routeStageId.value, ready.value] as const,
   ([stage, currentRouteStageId, isReady]) => {
     if (isReady && stage && !currentRouteStageId) {
-      // Auto-selected a stage but no stageId in route, navigate to it
       const stageId = stage.name.split("/").pop();
       const planId = extractPlanUIDFromRolloutName(rollout.value.name);
-
       router.replace({
         name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
         params: {
@@ -133,7 +135,7 @@ const handleRunStage = (stage: Stage) => {
 const handleCreateStage = async (stage: Stage) => {
   try {
     const request = create(CreateRolloutRequestSchema, {
-      parent: rollout.value.plan,
+      parent: extractPlanNameFromRolloutName(rollout.value.name),
       target: stage.environment,
     });
     await rolloutServiceClientConnect.createRollout(request);

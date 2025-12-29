@@ -50,10 +50,11 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 					Start: int32(byteOffset),
 					End:   int32(byteOffset + stmtByteLength),
 				},
-				End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-					Line:   int32(buf[len(buf)-1].GetLine()),
-					Column: int32(buf[len(buf)-1].GetColumn()),
-				}, statement),
+				End: common.ConvertANTLRTokenToExclusiveEndPosition(
+					int32(buf[len(buf)-1].GetLine()),
+					int32(buf[len(buf)-1].GetColumn()),
+					buf[len(buf)-1].GetText(),
+				),
 				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
 				Empty: empty,
 			})

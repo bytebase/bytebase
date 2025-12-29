@@ -272,9 +272,9 @@
         "title": "Sincronización de directorios",
         "desc": "Sincronice usuarios y grupos desde Entra ID a Bytebase."
       },
-      "FEATURE_SIGN_IN_FREQUENCY_CONTROL": {
-        "title": "Control de frecuencia de inicio de sesión",
-        "desc": "Configure con qué frecuencia los usuarios deben volver a autenticarse."
+      "FEATURE_TOKEN_DURATION_CONTROL": {
+        "title": "Control de duración de token",
+        "desc": "Configure las duraciones del token de acceso y del token de actualización."
       },
       "FEATURE_EXTERNAL_SECRET_MANAGER": {
         "title": "Gestor de secretos externo",

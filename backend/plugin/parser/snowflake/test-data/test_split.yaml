@@ -1,0 +1,41 @@
+- description: "multiple statements on multiple lines"
+  input: "SELECT * FROM users;\n\tSELECT * FROM orders;\n\tSELECT * FROM products;"
+  result:
+    - text: "SELECT * FROM users;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 21}
+      range: {start: 0, end: 20}
+      empty: false
+    - text: "\n\tSELECT * FROM orders;"
+      baseline: 0
+      start: {line: 2, column: 2}
+      end: {line: 2, column: 23}
+      range: {start: 20, end: 43}
+      empty: false
+    - text: "\n\tSELECT * FROM products;"
+      baseline: 1
+      start: {line: 3, column: 2}
+      end: {line: 3, column: 25}
+      range: {start: 43, end: 68}
+      empty: false
+
+- description: "single statement"
+  input: "SELECT * FROM users;"
+  result:
+    - text: "SELECT * FROM users;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 21}
+      range: {start: 0, end: 20}
+      empty: false
+
+- description: "statement without semicolon"
+  input: "SELECT * FROM users"
+  result:
+    - text: "SELECT * FROM users"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 20}
+      range: {start: 0, end: 19}
+      empty: false
