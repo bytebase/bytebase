@@ -869,8 +869,10 @@ type WorkspaceProfileSetting struct {
 	DisallowSignup bool `protobuf:"varint,2,opt,name=disallow_signup,json=disallowSignup,proto3" json:"disallow_signup,omitempty"`
 	// Require 2FA for all users.
 	Require_2Fa bool `protobuf:"varint,3,opt,name=require_2fa,json=require2fa,proto3" json:"require_2fa,omitempty"`
-	// The duration for token.
-	TokenDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=token_duration,json=tokenDuration,proto3" json:"token_duration,omitempty"`
+	// The duration for refresh token. Default is 7 days.
+	RefreshTokenDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=refresh_token_duration,json=refreshTokenDuration,proto3" json:"refresh_token_duration,omitempty"`
+	// The duration for access token. Default is 1 hour.
+	AccessTokenDuration *durationpb.Duration `protobuf:"bytes,18,opt,name=access_token_duration,json=accessTokenDuration,proto3" json:"access_token_duration,omitempty"`
 	// The setting of custom announcement
 	Announcement *Announcement `protobuf:"bytes,5,opt,name=announcement,proto3" json:"announcement,omitempty"`
 	// The max duration for role expired.
@@ -954,9 +956,16 @@ func (x *WorkspaceProfileSetting) GetRequire_2Fa() bool {
 	return false
 }
 
-func (x *WorkspaceProfileSetting) GetTokenDuration() *durationpb.Duration {
+func (x *WorkspaceProfileSetting) GetRefreshTokenDuration() *durationpb.Duration {
 	if x != nil {
-		return x.TokenDuration
+		return x.RefreshTokenDuration
+	}
+	return nil
+}
+
+func (x *WorkspaceProfileSetting) GetAccessTokenDuration() *durationpb.Duration {
+	if x != nil {
+		return x.AccessTokenDuration
 	}
 	return nil
 }
@@ -2871,14 +2880,14 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x04lark\x18\x05 \x01(\v2\x1e.bytebase.v1.AppIMSetting.LarkH\x00R\x04lark\x12@\n" +
 	"\bdingtalk\x18\x06 \x01(\v2\".bytebase.v1.AppIMSetting.DingTalkH\x00R\bdingtalk\x127\n" +
 	"\x05teams\x18\a \x01(\v2\x1f.bytebase.v1.AppIMSetting.TeamsH\x00R\x05teamsB\t\n" +
-	"\apayload\"\xf7\n" +
-	"\n" +
+	"\apayload\"\xd5\v\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
 	"\vrequire_2fa\x18\x03 \x01(\bR\n" +
-	"require2fa\x12@\n" +
-	"\x0etoken_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\rtokenDuration\x12=\n" +
+	"require2fa\x12O\n" +
+	"\x16refresh_token_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x14refreshTokenDuration\x12M\n" +
+	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12=\n" +
 	"\fannouncement\x18\x05 \x01(\v2\x19.bytebase.v1.AnnouncementR\fannouncement\x12Q\n" +
 	"\x17maximum_role_expiration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\x18\n" +
 	"\adomains\x18\a \x03(\tR\adomains\x126\n" +
@@ -3096,51 +3105,52 @@ var file_v1_setting_service_proto_depIdxs = []int32{
 	20, // 10: bytebase.v1.SettingValue.ai:type_name -> bytebase.v1.AISetting
 	21, // 11: bytebase.v1.SettingValue.environment:type_name -> bytebase.v1.EnvironmentSetting
 	28, // 12: bytebase.v1.AppIMSetting.settings:type_name -> bytebase.v1.AppIMSetting.IMSetting
-	44, // 13: bytebase.v1.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
-	15, // 14: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
-	44, // 15: bytebase.v1.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
-	0,  // 16: bytebase.v1.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.v1.DatabaseChangeMode
-	44, // 17: bytebase.v1.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
-	29, // 18: bytebase.v1.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
-	2,  // 19: bytebase.v1.Announcement.level:type_name -> bytebase.v1.Announcement.AlertLevel
-	30, // 20: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
-	31, // 21: bytebase.v1.DataClassificationSetting.configs:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig
-	35, // 22: bytebase.v1.SemanticTypeSetting.types:type_name -> bytebase.v1.SemanticTypeSetting.SemanticType
-	36, // 23: bytebase.v1.Algorithm.full_mask:type_name -> bytebase.v1.Algorithm.FullMask
-	37, // 24: bytebase.v1.Algorithm.range_mask:type_name -> bytebase.v1.Algorithm.RangeMask
-	38, // 25: bytebase.v1.Algorithm.md5_mask:type_name -> bytebase.v1.Algorithm.MD5Mask
-	39, // 26: bytebase.v1.Algorithm.inner_outer_mask:type_name -> bytebase.v1.Algorithm.InnerOuterMask
-	5,  // 27: bytebase.v1.AISetting.provider:type_name -> bytebase.v1.AISetting.Provider
-	41, // 28: bytebase.v1.EnvironmentSetting.environments:type_name -> bytebase.v1.EnvironmentSetting.Environment
-	45, // 29: bytebase.v1.AppIMSetting.IMSetting.type:type_name -> bytebase.v1.WebhookType
-	22, // 30: bytebase.v1.AppIMSetting.IMSetting.slack:type_name -> bytebase.v1.AppIMSetting.Slack
-	23, // 31: bytebase.v1.AppIMSetting.IMSetting.feishu:type_name -> bytebase.v1.AppIMSetting.Feishu
-	24, // 32: bytebase.v1.AppIMSetting.IMSetting.wecom:type_name -> bytebase.v1.AppIMSetting.Wecom
-	25, // 33: bytebase.v1.AppIMSetting.IMSetting.lark:type_name -> bytebase.v1.AppIMSetting.Lark
-	26, // 34: bytebase.v1.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.v1.AppIMSetting.DingTalk
-	27, // 35: bytebase.v1.AppIMSetting.IMSetting.teams:type_name -> bytebase.v1.AppIMSetting.Teams
-	44, // 36: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.password_rotation:type_name -> google.protobuf.Duration
-	46, // 37: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
-	47, // 38: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
-	3,  // 39: bytebase.v1.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule.Source
-	32, // 40: bytebase.v1.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
-	34, // 41: bytebase.v1.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	33, // 42: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
-	19, // 43: bytebase.v1.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.v1.Algorithm
-	40, // 44: bytebase.v1.Algorithm.RangeMask.slices:type_name -> bytebase.v1.Algorithm.RangeMask.Slice
-	4,  // 45: bytebase.v1.Algorithm.InnerOuterMask.type:type_name -> bytebase.v1.Algorithm.InnerOuterMask.MaskType
-	42, // 46: bytebase.v1.EnvironmentSetting.Environment.tags:type_name -> bytebase.v1.EnvironmentSetting.Environment.TagsEntry
-	6,  // 47: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
-	8,  // 48: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
-	10, // 49: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
-	7,  // 50: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
-	11, // 51: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
-	11, // 52: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
-	50, // [50:53] is the sub-list for method output_type
-	47, // [47:50] is the sub-list for method input_type
-	47, // [47:47] is the sub-list for extension type_name
-	47, // [47:47] is the sub-list for extension extendee
-	0,  // [0:47] is the sub-list for field type_name
+	44, // 13: bytebase.v1.WorkspaceProfileSetting.refresh_token_duration:type_name -> google.protobuf.Duration
+	44, // 14: bytebase.v1.WorkspaceProfileSetting.access_token_duration:type_name -> google.protobuf.Duration
+	15, // 15: bytebase.v1.WorkspaceProfileSetting.announcement:type_name -> bytebase.v1.Announcement
+	44, // 16: bytebase.v1.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
+	0,  // 17: bytebase.v1.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.v1.DatabaseChangeMode
+	44, // 18: bytebase.v1.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
+	29, // 19: bytebase.v1.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.v1.WorkspaceProfileSetting.PasswordRestriction
+	2,  // 20: bytebase.v1.Announcement.level:type_name -> bytebase.v1.Announcement.AlertLevel
+	30, // 21: bytebase.v1.WorkspaceApprovalSetting.rules:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule
+	31, // 22: bytebase.v1.DataClassificationSetting.configs:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig
+	35, // 23: bytebase.v1.SemanticTypeSetting.types:type_name -> bytebase.v1.SemanticTypeSetting.SemanticType
+	36, // 24: bytebase.v1.Algorithm.full_mask:type_name -> bytebase.v1.Algorithm.FullMask
+	37, // 25: bytebase.v1.Algorithm.range_mask:type_name -> bytebase.v1.Algorithm.RangeMask
+	38, // 26: bytebase.v1.Algorithm.md5_mask:type_name -> bytebase.v1.Algorithm.MD5Mask
+	39, // 27: bytebase.v1.Algorithm.inner_outer_mask:type_name -> bytebase.v1.Algorithm.InnerOuterMask
+	5,  // 28: bytebase.v1.AISetting.provider:type_name -> bytebase.v1.AISetting.Provider
+	41, // 29: bytebase.v1.EnvironmentSetting.environments:type_name -> bytebase.v1.EnvironmentSetting.Environment
+	45, // 30: bytebase.v1.AppIMSetting.IMSetting.type:type_name -> bytebase.v1.WebhookType
+	22, // 31: bytebase.v1.AppIMSetting.IMSetting.slack:type_name -> bytebase.v1.AppIMSetting.Slack
+	23, // 32: bytebase.v1.AppIMSetting.IMSetting.feishu:type_name -> bytebase.v1.AppIMSetting.Feishu
+	24, // 33: bytebase.v1.AppIMSetting.IMSetting.wecom:type_name -> bytebase.v1.AppIMSetting.Wecom
+	25, // 34: bytebase.v1.AppIMSetting.IMSetting.lark:type_name -> bytebase.v1.AppIMSetting.Lark
+	26, // 35: bytebase.v1.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.v1.AppIMSetting.DingTalk
+	27, // 36: bytebase.v1.AppIMSetting.IMSetting.teams:type_name -> bytebase.v1.AppIMSetting.Teams
+	44, // 37: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction.password_rotation:type_name -> google.protobuf.Duration
+	46, // 38: bytebase.v1.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.v1.ApprovalTemplate
+	47, // 39: bytebase.v1.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	3,  // 40: bytebase.v1.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.v1.WorkspaceApprovalSetting.Rule.Source
+	32, // 41: bytebase.v1.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.Level
+	34, // 42: bytebase.v1.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	33, // 43: bytebase.v1.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.v1.DataClassificationSetting.DataClassificationConfig.DataClassification
+	19, // 44: bytebase.v1.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.v1.Algorithm
+	40, // 45: bytebase.v1.Algorithm.RangeMask.slices:type_name -> bytebase.v1.Algorithm.RangeMask.Slice
+	4,  // 46: bytebase.v1.Algorithm.InnerOuterMask.type:type_name -> bytebase.v1.Algorithm.InnerOuterMask.MaskType
+	42, // 47: bytebase.v1.EnvironmentSetting.Environment.tags:type_name -> bytebase.v1.EnvironmentSetting.Environment.TagsEntry
+	6,  // 48: bytebase.v1.SettingService.ListSettings:input_type -> bytebase.v1.ListSettingsRequest
+	8,  // 49: bytebase.v1.SettingService.GetSetting:input_type -> bytebase.v1.GetSettingRequest
+	10, // 50: bytebase.v1.SettingService.UpdateSetting:input_type -> bytebase.v1.UpdateSettingRequest
+	7,  // 51: bytebase.v1.SettingService.ListSettings:output_type -> bytebase.v1.ListSettingsResponse
+	11, // 52: bytebase.v1.SettingService.GetSetting:output_type -> bytebase.v1.Setting
+	11, // 53: bytebase.v1.SettingService.UpdateSetting:output_type -> bytebase.v1.Setting
+	51, // [51:54] is the sub-list for method output_type
+	48, // [48:51] is the sub-list for method input_type
+	48, // [48:48] is the sub-list for extension type_name
+	48, // [48:48] is the sub-list for extension extendee
+	0,  // [0:48] is the sub-list for field type_name
 }
 
 func init() { file_v1_setting_service_proto_init() }

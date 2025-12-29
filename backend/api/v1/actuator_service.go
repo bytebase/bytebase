@@ -238,7 +238,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]v1pb.PlanFeatu
 	if setting.Require_2Fa {
 		features = append(features, v1pb.PlanFeature_FEATURE_TWO_FA)
 	}
-	if setting.GetTokenDuration().GetSeconds() > 0 && float64(setting.GetTokenDuration().GetSeconds()) != auth.DefaultTokenDuration.Seconds() {
+	if setting.GetRefreshTokenDuration().GetSeconds() > 0 && float64(setting.GetRefreshTokenDuration().GetSeconds()) != auth.DefaultRefreshTokenDuration.Seconds() {
 		features = append(features, v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL)
 	}
 	if setting.GetAnnouncement().GetText() != "" {

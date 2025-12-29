@@ -500,11 +500,18 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   require2fa: boolean;
 
   /**
-   * The duration for token.
+   * The duration for refresh token. Default is 7 days.
    *
-   * @generated from field: google.protobuf.Duration token_duration = 4;
+   * @generated from field: google.protobuf.Duration refresh_token_duration = 4;
    */
-  tokenDuration?: Duration;
+  refreshTokenDuration?: Duration;
+
+  /**
+   * The duration for access token. Default is 1 hour.
+   *
+   * @generated from field: google.protobuf.Duration access_token_duration = 18;
+   */
+  accessTokenDuration?: Duration;
 
   /**
    * The setting of custom announcement

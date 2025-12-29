@@ -701,9 +701,15 @@
           "managed-by-flag": "This setting is managed via the --external-url command-line flag",
           "cannot-edit-flag": "External URL cannot be changed because it is set via --external-url command-line flag"
         },
-        "sign-in-frequency": {
-          "self": "Sign-in frequency",
-          "description": "Sign-in frequency defines how often users must reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
+        "access-token-duration": {
+          "self": "Access token duration",
+          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
+          "minutes": "Minute(s)",
+          "hours": "Hour(s)"
+        },
+        "refresh-token-duration": {
+          "self": "Refresh token duration",
+          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
           "hours": "Hour(s)",
           "days": "Day(s)"
         },

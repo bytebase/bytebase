@@ -2062,7 +2062,8 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | external_url | [string](#string) |  | The external URL is used for sso authentication callback. |
 | disallow_signup | [bool](#bool) |  | Disallow self-service signup, users can only be invited by the owner. |
 | require_2fa | [bool](#bool) |  | Require 2FA for all users. |
-| token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for token. |
+| refresh_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for refresh token. Default is 7 days. |
+| access_token_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for access token. Default is 1 hour. |
 | announcement | [Announcement](#bytebase-v1-Announcement) |  | The setting of custom announcement |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max duration for role expired. |
 | domains | [string](#string) | repeated | The workspace domain, e.g., bytebase.com. |

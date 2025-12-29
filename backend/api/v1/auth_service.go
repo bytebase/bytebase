@@ -84,14 +84,6 @@ func NewAuthService(store *store.Store, secret string, licenseService *enterpris
 	}
 }
 
-// GetRefreshTokenDuration returns the configured refresh token duration or default.
-func GetRefreshTokenDuration(_ context.Context, _ *store.Store, _ *enterprise.LicenseService) time.Duration {
-	// TODO: Add refresh_token_duration field to WorkspaceProfileSetting proto
-	// and implement workspace setting-based configuration similar to GetTokenDuration.
-	// For now, use a fixed 30-day duration.
-	return 30 * 24 * time.Hour
-}
-
 // Login is the auth login method including SSO.
 func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.LoginRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
@@ -246,13 +238,13 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 	}
 
 	// 7. Issue new tokens
-	accessTokenDuration := auth.GetTokenDuration(ctx, s.store, s.licenseService)
+	accessTokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService)
 	accessToken, err := auth.GenerateAccessToken(user.Email, s.profile.Mode, s.secret, accessTokenDuration)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate access token"))
 	}
 
-	refreshTokenDuration := GetRefreshTokenDuration(ctx, s.store, s.licenseService)
+	refreshTokenDuration := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService)
 	newRefreshToken, err := auth.GenerateOpaqueToken()
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate refresh token"))
@@ -768,7 +760,7 @@ func (s *AuthService) checkMFARequired(user *store.UserMessage, mfaSecondLogin b
 
 // generateLoginToken generates the appropriate token based on user type.
 func (s *AuthService) generateLoginToken(ctx context.Context, user *store.UserMessage) (string, error) {
-	tokenDuration := auth.GetTokenDuration(ctx, s.store, s.licenseService)
+	tokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService)
 
 	switch user.Type {
 	case storepb.PrincipalType_END_USER:
@@ -800,7 +792,7 @@ func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate refresh token"))
 		}
-		refreshTokenDuration := GetRefreshTokenDuration(ctx, s.store, s.licenseService)
+		refreshTokenDuration := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService)
 		if err := s.store.CreateWebRefreshToken(ctx, &store.WebRefreshTokenMessage{
 			TokenHash: auth.HashToken(refreshToken),
 			UserEmail: user.Email,
