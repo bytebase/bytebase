@@ -255,9 +255,6 @@ func (x *Rollout) Equal(y *Rollout) bool {
 			return false
 		}
 	}
-	if x.Creator != y.Creator {
-		return false
-	}
 	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}

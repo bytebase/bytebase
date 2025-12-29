@@ -14097,10 +14097,6 @@ components:
             $ref: '#/components/schemas/bytebase.v1.Stage'
           title: stages
           description: Stages and thus tasks of the rollout.
-        creator:
-          type: string
-          title: creator
-          description: 'Format: users/hello@world.com'
         createTime:
           title: create_time
           $ref: '#/components/schemas/google.protobuf.Timestamp'
