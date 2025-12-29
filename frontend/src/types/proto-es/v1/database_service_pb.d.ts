@@ -3080,7 +3080,7 @@ export declare type Changelog = Message<"bytebase.v1.Changelog"> & {
   prevSchemaSize: bigint;
 
   /**
-   * Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
    * @generated from field: string task_run = 11;
    */

@@ -7636,7 +7636,7 @@ components:
         taskRun:
           type: string
           title: task_run
-          description: 'Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
+          description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
         version:
           type: string
           title: version
@@ -10168,7 +10168,7 @@ components:
         parent:
           type: string
           title: parent
-          description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
+          description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
       title: GetTaskRunSessionRequest
       additionalProperties: false
     bytebase.v1.GetUserRequest:
@@ -13147,7 +13147,7 @@ components:
         name:
           type: string
           title: name
-          description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
+          description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
       title: PreviewTaskRunRollbackRequest
       additionalProperties: false
     bytebase.v1.PreviewTaskRunRollbackResponse:
@@ -14008,8 +14008,7 @@ components:
           description: |-
             The task run associated with the revision.
              Can be empty.
-             Format:
-             projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+             Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
         type:
           title: type
           description: The type of the revision.

@@ -263,8 +263,7 @@ export declare type Revision = Message<"bytebase.v1.Revision"> & {
   /**
    * The task run associated with the revision.
    * Can be empty.
-   * Format:
-   * projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
    * @generated from field: string task_run = 13;
    */
