@@ -47,6 +47,8 @@ const (
 
 	// AccessTokenCookieName is the cookie name of access token.
 	AccessTokenCookieName = "access-token"
+	// RefreshTokenCookieName is the cookie name of refresh token.
+	RefreshTokenCookieName = "refresh-token"
 )
 
 // APIAuthInterceptor is the auth interceptor for gRPC server.

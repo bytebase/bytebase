@@ -93,8 +93,6 @@ func GetRefreshTokenDuration(ctx context.Context, store *store.Store, licenseSer
 	return refreshTokenDuration
 }
 
-const RefreshTokenCookieName = "refresh-token"
-
 // GetRefreshTokenCookie creates a cookie for the refresh token.
 // token="" => unset (clears cookie)
 // Path is "/" to allow logout to delete the token from database.
@@ -125,8 +123,8 @@ func GetRefreshTokenFromCookie(header http.Header) string {
 	for _, cookie := range header.Values("Cookie") {
 		for _, part := range strings.Split(cookie, ";") {
 			part = strings.TrimSpace(part)
-			if strings.HasPrefix(part, RefreshTokenCookieName+"=") {
-				return strings.TrimPrefix(part, RefreshTokenCookieName+"=")
+			if rt, ok := strings.CutPrefix(part, RefreshTokenCookieName+"="); ok {
+				return rt
 			}
 		}
 	}
