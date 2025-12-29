@@ -1877,7 +1877,7 @@ func (x *TaskRunLogEntry) GetComputeDiff() *TaskRunLogEntry_ComputeDiff {
 
 type GetTaskRunSessionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	Parent        string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2000,7 +2000,7 @@ func (*TaskRunSession_Postgres_) isTaskRunSession_Session() {}
 
 type PreviewTaskRunRollbackRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

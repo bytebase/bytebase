@@ -1744,7 +1744,7 @@ export declare const TaskRunLogEntry_TypeSchema: GenEnum<TaskRunLogEntry_Type>;
  */
 export declare type GetTaskRunSessionRequest = Message<"bytebase.v1.GetTaskRunSessionRequest"> & {
   /**
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
    * @generated from field: string parent = 1;
    */
@@ -1940,7 +1940,7 @@ export declare const TaskRunSession_Postgres_SessionSchema: GenMessage<TaskRunSe
  */
 export declare type PreviewTaskRunRollbackRequest = Message<"bytebase.v1.PreviewTaskRunRollbackRequest"> & {
   /**
-   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+   * Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    *
    * @generated from field: string name = 1;
    */

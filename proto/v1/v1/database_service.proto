@@ -1443,7 +1443,7 @@ message Changelog {
   string prev_schema = 9;
   int64 prev_schema_size = 10;
 
-  // Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string task_run = 11;
 
   // Could be empty

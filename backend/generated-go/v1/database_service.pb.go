@@ -5370,7 +5370,7 @@ type Changelog struct {
 	SchemaSize     int64  `protobuf:"varint,8,opt,name=schema_size,json=schemaSize,proto3" json:"schema_size,omitempty"`
 	PrevSchema     string `protobuf:"bytes,9,opt,name=prev_schema,json=prevSchema,proto3" json:"prev_schema,omitempty"`
 	PrevSchemaSize int64  `protobuf:"varint,10,opt,name=prev_schema_size,json=prevSchemaSize,proto3" json:"prev_schema_size,omitempty"`
-	// Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	TaskRun string `protobuf:"bytes,11,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
 	// Could be empty
 	Version string `protobuf:"bytes,12,opt,name=version,proto3" json:"version,omitempty"`

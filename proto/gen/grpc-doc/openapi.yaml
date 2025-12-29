@@ -8713,7 +8713,7 @@ components:
                     type: string
                 taskRun:
                     type: string
-                    description: 'Format: projects/{projects}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
+                    description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
                 version:
                     type: string
                     description: Could be empty
@@ -12095,7 +12095,7 @@ components:
             properties:
                 name:
                     type: string
-                    description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
+                    description: 'Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}'
         PreviewTaskRunRollbackResponse:
             type: object
             properties:
@@ -12832,8 +12832,7 @@ components:
                     description: |-
                         The task run associated with the revision.
                          Can be empty.
-                         Format:
-                         projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+                         Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
