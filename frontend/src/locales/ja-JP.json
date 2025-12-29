@@ -701,11 +701,17 @@
           "managed-by-flag": "この設定は --external-url コマンドラインフラグによって管理されています",
           "cannot-edit-flag": "外部URLは --external-url コマンドラインフラグで設定されているため変更できません"
         },
-        "sign-in-frequency": {
-          "self": "ログイン頻度",
-          "description": "サインイン頻度は、ユーザーが再認証する必要がある間隔を定義します。設定の更新は、変更を反映させるためにユーザーが再度サインインする必要があります。",
-          "hours": "時間",
-          "days": "日"
+        "access-token-duration": {
+          "self": "Access token duration",
+          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
+          "minutes": "Minute(s)",
+          "hours": "Hour(s)"
+        },
+        "refresh-token-duration": {
+          "self": "Refresh token duration",
+          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
+          "hours": "Hour(s)",
+          "days": "Day(s)"
         },
         "inactive-session-timeout": {
           "self": "非アクティブセッションタイムアウト",

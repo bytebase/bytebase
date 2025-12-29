@@ -1,1 +1,2 @@
-export const defaultTokenDurationInHours = 7 * 24;
+export const defaultAccessTokenDurationInHours = 1;
+export const defaultRefreshTokenDurationInHours = 7 * 24;

@@ -701,11 +701,17 @@
           "managed-by-flag": "Esta configuración está gestionada a través del parámetro de línea de comandos --external-url",
           "cannot-edit-flag": "La URL externa no se puede cambiar porque está configurada mediante el parámetro de línea de comandos --external-url"
         },
-        "sign-in-frequency": {
-          "self": "Frecuencia de inicio de sesión",
-          "description": "La frecuencia de inicio de sesión define con qué frecuencia los usuarios deben volver a autenticarse. Las actualizaciones de configuración requieren que los usuarios inicien sesión nuevamente para que los cambios surtan efecto.",
-          "hours": "Horas",
-          "days": "Días"
+        "access-token-duration": {
+          "self": "Access token duration",
+          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
+          "minutes": "Minute(s)",
+          "hours": "Hour(s)"
+        },
+        "refresh-token-duration": {
+          "self": "Refresh token duration",
+          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
+          "hours": "Hour(s)",
+          "days": "Day(s)"
         },
         "inactive-session-timeout": {
           "self": "Tiempo de espera de sesión inactiva",

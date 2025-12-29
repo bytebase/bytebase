@@ -334,7 +334,10 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if x.Require_2Fa != y.Require_2Fa {
 		return false
 	}
-	if p, q := x.TokenDuration, y.TokenDuration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+	if p, q := x.RefreshTokenDuration, y.RefreshTokenDuration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if p, q := x.AccessTokenDuration, y.AccessTokenDuration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
 	if !x.Announcement.Equal(y.Announcement) {

@@ -6179,10 +6179,17 @@ resource.table_name.matches(&#34;sensitive_.*&#34;) &amp;&amp; resource.db_engin
                 </tr>
               
                 <tr>
-                  <td>token_duration</td>
+                  <td>refresh_token_duration</td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
-                  <td><p>The duration for token. </p></td>
+                  <td><p>The duration for refresh token. Default is 7 days. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>access_token_duration</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>The duration for access token. Default is 1 hour. </p></td>
                 </tr>
               
                 <tr>
