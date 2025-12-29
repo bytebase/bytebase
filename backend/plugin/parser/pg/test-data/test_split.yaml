@@ -118,3 +118,85 @@
       end: {line: 1, column: 26}
       range: {start: 15, end: 25}
       empty: false
+
+# =============================================================================
+# Windows Line Endings (CRLF)
+# =============================================================================
+- description: "CRLF line endings"
+  input: "SELECT 1;\r\nSELECT 2;"
+  result:
+    - text: "SELECT 1;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 10}
+      range: {start: 0, end: 9}
+      empty: false
+    - text: "\r\nSELECT 2;"
+      baseline: 0
+      start: {line: 2, column: 1}
+      end: {line: 2, column: 10}
+      range: {start: 9, end: 20}
+      empty: false
+
+- description: "multi-line with CRLF"
+  input: "CREATE TABLE t\r\n(a int);\r\nCREATE TABLE t1(b int);"
+  result:
+    - text: "CREATE TABLE t\r\n(a int);"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 2, column: 9}
+      range: {start: 0, end: 24}
+      empty: false
+    - text: "\r\nCREATE TABLE t1(b int);"
+      baseline: 1
+      start: {line: 3, column: 1}
+      end: {line: 3, column: 24}
+      range: {start: 24, end: 49}
+      empty: false
+
+# =============================================================================
+# PostgreSQL: Stored Procedures
+# =============================================================================
+- description: "procedure with dollar-quoted body"
+  input: |-
+    CREATE PROCEDURE insert_data(a varchar(50))
+    LANGUAGE SQL
+    AS $$
+      INSERT INTO tbl VALUES ('test;value');
+    $$;
+    SELECT 1;
+  result:
+    - text: "CREATE PROCEDURE insert_data(a varchar(50))\nLANGUAGE SQL\nAS $$\n  INSERT INTO tbl VALUES ('test;value');\n$$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 5, column: 4}
+      range: {start: 0, end: 107}
+      empty: false
+    - text: "\nSELECT 1;"
+      baseline: 4
+      start: {line: 6, column: 1}
+      end: {line: 6, column: 10}
+      range: {start: 107, end: 117}
+      empty: false
+
+- description: "function with tagged dollar-quote"
+  input: |-
+    CREATE FUNCTION get_data()
+    RETURNS TEXT
+    AS $func$
+      SELECT 'value with $$ inside';
+    $func$;
+    SELECT 2;
+  result:
+    - text: "CREATE FUNCTION get_data()\nRETURNS TEXT\nAS $func$\n  SELECT 'value with $$ inside';\n$func$;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 5, column: 8}
+      range: {start: 0, end: 90}
+      empty: false
+    - text: "\nSELECT 2;"
+      baseline: 4
+      start: {line: 6, column: 1}
+      end: {line: 6, column: 10}
+      range: {start: 90, end: 100}
+      empty: false
