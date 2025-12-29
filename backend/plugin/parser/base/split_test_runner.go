@@ -1,6 +1,7 @@
 package base
 
 import (
+	"flag"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -9,6 +10,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
+
+// record is a flag to update expected results in YAML files.
+// Usage: go test -run TestXxxSplitSQL -args -record
+var record = flag.Bool("record", false, "update expected results in YAML test files")
 
 // SplitTestCase represents a single test case in YAML.
 type SplitTestCase struct {
@@ -104,20 +109,90 @@ func assertStatementsEqual(t *testing.T, expected []StatementResult, actual []St
 // RunSplitTests loads YAML test cases and runs them against a SplitSQL function.
 // For engines with dual implementations (lexer and parser), it enforces that
 // both produce identical results when both succeed.
+//
+// When run with -record flag, it updates the YAML file with actual results:
+//
+//	go test -run TestXxxSplitSQL -args -record
 func RunSplitTests(t *testing.T, testDataPath string, opts SplitTestOptions) {
 	t.Helper()
 
 	require.NotNil(t, opts.SplitFunc, "SplitFunc is required")
 
+	// Get the full path to the test file
+	_, callerFile, _, ok := runtime.Caller(1)
+	require.True(t, ok, "failed to get caller info")
+	callerDir := filepath.Dir(callerFile)
+	fullPath := filepath.Join(callerDir, testDataPath)
+
 	// Caller depth 2: skip loadTestCases (1) and RunSplitTests (2) to get the actual test function
 	testCases := loadTestCases(t, testDataPath, 2)
 	require.NotEmpty(t, testCases, "no test cases found in %s", testDataPath)
+
+	// Record mode: update expected results in YAML file
+	if *record {
+		recordTestResults(t, fullPath, testCases, opts)
+		return
+	}
 
 	for _, tc := range testCases {
 		t.Run(tc.Description, func(t *testing.T) {
 			runSingleTest(t, tc, opts)
 		})
 	}
+}
+
+// recordTestResults runs all test cases and updates the YAML file with actual results.
+func recordTestResults(t *testing.T, fullPath string, testCases []SplitTestCase, opts SplitTestOptions) {
+	t.Helper()
+
+	updated := make([]SplitTestCase, len(testCases))
+	for i, tc := range testCases {
+		updated[i] = SplitTestCase{
+			Description: tc.Description,
+			Input:       tc.Input,
+		}
+
+		result, err := opts.SplitFunc(tc.Input)
+		if err != nil {
+			updated[i].Error = err.Error()
+			continue
+		}
+
+		updated[i].Result = make([]StatementResult, len(result))
+		for j, stmt := range result {
+			updated[i].Result[j] = StatementResult{
+				Text:     stmt.Text,
+				BaseLine: stmt.BaseLine,
+				Empty:    stmt.Empty,
+			}
+			if stmt.Start != nil {
+				updated[i].Result[j].Start = PositionResult{
+					Line:   stmt.Start.Line,
+					Column: stmt.Start.Column,
+				}
+			}
+			if stmt.End != nil {
+				updated[i].Result[j].End = PositionResult{
+					Line:   stmt.End.Line,
+					Column: stmt.End.Column,
+				}
+			}
+			if stmt.Range != nil {
+				updated[i].Result[j].Range = RangeResult{
+					Start: stmt.Range.Start,
+					End:   stmt.Range.End,
+				}
+			}
+		}
+	}
+
+	data, err := yaml.Marshal(updated)
+	require.NoError(t, err, "failed to marshal updated test cases")
+
+	err = os.WriteFile(fullPath, data, 0644)
+	require.NoError(t, err, "failed to write updated test file: %s", fullPath)
+
+	t.Logf("Updated %s with %d test cases", fullPath, len(updated))
 }
 
 func runSingleTest(t *testing.T, tc SplitTestCase, opts SplitTestOptions) {
