@@ -34,6 +34,7 @@ import { getProjectName } from "@/store/modules/v1/common";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import HighlightLabelText from "./HighlightLabelText.vue";
+import { mapSorterStatus } from "./utils";
 
 type ProjectDataTableColumn = DataTableColumn<Project> & {
   hide?: boolean;
@@ -88,7 +89,7 @@ const updateSelectedProjects = (checkedRowKeys: (string | number)[]) => {
 };
 
 const columnList = computed((): ProjectDataTableColumn[] => {
-  return (
+  const columns: ProjectDataTableColumn[] = (
     [
       {
         key: "selection",
@@ -156,26 +157,8 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         ),
       },
     ] as ProjectDataTableColumn[]
-  )
-    .filter((column) => !column.hide)
-    .map((column) => {
-      if (props.sorters === undefined || column.type) {
-        return column;
-      }
-      const sorterIndex = props.sorters.findIndex(
-        (s) => s.columnKey === column.key.toString()
-      );
-      if (sorterIndex < 0) {
-        return column;
-      }
-      return {
-        ...column,
-        sorter: {
-          multiple: sorterIndex,
-        },
-        sortOrder: props.sorters[sorterIndex].order,
-      };
-    });
+  ).filter((column) => !column.hide);
+  return mapSorterStatus(columns, props.sorters);
 });
 
 const rowProps = (project: Project) => {

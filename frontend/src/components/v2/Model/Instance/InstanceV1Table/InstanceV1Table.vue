@@ -41,6 +41,7 @@ import { NULL_ENVIRONMENT_NAME } from "@/types";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { hostPortOfDataSource, hostPortOfInstanceV1, urlfy } from "@/utils";
 import EnvironmentV1Name from "../../EnvironmentV1Name.vue";
+import { mapSorterStatus } from "../../utils";
 
 type InstanceDataTableColumn = DataTableColumn<Instance> & {
   hide?: boolean;
@@ -209,26 +210,16 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     render: (instance) => (instance.activation ? "Y" : ""),
   };
 
-  return [SELECTION, NAME, ENVIRONMENT, ADDRESS, LABELS, EXTERNAL_LINK, LICENSE]
-    .filter((column) => !column.hide)
-    .map((column) => {
-      if (props.sorters === undefined || column.type) {
-        return column;
-      }
-      const sorterIndex = props.sorters.findIndex(
-        (s) => s.columnKey === column.key.toString()
-      );
-      if (sorterIndex < 0) {
-        return column;
-      }
-      return {
-        ...column,
-        sorter: {
-          multiple: sorterIndex,
-        },
-        sortOrder: props.sorters[sorterIndex].order,
-      };
-    });
+  const columns: InstanceDataTableColumn[] = [
+    SELECTION,
+    NAME,
+    ENVIRONMENT,
+    ADDRESS,
+    LABELS,
+    EXTERNAL_LINK,
+    LICENSE,
+  ].filter((column) => !column.hide);
+  return mapSorterStatus(columns, props.sorters);
 });
 
 const handleDataSourceToggle = (e: MouseEvent, instance: Instance) => {

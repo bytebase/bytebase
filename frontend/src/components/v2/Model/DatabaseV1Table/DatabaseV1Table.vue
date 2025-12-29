@@ -34,6 +34,7 @@ import {
 } from "@/components/v2/Model/cells";
 import type { ComposedDatabase } from "@/types";
 import { hostPortOfInstanceV1 } from "@/utils";
+import { mapSorterStatus } from "../utils";
 
 type DatabaseDataTableColumn = DataTableColumn<ComposedDatabase> & {
   hide?: boolean;
@@ -195,31 +196,13 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     ["PROJECT_SHORT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE, ADDRESS]],
   ]);
 
-  return (
+  const columns: DatabaseDataTableColumn[] = (
     [
       SELECTION,
       ...(columnsMap.get(props.mode) || []),
     ] as DatabaseDataTableColumn[]
-  )
-    .filter((column) => !column.hide)
-    .map((column) => {
-      if (props.sorters === undefined || column.type) {
-        return column;
-      }
-      const sorterIndex = props.sorters.findIndex(
-        (s) => s.columnKey === column.key.toString()
-      );
-      if (sorterIndex < 0) {
-        return column;
-      }
-      return {
-        ...column,
-        sorter: {
-          multiple: sorterIndex,
-        },
-        sortOrder: props.sorters[sorterIndex].order,
-      };
-    });
+  ).filter((column) => !column.hide);
+  return mapSorterStatus(columns, props.sorters);
 });
 
 const rowProps = (database: ComposedDatabase) => {
