@@ -32,6 +32,14 @@ export const extractPlanUIDFromRolloutName = (name: string) => {
   return matches?.[1] ?? "";
 };
 
+export const extractPlanNameFromRolloutName = (name: string) => {
+  // Rollout name format: projects/{project}/plans/{plan}/rollout
+  // Returns: projects/{project}/plans/{plan}
+  const pattern = /^(.+\/plans\/[^/]+)\/rollout(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
+
 export const extractStageUID = (name: string) => {
   const pattern = /(?:^|\/)stages\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);

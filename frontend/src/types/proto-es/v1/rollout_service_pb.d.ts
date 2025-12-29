@@ -363,14 +363,6 @@ export declare type Rollout = Message<"bytebase.v1.Rollout"> & {
   name: string;
 
   /**
-   * The plan that this rollout is based on.
-   * Format: projects/{project}/plans/{plan}
-   *
-   * @generated from field: string plan = 2;
-   */
-  plan: string;
-
-  /**
    * The title of the rollout, inherited from the associated plan.
    * This field is output only and cannot be directly set.
    *

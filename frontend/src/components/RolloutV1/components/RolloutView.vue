@@ -46,6 +46,7 @@ import { pushNotification } from "@/store/modules/notification";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import {
+  extractPlanNameFromRolloutName,
   extractPlanUIDFromRolloutName,
   extractProjectResourceName,
 } from "@/utils";
@@ -133,7 +134,7 @@ const handleRunStage = (stage: Stage) => {
 const handleCreateStage = async (stage: Stage) => {
   try {
     const request = create(CreateRolloutRequestSchema, {
-      parent: rollout.value.plan,
+      parent: extractPlanNameFromRolloutName(rollout.value.name),
       target: stage.environment,
     });
     await rolloutServiceClientConnect.createRollout(request);

@@ -63,7 +63,6 @@ export async function generateRolloutPreview(
   // Step 6: Build and return the rollout
   return create(RolloutSchema, {
     name: "", // Preview rollout has no name
-    plan: plan.name,
     title: plan.title,
     stages,
   });

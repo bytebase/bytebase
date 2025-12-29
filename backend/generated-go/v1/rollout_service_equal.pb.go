@@ -241,9 +241,6 @@ func (x *Rollout) Equal(y *Rollout) bool {
 	if x.Name != y.Name {
 		return false
 	}
-	if x.Plan != y.Plan {
-		return false
-	}
 	if x.Title != y.Title {
 		return false
 	}

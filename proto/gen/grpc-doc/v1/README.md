@@ -9582,7 +9582,6 @@ For example: update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type in 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The resource name of the rollout. Format: projects/{project}/plans/{plan}/rollout |
-| plan | [string](#string) |  | The plan that this rollout is based on. Format: projects/{project}/plans/{plan} |
 | title | [string](#string) |  | The title of the rollout, inherited from the associated plan. This field is output only and cannot be directly set. |
 | stages | [Stage](#bytebase-v1-Stage) | repeated | Stages and thus tasks of the rollout. |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |

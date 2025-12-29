@@ -16,7 +16,7 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { GetRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import { getRolloutFromPlan } from "@/utils";
+import { getRolloutFromPlan, extractPlanNameFromRolloutName } from "@/utils";
 import { emptyPlan } from "@/types/v1/issue/plan";
 import { createPlanSkeleton } from "./create";
 
@@ -94,12 +94,16 @@ export function useInitializePlan(
         await rolloutServiceClientConnect.getRollout(rolloutRequest);
       rolloutResult = newRollout;
 
-      if (!rolloutResult.plan) {
-        throw new Error(`Rollout ${planUid} does not have an associated plan`);
+      // Extract plan name from rollout name
+      const planName = extractPlanNameFromRolloutName(rolloutResult.name);
+      if (!planName) {
+        throw new Error(
+          `Rollout ${planUid} does not have a valid plan reference in its name`
+        );
       }
 
-      // Fetch the plan using the rollout's plan reference
-      planResult = await planStore.fetchPlanByName(rolloutResult.plan);
+      // Fetch the plan using the extracted plan name
+      planResult = await planStore.fetchPlanByName(planName);
 
       // Fetch the associated issue if it exists via the plan
       if (planResult.issue) {

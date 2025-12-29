@@ -14079,12 +14079,6 @@ components:
           description: |-
             The resource name of the rollout.
              Format: projects/{project}/plans/{plan}/rollout
-        plan:
-          type: string
-          title: plan
-          description: |-
-            The plan that this rollout is based on.
-             Format: projects/{project}/plans/{plan}
         title:
           type: string
           title: title
