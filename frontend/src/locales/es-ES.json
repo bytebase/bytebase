@@ -984,18 +984,6 @@
           "title": "Proyecto",
           "description": "Filtrar por proyecto"
         },
-        "instance": {
-          "title": "Instancia",
-          "description": "Filtrar por instancia"
-        },
-        "environment": {
-          "title": "Ambiente",
-          "description": "Filtrar por entorno"
-        },
-        "database": {
-          "title": "Base de datos",
-          "description": "Filtrar por base de datos"
-        },
         "creator": {
           "title": "Creador",
           "description": "Búsqueda por creador"

@@ -984,18 +984,6 @@
           "title": "Dự án",
           "description": "Lọc theo dự án"
         },
-        "instance": {
-          "title": "Phiên bản",
-          "description": "Lọc theo phiên bản"
-        },
-        "environment": {
-          "title": "Môi trường",
-          "description": "Lọc theo môi trường"
-        },
-        "database": {
-          "title": "Cơ sở dữ liệu",
-          "description": "Lọc theo cơ sở dữ liệu"
-        },
         "creator": {
           "title": "Người tạo",
           "description": "Tìm kiếm theo người sáng tạo"

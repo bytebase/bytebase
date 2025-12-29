@@ -984,18 +984,6 @@
           "title": "プロジェクト",
           "description": "プロジェクトでフィルターする"
         },
-        "instance": {
-          "title": "例",
-          "description": "インスタンスによるフィルター"
-        },
-        "environment": {
-          "title": "環境",
-          "description": "環境に基づいてフィルタリングする"
-        },
-        "database": {
-          "title": "データベース",
-          "description": "データベースに基づいてフィルタリングする"
-        },
         "creator": {
           "title": "作成者",
           "description": "作成者で検索"
