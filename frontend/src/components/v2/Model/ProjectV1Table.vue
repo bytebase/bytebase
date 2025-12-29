@@ -13,12 +13,17 @@
     :row-props="rowProps"
     :paginate-single-page="false"
     @update:checked-row-keys="updateSelectedProjects"
+    @update:sorter="$emit('update:sorters', $event)"
   />
 </template>
 
 <script lang="tsx" setup>
 import { CheckIcon } from "lucide-vue-next";
-import { type DataTableColumn, NDataTable } from "naive-ui";
+import {
+  type DataTableColumn,
+  type DataTableSortState,
+  NDataTable,
+} from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -49,6 +54,7 @@ const props = withDefaults(
     showSelection?: boolean;
     // Whether to show labels column (hidden in dropdowns for cleaner UI)
     showLabels?: boolean;
+    sorters?: DataTableSortState[];
   }>(),
   {
     bordered: true,
@@ -63,6 +69,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "row-click", project: Project): void;
   (event: "update:selected-project-names", projectNames: string[]): void;
+  (event: "update:sorters", sorters: DataTableSortState[]): void;
 }>();
 
 const { t } = useI18n();
@@ -149,7 +156,26 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         ),
       },
     ] as ProjectDataTableColumn[]
-  ).filter((column) => !column.hide);
+  )
+    .filter((column) => !column.hide)
+    .map((column) => {
+      if (props.sorters === undefined || column.type) {
+        return column;
+      }
+      const sorterIndex = props.sorters.findIndex(
+        (s) => s.columnKey === column.key.toString()
+      );
+      if (sorterIndex < 0) {
+        return column;
+      }
+      return {
+        ...column,
+        sorter: {
+          multiple: sorterIndex,
+        },
+        sortOrder: props.sorters[sorterIndex].order,
+      };
+    });
 });
 
 const rowProps = (project: Project) => {

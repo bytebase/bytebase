@@ -99,6 +99,13 @@ func (s *ProjectService) ListProjects(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	find.FilterQ = filterQ
+
+	orderByKeys, err := store.GetProjectOrders(req.Msg.OrderBy)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	find.OrderByKeys = orderByKeys
+
 	projects, err := s.store.ListProjects(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -148,6 +155,12 @@ func (s *ProjectService) SearchProjects(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	find.FilterQ = filterQ
+
+	orderByKeys, err := store.GetProjectOrders(req.Msg.OrderBy)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	find.OrderByKeys = orderByKeys
 
 	projects, err := s.store.ListProjects(ctx, find)
 	if err != nil {

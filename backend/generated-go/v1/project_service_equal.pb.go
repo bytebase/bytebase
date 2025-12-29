@@ -76,6 +76,9 @@ func (x *ListProjectsRequest) Equal(y *ListProjectsRequest) bool {
 	if x.Filter != y.Filter {
 		return false
 	}
+	if x.OrderBy != y.OrderBy {
+		return false
+	}
 	return true
 }
 
@@ -117,6 +120,9 @@ func (x *SearchProjectsRequest) Equal(y *SearchProjectsRequest) bool {
 		return false
 	}
 	if x.PageToken != y.PageToken {
+		return false
+	}
+	if x.OrderBy != y.OrderBy {
 		return false
 	}
 	return true

@@ -448,8 +448,9 @@ type ListInstancesRequest struct {
 	// host == "127.0.0.1" && port == "54321"
 	Filter string `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The order by of instances.
-	// Support title, environment
+	// Support title, environment. The default sorting order is ascending.
 	// For example:
+	// - order_by = "title"
 	// - order_by = "title desc"
 	// - order_by = "title desc, environment asc"
 	OrderBy       string `protobuf:"bytes,5,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`

@@ -123,7 +123,7 @@ type SearchAuditLogsRequest struct {
 	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The order by of the log.
-	// Only support order by create_time.
+	// Only support order by create_time. The default sorting order is ascending.
 	// For example:
 	//   - order_by = "create_time asc"
 	//   - order_by = "create_time desc"
@@ -269,7 +269,7 @@ type ExportAuditLogsRequest struct {
 	// Check the filter field in the SearchAuditLogsRequest message.
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The order by of the log.
-	// Only support order by create_time.
+	// Only support order by create_time. The default sorting order is ascending.
 	// For example:
 	//   - order_by = "create_time asc"
 	//   - order_by = "create_time desc"

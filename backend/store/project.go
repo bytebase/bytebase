@@ -41,6 +41,7 @@ type FindProjectMessage struct {
 	Limit       *int
 	Offset      *int
 	FilterQ     *qb.Query
+	OrderByKeys []*OrderByKey
 }
 
 // UpdateProjectMessage is the message for updating a project.
@@ -108,7 +109,16 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 	if !find.ShowDeleted {
 		q.And("deleted = ?", false)
 	}
-	q.Space("ORDER BY project.resource_id")
+
+	if len(find.OrderByKeys) > 0 {
+		orderBy := []string{}
+		for _, v := range find.OrderByKeys {
+			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
+		}
+		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
+	} else {
+		q.Space("ORDER BY project.resource_id")
+	}
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -675,4 +685,25 @@ func GetListProjectFilter(filter string) (*qb.Query, error) {
 		return nil, err
 	}
 	return qb.Q().Space("(?)", q), nil
+}
+
+func GetProjectOrders(orderBy string) ([]*OrderByKey, error) {
+	keys, err := parseOrderBy(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(keys) == 0 {
+		return nil, nil
+	}
+	if len(keys) > 1 || keys[0].Key != "title" {
+		return nil, errors.Errorf(`only support order by "title"`)
+	}
+
+	return []*OrderByKey{
+		{
+			Key:       "name",
+			SortOrder: keys[0].SortOrder,
+		},
+	}, nil
 }
