@@ -1038,6 +1038,16 @@ paths:
                      host == "127.0.0.1" && port == "54321"
                   schema:
                     type: string
+                - name: orderBy
+                  in: query
+                  description: |-
+                    The order by of instances.
+                     Support title, environment
+                     For example:
+                     - order_by = "title desc"
+                     - order_by = "title desc, environment asc"
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK

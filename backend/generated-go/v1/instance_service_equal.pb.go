@@ -40,6 +40,9 @@ func (x *ListInstancesRequest) Equal(y *ListInstancesRequest) bool {
 	if x.Filter != y.Filter {
 		return false
 	}
+	if x.OrderBy != y.OrderBy {
+		return false
+	}
 	return true
 }
 

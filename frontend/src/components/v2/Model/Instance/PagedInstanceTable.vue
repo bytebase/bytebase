@@ -9,12 +9,15 @@
         v-bind="$attrs"
         :loading="loading"
         :instance-list="list"
+        :sorters="sorters"
+        @update:sorters="onSorterUpdate"
       />
     </template>
   </PagedTable>
 </template>
 
 <script lang="tsx" setup>
+import { type DataTableSortState } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import type { ComponentExposed } from "vue-component-type-helpers";
 import PagedTable from "@/components/v2/Model/PagedTable.vue";
@@ -28,8 +31,42 @@ const props = defineProps<{
 }>();
 
 const instanceStore = useInstanceV1Store();
-
 const instancePagedTable = ref<ComponentExposed<typeof PagedTable<Instance>>>();
+
+const sorters = ref<DataTableSortState[]>([
+  {
+    columnKey: "title",
+    order: false,
+    sorter: true,
+  },
+  {
+    columnKey: "environment",
+    order: false,
+    sorter: true,
+  },
+]);
+
+const onSorterUpdate = (sortStates: DataTableSortState[]) => {
+  for (const sortState of sortStates) {
+    const sorterIndex = sorters.value.findIndex(
+      (s) => s.columnKey === sortState.columnKey
+    );
+    if (sorterIndex >= 0) {
+      sorters.value[sorterIndex] = sortState;
+    }
+  }
+};
+
+const orderBy = computed(() => {
+  return sorters.value
+    .filter((sorter) => sorter.order)
+    .map((sorter) => {
+      const key = sorter.columnKey.toString();
+      const order = sorter.order == "ascend" ? "asc" : "desc";
+      return `${key} ${order}`;
+    })
+    .join(", ");
+});
 
 const fetchInstances = async ({
   pageToken,
@@ -42,6 +79,7 @@ const fetchInstances = async ({
     pageToken,
     pageSize,
     filter: props.filter,
+    orderBy: orderBy.value,
   });
   return {
     nextPageToken: nextPageToken ?? "",
@@ -50,7 +88,7 @@ const fetchInstances = async ({
 };
 
 watch(
-  () => props.filter,
+  [() => props.filter, () => orderBy.value],
   () => instancePagedTable.value?.refresh(),
   { deep: true }
 );

@@ -47,6 +47,7 @@ type FindInstanceMessage struct {
 	Limit       *int
 	Offset      *int
 	FilterQ     *qb.Query
+	OrderByKeys []*OrderByKey
 }
 
 // GetInstance gets an instance by the resource_id.
@@ -227,14 +228,17 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 func (s *Store) listInstanceImpl(ctx context.Context, txn *sql.Tx, find *FindInstanceMessage) ([]*InstanceMessage, error) {
 	where := qb.Q().Space("TRUE")
 	from := qb.Q().Space("instance")
+	needsDistinct := false
 	if filterQ := find.FilterQ; filterQ != nil {
 		where.And("?", filterQ)
 		filterSQL, _, _ := filterQ.ToSQL()
 		if hasHostPortFilter(filterSQL) {
 			from.Space("CROSS JOIN jsonb_array_elements(instance.metadata -> 'dataSources') AS ds")
+			needsDistinct = true
 		}
 		if strings.Contains(filterSQL, "db.project") {
 			from.Space("LEFT JOIN db ON db.instance = instance.resource_id")
+			needsDistinct = true
 		}
 	}
 	if v := find.ResourceID; v != nil {
@@ -248,15 +252,30 @@ func (s *Store) listInstanceImpl(ctx context.Context, txn *sql.Tx, find *FindIns
 	}
 
 	q := qb.Q().Space(`
-		SELECT DISTINCT ON (resource_id)
+		SELECT
 			instance.resource_id,
 			instance.environment,
 			instance.deleted,
 			instance.metadata
 		FROM ?
 		WHERE ?
-		ORDER BY resource_id
 	`, from, where)
+
+	// Use GROUP BY to deduplicate when JOINs create duplicate rows
+	if needsDistinct {
+		q.Space("GROUP BY instance.resource_id, instance.environment, instance.deleted, instance.metadata")
+	}
+
+	if len(find.OrderByKeys) > 0 {
+		orderBy := []string{}
+		for _, v := range find.OrderByKeys {
+			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
+		}
+		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
+	} else {
+		q.Space("ORDER BY resource_id ASC")
+	}
+
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -940,4 +959,31 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 
 func convertEngine(engine v1pb.Engine) string {
 	return storepb.Engine_name[int32(engine)]
+}
+
+func GetInstanceOrders(orderBy string) ([]*OrderByKey, error) {
+	keys, err := parseOrderBy(orderBy)
+	if err != nil {
+		return nil, err
+	}
+
+	orderByKeys := []*OrderByKey{}
+	for _, orderByKey := range keys {
+		switch orderByKey.Key {
+		case "title":
+			orderByKeys = append(orderByKeys, &OrderByKey{
+				Key:       "instance.metadata->>'title'",
+				SortOrder: orderByKey.SortOrder,
+			})
+		case "environment":
+			orderByKeys = append(orderByKeys, &OrderByKey{
+				Key:       "instance.environment",
+				SortOrder: orderByKey.SortOrder,
+			})
+		default:
+			return nil, errors.Errorf(`invalid order key "%v"`, orderByKey.Key)
+		}
+	}
+
+	return orderByKeys, nil
 }

@@ -80,6 +80,13 @@ func (s *InstanceService) ListInstances(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	find.FilterQ = filterQ
+
+	orderByKeys, err := store.GetInstanceOrders(req.Msg.OrderBy)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	find.OrderByKeys = orderByKeys
+
 	instances, err := s.store.ListInstances(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)

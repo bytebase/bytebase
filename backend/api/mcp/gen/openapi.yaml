@@ -11461,6 +11461,15 @@ components:
              You can combine filter conditions like:
              name.matches("sample") && environment == "environments/test"
              host == "127.0.0.1" && port == "54321"
+        orderBy:
+          type: string
+          title: order_by
+          description: |-
+            The order by of instances.
+             Support title, environment
+             For example:
+             - order_by = "title desc"
+             - order_by = "title desc, environment asc"
       title: ListInstancesRequest
       additionalProperties: false
     bytebase.v1.ListInstancesResponse:
