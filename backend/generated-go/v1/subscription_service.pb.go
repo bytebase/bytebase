@@ -139,7 +139,7 @@ const (
 	PlanFeature_FEATURE_DATA_CLASSIFICATION                    PlanFeature = 50
 	PlanFeature_FEATURE_SCIM                                   PlanFeature = 51
 	PlanFeature_FEATURE_DIRECTORY_SYNC                         PlanFeature = 52
-	PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL              PlanFeature = 53
+	PlanFeature_FEATURE_TOKEN_DURATION_CONTROL                 PlanFeature = 53
 	PlanFeature_FEATURE_EXTERNAL_SECRET_MANAGER                PlanFeature = 54
 	PlanFeature_FEATURE_USER_EMAIL_DOMAIN_RESTRICTION          PlanFeature = 55
 	// Administration & Support
@@ -216,7 +216,7 @@ var (
 		50: "FEATURE_DATA_CLASSIFICATION",
 		51: "FEATURE_SCIM",
 		52: "FEATURE_DIRECTORY_SYNC",
-		53: "FEATURE_SIGN_IN_FREQUENCY_CONTROL",
+		53: "FEATURE_TOKEN_DURATION_CONTROL",
 		54: "FEATURE_EXTERNAL_SECRET_MANAGER",
 		55: "FEATURE_USER_EMAIL_DOMAIN_RESTRICTION",
 		56: "FEATURE_PROJECT_MANAGEMENT",
@@ -289,7 +289,7 @@ var (
 		"FEATURE_DATA_CLASSIFICATION":                    50,
 		"FEATURE_SCIM":                                   51,
 		"FEATURE_DIRECTORY_SYNC":                         52,
-		"FEATURE_SIGN_IN_FREQUENCY_CONTROL":              53,
+		"FEATURE_TOKEN_DURATION_CONTROL":                 53,
 		"FEATURE_EXTERNAL_SECRET_MANAGER":                54,
 		"FEATURE_USER_EMAIL_DOMAIN_RESTRICTION":          55,
 		"FEATURE_PROJECT_MANAGEMENT":                     56,
@@ -672,7 +672,7 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x04FREE\x10\x01\x12\b\n" +
 	"\x04TEAM\x10\x02\x12\x0e\n" +
 	"\n" +
-	"ENTERPRISE\x10\x03*\xd3\x12\n" +
+	"ENTERPRISE\x10\x03*\xd0\x12\n" +
 	"\vPlanFeature\x12\x17\n" +
 	"\x13FEATURE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17FEATURE_DATABASE_CHANGE\x10\x01\x12,\n" +
@@ -727,8 +727,8 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x14FEATURE_DATA_MASKING\x101\x12\x1f\n" +
 	"\x1bFEATURE_DATA_CLASSIFICATION\x102\x12\x10\n" +
 	"\fFEATURE_SCIM\x103\x12\x1a\n" +
-	"\x16FEATURE_DIRECTORY_SYNC\x104\x12%\n" +
-	"!FEATURE_SIGN_IN_FREQUENCY_CONTROL\x105\x12#\n" +
+	"\x16FEATURE_DIRECTORY_SYNC\x104\x12\"\n" +
+	"\x1eFEATURE_TOKEN_DURATION_CONTROL\x105\x12#\n" +
 	"\x1fFEATURE_EXTERNAL_SECRET_MANAGER\x106\x12)\n" +
 	"%FEATURE_USER_EMAIL_DOMAIN_RESTRICTION\x107\x12\x1e\n" +
 	"\x1aFEATURE_PROJECT_MANAGEMENT\x108\x12\"\n" +

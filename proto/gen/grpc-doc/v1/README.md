@@ -9587,7 +9587,6 @@ For example: update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type in 
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| issue | [string](#string) |  | The issue associated with the rollout. Could be empty. Format: projects/{project}/issues/{issue} |
 
 
 
@@ -10470,7 +10469,7 @@ PlanFeature represents the available features in Bytebase
 | FEATURE_DATA_CLASSIFICATION | 50 |  |
 | FEATURE_SCIM | 51 |  |
 | FEATURE_DIRECTORY_SYNC | 52 |  |
-| FEATURE_SIGN_IN_FREQUENCY_CONTROL | 53 |  |
+| FEATURE_TOKEN_DURATION_CONTROL | 53 |  |
 | FEATURE_EXTERNAL_SECRET_MANAGER | 54 |  |
 | FEATURE_USER_EMAIL_DOMAIN_RESTRICTION | 55 |  |
 | FEATURE_PROJECT_MANAGEMENT | 56 | Administration &amp; Support |

@@ -12943,7 +12943,7 @@ components:
         - FEATURE_DATA_CLASSIFICATION
         - FEATURE_SCIM
         - FEATURE_DIRECTORY_SYNC
-        - FEATURE_SIGN_IN_FREQUENCY_CONTROL
+        - FEATURE_TOKEN_DURATION_CONTROL
         - FEATURE_EXTERNAL_SECRET_MANAGER
         - FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
         - FEATURE_PROJECT_MANAGEMENT
@@ -14098,12 +14098,6 @@ components:
         updateTime:
           title: update_time
           $ref: '#/components/schemas/google.protobuf.Timestamp'
-        issue:
-          type: string
-          title: issue
-          description: |-
-            The issue associated with the rollout. Could be empty.
-             Format: projects/{project}/issues/{issue}
       title: Rollout
       additionalProperties: false
     bytebase.v1.RolloutPolicy:

@@ -465,9 +465,9 @@ export enum PlanFeature {
   FEATURE_DIRECTORY_SYNC = 52,
 
   /**
-   * @generated from enum value: FEATURE_SIGN_IN_FREQUENCY_CONTROL = 53;
+   * @generated from enum value: FEATURE_TOKEN_DURATION_CONTROL = 53;
    */
-  FEATURE_SIGN_IN_FREQUENCY_CONTROL = 53,
+  FEATURE_TOKEN_DURATION_CONTROL = 53,
 
   /**
    * @generated from enum value: FEATURE_EXTERNAL_SECRET_MANAGER = 54;

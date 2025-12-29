@@ -272,9 +272,9 @@
         "title": "ディレクトリ同期",
         "desc": "Entra IDからBytebaseにユーザーとグループを同期します。"
       },
-      "FEATURE_SIGN_IN_FREQUENCY_CONTROL": {
-        "title": "サインイン頻度制御",
-        "desc": "ユーザーが再認証する頻度を設定します。"
+      "FEATURE_TOKEN_DURATION_CONTROL": {
+        "title": "トークン期間制御",
+        "desc": "アクセストークンとリフレッシュトークンの有効期間を設定します。"
       },
       "FEATURE_EXTERNAL_SECRET_MANAGER": {
         "title": "外部シークレットマネージャー",
