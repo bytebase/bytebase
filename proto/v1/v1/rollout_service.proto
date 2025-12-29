@@ -290,10 +290,6 @@ message Rollout {
   // Format: projects/{project}/plans/{plan}/rollout
   string name = 1;
 
-  // The plan that this rollout is based on.
-  // Format: projects/{project}/plans/{plan}
-  string plan = 2 [(google.api.field_behavior) = REQUIRED];
-
   // The title of the rollout, inherited from the associated plan.
   // This field is output only and cannot be directly set.
   string title = 3 [(google.api.field_behavior) = OUTPUT_ONLY];

@@ -12854,8 +12854,6 @@ components:
                     format: enum
             description: Role defines a set of permissions that can be assigned to users.
         Rollout:
-            required:
-                - plan
             type: object
             properties:
                 name:
@@ -12863,11 +12861,6 @@ components:
                     description: |-
                         The resource name of the rollout.
                          Format: projects/{project}/plans/{plan}/rollout
-                plan:
-                    type: string
-                    description: |-
-                        The plan that this rollout is based on.
-                         Format: projects/{project}/plans/{plan}
                 title:
                     readOnly: true
                     type: string

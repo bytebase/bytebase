@@ -213,7 +213,6 @@ func convertToRollout(project *store.ProjectMessage, plan *store.PlanMessage, ta
 
 	rolloutV1 := &v1pb.Rollout{
 		Name:       common.FormatRollout(project.ResourceID, plan.UID),
-		Plan:       common.FormatPlan(project.ResourceID, plan.UID),
 		Title:      plan.Name,
 		Stages:     nil,
 		CreateTime: timestamppb.New(createTime),
