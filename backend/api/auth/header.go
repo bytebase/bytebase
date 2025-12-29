@@ -22,7 +22,7 @@ func GetTokenCookie(ctx context.Context, stores *store.Store, licenseService *en
 		}
 	}
 	isHTTPS := strings.HasPrefix(origin, "https")
-	tokenDuration := GetTokenDuration(ctx, stores, licenseService)
+	tokenDuration := GetAccessTokenDuration(ctx, stores, licenseService)
 	return &http.Cookie{
 		Name:  AccessTokenCookieName,
 		Value: token,
@@ -41,36 +41,56 @@ func GetTokenCookie(ctx context.Context, stores *store.Store, licenseService *en
 	}
 }
 
-func GetTokenDuration(ctx context.Context, store *store.Store, licenseService *enterprise.LicenseService) time.Duration {
-	tokenDuration := DefaultTokenDuration
+func GetAccessTokenDuration(ctx context.Context, store *store.Store, licenseService *enterprise.LicenseService) time.Duration {
+	accessTokenDuration := DefaultAccessTokenDuration
 
 	// If the sign-in frequency control feature is not enabled, return default duration
 	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
-		return tokenDuration
+		return accessTokenDuration
 	}
 
 	workspaceProfile, err := store.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
-		return tokenDuration
+		return accessTokenDuration
 	}
 
-	if workspaceProfile.GetTokenDuration().GetSeconds() > 0 {
-		tokenDuration = workspaceProfile.GetTokenDuration().AsDuration()
+	if workspaceProfile.GetAccessTokenDuration().GetSeconds() > 0 {
+		accessTokenDuration = workspaceProfile.GetAccessTokenDuration().AsDuration()
+	}
+
+	return accessTokenDuration
+}
+
+func GetRefreshTokenDuration(ctx context.Context, store *store.Store, licenseService *enterprise.LicenseService) time.Duration {
+	refreshTokenDuration := DefaultRefreshTokenDuration
+
+	// If the sign-in frequency control feature is not enabled, return default duration
+	if err := licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_SIGN_IN_FREQUENCY_CONTROL); err != nil {
+		return refreshTokenDuration
+	}
+
+	workspaceProfile, err := store.GetWorkspaceProfileSetting(ctx)
+	if err != nil {
+		return refreshTokenDuration
+	}
+
+	if workspaceProfile.GetRefreshTokenDuration().GetSeconds() > 0 {
+		refreshTokenDuration = workspaceProfile.GetRefreshTokenDuration().AsDuration()
 	}
 	// Currently we implement the password rotation restriction in a simple way:
 	// 1. Only check if users need to reset their password during login.
 	// 2. For the 1st time login, if `RequireResetPasswordForFirstLogin` is true, `require_reset_password` in the response will be true
 	// 3. Otherwise if the `PasswordRotation` exists, check the password last updated time to decide if the `require_reset_password` is true.
-	// So we will use the minimum value between (`workspaceProfile.TokenDuration`, `passwordRestriction.PasswordRotation`) to force to expire the token.
+	// So we will use the minimum value between (`refreshTokenDuration`, `passwordRestriction.PasswordRotation`) to force to expire the token.
 	passwordRestriction := workspaceProfile.GetPasswordRestriction()
 	if passwordRestriction.GetPasswordRotation().GetSeconds() > 0 {
 		passwordRotation := passwordRestriction.GetPasswordRotation().AsDuration()
-		if passwordRotation.Seconds() < tokenDuration.Seconds() {
-			tokenDuration = passwordRotation
+		if passwordRotation.Seconds() < refreshTokenDuration.Seconds() {
+			refreshTokenDuration = passwordRotation
 		}
 	}
 
-	return tokenDuration
+	return refreshTokenDuration
 }
 
 const RefreshTokenCookieName = "refresh-token"

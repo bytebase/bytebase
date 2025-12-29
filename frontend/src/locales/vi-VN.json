@@ -701,11 +701,17 @@
           "managed-by-flag": "Cài đặt này được quản lý thông qua tham số dòng lệnh --external-url",
           "cannot-edit-flag": "Không thể thay đổi URL bên ngoài vì nó được đặt thông qua tham số dòng lệnh --external-url"
         },
-        "sign-in-frequency": {
-          "self": "Tần suất đăng nhập",
-          "description": "Tần suất đăng nhập xác định tần suất người dùng phải xác thực lại. Cập nhật cấu hình yêu cầu người dùng đăng nhập lại để thay đổi có hiệu lực.",
-          "hours": "Giờ",
-          "days": "Ngày"
+        "access-token-duration": {
+          "self": "Access token duration",
+          "description": "How long access tokens remain valid before requiring refresh. Shorter durations improve security.",
+          "minutes": "Minute(s)",
+          "hours": "Hour(s)"
+        },
+        "refresh-token-duration": {
+          "self": "Refresh token duration",
+          "description": "How often users must fully reauthenticate. Configuration updates require users to sign in again for changes to take effect.",
+          "hours": "Hour(s)",
+          "days": "Day(s)"
         },
         "inactive-session-timeout": {
           "self": "Thời gian chờ phiên không hoạt động",

@@ -426,8 +426,10 @@ type WorkspaceProfileSetting struct {
 	DisallowSignup bool `protobuf:"varint,2,opt,name=disallow_signup,json=disallowSignup,proto3" json:"disallow_signup,omitempty"`
 	// Require 2FA for all users.
 	Require_2Fa bool `protobuf:"varint,3,opt,name=require_2fa,json=require2fa,proto3" json:"require_2fa,omitempty"`
-	// The duration for token.
-	TokenDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=token_duration,json=tokenDuration,proto3" json:"token_duration,omitempty"`
+	// The duration for refresh token. Default is 7 days.
+	RefreshTokenDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=refresh_token_duration,json=refreshTokenDuration,proto3" json:"refresh_token_duration,omitempty"`
+	// The duration for access token. Default is 1 hour.
+	AccessTokenDuration *durationpb.Duration `protobuf:"bytes,18,opt,name=access_token_duration,json=accessTokenDuration,proto3" json:"access_token_duration,omitempty"`
 	// The setting of custom announcement
 	Announcement *WorkspaceProfileSetting_Announcement `protobuf:"bytes,5,opt,name=announcement,proto3" json:"announcement,omitempty"`
 	// The max duration for role expired.
@@ -511,9 +513,16 @@ func (x *WorkspaceProfileSetting) GetRequire_2Fa() bool {
 	return false
 }
 
-func (x *WorkspaceProfileSetting) GetTokenDuration() *durationpb.Duration {
+func (x *WorkspaceProfileSetting) GetRefreshTokenDuration() *durationpb.Duration {
 	if x != nil {
-		return x.TokenDuration
+		return x.RefreshTokenDuration
+	}
+	return nil
+}
+
+func (x *WorkspaceProfileSetting) GetAccessTokenDuration() *durationpb.Duration {
+	if x != nil {
+		return x.AccessTokenDuration
 	}
 	return nil
 }
@@ -2377,13 +2386,14 @@ const file_store_setting_proto_rawDesc = "" +
 	"\vauth_secret\x18\x01 \x01(\tR\n" +
 	"authSecret\x12!\n" +
 	"\fworkspace_id\x18\x02 \x01(\tR\vworkspaceId\x12\x18\n" +
-	"\alicense\x18\x03 \x01(\tR\alicense\"\xe6\r\n" +
+	"\alicense\x18\x03 \x01(\tR\alicense\"\xc4\x0e\n" +
 	"\x17WorkspaceProfileSetting\x12!\n" +
 	"\fexternal_url\x18\x01 \x01(\tR\vexternalUrl\x12'\n" +
 	"\x0fdisallow_signup\x18\x02 \x01(\bR\x0edisallowSignup\x12\x1f\n" +
 	"\vrequire_2fa\x18\x03 \x01(\bR\n" +
-	"require2fa\x12@\n" +
-	"\x0etoken_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\rtokenDuration\x12X\n" +
+	"require2fa\x12O\n" +
+	"\x16refresh_token_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x14refreshTokenDuration\x12M\n" +
+	"\x15access_token_duration\x18\x12 \x01(\v2\x19.google.protobuf.DurationR\x13accessTokenDuration\x12X\n" +
 	"\fannouncement\x18\x05 \x01(\v24.bytebase.store.WorkspaceProfileSetting.AnnouncementR\fannouncement\x12Q\n" +
 	"\x17maximum_role_expiration\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x15maximumRoleExpiration\x12\x18\n" +
 	"\adomains\x18\a \x03(\tR\adomains\x126\n" +
@@ -2622,46 +2632,47 @@ var file_store_setting_proto_goTypes = []any{
 	(WebhookType)(0),                         // 40: bytebase.store.WebhookType
 }
 var file_store_setting_proto_depIdxs = []int32{
-	37, // 0: bytebase.store.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
-	15, // 1: bytebase.store.WorkspaceProfileSetting.announcement:type_name -> bytebase.store.WorkspaceProfileSetting.Announcement
-	37, // 2: bytebase.store.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
-	1,  // 3: bytebase.store.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.store.WorkspaceProfileSetting.DatabaseChangeMode
-	37, // 4: bytebase.store.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
-	16, // 5: bytebase.store.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.store.WorkspaceProfileSetting.PasswordRestriction
-	17, // 6: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
-	18, // 7: bytebase.store.DataClassificationSetting.configs:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig
-	22, // 8: bytebase.store.Algorithm.full_mask:type_name -> bytebase.store.Algorithm.FullMask
-	23, // 9: bytebase.store.Algorithm.range_mask:type_name -> bytebase.store.Algorithm.RangeMask
-	24, // 10: bytebase.store.Algorithm.md5_mask:type_name -> bytebase.store.Algorithm.MD5Mask
-	25, // 11: bytebase.store.Algorithm.inner_outer_mask:type_name -> bytebase.store.Algorithm.InnerOuterMask
-	27, // 12: bytebase.store.SemanticTypeSetting.types:type_name -> bytebase.store.SemanticTypeSetting.SemanticType
-	34, // 13: bytebase.store.AppIMSetting.settings:type_name -> bytebase.store.AppIMSetting.IMSetting
-	5,  // 14: bytebase.store.AISetting.provider:type_name -> bytebase.store.AISetting.Provider
-	35, // 15: bytebase.store.EnvironmentSetting.environments:type_name -> bytebase.store.EnvironmentSetting.Environment
-	2,  // 16: bytebase.store.WorkspaceProfileSetting.Announcement.level:type_name -> bytebase.store.WorkspaceProfileSetting.Announcement.AlertLevel
-	37, // 17: bytebase.store.WorkspaceProfileSetting.PasswordRestriction.password_rotation:type_name -> google.protobuf.Duration
-	38, // 18: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
-	39, // 19: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
-	3,  // 20: bytebase.store.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule.Source
-	19, // 21: bytebase.store.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
-	21, // 22: bytebase.store.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	20, // 23: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
-	26, // 24: bytebase.store.Algorithm.RangeMask.slices:type_name -> bytebase.store.Algorithm.RangeMask.Slice
-	4,  // 25: bytebase.store.Algorithm.InnerOuterMask.type:type_name -> bytebase.store.Algorithm.InnerOuterMask.MaskType
-	10, // 26: bytebase.store.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.store.Algorithm
-	40, // 27: bytebase.store.AppIMSetting.IMSetting.type:type_name -> bytebase.store.WebhookType
-	28, // 28: bytebase.store.AppIMSetting.IMSetting.slack:type_name -> bytebase.store.AppIMSetting.Slack
-	29, // 29: bytebase.store.AppIMSetting.IMSetting.feishu:type_name -> bytebase.store.AppIMSetting.Feishu
-	30, // 30: bytebase.store.AppIMSetting.IMSetting.wecom:type_name -> bytebase.store.AppIMSetting.Wecom
-	31, // 31: bytebase.store.AppIMSetting.IMSetting.lark:type_name -> bytebase.store.AppIMSetting.Lark
-	32, // 32: bytebase.store.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.store.AppIMSetting.DingTalk
-	33, // 33: bytebase.store.AppIMSetting.IMSetting.teams:type_name -> bytebase.store.AppIMSetting.Teams
-	36, // 34: bytebase.store.EnvironmentSetting.Environment.tags:type_name -> bytebase.store.EnvironmentSetting.Environment.TagsEntry
-	35, // [35:35] is the sub-list for method output_type
-	35, // [35:35] is the sub-list for method input_type
-	35, // [35:35] is the sub-list for extension type_name
-	35, // [35:35] is the sub-list for extension extendee
-	0,  // [0:35] is the sub-list for field type_name
+	37, // 0: bytebase.store.WorkspaceProfileSetting.refresh_token_duration:type_name -> google.protobuf.Duration
+	37, // 1: bytebase.store.WorkspaceProfileSetting.access_token_duration:type_name -> google.protobuf.Duration
+	15, // 2: bytebase.store.WorkspaceProfileSetting.announcement:type_name -> bytebase.store.WorkspaceProfileSetting.Announcement
+	37, // 3: bytebase.store.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
+	1,  // 4: bytebase.store.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.store.WorkspaceProfileSetting.DatabaseChangeMode
+	37, // 5: bytebase.store.WorkspaceProfileSetting.inactive_session_timeout:type_name -> google.protobuf.Duration
+	16, // 6: bytebase.store.WorkspaceProfileSetting.password_restriction:type_name -> bytebase.store.WorkspaceProfileSetting.PasswordRestriction
+	17, // 7: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
+	18, // 8: bytebase.store.DataClassificationSetting.configs:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig
+	22, // 9: bytebase.store.Algorithm.full_mask:type_name -> bytebase.store.Algorithm.FullMask
+	23, // 10: bytebase.store.Algorithm.range_mask:type_name -> bytebase.store.Algorithm.RangeMask
+	24, // 11: bytebase.store.Algorithm.md5_mask:type_name -> bytebase.store.Algorithm.MD5Mask
+	25, // 12: bytebase.store.Algorithm.inner_outer_mask:type_name -> bytebase.store.Algorithm.InnerOuterMask
+	27, // 13: bytebase.store.SemanticTypeSetting.types:type_name -> bytebase.store.SemanticTypeSetting.SemanticType
+	34, // 14: bytebase.store.AppIMSetting.settings:type_name -> bytebase.store.AppIMSetting.IMSetting
+	5,  // 15: bytebase.store.AISetting.provider:type_name -> bytebase.store.AISetting.Provider
+	35, // 16: bytebase.store.EnvironmentSetting.environments:type_name -> bytebase.store.EnvironmentSetting.Environment
+	2,  // 17: bytebase.store.WorkspaceProfileSetting.Announcement.level:type_name -> bytebase.store.WorkspaceProfileSetting.Announcement.AlertLevel
+	37, // 18: bytebase.store.WorkspaceProfileSetting.PasswordRestriction.password_rotation:type_name -> google.protobuf.Duration
+	38, // 19: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
+	39, // 20: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	3,  // 21: bytebase.store.WorkspaceApprovalSetting.Rule.source:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule.Source
+	19, // 22: bytebase.store.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
+	21, // 23: bytebase.store.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	20, // 24: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
+	26, // 25: bytebase.store.Algorithm.RangeMask.slices:type_name -> bytebase.store.Algorithm.RangeMask.Slice
+	4,  // 26: bytebase.store.Algorithm.InnerOuterMask.type:type_name -> bytebase.store.Algorithm.InnerOuterMask.MaskType
+	10, // 27: bytebase.store.SemanticTypeSetting.SemanticType.algorithm:type_name -> bytebase.store.Algorithm
+	40, // 28: bytebase.store.AppIMSetting.IMSetting.type:type_name -> bytebase.store.WebhookType
+	28, // 29: bytebase.store.AppIMSetting.IMSetting.slack:type_name -> bytebase.store.AppIMSetting.Slack
+	29, // 30: bytebase.store.AppIMSetting.IMSetting.feishu:type_name -> bytebase.store.AppIMSetting.Feishu
+	30, // 31: bytebase.store.AppIMSetting.IMSetting.wecom:type_name -> bytebase.store.AppIMSetting.Wecom
+	31, // 32: bytebase.store.AppIMSetting.IMSetting.lark:type_name -> bytebase.store.AppIMSetting.Lark
+	32, // 33: bytebase.store.AppIMSetting.IMSetting.dingtalk:type_name -> bytebase.store.AppIMSetting.DingTalk
+	33, // 34: bytebase.store.AppIMSetting.IMSetting.teams:type_name -> bytebase.store.AppIMSetting.Teams
+	36, // 35: bytebase.store.EnvironmentSetting.Environment.tags:type_name -> bytebase.store.EnvironmentSetting.Environment.TagsEntry
+	36, // [36:36] is the sub-list for method output_type
+	36, // [36:36] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_store_setting_proto_init() }

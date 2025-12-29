@@ -17718,9 +17718,13 @@ components:
           type: boolean
           title: require_2fa
           description: Require 2FA for all users.
-        tokenDuration:
-          title: token_duration
-          description: The duration for token.
+        refreshTokenDuration:
+          title: refresh_token_duration
+          description: The duration for refresh token. Default is 7 days.
+          $ref: '#/components/schemas/google.protobuf.Duration'
+        accessTokenDuration:
+          title: access_token_duration
+          description: The duration for access token. Default is 1 hour.
           $ref: '#/components/schemas/google.protobuf.Duration'
         announcement:
           title: announcement

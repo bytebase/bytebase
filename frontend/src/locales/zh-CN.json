@@ -701,11 +701,17 @@
           "managed-by-flag": "此设置由 --external-url 命令行参数管理",
           "cannot-edit-flag": "外部 URL 无法更改，因为它是通过 --external-url 命令行参数设置的"
         },
-        "sign-in-frequency": {
-          "self": "登录频率",
-          "description": "登录频率定义了用户需要重新验证身份的时间间隔。配置更新需要用户重新登录才能生效。",
+        "access-token-duration": {
+          "self": "访问令牌有效期",
+          "description": "访问令牌在需要刷新前保持有效的时间。较短的有效期可提高安全性。",
+          "minutes": "分钟",
+          "hours": "小时"
+        },
+        "refresh-token-duration": {
+          "self": "刷新令牌有效期",
+          "description": "用户需要完全重新认证的频率。配置更新后需要用户重新登录才能生效。",
           "hours": "小时",
-          "days": "天数"
+          "days": "天"
         },
         "inactive-session-timeout": {
           "self": "非活动会话超时",
