@@ -78,3 +78,18 @@ func ConvertTiDBParserErrorPositionToPosition(line, column int) *storepb.Positio
 		Column: int32(column),
 	}
 }
+
+// ConvertANTLRTokenToExclusiveEndPosition converts an ANTLR token position to an exclusive end Position.
+// The end token's line and column (0-based) plus its text are used to calculate where the position
+// should point to (after the last character of the token).
+// This is used for Statement.End which should use exclusive semantics (pointing after the last character).
+func ConvertANTLRTokenToExclusiveEndPosition(line int32, column int32, tokenText string) *storepb.Position {
+	tokenCharLength := int32(len([]rune(tokenText)))
+	// For exclusive end, we simply add the token length to the column.
+	// The column is 0-based in ANTLR, so we add 1 to convert to 1-based.
+	// The result points to the position AFTER the last character of the token.
+	return &storepb.Position{
+		Line:   line,
+		Column: column + tokenCharLength + 1,
+	}
+}

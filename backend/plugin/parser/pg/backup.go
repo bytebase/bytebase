@@ -169,10 +169,11 @@ func generateSQLForTable(statementInfoList []statementInfo, targetSchema string,
 			Line:   int32(statementInfoList[0].tree.GetStart().GetLine() + statementInfoList[0].baseLine),
 			Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
 		},
-		EndPosition: &storepb.Position{
-			Line:   int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine() + statementInfoList[len(statementInfoList)-1].baseLine),
-			Column: int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
-		},
+		EndPosition: common.ConvertANTLRTokenToExclusiveEndPosition(
+			int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()+statementInfoList[len(statementInfoList)-1].baseLine),
+			int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
+			statementInfoList[len(statementInfoList)-1].tree.GetStop().GetText(),
+		),
 	}, nil
 }
 

@@ -30,7 +30,7 @@
         column: 0
       endposition:
         line: 7
-        column: 44
+        column: 46
 - input: |-
     DELETE FROM t
     USING test
@@ -47,7 +47,7 @@
         column: 0
       endposition:
         line: 3
-        column: 31
+        column: 34
 - input: |-
     DELETE FROM test
     USING test2
@@ -64,7 +64,7 @@
         column: 0
       endposition:
         line: 3
-        column: 38
+        column: 41
 - input: |-
     UPDATE test
     SET test.c1 = 2
@@ -82,7 +82,7 @@
         column: 0
       endposition:
         line: 4
-        column: 38
+        column: 41
 - input: |-
     DELETE FROM test1 WHERE c1 = 1;
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1;
@@ -98,7 +98,7 @@
         column: 0
       endposition:
         line: 1
-        column: 29
+        column: 31
     - statement: |-
         CREATE TABLE "backupSchema"."rollback_test_public" AS
           SELECT "public"."test".* FROM test WHERE test.c1 = 1;
@@ -110,7 +110,7 @@
         column: 0
       endposition:
         line: 2
-        column: 44
+        column: 46
 - input: DELETE FROM test WHERE c1 = 1;
   result:
     - statement: |-
@@ -124,7 +124,7 @@
         column: 0
       endposition:
         line: 1
-        column: 28
+        column: 30
 - input: UPDATE test SET c1 = 1 WHERE c1=2;
   result:
     - statement: |-
@@ -138,7 +138,7 @@
         column: 0
       endposition:
         line: 1
-        column: 32
+        column: 34
 - input: |-
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1 ;
     UPDATE test SET test.c1 = 3 WHERE test.c1 = 5 ;
@@ -156,7 +156,7 @@
         column: 0
       endposition:
         line: 2
-        column: 44
+        column: 46
 - input: |-
     DELETE FROM test t1
     USING test2 t2
@@ -173,4 +173,4 @@
         column: 0
       endposition:
         line: 3
-        column: 17
+        column: 20

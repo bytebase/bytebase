@@ -51,7 +51,7 @@
         column: 1
       endposition:
         line: 18
-        column: 78
+        column: 79
 - input: |-
     WITH t_cte AS (
       SELECT * FROM test WHERE test.b1 > 10
@@ -70,7 +70,7 @@
         column: 1
       endposition:
         line: 3
-        column: 66
+        column: 67
 - input: |-
     WITH t_cte AS (
       SELECT * FROM test WHERE test.b1 > 10
@@ -89,7 +89,7 @@
         column: 1
       endposition:
         line: 3
-        column: 62
+        column: 63
 - input: |-
     UPDATE test SET test.c1 = 1 WHERE test.b1 = 1;
     UPDATE test SET test.c1 = 2 WHERE test.b1 = 2;
@@ -122,7 +122,7 @@
         column: 1
       endposition:
         line: 7
-        column: 46
+        column: 47
 - input: UPDATE t_generated SET a = 1 WHERE a = 2;
   result:
     - statement: |-
@@ -136,7 +136,7 @@
         column: 1
       endposition:
         line: 1
-        column: 41
+        column: 42
 - input: |-
     UPDATE db1.t1 SET c1 = 1 WHERE c1 = 2;
     UPDATE db2.t2 SET c1 = 1 WHERE c1 = 2;
@@ -152,7 +152,7 @@
         column: 1
       endposition:
         line: 1
-        column: 38
+        column: 39
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_t2_db2` LIKE `db2`.`t2`;
         INSERT INTO `backupDB`.`_rollback_t2_db2`  SELECT `t2`.* FROM db2.t2 WHERE c1 = 2;
@@ -164,7 +164,7 @@
         column: 1
       endposition:
         line: 2
-        column: 38
+        column: 39
 - input: DELETE test FROM test, test2 as t2 where test.id = t2.id;
   result:
     - statement: |-
@@ -178,7 +178,7 @@
         column: 1
       endposition:
         line: 1
-        column: 57
+        column: 58
 - input: DELETE t1, t2 FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
   result:
     - statement: |-
@@ -192,7 +192,7 @@
         column: 1
       endposition:
         line: 1
-        column: 63
+        column: 64
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
@@ -204,7 +204,7 @@
         column: 1
       endposition:
         line: 1
-        column: 63
+        column: 64
 - input: DELETE FROM t1, t2 USING test as t1, test2 as t2 WHERE t1.id = t2.id;
   result:
     - statement: |-
@@ -218,7 +218,7 @@
         column: 1
       endposition:
         line: 1
-        column: 69
+        column: 70
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
@@ -230,7 +230,7 @@
         column: 1
       endposition:
         line: 1
-        column: 69
+        column: 70
 - input: DELETE FROM test as t1 WHERE t1.c1 = 1;
   result:
     - statement: |-
@@ -244,7 +244,7 @@
         column: 1
       endposition:
         line: 1
-        column: 39
+        column: 40
 - input: DELETE FROM test WHERE c1 = 1;
   result:
     - statement: |-
@@ -258,7 +258,7 @@
         column: 1
       endposition:
         line: 1
-        column: 30
+        column: 31
 - input: UPDATE test x SET x.c1 = 1 WHERE x.c1 = 1
   result:
     - statement: |-
@@ -272,7 +272,7 @@
         column: 1
       endposition:
         line: 1
-        column: 41
+        column: 42
 - input: UPDATE test SET c1 = 1 WHERE c1=2;
   result:
     - statement: |-
@@ -286,7 +286,7 @@
         column: 1
       endposition:
         line: 1
-        column: 34
+        column: 35
 - input: UPDATE test t1, test2 t2 SET t1.c1 = 1 WHERE t1.c1 = t2.c1;
   result:
     - statement: |-
@@ -300,7 +300,7 @@
         column: 1
       endposition:
         line: 1
-        column: 59
+        column: 60
 - input: UPDATE test t1, test2 t2 SET t1.c1 = 1, t2.c2 = 2 WHERE t1.c1 = t2.c1;
   result:
     - statement: |-
@@ -314,7 +314,7 @@
         column: 1
       endposition:
         line: 1
-        column: 70
+        column: 71
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
         INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
@@ -326,7 +326,7 @@
         column: 1
       endposition:
         line: 1
-        column: 70
+        column: 71
 - input: |-
     UPDATE test t1 SET t1.c1 = 2 WHERE t1.c1 = 1 ;
     UPDATE test t2 SET t2.c1 = 3 WHERE t2.c1 = 5 ;
@@ -344,4 +344,4 @@
         column: 1
       endposition:
         line: 2
-        column: 46
+        column: 47

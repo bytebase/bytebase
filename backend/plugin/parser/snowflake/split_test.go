@@ -19,7 +19,7 @@ func TestSplitSQL(t *testing.T) {
 			BaseLine: 0,
 			Range:    &storepb.Range{Start: 0, End: 20},
 			Start:    &storepb.Position{Line: 1, Column: 1},
-			End:      &storepb.Position{Line: 1, Column: 20},
+			End:      &storepb.Position{Line: 1, Column: 21},
 			Empty:    false,
 		},
 		{
@@ -27,7 +27,7 @@ func TestSplitSQL(t *testing.T) {
 			BaseLine: 0,
 			Range:    &storepb.Range{Start: 20, End: 43},
 			Start:    &storepb.Position{Line: 2, Column: 2},
-			End:      &storepb.Position{Line: 2, Column: 22},
+			End:      &storepb.Position{Line: 2, Column: 23},
 			Empty:    false,
 		},
 		{
@@ -35,7 +35,7 @@ func TestSplitSQL(t *testing.T) {
 			BaseLine: 1,
 			Range:    &storepb.Range{Start: 43, End: 68},
 			Start:    &storepb.Position{Line: 3, Column: 2},
-			End:      &storepb.Position{Line: 3, Column: 24},
+			End:      &storepb.Position{Line: 3, Column: 25},
 			Empty:    false,
 		},
 	}
