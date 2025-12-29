@@ -1206,9 +1206,7 @@ type Rollout struct {
 	// This field is output only and cannot be directly set.
 	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	// Stages and thus tasks of the rollout.
-	Stages []*Stage `protobuf:"bytes,4,rep,name=stages,proto3" json:"stages,omitempty"`
-	// Format: users/hello@world.com
-	Creator       string                 `protobuf:"bytes,5,opt,name=creator,proto3" json:"creator,omitempty"`
+	Stages        []*Stage               `protobuf:"bytes,4,rep,name=stages,proto3" json:"stages,omitempty"`
 	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	UpdateTime    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1271,13 +1269,6 @@ func (x *Rollout) GetStages() []*Stage {
 		return x.Stages
 	}
 	return nil
-}
-
-func (x *Rollout) GetCreator() string {
-	if x != nil {
-		return x.Creator
-	}
-	return ""
 }
 
 func (x *Rollout) GetCreateTime() *timestamppb.Timestamp {
@@ -3596,13 +3587,12 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x14bytebase.com/TaskRunR\x04name\"L\n" +
 	"\x14GetTaskRunLogRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/TaskRunR\x06parent\"\xe9\x02\n" +
+	"\x14bytebase.com/TaskRunR\x06parent\"\xca\x02\n" +
 	"\aRollout\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
 	"\x04plan\x18\x02 \x01(\tB\x03\xe0A\x02R\x04plan\x12\x19\n" +
 	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x03R\x05title\x12/\n" +
-	"\x06stages\x18\x04 \x03(\v2\x12.bytebase.v1.StageB\x03\xe0A\x03R\x06stages\x12\x1d\n" +
-	"\acreator\x18\x05 \x01(\tB\x03\xe0A\x03R\acreator\x12@\n" +
+	"\x06stages\x18\x04 \x03(\v2\x12.bytebase.v1.StageB\x03\xe0A\x03R\x06stages\x12@\n" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12@\n" +
 	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +

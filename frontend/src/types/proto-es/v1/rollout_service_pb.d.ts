@@ -386,13 +386,6 @@ export declare type Rollout = Message<"bytebase.v1.Rollout"> & {
   stages: Stage[];
 
   /**
-   * Format: users/hello@world.com
-   *
-   * @generated from field: string creator = 5;
-   */
-  creator: string;
-
-  /**
    * @generated from field: google.protobuf.Timestamp create_time = 6;
    */
   createTime?: Timestamp;

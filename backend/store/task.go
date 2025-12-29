@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -21,11 +20,10 @@ type TaskMessage struct {
 	ID int
 
 	// Related fields
-	PlanID         int64
-	InstanceID     string
-	Environment    string // The environment ID (was stage_id). Could be empty if the task does not have an environment.
-	DatabaseName   *string
-	TaskRunRawList []*TaskRunMessage
+	PlanID       int64
+	InstanceID   string
+	Environment  string // The environment ID (was stage_id). Could be empty if the task does not have an environment.
+	DatabaseName *string
 
 	// Domain specific fields
 	Type    storepb.Task_Type
@@ -499,73 +497,6 @@ func (s *Store) BatchSkipTasks(ctx context.Context, taskUIDs []int, comment stri
 	}
 
 	return nil
-}
-
-// ListTasksToAutoRollout returns tasks that
-// 1. have no task runs
-// 2. are not skipped
-// 3. are associated with an open issue or no issue
-// 4. are in an environment that has auto rollout enabled
-// 5. are the first task in the pipeline for their environment
-// 6. are not data export tasks.
-func (s *Store) ListTasksToAutoRollout(ctx context.Context, environments []string) ([]int, error) {
-	q := qb.Q().Space(`
-		SELECT
-			task.plan_id,
-			task.environment,
-			task.id
-		FROM task
-		LEFT JOIN plan ON plan.id = task.plan_id
-		LEFT JOIN issue ON issue.plan_id = plan.id
-		WHERE NOT EXISTS (SELECT 1 FROM task_run WHERE task_run.task_id = task.id)
-		AND task.type != 'DATABASE_EXPORT'
-		AND COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE) IS FALSE
-		AND COALESCE(issue.status, 'OPEN') = 'OPEN'
-		AND task.environment = ANY(?)
-		ORDER BY task.plan_id, task.id`, environments)
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	// Group tasks by plan and environment, keeping only the first task per environment
-	planEnvFirstTask := map[int64]map[string]int{}
-	for rows.Next() {
-		var plan int64
-		var environment string
-		var task int
-		if err := rows.Scan(&plan, &environment, &task); err != nil {
-			return nil, err
-		}
-
-		if _, ok := planEnvFirstTask[plan]; !ok {
-			planEnvFirstTask[plan] = map[string]int{}
-		}
-		// Keep only the first task for each environment
-		if _, exists := planEnvFirstTask[plan][environment]; !exists {
-			planEnvFirstTask[plan][environment] = task
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	var ids []int
-	for _, envTasks := range planEnvFirstTask {
-		for _, taskID := range envTasks {
-			ids = append(ids, taskID)
-		}
-	}
-
-	slices.Sort(ids)
-
-	return ids, nil
 }
 
 // CreateTasks creates tasks for a plan.

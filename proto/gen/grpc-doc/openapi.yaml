@@ -12880,10 +12880,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Stage'
                     description: Stages and thus tasks of the rollout.
-                creator:
-                    readOnly: true
-                    type: string
-                    description: 'Format: users/hello@world.com'
                 createTime:
                     readOnly: true
                     type: string
