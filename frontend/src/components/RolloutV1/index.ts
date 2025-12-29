@@ -21,8 +21,8 @@ export { default as TaskFilter } from "./components/TaskFilter.vue";
 // Task run log viewer
 export * from "./components/TaskRunLogViewer";
 
-// Logic/context
-export * from "./logic/context";
+// Logic
+export * from "./logic";
 
 // Constants
 export * from "./constants/task";

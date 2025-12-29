@@ -29,8 +29,8 @@ export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings
 export const PROJECT_V1_ROUTE_EXPORT_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.export-center`;
 export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.release`;
 export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
-export const PROJECT_V1_ROUTE_ROLLOUTS = `${PROJECT_V1_ROUTE_DASHBOARD}.rollout`;
-export const PROJECT_V1_ROUTE_PLAN_ROLLOUT = `${PROJECT_V1_ROUTE_PLAN_DETAIL}.rollout`;
+export const PROJECT_V1_ROUTE_ROLLOUTS = `${PROJECT_V1_ROUTE_DASHBOARD}.rollouts`;
+export const PROJECT_V1_ROUTE_PLAN_ROLLOUT = `${PROJECT_V1_ROUTE_ROLLOUTS}.rollout`;
 export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE = `${PROJECT_V1_ROUTE_PLAN_ROLLOUT}.stage`;
 export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK = `${PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE}.task`;
 
@@ -91,40 +91,33 @@ const rolloutRoutes: RouteRecordRaw[] = [
     children: [
       {
         path: "",
-        component: () => import("@/views/project/RolloutDetailLayout.vue"),
+        name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+        component: () =>
+          import("@/components/RolloutV1/components/RolloutView.vue"),
         props: true,
-        children: [
-          {
-            path: "",
-            name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-            component: () =>
-              import("@/components/RolloutV1/components/RolloutView.vue"),
-            props: true,
-            meta: {
-              requiredPermissionList: () => ["bb.rollouts.get"],
-            },
-          },
-          {
-            path: "stages/:stageId",
-            name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
-            component: () =>
-              import("@/components/RolloutV1/components/RolloutView.vue"),
-            props: true,
-            meta: {
-              requiredPermissionList: () => ["bb.rollouts.get"],
-            },
-          },
-          {
-            path: "stages/:stageId/tasks/:taskId",
-            name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
-            component: () =>
-              import("@/components/RolloutV1/components/TaskView.vue"),
-            props: true,
-            meta: {
-              requiredPermissionList: () => ["bb.rollouts.get"],
-            },
-          },
-        ],
+        meta: {
+          requiredPermissionList: () => ["bb.rollouts.get"],
+        },
+      },
+      {
+        path: "stages/:stageId",
+        name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE,
+        component: () =>
+          import("@/components/RolloutV1/components/RolloutView.vue"),
+        props: true,
+        meta: {
+          requiredPermissionList: () => ["bb.rollouts.get"],
+        },
+      },
+      {
+        path: "stages/:stageId/tasks/:taskId",
+        name: PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
+        component: () =>
+          import("@/components/RolloutV1/components/TaskView.vue"),
+        props: true,
+        meta: {
+          requiredPermissionList: () => ["bb.rollouts.get"],
+        },
       },
     ],
   },
