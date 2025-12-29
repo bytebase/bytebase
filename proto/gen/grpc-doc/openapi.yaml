@@ -4476,7 +4476,7 @@ paths:
                      Supported filters:
                      - creator: the plan creator full name in "users/{email or id}" format, support "==" operator.
                      - create_time: the plan create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
-                     - has_rollout: the plan has rollout or not, support "==" operator, the value should be "true" or "false".
+                     - has_rollout: whether the plan has rollout, support "==" operator, the value should be "true" or "false".
                      - has_issue: the plan has issue or not, support "==" operator, the value should be "true" or "false".
                      - title: the plan title, support "==" operator for exact match and ".matches()" operator for case-insensitive substring match.
                      - spec_type: the plan spec config type, support "==" operator, the value should be "create_database_config", "change_database_config", or "export_data_config".
@@ -4484,7 +4484,7 @@ paths:
 
                      For example:
                      creator == "users/ed@bytebase.com" && create_time >= "2025-01-02T15:04:05Z07:00"
-                     has_pipeline == false && has_issue == true
+                     has_rollout == false && has_issue == true
                      title == "My Plan"
                      title.matches("database migration")
                      spec_type == "change_database_config"
@@ -5789,13 +5789,11 @@ paths:
                      The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                      Supported filters:
-                     - creator: the rollout creator full name in "users/{email or id}" format, support "==" operator.
                      - update_time: rollout update time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
-                     - task_type: the task type, support "==" and "in" operators, check the Task.Type enum for the values.
+                     - task_type: the task type, support "in" operator, check the Task.Type enum for the values.
 
                      For example:
-                     creator == "users/ed@bytebase.com" && update_time >= "2025-01-02T15:04:05Z07:00"
-                     task_type == "DATABASE_MIGRATE"
+                     update_time >= "2025-01-02T15:04:05Z07:00"
                      task_type in ["DATABASE_MIGRATE", "DATABASE_EXPORT"]
                   schema:
                     type: string

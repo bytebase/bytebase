@@ -330,12 +330,12 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 						return nil, errors.New("invalid empty creator identifier")
 					}
 					return qb.Q().Space("plan.creator = ?", creatorEmail), nil
-				case "has_pipeline":
-					hasPipeline, ok := value.(bool)
+				case "has_rollout":
+					hasRollout, ok := value.(bool)
 					if !ok {
-						return nil, errors.Errorf(`"has_pipeline" should be bool`)
+						return nil, errors.Errorf(`"has_rollout" should be bool`)
 					}
-					if !hasPipeline {
+					if !hasRollout {
 						return qb.Q().Space("(plan.config->>'hasRollout' IS NULL OR plan.config->>'hasRollout' = ?)", "false"), nil
 					}
 					return qb.Q().Space("plan.config->>'hasRollout' = ?", "true"), nil

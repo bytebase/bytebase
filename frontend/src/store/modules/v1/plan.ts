@@ -23,7 +23,7 @@ export interface PlanFind {
   createdTsAfter?: number;
   createdTsBefore?: number;
   hasIssue?: boolean;
-  hasPipeline?: boolean;
+  hasRollout?: boolean;
   specType?: string;
   state?: "ACTIVE" | "DELETED";
 }
@@ -49,8 +49,8 @@ export const buildPlanFilter = (find: PlanFind): string => {
   if (find.hasIssue !== undefined) {
     filter.push(`has_issue == ${find.hasIssue}`);
   }
-  if (find.hasPipeline !== undefined) {
-    filter.push(`has_pipeline == ${find.hasPipeline}`);
+  if (find.hasRollout !== undefined) {
+    filter.push(`has_rollout == ${find.hasRollout}`);
   }
   if (find.specType) {
     filter.push(`spec_type == "${find.specType}"`);
