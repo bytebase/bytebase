@@ -302,6 +302,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   const fetchInstanceList = async (params: {
     pageSize?: number;
     pageToken?: string;
+    orderBy?: string;
     filter?: InstanceFilter;
   }) => {
     if (!hasWorkspacePermissionV2("bb.instances.list")) {
@@ -313,6 +314,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const request = create(ListInstancesRequestSchema, {
       pageSize: params.pageSize,
       pageToken: params.pageToken,
+      orderBy: params.orderBy,
       filter: getListInstanceFilter(params.filter ?? {}),
       showDeleted: params.filter?.state === State.DELETED ? true : false,
     });

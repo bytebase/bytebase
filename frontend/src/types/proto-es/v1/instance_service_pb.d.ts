@@ -104,6 +104,17 @@ export declare type ListInstancesRequest = Message<"bytebase.v1.ListInstancesReq
    * @generated from field: string filter = 4;
    */
   filter: string;
+
+  /**
+   * The order by of instances.
+   * Support name, environment
+   * For example:
+   * - order_by = "title desc"
+   * - order_by = "title desc, environment asc"
+   *
+   * @generated from field: string order_by = 5;
+   */
+  orderBy: string;
 };
 
 /**

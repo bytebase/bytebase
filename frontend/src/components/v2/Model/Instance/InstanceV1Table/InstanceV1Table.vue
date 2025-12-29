@@ -12,8 +12,9 @@
     :row-props="rowProps"
     :paginate-single-page="false"
     @update:checked-row-keys="
-        (val) => $emit('update:selected-instance-names', val as string[])
-      "
+      (val) => $emit('update:selected-instance-names', val as string[])
+    "
+    @update:sorter="$emit('update:sorters', $event)"
   />
 </template>
 
@@ -23,7 +24,7 @@ import {
   ChevronUpIcon,
   ExternalLinkIcon,
 } from "lucide-vue-next";
-import { type DataTableColumn, NButton, NDataTable } from "naive-ui";
+import { type DataTableColumn, type DataTableSortState, NButton, NDataTable } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -57,6 +58,7 @@ const props = withDefaults(
     showAddress?: boolean;
     showExternalLink?: boolean;
     onClick?: (instance: Instance, e: MouseEvent) => void;
+    sorters?: DataTableSortState[];
   }>(),
   {
     bordered: true,
@@ -72,6 +74,7 @@ const props = withDefaults(
 
 defineEmits<{
   (event: "update:selected-instance-names", val: string[]): void;
+  (event: "update:sorters", sorters: DataTableSortState[]): void;
 }>();
 
 const { t } = useI18n();
@@ -209,7 +212,25 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     LABELS,
     EXTERNAL_LINK,
     LICENSE,
-  ].filter((column) => !column.hide);
+  ].filter((column) => !column.hide)
+  .map((column) => {
+    if (props.sorters === undefined || column.type) {
+      return column;
+    }
+    const sorterIndex = props.sorters.findIndex(
+      (s) => s.columnKey === column.key.toString()
+    );
+    if (sorterIndex < 0) {
+      return column;
+    }
+    return {
+      ...column,
+      sorter: {
+        multiple: sorterIndex,
+      },
+      sortOrder: props.sorters[sorterIndex].order,
+    };
+  });
 });
 
 const handleDataSourceToggle = (e: MouseEvent, instance: Instance) => {

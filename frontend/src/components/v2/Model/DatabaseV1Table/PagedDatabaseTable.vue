@@ -123,7 +123,7 @@ const fetchDatabases = async ({
 };
 
 watch(
-  () => [props.filter, props.parent, orderBy.value],
+  [() => props.filter, () => props.parent, () => orderBy.value],
   () => databasePagedTable.value?.refresh(),
   { deep: true }
 );

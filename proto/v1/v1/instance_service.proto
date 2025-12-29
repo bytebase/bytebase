@@ -230,6 +230,13 @@ message ListInstancesRequest {
   // name.matches("sample") && environment == "environments/test"
   // host == "127.0.0.1" && port == "54321"
   string filter = 4;
+
+  // The order by of instances.
+  // Support name, environment
+  // For example:
+  // - order_by = "title desc"
+  // - order_by = "title desc, environment asc"
+  string order_by = 5;
 }
 
 message ListInstancesResponse {
