@@ -264,9 +264,6 @@ func (x *Rollout) Equal(y *Rollout) bool {
 	if p, q := x.UpdateTime, y.UpdateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if x.Issue != y.Issue {
-		return false
-	}
 	return true
 }
 

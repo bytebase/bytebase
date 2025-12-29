@@ -101,11 +101,11 @@ export function useInitializePlan(
       // Fetch the plan using the rollout's plan reference
       planResult = await planStore.fetchPlanByName(rolloutResult.plan);
 
-      // Fetch the associated issue if it exists
-      if (rolloutResult.issue) {
+      // Fetch the associated issue if it exists via the plan
+      if (planResult.issue) {
         try {
           const issueRequest = create(GetIssueRequestSchema, {
-            name: rolloutResult.issue,
+            name: planResult.issue,
           });
           const newIssue =
             await issueServiceClientConnect.getIssue(issueRequest);

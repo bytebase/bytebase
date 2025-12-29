@@ -12882,12 +12882,6 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
-                issue:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The issue associated with the rollout. Could be empty.
-                         Format: projects/{project}/issues/{issue}
         RolloutPolicy:
             type: object
             properties:

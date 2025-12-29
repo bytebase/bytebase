@@ -1208,12 +1208,9 @@ type Rollout struct {
 	// Stages and thus tasks of the rollout.
 	Stages []*Stage `protobuf:"bytes,4,rep,name=stages,proto3" json:"stages,omitempty"`
 	// Format: users/hello@world.com
-	Creator    string                 `protobuf:"bytes,5,opt,name=creator,proto3" json:"creator,omitempty"`
-	CreateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
-	// The issue associated with the rollout. Could be empty.
-	// Format: projects/{project}/issues/{issue}
-	Issue         string `protobuf:"bytes,8,opt,name=issue,proto3" json:"issue,omitempty"`
+	Creator       string                 `protobuf:"bytes,5,opt,name=creator,proto3" json:"creator,omitempty"`
+	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	UpdateTime    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1295,13 +1292,6 @@ func (x *Rollout) GetUpdateTime() *timestamppb.Timestamp {
 		return x.UpdateTime
 	}
 	return nil
-}
-
-func (x *Rollout) GetIssue() string {
-	if x != nil {
-		return x.Issue
-	}
-	return ""
 }
 
 type Stage struct {
@@ -3606,7 +3596,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x14bytebase.com/TaskRunR\x04name\"L\n" +
 	"\x14GetTaskRunLogRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/TaskRunR\x06parent\"\x84\x03\n" +
+	"\x14bytebase.com/TaskRunR\x06parent\"\xe9\x02\n" +
 	"\aRollout\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x17\n" +
 	"\x04plan\x18\x02 \x01(\tB\x03\xe0A\x02R\x04plan\x12\x19\n" +
@@ -3616,8 +3606,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12@\n" +
 	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"updateTime\x12\x19\n" +
-	"\x05issue\x18\b \x01(\tB\x03\xe0A\x03R\x05issue:B\xeaA?\n" +
+	"updateTime:B\xeaA?\n" +
 	"\x14bytebase.com/Rollout\x12'projects/{project}/plans/{plan}/rollout\"\xcc\x01\n" +
 	"\x05Stage\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x13\n" +
