@@ -6,6 +6,7 @@
     :striped="true"
     :loading="loading"
     :row-key="(data: AuditLog) => data.name"
+    @update:sorter="$emit('update:sorters', $event)"
   />
 </template>
 
@@ -15,7 +16,12 @@ import { createRegistry, toJsonString } from "@bufbuild/protobuf";
 import { AnySchema } from "@bufbuild/protobuf/wkt";
 import dayjs from "dayjs";
 import { ExternalLinkIcon } from "lucide-vue-next";
-import { type DataTableColumn, NButton, NDataTable } from "naive-ui";
+import {
+  type DataTableColumn,
+  type DataTableSortState,
+  NButton,
+  NDataTable,
+} from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectV1Name } from "@/components/v2";
@@ -61,6 +67,7 @@ const props = withDefaults(
     auditLogList: AuditLog[];
     showProject?: boolean;
     loading?: boolean;
+    sorters?: DataTableSortState[];
   }>(),
   {
     showProject: true,
@@ -68,13 +75,17 @@ const props = withDefaults(
   }
 );
 
+defineEmits<{
+  (event: "update:sorters", sorters: DataTableSortState[]): void;
+}>();
+
 const { t } = useI18n();
 
 const columnList = computed((): AuditDataTableColumn[] => {
   return (
     [
       {
-        key: "created-ts",
+        key: "create_time",
         title: t("audit-log.table.created-ts"),
         width: 220,
         resizable: true,
@@ -218,7 +229,26 @@ const columnList = computed((): AuditDataTableColumn[] => {
         },
       },
     ] as AuditDataTableColumn[]
-  ).filter((column) => !column.hide);
+  )
+    .filter((column) => !column.hide)
+    .map((column) => {
+      if (props.sorters === undefined || column.type) {
+        return column;
+      }
+      const sorterIndex = props.sorters.findIndex(
+        (s) => s.columnKey === column.key.toString()
+      );
+      if (sorterIndex < 0) {
+        return column;
+      }
+      return {
+        ...column,
+        sorter: {
+          multiple: sorterIndex,
+        },
+        sortOrder: props.sorters[sorterIndex].order,
+      };
+    });
 });
 
 const getViewLink = (auditLog: AuditLog): string | null => {

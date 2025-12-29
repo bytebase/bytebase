@@ -187,6 +187,12 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 		ShowDeleted: req.Msg.ShowDeleted,
 	}
 
+	orderByKeys, err := store.GetDatabaseOrders(req.Msg.OrderBy)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	find.OrderByKeys = orderByKeys
+
 	filterQ, err := store.GetListDatabaseFilter(req.Msg.Filter)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)

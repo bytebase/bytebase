@@ -1,5 +1,4 @@
-import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { SearchAuditLogsParams } from "@/types";
+import type { AuditLogFilter } from "@/types";
 import { AuditLog_Severity } from "@/types/proto-es/v1/audit_log_service_pb";
 import {
   getTsRangeFromSearchParams,
@@ -7,18 +6,13 @@ import {
   type SearchParams,
 } from "@/utils";
 
-export const buildSearchAuditLogParams = (
+export const buildAuditLogFilter = (
   searchParams: SearchParams
-): SearchAuditLogsParams => {
+): AuditLogFilter => {
   const levelScope = getValueFromSearchParams(searchParams, "level");
   const createdTsRange = getTsRangeFromSearchParams(searchParams, "created");
 
-  const params: SearchAuditLogsParams = {
-    parent: getValueFromSearchParams(
-      searchParams,
-      "project",
-      projectNamePrefix
-    ),
+  const params: AuditLogFilter = {
     method: getValueFromSearchParams(searchParams, "method"),
     userEmail: getValueFromSearchParams(searchParams, "actor"),
   };

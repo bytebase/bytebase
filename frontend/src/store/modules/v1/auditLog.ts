@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { defineStore } from "pinia";
 import { auditLogServiceClientConnect } from "@/grpcweb";
-import type { SearchAuditLogsParams } from "@/types";
+import type { AuditLogFilter, SearchAuditLogsParams } from "@/types";
 import {
   AuditLog_Severity,
   ExportAuditLogsRequestSchema,
@@ -14,7 +14,7 @@ import { userNamePrefix } from "./common";
 
 dayjs.extend(utc);
 
-const buildFilter = (search: SearchAuditLogsParams): string => {
+const buildFilter = (search: AuditLogFilter): string => {
   const filter: string[] = [];
   if (search.method) {
     filter.push(`method == "${search.method}"`);
@@ -42,8 +42,8 @@ export const useAuditLogStore = defineStore("audit_log", () => {
   const fetchAuditLogs = async (search: SearchAuditLogsParams) => {
     const request = create(SearchAuditLogsRequestSchema, {
       parent: search.parent,
-      filter: buildFilter(search),
-      orderBy: search.order ? `create_time ${search.order}` : undefined,
+      filter: buildFilter(search.filter),
+      orderBy: search.orderBy,
       pageSize: search.pageSize,
       pageToken: search.pageToken,
     });
@@ -54,24 +54,20 @@ export const useAuditLogStore = defineStore("audit_log", () => {
   const exportAuditLogs = async ({
     search,
     format,
-    pageSize,
-    pageToken,
   }: {
     search: SearchAuditLogsParams;
     format: ExportFormat;
-    pageSize: number;
-    pageToken: string;
   }): Promise<{
     content: Uint8Array;
     nextPageToken: string;
   }> => {
     const request = create(ExportAuditLogsRequestSchema, {
       parent: search.parent,
-      filter: buildFilter(search),
-      orderBy: search.order ? `create_time ${search.order}` : undefined,
+      filter: buildFilter(search.filter),
+      orderBy: search.orderBy,
       format,
-      pageSize,
-      pageToken,
+      pageSize: search.pageSize,
+      pageToken: search.pageToken,
     });
     return await auditLogServiceClientConnect.exportAuditLogs(request);
   };

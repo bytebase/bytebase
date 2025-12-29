@@ -90,56 +90,6 @@ func TestParseFilter(t *testing.T) {
 	}
 }
 
-func TestParseOrderBy(t *testing.T) {
-	testCases := []struct {
-		input string
-		want  []orderByKey
-		err   error
-	}{
-		{
-			input: "start_time",
-			want: []orderByKey{
-				{
-					key:      "start_time",
-					isAscend: true,
-				},
-			},
-		},
-		{
-			input: "start_time desc",
-			want: []orderByKey{
-				{
-					key:      "start_time",
-					isAscend: false,
-				},
-			},
-		},
-		{
-			input: "start_time desc, count",
-			want: []orderByKey{
-				{
-					key:      "start_time",
-					isAscend: false,
-				},
-				{
-					key:      "count",
-					isAscend: true,
-				},
-			},
-		},
-	}
-
-	for _, test := range testCases {
-		got, err := parseOrderBy(test.input)
-		if test.err != nil {
-			require.EqualError(t, err, test.err.Error())
-		} else {
-			require.NoError(t, err)
-			require.Equal(t, test.want, got)
-		}
-	}
-}
-
 func TestIsValidateOnlyRequest(t *testing.T) {
 	tests := []struct {
 		name    string

@@ -83,6 +83,9 @@ func (x *ListDatabasesRequest) Equal(y *ListDatabasesRequest) bool {
 	if x.ShowDeleted != y.ShowDeleted {
 		return false
 	}
+	if x.OrderBy != y.OrderBy {
+		return false
+	}
 	return true
 }
 
