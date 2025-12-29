@@ -1,0 +1,31 @@
+- description: "multiple statements same line"
+  input: "SELECT * FROM users; SELECT * FROM orders;"
+  result:
+    - text: "SELECT * FROM users;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 21}
+      range: {start: 0, end: 20}
+      empty: false
+    - text: "SELECT * FROM orders;"
+      baseline: 0
+      start: {line: 1, column: 22}
+      end: {line: 1, column: 43}
+      range: {start: 21, end: 42}
+      empty: false
+
+- description: "unicode in table names"
+  input: "SELECT * FROM 表名; INSERT INTO 表 VALUES (1);"
+  result:
+    - text: "SELECT * FROM 表名;"
+      baseline: 0
+      start: {line: 1, column: 1}
+      end: {line: 1, column: 18}
+      range: {start: 0, end: 21}
+      empty: false
+    - text: "INSERT INTO 表 VALUES (1);"
+      baseline: 0
+      start: {line: 1, column: 19}
+      end: {line: 1, column: 44}
+      range: {start: 22, end: 49}
+      empty: false
