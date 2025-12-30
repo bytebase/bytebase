@@ -9,35 +9,34 @@
       <IssueCommentView
         class="group"
         v-for="(item, index) in issueComments"
-        :key="item.comment.name"
+        :key="item.name"
         :issue="issue"
         :index="index"
         :is-last="index === issueComments.length - 1"
-        :issue-comment="item.comment"
-        :similar="item.similar"
+        :issue-comment="item"
       >
-        <template v-if="allowEditIssueComment(item.comment)" #subject-suffix>
+        <template v-if="allowEditIssueComment(item)" #subject-suffix>
           <!-- Edit Comment Button-->
           <NButton
             v-if="!state.editCommentMode"
             quaternary
             size="tiny"
             class="text-gray-500 hover:text-gray-700"
-            @click.prevent="onUpdateComment(item.comment)"
+            @click.prevent="onUpdateComment(item)"
           >
             <PencilIcon class="w-3.5 h-3.5" />
           </NButton>
         </template>
 
-        <template v-if="item.comment.comment" #comment>
+        <template v-if="item.comment" #comment>
           <MarkdownEditor
             :mode="
               state.editCommentMode &&
-              state.activeComment?.name === item.comment.name
+              state.activeComment?.name === item.name
                 ? 'editor'
                 : 'preview'
             "
-            :content="item.comment.comment"
+            :content="item.comment"
             :project="project"
             :maxlength="65536"
             :max-height="Number.MAX_SAFE_INTEGER"
@@ -47,7 +46,7 @@
           <div
             v-if="
               state.editCommentMode &&
-              state.activeComment?.name === item.comment.name
+              state.activeComment?.name === item.name
             "
             class="flex gap-x-2 mt-2 items-center justify-end"
           >
@@ -106,6 +105,8 @@ import MarkdownEditor from "@/components/MarkdownEditor";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import {
   extractUserId,
+  getIssueCommentType,
+  IssueCommentType,
   useCurrentProjectV1,
   useCurrentUserV1,
   useIssueCommentStore,
@@ -115,12 +116,7 @@ import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useIssueContext } from "../../logic";
-import {
-  type DistinctIssueComment,
-  IssueCommentView,
-  isSimilarIssueComment,
-  isUserEditableComment,
-} from "./IssueCommentView";
+import { IssueCommentView } from "./IssueCommentView";
 import IssueCreatedCommentV1 from "./IssueCommentView/IssueCreatedCommentV1.vue";
 
 interface LocalState {
@@ -156,24 +152,8 @@ const prepareIssueComments = async () => {
 
 watchEffect(prepareIssueComments);
 
-const issueComments = computed((): DistinctIssueComment[] => {
-  const list = issueCommentStore.getIssueComments(issue.value.name);
-  const distinctIssueComments: DistinctIssueComment[] = [];
-  for (let i = 0; i < list.length; i++) {
-    const comment = list[i];
-    if (distinctIssueComments.length === 0) {
-      distinctIssueComments.push({ comment, similar: [] });
-      continue;
-    }
-
-    const prev = distinctIssueComments[distinctIssueComments.length - 1];
-    if (isSimilarIssueComment(prev.comment, comment)) {
-      prev.similar.push(comment);
-    } else {
-      distinctIssueComments.push({ comment, similar: [] });
-    }
-  }
-  return distinctIssueComments;
+const issueComments = computed(() => {
+  return issueCommentStore.getIssueComments(issue.value.name);
 });
 
 const allowCreateComment = computed(() => {
@@ -196,7 +176,13 @@ const doCreateComment = async (comment: string) => {
 };
 
 const allowEditIssueComment = (comment: IssueComment) => {
-  if (!isUserEditableComment(comment)) {
+  const commentType = getIssueCommentType(comment);
+  // Check if comment is user-editable
+  const isEditable =
+    commentType === IssueCommentType.USER_COMMENT ||
+    (commentType === IssueCommentType.APPROVAL && comment.comment !== "");
+
+  if (!isEditable) {
     return false;
   }
   if (currentUser.value.email === extractUserId(comment.creator)) {

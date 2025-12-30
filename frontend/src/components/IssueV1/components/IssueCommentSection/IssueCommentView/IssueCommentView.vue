@@ -15,7 +15,6 @@
           :issue="issue"
           :index="index"
           :issue-comment="issueComment"
-          :similar="similar"
         >
           <template v-for="(_, name) in $slots" :key="name" #[name]>
             <slot :name="name" />
@@ -38,7 +37,6 @@ defineProps<{
   isLast: boolean;
   index: number;
   issueComment: IssueComment;
-  similar: IssueComment[];
   rollout?: Rollout;
 }>();
 </script>

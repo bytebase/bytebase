@@ -13,7 +13,6 @@
 
         <IssueCommentAction
           :issue-comment="issueComment"
-          :similar="similar"
         >
           <template v-for="(_, name) in $slots" :key="name" #[name]>
             <slot :name="name" />
@@ -32,6 +31,5 @@ import IssueCommentAction from "./IssueCommentAction.vue";
 defineProps<{
   isLast: boolean;
   issueComment: IssueComment;
-  similar: IssueComment[];
 }>();
 </script>

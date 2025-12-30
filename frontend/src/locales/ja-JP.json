@@ -939,8 +939,7 @@
       "resolved-issue": "イシューを完了する",
       "canceled-issue": "イシューをキャンセルする",
       "xxx-automatically": "自動{verb}"
-    },
-    "n-similar-activities": "({count} 件の同様のイベント)"
+    }
   },
   "issue": {
     "labels": "イシューラベル",

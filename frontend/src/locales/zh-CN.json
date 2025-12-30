@@ -939,8 +939,7 @@
       "resolved-issue": "完成工单",
       "canceled-issue": "取消工单",
       "xxx-automatically": "自动{verb}"
-    },
-    "n-similar-activities": "({count} 个相似的活动)"
+    }
   },
   "issue": {
     "labels": "工单标签",

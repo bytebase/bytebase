@@ -96,6 +96,7 @@ import UserAvatar from "@/components/User/UserAvatar.vue";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1, useCurrentUserV1, useUserStore } from "@/store";
 import { type ComposedIssue, getTimeForPbTimestampProtoEs } from "@/types";
+import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import { UpdateIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import {
   PlanSchema,
@@ -103,11 +104,10 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
 import ActionCreator from "./ActionCreator.vue";
-import type { DistinctIssueComment } from "./common";
 
 const props = defineProps<{
   issue: ComposedIssue;
-  issueComments: DistinctIssueComment[];
+  issueComments: IssueComment[];
 }>();
 
 const emit = defineEmits<{

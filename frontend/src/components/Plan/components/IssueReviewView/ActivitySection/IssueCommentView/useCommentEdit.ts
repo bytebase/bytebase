@@ -1,11 +1,16 @@
 import type { ComputedRef, Ref } from "vue";
 import { computed, reactive } from "vue";
 import { usePlanContext } from "@/components/Plan/logic";
-import { extractUserId, useCurrentUserV1, useIssueCommentStore } from "@/store";
+import {
+  extractUserId,
+  getIssueCommentType,
+  IssueCommentType,
+  useCurrentUserV1,
+  useIssueCommentStore,
+} from "@/store";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasProjectPermissionV2 } from "@/utils";
-import { isUserEditableComment } from "./common";
 
 interface CommentEditState {
   editMode: boolean;
@@ -32,7 +37,13 @@ export function useCommentEdit(project: Ref<Project> | ComputedRef<Project>) {
   });
 
   const allowEditComment = (comment: IssueComment): boolean => {
-    if (!isUserEditableComment(comment)) {
+    const commentType = getIssueCommentType(comment);
+    // Check if comment is user-editable
+    const isEditable =
+      commentType === IssueCommentType.USER_COMMENT ||
+      (commentType === IssueCommentType.APPROVAL && comment.comment !== "");
+
+    if (!isEditable) {
       return false;
     }
     if (currentUser.value.email === extractUserId(comment.creator)) {
