@@ -58,24 +58,16 @@ func convertToStoreActivityTypes(types []v1pb.Activity_Type) ([]storepb.Activity
 		switch tp {
 		case v1pb.Activity_TYPE_UNSPECIFIED:
 			return nil, common.Errorf(common.Invalid, "activity type must not be unspecified")
-		case v1pb.Activity_ISSUE_CREATE:
-			result = append(result, storepb.Activity_ISSUE_CREATE)
-		case v1pb.Activity_ISSUE_COMMENT_CREATE:
-			result = append(result, storepb.Activity_ISSUE_COMMENT_CREATE)
-		case v1pb.Activity_ISSUE_FIELD_UPDATE:
-			result = append(result, storepb.Activity_ISSUE_FIELD_UPDATE)
-		case v1pb.Activity_ISSUE_STATUS_UPDATE:
-			result = append(result, storepb.Activity_ISSUE_STATUS_UPDATE)
-		case v1pb.Activity_ISSUE_APPROVAL_NOTIFY:
-			result = append(result, storepb.Activity_ISSUE_APPROVAL_NOTIFY)
-		case v1pb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
-			result = append(result, storepb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
-		case v1pb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
-			result = append(result, storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
-		case v1pb.Activity_NOTIFY_ISSUE_APPROVED:
-			result = append(result, storepb.Activity_NOTIFY_ISSUE_APPROVED)
-		case v1pb.Activity_NOTIFY_PIPELINE_ROLLOUT:
-			result = append(result, storepb.Activity_NOTIFY_PIPELINE_ROLLOUT)
+		case v1pb.Activity_ISSUE_CREATED:
+			result = append(result, storepb.Activity_ISSUE_CREATED)
+		case v1pb.Activity_ISSUE_APPROVAL_REQUESTED:
+			result = append(result, storepb.Activity_ISSUE_APPROVAL_REQUESTED)
+		case v1pb.Activity_ISSUE_SENT_BACK:
+			result = append(result, storepb.Activity_ISSUE_SENT_BACK)
+		case v1pb.Activity_PIPELINE_FAILED:
+			result = append(result, storepb.Activity_PIPELINE_FAILED)
+		case v1pb.Activity_PIPELINE_COMPLETED:
+			result = append(result, storepb.Activity_PIPELINE_COMPLETED)
 		default:
 			return nil, common.Errorf(common.Invalid, "unsupported activity type: %v", tp)
 		}
@@ -87,24 +79,16 @@ func convertToV1ActivityTypes(types []storepb.Activity_Type) []v1pb.Activity_Typ
 	var result []v1pb.Activity_Type
 	for _, tp := range types {
 		switch tp {
-		case storepb.Activity_ISSUE_CREATE:
-			result = append(result, v1pb.Activity_ISSUE_CREATE)
-		case storepb.Activity_ISSUE_COMMENT_CREATE:
-			result = append(result, v1pb.Activity_ISSUE_COMMENT_CREATE)
-		case storepb.Activity_ISSUE_FIELD_UPDATE:
-			result = append(result, v1pb.Activity_ISSUE_FIELD_UPDATE)
-		case storepb.Activity_ISSUE_STATUS_UPDATE:
-			result = append(result, v1pb.Activity_ISSUE_STATUS_UPDATE)
-		case storepb.Activity_ISSUE_APPROVAL_NOTIFY:
-			result = append(result, v1pb.Activity_ISSUE_APPROVAL_NOTIFY)
-		case storepb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE:
-			result = append(result, v1pb.Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE)
-		case storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE:
-			result = append(result, v1pb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE)
-		case storepb.Activity_NOTIFY_ISSUE_APPROVED:
-			result = append(result, v1pb.Activity_NOTIFY_ISSUE_APPROVED)
-		case storepb.Activity_NOTIFY_PIPELINE_ROLLOUT:
-			result = append(result, v1pb.Activity_NOTIFY_PIPELINE_ROLLOUT)
+		case storepb.Activity_ISSUE_CREATED:
+			result = append(result, v1pb.Activity_ISSUE_CREATED)
+		case storepb.Activity_ISSUE_APPROVAL_REQUESTED:
+			result = append(result, v1pb.Activity_ISSUE_APPROVAL_REQUESTED)
+		case storepb.Activity_ISSUE_SENT_BACK:
+			result = append(result, v1pb.Activity_ISSUE_SENT_BACK)
+		case storepb.Activity_PIPELINE_FAILED:
+			result = append(result, v1pb.Activity_PIPELINE_FAILED)
+		case storepb.Activity_PIPELINE_COMPLETED:
+			result = append(result, v1pb.Activity_PIPELINE_COMPLETED)
 		default:
 			result = append(result, v1pb.Activity_TYPE_UNSPECIFIED)
 		}

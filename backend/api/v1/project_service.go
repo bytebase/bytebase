@@ -995,7 +995,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 		webhookplugin.Context{
 			URL:         webhook.Payload.GetUrl(),
 			Level:       webhookplugin.WebhookInfo,
-			EventType:   storepb.Activity_ISSUE_CREATE.String(),
+			EventType:   storepb.Activity_ISSUE_CREATED.String(),
 			Title:       fmt.Sprintf("Test webhook %q", webhook.Payload.GetTitle()),
 			TitleZh:     fmt.Sprintf("测试 webhook %q", webhook.Payload.GetTitle()),
 			Description: "This is a test",

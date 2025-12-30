@@ -212,13 +212,6 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 				return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
 			}
 
-			r.webhookManager.CreateEvent(ctx, &webhook.Event{
-				Actor:   store.SystemBotUser,
-				Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
-				Comment: "",
-				Issue:   webhook.NewIssue(updatedIssue),
-				Project: webhook.NewProject(project),
-			})
 			return nil
 		}(); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
@@ -238,46 +231,6 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 	if err := updateIssueApprovalPayload(ctx, r.store, issue, payload.Approval, riskLevel); err != nil {
 		return false, errors.Wrap(err, "failed to update issue payload")
-	}
-
-	if err := func() error {
-		if payload.Approval.ApprovalTemplate != nil {
-			return nil
-		}
-		if issue.PlanUID == nil {
-			return nil
-		}
-		tasks, err := r.store.ListTasks(ctx, &store.TaskFind{PlanID: issue.PlanUID})
-		if err != nil {
-			return errors.Wrapf(err, "failed to list tasks")
-		}
-		if len(tasks) == 0 {
-			return nil
-		}
-		// Get the first environment from tasks
-		var firstEnvironment string
-		for _, task := range tasks {
-			firstEnvironment = task.Environment
-			break
-		}
-		policy, err := apiv1.GetValidRolloutPolicyForEnvironment(ctx, r.store, firstEnvironment)
-		if err != nil {
-			return err
-		}
-		r.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_NOTIFY_PIPELINE_ROLLOUT,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(project),
-			IssueRolloutReady: &webhook.EventIssueRolloutReady{
-				RolloutPolicy: policy,
-				StageName:     firstEnvironment,
-			},
-		})
-		return nil
-	}(); err != nil {
-		slog.Error("failed to create rollout release notification activity", log.BBError(err))
 	}
 
 	func() {
@@ -314,18 +267,6 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 				ApprovalRole:  role,
 				RequiredCount: 1,
 				Approvers:     approvers,
-			},
-		})
-
-		// Keep legacy ISSUE_APPROVAL_NOTIFY for backward compatibility
-		r.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   creator,
-			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(project),
-			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
-				Role: role,
 			},
 		})
 	}()

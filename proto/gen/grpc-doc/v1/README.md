@@ -8218,7 +8218,7 @@ The project&#39;s `name` field is used to identify the project to update. Format
 | title | [string](#string) |  | title is the title of the webhook. |
 | url | [string](#string) |  | url is the url of the webhook, should be unique within the project. |
 | direct_message | [bool](#bool) |  | if direct_message is set, the notification is sent directly to the persons and url will be ignored. IM integration setting should be set for this function to work. |
-| notification_types | [Activity.Type](#bytebase-v1-Activity-Type) | repeated | notification_types is the list of activities types that the webhook is interested in. Bytebase will only send notifications to the webhook if the activity type is in the list. It should not be empty, and should be a subset of the following: - ISSUE_CREATE - ISSUE_COMMENT_CREATE - ISSUE_FIELD_UPDATE - ISSUE_STATUS_UPDATE - ISSUE_APPROVAL_NOTIFY - ISSUE_PIPELINE_STAGE_STATUS_UPDATE - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE - NOTIFY_ISSUE_APPROVED - NOTIFY_PIPELINE_ROLLOUT |
+| notification_types | [Activity.Type](#bytebase-v1-Activity-Type) | repeated | notification_types is the list of activities types that the webhook is interested in. Bytebase will only send notifications to the webhook if the activity type is in the list. It should not be empty, and should be a subset of the following: - ISSUE_CREATED - ISSUE_APPROVAL_REQUESTED - ISSUE_SENT_BACK - PIPELINE_FAILED - PIPELINE_COMPLETED |
 
 
 
@@ -8235,19 +8235,13 @@ Activity type enumeration.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| ISSUE_CREATE | 1 | Issue related activity types.
+| ISSUE_CREATED | 10 | Focused event types for reduced notification noise.
 
-ISSUE_CREATE represents creating an issue. |
-| ISSUE_COMMENT_CREATE | 2 | ISSUE_COMMENT_CREATE represents commenting on an issue. |
-| ISSUE_FIELD_UPDATE | 3 | ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc. |
-| ISSUE_STATUS_UPDATE | 4 | ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. |
-| ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
-| ISSUE_APPROVAL_NOTIFY | 6 | ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
-| ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE | 7 | ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED. |
-| NOTIFY_ISSUE_APPROVED | 8 | Notifications via webhooks.
-
-NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
-| NOTIFY_PIPELINE_ROLLOUT | 9 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
+ISSUE_CREATED represents a new issue creation event. |
+| ISSUE_APPROVAL_REQUESTED | 11 | ISSUE_APPROVAL_REQUESTED represents an approval request event. |
+| ISSUE_SENT_BACK | 12 | ISSUE_SENT_BACK represents an issue being sent back by an approver. |
+| PIPELINE_FAILED | 13 | PIPELINE_FAILED represents a pipeline failure event. |
+| PIPELINE_COMPLETED | 14 | PIPELINE_COMPLETED represents a pipeline completion event. |
 
 
  

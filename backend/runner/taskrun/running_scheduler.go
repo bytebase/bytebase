@@ -368,45 +368,8 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 	}
 }
 
-func (s *Scheduler) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus storepb.TaskRun_Status, errDetail string) {
-	if err := func() error {
-		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
-		if err != nil {
-			return errors.Wrapf(err, "failed to get plan")
-		}
-		if plan == nil {
-			return errors.Errorf("plan %v not found", task.PlanID)
-		}
-		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
-		if err != nil {
-			return errors.Wrapf(err, "failed to get project")
-		}
-		if project == nil {
-			return errors.Errorf("project %v not found", plan.ProjectID)
-		}
-		issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-			PlanUID: &task.PlanID,
-		})
-		if err != nil {
-			return errors.Wrap(err, "failed to get issue")
-		}
-		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
-			Rollout: webhook.NewRollout(plan),
-			Project: webhook.NewProject(project),
-			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-				Title:  task.GetDatabaseName(),
-				Status: newStatus.String(),
-				Detail: errDetail,
-			},
-		})
-		return nil
-	}(); err != nil {
-		slog.Error("failed to create activity for task run status update", log.BBError(err))
-	}
+func (*Scheduler) createActivityForTaskRunStatusUpdate(_ context.Context, _ *store.TaskMessage, _ storepb.TaskRun_Status, _ string) {
+	// No webhook events for task run status updates
 }
 
 func (s *Scheduler) recordPipelineFailure(ctx context.Context, task *store.TaskMessage, errDetail string) {

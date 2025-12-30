@@ -687,71 +687,6 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		if payload.Approval.ApprovalTemplate == nil {
 			return
 		}
-		role := utils.FindNextPendingRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
-		if role == "" {
-			return
-		}
-
-		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(project),
-			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
-				Role: role,
-			},
-		})
-	}()
-
-	func() {
-		if !approved {
-			return
-		}
-
-		// notify issue approved
-		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_NOTIFY_ISSUE_APPROVED,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(project),
-		})
-
-		// notify pipeline rollout
-		if err := func() error {
-			if issue.PlanUID == nil {
-				return nil
-			}
-			tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: issue.PlanUID})
-			if err != nil {
-				return errors.Wrapf(err, "failed to list tasks")
-			}
-			if len(tasks) == 0 {
-				return nil
-			}
-
-			// Get the first environment from tasks
-			firstEnvironment := tasks[0].Environment
-			policy, err := GetValidRolloutPolicyForEnvironment(ctx, s.store, firstEnvironment)
-			if err != nil {
-				return err
-			}
-			s.webhookManager.CreateEvent(ctx, &webhook.Event{
-				Actor:   user,
-				Type:    storepb.Activity_NOTIFY_PIPELINE_ROLLOUT,
-				Comment: "",
-				Issue:   webhook.NewIssue(issue),
-				Project: webhook.NewProject(project),
-				IssueRolloutReady: &webhook.EventIssueRolloutReady{
-					RolloutPolicy: policy,
-					StageName:     firstEnvironment,
-				},
-			})
-			return nil
-		}(); err != nil {
-			slog.Error("failed to create rollout release notification activity", log.BBError(err))
-		}
 	}()
 
 	// If the issue is a grant request and approved, we will always auto close it.
@@ -782,14 +717,6 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 				}); err != nil {
 					return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
 				}
-
-				s.webhookManager.CreateEvent(ctx, &webhook.Event{
-					Actor:   store.SystemBotUser,
-					Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
-					Comment: "",
-					Issue:   webhook.NewIssue(updatedIssue),
-					Project: webhook.NewProject(project),
-				})
 			}
 			return nil
 		}(); err != nil {
@@ -984,17 +911,6 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		if role == "" {
 			return
 		}
-
-		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(project),
-			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
-				Role: role,
-			},
-		})
 	}()
 
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
@@ -1065,7 +981,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	updateMasks := map[string]bool{}
 
 	patch := &store.UpdateIssueMessage{}
-	var webhookEvents []*webhook.Event
 	var issueCommentCreates []*store.IssueCommentMessage
 	for _, path := range req.Msg.UpdateMask.Paths {
 		updateMasks[path] = true
@@ -1111,17 +1026,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 				},
 			})
 
-			webhookEvents = append(webhookEvents, &webhook.Event{
-				Actor:   user,
-				Type:    storepb.Activity_ISSUE_FIELD_UPDATE,
-				Comment: "",
-				Issue:   webhook.NewIssue(issue),
-				Project: webhook.NewProject(project),
-				IssueUpdate: &webhook.EventIssueUpdate{
-					Path: path,
-				},
-			})
-
 		case "description":
 			// Prevent updating description if plan exists
 			if issue.PlanUID != nil {
@@ -1139,17 +1043,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 							ToDescription:   &req.Msg.Issue.Description,
 						},
 					},
-				},
-			})
-
-			webhookEvents = append(webhookEvents, &webhook.Event{
-				Actor:   user,
-				Type:    storepb.Activity_ISSUE_FIELD_UPDATE,
-				Comment: "",
-				Issue:   webhook.NewIssue(issue),
-				Project: webhook.NewProject(project),
-				IssueUpdate: &webhook.EventIssueUpdate{
-					Path: path,
 				},
 			})
 
@@ -1187,9 +1080,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 	}
 
-	for _, e := range webhookEvents {
-		s.webhookManager.CreateEvent(ctx, e)
-	}
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, issueCommentCreates...); err != nil {
 		slog.Warn("failed to create issue comments", "issue id", issue.UID, log.BBError(err))
 	}
@@ -1286,14 +1176,6 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 			slog.Error("updated issue not found", "issueUID", issueUID)
 			continue
 		}
-
-		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   user,
-			Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
-			Comment: req.Msg.Reason,
-			Issue:   webhook.NewIssue(updatedIssue),
-			Project: webhook.NewProject(project),
-		})
 	}
 
 	return connect.NewResponse(&v1pb.BatchUpdateIssuesStatusResponse{}), nil
@@ -1371,14 +1253,6 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
 	}
-
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
-		Type:    storepb.Activity_ISSUE_COMMENT_CREATE,
-		Comment: req.Msg.IssueComment.Comment,
-		Issue:   webhook.NewIssue(issue),
-		Project: webhook.NewProject(project),
-	})
 
 	ic, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
 		IssueUID: issue.UID,

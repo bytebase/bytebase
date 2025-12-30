@@ -27,29 +27,7 @@ type Activity_Type int32
 const (
 	// Unspecified type.
 	Activity_TYPE_UNSPECIFIED Activity_Type = 0
-	// Issue related activity types.
-	//
-	// ISSUE_CREATE represents creating an issue.
-	Activity_ISSUE_CREATE Activity_Type = 1
-	// ISSUE_COMMENT_CREATE represents commenting on an issue.
-	Activity_ISSUE_COMMENT_CREATE Activity_Type = 2
-	// ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
-	Activity_ISSUE_FIELD_UPDATE Activity_Type = 3
-	// ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL for now.
-	Activity_ISSUE_STATUS_UPDATE Activity_Type = 4
-	// ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
-	Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE Activity_Type = 5
-	// ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
-	Activity_ISSUE_APPROVAL_NOTIFY Activity_Type = 6
-	// ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
-	Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE Activity_Type = 7
-	// Notifications via webhooks.
-	//
-	// NOTIFY_ISSUE_APPROVED represents the issue approved notification.
-	Activity_NOTIFY_ISSUE_APPROVED Activity_Type = 8
-	// NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
-	Activity_NOTIFY_PIPELINE_ROLLOUT Activity_Type = 9
-	// New focused event types for reduced notification noise.
+	// Focused event types for reduced notification noise.
 	//
 	// ISSUE_CREATED represents a new issue creation event.
 	Activity_ISSUE_CREATED Activity_Type = 10
@@ -67,15 +45,6 @@ const (
 var (
 	Activity_Type_name = map[int32]string{
 		0:  "TYPE_UNSPECIFIED",
-		1:  "ISSUE_CREATE",
-		2:  "ISSUE_COMMENT_CREATE",
-		3:  "ISSUE_FIELD_UPDATE",
-		4:  "ISSUE_STATUS_UPDATE",
-		5:  "ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
-		6:  "ISSUE_APPROVAL_NOTIFY",
-		7:  "ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE",
-		8:  "NOTIFY_ISSUE_APPROVED",
-		9:  "NOTIFY_PIPELINE_ROLLOUT",
 		10: "ISSUE_CREATED",
 		11: "ISSUE_APPROVAL_REQUESTED",
 		12: "ISSUE_SENT_BACK",
@@ -83,21 +52,12 @@ var (
 		14: "PIPELINE_COMPLETED",
 	}
 	Activity_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED":                      0,
-		"ISSUE_CREATE":                          1,
-		"ISSUE_COMMENT_CREATE":                  2,
-		"ISSUE_FIELD_UPDATE":                    3,
-		"ISSUE_STATUS_UPDATE":                   4,
-		"ISSUE_PIPELINE_STAGE_STATUS_UPDATE":    5,
-		"ISSUE_APPROVAL_NOTIFY":                 6,
-		"ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE": 7,
-		"NOTIFY_ISSUE_APPROVED":                 8,
-		"NOTIFY_PIPELINE_ROLLOUT":               9,
-		"ISSUE_CREATED":                         10,
-		"ISSUE_APPROVAL_REQUESTED":              11,
-		"ISSUE_SENT_BACK":                       12,
-		"PIPELINE_FAILED":                       13,
-		"PIPELINE_COMPLETED":                    14,
+		"TYPE_UNSPECIFIED":         0,
+		"ISSUE_CREATED":            10,
+		"ISSUE_APPROVAL_REQUESTED": 11,
+		"ISSUE_SENT_BACK":          12,
+		"PIPELINE_FAILED":          13,
+		"PIPELINE_COMPLETED":       14,
 	}
 )
 
@@ -252,19 +212,10 @@ var File_store_project_webhook_proto protoreflect.FileDescriptor
 
 const file_store_project_webhook_proto_rawDesc = "" +
 	"\n" +
-	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x9f\x03\n" +
-	"\bActivity\"\x92\x03\n" +
+	"\x1bstore/project_webhook.proto\x12\x0ebytebase.store\x1a\x12store/common.proto\"\x9c\x01\n" +
+	"\bActivity\"\x8f\x01\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
-	"\fISSUE_CREATE\x10\x01\x12\x18\n" +
-	"\x14ISSUE_COMMENT_CREATE\x10\x02\x12\x16\n" +
-	"\x12ISSUE_FIELD_UPDATE\x10\x03\x12\x17\n" +
-	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12&\n" +
-	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12\x19\n" +
-	"\x15ISSUE_APPROVAL_NOTIFY\x10\x06\x12)\n" +
-	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\a\x12\x19\n" +
-	"\x15NOTIFY_ISSUE_APPROVED\x10\b\x12\x1b\n" +
-	"\x17NOTIFY_PIPELINE_ROLLOUT\x10\t\x12\x11\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rISSUE_CREATED\x10\n" +
 	"\x12\x1c\n" +
 	"\x18ISSUE_APPROVAL_REQUESTED\x10\v\x12\x13\n" +
