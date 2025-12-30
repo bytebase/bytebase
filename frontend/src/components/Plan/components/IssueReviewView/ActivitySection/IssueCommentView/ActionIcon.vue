@@ -11,7 +11,7 @@
       <div
         class="w-7 h-7 bg-white rounded-full ring-4 ring-white flex items-center justify-center"
       >
-        <PrincipalAvatar
+        <UserAvatar
           :user="user"
           override-class="w-7 h-7 font-medium"
           override-text-size="0.8rem"
@@ -45,7 +45,7 @@ import {
 import type { Component } from "vue";
 import { computed } from "vue";
 import { SkipIcon } from "@/components/Icon";
-import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
+import UserAvatar from "@/components/User/UserAvatar.vue";
 import {
   extractUserId,
   getIssueCommentType,

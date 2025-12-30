@@ -24,12 +24,13 @@
           :key="i"
           :ref="(el) => (itemRefs[i] = el as HTMLElement)"
         >
-          <BBBadge
+          <NTag
             v-if="data.type == 'template'"
-            :text="data.value"
-            :can-remove="!disabled"
-            @remove="() => onTemplateRemove(i)"
-          />
+            :closable="!disabled"
+            @close="() => onTemplateRemove(i)"
+          >
+            {{ data.value }}
+          </NTag>
           <AutoWidthInput
             v-else
             :value="data.value"
@@ -44,7 +45,7 @@
         <input
           ref="inputRef"
           v-model="state.inputData"
-          class="flex-1 px-0 m-0 py-1 shadow-none ring-0 border-0 border-none outline-hidden focus:shadow-none focus:ring-0 focus:border-0 focus:border-none"
+          class="flex-1 px-0 m-0 py-1 bg-transparent shadow-none ring-0 border-0 border-none outline-hidden focus:shadow-none focus:ring-0 focus:border-0 focus:border-none"
           type="text"
           :disabled="disabled"
           @keydown.delete="onInputDataDeleteEnter"
@@ -59,10 +60,9 @@
 </template>
 
 <script lang="ts" setup>
-import { NTooltip } from "naive-ui";
+import { NTag, NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { onMounted, onUnmounted, reactive, ref, watch, watchEffect } from "vue";
-import { BBBadge } from "@/bbkit";
 import AutoWidthInput from "./AutoWidthInput.vue";
 import type { Template, TemplateInput } from "./types";
 import { InputType } from "./types";

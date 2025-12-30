@@ -140,11 +140,7 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
     resizable: true,
     ellipsis: true,
     render: (data) => (
-      <ProjectNameCell
-        project={data.projectEntity}
-        mode={props.mode}
-        keyword={props.keyword}
-      />
+      <ProjectNameCell project={data.projectEntity} keyword={props.keyword} />
     ),
   };
   const INSTANCE: DatabaseDataTableColumn = {

@@ -196,8 +196,14 @@ const upsertReviewResource = async () => {
   emit("close");
 };
 
-const getResourceAttachedConfigName = (resource: string) => {
+const getResourceAttachedConfigName = ({
+  name: resource,
+}: {
+  name: string;
+}) => {
   const config = sqlReviewStore.getReviewPolicyByResouce(resource)?.name;
-  return config ? `(${config})` : "";
+  return config ? (
+    <span class="opacity-60 textinfolabel">{`(${config})`}</span>
+  ) : null;
 };
 </script>

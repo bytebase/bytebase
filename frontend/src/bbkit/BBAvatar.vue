@@ -63,7 +63,7 @@ const props = withDefaults(
   defineProps<{
     username?: string;
     email?: string;
-    size: BBAvatarSizeType;
+    size?: BBAvatarSizeType;
     rounded?: boolean;
     backgroundColor?: string;
     overrideClass?: VueClass;

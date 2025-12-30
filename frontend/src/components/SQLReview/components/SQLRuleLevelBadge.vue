@@ -1,17 +1,16 @@
 <template>
-  <BBBadge
-    :text="text"
-    :can-remove="false"
-    :badge-style="style"
+  <NTag
+    :type="style"
     :size="'small'"
-  />
+  >
+    {{ text }}
+  </NTag>
 </template>
 
 <script lang="ts" setup>
+import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBBadge } from "@/bbkit";
-import type { BBBadgeStyle } from "@/bbkit/BBBadge.vue";
 import { SQLReviewRule_Level } from "@/types/proto-es/v1/review_config_service_pb";
 
 const props = withDefaults(
@@ -26,14 +25,14 @@ const props = withDefaults(
 
 const { t } = useI18n();
 
-const style = computed((): BBBadgeStyle => {
+const style = computed(() => {
   switch (props.level) {
     case SQLReviewRule_Level.ERROR:
-      return "CRITICAL";
+      return "error";
     case SQLReviewRule_Level.WARNING:
-      return "WARN";
+      return "warning";
     default:
-      return "DISABLED";
+      return "default";
   }
 });
 

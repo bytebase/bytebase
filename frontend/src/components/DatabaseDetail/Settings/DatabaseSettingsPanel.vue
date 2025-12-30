@@ -11,8 +11,8 @@
           :disabled="!allowUpdateDatabase"
           :clearable="!database.instanceResource.environment"
           :render-suffix="
-            (env: string) =>
-              database.instanceResource.environment === env
+            (env: Environment) =>
+              database.instanceResource.environment === env.name
                 ? `(${$t('common.default')})`
                 : ''
           "
@@ -44,6 +44,7 @@ import {
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
 import { UpdateDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import type { Environment } from "@/types/v1/environment";
 import Labels from "./components/Labels.vue";
 
 const props = defineProps<{

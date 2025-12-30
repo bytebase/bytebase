@@ -21,7 +21,7 @@
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
-import { computed } from "vue";
+import { computed, type VNodeChild } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/cells";
 import { useProjectV1Store } from "@/store";
@@ -41,21 +41,16 @@ import {
   getRenderTagFunc,
 } from "./RemoteResourceSelector/utils";
 
-const props = withDefaults(
-  defineProps<{
-    disabled?: boolean;
-    value?: string[] | string | undefined; // UNKNOWN_PROJECT_NAME to "ALL"
-    includeAll?: boolean;
-    includeDefaultProject?: boolean;
-    multiple?: boolean;
-    size?: SelectSize;
-    renderSuffix?: (project: string) => string;
-    filter?: (project: Project) => boolean;
-  }>(),
-  {
-    renderSuffix: () => "",
-  }
-);
+const props = defineProps<{
+  disabled?: boolean;
+  value?: string[] | string | undefined; // UNKNOWN_PROJECT_NAME to "ALL"
+  includeAll?: boolean;
+  includeDefaultProject?: boolean;
+  multiple?: boolean;
+  size?: SelectSize;
+  renderSuffix?: (project: Project) => VNodeChild;
+  filter?: (project: Project) => boolean;
+}>();
 
 defineEmits<{
   (event: "update:value", name: string[] | string | undefined): void;
@@ -120,16 +115,9 @@ const handleSearch = async (params: {
 const customLabel = (project: Project, keyword: string) => {
   if (!project) return null;
   return (
-    <ProjectNameCell
-      project={project}
-      mode="ALL_SHORT"
-      keyword={keyword}
-      suffix={props.renderSuffix(project.name)}
-    >
+    <ProjectNameCell project={project} keyword={keyword}>
       {{
-        suffix: () => (
-          <span class="opacity-60">{props.renderSuffix(project.name)}</span>
-        ),
+        suffix: () => (props.renderSuffix ? props.renderSuffix(project) : null),
       }}
     </ProjectNameCell>
   );

@@ -49,7 +49,8 @@ import { type ButtonProps, NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import BBAlert from "./BBAlert.vue";
-import type { BBButtonConfirmType } from "./types";
+
+type BBButtonConfirmType = "NORMAL" | "DELETE" | "ARCHIVE" | "RESTORE";
 
 const props = withDefaults(
   defineProps<{
