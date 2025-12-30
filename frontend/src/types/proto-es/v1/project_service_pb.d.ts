@@ -830,8 +830,6 @@ export enum Activity_Type {
   TYPE_UNSPECIFIED = 0,
 
   /**
-   * Focused event types for reduced notification noise.
-   *
    * ISSUE_CREATED represents a new issue creation event.
    *
    * @generated from enum value: ISSUE_CREATED = 10;

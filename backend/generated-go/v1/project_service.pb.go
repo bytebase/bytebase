@@ -31,8 +31,6 @@ type Activity_Type int32
 const (
 	// Unspecified type.
 	Activity_TYPE_UNSPECIFIED Activity_Type = 0
-	// Focused event types for reduced notification noise.
-	//
 	// ISSUE_CREATED represents a new issue creation event.
 	Activity_ISSUE_CREATED Activity_Type = 10
 	// ISSUE_APPROVAL_REQUESTED represents an approval request event.
