@@ -297,11 +297,11 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		WHERE NOT EXISTS (
 			SELECT 1 FROM task_run
 			WHERE task_run.task_id = tasks.task_id
-			AND task_run.status IN (?, ?, ?)
+			AND task_run.status IN (?, ?, ?, ?)
 		)
 		ON CONFLICT (task_id, attempt) DO NOTHING
 	`, creator, storepb.TaskRun_PENDING.String(), taskUIDs, sheetSha256s, runAts,
-		storepb.TaskRun_PENDING.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
+		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
 
 	query, args, err := q.ToSQL()
 	if err != nil {
