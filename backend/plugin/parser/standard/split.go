@@ -24,14 +24,23 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	var list []base.Statement
 	byteOffset := 0
 	err := applyMultiStatements(strings.NewReader(statement), func(sql string) error {
-		// Find the start position of this SQL in the original statement
-		startPos := strings.Index(statement[byteOffset:], strings.TrimLeft(sql, "\n\t "))
-		if startPos != -1 {
-			startPos += byteOffset
-		} else {
-			startPos = byteOffset
+		// sql may have trailing newline added by applyMultiStatements
+		// Strip trailing whitespace for searching in the original statement
+		sqlTrimmed := strings.TrimRight(sql, "\n\r\t ")
+
+		// Find where the SQL content exists in the remaining statement
+		sqlPos := strings.Index(statement[byteOffset:], sqlTrimmed)
+		if sqlPos == -1 {
+			sqlPos = 0
 		}
-		endPos := startPos + len(sql)
+
+		// startPos includes leading whitespace from where previous statement ended
+		startPos := byteOffset
+		// endPos is where the SQL content ends
+		endPos := byteOffset + sqlPos + len(sqlTrimmed)
+
+		// The actual text includes leading whitespace + SQL content
+		text := statement[startPos:endPos]
 
 		// Calculate line and column for Start position
 		startLine, startColumn := calculateLineAndColumn(statement, startPos)
@@ -39,7 +48,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		endLine, endColumn := calculateLineAndColumn(statement, endPos)
 
 		list = append(list, base.Statement{
-			Text:     sql,
+			Text:     text,
 			BaseLine: startLine,
 			Start: &storepb.Position{
 				Line:   int32(startLine + 1),   // 1-based
@@ -53,7 +62,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				Start: int32(startPos),
 				End:   int32(endPos),
 			},
-			Empty: isEmptySQL(sql),
+			Empty: isEmptySQL(text),
 		})
 		byteOffset = endPos
 		return nil
@@ -173,7 +182,7 @@ func applyMultiStatements(sc io.Reader, f func(string) error) error {
 		}
 		if execute {
 			s := sb.String()
-			s = strings.Trim(s, "\n\t ")
+			// Don't trim - include leading whitespace in Text for position consistency
 			if s != "" {
 				if err := f(s); err != nil {
 					return errors.Wrapf(err, "execute query %q failed", s)
@@ -184,7 +193,7 @@ func applyMultiStatements(sc io.Reader, f func(string) error) error {
 	}
 	// Apply the remaining content.
 	s := sb.String()
-	s = strings.Trim(s, "\n\t ")
+	// Don't trim - include leading whitespace in Text for position consistency
 	if s != "" {
 		if err := f(s); err != nil {
 			return errors.Wrapf(err, "execute query %q failed", s)

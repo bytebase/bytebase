@@ -42,7 +42,8 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 			}
 			stmtText := bufStr.String()
 			stmtByteLength := len(stmtText)
-			antlrPosition := base.FirstDefaultChannelTokenPosition(buf)
+			// Calculate start position from byte offset (first character of Text)
+			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 			sqls = append(sqls, base.Statement{
 				Text:     stmtText,
 				BaseLine: buf[0].GetLine() - 1,
@@ -55,7 +56,10 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 					int32(buf[len(buf)-1].GetColumn()),
 					buf[len(buf)-1].GetText(),
 				),
-				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Start: &storepb.Position{
+					Line:   int32(startLine + 1),
+					Column: int32(startColumn + 1),
+				},
 				Empty: empty,
 			})
 			byteOffset += stmtByteLength

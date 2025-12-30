@@ -66,6 +66,8 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		lastToken = tokens[len(tokens)-1]
 	}
 
+	// Since Text is the entire statement (including any leading whitespace),
+	// Start should point to the first character (position 1,1)
 	return []base.Statement{
 		{
 			Text:     statement,
@@ -74,10 +76,10 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				Start: 0,
 				End:   int32(len(statement)),
 			},
-			Start: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(firstToken.GetLine()),
-				Column: int32(firstToken.GetColumn()),
-			}, statement),
+			Start: &storepb.Position{
+				Line:   1,
+				Column: 1,
+			},
 			End: common.ConvertANTLRTokenToExclusiveEndPosition(
 				int32(lastToken.GetLine()),
 				int32(lastToken.GetColumn()),
