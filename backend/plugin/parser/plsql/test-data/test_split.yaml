@@ -4,13 +4,13 @@
     - text: "SELECT * FROM t1"
       baseline: 0
       start: {line: 1, column: 1}
-      end: {line: 1, column: 15}
+      end: {line: 1, column: 17}
       range: {start: 0, end: 16}
       empty: false
     - text: "SELECT * FROM t2"
       baseline: 0
       start: {line: 1, column: 19}
-      end: {line: 1, column: 33}
+      end: {line: 1, column: 35}
       range: {start: 18, end: 34}
       empty: false
 
@@ -20,13 +20,13 @@
     - text: "select * from t"
       baseline: 1
       start: {line: 2, column: 5}
-      end: {line: 2, column: 19}
+      end: {line: 2, column: 20}
       range: {start: 5, end: 20}
       empty: false
     - text: "create table table$1 (id int)"
       baseline: 2
       start: {line: 3, column: 5}
-      end: {line: 3, column: 33}
+      end: {line: 3, column: 34}
       range: {start: 26, end: 56}
       empty: false
 
@@ -36,7 +36,7 @@
     - text: "CREATE OR REPLACE PROCEDURE test_proc IS\nBEGIN\n    CALL DBMS_OUTPUT.PUT_LINE('Hello');\nEND;"
       baseline: 0
       start: {line: 1, column: 1}
-      end: {line: 4, column: 4}
+      end: {line: 4, column: 5}
       range: {start: 0, end: 91}
       empty: false
 
@@ -46,13 +46,13 @@
     - text: "CREATE OR REPLACE PROCEDURE proc1 IS\nBEGIN\n    NULL;\nEND;"
       baseline: 0
       start: {line: 1, column: 1}
-      end: {line: 4, column: 4}
+      end: {line: 4, column: 5}
       range: {start: 0, end: 57}
       empty: false
     - text: "CREATE OR REPLACE PROCEDURE proc2 IS\nBEGIN\n    NULL;\nEND;"
       baseline: 5
       start: {line: 6, column: 1}
-      end: {line: 9, column: 4}
+      end: {line: 9, column: 5}
       range: {start: 60, end: 117}
       empty: false
 
@@ -62,13 +62,13 @@
     - text: "SELECT * FROM t1"
       baseline: 0
       start: {line: 1, column: 1}
-      end: {line: 1, column: 15}
+      end: {line: 1, column: 17}
       range: {start: 0, end: 16}
       empty: false
     - text: "SELECT * FROM t2"
       baseline: 2
       start: {line: 3, column: 1}
-      end: {line: 3, column: 15}
+      end: {line: 3, column: 17}
       range: {start: 20, end: 36}
       empty: false
 
@@ -78,7 +78,7 @@
     - text: "BEGIN\n    CALL DBMS_OUTPUT.PUT_LINE('Test');\nEND;"
       baseline: 0
       start: {line: 1, column: 1}
-      end: {line: 3, column: 4}
+      end: {line: 3, column: 5}
       range: {start: 0, end: 49}
       empty: false
 
@@ -88,7 +88,7 @@
     - text: "ALTER TABLE DATA.TEST\nMODIFY PARTITION BY RANGE (TXN_DATE)\nINTERVAL (NUMTODSINTERVAL(1, 'DAY'))\n(\n\tPARTITION TEST_PO VALUES LESS THAN (\n\t\tTO_DATE('2000-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')\n\t)\n)\nONLINE"
       baseline: 0
       start: {line: 1, column: 1}
-      end: {line: 9, column: 1}
+      end: {line: 9, column: 7}
       range: {start: 0, end: 233}
       empty: false
 
@@ -98,7 +98,7 @@
     - text: "CALL my_procedure()"
       baseline: 0
       start: {line: 1, column: 1}
-      end: {line: 1, column: 19}
+      end: {line: 1, column: 20}
       range: {start: 0, end: 19}
       empty: false
 
@@ -108,7 +108,7 @@
     - text: "DROP TABLESPACE xxx INCLUDING CONTENTS CASCADE CONSTRAINTS"
       baseline: 0
       start: {line: 1, column: 1}
-      end: {line: 1, column: 48}
+      end: {line: 1, column: 59}
       range: {start: 0, end: 58}
       empty: false
 
