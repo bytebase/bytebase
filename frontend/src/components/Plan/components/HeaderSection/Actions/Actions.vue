@@ -161,8 +161,8 @@ const handlePerformAction = async (action: UnifiedAction) => {
       }
       break;
     case "ROLLOUT_START":
-      // For export/create plans without rollout, create and run all tasks
-      if (context.value.isExportPlan && !rollout.value) {
+      // For deferred rollout plans without rollout, create and run all tasks
+      if (context.value.hasDeferredRollout && !rollout.value) {
         await handleCreateRollout({ runAllTasks: true });
         return;
       }
