@@ -31,6 +31,7 @@ type Scheduler struct {
 	webhookManager *webhook.Manager
 	executorMap    map[storepb.Task_Type]Executor
 	profile        *config.Profile
+	pipelineEvents *PipelineEventsTracker
 }
 
 // NewScheduler will create a new scheduler.
@@ -46,6 +47,7 @@ func NewScheduler(
 		webhookManager: webhookManager,
 		profile:        profile,
 		executorMap:    map[storepb.Task_Type]Executor{},
+		pipelineEvents: NewPipelineEventsTracker(),
 	}
 }
 
