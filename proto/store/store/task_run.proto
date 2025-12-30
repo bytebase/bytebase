@@ -26,6 +26,8 @@ message TaskRun {
     NOT_STARTED = 6;
     // Task run was skipped and will not execute.
     SKIPPED = 7;
+    // Task run is ready for immediate execution.
+    AVAILABLE = 8;
   }
 }
 

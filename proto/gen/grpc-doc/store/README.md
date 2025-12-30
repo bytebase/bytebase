@@ -4881,6 +4881,7 @@ Status represents the current execution state of a task run.
 | CANCELED | 5 | Task run was canceled by user or system. |
 | NOT_STARTED | 6 | Task run has not started yet. |
 | SKIPPED | 7 | Task run was skipped and will not execute. |
+| AVAILABLE | 8 | Task run is ready for immediate execution. |
 
 
  

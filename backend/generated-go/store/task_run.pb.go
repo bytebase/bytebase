@@ -41,6 +41,8 @@ const (
 	TaskRun_NOT_STARTED TaskRun_Status = 6
 	// Task run was skipped and will not execute.
 	TaskRun_SKIPPED TaskRun_Status = 7
+	// Task run is ready for immediate execution.
+	TaskRun_AVAILABLE TaskRun_Status = 8
 )
 
 // Enum value maps for TaskRun_Status.
@@ -54,6 +56,7 @@ var (
 		5: "CANCELED",
 		6: "NOT_STARTED",
 		7: "SKIPPED",
+		8: "AVAILABLE",
 	}
 	TaskRun_Status_value = map[string]int32{
 		"STATUS_UNSPECIFIED": 0,
@@ -64,6 +67,7 @@ var (
 		"CANCELED":           5,
 		"NOT_STARTED":        6,
 		"SKIPPED":            7,
+		"AVAILABLE":          8,
 	}
 )
 
@@ -577,8 +581,8 @@ var File_store_task_run_proto protoreflect.FileDescriptor
 
 const file_store_task_run_proto_rawDesc = "" +
 	"\n" +
-	"\x14store/task_run.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\x87\x01\n" +
-	"\aTaskRun\"|\n" +
+	"\x14store/task_run.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12store/common.proto\"\x97\x01\n" +
+	"\aTaskRun\"\x8b\x01\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\v\n" +
@@ -588,7 +592,8 @@ const file_store_task_run_proto_rawDesc = "" +
 	"\x06FAILED\x10\x04\x12\f\n" +
 	"\bCANCELED\x10\x05\x12\x0f\n" +
 	"\vNOT_STARTED\x10\x06\x12\v\n" +
-	"\aSKIPPED\x10\a\"\xde\x02\n" +
+	"\aSKIPPED\x10\a\x12\r\n" +
+	"\tAVAILABLE\x10\b\"\xde\x02\n" +
 	"\rTaskRunResult\x12\x16\n" +
 	"\x06detail\x18\x01 \x01(\tR\x06detail\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12?\n" +
