@@ -97,7 +97,6 @@ const onSortersUpdate = (
   sortStates: DataTableSortState[] | DataTableSortState | null
 ) => {
   if (!sortStates) {
-    // TODO(ed): should reset the sorters?
     return;
   }
   let states: DataTableSortState[] = [];
@@ -255,5 +254,6 @@ defineExpose({
   updateCache,
   removeCache,
   dataList,
+  orderBy,
 });
 </script>

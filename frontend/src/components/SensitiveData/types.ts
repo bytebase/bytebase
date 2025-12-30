@@ -4,8 +4,6 @@ import type {
   ObjectSchema,
   TableCatalog,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
-import type { Group } from "@/types/proto-es/v1/group_service_pb";
-import type { User } from "@/types/proto-es/v1/user_service_pb";
 
 export type MaskDataTarget = TableCatalog | ColumnCatalog | ObjectSchema;
 
@@ -29,8 +27,6 @@ export interface AccessUser {
   type: "user" | "group";
   key: string;
   member: string;
-  group?: Group;
-  user?: User;
   expirationTimestamp?: number;
   rawExpression: string;
   description: string;
