@@ -75,7 +75,8 @@ func splitByParser(statement string) ([]base.Statement, error) {
 			pos := goStmt.GetStop().GetTokenIndex()
 			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
 			stmtByteLength := len(stmtText)
-			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+			// Calculate start position from byte offset (first character of Text)
+			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 			result = append(result, base.Statement{
 				Text:     stmtText,
 				BaseLine: tokens[start].GetLine() - 1,
@@ -88,7 +89,10 @@ func splitByParser(statement string) ([]base.Statement, error) {
 					int32(tokens[pos].GetColumn()),
 					tokens[pos].GetText(),
 				),
-				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Start: &storepb.Position{
+					Line:   int32(startLine + 1),
+					Column: int32(startColumn + 1),
+				},
 				Empty: false,
 			})
 			byteOffset += stmtByteLength
@@ -122,7 +126,8 @@ func splitByParser(statement string) ([]base.Statement, error) {
 				pos := goStmt.GetStop().GetTokenIndex()
 				stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
 				stmtByteLength := len(stmtText)
-				antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+				// Calculate start position from byte offset (first character of Text)
+				startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 				result = append(result, base.Statement{
 					Text:     stmtText,
 					BaseLine: tokens[start].GetLine() - 1,
@@ -135,7 +140,10 @@ func splitByParser(statement string) ([]base.Statement, error) {
 						int32(tokens[pos].GetColumn()),
 						tokens[pos].GetText(),
 					),
-					Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+					Start: &storepb.Position{
+						Line:   int32(startLine + 1),
+						Column: int32(startColumn + 1),
+					},
 					Empty: false,
 				})
 				byteOffset += stmtByteLength
@@ -153,7 +161,8 @@ func splitByParser(statement string) ([]base.Statement, error) {
 			pos := goStmt.GetStop().GetTokenIndex()
 			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
 			stmtByteLength := len(stmtText)
-			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+			// Calculate start position from byte offset (first character of Text)
+			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 			result = append(result, base.Statement{
 				Text:     stmtText,
 				BaseLine: tokens[start].GetLine() - 1,
@@ -166,7 +175,10 @@ func splitByParser(statement string) ([]base.Statement, error) {
 					int32(tokens[pos].GetColumn()),
 					tokens[pos].GetText(),
 				),
-				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Start: &storepb.Position{
+					Line:   int32(startLine + 1),
+					Column: int32(startColumn + 1),
+				},
 				Empty: false,
 			})
 			byteOffset += stmtByteLength
@@ -186,7 +198,8 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 			pos := sqlClause.GetStop().GetTokenIndex()
 			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
 			stmtByteLength := len(stmtText)
-			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+			// Calculate start position from byte offset (first character of Text)
+			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 			result = append(result, base.Statement{
 				Text:     stmtText,
 				BaseLine: tokens[start].GetLine() - 1,
@@ -199,7 +212,10 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 					int32(tokens[pos].GetColumn()),
 					tokens[pos].GetText(),
 				),
-				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Start: &storepb.Position{
+					Line:   int32(startLine + 1),
+					Column: int32(startColumn + 1),
+				},
 				Empty: false,
 			})
 			byteOffset += stmtByteLength
@@ -209,7 +225,8 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 		pos := b.Batch_level_statement().GetStop().GetTokenIndex()
 		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
 		stmtByteLength := len(stmtText)
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
 			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
@@ -222,7 +239,10 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 				int32(tokens[pos].GetColumn()),
 				tokens[pos].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: false,
 		})
 		byteOffset += stmtByteLength
@@ -231,7 +251,8 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 		pos := b.Execute_body_batch().GetStop().GetTokenIndex()
 		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
 		stmtByteLength := len(stmtText)
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
 			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
@@ -244,7 +265,10 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 				int32(tokens[pos].GetColumn()),
 				tokens[pos].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: false,
 		})
 		byteOffset += stmtByteLength
@@ -253,7 +277,8 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 			pos := sqlClause.GetStop().GetTokenIndex()
 			stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
 			stmtByteLength := len(stmtText)
-			antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+			// Calculate start position from byte offset (first character of Text)
+			startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 			result = append(result, base.Statement{
 				Text:     stmtText,
 				BaseLine: tokens[start].GetLine() - 1,
@@ -266,7 +291,10 @@ func splitBatchWithoutGo(b parser.IBatch_without_goContext, tokens []antlr.Token
 					int32(tokens[pos].GetColumn()),
 					tokens[pos].GetText(),
 				),
-				Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+				Start: &storepb.Position{
+					Line:   int32(startLine + 1),
+					Column: int32(startColumn + 1),
+				},
 				Empty: false,
 			})
 			byteOffset += stmtByteLength

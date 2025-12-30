@@ -38,17 +38,23 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
 			text := ""
 			var lastToken antlr.Token
-			// tokens looks like
+
+			// Calculate the leading whitespace/comments before this statement
+			leadingContent := ""
 			if startTokenIndex := stmt.GetStart().GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
-				byteOffsetStart += len(tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(stmt.GetStart().GetTokenIndex()-1)))
+				leadingContent = tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(stmt.GetStart().GetTokenIndex()-1))
 			}
-			byteOffsetEnd := byteOffsetStart + len(tokens.GetTextFromTokens(stmt.GetStart(), stmt.GetStop()))
+
+			// Calculate byte offsets
+			// byteOffsetStart is where the previous statement ended (including any leading whitespace)
+			tokenByteOffset := byteOffsetStart + len(leadingContent)
+			byteOffsetEnd := tokenByteOffset + len(tokens.GetTextFromTokens(stmt.GetStart(), stmt.GetStop()))
 
 			// The go-ora driver requires semicolon for anonymous block,
 			// but does not support semicolon for other statements.
 			if needSemicolon(stmt) {
 				lastToken = tokens.Get(stmt.GetStop().GetTokenIndex())
-				text = tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
+				text = leadingContent + tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
 				if lastToken.GetTokenType() != parser.PlSqlParserSEMICOLON {
 					text += ";"
 				}
@@ -58,21 +64,22 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 					stopIndex--
 				}
 				lastToken = tokens.Get(stopIndex)
-				text = tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
-				text = strings.TrimRightFunc(text, utils.IsSpaceOrSemicolon)
+				sqlContent := tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
+				sqlContent = strings.TrimRightFunc(sqlContent, utils.IsSpaceOrSemicolon)
+				text = leadingContent + sqlContent
 			}
+
+			// Calculate start position based on byteOffsetStart (including leading whitespace)
+			startLine, startColumn := calculateLineAndColumn(statement, byteOffsetStart)
 
 			result = append(result, base.Statement{
 				Text: text,
 				// BaseLine is 0-based line offset of this statement in the original SQL
-				BaseLine: stmt.GetStart().GetLine() - 1,
-				Start: common.ConvertANTLRPositionToPosition(
-					&common.ANTLRPosition{
-						Line:   int32(stmt.GetStart().GetLine()),
-						Column: int32(stmt.GetStart().GetColumn()),
-					},
-					statement,
-				),
+				BaseLine: startLine,
+				Start: &storepb.Position{
+					Line:   int32(startLine + 1),
+					Column: int32(startColumn + 1),
+				},
 				End: common.ConvertANTLRTokenToExclusiveEndPosition(
 					int32(lastToken.GetLine()),
 					int32(lastToken.GetColumn()),
@@ -89,6 +96,24 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		}
 	}
 	return result, nil
+}
+
+// calculateLineAndColumn calculates the 0-based line number and 0-based column (character offset)
+// for a given byte offset in the statement.
+func calculateLineAndColumn(statement string, byteOffset int) (line, column int) {
+	if byteOffset > len(statement) {
+		byteOffset = len(statement)
+	}
+	// Range over string iterates over runes (code points), not bytes
+	for _, r := range statement[:byteOffset] {
+		if r == '\n' {
+			line++
+			column = 0
+		} else {
+			column++
+		}
+	}
+	return line, column
 }
 
 func SplitSQLForCompletion(statement string) ([]base.Statement, error) {

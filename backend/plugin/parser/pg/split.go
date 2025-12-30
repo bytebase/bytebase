@@ -70,9 +70,8 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
 		stmtByteLength := len(stmtText)
 
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
-		// From antlr4, the line is ONE based, and the column is ZERO based.
-		// So we should minus 1 for the line.
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
 			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
@@ -85,7 +84,10 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 				int32(tokens[pos].GetColumn()),
 				tokens[pos].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: base.IsEmpty(tokens[start:pos+1], parser.PostgreSQLParserSEMI),
 		})
 		byteOffset += stmtByteLength
@@ -97,9 +99,8 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 		stmtText := stream.GetTextFromTokens(tokens[start], tokens[eofPos-1])
 		stmtByteLength := len(stmtText)
 
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
-		// From antlr4, the line is ONE based, and the column is ZERO based.
-		// So we should minus 1 for the line.
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
 			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
@@ -112,7 +113,10 @@ func splitByParser(statement string, lexer *parser.PostgreSQLLexer, stream *antl
 				int32(tokens[eofPos-1].GetColumn()),
 				tokens[eofPos-1].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: base.IsEmpty(tokens[start:eofPos], parser.PostgreSQLParserSEMI),
 		})
 	}
@@ -207,9 +211,8 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 		stmtText := stream.GetTextFromTokens(tokens[start], tokens[pos])
 		stmtByteLength := len(stmtText)
 
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
-		// From antlr4, the line is ONE based, and the column is ZERO based.
-		// So we should minus 1 for the line.
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
 			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
@@ -222,7 +225,10 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 				int32(tokens[pos].GetColumn()),
 				tokens[pos].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: base.IsEmpty(tokens[start:pos+1], parser.PostgreSQLParserSEMI),
 		})
 		byteOffset += stmtByteLength
@@ -234,9 +240,8 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 		stmtText := stream.GetTextFromTokens(tokens[start], tokens[eofPos-1])
 		stmtByteLength := len(stmtText)
 
-		antlrPosition := base.FirstDefaultChannelTokenPosition(tokens[start:])
-		// From antlr4, the line is ONE based, and the column is ZERO based.
-		// So we should minus 1 for the line.
+		// Calculate start position from byte offset (first character of Text)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		result = append(result, base.Statement{
 			Text:     stmtText,
 			BaseLine: tokens[start].GetLine() - 1,
@@ -249,7 +254,10 @@ func splitSQLImpl(stream *antlr.CommonTokenStream, statement string) ([]base.Sta
 				int32(tokens[eofPos-1].GetColumn()),
 				tokens[eofPos-1].GetText(),
 			),
-			Start: common.ConvertANTLRPositionToPosition(antlrPosition, statement),
+			Start: &storepb.Position{
+				Line:   int32(startLine + 1),
+				Column: int32(startColumn + 1),
+			},
 			Empty: base.IsEmpty(tokens[start:eofPos], parser.PostgreSQLParserSEMI),
 		})
 	}
