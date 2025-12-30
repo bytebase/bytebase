@@ -79,6 +79,7 @@ import UserAvatar from "@/components/User/UserAvatar.vue";
 import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
 import { useCurrentProjectV1, useCurrentUserV1, useUserStore } from "@/store";
 import { getTimeForPbTimestampProtoEs } from "@/types";
+import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import {
   IssueSchema,
   UpdateIssueRequestSchema,
@@ -89,11 +90,10 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { hasProjectPermissionV2, isValidPlanName } from "@/utils";
 import ActionCreator from "./ActionCreator.vue";
-import type { DistinctIssueComment } from "./common";
 import EditableMarkdownContent from "./EditableMarkdownContent.vue";
 
 defineProps<{
-  issueComments: DistinctIssueComment[];
+  issueComments: IssueComment[];
 }>();
 
 const { t } = useI18n();

@@ -939,8 +939,7 @@
       "resolved-issue": "incidencia resuelta",
       "canceled-issue": "incidencia cancelada",
       "xxx-automatically": "{verb} automáticamente"
-    },
-    "n-similar-activities": "({count} actividad similar) | ({count} actividades similares)"
+    }
   },
   "issue": {
     "labels": "Etiquetas de problema",

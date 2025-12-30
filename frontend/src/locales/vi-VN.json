@@ -939,8 +939,7 @@
       "resolved-issue": "đã giải quyết vấn đề",
       "canceled-issue": "đã hủy vấn đề",
       "xxx-automatically": "{verb} tự động"
-    },
-    "n-similar-activities": "({count} hoạt động tương tự) | ({count} hoạt động tương tự)"
+    }
   },
   "issue": {
     "labels": "Nhãn vấn đề",

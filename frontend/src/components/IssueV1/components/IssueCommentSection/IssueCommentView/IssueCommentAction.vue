@@ -45,14 +45,6 @@
             >
               ({{ $t("common.edited") }})
             </span>
-
-            <span v-if="similar.length > 0" class="text-xs text-gray-500">
-              {{
-                $t("activity.n-similar-activities", {
-                  count: similar.length + 1,
-                })
-              }}
-            </span>
           </div>
 
           <slot name="subject-suffix"></slot>
@@ -86,7 +78,6 @@ defineProps<{
   issue: ComposedIssue;
   index: number;
   issueComment: IssueComment;
-  similar: IssueComment[];
   rollout?: Rollout;
 }>();
 
