@@ -82,8 +82,8 @@
 import { computed, watchEffect } from "vue";
 import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/IssueV1/logic/utils";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
-import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
 import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
+import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
 import {
   DatabaseV1Name,
   EnvironmentV1Name,
