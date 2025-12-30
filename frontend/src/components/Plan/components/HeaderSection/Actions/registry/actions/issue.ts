@@ -115,10 +115,9 @@ export const ISSUE_STATUS_REOPEN: ActionDefinition = {
   category: "primary",
   priority: 20,
 
+  // Only show reopen for canceled issues, not for done/resolved issues
   isVisible: (ctx) =>
-    (ctx.issueStatus === IssueStatus.CANCELED ||
-      ctx.issueStatus === IssueStatus.DONE) &&
-    ctx.permissions.updateIssue,
+    ctx.issueStatus === IssueStatus.CANCELED && ctx.permissions.updateIssue,
 
   isDisabled: () => false,
   disabledReason: () => undefined,

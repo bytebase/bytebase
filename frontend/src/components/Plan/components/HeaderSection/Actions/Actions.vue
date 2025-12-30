@@ -88,13 +88,17 @@ import {
 import { CreateButton, CreateIssueButton, RolloutCreatePanel } from "./create";
 import { ExportArchiveDownloadAction } from "./export";
 import RolloutReadyLink from "./RolloutReadyLink.vue";
-import { ActionButton, ActionDropdown, useActionRegistry } from "./registry";
+import {
+  ActionButton,
+  ActionDropdown,
+  IssueReviewButton,
+  useActionRegistry,
+} from "./registry";
 import type {
   IssueStatusAction,
   RolloutAction,
   UnifiedAction,
 } from "./registry/types";
-import { IssueReviewButton } from "./unified";
 
 const { t } = useI18n();
 const router = useRouter();
