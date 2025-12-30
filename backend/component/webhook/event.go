@@ -16,14 +16,7 @@ type Event struct {
 	Project *Project
 	Rollout *Rollout
 
-	// Existing event types
-	IssueUpdate         *EventIssueUpdate
-	IssueApprovalCreate *EventIssueApprovalCreate
-	IssueRolloutReady   *EventIssueRolloutReady
-	StageStatusUpdate   *EventStageStatusUpdate
-	TaskRunStatusUpdate *EventTaskRunStatusUpdate
-
-	// New focused event types
+	// Focused event types
 	IssueCreated      *EventIssueCreated
 	ApprovalRequested *EventIssueApprovalRequested
 	SentBack          *EventIssueSentBack
@@ -76,31 +69,6 @@ type Project struct {
 
 type Rollout struct {
 	UID int
-}
-
-type EventIssueUpdate struct {
-	Path string
-}
-
-type EventIssueApprovalCreate struct {
-	Role string
-}
-
-type EventIssueRolloutReady struct {
-	RolloutPolicy *storepb.RolloutPolicy
-	StageName     string
-}
-
-type EventStageStatusUpdate struct {
-	StageTitle string
-	StageID    string
-}
-
-type EventTaskRunStatusUpdate struct {
-	Title         string
-	Status        string
-	Detail        string
-	SkippedReason string
 }
 
 type EventIssueCreated struct {

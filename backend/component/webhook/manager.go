@@ -26,13 +26,6 @@ type Manager struct {
 	profile    *config.Profile
 }
 
-// Metadata is the activity metadata.
-type Metadata struct {
-	Issue *store.IssueMessage
-}
-
-type UsersGetter func(ctx context.Context) ([]*store.UserMessage, error)
-
 // NewManager creates an activity manager.
 func NewManager(store *store.Store, iamManager *iam.Manager, profile *config.Profile) *Manager {
 	return &Manager{
@@ -184,8 +177,6 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 			Name:  common.FormatProject(e.Project.ResourceID),
 			Title: e.Project.Title,
 		},
-		Stage:           nil,
-		TaskResult:      nil,
 		Description:     e.Comment,
 		Link:            link,
 		ActorID:         e.Actor.ID,
@@ -218,19 +209,6 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 	if e.Rollout != nil {
 		webhookCtx.Rollout = &webhook.Rollout{
 			UID: e.Rollout.UID,
-		}
-	}
-	if u := e.TaskRunStatusUpdate; u != nil {
-		webhookCtx.TaskResult = &webhook.TaskResult{
-			Name:          u.Title,
-			Status:        u.Status,
-			Detail:        u.Detail,
-			SkippedReason: u.SkippedReason,
-		}
-	}
-	if u := e.StageStatusUpdate; u != nil {
-		webhookCtx.Stage = &webhook.Stage{
-			Name: u.StageTitle,
 		}
 	}
 
