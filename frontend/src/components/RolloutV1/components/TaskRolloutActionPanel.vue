@@ -281,7 +281,6 @@ import {
   getProjectIdPlanUidStageUidTaskUidFromRolloutName,
   planNamePrefix,
   projectNamePrefix,
-  rolloutNamePrefix,
   stageNamePrefix,
   userNamePrefix,
 } from "@/store/modules/v1/common";
