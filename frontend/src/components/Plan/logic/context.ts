@@ -8,7 +8,7 @@ import type { Rollout, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import type {
   IssueReviewAction,
   IssueStatusAction,
-} from "../components/HeaderSection/Actions/unified";
+} from "../components/HeaderSection/Actions/registry";
 
 export type PlanEvents = Emittery<{
   "status-changed": { eager: boolean };

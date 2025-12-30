@@ -8,18 +8,34 @@ import type {
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
-import type { UnifiedAction } from "../unified/types";
 
-// Re-export action types from unified
-export type {
-  ExportAction,
-  IssueAction,
-  IssueReviewAction,
-  IssueStatusAction,
-  PlanAction,
-  RolloutAction,
-  UnifiedAction,
-} from "../unified/types";
+// Action type definitions
+export type IssueReviewAction = "ISSUE_REVIEW";
+
+export type IssueStatusAction =
+  | "ISSUE_STATUS_CLOSE"
+  | "ISSUE_STATUS_REOPEN"
+  | "ISSUE_STATUS_RESOLVE";
+
+export type IssueAction =
+  | IssueReviewAction
+  | IssueStatusAction
+  | "ISSUE_CREATE";
+
+export type PlanAction = "PLAN_CLOSE" | "PLAN_REOPEN";
+
+export type RolloutAction =
+  | "ROLLOUT_CREATE"
+  | "ROLLOUT_START"
+  | "ROLLOUT_CANCEL";
+
+export type ExportAction = "EXPORT_DOWNLOAD";
+
+export type UnifiedAction =
+  | IssueAction
+  | PlanAction
+  | RolloutAction
+  | ExportAction;
 
 export type ExecuteType =
   | "immediate"
