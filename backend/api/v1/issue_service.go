@@ -12,7 +12,6 @@ import (
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -658,23 +657,17 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		// TODO(p0ny): Post project IAM policy update activity.
 	}
 
-	if err := func() error {
-		p := &storepb.IssueCommentPayload{
+	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
+		IssueUID: issue.UID,
+		Payload: &storepb.IssueCommentPayload{
 			Comment: req.Msg.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
 					Status: storepb.IssuePayloadApproval_Approver_APPROVED,
 				},
 			},
-		}
-		if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-			IssueUID: issue.UID,
-			Payload:  p,
-		}, user.Email); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
+		},
+	}); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
@@ -836,21 +829,17 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 	}
 
-	if err := func() error {
-		p := &storepb.IssueCommentPayload{
+	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
+		IssueUID: issue.UID,
+		Payload: &storepb.IssueCommentPayload{
 			Comment: req.Msg.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
 					Status: storepb.IssuePayloadApproval_Approver_REJECTED,
 				},
 			},
-		}
-		_, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-			IssueUID: issue.UID,
-			Payload:  p,
-		}, user.Email)
-		return err
-	}(); err != nil {
+		},
+	}); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
@@ -942,23 +931,17 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		})
 	}()
 
-	if err := func() error {
-		p := &storepb.IssueCommentPayload{
+	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
+		IssueUID: issue.UID,
+		Payload: &storepb.IssueCommentPayload{
 			Comment: req.Msg.Comment,
 			Event: &storepb.IssueCommentPayload_Approval_{
 				Approval: &storepb.IssueCommentPayload_Approval{
 					Status: storepb.IssuePayloadApproval_Approver_PENDING,
 				},
 			},
-		}
-		if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-			IssueUID: issue.UID,
-			Payload:  p,
-		}, user.Email); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
+		},
+	}); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
@@ -1141,10 +1124,8 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	for _, e := range webhookEvents {
 		s.webhookManager.CreateEvent(ctx, e)
 	}
-	for _, create := range issueCommentCreates {
-		if _, err := s.store.CreateIssueComment(ctx, create, user.Email); err != nil {
-			slog.Warn("failed to create issue comment", "issue id", issue.UID, log.BBError(err))
-		}
+	if _, err := s.store.CreateIssueComments(ctx, user.Email, issueCommentCreates...); err != nil {
+		slog.Warn("failed to create issue comments", "issue id", issue.UID, log.BBError(err))
 	}
 
 	issueV1, err := s.convertToIssue(issue)
@@ -1161,33 +1142,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 
-	var issueIDs []int
-	var issues []*store.IssueMessage
-	for _, issueName := range req.Msg.Issues {
-		issue, err := s.getIssueMessage(ctx, issueName)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find issue %v, err: %v", issueName, err))
-		}
-		if issue == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find issue %v", issueName))
-		}
-		issueIDs = append(issueIDs, issue.UID)
-		issues = append(issues, issue)
-
-		// Check if there is any running/pending task runs.
-		if issue.PlanUID != nil {
-			taskRunStatusList := []storepb.TaskRun_Status{storepb.TaskRun_RUNNING, storepb.TaskRun_PENDING}
-			taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{PlanUID: issue.PlanUID, Status: &taskRunStatusList})
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list task runs, err: %v", err))
-			}
-			if len(taskRuns) > 0 {
-				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot update status because there are running/pending task runs for issue %q, cancel the task runs first", issueName))
-			}
-		}
-	}
-
-	if len(issueIDs) == 0 {
+	if len(req.Msg.Issues) == 0 {
 		return connect.NewResponse(&v1pb.BatchUpdateIssuesStatusResponse{}), nil
 	}
 
@@ -1196,60 +1151,83 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to convert to issue status, err: %v", err))
 	}
 
-	if err := s.store.BatchUpdateIssueStatuses(ctx, issueIDs, newStatus); err != nil {
+	// Parse issue names and validate all issues belong to the same project.
+	var projectID string
+	issueUIDs := make([]int, 0, len(req.Msg.Issues))
+	for i, issueName := range req.Msg.Issues {
+		issueProjectID, issueUID, err := common.GetProjectIDIssueUID(issueName)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid issue name %q: %v", issueName, err))
+		}
+
+		// Ensure all issues belong to the same project.
+		if i == 0 {
+			projectID = issueProjectID
+		} else if issueProjectID != projectID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("all issues must belong to the same project, found %q and %q", projectID, issueProjectID))
+		}
+
+		issueUIDs = append(issueUIDs, issueUID)
+	}
+
+	// Get project early for webhooks.
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project: %v", err))
+	}
+	if project == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", projectID))
+	}
+
+	// Batch update issue statuses. This validates project membership, DONE status, and returns old statuses.
+	oldIssueStatuses, err := s.store.BatchUpdateIssueStatuses(ctx, projectID, issueUIDs, newStatus)
+	if err != nil {
+		if common.ErrorCode(err) == common.Invalid {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch update issues, err: %v", err))
 	}
 
-	if err := func() error {
-		var errs error
-		for _, issue := range issues {
-			updatedIssue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{UID: &issue.UID})
-			if err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to get issue %v", issue.UID))
-				continue
-			}
-			project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &updatedIssue.ProjectID})
-			if err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to get project for issue %v", issue.UID))
-				continue
-			}
-			if project == nil {
-				errs = multierr.Append(errs, errors.Errorf("project %s not found for issue %v", updatedIssue.ProjectID, issue.UID))
-				continue
-			}
-
-			func() {
-				s.webhookManager.CreateEvent(ctx, &webhook.Event{
-					Actor:   user,
-					Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
-					Comment: req.Msg.Reason,
-					Issue:   webhook.NewIssue(updatedIssue),
-					Project: webhook.NewProject(project),
-				})
-			}()
-
-			func() {
-				fromStatus := convertToIssueStatus(issue.Status)
-				if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-					IssueUID: issue.UID,
-					Payload: &storepb.IssueCommentPayload{
-						Comment: req.Msg.Reason,
-						Event: &storepb.IssueCommentPayload_IssueUpdate_{
-							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-								FromStatus: convertToIssueCommentPayloadIssueUpdateIssueStatus(&fromStatus),
-								ToStatus:   convertToIssueCommentPayloadIssueUpdateIssueStatus(&req.Msg.Status),
-							},
-						},
+	// Batch create issue comments.
+	issueComments := make([]*store.IssueCommentMessage, 0, len(issueUIDs))
+	for _, issueUID := range issueUIDs {
+		oldStatus := oldIssueStatuses[issueUID]
+		issueComments = append(issueComments, &store.IssueCommentMessage{
+			IssueUID: issueUID,
+			Payload: &storepb.IssueCommentPayload{
+				Comment: req.Msg.Reason,
+				Event: &storepb.IssueCommentPayload_IssueUpdate_{
+					IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+						FromStatus: &oldStatus,
+						ToStatus:   &newStatus,
 					},
-				}, user.Email); err != nil {
-					errs = multierr.Append(errs, errors.Wrapf(err, "failed to create issue comment after change the issue status"))
-					return
-				}
-			}()
+				},
+			},
+		})
+	}
+	if _, err := s.store.CreateIssueComments(ctx, user.Email, issueComments...); err != nil {
+		slog.Error("failed to batch create issue comments", log.BBError(err))
+	}
+
+	// Create webhooks for each updated issue.
+	for _, issueUID := range issueUIDs {
+		updatedIssue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{UID: &issueUID, ProjectID: &projectID})
+		if err != nil {
+			slog.Error("failed to get updated issue", "issueUID", issueUID, log.BBError(err))
+			continue
 		}
-		return errs
-	}(); err != nil {
-		slog.Error("failed to create activity after changing the issue status", log.BBError(err))
+		if updatedIssue == nil {
+			slog.Error("updated issue not found", "issueUID", issueUID)
+			continue
+		}
+
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   user,
+			Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
+			Comment: req.Msg.Reason,
+			Issue:   webhook.NewIssue(updatedIssue),
+			Project: webhook.NewProject(project),
+		})
 	}
 
 	return connect.NewResponse(&v1pb.BatchUpdateIssuesStatusResponse{}), nil
@@ -1336,12 +1314,12 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 		Project: webhook.NewProject(project),
 	})
 
-	ic, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+	ic, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
 		IssueUID: issue.UID,
 		Payload: &storepb.IssueCommentPayload{
 			Comment: req.Msg.IssueComment.Comment,
 		},
-	}, user.Email)
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue comment: %v", err))
 	}

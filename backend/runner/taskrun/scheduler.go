@@ -237,7 +237,7 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 
 						fromStatus := storepb.Issue_Status(storepb.Issue_Status_value[issueN.Status.String()])
 						toStatus := storepb.Issue_Status(storepb.Issue_Status_value[updatedIssue.Status.String()])
-						if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+						if _, err := s.store.CreateIssueComments(ctx, common.SystemBotEmail, &store.IssueCommentMessage{
 							IssueUID: issueN.UID,
 							Payload: &storepb.IssueCommentPayload{
 								Event: &storepb.IssueCommentPayload_IssueUpdate_{
@@ -247,7 +247,7 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 									},
 								},
 							},
-						}, common.SystemBotEmail); err != nil {
+						}); err != nil {
 							return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
 						}
 

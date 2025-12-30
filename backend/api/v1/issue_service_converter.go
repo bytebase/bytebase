@@ -344,26 +344,6 @@ func convertToIssueCommentEventIssueUpdate(u *storepb.IssueCommentPayload_IssueU
 	}
 }
 
-func convertToIssueCommentPayloadIssueUpdateIssueStatus(s *v1pb.IssueStatus) *storepb.Issue_Status {
-	if s == nil {
-		return nil
-	}
-	var is storepb.Issue_Status
-	switch *s {
-	case v1pb.IssueStatus_CANCELED:
-		is = storepb.Issue_CANCELED
-	case v1pb.IssueStatus_DONE:
-		is = storepb.Issue_DONE
-	case v1pb.IssueStatus_OPEN:
-		is = storepb.Issue_OPEN
-	case v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED:
-		is = storepb.Issue_ISSUE_STATUS_UNSPECIFIED
-	default:
-		is = storepb.Issue_ISSUE_STATUS_UNSPECIFIED
-	}
-	return &is
-}
-
 func convertToIssueCommentEventIssueUpdateStatus(s *storepb.Issue_Status) *v1pb.IssueStatus {
 	if s == nil {
 		return nil

@@ -118,36 +118,59 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 	return issueComments, nil
 }
 
-func (s *Store) CreateIssueComment(ctx context.Context, create *IssueCommentMessage, creator string) (*IssueCommentMessage, error) {
-	payload, err := protojson.Marshal(create.Payload)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to marshal payload")
+// CreateIssueComments creates one or more issue comments.
+// For a single comment, it returns the created comment with UID, CreatedAt, and UpdatedAt filled in.
+// For multiple comments, it performs a batch insert and returns nil.
+func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates ...*IssueCommentMessage) (*IssueCommentMessage, error) {
+	if len(creates) == 0 {
+		return nil, nil
 	}
 
-	q := qb.Q().Space(`
-		INSERT INTO issue_comment (
-			creator,
-			issue_id,
-			payload
-		) VALUES (
-			?,
-			?,
-			?
-		) RETURNING id, created_at, updated_at
-	`, creator, create.IssueUID, payload)
+	// Prepare all payloads.
+	issueIDs := make([]int, 0, len(creates))
+	payloads := make([][]byte, 0, len(creates))
+	for _, create := range creates {
+		payload, err := protojson.Marshal(create.Payload)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal payload")
+		}
+		issueIDs = append(issueIDs, create.IssueUID)
+		payloads = append(payloads, payload)
+	}
 
+	// Use UNNEST to insert all comments in one query.
+	q := qb.Q().Space(`
+		INSERT INTO issue_comment (creator, issue_id, payload)
+		SELECT ?, unnest(?::INT[]), unnest(?::JSONB[])
+	`, creator, issueIDs, payloads)
+
+	// For single comment, use RETURNING to get the created comment details.
+	if len(creates) == 1 {
+		q.Space("RETURNING id, created_at, updated_at")
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to build sql")
+		}
+
+		create := creates[0]
+		if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.UID, &create.CreatedAt, &create.UpdatedAt); err != nil {
+			return nil, errors.Wrapf(err, "failed to insert")
+		}
+		create.CreatorEmail = creator
+		return create, nil
+	}
+
+	// For multiple comments, just execute without RETURNING.
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.UID, &create.CreatedAt, &create.UpdatedAt); err != nil {
-		return nil, errors.Wrapf(err, "failed to insert")
+	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to batch insert comments")
 	}
 
-	create.CreatorEmail = creator
-
-	return create, nil
+	return nil, nil
 }
 
 func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommentMessage) error {
