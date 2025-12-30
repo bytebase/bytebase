@@ -66,7 +66,7 @@ func (s *Scheduler) Register(taskType storepb.Task_Type, executorGetter Executor
 func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	go s.ListenTaskSkippedOrDone(ctx)
+	go s.runTaskCompletionListener(ctx)
 
 	// Start rollout creator component
 	rolloutCreator := NewRolloutCreator(s.store, s.stateCfg, s.webhookManager)
@@ -79,22 +79,17 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	<-ctx.Done()
 }
 
-func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
+func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
 			if !ok {
 				err = errors.Errorf("%v", r)
 			}
-			slog.Error("ListenTaskSkippedOrDone PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+			slog.Error("runTaskCompletionListener PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
-	slog.Info("TaskSkippedOrDoneListener started")
-	type planEnvironment struct {
-		planUID     int64
-		environment string
-	}
-	planEnvironmentDoneConfirmed := map[planEnvironment]bool{}
+	slog.Info("Task completion listener started")
 
 	for {
 		select {
@@ -104,44 +99,18 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 				if err != nil {
 					return errors.Wrapf(err, "failed to get task")
 				}
-				if planEnvironmentDoneConfirmed[planEnvironment{planUID: task.PlanID, environment: task.Environment}] {
-					return nil
-				}
 
-				environmentTasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &task.PlanID, Environment: &task.Environment})
-				if err != nil {
-					return errors.Wrapf(err, "failed to list tasks")
-				}
-
-				skippedOrDone := tasksSkippedOrDone(environmentTasks)
-				if !skippedOrDone {
-					return nil
-				}
-
-				planEnvironmentDoneConfirmed[planEnvironment{planUID: task.PlanID, environment: task.Environment}] = true
-
-				// Check if entire plan is complete
+				// Check if entire plan is complete and handle webhooks
 				s.checkPlanCompletion(ctx, task.PlanID)
 
 				return nil
 			}(); err != nil {
-				slog.Error("failed to handle task skipped or done", log.BBError(err))
+				slog.Error("failed to handle task completion", log.BBError(err))
 			}
 		case <-ctx.Done():
 			return
 		}
 	}
-}
-
-func tasksSkippedOrDone(tasks []*store.TaskMessage) bool {
-	for _, task := range tasks {
-		skipped := task.Payload.GetSkipped()
-		done := task.LatestTaskRunStatus == storepb.TaskRun_DONE
-		if !skipped && !done {
-			return false
-		}
-	}
-	return true
 }
 
 func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {

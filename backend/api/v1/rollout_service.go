@@ -252,7 +252,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		}
 	}
 
-	if err := CreateRolloutAndPendingTasks(ctx, s.store, s.webhookManager, plan, nil, project, tasks); err != nil {
+	if err := CreateRolloutAndPendingTasks(ctx, s.store, plan, nil, project, tasks); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -332,7 +332,6 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 func CreateRolloutAndPendingTasks(
 	ctx context.Context,
 	s *store.Store,
-	_ *webhook.Manager,
 	plan *store.PlanMessage,
 	issue *store.IssueMessage,
 	project *store.ProjectMessage,
