@@ -23,7 +23,6 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
   getDefaultPagination,
-  hasWorkspacePermissionV2,
   supportedEngineV1List,
 } from "@/utils";
 import type { ScopeOption, ValueOption } from "./types";
