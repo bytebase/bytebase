@@ -283,6 +283,7 @@
     "view-change": "Xem thay đổi",
     "status": {
       "running": "Đang chạy",
+      "available": "Có sẵn",
       "failed": "Thất bại",
       "canceled": "Đã hủy",
       "skipped": "Đã bỏ qua",

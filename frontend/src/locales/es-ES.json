@@ -283,6 +283,7 @@
     "view-change": "Ver cambio",
     "status": {
       "running": "Ejecutándose",
+      "available": "Disponible",
       "failed": "Fallido",
       "canceled": "Cancelado",
       "skipped": "Omitido",

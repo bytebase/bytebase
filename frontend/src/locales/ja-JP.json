@@ -283,6 +283,7 @@
     "view-change": "変更を表示する",
     "status": {
       "running": "ランニング",
+      "available": "利用可能",
       "failed": "失敗",
       "canceled": "キャンセル",
       "skipped": "スキップ",

@@ -283,6 +283,7 @@
     "view-change": "View change",
     "status": {
       "running": "Running",
+      "available": "Available",
       "failed": "Failed",
       "canceled": "Canceled",
       "skipped": "Skipped",
