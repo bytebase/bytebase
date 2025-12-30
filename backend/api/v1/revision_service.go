@@ -78,7 +78,7 @@ func (s *RevisionService) ListRevisions(
 	var nextPageToken string
 	if len(revisions) == limitPlusOne {
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token, error"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
 		}
 		revisions = revisions[:offset.limit]
 	}

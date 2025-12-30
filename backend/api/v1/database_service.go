@@ -63,7 +63,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, req *connect.Request[
 	}
 	database, err := s.convertToDatabase(ctx, databaseMessage)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert database, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database"))
 	}
 	return connect.NewResponse(database), nil
 }
@@ -116,7 +116,7 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 		}
 		database, err := s.convertToDatabase(ctx, databaseMessage)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert database, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database"))
 		}
 		databases = append(databases, database)
 	}
@@ -248,7 +248,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 	if len(databaseMessages) == limitPlusOne {
 		databaseMessages = databaseMessages[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal next page token, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
 		}
 	}
 
@@ -258,7 +258,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 	for _, databaseMessage := range databaseMessages {
 		database, err := s.convertToDatabase(ctx, databaseMessage)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert database, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database"))
 		}
 		response.Databases = append(response.Databases, database)
 	}
@@ -382,7 +382,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 
 	database, err := s.convertToDatabase(ctx, updatedDatabase)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert database, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database"))
 	}
 	return connect.NewResponse(database), nil
 }
@@ -691,22 +691,22 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 	// Use unified SDL-based approach for all scenarios
 	sourceDBSchema, err := s.getSourceDBMetadata(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get source schema, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get source schema"))
 	}
 
 	targetDBSchema, err := s.getTargetDBMetadata(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get target schema, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get target schema"))
 	}
 
 	engine, err := s.getParserEngine(ctx, req.Msg)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get parser engine, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get parser engine"))
 	}
 
 	schemaDiff, err := schema.GetDatabaseSchemaDiff(engine, sourceDBSchema, targetDBSchema)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute schema diff, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute schema diff"))
 	}
 
 	// Filter out bbdataarchive schema changes for Postgres
@@ -716,7 +716,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 
 	migrationSQL, err := schema.GenerateMigration(engine, schemaDiff)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate migration SQL, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate migration SQL"))
 	}
 
 	return connect.NewResponse(&v1pb.DiffSchemaResponse{

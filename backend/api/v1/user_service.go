@@ -57,7 +57,7 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 	}
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
 	if user == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", email))
@@ -128,14 +128,14 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 
 	users, err := s.store.ListUsers(ctx, find)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list user, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list user"))
 	}
 
 	nextPageToken := ""
 	if len(users) == limitPlusOne {
 		users = users[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal next page token, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
 		}
 	}
 
@@ -153,7 +153,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_SELF_SERVICE_SIGNUP); err == nil {
 		setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find workspace setting, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 		}
 		if setting.DisallowSignup || s.profile.SaaS {
 			callerUser, ok := GetUserFromContext(ctx)
@@ -205,13 +205,13 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 
 	count, err := s.store.CountActiveEndUsers(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to count users, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count users"))
 	}
 	firstEndUser := count == 0
 
 	if request.Msg.User.Phone != "" {
 		if err := common.ValidatePhone(request.Msg.User.Phone); err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid phone %q, error: %v", request.Msg.User.Phone, err))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid phone %q", request.Msg.User.Phone))
 		}
 	}
 
@@ -222,7 +222,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 	}
 	existingUser, err := s.store.GetUserByEmail(ctx, request.Msg.User.Email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find user by email, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
 	}
 	if existingUser != nil {
 		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s exists", request.Msg.User.Email))
@@ -260,7 +260,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate password hash, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate password hash"))
 	}
 
 	// Build profile with workload identity config if applicable
@@ -288,7 +288,7 @@ func (s *UserService) CreateUser(ctx context.Context, request *connect.Request[v
 
 	user, err := s.store.CreateUser(ctx, userMessage)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create user, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
 	}
 
 	if firstEndUser {
@@ -353,7 +353,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	}
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
 	if user == nil {
 		if request.Msg.AllowMissing {
@@ -430,12 +430,12 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 			} else {
 				setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find workspace setting, error: %v", err))
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 				}
 				if setting.Require_2Fa {
 					isWorkspaceAdmin, err := isUserWorkspaceAdmin(ctx, s.store, callerUser)
 					if err != nil {
-						return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check user roles, error: %v", err))
+						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check user roles"))
 					}
 					// Allow workspace admin to disable 2FA even if it is required.
 					if !isWorkspaceAdmin {
@@ -447,7 +447,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 		case "phone":
 			if request.Msg.User.Phone != "" {
 				if err := common.ValidatePhone(request.Msg.User.Phone); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid phone number %q, error: %v", request.Msg.User.Phone, err))
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid phone number %q", request.Msg.User.Phone))
 				}
 			}
 			patch.Phone = &request.Msg.User.Phone
@@ -462,7 +462,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte((*passwordPatch)), bcrypt.DefaultCost)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate password hash, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate password hash"))
 		}
 		passwordHashStr := string(passwordHash)
 		patch.PasswordHash = &passwordHashStr
@@ -489,11 +489,11 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 	if request.Msg.RegenerateTempMfaSecret {
 		tempSecret, err := generateRandSecret(user.Email)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate MFA secret, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate MFA secret"))
 		}
 		tempRecoveryCodes, err := generateRecoveryCodes(10)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate recovery codes, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate recovery codes"))
 		}
 		patch.MFAConfig = &storepb.MFAConfig{
 			TempOtpSecret:            tempSecret,
@@ -522,7 +522,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 
 	user, err = s.store.UpdateUser(ctx, user, patch)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update user, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
 	}
 
 	userResponse := convertToUser(ctx, s.iamManager, user)
@@ -552,7 +552,7 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 	}
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
 	if user == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", email))
@@ -645,7 +645,7 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 	}
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
 	if user == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", email))
@@ -687,7 +687,7 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	}
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
 	}
 	if user == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user not found"))
@@ -709,7 +709,7 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	// Check if email already exists
 	existedUser, err := s.store.GetUserByEmail(ctx, request.Msg.Email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find user by email, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
 	}
 	if existedUser != nil && existedUser.ID != user.ID {
 		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s already exists", request.Msg.Email))
@@ -718,7 +718,7 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	// Update the email
 	user, err = s.store.UpdateUserEmail(ctx, user, request.Msg.Email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update user email, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user email"))
 	}
 
 	return connect.NewResponse(convertToUser(ctx, s.iamManager, user)), nil
@@ -806,7 +806,7 @@ func validateEmailWithDomains(ctx context.Context, licenseService *enterprise.Li
 	}
 	setting, err := stores.GetWorkspaceProfileSetting(ctx)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to find workspace setting, error: %v", err))
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 	}
 
 	var allowedDomains []string

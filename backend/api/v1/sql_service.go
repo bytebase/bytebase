@@ -1278,7 +1278,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 	if len(historyList) == limitPlusOne {
 		historyList = historyList[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal next page token, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
 		}
 	}
 
@@ -1288,7 +1288,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, req *connect.Requ
 	for _, history := range historyList {
 		queryHistory, err := s.convertToV1QueryHistory(ctx, history)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert log entity, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert log entity"))
 		}
 		if queryHistory == nil {
 			continue
@@ -1426,7 +1426,7 @@ func (s *SQLService) accessCheck(
 
 	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get workspace iam policy, error: %v", err))
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get workspace iam policy"))
 	}
 
 	projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.ResourceID)
@@ -1696,13 +1696,13 @@ func (*SQLService) DiffMetadata(_ context.Context, req *connect.Request[v1pb.Dif
 	// Get the metadata diff between source and target
 	metadataDiff, err := schema.GetDatabaseSchemaDiff(storepb.Engine(request.Engine), sourceDBSchema, targetDBSchema)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to compute diff between source and target schemas, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute diff between source and target schemas"))
 	}
 
 	// Generate migration SQL from the diff
 	diff, err := schema.GenerateMigration(storepb.Engine(request.Engine), metadataDiff)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate migration SQL, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate migration SQL"))
 	}
 
 	return connect.NewResponse(&v1pb.DiffMetadataResponse{

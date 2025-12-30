@@ -69,7 +69,7 @@ func (s *IssueService) GetIssue(ctx context.Context, req *connect.Request[v1pb.G
 	}
 	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 	return connect.NewResponse(issueV1), nil
 }
@@ -216,7 +216,7 @@ func (s *IssueService) getIssueFind(
 	}
 
 	if _, err := parseFilter(ast.NativeRep().Expr()); err != nil {
-		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter, error: %v", err))
+		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse filter"))
 	}
 	return issueFind, filterIssue, nil
 }
@@ -249,20 +249,20 @@ func (s *IssueService) ListIssues(ctx context.Context, req *connect.Request[v1pb
 
 	issues, err := s.store.ListIssues(ctx, issueFind)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to search issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to search issue"))
 	}
 
 	var nextPageToken string
 	if len(issues) == limitPlusOne {
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get next page token, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
 		}
 		issues = issues[:offset.limit]
 	}
 
 	converted, err := s.convertToIssues(ctx, issues, issueFilter)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 	return connect.NewResponse(&v1pb.ListIssuesResponse{
 		Issues:        converted,
@@ -304,27 +304,27 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 		}
 		projectIDsFilter, err := getProjectIDsSearchFilter(ctx, user, iam.PermissionIssuesGet, s.iamManager, s.store)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get projectIDs, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get projectIDs"))
 		}
 		issueFind.ProjectIDs = projectIDsFilter
 	}
 
 	issues, err := s.store.ListIssues(ctx, issueFind)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to search issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to search issue"))
 	}
 
 	var nextPageToken string
 	if len(issues) == limitPlusOne {
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get next page token, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
 		}
 		issues = issues[:offset.limit]
 	}
 
 	converted, err := s.convertToIssues(ctx, issues, issueFilter)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 	return connect.NewResponse(&v1pb.SearchIssuesResponse{
 		Issues:        converted,
@@ -357,7 +357,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
@@ -398,7 +398,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 	}
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &project.ResourceID})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 	}
 	if plan == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
@@ -425,7 +425,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 
 	issue, err := s.store.CreateIssue(ctx, issueCreateMessage)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
@@ -439,7 +439,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 
 	converted, err := s.convertToIssue(issue)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 
 	return connect.NewResponse(converted), nil
@@ -468,7 +468,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 	if expression := request.Issue.GrantRequest.GetCondition().GetExpression(); expression != "" {
 		e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel environment, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create cel environment"))
 		}
 		if _, issues := e.Compile(expression); issues != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("found issues in grant request condition expression, issues: %v", issues.String()))
@@ -477,7 +477,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 
 	convertedGrantRequest, err := convertGrantRequest(ctx, s.store, request.Issue.GrantRequest)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert GrantRequest, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert GrantRequest"))
 	}
 	issueCreateMessage := &store.IssueMessage{
 		ProjectID:    project.ResourceID,
@@ -500,7 +500,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 
 	issue, err := s.store.CreateIssue(ctx, issueCreateMessage)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
@@ -514,7 +514,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 
 	converted, err := s.convertToIssue(issue)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 
 	return connect.NewResponse(converted), nil
@@ -537,7 +537,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 	}
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID, ProjectID: &project.ResourceID})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 	}
 	if plan == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, project.ResourceID))
@@ -564,7 +564,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 
 	issue, err := s.store.CreateIssue(ctx, issueCreateMessage)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
@@ -578,7 +578,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 
 	converted, err := s.convertToIssue(issue)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 
 	return connect.NewResponse(converted), nil
@@ -592,7 +592,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
@@ -638,7 +638,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 	approved, err := utils.CheckApprovalApproved(payload.Approval)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check if the approval is approved, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if the approval is approved"))
 	}
 
 	issue, err = s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{
@@ -647,7 +647,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		},
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 	}
 
 	// Grant the privilege if the issue is approved.
@@ -770,7 +770,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 
 	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 
 	// Auto-create rollout if this approval completes the approval flow
@@ -833,7 +833,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 		},
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 	}
 
 	if err := func() error {
@@ -856,7 +856,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 
 	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 	return connect.NewResponse(issueV1), nil
 }
@@ -869,7 +869,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
@@ -918,7 +918,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		},
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 	}
 
 	func() {
@@ -964,7 +964,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 
 	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 	return connect.NewResponse(issueV1), nil
 }
@@ -1007,7 +1007,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
@@ -1131,7 +1131,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 
 	issue, err = s.store.UpdateIssue(ctx, issue.UID, patch)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
 	}
 
 	if updateMasks["approval_finding_done"] {
@@ -1149,7 +1149,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 
 	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
 	return connect.NewResponse(issueV1), nil
 }
@@ -1295,7 +1295,7 @@ func (s *IssueService) ListIssueComments(ctx context.Context, req *connect.Reque
 	var nextPageToken string
 	if len(issueComments) == limitPlusOne {
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get next page token, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
 		}
 		issueComments = issueComments[:offset.limit]
 	}
@@ -1322,7 +1322,7 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 	}
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
@@ -1421,7 +1421,7 @@ func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get issue"))
 	}
 	if issue == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %d not found in project %s", issueUID, projectID))

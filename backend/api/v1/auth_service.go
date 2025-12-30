@@ -453,7 +453,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		PasswordHash: string(passwordHash),
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user, error"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
 	}
 	if userInfo.HasGroups {
 		// Sync user groups with the identity provider.
@@ -672,7 +672,7 @@ func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginR
 	}
 	user, err := s.store.GetUserByEmail(ctx, userEmail)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user, error"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user"))
 	}
 	if user == nil {
 		return nil, invalidCredentialsError
@@ -704,7 +704,7 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 
 	isWorkspaceAdmin, err := isUserWorkspaceAdmin(ctx, s.store, user)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check user roles, error"))
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check user roles"))
 	}
 
 	// Skip restrictions for workspace admins and service accounts
@@ -724,7 +724,7 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_DISALLOW_PASSWORD_SIGNIN); err == nil {
 		setting, err := s.store.GetWorkspaceProfileSetting(ctx)
 		if err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting, error"))
+			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
 		}
 		if setting.DisallowPasswordSignin && !loginViaIDP {
 			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
