@@ -3546,9 +3546,7 @@ Activity type enumeration.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 | Unspecified type. |
-| ISSUE_CREATED | 10 | Focused event types for reduced notification noise.
-
-ISSUE_CREATED represents a new issue creation event. |
+| ISSUE_CREATED | 10 | ISSUE_CREATED represents a new issue creation event. |
 | ISSUE_APPROVAL_REQUESTED | 11 | ISSUE_APPROVAL_REQUESTED represents an approval request event. |
 | ISSUE_SENT_BACK | 12 | ISSUE_SENT_BACK represents an issue being sent back by an approver. |
 | PIPELINE_FAILED | 13 | PIPELINE_FAILED represents a pipeline failure event. |

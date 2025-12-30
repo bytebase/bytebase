@@ -12,8 +12,6 @@ message Activity {
   enum Type {
     // Unspecified type.
     TYPE_UNSPECIFIED = 0;
-    // Focused event types for reduced notification noise.
-    //
     // ISSUE_CREATED represents a new issue creation event.
     ISSUE_CREATED = 10;
     // ISSUE_APPROVAL_REQUESTED represents an approval request event.
