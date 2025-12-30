@@ -1886,13 +1886,17 @@
           "title": "Issue approval needed",
           "label": "When issue is pending approval"
         },
-        "notify-issue-approved": {
-          "title": "Issue approved",
-          "label": "When issue is approved"
+        "issue-sent-back": {
+          "title": "Issue sent back",
+          "label": "When issue is sent back by an approver"
         },
-        "notify-pipeline-rollout": {
-          "title": "Issue rollout needed",
-          "label": "When the issue is waiting for rollout"
+        "pipeline-failed": {
+          "title": "Pipeline failed",
+          "label": "When pipeline tasks fail"
+        },
+        "pipeline-completed": {
+          "title": "Pipeline completed",
+          "label": "When pipeline completes successfully"
         }
       }
     },

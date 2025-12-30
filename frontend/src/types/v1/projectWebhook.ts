@@ -9,7 +9,7 @@ import {
 export const emptyProjectWebhook = () => {
   return createProto(WebhookSchema, {
     type: WebhookType.SLACK,
-    notificationTypes: [Activity_Type.ISSUE_STATUS_UPDATE],
+    notificationTypes: [Activity_Type.ISSUE_CREATED],
   });
 };
 
@@ -101,64 +101,32 @@ export const projectWebhookV1ActivityItemList =
       {
         title: t("project.webhook.activity-item.issue-creation.title"),
         label: t("project.webhook.activity-item.issue-creation.label"),
-        activity: Activity_Type.ISSUE_CREATE,
-        supportDirectMessage: false,
-      },
-      {
-        title: t("project.webhook.activity-item.issue-status-change.title"),
-        label: t("project.webhook.activity-item.issue-status-change.label"),
-        activity: Activity_Type.ISSUE_STATUS_UPDATE,
-        supportDirectMessage: false,
-      },
-      {
-        title: t(
-          "project.webhook.activity-item.issue-stage-status-change.title"
-        ),
-        label: t(
-          "project.webhook.activity-item.issue-stage-status-change.label"
-        ),
-        activity: Activity_Type.ISSUE_PIPELINE_STAGE_STATUS_UPDATE,
-        supportDirectMessage: false,
-      },
-      {
-        title: t(
-          "project.webhook.activity-item.issue-task-status-change.title"
-        ),
-        label: t(
-          "project.webhook.activity-item.issue-task-status-change.label"
-        ),
-        activity: Activity_Type.ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
-        supportDirectMessage: false,
-      },
-      {
-        title: t("project.webhook.activity-item.issue-info-change.title"),
-        label: t("project.webhook.activity-item.issue-info-change.label"),
-        activity: Activity_Type.ISSUE_FIELD_UPDATE,
-        supportDirectMessage: false,
-      },
-      {
-        title: t("project.webhook.activity-item.issue-comment-creation.title"),
-        label: t("project.webhook.activity-item.issue-comment-creation.label"),
-        activity: Activity_Type.ISSUE_COMMENT_CREATE,
+        activity: Activity_Type.ISSUE_CREATED,
         supportDirectMessage: false,
       },
       {
         title: t("project.webhook.activity-item.issue-approval-notify.title"),
         label: t("project.webhook.activity-item.issue-approval-notify.label"),
-        activity: Activity_Type.ISSUE_APPROVAL_NOTIFY,
+        activity: Activity_Type.ISSUE_APPROVAL_REQUESTED,
         supportDirectMessage: true,
       },
       {
-        title: t("project.webhook.activity-item.notify-issue-approved.title"),
-        label: t("project.webhook.activity-item.notify-issue-approved.label"),
-        activity: Activity_Type.NOTIFY_ISSUE_APPROVED,
+        title: t("project.webhook.activity-item.issue-sent-back.title"),
+        label: t("project.webhook.activity-item.issue-sent-back.label"),
+        activity: Activity_Type.ISSUE_SENT_BACK,
         supportDirectMessage: true,
       },
       {
-        title: t("project.webhook.activity-item.notify-pipeline-rollout.title"),
-        label: t("project.webhook.activity-item.notify-pipeline-rollout.label"),
-        activity: Activity_Type.NOTIFY_PIPELINE_ROLLOUT,
-        supportDirectMessage: true,
+        title: t("project.webhook.activity-item.pipeline-failed.title"),
+        label: t("project.webhook.activity-item.pipeline-failed.label"),
+        activity: Activity_Type.PIPELINE_FAILED,
+        supportDirectMessage: false,
+      },
+      {
+        title: t("project.webhook.activity-item.pipeline-completed.title"),
+        label: t("project.webhook.activity-item.pipeline-completed.label"),
+        activity: Activity_Type.PIPELINE_COMPLETED,
+        supportDirectMessage: false,
       },
     ];
   };

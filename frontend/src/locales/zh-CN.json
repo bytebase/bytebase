@@ -1862,37 +1862,21 @@
           "title": "创建@:common.issue",
           "label": "当一个新的工单被创建"
         },
-        "issue-status-change": {
-          "title": "工单状态变更",
-          "label": "当一个工单的状态发生变更"
-        },
-        "issue-stage-status-change": {
-          "title": "工单阶段状态变更",
-          "label": "当一个工单包含的阶段状态发生了变更"
-        },
-        "issue-task-status-change": {
-          "title": "工单任务状态变更",
-          "label": "当一个工单包含的任务状态发生了变更"
-        },
-        "issue-info-change": {
-          "title": "工单信息变更",
-          "label": "当一个工单的信息 (比如: 标题, 描述) 发生了变更"
-        },
-        "issue-comment-creation": {
-          "title": "工单被评论",
-          "label": "当新的工单评论被创建"
-        },
         "issue-approval-notify": {
           "title": "工单待审批",
           "label": "当工单需要审批"
         },
-        "notify-issue-approved": {
-          "title": "工单审批通过",
-          "label": "当工单审批通过"
+        "issue-sent-back": {
+          "title": "工单被退回",
+          "label": "当工单被审批人退回"
         },
-        "notify-pipeline-rollout": {
-          "title": "工单待发布",
-          "label": "当工单待发布时"
+        "pipeline-failed": {
+          "title": "流水线失败",
+          "label": "当流水线任务失败"
+        },
+        "pipeline-completed": {
+          "title": "流水线完成",
+          "label": "当流水线成功完成"
         }
       }
     },

@@ -1862,37 +1862,21 @@
           "title": "@:common.issue を作成する",
           "label": "新しいイシューが作成されたとき"
         },
-        "issue-status-change": {
-          "title": "イシューのステータスの変更",
-          "label": "イシューのステータスが変更されたとき"
-        },
-        "issue-stage-status-change": {
-          "title": "イシューのステージのステータスの変更",
-          "label": "イシューに含まれるステージステータスが変更されたとき"
-        },
-        "issue-task-status-change": {
-          "title": "イシューのタスクのステータスの変更",
-          "label": "イシューに含まれるタスクのステータスが変更されたとき"
-        },
-        "issue-info-change": {
-          "title": "イシューの情報の変更",
-          "label": "イシューの情報 (例: タイトル、説明) が変更されたとき"
-        },
-        "issue-comment-creation": {
-          "title": "イシューへのコメント",
-          "label": "新しいイシューコメントが作成されたとき"
-        },
         "issue-approval-notify": {
           "title": "イシューは承認待ちです",
           "label": "イシューに承認が必要な場合"
         },
-        "notify-issue-approved": {
-          "title": "イシューが承認されました",
-          "label": "イシューが承認されたとき"
+        "issue-sent-back": {
+          "title": "イシューが差し戻されました",
+          "label": "承認者がイシューを差し戻したとき"
         },
-        "notify-pipeline-rollout": {
-          "title": "リリースされる作業命令",
-          "label": "イシューがリリース保留中の場合"
+        "pipeline-failed": {
+          "title": "パイプラインが失敗しました",
+          "label": "パイプラインタスクが失敗したとき"
+        },
+        "pipeline-completed": {
+          "title": "パイプラインが完了しました",
+          "label": "パイプラインが正常に完了したとき"
         }
       }
     },
