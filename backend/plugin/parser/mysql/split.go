@@ -67,7 +67,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 			stmtEndByte := len(statement[:stmtEndChar])
 
 			// Calculate start position from byte offset (first character of Text)
-			startLine, startColumn := calculateLineAndColumn(statement, stmtStartByte)
+			startLine, startColumn := base.CalculateLineAndColumn(statement, stmtStartByte)
 			// From antlr4, the line is ONE based, and the column is ZERO based.
 			// So we should minus 1 for the line.
 			result = append(result, base.Statement{
@@ -108,7 +108,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 			stmtEndByte := len(statement[:stmtEndChar])
 
 			// Calculate start position from byte offset (first character of Text)
-			startLine, startColumn := calculateLineAndColumn(statement, stmtStartByte)
+			startLine, startColumn := base.CalculateLineAndColumn(statement, stmtStartByte)
 			// From antlr4, the line is ONE based, and the column is ZERO based.
 			// So we should minus 1 for the line.
 			result = append(result, base.Statement{
@@ -149,7 +149,7 @@ func splitDelimiterModeSQL(stream *antlr.CommonTokenStream, statement string) ([
 		stmtEndByte := len(statement[:stmtEndChar])
 
 		// Calculate start position from byte offset (first character of Text)
-		startLine, startColumn := calculateLineAndColumn(statement, stmtStartByte)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, stmtStartByte)
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
@@ -254,7 +254,7 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 		stmtByteLength := len(stmtText)
 
 		// Calculate start position from byte offset (first character of Text)
-		startLine, startColumn := calculateLineAndColumn(statement, byteOffset)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
@@ -285,7 +285,7 @@ func splitByParser(statement string, lexer *parser.MySQLLexer, stream *antlr.Com
 		stmtByteLength := len(stmtText)
 
 		// Calculate start position from byte offset (first character of Text)
-		startLine, startColumn := calculateLineAndColumn(statement, byteOffset)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
@@ -458,7 +458,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 		stmtByteLength := len(stmtText)
 
 		// Calculate start position from byte offset (first character of Text)
-		startLine, startColumn := calculateLineAndColumn(statement, byteOffset)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
@@ -489,7 +489,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream, statement string) ([]b
 		stmtByteLength := len(stmtText)
 
 		// Calculate start position from byte offset (first character of Text)
-		startLine, startColumn := calculateLineAndColumn(statement, byteOffset)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffset)
 		// From antlr4, the line is ONE based, and the column is ZERO based.
 		// So we should minus 1 for the line.
 		result = append(result, base.Statement{
@@ -527,22 +527,4 @@ func popSemicolonStack(stack []int, openParPos int) []int {
 	}
 
 	return []int{}
-}
-
-// calculateLineAndColumn calculates the 0-based line number and 0-based column (character offset)
-// for a given byte offset in the statement.
-func calculateLineAndColumn(statement string, byteOffset int) (line, column int) {
-	if byteOffset > len(statement) {
-		byteOffset = len(statement)
-	}
-	// Range over string iterates over runes (code points), not bytes
-	for _, r := range statement[:byteOffset] {
-		if r == '\n' {
-			line++
-			column = 0
-		} else {
-			column++
-		}
-	}
-	return line, column
 }
