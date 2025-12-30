@@ -217,6 +217,77 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		usersGetter = getUsersFromRole(m.store, role, e.Project.ResourceID)
 		mentionUsers = getUsersForDirectMessage(ctx, e, usersGetter)
 
+	case storepb.Activity_ISSUE_CREATED:
+		title = "Issue created"
+		titleZh = "创建工单"
+		if e.IssueCreated != nil {
+			webhookCtx.Description = fmt.Sprintf("%s created issue %s", e.IssueCreated.CreatorName, e.Issue.Title)
+		}
+
+	case storepb.Activity_ISSUE_APPROVAL_REQUESTED:
+		level = webhook.WebhookWarn
+		title = "Approval required"
+		titleZh = "需要审批"
+		if e.ApprovalRequested != nil {
+			webhookCtx.ApprovalRole = e.ApprovalRequested.ApprovalRole
+			webhookCtx.ApprovalRequired = e.ApprovalRequested.RequiredCount
+			mentionUsers = make([]*store.UserMessage, 0, len(e.ApprovalRequested.Approvers))
+			for _, user := range e.ApprovalRequested.Approvers {
+				mentionUsers = append(mentionUsers, &store.UserMessage{
+					Name:  user.Name,
+					Email: user.Email,
+				})
+			}
+		}
+
+	case storepb.Activity_ISSUE_SENT_BACK:
+		level = webhook.WebhookWarn
+		title = "Issue sent back"
+		titleZh = "工单被退回"
+		if e.SentBack != nil {
+			webhookCtx.Description = fmt.Sprintf("%s sent back the issue: %s", e.SentBack.ApproverName, e.SentBack.Reason)
+			mentionUsers = []*store.UserMessage{
+				{
+					Name:  e.SentBack.CreatorName,
+					Email: e.SentBack.CreatorEmail,
+				},
+			}
+		}
+
+	case storepb.Activity_PIPELINE_FAILED:
+		level = webhook.WebhookError
+		title = "Pipeline failed"
+		titleZh = "流水线失败"
+		if e.PipelineFailed != nil {
+			failedTasks := make([]webhook.FailedTaskInfo, 0, len(e.PipelineFailed.FailedTasks))
+			for _, task := range e.PipelineFailed.FailedTasks {
+				failedTasks = append(failedTasks, webhook.FailedTaskInfo{
+					Name:         task.TaskName,
+					Instance:     task.InstanceName,
+					Database:     task.DatabaseName,
+					ErrorMessage: task.ErrorMessage,
+					FailedAt:     task.FailedAt.Format(time.RFC3339),
+				})
+			}
+			webhookCtx.FailedTasks = failedTasks
+			webhookCtx.Description = fmt.Sprintf("%d task(s) failed", len(failedTasks))
+		}
+
+	case storepb.Activity_PIPELINE_COMPLETED:
+		level = webhook.WebhookSuccess
+		title = "Pipeline completed"
+		titleZh = "流水线完成"
+		if e.PipelineCompleted != nil {
+			duration := e.PipelineCompleted.CompletedAt.Sub(e.PipelineCompleted.StartedAt)
+			webhookCtx.PipelineMetrics = &webhook.PipelineMetrics{
+				TotalTasks:   e.PipelineCompleted.TotalTasks,
+				StartedAt:    e.PipelineCompleted.StartedAt.Format(time.RFC3339),
+				CompletedAt:  e.PipelineCompleted.CompletedAt.Format(time.RFC3339),
+				DurationSecs: int64(duration.Seconds()),
+			}
+			webhookCtx.Description = fmt.Sprintf("Completed %d task(s) in %s", e.PipelineCompleted.TotalTasks, duration.String())
+		}
+
 	default:
 		// Unsupported event type
 		return nil, errors.Errorf("unsupported activity type %q for generating webhook context", e.Type)
