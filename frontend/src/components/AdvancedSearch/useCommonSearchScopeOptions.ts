@@ -218,12 +218,6 @@ export const useCommonSearchScopeOptions = (
 
     const scopes: ScopeOption[] = [];
     for (const id of unref(supportOptionIdList)) {
-      // TODO(ed): optimize it.
-      if (id === "instance") {
-        if (!hasWorkspacePermissionV2("bb.instances.list")) {
-          continue;
-        }
-      }
       const create = scopeCreators[id];
       if (create) {
         scopes.push(create());

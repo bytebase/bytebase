@@ -1,6 +1,5 @@
 <template>
   <NConfigProvider
-    :key="key"
     :locale="generalLang"
     :date-locale="dateLang"
     :theme-overrides="themeOverrides"
@@ -36,7 +35,6 @@ import { onErrorCaptured, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Watermark from "@/components/misc/Watermark.vue";
 import { dateLang, generalLang, themeOverrides } from "../naive-ui.config";
-import { provideAppRootContext } from "./AppRootContext";
 import AuthContext from "./AuthContext.vue";
 import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { overrideAppProfile } from "./customAppProfile";
@@ -50,8 +48,6 @@ const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
 const route = useRoute();
 const router = useRouter();
-// TODO(ed): can we remove it?
-const { key } = provideAppRootContext();
 const notificationStore = useNotificationStore();
 
 watchEffect(async () => {

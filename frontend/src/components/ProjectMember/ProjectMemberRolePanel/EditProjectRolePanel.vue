@@ -178,7 +178,6 @@ const allowConfirm = computed(() => {
     props.binding.members.length === 1 &&
     expirationSelectorRef.value?.isValid &&
     databaseResourceFormRef.value?.isValid
-    // TODO(ed): check if expression changed
   );
 });
 

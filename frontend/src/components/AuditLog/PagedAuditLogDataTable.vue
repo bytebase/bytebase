@@ -87,7 +87,7 @@ const handleExport = async ({
         search: {
           parent: props.parent,
           filter: props.filter,
-          // TODO(ed): how to support order by?
+          orderBy: auditPagedTable.value?.orderBy,
           pageSize: 5000, // The maximum page size is 5000
           pageToken,
         },

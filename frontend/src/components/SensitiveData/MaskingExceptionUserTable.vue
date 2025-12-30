@@ -28,20 +28,16 @@ import {
   InstanceV1Name,
   MiniActionButton,
 } from "@/components/v2";
-import { UserNameCell } from "@/components/v2/Model/cells";
 import {
   composePolicyBindings,
-  extractGroupEmail,
   pushNotification,
   useDatabaseV1Store,
   useGroupStore,
   usePolicyByParentAndType,
   usePolicyV1Store,
-  useUserStore,
+  extractUserId,
 } from "@/store";
 import {
-  getGroupEmailInBinding,
-  getUserEmailInBinding,
   groupBindingPrefix,
   isValidDatabaseName,
 } from "@/types";
@@ -58,6 +54,7 @@ import {
   type ConditionExpression,
 } from "@/utils/issue/cel";
 import { type AccessUser } from "./types";
+import { UserLink } from "@/components/v2/Model/cells";
 
 interface LocalState {
   loading: boolean;
@@ -80,7 +77,6 @@ const state = reactive<LocalState>({
 });
 const { t } = useI18n();
 const router = useRouter();
-const userStore = useUserStore();
 const groupStore = useGroupStore();
 const databaseStore = useDatabaseV1Store();
 const policyStore = usePolicyV1Store();
@@ -216,24 +212,10 @@ const getAccessUsers = (
         : undefined,
     };
 
-    if (member.startsWith(groupBindingPrefix)) {
-      access.group = groupStore.getGroupByIdentifier(member);
-    } else {
-      access.user = userStore.getUserByIdentifier(member);
-    }
-
     result.push(access);
   }
 
   return result;
-};
-
-const getMemberBinding = (access: AccessUser): string => {
-  if (access.type === "user") {
-    return getUserEmailInBinding(access.user!.email);
-  }
-  const email = extractGroupEmail(access.group!.name);
-  return getGroupEmailInBinding(email);
 };
 
 const updateAccessUserList = async () => {
@@ -254,7 +236,7 @@ const updateAccessUserList = async () => {
   );
   const conditionList = await batchConvertFromCELString(expressionList);
 
-  await composePolicyBindings(exemptions);
+  await composePolicyBindings(exemptions, true);
   for (let i = 0; i < exemptions.length; i++) {
     const exception = exemptions[i];
     const condition = conditionList[i];
@@ -269,14 +251,7 @@ const updateAccessUserList = async () => {
     [...memberMap.values()],
     [
       (access) => (access.type === "user" ? 1 : 0),
-      (access) => {
-        if (access.group) {
-          return access.group.name;
-        } else if (access.user) {
-          return access.user.name;
-        }
-        return "";
-      },
+      (access) => access.member,
     ],
     ["desc", "desc"]
   );
@@ -301,18 +276,16 @@ const accessTableColumns = computed(
         title: t("common.members"),
         resizable: true,
         render: (item: AccessUser) => {
-          if (item.group) {
-            return <GroupNameCell group={item.group} />;
-          } else if (item.user) {
-            return (
-              <UserNameCell
-                user={item.user}
-                size="small"
-                allowEdit={false}
-                showMfaEnabled={false}
-                showSource={false}
-              />
-            );
+          if (item.member.startsWith(groupBindingPrefix)) {
+            const group = groupStore.getGroupByIdentifier(item.member)
+            if (group) {
+              return (
+                <GroupNameCell group={group} />
+              );
+            }
+          } else {
+            const email = extractUserId(item.member);
+            return <UserLink title={email} email={email} />;
           }
           return <span>{item.member}</span>;
         },
@@ -387,7 +360,7 @@ const revokeAccessAlert = (item: AccessUser) => {
         <div class="flex flex-col gap-y-3">
           <div class="textlabel text-base!">
             {t("project.masking-exemption.revoke-exemption-title", {
-              member: getMemberBinding(item),
+              member: item.member,
             })}
           </div>
           {getDatabaseAccessResource(item)}
@@ -488,7 +461,7 @@ const updateExceptionPolicy = async () => {
     }
     expressionsMap
       .get(finalExpression)!
-      .members.push(getMemberBinding(accessUser));
+      .members.push(accessUser.member);
   }
 
   const exceptions = [];

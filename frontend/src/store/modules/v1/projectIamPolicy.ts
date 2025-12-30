@@ -29,7 +29,8 @@ import { useGroupStore } from "./group";
 import { usePermissionStore } from "./permission";
 
 export const composePolicyBindings = async (
-  bindings: { members: string[] }[]
+  bindings: { members: string[] }[],
+  skipFetchUsers = false
 ) => {
   const users: string[] = [];
   const groups: string[] = [];
@@ -42,10 +43,16 @@ export const composePolicyBindings = async (
       }
     }
   }
-  await Promise.all([
-    useUserStore().batchGetOrFetchUsers(users),
-    useGroupStore().batchGetOrFetchGroups(groups),
-  ]);
+
+  const requests: Promise<unknown>[] = [
+    useGroupStore().batchGetOrFetchGroups(groups)
+  ]
+  if (!skipFetchUsers) {
+    requests.push(
+      useUserStore().batchGetOrFetchUsers(users)
+    )
+  }
+  await Promise.allSettled(requests);
 };
 
 export const useProjectIamPolicyStore = defineStore(
