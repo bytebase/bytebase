@@ -818,6 +818,13 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	if err != nil {
 		return nil, err
 	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+	}
+	if project == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
+	}
 	payload := issue.Payload
 	if payload.Approval == nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("issue payload approval is nil"))
@@ -878,6 +885,29 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	}); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
+
+	// Get issue creator for webhook event
+	creator, err := s.store.GetUserByEmail(ctx, issue.CreatorEmail)
+	if err != nil {
+		slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
+		creator = store.SystemBotUser
+	}
+
+	// Trigger ISSUE_SENT_BACK webhook
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Actor:   user,
+		Type:    storepb.Activity_ISSUE_SENT_BACK,
+		Comment: req.Msg.Comment,
+		Issue:   webhook.NewIssue(issue),
+		Project: webhook.NewProject(project),
+		SentBack: &webhook.EventIssueSentBack{
+			ApproverName:  user.Name,
+			ApproverEmail: user.Email,
+			CreatorName:   creator.Name,
+			CreatorEmail:  creator.Email,
+			Reason:        req.Msg.Comment,
+		},
+	})
 
 	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
