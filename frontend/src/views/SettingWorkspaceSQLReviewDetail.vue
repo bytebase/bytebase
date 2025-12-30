@@ -57,14 +57,14 @@
         :action-text="$t('sql-review.attach-resource.self')"
         @click="state.showResourcePanel = true"
       />
-      <div class="flex flex-col gap-y-2 gap-x-2">
-        <BBBadge
+      <div class="flex flex-wrap gap-y-2 gap-x-2">
+        <NTag
           v-for="resource in reviewPolicy.resources"
           :key="resource"
-          :can-remove="false"
+          type="primary"
         >
           <Resource :resource="resource" :show-prefix="true" />
-        </BBBadge>
+        </NTag>
       </div>
     </div>
 
@@ -146,7 +146,7 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
-import { NButton, NDivider } from "naive-ui";
+import { NButton, NDivider, NTag } from "naive-ui";
 import {
   computed,
   nextTick,
@@ -157,13 +157,7 @@ import {
 } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import {
-  BBAlert,
-  BBAttention,
-  BBBadge,
-  BBButtonConfirm,
-  BBTextField,
-} from "@/bbkit";
+import { BBAlert, BBAttention, BBButtonConfirm, BBTextField } from "@/bbkit";
 import { SQLReviewCreation } from "@/components/SQLReview";
 import SQLReviewAttachResourcesPanel from "@/components/SQLReview/components/SQLReviewAttachResourcesPanel.vue";
 import SQLReviewTabsByEngine from "@/components/SQLReview/components/SQLReviewTabsByEngine.vue";

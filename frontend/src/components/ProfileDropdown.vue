@@ -53,18 +53,6 @@ const uiStateStore = useUIStateStore();
 const { setLocale, locale } = useLanguage();
 const currentUserV1 = useCurrentUserV1();
 const showDropdown = ref(false);
-const hideQuickstart = computed(() => {
-  if (useAppFeature("bb.feature.hide-quick-start").value) {
-    return true;
-  }
-  // Hide quickstart if there are more than 1 active users.
-  return (
-    actuatorStore.getActiveUserCount({
-      includeBot: false,
-      includeServiceAccount: false,
-    }) > 1
-  );
-});
 const hideHelp = useAppFeature("bb.feature.hide-help");
 
 // For now, debug mode is a global setting and will affect all users.
@@ -282,7 +270,7 @@ const options = computed((): DropdownOption[] => [
   {
     key: "quick-start",
     type: "render",
-    show: !hideQuickstart.value,
+    show: actuatorStore.quickStartEnabled,
     render() {
       return (
         <div class="menu-item" onClick={resetQuickstart}>

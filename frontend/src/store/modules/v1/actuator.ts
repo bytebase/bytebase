@@ -1,9 +1,8 @@
 import { create } from "@bufbuild/protobuf";
-import type { RemovableRef } from "@vueuse/core";
 import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import semver from "semver";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { actuatorServiceClientConnect } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import {
@@ -27,252 +26,306 @@ const EXTERNAL_URL_PLACEHOLDER =
 const GITHUB_API_LIST_BYTEBASE_RELEASE =
   "https://api.github.com/repos/bytebase/bytebase/releases";
 
-interface ActuatorState {
-  // Whether the app is initialized or not.
-  initialized: boolean;
-  serverInfo?: ActuatorInfo;
-  // Last time when we fetched the server info.
-  serverInfoTs: number;
-  resourcePackage?: ResourcePackage;
-  releaseInfo: RemovableRef<ReleaseInfo>;
-  appProfile: AppProfile;
-  onboardingState: RemovableRef<{
+export const useActuatorV1Store = defineStore("actuator_v1", () => {
+  // State
+  const initialized = ref(false);
+  const serverInfo = ref<ActuatorInfo | undefined>(undefined);
+  const serverInfoTs = ref(0);
+  const resourcePackage = ref<ResourcePackage | undefined>(undefined);
+  const releaseInfo = useLocalStorage<ReleaseInfo>("bytebase_release", {
+    ignoreRemindModalTillNextRelease: false,
+    nextCheckTs: 0,
+  });
+  const appProfile = ref<AppProfile>(defaultAppProfile());
+  const onboardingState = useLocalStorage<{
     isOnboarding: boolean;
     consumed: string[];
-  }>;
-}
+  }>("bb.onboarding-state", {
+    isOnboarding: false,
+    consumed: [],
+  });
 
-export const useActuatorV1Store = defineStore("actuator_v1", {
-  state: (): ActuatorState => ({
-    initialized: false,
-    serverInfo: undefined,
-    serverInfoTs: 0,
-    resourcePackage: undefined,
-    releaseInfo: useLocalStorage("bytebase_release", {
-      ignoreRemindModalTillNextRelease: false,
-      nextCheckTs: 0,
-    }),
-    appProfile: defaultAppProfile(),
-    onboardingState: useLocalStorage<{
-      isOnboarding: boolean;
-      consumed: string[];
-    }>("bb.onboarding-state", {
-      isOnboarding: false,
-      consumed: [],
-    }),
-  }),
-  getters: {
-    changelogURL: (state) => {
-      // valid version should following semantic version like 3.1.0
-      const version = semver.valid(state.serverInfo?.version);
-      if (!version) {
-        return "";
-      }
-      return `https://docs.bytebase.com/changelog/bytebase-${version.split(".").join("-")}/`;
-    },
-    info: (state) => {
-      return state.serverInfo;
-    },
-    brandingLogo: (state) => {
-      if (!state.resourcePackage?.logo) {
-        return "";
-      }
-      return new TextDecoder().decode(state.resourcePackage?.logo);
-    },
-    version: (state) => {
-      return state.serverInfo?.version || "";
-    },
-    gitCommitBE: (state) => {
-      const commit = state.serverInfo?.gitCommit ?? "";
-      return commit === "" ? "unknown" : commit;
-    },
-    gitCommitFE: () => {
-      const commit = import.meta.env.GIT_COMMIT ?? "";
-      return commit === "" ? "unknown" : commit;
-    },
-    isDemo: (state) => {
-      return state.serverInfo?.demo;
-    },
-    isDebug: (state) => {
-      return state.serverInfo?.debug || false;
-    },
-    isDocker: (state) => {
-      return state.serverInfo?.docker || false;
-    },
-    isSaaSMode: (state) => {
-      return state.serverInfo?.saas || false;
-    },
-    needAdminSetup: (state) => {
-      return state.serverInfo?.needAdminSetup || false;
-    },
-    needConfigureExternalUrl: (state) => {
-      if (!state.serverInfo) return false;
-      const url = state.serverInfo?.externalUrl ?? "";
-      return url === "" || url === EXTERNAL_URL_PLACEHOLDER;
-    },
-    disallowSignup: (state) => {
-      return state.serverInfo?.disallowSignup || false;
-    },
-    disallowPasswordSignin: (state) => {
-      return state.serverInfo?.disallowPasswordSignin || false;
-    },
-    hasNewRelease: (state) => {
-      return (
-        (state.serverInfo?.version === "development" &&
-          !!state.releaseInfo.latest?.tag_name) ||
-        semverCompare(
-          state.releaseInfo.latest?.tag_name ?? "",
-          state.serverInfo?.version ?? ""
-        )
-      );
-    },
-    passwordRestriction: (state) => {
-      return (
-        state.serverInfo?.passwordRestriction ??
-        create(WorkspaceProfileSetting_PasswordRestrictionSchema, {
-          minLength: 8,
-          requireLetter: true,
-        })
-      );
-    },
-    activatedInstanceCount: (state) => {
-      return state.serverInfo?.activatedInstanceCount ?? 0;
-    },
-    totalInstanceCount: (state) => {
-      return state.serverInfo?.totalInstanceCount ?? 0;
-    },
-    inactiveUserCount: (state) => {
-      return (state.serverInfo?.userStats ?? []).reduce((count, stat) => {
-        if (stat.state === State.DELETED) {
-          count += stat.count;
-        }
-        return count;
-      }, 0);
-    },
-  },
-  actions: {
-    getActiveUserCount({
-      includeBot,
-      includeServiceAccount,
-    }: {
-      includeBot: boolean;
-      includeServiceAccount: boolean;
-    }) {
-      return (this.serverInfo?.userStats ?? []).reduce((count, stat) => {
-        if (stat.state !== State.ACTIVE) {
-          return count;
-        }
-        if (!includeBot && stat.userType === UserType.SYSTEM_BOT) {
-          return count;
-        }
-        if (
-          !includeServiceAccount &&
-          stat.userType === UserType.SERVICE_ACCOUNT
-        ) {
-          return count;
-        }
+  // Getters
+  const changelogURL = computed(() => {
+    const version = semver.valid(serverInfo.value?.version);
+    if (!version) {
+      return "";
+    }
+    return `https://docs.bytebase.com/changelog/bytebase-${version.split(".").join("-")}/`;
+  });
+
+  const info = computed(() => serverInfo.value);
+
+  const brandingLogo = computed(() => {
+    if (!resourcePackage.value?.logo) {
+      return "";
+    }
+    return new TextDecoder().decode(resourcePackage.value?.logo);
+  });
+
+  const version = computed(() => serverInfo.value?.version || "");
+
+  const gitCommitBE = computed(() => {
+    const commit = serverInfo.value?.gitCommit ?? "";
+    return commit === "" ? "unknown" : commit;
+  });
+
+  const gitCommitFE = computed(() => {
+    const commit = import.meta.env.GIT_COMMIT ?? "";
+    return commit === "" ? "unknown" : commit;
+  });
+
+  const isDemo = computed(() => serverInfo.value?.demo);
+
+  const isDebug = computed(() => serverInfo.value?.debug || false);
+
+  const isDocker = computed(() => serverInfo.value?.docker || false);
+
+  const isSaaSMode = computed(() => serverInfo.value?.saas || false);
+
+  const needAdminSetup = computed(
+    () => serverInfo.value?.needAdminSetup || false
+  );
+
+  const needConfigureExternalUrl = computed(() => {
+    if (!serverInfo.value) return false;
+    const url = serverInfo.value?.externalUrl ?? "";
+    return url === "" || url === EXTERNAL_URL_PLACEHOLDER;
+  });
+
+  const disallowSignup = computed(
+    () => serverInfo.value?.disallowSignup || false
+  );
+
+  const disallowPasswordSignin = computed(
+    () => serverInfo.value?.disallowPasswordSignin || false
+  );
+
+  const hasNewRelease = computed(() => {
+    return (
+      (serverInfo.value?.version === "development" &&
+        !!releaseInfo.value.latest?.tag_name) ||
+      semverCompare(
+        releaseInfo.value.latest?.tag_name ?? "",
+        serverInfo.value?.version ?? ""
+      )
+    );
+  });
+
+  const passwordRestriction = computed(() => {
+    return (
+      serverInfo.value?.passwordRestriction ??
+      create(WorkspaceProfileSetting_PasswordRestrictionSchema, {
+        minLength: 8,
+        requireLetter: true,
+      })
+    );
+  });
+
+  const activatedInstanceCount = computed(
+    () => serverInfo.value?.activatedInstanceCount ?? 0
+  );
+
+  const totalInstanceCount = computed(
+    () => serverInfo.value?.totalInstanceCount ?? 0
+  );
+
+  const inactiveUserCount = computed(() => {
+    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
+      if (stat.state === State.DELETED) {
         count += stat.count;
+      }
+      return count;
+    }, 0);
+  });
+
+  // Actions
+  const getActiveUserCount = ({
+    includeBot,
+    includeServiceAccount,
+  }: {
+    includeBot: boolean;
+    includeServiceAccount: boolean;
+  }) => {
+    return (serverInfo.value?.userStats ?? []).reduce((count, stat) => {
+      if (stat.state !== State.ACTIVE) {
         return count;
-      }, 0);
-    },
-    setLogo(logo: string) {
-      if (this.resourcePackage) {
-        this.resourcePackage.logo = new TextEncoder().encode(logo);
       }
-    },
-    setServerInfo(serverInfo: ActuatorInfo) {
-      this.serverInfo = serverInfo;
-      this.serverInfoTs = Date.now();
-    },
-    async fetchServerInfo() {
-      const [serverInfo, resourcePackage] = await Promise.all([
-        actuatorServiceClientConnect.getActuatorInfo({}),
-        actuatorServiceClientConnect.getResourcePackage({}),
-      ]);
-      this.setServerInfo(serverInfo);
-      this.resourcePackage = resourcePackage;
-      return serverInfo;
-    },
-    async patchDebug({ debug }: { debug: boolean }) {
-      const serverInfo = await actuatorServiceClientConnect.updateActuatorInfo({
-        actuator: {
-          debug,
-        },
-        updateMask: {
-          paths: ["debug"],
-        },
+      if (!includeBot && stat.userType === UserType.SYSTEM_BOT) {
+        return count;
+      }
+      if (
+        !includeServiceAccount &&
+        stat.userType === UserType.SERVICE_ACCOUNT
+      ) {
+        return count;
+      }
+      count += stat.count;
+      return count;
+    }, 0);
+  };
+
+  const quickStartEnabled = computed(() => {
+    if (useAppFeature("bb.feature.hide-quick-start").value) {
+      return false;
+    }
+    if (!serverInfo.value?.enableSample) {
+      return false;
+    }
+
+    // Hide quickstart if there are more than 1 active users.
+    return (
+      getActiveUserCount({
+        includeBot: false,
+        includeServiceAccount: false,
+      }) <= 1
+    );
+  });
+
+  const setLogo = (logo: string) => {
+    if (resourcePackage.value) {
+      resourcePackage.value.logo = new TextEncoder().encode(logo);
+    }
+  };
+
+  const setServerInfo = (info: ActuatorInfo) => {
+    serverInfo.value = info;
+    serverInfoTs.value = Date.now();
+  };
+
+  const fetchServerInfo = async () => {
+    const [info, pkg] = await Promise.all([
+      actuatorServiceClientConnect.getActuatorInfo({}),
+      actuatorServiceClientConnect.getResourcePackage({}),
+    ]);
+    setServerInfo(info);
+    resourcePackage.value = pkg;
+    return info;
+  };
+
+  const patchDebug = async ({ debug }: { debug: boolean }) => {
+    const info = await actuatorServiceClientConnect.updateActuatorInfo({
+      actuator: {
+        debug,
+      },
+      updateMask: {
+        paths: ["debug"],
+      },
+    });
+    setServerInfo(info);
+  };
+
+  const fetchLatestRelease = async (): Promise<Release | undefined> => {
+    try {
+      const releaseList = await useSilentRequest(async () => {
+        const response = await fetch(
+          `${GITHUB_API_LIST_BYTEBASE_RELEASE}?per_page=1`
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json() as Promise<Release[]>;
       });
-      this.setServerInfo(serverInfo);
-    },
-    async tryToRemindRelease(): Promise<boolean> {
-      if (this.serverInfo?.saas ?? false) {
-        return false;
-      }
-      if (!this.releaseInfo.latest) {
-        const release = await this.fetchLatestRelease();
-        this.releaseInfo.latest = release;
-      }
-      if (!this.releaseInfo.latest) {
-        return false;
-      }
+      return releaseList[0];
+    } catch {
+      return;
+    }
+  };
 
-      // It's time to fetch the release
-      if (Date.now() >= this.releaseInfo.nextCheckTs) {
-        const release = await this.fetchLatestRelease();
-        if (!release) {
-          return false;
-        }
+  const tryToRemindRelease = async (): Promise<boolean> => {
+    if (serverInfo.value?.saas ?? false) {
+      return false;
+    }
+    if (!releaseInfo.value.latest) {
+      const release = await fetchLatestRelease();
+      releaseInfo.value.latest = release;
+    }
+    if (!releaseInfo.value.latest) {
+      return false;
+    }
 
-        // check till 24 hours later
-        this.releaseInfo.nextCheckTs = Date.now() + 24 * 60 * 60 * 1000;
-
-        if (semverCompare(release.tag_name, this.releaseInfo.latest.tag_name)) {
-          this.releaseInfo.ignoreRemindModalTillNextRelease = false;
-        }
-
-        this.releaseInfo.latest = release;
-      }
-
-      if (this.releaseInfo.ignoreRemindModalTillNextRelease) {
+    if (Date.now() >= releaseInfo.value.nextCheckTs) {
+      const release = await fetchLatestRelease();
+      if (!release) {
         return false;
       }
 
-      return this.hasNewRelease;
-    },
-    async tryToRemindRefresh(): Promise<boolean> {
-      // refetch after 30 minutes to keep the info fresh.
-      if (Date.now() - this.serverInfoTs >= 1000 * 60 * 30) {
-        await this.fetchServerInfo();
+      releaseInfo.value.nextCheckTs = Date.now() + 24 * 60 * 60 * 1000;
+
+      if (semverCompare(release.tag_name, releaseInfo.value.latest.tag_name)) {
+        releaseInfo.value.ignoreRemindModalTillNextRelease = false;
       }
-      if (this.gitCommitBE === "unknown" || this.gitCommitFE === "unknown") {
-        return false;
-      }
-      return this.gitCommitBE !== this.gitCommitFE;
-    },
-    async fetchLatestRelease(): Promise<Release | undefined> {
-      try {
-        const releaseList = await useSilentRequest(async () => {
-          const response = await fetch(
-            `${GITHUB_API_LIST_BYTEBASE_RELEASE}?per_page=1`
-          );
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json() as Promise<Release[]>;
-        });
-        return releaseList[0];
-      } catch {
-        // It's okay to ignore the failure and just return undefined.
-        return;
-      }
-    },
-    async setupSample() {
-      await actuatorServiceClientConnect.setupSample({});
-    },
-    overrideAppFeatures(overrides: Partial<AppFeatures>) {
-      Object.assign(this.appProfile.features, overrides);
-    },
-  },
+
+      releaseInfo.value.latest = release;
+    }
+
+    if (releaseInfo.value.ignoreRemindModalTillNextRelease) {
+      return false;
+    }
+
+    return hasNewRelease.value;
+  };
+
+  const tryToRemindRefresh = async (): Promise<boolean> => {
+    if (Date.now() - serverInfoTs.value >= 1000 * 60 * 30) {
+      await fetchServerInfo();
+    }
+    if (gitCommitBE.value === "unknown" || gitCommitFE.value === "unknown") {
+      return false;
+    }
+    return gitCommitBE.value !== gitCommitFE.value;
+  };
+
+  const setupSample = async () => {
+    await actuatorServiceClientConnect.setupSample({});
+  };
+
+  const overrideAppFeatures = (overrides: Partial<AppFeatures>) => {
+    Object.assign(appProfile.value.features, overrides);
+  };
+
+  return {
+    // State
+    initialized,
+    serverInfo,
+    serverInfoTs,
+    resourcePackage,
+    releaseInfo,
+    appProfile,
+    onboardingState,
+    // Getters
+    changelogURL,
+    info,
+    brandingLogo,
+    version,
+    gitCommitBE,
+    gitCommitFE,
+    isDemo,
+    isDebug,
+    isDocker,
+    isSaaSMode,
+    needAdminSetup,
+    needConfigureExternalUrl,
+    disallowSignup,
+    disallowPasswordSignin,
+    hasNewRelease,
+    passwordRestriction,
+    activatedInstanceCount,
+    totalInstanceCount,
+    inactiveUserCount,
+    quickStartEnabled,
+    // Actions
+    getActiveUserCount,
+    setLogo,
+    setServerInfo,
+    fetchServerInfo,
+    patchDebug,
+    fetchLatestRelease,
+    tryToRemindRelease,
+    tryToRemindRefresh,
+    setupSample,
+    overrideAppFeatures,
+  };
 });
 
 export const useAppFeature = <T extends keyof AppFeatures>(feature: T) => {

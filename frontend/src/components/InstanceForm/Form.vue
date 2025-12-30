@@ -9,10 +9,14 @@
         @update:engine="(newEngine: Engine) => changeInstanceEngine(newEngine)"
       >
         <template #suffix="{ engine }">
-          <BBBetaBadge
+          <NTag
             v-if="isEngineBeta(engine as Engine)"
-            class="absolute -top-1.5 -right-1 rounded-sm text-xs bg-gray-500! px-1 py-0! z-10"
-          />
+            round
+            size="small"
+            type="info"
+          >
+            Beta
+          </NTag>
         </template>
       </InstanceEngineRadioGrid>
 
@@ -513,10 +517,11 @@ import {
   NRadio,
   NRadioGroup,
   NSwitch,
+  NTag,
 } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBAttention, BBBetaBadge } from "@/bbkit";
+import { BBAttention } from "@/bbkit";
 import { InstanceArchiveRestoreButton } from "@/components/Instance";
 import { LabelListEditor } from "@/components/Label";
 import RequiredStar from "@/components/RequiredStar.vue";

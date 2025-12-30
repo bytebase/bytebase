@@ -23,14 +23,14 @@
           <span class="text-base font-medium">
             {{ template.review.name }}
           </span>
-          <div class="flex flex-col gap-y-2">
-            <BBBadge
+          <div class="flex flex-wrap gap-2">
+            <NTag
               v-for="resource in template.review.resources"
               :key="resource"
-              :can-remove="false"
+              type="primary"
             >
               <Resource :resource="resource" :show-prefix="true" />
-            </BBBadge>
+            </NTag>
           </div>
           <p class="text-sm">
             <span class="mr-2">{{ $t("sql-review.enabled-rules") }}:</span>
@@ -91,9 +91,8 @@
 </template>
 
 <script lang="ts" setup>
-import { NDivider } from "naive-ui";
+import { NDivider, NTag } from "naive-ui";
 import { computed } from "vue";
-import { BBBadge } from "@/bbkit";
 import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { useSQLReviewPolicyList } from "@/store";
 import type { SQLReviewPolicyTemplateV2 } from "@/types";

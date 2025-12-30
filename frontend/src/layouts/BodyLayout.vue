@@ -118,7 +118,7 @@
       </div>
     </div>
 
-    <Quickstart v-if="actuatorStore.info?.enableSample" />
+    <Quickstart />
   </div>
 
   <ReleaseRemindModal

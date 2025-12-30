@@ -46,7 +46,7 @@
       </template>
     </NSplit>
 
-    <Quickstart v-if="actuatorStore.info?.enableSample" />
+    <Quickstart />
 
     <teleport to="#sql-editor-debug">
       <li>[Page]isDisconnected: {{ isDisconnected }}</li>
@@ -76,7 +76,6 @@ import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
-  useActuatorV1Store,
   useDatabaseV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
@@ -100,7 +99,6 @@ const state = reactive<LocalState>({
 });
 
 const router = useRouter();
-const actuatorStore = useActuatorV1Store();
 const databaseStore = useDatabaseV1Store();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();

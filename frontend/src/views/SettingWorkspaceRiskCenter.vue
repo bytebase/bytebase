@@ -25,34 +25,34 @@
         </h3>
         <div class="space-y-3">
           <div class="flex items-start gap-x-3">
-            <BBBadge
-              :text="$t('custom-approval.risk-rule.risk.risk-level.high')"
-              :can-remove="false"
-              badge-style="CRITICAL"
+            <NTag
+              type="error"
               size="small"
-            />
+            >
+              {{ $t('custom-approval.risk-rule.risk.risk-level.high') }}
+            </NTag>
             <p class="text-control-light">
               {{ $t("custom-approval.risk.risk-level-high") }}
             </p>
           </div>
           <div class="flex items-start gap-x-3">
-            <BBBadge
-              :text="$t('custom-approval.risk-rule.risk.risk-level.moderate')"
-              :can-remove="false"
-              badge-style="WARN"
+            <NTag
+              type="warning"
               size="small"
-            />
+            >
+              {{ $t('custom-approval.risk-rule.risk.risk-level.moderate') }}
+            </NTag>
             <p class="text-control-light">
               {{ $t("custom-approval.risk.risk-level-moderate") }}
             </p>
           </div>
           <div class="flex items-start gap-x-3">
-            <BBBadge
-              :text="$t('custom-approval.risk-rule.risk.risk-level.low')"
-              :can-remove="false"
-              badge-style="INFO"
+            <NTag
+              type="info"
               size="small"
-            />
+            >
+              {{ $t('custom-approval.risk-rule.risk.risk-level.low') }}
+            </NTag>
             <p class="text-control-light">
               {{ $t("custom-approval.risk.risk-level-low") }}
             </p>
@@ -73,7 +73,7 @@
 </template>
 
 <script lang="ts" setup>
-import BBBadge from "@/bbkit/BBBadge.vue";
+import { NTag } from "naive-ui";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 </script>

@@ -1,8 +1,6 @@
 import BBAlert from "./BBAlert.vue";
 import BBAttention from "./BBAttention.vue";
 import BBAvatar from "./BBAvatar.vue";
-import BBBadge from "./BBBadge.vue";
-import BBBetaBadge from "./BBBetaBadge.vue";
 import BBButtonConfirm from "./BBButtonConfirm.vue";
 import BBModal from "./BBModal.vue";
 import BBSpin from "./BBSpin.vue";
@@ -18,6 +16,4 @@ export {
   BBModal,
   BBSpin,
   BBTextField,
-  BBBadge,
-  BBBetaBadge,
 };

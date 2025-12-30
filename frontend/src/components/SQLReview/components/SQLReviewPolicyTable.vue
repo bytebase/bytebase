@@ -22,19 +22,18 @@
           {{ review.name }}
         </div>
         <div class="flex flex-wrap gap-y-2 gap-x-2">
-          <BBBadge
+          <NTag
             v-for="resource in review.resources"
             :key="resource"
-            :can-remove="false"
           >
             <Resource :show-prefix="true" :resource="resource" />
-          </BBBadge>
-          <BBBadge
+          </NTag>
+          <NTag
             v-if="!review.enforce"
-            :text="$t('common.disable')"
-            :can-remove="false"
-            :badge-style="'DISABLED'"
-          />
+            type="warning"
+          >
+            {{ $t('common.disable') }}
+          </NTag>
         </div>
         <div class="flex items-center gap-x-2 mt-4">
           <NButton size="small" @click.prevent="handleClickEdit(review)">
@@ -63,11 +62,11 @@
 </template>
 
 <script setup lang="tsx">
-import { NButton } from "naive-ui";
+import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBBadge, BBButtonConfirm } from "@/bbkit";
+import { BBButtonConfirm } from "@/bbkit";
 import Resource from "@/components/v2/ResourceOccupiedModal/Resource.vue";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useSQLReviewStore } from "@/store";

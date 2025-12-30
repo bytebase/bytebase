@@ -25,9 +25,6 @@ const props = withDefaults(
   }>(),
   {
     user: () => unknownUser(),
-    size: "NORMAL",
-    overrideClass: undefined,
-    overrideTextSize: undefined,
   }
 );
 

@@ -115,7 +115,6 @@ import { computed, h, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import Draggable from "vuedraggable";
-import type { BBTabItem } from "@/bbkit/types";
 import {
   EnvironmentForm,
   Form as EnvironmentFormBody,
@@ -225,14 +224,12 @@ watch(
   { immediate: true }
 );
 
-const tabItemList = computed((): BBTabItem<Environment>[] => {
-  return environmentList.value.map(
-    (item, index: number): BBTabItem<Environment> => {
-      const title = `${index + 1}. ${item.title}`;
-      const id = item.id;
-      return { title, id, data: item };
-    }
-  );
+const tabItemList = computed(() => {
+  return environmentList.value.map((item, index: number) => {
+    const title = `${index + 1}. ${item.title}`;
+    const id = item.id;
+    return { title, id, data: item };
+  });
 });
 
 const getEnvironmentCreate = () => {

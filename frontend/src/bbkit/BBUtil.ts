@@ -6,15 +6,3 @@ export function hashCode(s: string): number {
   }
   return hash;
 }
-
-export function isAncestorOf(
-  maybeAncestor: HTMLElement,
-  maybeDescendant: HTMLElement
-): boolean {
-  let element: HTMLElement | null = maybeDescendant;
-  while (element) {
-    if (element === maybeAncestor) return true;
-    element = element.parentElement;
-  }
-  return false;
-}

@@ -28,18 +28,15 @@ import { NTooltip } from "naive-ui";
 import { ProjectV1Name } from "@/components/v2";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { Mode } from "../DatabaseV1Table/DatabaseV1Table.vue";
 
 withDefaults(
   defineProps<{
     project: Project;
-    mode?: Mode;
     link?: boolean;
     keyword?: string;
     suffix?: string;
   }>(),
   {
-    mode: "ALL",
     link: false,
     keyword: undefined,
     suffix: "",

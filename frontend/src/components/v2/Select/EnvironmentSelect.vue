@@ -48,11 +48,10 @@ const props = withDefaults(
     disabled?: boolean;
     size?: SelectSize;
     filter?: (environment: Environment) => boolean;
-    renderSuffix?: (environment: string) => VNodeChild;
+    renderSuffix?: (environment: Environment) => VNodeChild;
   }>(),
   {
     showProductionIcon: true,
-    renderSuffix: () => null,
   }
 );
 
@@ -96,7 +95,7 @@ const customLabel = (environment: Environment) => {
         showIcon={props.showProductionIcon}
         link={false}
       />
-      {props.renderSuffix(environment.name)}
+      {props.renderSuffix ? props.renderSuffix(environment) : null}
     </div>
   );
 };
