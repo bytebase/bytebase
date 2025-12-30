@@ -327,6 +327,10 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 		slog.Error("failed to get issue for completion webhook", log.BBError(err))
 		return
 	}
+	if issueN == nil {
+		slog.Error("issue not found for completion webhook", slog.Int64("plan_id", planID))
+		return
+	}
 
 	// Send PIPELINE_COMPLETED webhook
 	startedAt := time.Now()
