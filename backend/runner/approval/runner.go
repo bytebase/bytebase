@@ -191,7 +191,36 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
 			return false, err
 		}
-		if err := webhook.ChangeIssueStatus(ctx, r.store, r.webhookManager, issue, storepb.Issue_DONE, store.SystemBotUser, ""); err != nil {
+		if err := func() error {
+			newStatus := storepb.Issue_DONE
+			updatedIssue, err := r.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
+			if err != nil {
+				return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
+			}
+
+			if _, err := r.store.CreateIssueComments(ctx, common.SystemBotEmail, &store.IssueCommentMessage{
+				IssueUID: issue.UID,
+				Payload: &storepb.IssueCommentPayload{
+					Event: &storepb.IssueCommentPayload_IssueUpdate_{
+						IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+							FromStatus: &issue.Status,
+							ToStatus:   &updatedIssue.Status,
+						},
+					},
+				},
+			}); err != nil {
+				return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
+			}
+
+			r.webhookManager.CreateEvent(ctx, &webhook.Event{
+				Actor:   store.SystemBotUser,
+				Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
+				Comment: "",
+				Issue:   webhook.NewIssue(updatedIssue),
+				Project: webhook.NewProject(project),
+			})
+			return nil
+		}(); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
 		}
 	}
