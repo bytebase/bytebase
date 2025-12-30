@@ -9,7 +9,6 @@ import (
 
 // PipelineFailureWindow tracks failed tasks for aggregation.
 type PipelineFailureWindow struct {
-	mu               sync.Mutex
 	firstFailureTime time.Time
 	failedTasks      []webhook.FailedTask
 	notificationSent bool
@@ -51,14 +50,17 @@ func (t *PipelineEventsTracker) RecordTaskFailure(planID int64, task webhook.Fai
 
 			if w, ok := t.windows[planID]; ok && !w.notificationSent {
 				w.notificationSent = true
-				onAggregated(w.failedTasks)
+				// Copy tasks to avoid holding lock during callback
+				tasksCopy := make([]webhook.FailedTask, len(w.failedTasks))
+				copy(tasksCopy, w.failedTasks)
+				// Delete window after sending to prevent memory leak
+				delete(t.windows, planID)
+				onAggregated(tasksCopy)
 			}
 		})
 	} else {
 		// Add to existing window
-		window.mu.Lock()
 		window.failedTasks = append(window.failedTasks, task)
-		window.mu.Unlock()
 	}
 }
 

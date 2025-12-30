@@ -130,6 +130,9 @@ func (s *Scheduler) scheduleRunningTaskRun(ctx context.Context, taskRun *store.T
 	if err != nil {
 		return errors.Wrapf(err, "failed to get instance")
 	}
+	if instance == nil {
+		return errors.Errorf("instance %v not found", task.InstanceID)
+	}
 	if instance.Deleted {
 		return errors.Errorf("instance %v is deleted", task.InstanceID)
 	}
@@ -452,7 +455,11 @@ func (s *Scheduler) recordPipelineFailure(ctx context.Context, task *store.TaskM
 					firstFailureTime = failedTasks[0].FailedAt
 				}
 
-				s.webhookManager.CreateEvent(ctx, &webhook.Event{
+				// Use background context to avoid cancellation issues
+				webhookCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+
+				s.webhookManager.CreateEvent(webhookCtx, &webhook.Event{
 					Actor:   store.SystemBotUser,
 					Type:    storepb.Activity_PIPELINE_FAILED,
 					Project: webhook.NewProject(project),
