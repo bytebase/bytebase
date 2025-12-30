@@ -60,7 +60,9 @@
           </label>
           <EnvironmentV1Name
             :environment="
-              environmentStore.getEnvironmentByName(targetStage.environment)
+              environmentStore.getEnvironmentByName(
+                target.stage?.environment ?? ''
+              )
             "
             :link="false"
           />
@@ -75,7 +77,11 @@
               }}</span>
               <span
                 class="opacity-80"
-                v-if="eligibleTasks.length > 1 && shouldShowStageInfo"
+                v-if="
+                  eligibleTasks.length > 1 &&
+                  shouldShowStageInfo &&
+                  target.stage
+                "
               >
                 ({{
                   eligibleTasks.length === target.stage.tasks.length
@@ -273,6 +279,7 @@ import {
 } from "@/store";
 import {
   getProjectIdPlanUidStageUidTaskUidFromRolloutName,
+  planNamePrefix,
   projectNamePrefix,
   rolloutNamePrefix,
   stageNamePrefix,
@@ -306,13 +313,23 @@ import { canRolloutTasks } from "./taskPermissions";
 // 1 hour in milliseconds
 const DEFAULT_RUN_DELAY_MS = 60 * 60 * 1000;
 
-export type TargetType = { type: "tasks"; tasks?: Task[]; stage: Stage };
+// Stage is optional - only needed for regular rollouts, not database create/export
+export type TargetType = { type: "tasks"; tasks?: Task[]; stage?: Stage };
 
 const props = defineProps<{
   show: boolean;
   action: "RUN" | "SKIP" | "CANCEL";
   target: TargetType;
 }>();
+
+// Task status filters for each action type
+const isRunnable = (task: Task) =>
+  task.status === Task_Status.NOT_STARTED ||
+  task.status === Task_Status.FAILED ||
+  task.status === Task_Status.CANCELED;
+
+const isCancellable = (task: Task) =>
+  task.status === Task_Status.PENDING || task.status === Task_Status.RUNNING;
 
 const emit = defineEmits<{
   (event: "close"): void;
@@ -337,11 +354,9 @@ watch(
   () => props.show,
   (show) => {
     if (show) {
-      // Check permission when panel opens
-      canRolloutPermission.value = canRolloutTasks(
-        props.target.stage.tasks || [],
-        issue.value
-      );
+      // Check permission when panel opens - use provided tasks or stage tasks
+      const tasks = props.target.tasks ?? props.target.stage?.tasks ?? [];
+      canRolloutPermission.value = canRolloutTasks(tasks, issue.value);
     }
   },
   { immediate: true }
@@ -496,7 +511,7 @@ const validationWarnings = computed(() => {
     // Automatic rollout info (always show as warning for non-export tasks with no task runs)
     if (
       isAutomaticRollout.value &&
-      !isDatabaseExportTask.value &&
+      rolloutType.value !== "DATABASE_EXPORT" &&
       !hasTaskRuns.value
     ) {
       warnings.push(t("rollout.automatic-rollout.description"));
@@ -517,153 +532,86 @@ const shouldShowBypassOption = computed(() => {
   );
 });
 
-// Extract stage from target
-const targetStage = computed(() => {
-  return props.target.stage;
+// All tasks from rollout
+const allRolloutTasks = computed(() =>
+  flatten(rollout.value.stages.map((stage) => stage.tasks))
+);
+
+// Detect rollout type based on tasks
+const rolloutType = computed(() => {
+  const tasks = allRolloutTasks.value;
+  if (tasks.every((task) => task.type === Task_Type.DATABASE_CREATE)) {
+    return "DATABASE_CREATE";
+  }
+  if (tasks.every((task) => task.type === Task_Type.DATABASE_EXPORT)) {
+    return "DATABASE_EXPORT";
+  }
+  return "DATABASE_CHANGE";
+});
+
+const isDatabaseCreateOrExport = computed(
+  () =>
+    rolloutType.value === "DATABASE_CREATE" ||
+    rolloutType.value === "DATABASE_EXPORT"
+);
+
+// Get eligible tasks based on action type
+const eligibleTasks = computed(() => {
+  // For database create/export, use all rollout tasks; otherwise use stage tasks
+  const tasks = isDatabaseCreateOrExport.value
+    ? allRolloutTasks.value
+    : (props.target.tasks ?? props.target.stage?.tasks ?? []);
+
+  // Filter by action type (RUN and SKIP use same filter)
+  if (props.action === "RUN" || props.action === "SKIP") {
+    return tasks.filter(isRunnable);
+  }
+  if (props.action === "CANCEL") {
+    return tasks.filter(isCancellable);
+  }
+  return tasks;
+});
+
+const title = computed(() => {
+  const n = eligibleTasks.value.length;
+  if (props.action === "RUN") return t("task.run-task", { n });
+  if (props.action === "SKIP") return t("task.skip-task", { n });
+  if (props.action === "CANCEL") return t("task.cancel-task", { n });
+  return "";
 });
 
 // Get rollout policy for target stage environment
 const { policy: rolloutPolicy } = usePolicyByParentAndType(
   computed(() => ({
-    parentPath: targetStage.value?.environment || "",
+    parentPath: props.target.stage?.environment || "",
     policyType: PolicyType.ROLLOUT_POLICY,
   }))
 );
 
-// Check if target stage has automatic rollout policy
-const isAutomaticRollout = computed(() => {
-  return (
+const isAutomaticRollout = computed(
+  () =>
     rolloutPolicy.value?.enforce &&
     rolloutPolicy.value.policy?.case === "rolloutPolicy" &&
     rolloutPolicy.value.policy.value.automatic
-  );
-});
-
-// Check if any of the eligible tasks have task runs
-const hasTaskRuns = computed(() => {
-  return eligibleTasks.value.some((task) =>
-    taskRuns.value.some((taskRun) => taskRun.name.startsWith(`${task.name}/`))
-  );
-});
-
-// Extract tasks if provided directly
-const targetTasks = computed(() => {
-  if (props.target.type === "tasks") {
-    return props.target.tasks;
-  }
-  return undefined;
-});
-
-const title = computed(() => {
-  switch (props.action) {
-    case "RUN":
-      return t("task.run-task", { n: eligibleTasks.value.length });
-    case "SKIP":
-      return t("task.skip-task", { n: eligibleTasks.value.length });
-    case "CANCEL":
-      return t("task.cancel-task", { n: eligibleTasks.value.length });
-    default:
-      return "";
-  }
-});
-
-// Get eligible tasks based on action type and target
-const eligibleTasks = computed(() => {
-  // For database create/export tasks, get all relevant tasks from all stages
-  if (isDatabaseCreationOrExportTask.value) {
-    const allTasks = flatten(rollout.value.stages.map((stage) => stage.tasks));
-    // Apply action-based filtering
-    if (props.action === "RUN") {
-      return allTasks.filter(
-        (task) =>
-          task.status === Task_Status.NOT_STARTED ||
-          task.status === Task_Status.CANCELED ||
-          task.status === Task_Status.FAILED
-      );
-    } else if (props.action === "SKIP") {
-      return allTasks.filter(
-        (task) =>
-          task.status === Task_Status.NOT_STARTED ||
-          task.status === Task_Status.FAILED ||
-          task.status === Task_Status.CANCELED
-      );
-    } else if (props.action === "CANCEL") {
-      return allTasks.filter(
-        (task) =>
-          task.status === Task_Status.PENDING ||
-          task.status === Task_Status.RUNNING
-      );
-    }
-    return allTasks;
-  }
-
-  // If specific tasks are provided, use them
-  if (
-    props.target.type === "tasks" &&
-    targetTasks.value &&
-    targetTasks.value.length > 0
-  ) {
-    return targetTasks.value;
-  }
-
-  // Otherwise filter from stage tasks based on action
-  const stageTasks = targetStage.value.tasks || [];
-
-  if (props.action === "RUN") {
-    return stageTasks.filter(
-      (task) =>
-        task.status === Task_Status.NOT_STARTED ||
-        task.status === Task_Status.FAILED ||
-        task.status === Task_Status.CANCELED
-    );
-  } else if (props.action === "SKIP") {
-    return stageTasks.filter(
-      (task) =>
-        task.status === Task_Status.NOT_STARTED ||
-        task.status === Task_Status.FAILED ||
-        task.status === Task_Status.CANCELED
-    );
-  } else if (props.action === "CANCEL") {
-    return stageTasks.filter(
-      (task) =>
-        task.status === Task_Status.PENDING ||
-        task.status === Task_Status.RUNNING
-    );
-  }
-
-  return [];
-});
-
-// Virtual scroll configuration
-const useVirtualScroll = computed(() => eligibleTasks.value.length > 50);
-const itemHeight = computed(() => 32); // Height of each task item in pixels
-
-const showScheduledTimePicker = computed(() => {
-  return props.action === "RUN";
-});
-
-// Check if any of the eligible tasks are database creation tasks
-const isDatabaseCreationTask = computed(() => {
-  const allTasks = flatten(rollout.value.stages.map((stage) => stage.tasks));
-  return allTasks.every((task) => task.type === Task_Type.DATABASE_CREATE);
-});
-
-// Check if any of the eligible tasks are database export tasks
-const isDatabaseExportTask = computed(() => {
-  const allTasks = flatten(rollout.value.stages.map((stage) => stage.tasks));
-  return allTasks.every((task) => task.type === Task_Type.DATABASE_EXPORT);
-});
-
-// Check if any of the eligible tasks are database creation or export tasks
-const isDatabaseCreationOrExportTask = computed(() => {
-  return isDatabaseCreationTask.value || isDatabaseExportTask.value;
-});
-
-const shouldShowStageInfo = computed(
-  () => !isDatabaseCreationOrExportTask.value
 );
 
-const shouldShowTaskInfo = computed(() => !isDatabaseCreationTask.value);
+const hasTaskRuns = computed(() =>
+  eligibleTasks.value.some((task) =>
+    taskRuns.value.some((taskRun) => taskRun.name.startsWith(`${task.name}/`))
+  )
+);
+
+// Virtual scroll for large task lists
+const useVirtualScroll = computed(() => eligibleTasks.value.length > 50);
+const itemHeight = 32;
+
+const showScheduledTimePicker = computed(() => props.action === "RUN");
+
+// UI visibility flags
+const shouldShowStageInfo = computed(() => !isDatabaseCreateOrExport.value);
+const shouldShowTaskInfo = computed(
+  () => rolloutType.value !== "DATABASE_CREATE"
+);
 
 // Handle execution mode change (immediate vs scheduled)
 const handleExecutionModeChange = (value: string) => {
@@ -699,65 +647,55 @@ const addRunTimeToRequest = (request: BatchRunTasksRequest) => {
   }
 };
 
+// Execute batch operation for tasks grouped by stage
+const executeBatchByStage = async (
+  operation: (parent: string, tasks: Task[]) => Promise<void>
+) => {
+  if (!rollout.value) return;
+
+  if (isDatabaseCreateOrExport.value) {
+    // For database create/export, group tasks by stage
+    const tasksByStage = groupTasksByStage(eligibleTasks.value);
+    for (const [stageId, stageTasks] of tasksByStage) {
+      await operation(`${rollout.value.name}/stages/${stageId}`, stageTasks);
+    }
+  } else if (props.target.stage) {
+    // For regular rollouts, use the single stage
+    await operation(props.target.stage.name, eligibleTasks.value);
+  }
+};
+
 const handleConfirm = async () => {
   if (loading.value) return;
 
   loading.value = true;
   try {
     if (props.action === "RUN") {
-      // For export tasks, group by stage/environment and make separate batch calls
-      if (isDatabaseExportTask.value) {
-        const tasksByStage = groupTasksByStage(eligibleTasks.value);
-
-        // Make batch run calls for each stage/environment
-        for (const [stageId, stageTasks] of tasksByStage) {
-          const request = create(BatchRunTasksRequestSchema, {
-            parent: `${rollout.value.name}/stages/${stageId}`,
-            tasks: stageTasks.map((task) => task.name),
-          });
-          addRunTimeToRequest(request);
-          await rolloutServiceClientConnect.batchRunTasks(request);
-        }
-      } else {
-        // For non-export tasks, use the original logic
+      await executeBatchByStage(async (parent, tasks) => {
         const request = create(BatchRunTasksRequestSchema, {
-          parent: targetStage.value.name,
-          tasks: eligibleTasks.value.map((task) => task.name),
+          parent,
+          tasks: tasks.map((task) => task.name),
         });
         addRunTimeToRequest(request);
         await rolloutServiceClientConnect.batchRunTasks(request);
-      }
+      });
 
       // Track prior backup telemetry (async, non-blocking)
       trackPriorBackupOnTaskRun(
         eligibleTasks.value,
         plan.value,
         projectOfPlan(plan.value),
-        targetStage.value.environment
+        props.target.stage?.environment ?? ""
       );
     } else if (props.action === "SKIP") {
-      // For export tasks, group by stage/environment and make separate batch calls
-      if (isDatabaseExportTask.value) {
-        const tasksByStage = groupTasksByStage(eligibleTasks.value);
-
-        // Make batch skip calls for each stage/environment
-        for (const [stageId, stageTasks] of tasksByStage) {
-          const request = create(BatchSkipTasksRequestSchema, {
-            parent: `${rollout.value.name}/stages/${stageId}`,
-            tasks: stageTasks.map((task) => task.name),
-            reason: comment.value,
-          });
-          await rolloutServiceClientConnect.batchSkipTasks(request);
-        }
-      } else {
-        // For non-export tasks, use the original logic
+      await executeBatchByStage(async (parent, tasks) => {
         const request = create(BatchSkipTasksRequestSchema, {
-          parent: targetStage.value.name,
-          tasks: eligibleTasks.value.map((task) => task.name),
+          parent,
+          tasks: tasks.map((task) => task.name),
           reason: comment.value,
         });
         await rolloutServiceClientConnect.batchSkipTasks(request);
-      }
+      });
     } else if (props.action === "CANCEL") {
       await cancelTasks();
     }
@@ -803,7 +741,7 @@ const cancelTasks = async () => {
     const [projectId, planId, stageId] =
       getProjectIdPlanUidStageUidTaskUidFromRolloutName(task.name);
     if (projectId && planId && stageId) {
-      const stageName = `${projectNamePrefix}${projectId}/${rolloutNamePrefix}${planId}/${stageNamePrefix}${stageId}`;
+      const stageName = `${projectNamePrefix}${projectId}/${planNamePrefix}${planId}/${"rollout"}/${stageNamePrefix}${stageId}`;
       if (!tasksByStage.has(stageName)) {
         tasksByStage.set(stageName, []);
       }

@@ -71,13 +71,18 @@ export const ISSUE_STATUS_RESOLVE: ActionDefinition = {
   category: "primary",
   priority: 50,
 
-  isVisible: (ctx) =>
-    ctx.issueStatus === IssueStatus.OPEN &&
-    (ctx.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-      ctx.approvalStatus === Issue_ApprovalStatus.SKIPPED) &&
-    ctx.allTasksFinished &&
-    ctx.plan.hasRollout &&
-    ctx.permissions.updateIssue,
+  isVisible: (ctx) => {
+    // Export plans auto-resolve when export completes, never show manual resolve
+    if (ctx.isExportPlan) return false;
+    return (
+      ctx.issueStatus === IssueStatus.OPEN &&
+      (ctx.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+        ctx.approvalStatus === Issue_ApprovalStatus.SKIPPED) &&
+      ctx.allTasksFinished &&
+      ctx.plan.hasRollout &&
+      ctx.permissions.updateIssue
+    );
+  },
 
   isDisabled: () => false,
   disabledReason: () => undefined,

@@ -1,6 +1,6 @@
 <template>
   <div class="w-full flex flex-col p-4 gap-4">
-    <DatabaseChangeSection />
+    <DatabaseChangeSection v-if="isDatabaseChangePlan" />
 
     <IssueStatusSection v-if="issue.approvalTemplate" :issue="issue" />
 
@@ -39,7 +39,11 @@ import DatabaseChangeSection from "./DatabaseChangeSection.vue";
 import IssueStatusSection from "./IssueStatusSection.vue";
 
 const { t } = useI18n();
-const { issue } = usePlanContextWithIssue();
+const { plan, issue } = usePlanContextWithIssue();
+
+const isDatabaseChangePlan = computed(() =>
+  plan.value.specs.some((spec) => spec.config?.case === "changeDatabaseConfig")
+);
 const currentUser = useCurrentUserV1();
 const { project } = useCurrentProjectV1();
 const { refreshResources } = useResourcePoller();

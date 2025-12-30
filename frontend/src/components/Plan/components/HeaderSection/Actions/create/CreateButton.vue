@@ -30,11 +30,7 @@ import {
   useSpecsValidation,
 } from "@/components/Plan/components/common";
 import { getLocalSheetByName, usePlanContext } from "@/components/Plan/logic";
-import {
-  issueServiceClientConnect,
-  planServiceClientConnect,
-  rolloutServiceClientConnect,
-} from "@/grpcweb";
+import { issueServiceClientConnect, planServiceClientConnect } from "@/grpcweb";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
@@ -56,7 +52,6 @@ import {
   type Plan_ChangeDatabaseConfig,
   type Plan_ExportDataConfig,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import {
   extractIssueUID,
@@ -144,7 +139,7 @@ const doCreatePlan = async () => {
   }
 };
 
-// Create data export issue (plan + issue + rollout)
+// Create data export issue (plan + issue, rollout is created later via EXPORT action)
 const doCreateDataExportIssue = async () => {
   // Create sheets first
   await createSheets();
@@ -173,12 +168,6 @@ const doCreateDataExportIssue = async () => {
   });
   const createdIssue =
     await issueServiceClientConnect.createIssue(issueRequest);
-
-  // Create the rollout
-  const rolloutRequest = create(CreateRolloutRequestSchema, {
-    parent: createdPlan.name,
-  });
-  await rolloutServiceClientConnect.createRollout(rolloutRequest);
 
   // Redirect to issue detail page
   nextTick(() => {
