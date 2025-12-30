@@ -98,7 +98,7 @@ func (s *GroupService) ListGroups(ctx context.Context, request *connect.Request[
 	if len(groups) == limitPlusOne {
 		groups = groups[:offset.limit]
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to marshal next page token, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal next page token"))
 		}
 	}
 
