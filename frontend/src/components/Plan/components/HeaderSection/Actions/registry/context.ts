@@ -156,6 +156,12 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
   const isExportPlan = plan.specs.some(
     (spec) => spec.config?.case === "exportDataConfig"
   );
+  // Plans where rollout is created on-demand when user clicks action button
+  const hasDeferredRollout = plan.specs.some(
+    (spec) =>
+      spec.config?.case === "exportDataConfig" ||
+      spec.config?.case === "createDatabaseConfig"
+  );
   const isCreator =
     currentUserEmail === extractUserId(plan.creator || "") ||
     (issue ? currentUserEmail === extractUserId(issue.creator) : false);
@@ -244,6 +250,7 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
     isCreating,
     isIssueOnly,
     isExportPlan,
+    hasDeferredRollout,
     isCreator,
     issueApproved,
     exportArchiveReady: computeExportArchiveReady(

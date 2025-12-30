@@ -369,7 +369,8 @@ const create = async () => {
     const { createdIssue } = await experimentalCreateIssueByPlan(
       project,
       issueCreate,
-      planCreate
+      planCreate,
+      { skipRollout: true }
     );
     router.push({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,

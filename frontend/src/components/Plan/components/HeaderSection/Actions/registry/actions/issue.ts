@@ -72,8 +72,8 @@ export const ISSUE_STATUS_RESOLVE: ActionDefinition = {
   priority: 50,
 
   isVisible: (ctx) => {
-    // Export plans auto-resolve when export completes, never show manual resolve
-    if (ctx.isExportPlan) return false;
+    // Deferred rollout plans auto-resolve when task completes, never show manual resolve
+    if (ctx.hasDeferredRollout) return false;
     return (
       ctx.issueStatus === IssueStatus.OPEN &&
       (ctx.approvalStatus === Issue_ApprovalStatus.APPROVED ||

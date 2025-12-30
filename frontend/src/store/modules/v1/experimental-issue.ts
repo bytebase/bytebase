@@ -145,10 +145,15 @@ export const experimentalFetchIssueByUID = async (
   return composeIssue(rawIssue);
 };
 
+export interface CreateIssueByPlanOptions {
+  skipRollout?: boolean;
+}
+
 export const experimentalCreateIssueByPlan = async (
   project: Project,
   issueCreate: Issue,
-  planCreate: Plan
+  planCreate: Plan,
+  options?: CreateIssueByPlanOptions
 ) => {
   const newPlan = planCreate;
   const request = create(CreatePlanRequestSchema, {
@@ -166,6 +171,12 @@ export const experimentalCreateIssueByPlan = async (
   const newCreatedIssue =
     await issueServiceClientConnect.createIssue(issueRequest);
   const createdIssue = newCreatedIssue;
+
+  // Skip rollout creation for plans that create rollout on-demand (e.g., database creation)
+  if (options?.skipRollout) {
+    return { createdPlan, createdIssue, createdRollout: undefined };
+  }
+
   const rolloutRequest = create(CreateRolloutRequestSchema, {
     parent: createdPlan.name,
   });

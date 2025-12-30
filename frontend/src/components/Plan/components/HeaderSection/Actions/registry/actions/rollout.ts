@@ -11,8 +11,8 @@ export const ROLLOUT_CREATE: ActionDefinition = {
   priority: 55,
 
   isVisible: (ctx) => {
-    // Export plans use ROLLOUT_START to create rollout and run tasks together
-    if (ctx.isExportPlan) return false;
+    // Deferred rollout plans use ROLLOUT_START to create rollout and run tasks together
+    if (ctx.hasDeferredRollout) return false;
     if (ctx.isIssueOnly) return false;
     if (ctx.plan.hasRollout) return false;
     if (!ctx.issue) return false;
@@ -40,8 +40,8 @@ export const ROLLOUT_START: ActionDefinition = {
   priority: 60,
 
   isVisible: (ctx) => {
-    // Export plans: rollout is created on-demand when user clicks Export button
-    if (ctx.isExportPlan) {
+    // Deferred rollout plans: rollout is created on-demand when user clicks action button
+    if (ctx.hasDeferredRollout) {
       if (!ctx.issue || !ctx.issueApproved) return false;
       // Show if no rollout yet (will create it) or has startable tasks
       if (!ctx.rollout) return ctx.permissions.runTasks;
