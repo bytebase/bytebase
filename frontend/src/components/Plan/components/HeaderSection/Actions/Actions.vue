@@ -36,22 +36,15 @@
       @execute="handlePerformAction"
     />
 
-    <!-- Rollout Action Panel -->
-    <template v-if="rollout && rolloutStage">
-      <TaskRolloutActionPanel
-        :show="Boolean(pendingRolloutAction)"
-        :action="
-          pendingRolloutAction === 'ROLLOUT_START'
-            ? 'RUN'
-            : pendingRolloutAction === 'ROLLOUT_CANCEL'
-              ? 'CANCEL'
-              : 'RUN'
-        "
-        :target="{ type: 'tasks', stage: rolloutStage }"
-        @close="pendingRolloutAction = undefined"
-        @confirm="handleRolloutActionConfirm"
-      />
-    </template>
+    <!-- Rollout Action Panel (only when rollout exists) -->
+    <TaskRolloutActionPanel
+      v-if="pendingRolloutAction && rolloutStage"
+      :show="true"
+      :action="pendingRolloutAction === 'ROLLOUT_CANCEL' ? 'CANCEL' : 'RUN'"
+      :target="{ type: 'tasks', stage: rolloutStage }"
+      @close="pendingRolloutAction = undefined"
+      @confirm="handleRolloutActionConfirm"
+    />
 
     <!-- Rollout Create Panel -->
     <RolloutCreatePanel
@@ -85,8 +78,8 @@ import {
   IssueStatus,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
+  BatchRunTasksRequestSchema,
   CreateRolloutRequestSchema,
-  Task_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import {
   extractPlanUIDFromRolloutName,
@@ -142,17 +135,9 @@ const hasRolloutCreationWarnings = computed(
   () => context.value.rolloutCreationWarnings.hasAny
 );
 
-// Get the stage that contains database creation or export tasks
-const rolloutStage = computed(() => {
-  if (!rollout.value) return undefined;
-  return rollout.value.stages.find((stage) =>
-    stage.tasks.some(
-      (task) =>
-        task.type === Task_Type.DATABASE_CREATE ||
-        task.type === Task_Type.DATABASE_EXPORT
-    )
-  );
-});
+// Get the first stage for database creation/export rollouts
+// (the panel handles all stages internally for these task types)
+const rolloutStage = computed(() => rollout.value?.stages[0]);
 
 const handlePerformAction = async (action: UnifiedAction) => {
   switch (action) {
@@ -176,6 +161,13 @@ const handlePerformAction = async (action: UnifiedAction) => {
       }
       break;
     case "ROLLOUT_START":
+      // For export/create plans without rollout, create and run all tasks
+      if (context.value.isExportPlan && !rollout.value) {
+        await handleCreateRollout({ runAllTasks: true });
+        return;
+      }
+      pendingRolloutAction.value = action as RolloutAction;
+      break;
     case "ROLLOUT_CANCEL":
       pendingRolloutAction.value = action as RolloutAction;
       break;
@@ -265,7 +257,8 @@ const handlePlanStateChange = async (action: "PLAN_CLOSE" | "PLAN_REOPEN") => {
   });
 };
 
-const handleCreateRollout = async () => {
+// Create rollout and optionally run all tasks (for export plans)
+const handleCreateRollout = async (options?: { runAllTasks?: boolean }) => {
   if (creatingRollout.value) return;
 
   creatingRollout.value = true;
@@ -276,19 +269,32 @@ const handleCreateRollout = async () => {
     const createdRollout =
       await rolloutServiceClientConnect.createRollout(request);
 
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.created"),
-    });
-
-    router.push({
-      name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
-      params: {
-        projectId: extractProjectResourceName(project.value.name),
-        planId: extractPlanUIDFromRolloutName(createdRollout.name),
-      },
-    });
+    if (options?.runAllTasks) {
+      // Run all tasks in each stage (for export/create plans)
+      for (const stage of createdRollout.stages) {
+        const runRequest = create(BatchRunTasksRequestSchema, {
+          parent: stage.name,
+          tasks: stage.tasks.map((task) => task.name),
+        });
+        await rolloutServiceClientConnect.batchRunTasks(runRequest);
+      }
+      await resourcePoller.refreshResources();
+      events.emit("status-changed", { eager: true });
+    } else {
+      // Navigate to rollout page
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.created"),
+      });
+      router.push({
+        name: PROJECT_V1_ROUTE_PLAN_ROLLOUT,
+        params: {
+          projectId: extractProjectResourceName(project.value.name),
+          planId: extractPlanUIDFromRolloutName(createdRollout.name),
+        },
+      });
+    }
   } catch (error) {
     pushNotification({
       module: "bytebase",
