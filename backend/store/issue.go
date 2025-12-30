@@ -367,28 +367,71 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 }
 
 // BatchUpdateIssueStatuses updates the status of multiple issues.
-func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, issueUIDs []int, status storepb.Issue_Status) error {
-	// Update the statuses
-	updateQuery := qb.Q().Space("UPDATE issue SET status = ? WHERE id = ANY(?)", status.String(), issueUIDs)
-	updateSQL, updateArgs, err := updateQuery.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build update sql")
-	}
-
+// Returns a map of issueUID -> old status for the updated issues.
+func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, issueUIDs []int, newStatus storepb.Issue_Status) (map[int]storepb.Issue_Status, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to begin transaction")
+		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
 
+	// Fetch current issues to validate project membership and get old statuses.
+	fetchQuery := qb.Q().Space("SELECT id, status FROM issue WHERE id = ANY(?) AND project = ?", issueUIDs, projectID)
+	fetchSQL, fetchArgs, err := fetchQuery.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build fetch sql")
+	}
+
+	rows, err := tx.QueryContext(ctx, fetchSQL, fetchArgs...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to fetch issues")
+	}
+	defer rows.Close()
+
+	oldStatuses := make(map[int]storepb.Issue_Status)
+	for rows.Next() {
+		var issueID int
+		var statusString string
+		if err := rows.Scan(&issueID, &statusString); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan issue")
+		}
+		statusValue, ok := storepb.Issue_Status_value[statusString]
+		if !ok {
+			return nil, errors.Errorf("invalid status string: %s", statusString)
+		}
+		issueStatus := storepb.Issue_Status(statusValue)
+
+		// Check if issue is already DONE.
+		if issueStatus == storepb.Issue_DONE {
+			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("cannot update status because issue %d is already DONE", issueID)}
+		}
+
+		oldStatuses[issueID] = issueStatus
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to iterate rows")
+	}
+
+	// Validate that all requested issues were found in the project.
+	if len(oldStatuses) != len(issueUIDs) {
+		return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("expected %d issues in project %s, found %d", len(issueUIDs), projectID, len(oldStatuses))}
+	}
+
+	// Update the statuses.
+	updateQuery := qb.Q().Space("UPDATE issue SET status = ? WHERE id = ANY(?) AND project = ?", newStatus.String(), issueUIDs, projectID)
+	updateSQL, updateArgs, err := updateQuery.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build update sql")
+	}
+
 	if _, err := tx.ExecContext(ctx, updateSQL, updateArgs...); err != nil {
-		return errors.Wrapf(err, "failed to update")
+		return nil, errors.Wrapf(err, "failed to update")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit")
+		return nil, errors.Wrapf(err, "failed to commit")
 	}
-	return nil
+	return oldStatuses, nil
 }
 
 func getTSVector(text string) string {
