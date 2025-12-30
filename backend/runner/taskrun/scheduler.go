@@ -218,6 +218,9 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 					slog.Error("failed to create rollout release notification activity", log.BBError(err))
 				}
 
+				// Check if entire plan is complete
+				s.checkPlanCompletion(ctx, task.PlanID)
+
 				return nil
 			}(); err != nil {
 				slog.Error("failed to handle task skipped or done", log.BBError(err))
@@ -237,4 +240,115 @@ func tasksSkippedOrDone(tasks []*store.TaskMessage) bool {
 		}
 	}
 	return true
+}
+
+func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
+	// Get all tasks for this plan
+	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
+	if err != nil {
+		slog.Error("failed to list tasks for plan completion check", log.BBError(err))
+		return
+	}
+
+	// Check if all tasks are in terminal state
+	allComplete := true
+	hasFailures := false
+	var earliestStart, latestEnd *time.Time
+
+	for _, task := range tasks {
+		status := task.LatestTaskRunStatus
+
+		// Check if task is in terminal state
+		isTerminal := status == storepb.TaskRun_DONE ||
+			status == storepb.TaskRun_FAILED ||
+			status == storepb.TaskRun_CANCELED ||
+			status == storepb.TaskRun_SKIPPED ||
+			task.Payload.GetSkipped()
+
+		if !isTerminal {
+			allComplete = false
+			break
+		}
+
+		// Track failures (excluding skipped tasks)
+		if status == storepb.TaskRun_FAILED && !task.Payload.GetSkipped() {
+			hasFailures = true
+		}
+
+		// Track start/end times for metrics
+		if task.RunAt != nil {
+			if earliestStart == nil || task.RunAt.Before(*earliestStart) {
+				earliestStart = task.RunAt
+			}
+		}
+		if task.UpdatedAt != nil {
+			if latestEnd == nil || task.UpdatedAt.After(*latestEnd) {
+				latestEnd = task.UpdatedAt
+			}
+		}
+	}
+
+	// Not all tasks complete yet
+	if !allComplete {
+		return
+	}
+
+	// Always clear the failure window when plan completes
+	s.pipelineEvents.Clear(planID)
+
+	// Only send completion webhook if there were no failures
+	if hasFailures {
+		return
+	}
+
+	// Get plan, project and issue for webhook
+	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
+	if err != nil {
+		slog.Error("failed to get plan for completion webhook", log.BBError(err))
+		return
+	}
+	if plan == nil {
+		slog.Error("plan not found for completion webhook", slog.Int64("plan_id", planID))
+		return
+	}
+
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
+	if err != nil {
+		slog.Error("failed to get project for completion webhook", log.BBError(err))
+		return
+	}
+	if project == nil {
+		slog.Error("project not found for completion webhook", slog.String("project_id", plan.ProjectID))
+		return
+	}
+
+	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planID})
+	if err != nil {
+		slog.Error("failed to get issue for completion webhook", log.BBError(err))
+		return
+	}
+
+	// Send PIPELINE_COMPLETED webhook
+	startedAt := time.Now()
+	completedAt := time.Now()
+	if earliestStart != nil {
+		startedAt = *earliestStart
+	}
+	if latestEnd != nil {
+		completedAt = *latestEnd
+	}
+
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Actor:   store.SystemBotUser,
+		Type:    storepb.Activity_PIPELINE_COMPLETED,
+		Comment: "",
+		Issue:   webhook.NewIssue(issueN),
+		Rollout: webhook.NewRollout(plan),
+		Project: webhook.NewProject(project),
+		PipelineCompleted: &webhook.EventPipelineCompleted{
+			TotalTasks:  len(tasks),
+			StartedAt:   startedAt,
+			CompletedAt: completedAt,
+		},
+	})
 }
