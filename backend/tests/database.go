@@ -61,9 +61,5 @@ func (ctl *controller) createDatabase(ctx context.Context, project *v1pb.Project
 		return err
 	}
 
-	if err := ctl.waitRollout(ctx, issueResp.Msg.Name, rolloutResp.Msg.Name); err != nil {
-		return err
-	}
-
-	return nil
+	return ctl.waitRollout(ctx, issueResp.Msg.Name, rolloutResp.Msg.Name)
 }
