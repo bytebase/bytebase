@@ -401,9 +401,9 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 		}
 		issueStatus := storepb.Issue_Status(statusValue)
 
-		// Check if issue is already DONE.
-		if issueStatus == storepb.Issue_DONE {
-			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("cannot update status because issue %d is already DONE", issueID)}
+		// Prevent changing status from DONE to other statuses.
+		if issueStatus == storepb.Issue_DONE && newStatus != storepb.Issue_DONE {
+			return nil, &common.Error{Code: common.Invalid, Err: errors.Errorf("cannot change status from DONE to %s for issue %d", newStatus.String(), issueID)}
 		}
 
 		oldStatuses[issueID] = issueStatus
