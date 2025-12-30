@@ -38,8 +38,8 @@ func (rc *RolloutCreator) Run(ctx context.Context, wg *sync.WaitGroup, rolloutCr
 
 	for {
 		select {
-		// case planID := <-rolloutCreationChan:
-		// 	rc.tryCreateRollout(ctx, planID)
+		case planID := <-rolloutCreationChan:
+			rc.tryCreateRollout(ctx, planID)
 		case <-ctx.Done():
 			slog.Debug("Rollout creator stopped")
 			return
