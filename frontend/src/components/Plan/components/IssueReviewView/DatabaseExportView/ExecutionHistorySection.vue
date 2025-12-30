@@ -26,10 +26,9 @@ import { computed } from "vue";
 import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { extractTaskUID } from "@/utils";
-import { usePlanContext, usePlanContextWithRollout } from "../../../logic";
+import { usePlanContext } from "../../../logic";
 
-const { plan, rollout } = usePlanContext();
-const { taskRuns } = usePlanContextWithRollout();
+const { plan, rollout, taskRuns } = usePlanContext();
 
 // Get the export data spec
 const exportDataSpec = computed(() => {
@@ -53,9 +52,9 @@ const exportTasks = computed(() => {
   return tasks;
 });
 
-// Get all task runs for export tasks
+// Get all task runs for export tasks (empty if no rollout)
 const allTaskRuns = computed((): TaskRun[] => {
-  if (exportTasks.value.length === 0) return [];
+  if (!rollout.value || exportTasks.value.length === 0) return [];
 
   const exportTaskUIDs = new Set(
     exportTasks.value.map((task) => extractTaskUID(task.name))

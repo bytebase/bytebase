@@ -101,7 +101,8 @@ export const provideResourcePoller = () => {
       },
     },
     rollout: {
-      canRefresh: () => !!plan.value?.name && !!rollout,
+      canRefresh: () =>
+        !!plan.value?.name && !!rollout && !!plan.value.hasRollout,
       refresh: () => {
         const rolloutName = getRolloutFromPlan(plan.value.name);
         return refreshRollout(rolloutName, project.value, rollout);
@@ -329,21 +330,22 @@ export const provideResourcePoller = () => {
     { deep: true }
   );
 
-  // Watch for plan issue/rollout changes on plan pages
+  // Watch for plan issue/rollout changes on plan and issue pages
   watch(
     () => ({ issue: plan.value?.issue, hasRollout: plan.value?.hasRollout }),
     async (newValues, oldValues) => {
       const routeName = route.name as string;
-      const isPlanRoute = includes(
+      const isRelevantRoute = includes(
         [
           PROJECT_V1_ROUTE_PLAN_DETAIL,
           PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
           PROJECT_V1_ROUTE_PLAN_DETAIL_SPEC_DETAIL,
+          PROJECT_V1_ROUTE_ISSUE_DETAIL_V1,
         ],
         routeName
       );
 
-      if (!isPlanRoute) return;
+      if (!isRelevantRoute) return;
 
       const issueAdded = !oldValues?.issue && newValues.issue;
       const rolloutAdded = !oldValues?.hasRollout && newValues.hasRollout;

@@ -41,10 +41,19 @@
             {{ databaseName }}
           </span>
         </div>
+
+        <!-- Task Status (only when rollout exists) -->
+        <div v-if="createDatabaseTask" class="flex items-center gap-2">
+          <span class="text-sm font-medium text-gray-600"
+            >{{ $t("common.status") }}:</span
+          >
+          <TaskStatus :status="createDatabaseTask.status" size="small" />
+        </div>
       </div>
 
+      <!-- Task Run Table (only when rollout exists and has task runs) -->
       <div
-        v-if="createDatabaseTask && taskRunsForCreateDatabase.length > 0"
+        v-if="rollout && createDatabaseTask && taskRunsForCreateDatabase.length > 0"
         class="mt-4"
       >
         <TaskRunTable
@@ -73,6 +82,7 @@
 import { computed, watchEffect } from "vue";
 import { extractCoreDatabaseInfoFromDatabaseCreateTask } from "@/components/IssueV1/logic/utils";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
+import TaskStatus from "@/components/Rollout/kits/TaskStatus.vue";
 import TaskRunTable from "@/components/RolloutV1/components/TaskRunTable.vue";
 import {
   DatabaseV1Name,
@@ -90,9 +100,9 @@ import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { isValidInstanceName } from "@/types/v1/instance";
 import { getSheetStatement } from "@/utils";
 import { extractInstanceResourceName } from "@/utils/v1/instance";
-import { usePlanContextWithRollout } from "../..";
+import { usePlanContext } from "../..";
 
-const { plan, rollout, taskRuns } = usePlanContextWithRollout();
+const { plan, rollout, taskRuns } = usePlanContext();
 const { project } = useCurrentProjectV1();
 const environmentStore = useEnvironmentV1Store();
 const instanceStore = useInstanceV1Store();
@@ -129,7 +139,7 @@ const databaseName = computed(() => {
   return createDatabaseConfig.value.database || "";
 });
 
-// Find the task related to this create database spec
+// Find the task related to this create database spec (only exists after rollout is created)
 const createDatabaseTask = computed(() => {
   if (!rollout.value || !createDatabaseSpec.value) return null;
 
@@ -144,7 +154,7 @@ const createDatabaseTask = computed(() => {
   return null;
 });
 
-// Get the sheet name from the task payload
+// Get the sheet name from the task payload (when rollout exists)
 const sheetName = computed(() => {
   if (!createDatabaseTask.value) return null;
 
@@ -176,6 +186,11 @@ const sheet = computed(() => {
 });
 
 const createStatement = computed(() => {
+  // Before rollout: show placeholder message
+  if (!rollout.value) {
+    return "-- Statement will be shown after rollout is created";
+  }
+
   if (!createDatabaseTask.value) {
     return "-- No task found for this create database spec";
   }
@@ -194,7 +209,7 @@ const createStatement = computed(() => {
 
 // Get task runs for this specific create database task
 const taskRunsForCreateDatabase = computed(() => {
-  if (!createDatabaseTask.value) return [];
+  if (!rollout.value || !createDatabaseTask.value) return [];
 
   const taskName = createDatabaseTask.value.name;
   return taskRuns.value.filter((taskRun) =>

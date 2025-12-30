@@ -71,13 +71,18 @@ export const ISSUE_STATUS_RESOLVE: ActionDefinition = {
   category: "primary",
   priority: 50,
 
-  isVisible: (ctx) =>
-    ctx.issueStatus === IssueStatus.OPEN &&
-    (ctx.approvalStatus === Issue_ApprovalStatus.APPROVED ||
-      ctx.approvalStatus === Issue_ApprovalStatus.SKIPPED) &&
-    ctx.allTasksFinished &&
-    ctx.plan.hasRollout &&
-    ctx.permissions.updateIssue,
+  isVisible: (ctx) => {
+    // Deferred rollout plans auto-resolve when task completes, never show manual resolve
+    if (ctx.hasDeferredRollout) return false;
+    return (
+      ctx.issueStatus === IssueStatus.OPEN &&
+      (ctx.approvalStatus === Issue_ApprovalStatus.APPROVED ||
+        ctx.approvalStatus === Issue_ApprovalStatus.SKIPPED) &&
+      ctx.allTasksFinished &&
+      ctx.plan.hasRollout &&
+      ctx.permissions.updateIssue
+    );
+  },
 
   isDisabled: () => false,
   disabledReason: () => undefined,
@@ -110,10 +115,9 @@ export const ISSUE_STATUS_REOPEN: ActionDefinition = {
   category: "primary",
   priority: 20,
 
+  // Only show reopen for canceled issues, not for done/resolved issues
   isVisible: (ctx) =>
-    (ctx.issueStatus === IssueStatus.CANCELED ||
-      ctx.issueStatus === IssueStatus.DONE) &&
-    ctx.permissions.updateIssue,
+    ctx.issueStatus === IssueStatus.CANCELED && ctx.permissions.updateIssue,
 
   isDisabled: () => false,
   disabledReason: () => undefined,

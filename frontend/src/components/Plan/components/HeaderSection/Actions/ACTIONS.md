@@ -17,13 +17,11 @@ Actions/
 │   ├── actions/
 │   │   ├── plan.ts              # PLAN_CLOSE, PLAN_REOPEN
 │   │   ├── issue.ts             # ISSUE_CREATE, ISSUE_REVIEW, ISSUE_STATUS_*
-│   │   └── rollout.ts           # ROLLOUT_CREATE, ROLLOUT_START, ROLLOUT_CANCEL
+│   │   └── rollout.ts           # ROLLOUT_CREATE, ROLLOUT_START, ROLLOUT_CANCEL, EXPORT_DOWNLOAD
 │   └── components/
 │       ├── ActionButton.vue     # Single action button
-│       └── ActionDropdown.vue   # Secondary actions dropdown
-├── unified/                     # Legacy components (compatibility layer)
-│   ├── UnifiedActionGroup.vue   # Button group with dropdown
-│   └── IssueReviewButton.vue    # Special review popover
+│       ├── ActionDropdown.vue   # Secondary actions dropdown
+│       └── IssueReviewButton.vue # Review popover with approve/reject/comment
 └── Actions.vue                  # Main orchestrator
 ```
 
@@ -31,9 +29,13 @@ Actions/
 
 **ActionContext**: Single reactive object containing all state needed for action decisions:
 - Entities: plan, issue, rollout, project
-- Derived flags: isIssueOnly, isExportPlan, isCreator
+- Derived flags: isIssueOnly, isExportPlan, hasDeferredRollout, isCreator
 - Permissions: updatePlan, createIssue, updateIssue, createRollout, runTasks
 - Validation: hasEmptySpec, planChecksRunning, planChecksFailed
+
+**hasDeferredRollout**: Plans where rollout is created on-demand (export, create database). For these plans:
+- ROLLOUT_CREATE is hidden; ROLLOUT_START creates rollout and runs tasks in one step
+- ISSUE_STATUS_RESOLVE is hidden (issues auto-resolve when task completes)
 
 **ActionDefinition**: Declarative action with pure functions:
 ```typescript
@@ -125,6 +127,8 @@ interface ActionDefinition {
 - Issue exists and is OPEN
 - Issue approval status is APPROVED or SKIPPED
 - All tasks in the rollout are finished (DONE or SKIPPED)
+- Rollout exists (`plan.hasRollout`)
+- Not a deferred rollout plan (export/create database plans auto-resolve when task completes)
 - User has `bb.issues.update` permission
 
 ---
@@ -144,10 +148,10 @@ interface ActionDefinition {
 #### `ISSUE_STATUS_REOPEN` (Primary, Priority: 20)
 **Label**: "Reopen"
 
-**Description**: Reopens a closed or resolved issue.
+**Description**: Reopens a canceled issue.
 
 **Visibility**:
-- Issue exists and is CANCELED or DONE
+- Issue exists and is CANCELED (not DONE - resolved issues cannot be reopened)
 - User has `bb.issues.update` permission
 
 ---
@@ -160,6 +164,8 @@ interface ActionDefinition {
 **Description**: Creates a rollout from the issue. Shows as primary action when ready, moves to dropdown when conditions aren't met.
 
 **Visibility**:
+- Not a deferred rollout plan (export/create database plans use ROLLOUT_START instead)
+- Not an issue-only plan
 - Plan has no rollout attached
 - Issue exists
 - User has `bb.rollouts.create` permission
@@ -184,9 +190,15 @@ When warnings exist, user must check "Bypass stage requirements" checkbox to pro
 - "Export" (for export data issues)
 - "Rollout" (for other issues)
 
-**Description**: Starts or retries tasks in the rollout.
+**Description**: Starts or retries tasks in the rollout. For deferred rollout plans (export/create database), this action creates the rollout and runs all tasks in one step.
 
 **Visibility**:
+For deferred rollout plans (export/create database):
+- Issue exists and is APPROVED or SKIPPED
+- No rollout yet (will create it) OR has startable tasks
+- User has `bb.taskRuns.create` permission
+
+For regular plans:
 - Rollout exists
 - Issue approval status is APPROVED or SKIPPED
 - Has DATABASE_CREATE or DATABASE_EXPORT tasks
@@ -330,6 +342,5 @@ export const MY_NEW_ACTION: ActionDefinition = {
 
 ## Implementation Files
 
-- **registry/**: Action registry (source of truth)
+- **registry/**: Action registry (source of truth for all actions and components)
 - **Actions.vue**: Main orchestrator
-- **unified/**: Legacy components (compatibility layer)

@@ -70,7 +70,11 @@ import { useRouter } from "vue-router";
 import DatabaseGroupIcon from "@/components/DatabaseGroupIcon.vue";
 import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
-import { getProjectNameAndDatabaseGroupName, useDBGroupStore } from "@/store";
+import {
+  getProjectNameAndDatabaseGroupName,
+  useDatabaseV1Store,
+  useDBGroupStore,
+} from "@/store";
 import { isValidDatabaseGroupName } from "@/types";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import DatabaseDisplay from "../common/DatabaseDisplay.vue";
@@ -89,6 +93,7 @@ const props = withDefaults(
 
 const router = useRouter();
 const dbGroupStore = useDBGroupStore();
+const dbStore = useDatabaseV1Store();
 
 const databases = ref<string[]>([]);
 
@@ -99,7 +104,14 @@ watchEffect(async () => {
       view: DatabaseGroupView.FULL,
       silent: true,
     });
-    databases.value = dbGroup.matchedDatabases?.map((db) => db.name) ?? [];
+    const matchedDatabases =
+      dbGroup.matchedDatabases?.map((db) => db.name) ?? [];
+    databases.value = matchedDatabases;
+
+    // Fetch matched databases so DatabaseDisplay can show environment
+    if (matchedDatabases.length > 0) {
+      await dbStore.batchGetOrFetchDatabases(matchedDatabases);
+    }
   } catch {
     databases.value = [];
   }

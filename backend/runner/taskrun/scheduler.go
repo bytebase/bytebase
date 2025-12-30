@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -149,14 +148,10 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 
 				currentEnvironment := task.Environment
 				var nextEnvironment string
-				var planDone bool
 				for i, env := range filteredEnvironmentOrder {
 					if env == currentEnvironment {
 						if i < len(filteredEnvironmentOrder)-1 {
 							nextEnvironment = filteredEnvironmentOrder[i+1]
-						}
-						if i == len(filteredEnvironmentOrder)-1 {
-							planDone = true
 						}
 						break
 					}
@@ -221,49 +216,6 @@ func (s *Scheduler) ListenTaskSkippedOrDone(ctx context.Context) {
 					slog.Error("failed to create rollout release notification activity", log.BBError(err))
 				}
 
-				// After all tasks in the pipeline are done, we will resolve the issue.
-				if issueN != nil && planDone {
-					if err := func() error {
-						// For those database data export issues, we don't resolve them automatically.
-						if issueN.Type == storepb.Issue_DATABASE_EXPORT {
-							return nil
-						}
-
-						newStatus := storepb.Issue_DONE
-						updatedIssue, err := s.store.UpdateIssue(ctx, issueN.UID, &store.UpdateIssueMessage{Status: &newStatus})
-						if err != nil {
-							return errors.Wrapf(err, "failed to update issue status")
-						}
-
-						fromStatus := storepb.Issue_Status(storepb.Issue_Status_value[issueN.Status.String()])
-						toStatus := storepb.Issue_Status(storepb.Issue_Status_value[updatedIssue.Status.String()])
-						if _, err := s.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-							IssueUID: issueN.UID,
-							Payload: &storepb.IssueCommentPayload{
-								Event: &storepb.IssueCommentPayload_IssueUpdate_{
-									IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-										FromStatus: &fromStatus,
-										ToStatus:   &toStatus,
-									},
-								},
-							},
-						}, common.SystemBotEmail); err != nil {
-							return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
-						}
-
-						s.webhookManager.CreateEvent(ctx, &webhook.Event{
-							Actor:   store.SystemBotUser,
-							Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
-							Comment: "",
-							Issue:   webhook.NewIssue(updatedIssue),
-							Project: webhook.NewProject(project),
-						})
-
-						return nil
-					}(); err != nil {
-						slog.Error("failed to update issue status", log.BBError(err))
-					}
-				}
 				return nil
 			}(); err != nil {
 				slog.Error("failed to handle task skipped or done", log.BBError(err))

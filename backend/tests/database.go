@@ -61,17 +61,5 @@ func (ctl *controller) createDatabase(ctx context.Context, project *v1pb.Project
 		return err
 	}
 
-	if err := ctl.waitRollout(ctx, issueResp.Msg.Name, rolloutResp.Msg.Name); err != nil {
-		return err
-	}
-
-	_, err = ctl.issueServiceClient.BatchUpdateIssuesStatus(ctx, connect.NewRequest(&v1pb.BatchUpdateIssuesStatusRequest{
-		Parent: project.Name,
-		Issues: []string{issueResp.Msg.Name},
-		Status: v1pb.IssueStatus_DONE,
-	}))
-	if err != nil {
-		return err
-	}
-	return nil
+	return ctl.waitRollout(ctx, issueResp.Msg.Name, rolloutResp.Msg.Name)
 }
