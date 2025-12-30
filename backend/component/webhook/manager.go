@@ -93,7 +93,6 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		titleZh = "需要审批"
 		if e.ApprovalRequested != nil {
 			webhookCtx.ApprovalRole = e.ApprovalRequested.ApprovalRole
-			webhookCtx.ApprovalRequired = e.ApprovalRequested.RequiredCount
 			mentionUsers = make([]*store.UserMessage, 0, len(e.ApprovalRequested.Approvers))
 			for _, user := range e.ApprovalRequested.Approvers {
 				mentionUsers = append(mentionUsers, &store.UserMessage{

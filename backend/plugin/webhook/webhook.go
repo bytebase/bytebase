@@ -106,10 +106,9 @@ type Context struct {
 	IMSetting     *storepb.AppIMSetting
 
 	// New event data
-	ApprovalRole     string
-	ApprovalRequired int
-	FailedTasks      []FailedTaskInfo
-	PipelineMetrics  *PipelineMetrics
+	ApprovalRole    string
+	FailedTasks     []FailedTaskInfo
+	PipelineMetrics *PipelineMetrics
 }
 
 // FailedTaskInfo contains information about a failed task.

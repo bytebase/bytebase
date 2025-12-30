@@ -264,9 +264,8 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(project),
 			ApprovalRequested: &webhook.EventIssueApprovalRequested{
-				ApprovalRole:  role,
-				RequiredCount: 1,
-				Approvers:     approvers,
+				ApprovalRole: role,
+				Approvers:    approvers,
 			},
 		})
 	}()

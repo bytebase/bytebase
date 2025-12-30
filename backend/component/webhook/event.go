@@ -77,9 +77,8 @@ type EventIssueCreated struct {
 }
 
 type EventIssueApprovalRequested struct {
-	ApprovalRole  string
-	RequiredCount int
-	Approvers     []User
+	ApprovalRole string
+	Approvers    []User
 }
 
 type EventIssueSentBack struct {

@@ -707,9 +707,8 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(project),
 			ApprovalRequested: &webhook.EventIssueApprovalRequested{
-				ApprovalRole:  role,
-				RequiredCount: 1, // TODO: Get from approval template
-				Approvers:     approvers,
+				ApprovalRole: role,
+				Approvers:    approvers,
 			},
 		})
 	}()
@@ -951,9 +950,8 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(project),
 			ApprovalRequested: &webhook.EventIssueApprovalRequested{
-				ApprovalRole:  role,
-				RequiredCount: 1, // TODO: Get from approval template
-				Approvers:     approvers,
+				ApprovalRole: role,
+				Approvers:    approvers,
 			},
 		})
 	}()
