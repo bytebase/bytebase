@@ -129,8 +129,8 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) error {
 	}
 
 	// Track what we've promoted this round to avoid over-committing
-	availableDBs := map[string]bool{}   // database key -> has AVAILABLE this round
-	rolloutCounts := map[int64]int{}    // plan_id -> count promoted this round
+	availableDBs := map[string]bool{} // database key -> has AVAILABLE this round
+	rolloutCounts := map[int64]int{}  // plan_id -> count promoted this round
 
 	for _, taskRun := range taskRuns {
 		promoted, err := s.schedulePendingTaskRun(ctx, taskRun, availableDBs, rolloutCounts)

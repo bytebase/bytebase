@@ -20,10 +20,6 @@ const (
 	taskSchedulerInterval = 5 * time.Second
 )
 
-// defaultRolloutMaxRunningTaskRuns is the maximum number of running tasks per rollout.
-// No limit by default.
-const defaultRolloutMaxRunningTaskRuns = 0
-
 // Scheduler is the scheduler for task run.
 type Scheduler struct {
 	store          *store.Store
