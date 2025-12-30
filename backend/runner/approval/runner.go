@@ -288,6 +288,29 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if role == "" {
 			return
 		}
+
+		// Get approvers for this role
+		approvers, err := r.getApproversForRole(ctx, issue.ProjectID, role)
+		if err != nil {
+			slog.Warn("failed to get approvers", log.BBError(err))
+			approvers = []webhook.User{} // Continue with empty list
+		}
+
+		// Trigger ISSUE_APPROVAL_REQUESTED webhook
+		r.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   store.SystemBotUser,
+			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(project),
+			ApprovalRequested: &webhook.EventIssueApprovalRequested{
+				ApprovalRole:  role,
+				RequiredCount: 1,
+				Approvers:     approvers,
+			},
+		})
+
+		// Keep legacy ISSUE_APPROVAL_NOTIFY for backward compatibility
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   store.SystemBotUser,
 			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
@@ -859,4 +882,34 @@ func collectStatementTypes(celVarsList []map[string]any) []string {
 		}
 	}
 	return result
+}
+
+// getApproversForRole retrieves the list of users who have the specified role
+// for the given project. It queries both project and workspace IAM policies.
+func (r *Runner) getApproversForRole(ctx context.Context, projectID string, role string) ([]webhook.User, error) {
+	// Get project IAM policy
+	projectIAM, err := r.store.GetProjectIamPolicy(ctx, projectID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get project IAM policy")
+	}
+
+	// Get workspace IAM policy
+	workspaceIAM, err := r.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get workspace IAM policy")
+	}
+
+	// Get all users with the specified role
+	users := utils.GetUsersByRoleInIAMPolicy(ctx, r.store, role, projectIAM.Policy, workspaceIAM.Policy)
+
+	// Convert to webhook.User format
+	approvers := make([]webhook.User, 0, len(users))
+	for _, user := range users {
+		approvers = append(approvers, webhook.User{
+			Name:  user.Name,
+			Email: user.Email,
+		})
+	}
+
+	return approvers, nil
 }
