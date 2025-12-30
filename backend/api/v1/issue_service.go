@@ -751,9 +751,33 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 				return errors.Wrap(err, "failed to check if the approval is approved")
 			}
 			if approved {
-				if err := webhook.ChangeIssueStatus(ctx, s.store, s.webhookManager, issue, storepb.Issue_DONE, store.SystemBotUser, ""); err != nil {
-					return errors.Wrap(err, "failed to update issue status")
+				newStatus := storepb.Issue_DONE
+				updatedIssue, err := s.store.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
+				if err != nil {
+					return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
 				}
+
+				if _, err := s.store.CreateIssueComments(ctx, common.SystemBotEmail, &store.IssueCommentMessage{
+					IssueUID: issue.UID,
+					Payload: &storepb.IssueCommentPayload{
+						Event: &storepb.IssueCommentPayload_IssueUpdate_{
+							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+								FromStatus: &issue.Status,
+								ToStatus:   &updatedIssue.Status,
+							},
+						},
+					},
+				}); err != nil {
+					return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
+				}
+
+				s.webhookManager.CreateEvent(ctx, &webhook.Event{
+					Actor:   store.SystemBotUser,
+					Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
+					Comment: "",
+					Issue:   webhook.NewIssue(updatedIssue),
+					Project: webhook.NewProject(project),
+				})
 			}
 			return nil
 		}(); err != nil {

@@ -363,6 +363,37 @@ func CreateRolloutAndPendingTasks(
 		return errors.Wrap(err, "failed to update plan hasRollout")
 	}
 
+	// Update issue status to DONE when rollout is created
+	if issue != nil {
+		newStatus := storepb.Issue_DONE
+		updatedIssue, err := s.UpdateIssue(ctx, issue.UID, &store.UpdateIssueMessage{Status: &newStatus})
+		if err != nil {
+			return errors.Wrapf(err, "failed to update issue %q's status", issue.Title)
+		}
+
+		if _, err := s.CreateIssueComments(ctx, common.SystemBotEmail, &store.IssueCommentMessage{
+			IssueUID: issue.UID,
+			Payload: &storepb.IssueCommentPayload{
+				Event: &storepb.IssueCommentPayload_IssueUpdate_{
+					IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
+						FromStatus: &issue.Status,
+						ToStatus:   &updatedIssue.Status,
+					},
+				},
+			},
+		}); err != nil {
+			return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
+		}
+
+		webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   store.SystemBotUser,
+			Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
+			Comment: "",
+			Issue:   webhook.NewIssue(updatedIssue),
+			Project: webhook.NewProject(project),
+		})
+	}
+
 	// Check if we should auto-rollout
 	envPolicies := make(map[string]*storepb.RolloutPolicy)
 	for _, task := range tasks {
