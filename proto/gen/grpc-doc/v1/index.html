@@ -4109,10 +4109,6 @@ Supported filters:
 - status: the issue status, support &#34;==&#34; and &#34;in&#34; operator, check the IssueStatus enum for the values.
 - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
 - type: the issue type, support &#34;==&#34; and &#34;in&#34; operator, check the Type enum in the Issue message for the values.
-- task_type: support &#34;==&#34; operator, the value can be &#34;DDL&#34;, &#34;DML&#34; or &#34;DATA_EXPORT&#34;
-- instance: the instance full name in the &#34;instances/{id}&#34; format, support &#34;==&#34; operator.
-- database: the database full name in the &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator.
-- environment: the database full name in the &#34;environments/{name}&#34; format, support &#34;==&#34; operator.
 - labels: the issue labels, support &#34;==&#34; and &#34;in&#34; operator.
 - approval_status: issue approval status, support &#34;==&#34; operator.
 - current_approver: the issue approver, should in &#34;users/{email} format&#34;, support &#34;==&#34; operator.
@@ -4120,9 +4116,8 @@ Supported filters:
 For example:
 creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#34;OPEN&#34;, &#34;DONE&#34;]
 status == &#34;CANCELED&#34; &amp;&amp; type == &#34;DATABASE_CHANGE&#34;
-instance == &#34;instances/sample&#34; &amp;&amp; labels in [&#34;label1&#34;, &#34;label2&#34;]
-create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34;
-environment == &#34;environments/test&#34; </p></td>
+labels in [&#34;label1&#34;, &#34;label2&#34;]
+create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; </p></td>
                 </tr>
               
                 <tr>
@@ -26886,14 +26881,6 @@ Format: projects/{project}/plans/{plan}/rollout </p></td>
                 </tr>
               
                 <tr>
-                  <td>plan</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The plan that this rollout is based on.
-Format: projects/{project}/plans/{plan} </p></td>
-                </tr>
-              
-                <tr>
                   <td>title</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -26909,13 +26896,6 @@ This field is output only and cannot be directly set. </p></td>
                 </tr>
               
                 <tr>
-                  <td>creator</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: users/hello@world.com </p></td>
-                </tr>
-              
-                <tr>
                   <td>create_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
@@ -26927,14 +26907,6 @@ This field is output only and cannot be directly set. </p></td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>issue</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The issue associated with the rollout. Could be empty.
-Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
             </tbody>
@@ -29543,7 +29515,7 @@ In this situation, `update_mask` is ignored. </p></td>
               </tr>
             
               <tr>
-                <td>FEATURE_SIGN_IN_FREQUENCY_CONTROL</td>
+                <td>FEATURE_TOKEN_DURATION_CONTROL</td>
                 <td>53</td>
                 <td><p></p></td>
               </tr>

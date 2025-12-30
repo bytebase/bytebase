@@ -10,14 +10,8 @@ import type {
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
-import { RichDatabaseName } from "@/components/v2";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useProjectV1Store,
-  useUserStore,
-} from "@/store";
-import { isValidProjectName, SYSTEM_BOT_USER_NAME, UNKNOWN_ID } from "@/types";
+import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
+import { isValidProjectName, SYSTEM_BOT_USER_NAME } from "@/types";
 import {
   Issue_ApprovalStatus,
   IssueStatus,
@@ -25,12 +19,7 @@ import {
 import { type Label } from "@/types/proto-es/v1/project_service_pb";
 import { UserType } from "@/types/proto-es/v1/user_service_pb";
 import type { SearchParams, SearchScopeId } from "@/utils";
-import {
-  extractEnvironmentResourceName,
-  extractInstanceResourceName,
-  extractProjectResourceName,
-  getDefaultPagination,
-} from "@/utils";
+import { getDefaultPagination } from "@/utils";
 
 export const useIssueSearchScopeOptions = (
   params: Ref<SearchParams>,
@@ -39,7 +28,6 @@ export const useIssueSearchScopeOptions = (
   const { t } = useI18n();
   const route = useRoute();
   const me = useCurrentUserV1();
-  const databaseV1Store = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
   const userStore = useUserStore();
 
@@ -127,56 +115,6 @@ export const useIssueSearchScopeOptions = (
   const fullScopeOptions = computed((): ScopeOption[] => {
     const scopes: ScopeOption[] = [
       ...commonScopeOptions.value,
-      {
-        id: "database",
-        title: t("issue.advanced-search.scope.database.title"),
-        description: t("issue.advanced-search.scope.database.description"),
-        search: ({
-          keyword,
-          nextPageToken,
-        }: {
-          keyword: string;
-          nextPageToken?: string;
-        }) => {
-          return databaseV1Store
-            .fetchDatabases({
-              pageToken: nextPageToken,
-              pageSize: getDefaultPagination(),
-              parent: projectName.value!,
-              filter: {
-                query: keyword,
-              },
-            })
-            .then((resp) => ({
-              nextPageToken: resp.nextPageToken,
-              options: resp.databases.map((db) => {
-                return {
-                  value: db.name,
-                  keywords: [
-                    db.databaseName,
-                    extractInstanceResourceName(db.instance),
-                    db.instanceResource.title,
-                    extractEnvironmentResourceName(
-                      db.effectiveEnvironment ?? ""
-                    ),
-                    db.effectiveEnvironmentEntity.title,
-                    extractProjectResourceName(db.project),
-                    db.projectEntity.title,
-                  ],
-                  custom: true,
-                  render: () => {
-                    return h("div", { class: "text-sm" }, [
-                      h(RichDatabaseName, {
-                        database: db,
-                        showProject: true,
-                      }),
-                    ]);
-                  },
-                };
-              }),
-            }));
-        },
-      },
       {
         id: "status",
         allowMultiple: true,
@@ -272,43 +210,12 @@ export const useIssueSearchScopeOptions = (
   // filteredScopeOptions will filter search options by chosen scope.
   // For example, if users select a specific project, we should only allow them select instances related with this project.
   const filteredScopeOptions = computed((): ScopeOption[] => {
-    const existedScopes = new Map<SearchScopeId, string>(
-      params.value.scopes.map((scope) => [scope.id, scope.value])
-    );
-
     const clone = fullScopeOptions.value.map((scope) => ({
       ...scope,
       options: scope.options?.map((option) => ({
         ...option,
       })),
     }));
-    const index = clone.findIndex((scope) => scope.id === "database");
-    if (index >= 0) {
-      clone[index].options = clone[index].options?.filter((option) => {
-        if (!existedScopes.has("project") && !existedScopes.has("instance")) {
-          return true;
-        }
-
-        const db = databaseV1Store.getDatabaseByName(option.value);
-        const project = db.project;
-        const instance = db.instance;
-
-        const existedProject = `projects/${
-          existedScopes.get("project") ?? UNKNOWN_ID
-        }`;
-        if (project === existedProject) {
-          return true;
-        }
-        const existedInstance = `instances/${
-          existedScopes.get("instance") ?? UNKNOWN_ID
-        }`;
-        if (instance === existedInstance) {
-          return true;
-        }
-
-        return false;
-      });
-    }
 
     return clone;
   });

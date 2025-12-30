@@ -992,10 +992,6 @@
           "title": "环境",
           "description": "根据环境过滤"
         },
-        "database": {
-          "title": "数据库",
-          "description": "根据数据库过滤"
-        },
         "creator": {
           "title": "创建人",
           "description": "根据创建人搜索"

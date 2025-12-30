@@ -992,10 +992,6 @@
           "title": "Environment",
           "description": "Filter by environment"
         },
-        "database": {
-          "title": "Database",
-          "description": "Filter by database"
-        },
         "creator": {
           "title": "Creator",
           "description": "Search by the creator"

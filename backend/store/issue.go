@@ -69,14 +69,6 @@ type FindIssueMessage struct {
 	Types           *[]storepb.Issue_Type
 
 	StatusList []storepb.Issue_Status
-	TaskTypes  *[]storepb.Task_Type
-	// Any of the task in the issue changes the instance with InstanceResourceID.
-	InstanceResourceID *string
-	// Any of the task in the issue changes the database with InstanceID and DatabaseName.
-	InstanceID   *string
-	DatabaseName *string
-	// Should match the task environment.
-	EnvironmentID *string
 	// If specified, then it will only fetch "Limit" most recently updated issues
 	Limit  *int
 	Offset *int
@@ -84,8 +76,6 @@ type FindIssueMessage struct {
 	Query *string
 
 	LabelList []string
-
-	NoPipeline bool
 }
 
 // GetIssue gets issue by issue UID.
@@ -246,12 +236,6 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	if v := find.ProjectIDs; v != nil {
 		where.And("issue.project = ANY(?)", *v)
 	}
-	if v := find.InstanceResourceID; v != nil {
-		where.And("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.instance = ?)", *v)
-	}
-	if find.InstanceID != nil && find.DatabaseName != nil {
-		where.And("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.instance = ? AND task.db_name = ?)", *find.InstanceID, *find.DatabaseName)
-	}
 	if v := find.CreatorID; v != nil {
 		where.And("issue.creator = ?", *v)
 	}
@@ -285,21 +269,8 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		}
 		where.And("issue.status = ANY(?)", statusStrings)
 	}
-	if v := find.TaskTypes; v != nil {
-		taskTypeStrings := make([]string, 0, len(*v))
-		for _, t := range *v {
-			taskTypeStrings = append(taskTypeStrings, t.String())
-		}
-		where.And("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.type = ANY(?))", taskTypeStrings)
-	}
-	if v := find.EnvironmentID; v != nil {
-		where.And("EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id AND task.environment = ?)", *v)
-	}
 	if len(find.LabelList) != 0 {
 		where.And("payload->'labels' ??& ?::TEXT[]", find.LabelList)
-	}
-	if find.NoPipeline {
-		where.And("NOT EXISTS (SELECT 1 FROM task WHERE task.plan_id = plan.id)")
 	}
 
 	q := qb.Q().Space(`
