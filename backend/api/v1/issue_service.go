@@ -428,12 +428,16 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
+	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    storepb.Activity_ISSUE_CREATE,
-		Comment: "",
-		Issue:   webhook.NewIssue(issue),
+		Type:    storepb.Activity_ISSUE_CREATED,
 		Project: webhook.NewProject(project),
+		Issue:   webhook.NewIssue(issue),
+		IssueCreated: &webhook.EventIssueCreated{
+			CreatorName:  user.Name,
+			CreatorEmail: user.Email,
+		},
 	})
 
 	converted, err := s.convertToIssue(issue)
@@ -503,12 +507,16 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
+	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    storepb.Activity_ISSUE_CREATE,
-		Comment: "",
-		Issue:   webhook.NewIssue(issue),
+		Type:    storepb.Activity_ISSUE_CREATED,
 		Project: webhook.NewProject(project),
+		Issue:   webhook.NewIssue(issue),
+		IssueCreated: &webhook.EventIssueCreated{
+			CreatorName:  user.Name,
+			CreatorEmail: user.Email,
+		},
 	})
 
 	converted, err := s.convertToIssue(issue)
@@ -567,12 +575,16 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
+	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    storepb.Activity_ISSUE_CREATE,
-		Comment: "",
-		Issue:   webhook.NewIssue(issue),
+		Type:    storepb.Activity_ISSUE_CREATED,
 		Project: webhook.NewProject(project),
+		Issue:   webhook.NewIssue(issue),
+		IssueCreated: &webhook.EventIssueCreated{
+			CreatorName:  user.Name,
+			CreatorEmail: user.Email,
+		},
 	})
 
 	converted, err := s.convertToIssue(issue)
