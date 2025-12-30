@@ -922,9 +922,10 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	for _, taskRun := range taskRuns {
 		switch taskRun.Status {
 		case storepb.TaskRun_PENDING:
+		case storepb.TaskRun_AVAILABLE:
 		case storepb.TaskRun_RUNNING:
 		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("taskRun %v is not pending or running", taskRun.ID))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("taskRun %v is not pending, available or running", taskRun.ID))
 		}
 	}
 
