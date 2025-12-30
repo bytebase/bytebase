@@ -3559,6 +3559,13 @@ ISSUE_CREATE represents creating an issue. |
 
 NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
 | NOTIFY_PIPELINE_ROLLOUT | 9 | NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification. |
+| ISSUE_CREATED | 10 | New focused event types for reduced notification noise.
+
+ISSUE_CREATED represents a new issue creation event. |
+| ISSUE_APPROVAL_REQUESTED | 11 | ISSUE_APPROVAL_REQUESTED represents an approval request event. |
+| ISSUE_SENT_BACK | 12 | ISSUE_SENT_BACK represents an issue being sent back by an approver. |
+| PIPELINE_FAILED | 13 | PIPELINE_FAILED represents a pipeline failure event. |
+| PIPELINE_COMPLETED | 14 | PIPELINE_COMPLETED represents a pipeline completion event. |
 
 
  
