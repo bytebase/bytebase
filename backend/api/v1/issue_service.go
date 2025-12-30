@@ -687,6 +687,31 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		if payload.Approval.ApprovalTemplate == nil {
 			return
 		}
+		// Notify next approvers if approval is not complete
+		role := utils.FindNextPendingRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
+		if role == "" {
+			return
+		}
+
+		approvers, err := s.getApproversForRole(ctx, issue.ProjectID, role)
+		if err != nil {
+			slog.Error("failed to get approvers for next role", slog.String("role", role), log.BBError(err))
+			return
+		}
+
+		// Send ISSUE_APPROVAL_REQUESTED webhook
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   user,
+			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(project),
+			ApprovalRequested: &webhook.EventIssueApprovalRequested{
+				ApprovalRole:  role,
+				RequiredCount: 1, // TODO: Get from approval template
+				Approvers:     approvers,
+			},
+		})
 	}()
 
 	// If the issue is a grant request and approved, we will always auto close it.
@@ -911,6 +936,26 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 		if role == "" {
 			return
 		}
+
+		approvers, err := s.getApproversForRole(ctx, issue.ProjectID, role)
+		if err != nil {
+			slog.Error("failed to get approvers for next role", slog.String("role", role), log.BBError(err))
+			return
+		}
+
+		// Send ISSUE_APPROVAL_REQUESTED webhook
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   user,
+			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
+			Comment: "",
+			Issue:   webhook.NewIssue(issue),
+			Project: webhook.NewProject(project),
+			ApprovalRequested: &webhook.EventIssueApprovalRequested{
+				ApprovalRole:  role,
+				RequiredCount: 1, // TODO: Get from approval template
+				Approvers:     approvers,
+			},
+		})
 	}()
 
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
@@ -1354,4 +1399,36 @@ func (s *IssueService) isUserReviewer(ctx context.Context, issue *store.IssueMes
 
 func canRequestIssue(issueCreatorEmail string, user *store.UserMessage) bool {
 	return issueCreatorEmail == user.Email
+}
+
+func (s *IssueService) getApproversForRole(ctx context.Context, projectID string, role string) ([]webhook.User, error) {
+	// Get project IAM policy
+	projectIAM, err := s.store.GetProjectIamPolicy(ctx, projectID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get project IAM policy")
+	}
+
+	// Get workspace IAM policy
+	workspaceIAM, err := s.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get workspace IAM policy")
+	}
+
+	// Get all users with the specified role
+	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, role, projectIAM.Policy, workspaceIAM.Policy)
+
+	// Convert to webhook.User format, filtering by END_USER principal type
+	approvers := make([]webhook.User, 0, len(users))
+	for _, user := range users {
+		// Only include END_USER principals as approvers
+		if user.Type != storepb.PrincipalType_END_USER {
+			continue
+		}
+		approvers = append(approvers, webhook.User{
+			Name:  user.Name,
+			Email: user.Email,
+		})
+	}
+
+	return approvers, nil
 }
