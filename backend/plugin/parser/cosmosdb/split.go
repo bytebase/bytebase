@@ -46,22 +46,16 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 		}
 	}
 
-	var firstToken, lastToken antlr.Token
+	var lastToken antlr.Token
 	for _, token := range tokens {
 		if token.GetTokenType() == antlr.TokenEOF {
 			break
-		}
-		if firstToken == nil && token.GetChannel() == antlr.TokenDefaultChannel {
-			firstToken = token
 		}
 		if token.GetChannel() == antlr.TokenDefaultChannel {
 			lastToken = token
 		}
 	}
 
-	if firstToken == nil {
-		firstToken = tokens[0]
-	}
 	if lastToken == nil && len(tokens) > 0 {
 		lastToken = tokens[len(tokens)-1]
 	}

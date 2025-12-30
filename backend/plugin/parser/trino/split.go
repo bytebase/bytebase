@@ -82,21 +82,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 		}
 
 		// Find the actual start position
-		startIdx := startToken.GetTokenIndex()
 		endIdx := stopToken.GetTokenIndex()
-
-		// Find the first non-hidden token for accurate start position display
-		var firstDefaultToken antlr.Token
-		for i := startIdx; i <= endIdx && i < len(tokens); i++ {
-			if tokens[i].GetChannel() == antlr.TokenDefaultChannel {
-				firstDefaultToken = tokens[i]
-				break
-			}
-		}
-
-		if firstDefaultToken == nil {
-			firstDefaultToken = startToken
-		}
 
 		// Check if there's a semicolon after the statement and include it
 		finalEndIdx := endIdx
@@ -115,7 +101,7 @@ func splitByParser(statement string) ([]base.Statement, error) {
 		text := statement[byteOffsetStart:rangeEnd]
 
 		// Calculate start position based on byteOffsetStart (including leading whitespace)
-		startLine, startColumn := calculateLineAndColumn(statement, byteOffsetStart)
+		startLine, startColumn := base.CalculateLineAndColumn(statement, byteOffsetStart)
 
 		result = append(result, base.Statement{
 			Text:     text,
@@ -139,22 +125,4 @@ func splitByParser(statement string) ([]base.Statement, error) {
 	}
 
 	return result, nil
-}
-
-// calculateLineAndColumn calculates the 0-based line number and 0-based column (character offset)
-// for a given byte offset in the statement.
-func calculateLineAndColumn(statement string, byteOffset int) (line, column int) {
-	if byteOffset > len(statement) {
-		byteOffset = len(statement)
-	}
-	// Range over string iterates over runes (code points), not bytes
-	for _, r := range statement[:byteOffset] {
-		if r == '\n' {
-			line++
-			column = 0
-		} else {
-			column++
-		}
-	}
-	return line, column
 }
