@@ -547,7 +547,15 @@ func validateSpecs(ctx context.Context, s *store.Store, projectID string, specs 
 			}
 		case *v1pb.Plan_Spec_ExportDataConfig:
 			configTypeCount["export_data"]++
-			databaseNames = append(databaseNames, config.ExportDataConfig.Targets...)
+			for _, target := range config.ExportDataConfig.Targets {
+				if _, _, err := common.GetInstanceDatabaseID(target); err == nil {
+					databaseNames = append(databaseNames, target)
+				} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+					databaseGroups = append(databaseGroups, target)
+				} else {
+					return nil, errors.Errorf("invalid target %v", target)
+				}
+			}
 			if config.ExportDataConfig.Sheet != "" {
 				if _, sha, err := common.GetProjectResourceIDSheetSha256(config.ExportDataConfig.Sheet); err == nil {
 					sheetSha256s = append(sheetSha256s, sha)
