@@ -49,7 +49,6 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	var firstToken, lastToken antlr.Token
 	for _, token := range tokens {
 		if token.GetTokenType() == antlr.TokenEOF {
-			lastToken = token
 			break
 		}
 		if firstToken == nil && token.GetChannel() == antlr.TokenDefaultChannel {
@@ -79,10 +78,11 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				Line:   int32(firstToken.GetLine()),
 				Column: int32(firstToken.GetColumn()),
 			}, statement),
-			End: common.ConvertANTLRPositionToPosition(&common.ANTLRPosition{
-				Line:   int32(lastToken.GetLine()),
-				Column: int32(lastToken.GetColumn()),
-			}, statement),
+			End: common.ConvertANTLRTokenToExclusiveEndPosition(
+				int32(lastToken.GetLine()),
+				int32(lastToken.GetColumn()),
+				lastToken.GetText(),
+			),
 			Empty: empty,
 		},
 	}, nil

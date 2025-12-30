@@ -37,8 +37,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 	for _, item := range tree.GetChildren() {
 		if stmt, ok := item.(parser.IUnit_statementContext); ok {
 			text := ""
-			lastLine := 0
-			lastColumn := 0
+			var lastToken antlr.Token
 			// tokens looks like
 			if startTokenIndex := stmt.GetStart().GetTokenIndex(); startTokenIndex-1 >= 0 && prevStopTokenIndex+1 <= startTokenIndex-1 {
 				byteOffsetStart += len(tokens.GetTextFromTokens(tokens.Get(prevStopTokenIndex+1), tokens.Get(stmt.GetStart().GetTokenIndex()-1)))
@@ -48,9 +47,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 			// The go-ora driver requires semicolon for anonymous block,
 			// but does not support semicolon for other statements.
 			if needSemicolon(stmt) {
-				lastToken := tokens.Get(stmt.GetStop().GetTokenIndex())
-				lastLine = lastToken.GetLine()
-				lastColumn = lastToken.GetColumn()
+				lastToken = tokens.Get(stmt.GetStop().GetTokenIndex())
 				text = tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
 				if lastToken.GetTokenType() != parser.PlSqlParserSEMICOLON {
 					text += ";"
@@ -60,9 +57,7 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 				if stmt.GetStop().GetTokenType() == parser.PlSqlParserSEMICOLON {
 					stopIndex--
 				}
-				lastToken := tokens.Get(stopIndex)
-				lastLine = lastToken.GetLine()
-				lastColumn = lastToken.GetColumn()
+				lastToken = tokens.Get(stopIndex)
 				text = tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
 				text = strings.TrimRightFunc(text, utils.IsSpaceOrSemicolon)
 			}
@@ -78,12 +73,10 @@ func SplitSQL(statement string) ([]base.Statement, error) {
 					},
 					statement,
 				),
-				End: common.ConvertANTLRPositionToPosition(
-					&common.ANTLRPosition{
-						Line:   int32(lastLine),
-						Column: int32(lastColumn),
-					},
-					statement,
+				End: common.ConvertANTLRTokenToExclusiveEndPosition(
+					int32(lastToken.GetLine()),
+					int32(lastToken.GetColumn()),
+					lastToken.GetText(),
 				),
 				Empty: base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
 				Range: &storepb.Range{
@@ -120,33 +113,25 @@ func SplitSQLForCompletion(statement string) ([]base.Statement, error) {
 				lastToken := tokens.Get(stopIndex)
 				result[len(result)-1] = base.Statement{
 					Text: lastResult.Text + tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
-					End: common.ConvertANTLRPositionToPosition(
-						&common.ANTLRPosition{
-							Line:   int32(lastToken.GetLine()),
-							Column: int32(lastToken.GetColumn()),
-						},
-						statement,
+					End: common.ConvertANTLRTokenToExclusiveEndPosition(
+						int32(lastToken.GetLine()),
+						int32(lastToken.GetColumn()),
+						lastToken.GetText(),
 					),
 					Empty: false,
 				}
 				continue
 			}
-			lastLine := 0
-			lastColumn := 0
 
 			stopIndex := stmt.GetStop().GetTokenIndex()
 			lastToken := tokens.Get(stopIndex)
-			lastLine = lastToken.GetLine()
-			lastColumn = lastToken.GetColumn()
 
 			result = append(result, base.Statement{
 				Text: tokens.GetTextFromTokens(stmt.GetStart(), lastToken),
-				End: common.ConvertANTLRPositionToPosition(
-					&common.ANTLRPosition{
-						Line:   int32(lastLine),
-						Column: int32(lastColumn),
-					},
-					statement,
+				End: common.ConvertANTLRTokenToExclusiveEndPosition(
+					int32(lastToken.GetLine()),
+					int32(lastToken.GetColumn()),
+					lastToken.GetText(),
 				),
 				Empty: base.IsEmpty(tokens.GetAllTokens()[stmt.GetStart().GetTokenIndex():stmt.GetStop().GetTokenIndex()+1], parser.PlSqlParserSEMICOLON),
 			})
