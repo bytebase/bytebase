@@ -289,6 +289,13 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 			return
 		}
 
+		// Get issue creator as actor
+		creator, err := r.store.GetUserByEmail(ctx, issue.CreatorEmail)
+		if err != nil {
+			slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
+			creator = store.SystemBotUser
+		}
+
 		// Get approvers for this role
 		approvers, err := r.getApproversForRole(ctx, issue.ProjectID, role)
 		if err != nil {
@@ -298,7 +305,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 		// Trigger ISSUE_APPROVAL_REQUESTED webhook
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
+			Actor:   creator,
 			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
@@ -312,7 +319,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 		// Keep legacy ISSUE_APPROVAL_NOTIFY for backward compatibility
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
+			Actor:   creator,
 			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
@@ -886,6 +893,7 @@ func collectStatementTypes(celVarsList []map[string]any) []string {
 
 // getApproversForRole retrieves the list of users who have the specified role
 // for the given project. It queries both project and workspace IAM policies.
+// Only returns END_USER type principals (excludes service accounts, system bots, etc).
 func (r *Runner) getApproversForRole(ctx context.Context, projectID string, role string) ([]webhook.User, error) {
 	// Get project IAM policy
 	projectIAM, err := r.store.GetProjectIamPolicy(ctx, projectID)
@@ -902,9 +910,13 @@ func (r *Runner) getApproversForRole(ctx context.Context, projectID string, role
 	// Get all users with the specified role
 	users := utils.GetUsersByRoleInIAMPolicy(ctx, r.store, role, projectIAM.Policy, workspaceIAM.Policy)
 
-	// Convert to webhook.User format
+	// Convert to webhook.User format, filtering by END_USER principal type
 	approvers := make([]webhook.User, 0, len(users))
 	for _, user := range users {
+		// Only include END_USER principals as approvers
+		if user.Type != storepb.PrincipalType_END_USER {
+			continue
+		}
 		approvers = append(approvers, webhook.User{
 			Name:  user.Name,
 			Email: user.Email,
