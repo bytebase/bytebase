@@ -99,7 +99,6 @@ import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
   useActuatorV1Store,
-  useAppFeature,
   useIssueV1Store,
   useProjectIamPolicyStore,
   useProjectV1Store,
@@ -136,9 +135,11 @@ const actuatorStore = useActuatorV1Store();
 const issueStore = useIssueV1Store();
 const worksheetStore = useWorkSheetStore();
 const projectIamPolicyStore = useProjectIamPolicyStore();
-const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
 
 const sampleProject = computedAsync(async () => {
+  if (!actuatorStore.quickStartEnabled) {
+    return;
+  }
   const project = await projectStore.getOrFetchProjectByName(
     `${projectNamePrefix}${SAMPLE_PROJECT_NAME}`,
     true /* silent */
@@ -266,27 +267,11 @@ const introList = computed(() => {
   );
 });
 
-const isFirstUser = computed(() => {
-  return (
-    actuatorStore.getActiveUserCount({
-      includeBot: false,
-      includeServiceAccount: false,
-    }) === 1
-  );
-});
-
 const showQuickstart = computed(() => {
-  if (hideQuickStart.value) {
+  if (!actuatorStore.quickStartEnabled) {
     return false;
   }
-  if (uiStateStore.getIntroStateByKey("hidden")) {
-    return false;
-  }
-  // Only show quickstart for the first user.
-  if (!isFirstUser.value) {
-    return false;
-  }
-  return true;
+  return !uiStateStore.getIntroStateByKey("hidden");
 });
 
 const currentStep = computed(() => {

@@ -28,18 +28,15 @@
       </div>
     </div>
 
-    <Quickstart v-if="actuatorStore.info?.enableSample" />
+    <Quickstart />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import { useActuatorV1Store } from "@/store";
 import DashboardHeader from "@/views/DashboardHeader.vue";
 import Quickstart from "../components/Quickstart.vue";
 import { provideBodyLayoutContext } from "./common";
-
-const actuatorStore = useActuatorV1Store();
 
 const mainContainerRef = ref<HTMLDivElement>();
 
