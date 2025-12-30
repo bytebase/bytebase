@@ -1862,37 +1862,21 @@
           "title": "Tạo vấn đề",
           "label": "Khi vấn đề mới được tạo"
         },
-        "issue-status-change": {
-          "title": "Thay đổi trạng thái vấn đề",
-          "label": "Khi trạng thái vấn đề đã thay đổi"
-        },
-        "issue-stage-status-change": {
-          "title": "Thay đổi trạng thái giai đoạn vấn đề",
-          "label": "Khi trạng thái giai đoạn kèm theo của vấn đề đã thay đổi"
-        },
-        "issue-task-status-change": {
-          "title": "Thay đổi trạng thái tác vụ vấn đề",
-          "label": "Khi trạng thái tác vụ kèm theo của vấn đề đã thay đổi"
-        },
-        "issue-info-change": {
-          "title": "Thay đổi thông tin vấn đề",
-          "label": "Khi thông tin vấn đề (ví dụ: tiêu đề, mô tả) đã thay đổi"
-        },
-        "issue-comment-creation": {
-          "title": "Tạo bình luận vấn đề",
-          "label": "Khi bình luận vấn đề mới được tạo"
-        },
         "issue-approval-notify": {
           "title": "Cần phê duyệt vấn đề",
           "label": "Khi vấn đề đang chờ phê duyệt"
         },
-        "notify-issue-approved": {
-          "title": "Vấn đề được chấp thuận",
-          "label": "Khi vấn đề được chấp thuận"
+        "issue-sent-back": {
+          "title": "Vấn đề bị trả lại",
+          "label": "Khi người phê duyệt trả lại vấn đề"
         },
-        "notify-pipeline-rollout": {
-          "title": "Cần triển khai vấn đề",
-          "label": "Khi vấn đề đang chờ triển khai"
+        "pipeline-failed": {
+          "title": "Pipeline thất bại",
+          "label": "Khi các tác vụ pipeline thất bại"
+        },
+        "pipeline-completed": {
+          "title": "Pipeline hoàn thành",
+          "label": "Khi pipeline hoàn thành thành công"
         }
       }
     },

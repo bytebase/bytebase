@@ -130,6 +130,9 @@ func (s *Scheduler) scheduleRunningTaskRun(ctx context.Context, taskRun *store.T
 	if err != nil {
 		return errors.Wrapf(err, "failed to get instance")
 	}
+	if instance == nil {
+		return errors.Errorf("instance %v not found", task.InstanceID)
+	}
 	if instance.Deleted {
 		return errors.Errorf("instance %v is deleted", task.InstanceID)
 	}
@@ -321,6 +324,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 			return
 		}
 		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_FAILED, taskRunResult.Detail)
+		s.recordPipelineFailure(ctx, task, taskRunResult.Detail)
 		return
 
 	case done && err == nil:
@@ -364,7 +368,11 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 	}
 }
 
-func (s *Scheduler) createActivityForTaskRunStatusUpdate(ctx context.Context, task *store.TaskMessage, newStatus storepb.TaskRun_Status, errDetail string) {
+func (*Scheduler) createActivityForTaskRunStatusUpdate(_ context.Context, _ *store.TaskMessage, _ storepb.TaskRun_Status, _ string) {
+	// No webhook events for task run status updates
+}
+
+func (s *Scheduler) recordPipelineFailure(ctx context.Context, task *store.TaskMessage, errDetail string) {
 	if err := func() error {
 		plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
 		if err != nil {
@@ -373,6 +381,7 @@ func (s *Scheduler) createActivityForTaskRunStatusUpdate(ctx context.Context, ta
 		if plan == nil {
 			return errors.Errorf("plan %v not found", task.PlanID)
 		}
+
 		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
 		if err != nil {
 			return errors.Wrapf(err, "failed to get project")
@@ -380,28 +389,56 @@ func (s *Scheduler) createActivityForTaskRunStatusUpdate(ctx context.Context, ta
 		if project == nil {
 			return errors.Errorf("project %v not found", plan.ProjectID)
 		}
-		issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-			PlanUID: &task.PlanID,
-		})
+
+		issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &task.PlanID})
 		if err != nil {
 			return errors.Wrap(err, "failed to get issue")
 		}
-		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
-			Rollout: webhook.NewRollout(plan),
-			Project: webhook.NewProject(project),
-			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-				Title:  task.GetDatabaseName(),
-				Status: newStatus.String(),
-				Detail: errDetail,
+
+		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+		if err != nil {
+			return errors.Wrapf(err, "failed to get instance")
+		}
+
+		failedTask := webhook.FailedTask{
+			TaskID:       int64(task.ID),
+			TaskName:     task.Type.String(),
+			DatabaseName: task.GetDatabaseName(),
+			InstanceName: instance.Metadata.Title,
+			ErrorMessage: errDetail,
+			FailedAt:     time.Now(),
+		}
+
+		s.pipelineEvents.RecordTaskFailure(
+			plan.UID,
+			failedTask,
+			func(failedTasks []webhook.FailedTask) {
+				firstFailureTime := time.Now().Add(-5 * time.Minute)
+				if len(failedTasks) > 0 {
+					firstFailureTime = failedTasks[0].FailedAt
+				}
+
+				// Use background context to avoid cancellation issues
+				webhookCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+
+				s.webhookManager.CreateEvent(webhookCtx, &webhook.Event{
+					Actor:   store.SystemBotUser,
+					Type:    storepb.Activity_PIPELINE_FAILED,
+					Project: webhook.NewProject(project),
+					Issue:   webhook.NewIssue(issue),
+					Rollout: webhook.NewRollout(plan),
+					PipelineFailed: &webhook.EventPipelineFailed{
+						FailedTasks:      failedTasks,
+						FirstFailureTime: firstFailureTime,
+					},
+				})
 			},
-		})
+		)
+
 		return nil
 	}(); err != nil {
-		slog.Error("failed to create activity for task run status update", log.BBError(err))
+		slog.Error("failed to record pipeline failure", log.BBError(err))
 	}
 }
 

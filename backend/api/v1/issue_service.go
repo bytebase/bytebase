@@ -428,12 +428,16 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
+	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    storepb.Activity_ISSUE_CREATE,
-		Comment: "",
-		Issue:   webhook.NewIssue(issue),
+		Type:    storepb.Activity_ISSUE_CREATED,
 		Project: webhook.NewProject(project),
+		Issue:   webhook.NewIssue(issue),
+		IssueCreated: &webhook.EventIssueCreated{
+			CreatorName:  user.Name,
+			CreatorEmail: user.Email,
+		},
 	})
 
 	converted, err := s.convertToIssue(issue)
@@ -503,12 +507,16 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
+	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    storepb.Activity_ISSUE_CREATE,
-		Comment: "",
-		Issue:   webhook.NewIssue(issue),
+		Type:    storepb.Activity_ISSUE_CREATED,
 		Project: webhook.NewProject(project),
+		Issue:   webhook.NewIssue(issue),
+		IssueCreated: &webhook.EventIssueCreated{
+			CreatorName:  user.Name,
+			CreatorEmail: user.Email,
+		},
 	})
 
 	converted, err := s.convertToIssue(issue)
@@ -567,12 +575,16 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 	}
 	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 
+	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
 		Actor:   user,
-		Type:    storepb.Activity_ISSUE_CREATE,
-		Comment: "",
-		Issue:   webhook.NewIssue(issue),
+		Type:    storepb.Activity_ISSUE_CREATED,
 		Project: webhook.NewProject(project),
+		Issue:   webhook.NewIssue(issue),
+		IssueCreated: &webhook.EventIssueCreated{
+			CreatorName:  user.Name,
+			CreatorEmail: user.Email,
+		},
 	})
 
 	converted, err := s.convertToIssue(issue)
@@ -675,71 +687,30 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 		if payload.Approval.ApprovalTemplate == nil {
 			return
 		}
+		// Notify next approvers if approval is not complete
 		role := utils.FindNextPendingRole(payload.Approval.ApprovalTemplate, payload.Approval.Approvers)
 		if role == "" {
 			return
 		}
 
-		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(project),
-			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
-				Role: role,
-			},
-		})
-	}()
-
-	func() {
-		if !approved {
+		approvers, err := s.getApproversForRole(ctx, issue.ProjectID, role)
+		if err != nil {
+			slog.Error("failed to get approvers for next role", slog.String("role", role), log.BBError(err))
 			return
 		}
 
-		// notify issue approved
+		// Send ISSUE_APPROVAL_REQUESTED webhook
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_NOTIFY_ISSUE_APPROVED,
+			Actor:   user,
+			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(project),
+			ApprovalRequested: &webhook.EventIssueApprovalRequested{
+				ApprovalRole: role,
+				Approvers:    approvers,
+			},
 		})
-
-		// notify pipeline rollout
-		if err := func() error {
-			if issue.PlanUID == nil {
-				return nil
-			}
-			tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: issue.PlanUID})
-			if err != nil {
-				return errors.Wrapf(err, "failed to list tasks")
-			}
-			if len(tasks) == 0 {
-				return nil
-			}
-
-			// Get the first environment from tasks
-			firstEnvironment := tasks[0].Environment
-			policy, err := GetValidRolloutPolicyForEnvironment(ctx, s.store, firstEnvironment)
-			if err != nil {
-				return err
-			}
-			s.webhookManager.CreateEvent(ctx, &webhook.Event{
-				Actor:   user,
-				Type:    storepb.Activity_NOTIFY_PIPELINE_ROLLOUT,
-				Comment: "",
-				Issue:   webhook.NewIssue(issue),
-				Project: webhook.NewProject(project),
-				IssueRolloutReady: &webhook.EventIssueRolloutReady{
-					RolloutPolicy: policy,
-					StageName:     firstEnvironment,
-				},
-			})
-			return nil
-		}(); err != nil {
-			slog.Error("failed to create rollout release notification activity", log.BBError(err))
-		}
 	}()
 
 	// If the issue is a grant request and approved, we will always auto close it.
@@ -770,14 +741,6 @@ func (s *IssueService) ApproveIssue(ctx context.Context, req *connect.Request[v1
 				}); err != nil {
 					return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
 				}
-
-				s.webhookManager.CreateEvent(ctx, &webhook.Event{
-					Actor:   store.SystemBotUser,
-					Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
-					Comment: "",
-					Issue:   webhook.NewIssue(updatedIssue),
-					Project: webhook.NewProject(project),
-				})
 			}
 			return nil
 		}(); err != nil {
@@ -805,6 +768,13 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
 	if err != nil {
 		return nil, err
+	}
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &issue.ProjectID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
+	}
+	if project == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
 	}
 	payload := issue.Payload
 	if payload.Approval == nil {
@@ -866,6 +836,29 @@ func (s *IssueService) RejectIssue(ctx context.Context, req *connect.Request[v1p
 	}); err != nil {
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
+
+	// Get issue creator for webhook event
+	creator, err := s.store.GetUserByEmail(ctx, issue.CreatorEmail)
+	if err != nil {
+		slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
+		creator = store.SystemBotUser
+	}
+
+	// Trigger ISSUE_SENT_BACK webhook
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Actor:   user,
+		Type:    storepb.Activity_ISSUE_SENT_BACK,
+		Comment: req.Msg.Comment,
+		Issue:   webhook.NewIssue(issue),
+		Project: webhook.NewProject(project),
+		SentBack: &webhook.EventIssueSentBack{
+			ApproverName:  user.Name,
+			ApproverEmail: user.Email,
+			CreatorName:   creator.Name,
+			CreatorEmail:  creator.Email,
+			Reason:        req.Msg.Comment,
+		},
+	})
 
 	issueV1, err := s.convertToIssue(issue)
 	if err != nil {
@@ -943,14 +936,22 @@ func (s *IssueService) RequestIssue(ctx context.Context, req *connect.Request[v1
 			return
 		}
 
+		approvers, err := s.getApproversForRole(ctx, issue.ProjectID, role)
+		if err != nil {
+			slog.Error("failed to get approvers for next role", slog.String("role", role), log.BBError(err))
+			return
+		}
+
+		// Send ISSUE_APPROVAL_REQUESTED webhook
 		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
+			Actor:   user,
+			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(project),
-			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
-				Role: role,
+			ApprovalRequested: &webhook.EventIssueApprovalRequested{
+				ApprovalRole: role,
+				Approvers:    approvers,
 			},
 		})
 	}()
@@ -1023,7 +1024,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	updateMasks := map[string]bool{}
 
 	patch := &store.UpdateIssueMessage{}
-	var webhookEvents []*webhook.Event
 	var issueCommentCreates []*store.IssueCommentMessage
 	for _, path := range req.Msg.UpdateMask.Paths {
 		updateMasks[path] = true
@@ -1069,17 +1069,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 				},
 			})
 
-			webhookEvents = append(webhookEvents, &webhook.Event{
-				Actor:   user,
-				Type:    storepb.Activity_ISSUE_FIELD_UPDATE,
-				Comment: "",
-				Issue:   webhook.NewIssue(issue),
-				Project: webhook.NewProject(project),
-				IssueUpdate: &webhook.EventIssueUpdate{
-					Path: path,
-				},
-			})
-
 		case "description":
 			// Prevent updating description if plan exists
 			if issue.PlanUID != nil {
@@ -1097,17 +1086,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 							ToDescription:   &req.Msg.Issue.Description,
 						},
 					},
-				},
-			})
-
-			webhookEvents = append(webhookEvents, &webhook.Event{
-				Actor:   user,
-				Type:    storepb.Activity_ISSUE_FIELD_UPDATE,
-				Comment: "",
-				Issue:   webhook.NewIssue(issue),
-				Project: webhook.NewProject(project),
-				IssueUpdate: &webhook.EventIssueUpdate{
-					Path: path,
 				},
 			})
 
@@ -1145,9 +1123,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 	}
 
-	for _, e := range webhookEvents {
-		s.webhookManager.CreateEvent(ctx, e)
-	}
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, issueCommentCreates...); err != nil {
 		slog.Warn("failed to create issue comments", "issue id", issue.UID, log.BBError(err))
 	}
@@ -1244,14 +1219,6 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 			slog.Error("updated issue not found", "issueUID", issueUID)
 			continue
 		}
-
-		s.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   user,
-			Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
-			Comment: req.Msg.Reason,
-			Issue:   webhook.NewIssue(updatedIssue),
-			Project: webhook.NewProject(project),
-		})
 	}
 
 	return connect.NewResponse(&v1pb.BatchUpdateIssuesStatusResponse{}), nil
@@ -1329,14 +1296,6 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
 	}
-
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
-		Type:    storepb.Activity_ISSUE_COMMENT_CREATE,
-		Comment: req.Msg.IssueComment.Comment,
-		Issue:   webhook.NewIssue(issue),
-		Project: webhook.NewProject(project),
-	})
 
 	ic, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
 		IssueUID: issue.UID,
@@ -1438,4 +1397,36 @@ func (s *IssueService) isUserReviewer(ctx context.Context, issue *store.IssueMes
 
 func canRequestIssue(issueCreatorEmail string, user *store.UserMessage) bool {
 	return issueCreatorEmail == user.Email
+}
+
+func (s *IssueService) getApproversForRole(ctx context.Context, projectID string, role string) ([]webhook.User, error) {
+	// Get project IAM policy
+	projectIAM, err := s.store.GetProjectIamPolicy(ctx, projectID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get project IAM policy")
+	}
+
+	// Get workspace IAM policy
+	workspaceIAM, err := s.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get workspace IAM policy")
+	}
+
+	// Get all users with the specified role
+	users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, role, projectIAM.Policy, workspaceIAM.Policy)
+
+	// Convert to webhook.User format, filtering by END_USER principal type
+	approvers := make([]webhook.User, 0, len(users))
+	for _, user := range users {
+		// Only include END_USER principals as approvers
+		if user.Type != storepb.PrincipalType_END_USER {
+			continue
+		}
+		approvers = append(approvers, webhook.User{
+			Name:  user.Name,
+			Email: user.Email,
+		})
+	}
+
+	return approvers, nil
 }

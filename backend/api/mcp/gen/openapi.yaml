@@ -6329,15 +6329,11 @@ components:
       title: Type
       enum:
         - TYPE_UNSPECIFIED
-        - ISSUE_CREATE
-        - ISSUE_COMMENT_CREATE
-        - ISSUE_FIELD_UPDATE
-        - ISSUE_STATUS_UPDATE
-        - ISSUE_PIPELINE_STAGE_STATUS_UPDATE
-        - ISSUE_APPROVAL_NOTIFY
-        - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
-        - NOTIFY_ISSUE_APPROVED
-        - NOTIFY_PIPELINE_ROLLOUT
+        - ISSUE_CREATED
+        - ISSUE_APPROVAL_REQUESTED
+        - ISSUE_SENT_BACK
+        - PIPELINE_FAILED
+        - PIPELINE_COMPLETED
       description: Activity type enumeration.
     bytebase.v1.ActuatorInfo:
       type: object
@@ -17496,15 +17492,11 @@ components:
             notification_types is the list of activities types that the webhook is interested in.
              Bytebase will only send notifications to the webhook if the activity type is in the list.
              It should not be empty, and should be a subset of the following:
-             - ISSUE_CREATE
-             - ISSUE_COMMENT_CREATE
-             - ISSUE_FIELD_UPDATE
-             - ISSUE_STATUS_UPDATE
-             - ISSUE_APPROVAL_NOTIFY
-             - ISSUE_PIPELINE_STAGE_STATUS_UPDATE
-             - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
-             - NOTIFY_ISSUE_APPROVED
-             - NOTIFY_PIPELINE_ROLLOUT
+             - ISSUE_CREATED
+             - ISSUE_APPROVAL_REQUESTED
+             - ISSUE_SENT_BACK
+             - PIPELINE_FAILED
+             - PIPELINE_COMPLETED
       title: Webhook
       additionalProperties: false
     bytebase.v1.WebhookType:

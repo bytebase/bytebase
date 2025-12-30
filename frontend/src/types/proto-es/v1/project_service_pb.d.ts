@@ -785,15 +785,11 @@ export declare type Webhook = Message<"bytebase.v1.Webhook"> & {
    * notification_types is the list of activities types that the webhook is interested in.
    * Bytebase will only send notifications to the webhook if the activity type is in the list.
    * It should not be empty, and should be a subset of the following:
-   * - ISSUE_CREATE
-   * - ISSUE_COMMENT_CREATE
-   * - ISSUE_FIELD_UPDATE
-   * - ISSUE_STATUS_UPDATE
-   * - ISSUE_APPROVAL_NOTIFY
-   * - ISSUE_PIPELINE_STAGE_STATUS_UPDATE
-   * - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
-   * - NOTIFY_ISSUE_APPROVED
-   * - NOTIFY_PIPELINE_ROLLOUT
+   * - ISSUE_CREATED
+   * - ISSUE_APPROVAL_REQUESTED
+   * - ISSUE_SENT_BACK
+   * - PIPELINE_FAILED
+   * - PIPELINE_COMPLETED
    *
    * @generated from field: repeated bytebase.v1.Activity.Type notification_types = 5;
    */
@@ -834,71 +830,39 @@ export enum Activity_Type {
   TYPE_UNSPECIFIED = 0,
 
   /**
-   * Issue related activity types.
+   * ISSUE_CREATED represents a new issue creation event.
    *
-   * ISSUE_CREATE represents creating an issue.
-   *
-   * @generated from enum value: ISSUE_CREATE = 1;
+   * @generated from enum value: ISSUE_CREATED = 10;
    */
-  ISSUE_CREATE = 1,
+  ISSUE_CREATED = 10,
 
   /**
-   * ISSUE_COMMENT_CREATE represents commenting on an issue.
+   * ISSUE_APPROVAL_REQUESTED represents an approval request event.
    *
-   * @generated from enum value: ISSUE_COMMENT_CREATE = 2;
+   * @generated from enum value: ISSUE_APPROVAL_REQUESTED = 11;
    */
-  ISSUE_COMMENT_CREATE = 2,
+  ISSUE_APPROVAL_REQUESTED = 11,
 
   /**
-   * ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
+   * ISSUE_SENT_BACK represents an issue being sent back by an approver.
    *
-   * @generated from enum value: ISSUE_FIELD_UPDATE = 3;
+   * @generated from enum value: ISSUE_SENT_BACK = 12;
    */
-  ISSUE_FIELD_UPDATE = 3,
+  ISSUE_SENT_BACK = 12,
 
   /**
-   * ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
+   * PIPELINE_FAILED represents a pipeline failure event.
    *
-   * @generated from enum value: ISSUE_STATUS_UPDATE = 4;
+   * @generated from enum value: PIPELINE_FAILED = 13;
    */
-  ISSUE_STATUS_UPDATE = 4,
+  PIPELINE_FAILED = 13,
 
   /**
-   * ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
+   * PIPELINE_COMPLETED represents a pipeline completion event.
    *
-   * @generated from enum value: ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5;
+   * @generated from enum value: PIPELINE_COMPLETED = 14;
    */
-  ISSUE_PIPELINE_STAGE_STATUS_UPDATE = 5,
-
-  /**
-   * ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
-   *
-   * @generated from enum value: ISSUE_APPROVAL_NOTIFY = 6;
-   */
-  ISSUE_APPROVAL_NOTIFY = 6,
-
-  /**
-   * ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
-   *
-   * @generated from enum value: ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 7;
-   */
-  ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE = 7,
-
-  /**
-   * Notifications via webhooks.
-   *
-   * NOTIFY_ISSUE_APPROVED represents the issue approved notification.
-   *
-   * @generated from enum value: NOTIFY_ISSUE_APPROVED = 8;
-   */
-  NOTIFY_ISSUE_APPROVED = 8,
-
-  /**
-   * NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
-   *
-   * @generated from enum value: NOTIFY_PIPELINE_ROLLOUT = 9;
-   */
-  NOTIFY_PIPELINE_ROLLOUT = 9,
+  PIPELINE_COMPLETED = 14,
 }
 
 /**

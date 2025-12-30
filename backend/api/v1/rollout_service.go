@@ -252,7 +252,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		}
 	}
 
-	if err := CreateRolloutAndPendingTasks(ctx, s.store, s.webhookManager, plan, nil, project, tasks); err != nil {
+	if err := CreateRolloutAndPendingTasks(ctx, s.store, plan, nil, project, tasks); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -332,7 +332,6 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 func CreateRolloutAndPendingTasks(
 	ctx context.Context,
 	s *store.Store,
-	webhookManager *webhook.Manager,
 	plan *store.PlanMessage,
 	issue *store.IssueMessage,
 	project *store.ProjectMessage,
@@ -384,14 +383,6 @@ func CreateRolloutAndPendingTasks(
 		}); err != nil {
 			return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
 		}
-
-		webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
-			Comment: "",
-			Issue:   webhook.NewIssue(updatedIssue),
-			Project: webhook.NewProject(project),
-		})
 	}
 
 	// Check if we should auto-rollout
@@ -441,19 +432,6 @@ func CreateRolloutAndPendingTasks(
 			if err := s.CreatePendingTaskRuns(ctx, common.SystemBotEmail, create); err != nil {
 				return errors.Wrapf(err, "failed to create pending task runs for task %d", task.ID)
 			}
-
-			webhookManager.CreateEvent(ctx, &webhook.Event{
-				Actor:   store.SystemBotUser,
-				Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
-				Comment: "",
-				Issue:   webhook.NewIssue(issue),
-				Rollout: webhook.NewRollout(plan),
-				Project: webhook.NewProject(project),
-				TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-					Title:  task.GetDatabaseName(),
-					Status: storepb.TaskRun_PENDING.String(),
-				},
-			})
 		}
 	}
 	return nil
@@ -766,16 +744,6 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pending task runs, error %v", err))
 	}
 
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
-		Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
-		Issue:   webhook.NewIssue(issueN),
-		Project: webhook.NewProject(project),
-		Rollout: webhook.NewRollout(plan),
-		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Status: storepb.TaskRun_PENDING.String(),
-		},
-	})
 	// Tickle task run scheduler.
 	s.stateCfg.TaskRunTickleChan <- 0
 
@@ -866,19 +834,6 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	for _, task := range tasksToSkip {
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 	}
-
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
-		Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
-		Comment: request.Reason,
-		Issue:   webhook.NewIssue(issueN),
-		Project: webhook.NewProject(project),
-		Rollout: webhook.NewRollout(plan),
-		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Status:        storepb.TaskRun_SKIPPED.String(),
-			SkippedReason: request.Reason,
-		},
-	})
 
 	return connect.NewResponse(&v1pb.BatchSkipTasksResponse{}), nil
 }
@@ -984,17 +939,6 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	if err := s.store.BatchCancelTaskRuns(ctx, taskRunIDs); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch patch task run status to canceled"))
 	}
-
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
-		Type:    storepb.Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE,
-		Issue:   webhook.NewIssue(issueN),
-		Rollout: webhook.NewRollout(plan),
-		Project: webhook.NewProject(project),
-		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Status: storepb.TaskRun_CANCELED.String(),
-		},
-	})
 
 	return connect.NewResponse(&v1pb.BatchCancelTaskRunsResponse{}), nil
 }

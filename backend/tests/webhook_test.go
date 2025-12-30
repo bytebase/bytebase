@@ -146,9 +146,7 @@ func TestWebhookIntegration(t *testing.T) {
 
 	// Create webhooks for issue events
 	for _, eventType := range []v1pb.Activity_Type{
-		v1pb.Activity_ISSUE_CREATE,
-		v1pb.Activity_ISSUE_STATUS_UPDATE,
-		v1pb.Activity_ISSUE_COMMENT_CREATE,
+		v1pb.Activity_ISSUE_CREATED,
 	} {
 		_, err := ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
 			Project: ctl.project.Name,

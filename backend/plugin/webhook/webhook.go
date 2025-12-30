@@ -104,6 +104,28 @@ type Context struct {
 
 	DirectMessage bool
 	IMSetting     *storepb.AppIMSetting
+
+	// New event data
+	ApprovalRole    string
+	FailedTasks     []FailedTaskInfo
+	PipelineMetrics *PipelineMetrics
+}
+
+// FailedTaskInfo contains information about a failed task.
+type FailedTaskInfo struct {
+	Name         string
+	Instance     string
+	Database     string
+	ErrorMessage string
+	FailedAt     string
+}
+
+// PipelineMetrics contains metrics about a pipeline execution.
+type PipelineMetrics struct {
+	TotalTasks   int
+	StartedAt    string
+	CompletedAt  string
+	DurationSecs int64
 }
 
 // Receiver is the webhook receiver.

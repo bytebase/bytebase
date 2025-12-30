@@ -1862,37 +1862,21 @@
           "title": "Issue creation",
           "label": "When new issue has been created"
         },
-        "issue-status-change": {
-          "title": "Issue status change",
-          "label": "When issue status has changed"
-        },
-        "issue-stage-status-change": {
-          "title": "Issue stage status change",
-          "label": "When issue's enclosing stage status has changed"
-        },
-        "issue-task-status-change": {
-          "title": "Issue task status change",
-          "label": "When issue's enclosing task status has changed"
-        },
-        "issue-info-change": {
-          "title": "Issue info change",
-          "label": "When issue info (e.g. title, description) has changed"
-        },
-        "issue-comment-creation": {
-          "title": "Issue comment creation",
-          "label": "When new issue comment has been created"
-        },
         "issue-approval-notify": {
           "title": "Issue approval needed",
           "label": "When issue is pending approval"
         },
-        "notify-issue-approved": {
-          "title": "Issue approved",
-          "label": "When issue is approved"
+        "issue-sent-back": {
+          "title": "Issue sent back",
+          "label": "When issue is sent back by an approver"
         },
-        "notify-pipeline-rollout": {
-          "title": "Issue rollout needed",
-          "label": "When the issue is waiting for rollout"
+        "pipeline-failed": {
+          "title": "Pipeline failed",
+          "label": "When pipeline tasks fail"
+        },
+        "pipeline-completed": {
+          "title": "Pipeline completed",
+          "label": "When pipeline completes successfully"
         }
       }
     },

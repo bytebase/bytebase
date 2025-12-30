@@ -9833,61 +9833,33 @@ IM integration setting should be set for this function to work. </p></td>
               </tr>
             
               <tr>
-                <td>ISSUE_CREATE</td>
-                <td>1</td>
-                <td><p>Issue related activity types.
-
-ISSUE_CREATE represents creating an issue.</p></td>
+                <td>ISSUE_CREATED</td>
+                <td>10</td>
+                <td><p>ISSUE_CREATED represents a new issue creation event.</p></td>
               </tr>
             
               <tr>
-                <td>ISSUE_COMMENT_CREATE</td>
-                <td>2</td>
-                <td><p>ISSUE_COMMENT_CREATE represents commenting on an issue.</p></td>
+                <td>ISSUE_APPROVAL_REQUESTED</td>
+                <td>11</td>
+                <td><p>ISSUE_APPROVAL_REQUESTED represents an approval request event.</p></td>
               </tr>
             
               <tr>
-                <td>ISSUE_FIELD_UPDATE</td>
-                <td>3</td>
-                <td><p>ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.</p></td>
+                <td>ISSUE_SENT_BACK</td>
+                <td>12</td>
+                <td><p>ISSUE_SENT_BACK represents an issue being sent back by an approver.</p></td>
               </tr>
             
               <tr>
-                <td>ISSUE_STATUS_UPDATE</td>
-                <td>4</td>
-                <td><p>ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL for now.</p></td>
+                <td>PIPELINE_FAILED</td>
+                <td>13</td>
+                <td><p>PIPELINE_FAILED represents a pipeline failure event.</p></td>
               </tr>
             
               <tr>
-                <td>ISSUE_PIPELINE_STAGE_STATUS_UPDATE</td>
-                <td>5</td>
-                <td><p>ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.</p></td>
-              </tr>
-            
-              <tr>
-                <td>ISSUE_APPROVAL_NOTIFY</td>
-                <td>6</td>
-                <td><p>ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.</p></td>
-              </tr>
-            
-              <tr>
-                <td>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE</td>
-                <td>7</td>
-                <td><p>ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.</p></td>
-              </tr>
-            
-              <tr>
-                <td>NOTIFY_ISSUE_APPROVED</td>
-                <td>8</td>
-                <td><p>Notifications via webhooks.
-
-NOTIFY_ISSUE_APPROVED represents the issue approved notification.</p></td>
-              </tr>
-            
-              <tr>
-                <td>NOTIFY_PIPELINE_ROLLOUT</td>
-                <td>9</td>
-                <td><p>NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.</p></td>
+                <td>PIPELINE_COMPLETED</td>
+                <td>14</td>
+                <td><p>PIPELINE_COMPLETED represents a pipeline completion event.</p></td>
               </tr>
             
           </tbody>

@@ -31,55 +31,35 @@ type Activity_Type int32
 const (
 	// Unspecified type.
 	Activity_TYPE_UNSPECIFIED Activity_Type = 0
-	// Issue related activity types.
-	//
-	// ISSUE_CREATE represents creating an issue.
-	Activity_ISSUE_CREATE Activity_Type = 1
-	// ISSUE_COMMENT_CREATE represents commenting on an issue.
-	Activity_ISSUE_COMMENT_CREATE Activity_Type = 2
-	// ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
-	Activity_ISSUE_FIELD_UPDATE Activity_Type = 3
-	// ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
-	Activity_ISSUE_STATUS_UPDATE Activity_Type = 4
-	// ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now.
-	Activity_ISSUE_PIPELINE_STAGE_STATUS_UPDATE Activity_Type = 5
-	// ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval.
-	Activity_ISSUE_APPROVAL_NOTIFY Activity_Type = 6
-	// ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, DONE, FAILED, CANCELED.
-	Activity_ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE Activity_Type = 7
-	// Notifications via webhooks.
-	//
-	// NOTIFY_ISSUE_APPROVED represents the issue approved notification.
-	Activity_NOTIFY_ISSUE_APPROVED Activity_Type = 8
-	// NOTIFY_PIPELINE_ROLLOUT represents the pipeline rollout notification.
-	Activity_NOTIFY_PIPELINE_ROLLOUT Activity_Type = 9
+	// ISSUE_CREATED represents a new issue creation event.
+	Activity_ISSUE_CREATED Activity_Type = 10
+	// ISSUE_APPROVAL_REQUESTED represents an approval request event.
+	Activity_ISSUE_APPROVAL_REQUESTED Activity_Type = 11
+	// ISSUE_SENT_BACK represents an issue being sent back by an approver.
+	Activity_ISSUE_SENT_BACK Activity_Type = 12
+	// PIPELINE_FAILED represents a pipeline failure event.
+	Activity_PIPELINE_FAILED Activity_Type = 13
+	// PIPELINE_COMPLETED represents a pipeline completion event.
+	Activity_PIPELINE_COMPLETED Activity_Type = 14
 )
 
 // Enum value maps for Activity_Type.
 var (
 	Activity_Type_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		1: "ISSUE_CREATE",
-		2: "ISSUE_COMMENT_CREATE",
-		3: "ISSUE_FIELD_UPDATE",
-		4: "ISSUE_STATUS_UPDATE",
-		5: "ISSUE_PIPELINE_STAGE_STATUS_UPDATE",
-		6: "ISSUE_APPROVAL_NOTIFY",
-		7: "ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE",
-		8: "NOTIFY_ISSUE_APPROVED",
-		9: "NOTIFY_PIPELINE_ROLLOUT",
+		0:  "TYPE_UNSPECIFIED",
+		10: "ISSUE_CREATED",
+		11: "ISSUE_APPROVAL_REQUESTED",
+		12: "ISSUE_SENT_BACK",
+		13: "PIPELINE_FAILED",
+		14: "PIPELINE_COMPLETED",
 	}
 	Activity_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED":                      0,
-		"ISSUE_CREATE":                          1,
-		"ISSUE_COMMENT_CREATE":                  2,
-		"ISSUE_FIELD_UPDATE":                    3,
-		"ISSUE_STATUS_UPDATE":                   4,
-		"ISSUE_PIPELINE_STAGE_STATUS_UPDATE":    5,
-		"ISSUE_APPROVAL_NOTIFY":                 6,
-		"ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE": 7,
-		"NOTIFY_ISSUE_APPROVED":                 8,
-		"NOTIFY_PIPELINE_ROLLOUT":               9,
+		"TYPE_UNSPECIFIED":         0,
+		"ISSUE_CREATED":            10,
+		"ISSUE_APPROVAL_REQUESTED": 11,
+		"ISSUE_SENT_BACK":          12,
+		"PIPELINE_FAILED":          13,
+		"PIPELINE_COMPLETED":       14,
 	}
 )
 
@@ -1426,15 +1406,11 @@ type Webhook struct {
 	// notification_types is the list of activities types that the webhook is interested in.
 	// Bytebase will only send notifications to the webhook if the activity type is in the list.
 	// It should not be empty, and should be a subset of the following:
-	// - ISSUE_CREATE
-	// - ISSUE_COMMENT_CREATE
-	// - ISSUE_FIELD_UPDATE
-	// - ISSUE_STATUS_UPDATE
-	// - ISSUE_APPROVAL_NOTIFY
-	// - ISSUE_PIPELINE_STAGE_STATUS_UPDATE
-	// - ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE
-	// - NOTIFY_ISSUE_APPROVED
-	// - NOTIFY_PIPELINE_ROLLOUT
+	// - ISSUE_CREATED
+	// - ISSUE_APPROVAL_REQUESTED
+	// - ISSUE_SENT_BACK
+	// - PIPELINE_FAILED
+	// - PIPELINE_COMPLETED
 	NotificationTypes []Activity_Type `protobuf:"varint,5,rep,packed,name=notification_types,json=notificationTypes,proto3,enum=bytebase.v1.Activity_Type" json:"notification_types,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -1704,19 +1680,16 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x03url\x18\x04 \x01(\tB\x03\xe0A\x02R\x03url\x12%\n" +
 	"\x0edirect_message\x18\x06 \x01(\bR\rdirectMessage\x12N\n" +
 	"\x12notification_types\x18\x05 \x03(\x0e2\x1a.bytebase.v1.Activity.TypeB\x03\xe0A\x06R\x11notificationTypes:@\xeaA=\n" +
-	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xac\x02\n" +
-	"\bActivity\"\x9f\x02\n" +
+	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\x9c\x01\n" +
+	"\bActivity\"\x8f\x01\n" +
 	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
-	"\fISSUE_CREATE\x10\x01\x12\x18\n" +
-	"\x14ISSUE_COMMENT_CREATE\x10\x02\x12\x16\n" +
-	"\x12ISSUE_FIELD_UPDATE\x10\x03\x12\x17\n" +
-	"\x13ISSUE_STATUS_UPDATE\x10\x04\x12&\n" +
-	"\"ISSUE_PIPELINE_STAGE_STATUS_UPDATE\x10\x05\x12\x19\n" +
-	"\x15ISSUE_APPROVAL_NOTIFY\x10\x06\x12)\n" +
-	"%ISSUE_PIPELINE_TASK_RUN_STATUS_UPDATE\x10\a\x12\x19\n" +
-	"\x15NOTIFY_ISSUE_APPROVED\x10\b\x12\x1b\n" +
-	"\x17NOTIFY_PIPELINE_ROLLOUT\x10\t2\x82\x12\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x11\n" +
+	"\rISSUE_CREATED\x10\n" +
+	"\x12\x1c\n" +
+	"\x18ISSUE_APPROVAL_REQUESTED\x10\v\x12\x13\n" +
+	"\x0fISSUE_SENT_BACK\x10\f\x12\x13\n" +
+	"\x0fPIPELINE_FAILED\x10\r\x12\x16\n" +
+	"\x12PIPELINE_COMPLETED\x10\x0e2\x82\x12\n" +
 	"\x0eProjectService\x12\x7f\n" +
 	"\n" +
 	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x95\x01\n" +

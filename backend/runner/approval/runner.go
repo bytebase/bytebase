@@ -212,13 +212,6 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 				return errors.Wrapf(err, "failed to create issue comment after changing the issue status")
 			}
 
-			r.webhookManager.CreateEvent(ctx, &webhook.Event{
-				Actor:   store.SystemBotUser,
-				Type:    storepb.Activity_ISSUE_STATUS_UPDATE,
-				Comment: "",
-				Issue:   webhook.NewIssue(updatedIssue),
-				Project: webhook.NewProject(project),
-			})
 			return nil
 		}(); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")
@@ -240,46 +233,6 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return false, errors.Wrap(err, "failed to update issue payload")
 	}
 
-	if err := func() error {
-		if payload.Approval.ApprovalTemplate != nil {
-			return nil
-		}
-		if issue.PlanUID == nil {
-			return nil
-		}
-		tasks, err := r.store.ListTasks(ctx, &store.TaskFind{PlanID: issue.PlanUID})
-		if err != nil {
-			return errors.Wrapf(err, "failed to list tasks")
-		}
-		if len(tasks) == 0 {
-			return nil
-		}
-		// Get the first environment from tasks
-		var firstEnvironment string
-		for _, task := range tasks {
-			firstEnvironment = task.Environment
-			break
-		}
-		policy, err := apiv1.GetValidRolloutPolicyForEnvironment(ctx, r.store, firstEnvironment)
-		if err != nil {
-			return err
-		}
-		r.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_NOTIFY_PIPELINE_ROLLOUT,
-			Comment: "",
-			Issue:   webhook.NewIssue(issue),
-			Project: webhook.NewProject(project),
-			IssueRolloutReady: &webhook.EventIssueRolloutReady{
-				RolloutPolicy: policy,
-				StageName:     firstEnvironment,
-			},
-		})
-		return nil
-	}(); err != nil {
-		slog.Error("failed to create rollout release notification activity", log.BBError(err))
-	}
-
 	func() {
 		if payload.Approval.ApprovalTemplate == nil {
 			return
@@ -288,14 +241,31 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if role == "" {
 			return
 		}
+
+		// Get issue creator as actor
+		creator, err := r.store.GetUserByEmail(ctx, issue.CreatorEmail)
+		if err != nil {
+			slog.Warn("failed to get issue creator, using system bot", log.BBError(err))
+			creator = store.SystemBotUser
+		}
+
+		// Get approvers for this role
+		approvers, err := r.getApproversForRole(ctx, issue.ProjectID, role)
+		if err != nil {
+			slog.Warn("failed to get approvers", log.BBError(err))
+			approvers = []webhook.User{} // Continue with empty list
+		}
+
+		// Trigger ISSUE_APPROVAL_REQUESTED webhook
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
-			Actor:   store.SystemBotUser,
-			Type:    storepb.Activity_ISSUE_APPROVAL_NOTIFY,
+			Actor:   creator,
+			Type:    storepb.Activity_ISSUE_APPROVAL_REQUESTED,
 			Comment: "",
 			Issue:   webhook.NewIssue(issue),
 			Project: webhook.NewProject(project),
-			IssueApprovalCreate: &webhook.EventIssueApprovalCreate{
-				Role: role,
+			ApprovalRequested: &webhook.EventIssueApprovalRequested{
+				ApprovalRole: role,
+				Approvers:    approvers,
 			},
 		})
 	}()
@@ -859,4 +829,39 @@ func collectStatementTypes(celVarsList []map[string]any) []string {
 		}
 	}
 	return result
+}
+
+// getApproversForRole retrieves the list of users who have the specified role
+// for the given project. It queries both project and workspace IAM policies.
+// Only returns END_USER type principals (excludes service accounts, system bots, etc).
+func (r *Runner) getApproversForRole(ctx context.Context, projectID string, role string) ([]webhook.User, error) {
+	// Get project IAM policy
+	projectIAM, err := r.store.GetProjectIamPolicy(ctx, projectID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get project IAM policy")
+	}
+
+	// Get workspace IAM policy
+	workspaceIAM, err := r.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get workspace IAM policy")
+	}
+
+	// Get all users with the specified role
+	users := utils.GetUsersByRoleInIAMPolicy(ctx, r.store, role, projectIAM.Policy, workspaceIAM.Policy)
+
+	// Convert to webhook.User format, filtering by END_USER principal type
+	approvers := make([]webhook.User, 0, len(users))
+	for _, user := range users {
+		// Only include END_USER principals as approvers
+		if user.Type != storepb.PrincipalType_END_USER {
+			continue
+		}
+		approvers = append(approvers, webhook.User{
+			Name:  user.Name,
+			Email: user.Email,
+		})
+	}
+
+	return approvers, nil
 }

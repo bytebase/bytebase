@@ -141,7 +141,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, planID int64) {
 	slog.Info("auto-creating rollout", slog.Int("plan_id", int(planID)))
 
 	// Create rollout and pending tasks
-	if err := apiv1.CreateRolloutAndPendingTasks(ctx, rc.store, rc.webhookManager, plan, issue, project, nil); err != nil {
+	if err := apiv1.CreateRolloutAndPendingTasks(ctx, rc.store, plan, issue, project, nil); err != nil {
 		slog.Error("failed to create rollout and pending tasks",
 			slog.Int("plan_id", int(planID)),
 			log.BBError(err))

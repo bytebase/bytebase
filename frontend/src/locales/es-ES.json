@@ -1862,37 +1862,21 @@
           "title": "Creación de incidencia",
           "label": "Cuando se crea una nueva incidencia"
         },
-        "issue-status-change": {
-          "title": "Cambio de estado de incidencia",
-          "label": "Cuando se cambia el estado de la incidencia"
-        },
-        "issue-stage-status-change": {
-          "title": "Cambio de estado de etapa de incidencia",
-          "label": "Cuando cambia el estado de la etapa que encierra la incidencia"
-        },
-        "issue-task-status-change": {
-          "title": "Cambio de estado de tarea de incidencia",
-          "label": "Cuando cambia el estado de la tarea que encierra la incidencia"
-        },
-        "issue-info-change": {
-          "title": "Cambio de información de incidencia",
-          "label": "Cuando cambia la información de la incidencia (por ejemplo, título, descripción)"
-        },
-        "issue-comment-creation": {
-          "title": "Creación de comentario de incidencia",
-          "label": "Cuando se crea un nuevo comentario en la incidencia"
-        },
         "issue-approval-notify": {
           "title": "Notificación de aprobación de incidencia",
-          "label": "Cuando se aprueba o rechaza una incidencia"
+          "label": "Cuando se requiere aprobación de incidencia"
         },
-        "notify-issue-approved": {
-          "title": "Asunto aprobado",
-          "label": "Cuando se aprueba la emisión"
+        "issue-sent-back": {
+          "title": "Incidencia devuelta",
+          "label": "Cuando un aprobador devuelve la incidencia"
         },
-        "notify-pipeline-rollout": {
-          "title": "Se necesita implementar el problema",
-          "label": "Cuando el problema está esperando la implementación"
+        "pipeline-failed": {
+          "title": "Pipeline fallido",
+          "label": "Cuando las tareas del pipeline fallan"
+        },
+        "pipeline-completed": {
+          "title": "Pipeline completado",
+          "label": "Cuando el pipeline se completa con éxito"
         }
       }
     },
