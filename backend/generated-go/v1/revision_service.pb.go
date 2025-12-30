@@ -483,8 +483,7 @@ type Revision struct {
 	SheetSha256 string `protobuf:"bytes,9,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
 	// The task run associated with the revision.
 	// Can be empty.
-	// Format:
-	// projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	TaskRun string `protobuf:"bytes,13,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
 	// The type of the revision.
 	Type          Revision_Type `protobuf:"varint,14,opt,name=type,proto3,enum=bytebase.v1.Revision_Type" json:"type,omitempty"`

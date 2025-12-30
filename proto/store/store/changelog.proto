@@ -5,7 +5,7 @@ package bytebase.store;
 option go_package = "generated-go/store";
 
 message ChangelogPayload {
-  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}
+  // Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string task_run = 1;
 
   // The revision uid.

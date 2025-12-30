@@ -75,7 +75,7 @@ func (ChangelogPayload_Type) EnumDescriptor() ([]byte, []int) {
 
 type ChangelogPayload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}
+	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	TaskRun string `protobuf:"bytes,1,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
 	// The revision uid.
 	// optional

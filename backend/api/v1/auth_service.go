@@ -239,7 +239,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 
 	// 7. Issue new tokens
 	accessTokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService)
-	accessToken, err := auth.GenerateAccessToken(user.Email, s.profile.Mode, s.secret, accessTokenDuration)
+	accessToken, err := auth.GenerateAccessToken(user.Email, s.secret, accessTokenDuration)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate access token"))
 	}
@@ -666,7 +666,7 @@ func (s *AuthService) authenticateLogin(ctx context.Context, request *v1pb.Login
 
 // completeMFALogin validates MFA temp token and verifies OTP or recovery code.
 func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	userEmail, err := auth.GetUserEmailFromMFATempToken(*request.MfaTempToken, s.profile.Mode, s.secret)
+	userEmail, err := auth.GetUserEmailFromMFATempToken(*request.MfaTempToken, s.secret)
 	if err != nil {
 		return nil, err
 	}
@@ -748,7 +748,7 @@ func (s *AuthService) checkMFARequired(user *store.UserMessage, mfaSecondLogin b
 		return nil, nil
 	}
 
-	mfaTempToken, err := auth.GenerateMFATempToken(user.Email, s.profile.Mode, s.secret, mfaTempTokenDuration)
+	mfaTempToken, err := auth.GenerateMFATempToken(user.Email, s.secret, mfaTempTokenDuration)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to generate MFA temp token"))
 	}
@@ -764,9 +764,9 @@ func (s *AuthService) generateLoginToken(ctx context.Context, user *store.UserMe
 
 	switch user.Type {
 	case storepb.PrincipalType_END_USER:
-		return auth.GenerateAccessToken(user.Email, s.profile.Mode, s.secret, tokenDuration)
+		return auth.GenerateAccessToken(user.Email, s.secret, tokenDuration)
 	case storepb.PrincipalType_SERVICE_ACCOUNT:
-		return auth.GenerateAPIToken(user.Email, s.profile.Mode, s.secret)
+		return auth.GenerateAPIToken(user.Email, s.secret)
 	default:
 		return "", connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user type %s cannot login", user.Type))
 	}
@@ -873,7 +873,7 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	}
 
 	// Generate Bytebase API token (1 hour duration, same as service account)
-	token, err := auth.GenerateAPIToken(user.Email, s.profile.Mode, s.secret)
+	token, err := auth.GenerateAPIToken(user.Email, s.secret)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal,
 			errors.Wrap(err, "failed to generate access token"))

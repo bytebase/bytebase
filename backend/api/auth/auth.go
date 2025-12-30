@@ -4,10 +4,8 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -33,10 +31,10 @@ const (
 	// Signing key section. For now, this is only used for signing, not for verifying since we only
 	// have 1 version. But it will be used to maintain backward compatibility if we change the signing mechanism.
 	keyID = "v1"
-	// AccessTokenAudienceFmt is the format of the acccess token audience.
-	AccessTokenAudienceFmt = "bb.user.access.%s"
-	// MFATempTokenAudienceFmt is the format of the MFA temp token audience.
-	MFATempTokenAudienceFmt = "bb.user.mfa-temp.%s"
+	// AccessTokenAudience is the audience for user access tokens.
+	AccessTokenAudience = "bb.user.access"
+	// MFATempTokenAudience is the audience for MFA temporary tokens.
+	MFATempTokenAudience = "bb.user.mfa-temp"
 	// OAuth2AccessTokenAudience is the audience for OAuth2 access tokens.
 	OAuth2AccessTokenAudience = "bb.oauth2.access"
 	apiTokenDuration          = 1 * time.Hour
@@ -164,38 +162,22 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 		return nil, nil, errs.New("failed to parse claim")
 	}
 
-	// Accept both user access tokens (bb.user.access.{mode}) and OAuth2 access tokens (bb.oauth2.access)
-	validUserAudience := fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode)
-	if !audienceContains(claims.Audience, validUserAudience) && !audienceContains(claims.Audience, OAuth2AccessTokenAudience) {
+	// Accept both user access tokens (bb.user.access) and OAuth2 access tokens (bb.oauth2.access)
+	if !audienceContains(claims.Audience, AccessTokenAudience) && !audienceContains(claims.Audience, OAuth2AccessTokenAudience) {
 		return nil, nil, errs.Errorf(
-			"invalid access token, audience mismatch, got %q, expected %q or %q. you may send request to the wrong environment",
+			"invalid access token, audience mismatch, got %q, expected %q or %q",
 			claims.Audience,
-			validUserAudience,
+			AccessTokenAudience,
 			OAuth2AccessTokenAudience,
 		)
 	}
 
-	// Try to parse subject as integer ID (old tokens), otherwise treat as email (new tokens and OAuth2)
-	var user *store.UserMessage
-	var err error
-	if principalID, parseErr := strconv.Atoi(claims.Subject); parseErr == nil {
-		// Old token with numeric ID as subject
-		user, err = in.store.GetUserByID(ctx, principalID)
-		if err != nil {
-			return nil, nil, errs.Errorf("failed to find user ID %q in the access token", principalID)
-		}
-		if user == nil {
-			return nil, nil, errs.Errorf("user ID %q not exists in the access token", principalID)
-		}
-	} else {
-		// New token with email as subject (includes OAuth2 tokens)
-		user, err = in.store.GetUserByEmail(ctx, claims.Subject)
-		if err != nil {
-			return nil, nil, errs.Errorf("failed to find user email %q in the access token", claims.Subject)
-		}
-		if user == nil {
-			return nil, nil, errs.Errorf("user email %q not exists in the access token", claims.Subject)
-		}
+	user, err := in.store.GetUserByEmail(ctx, claims.Subject)
+	if err != nil {
+		return nil, nil, errs.Errorf("failed to find user %q in the access token", claims.Subject)
+	}
+	if user == nil {
+		return nil, nil, errs.Errorf("user %q not exists in the access token", claims.Subject)
 	}
 	if user.MemberDeleted {
 		return nil, nil, errs.Errorf("user ID %q has been deactivated by administrators", user.ID)
@@ -226,7 +208,7 @@ func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr
 }
 
 // GetUserEmailFromMFATempToken returns the user email from the MFA temp token.
-func GetUserEmailFromMFATempToken(token string, mode common.ReleaseMode, secret string) (string, error) {
+func GetUserEmailFromMFATempToken(token string, secret string) (string, error) {
 	claims := &claimsMessage{}
 	_, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Name {
@@ -242,7 +224,7 @@ func GetUserEmailFromMFATempToken(token string, mode common.ReleaseMode, secret 
 	if err != nil {
 		return "", connect.NewError(connect.CodeUnauthenticated, errs.New("failed to parse claim"))
 	}
-	if !audienceContains(claims.Audience, fmt.Sprintf(MFATempTokenAudienceFmt, mode)) {
+	if !audienceContains(claims.Audience, MFATempTokenAudience) {
 		return "", connect.NewError(connect.CodeUnauthenticated, errs.New("invalid MFA temp token, audience mismatch"))
 	}
 	return claims.Subject, nil

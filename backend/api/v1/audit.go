@@ -191,7 +191,7 @@ func createAuditLogConnect(ctx context.Context, request, response any, method st
 				resource = u.Email
 			} else if loginRequest, ok := request.(*v1pb.LoginRequest); ok && loginRequest.MfaTempToken != nil {
 				// Extract user email from MFA temp token.
-				if userEmail, err := auth.GetUserEmailFromMFATempToken(*loginRequest.MfaTempToken, profile.Mode, secret); err == nil {
+				if userEmail, err := auth.GetUserEmailFromMFATempToken(*loginRequest.MfaTempToken, secret); err == nil {
 					resource = userEmail
 				}
 			}
