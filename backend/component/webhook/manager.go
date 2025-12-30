@@ -11,7 +11,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
@@ -21,17 +20,15 @@ import (
 
 // Manager is the webhook manager.
 type Manager struct {
-	store      *store.Store
-	iamManager *iam.Manager
-	profile    *config.Profile
+	store   *store.Store
+	profile *config.Profile
 }
 
 // NewManager creates an activity manager.
-func NewManager(store *store.Store, iamManager *iam.Manager, profile *config.Profile) *Manager {
+func NewManager(store *store.Store, profile *config.Profile) *Manager {
 	return &Manager{
-		store:      store,
-		iamManager: iamManager,
-		profile:    profile,
+		store:   store,
+		profile: profile,
 	}
 }
 
