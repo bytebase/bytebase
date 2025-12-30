@@ -107,10 +107,6 @@ export declare type ListIssuesRequest = Message<"bytebase.v1.ListIssuesRequest">
    * - status: the issue status, support "==" and "in" operator, check the IssueStatus enum for the values.
    * - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
    * - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
-   * - task_type: support "==" operator, the value can be "DDL", "DML" or "DATA_EXPORT"
-   * - instance: the instance full name in the "instances/{id}" format, support "==" operator.
-   * - database: the database full name in the "instances/{id}/databases/{name}" format, support "==" operator.
-   * - environment: the database full name in the "environments/{name}" format, support "==" operator.
    * - labels: the issue labels, support "==" and "in" operator.
    * - approval_status: issue approval status, support "==" operator.
    * - current_approver: the issue approver, should in "users/{email} format", support "==" operator.
@@ -118,9 +114,8 @@ export declare type ListIssuesRequest = Message<"bytebase.v1.ListIssuesRequest">
    * For example:
    * creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
    * status == "CANCELED" && type == "DATABASE_CHANGE"
-   * instance == "instances/sample" && labels in ["label1", "label2"]
+   * labels in ["label1", "label2"]
    * create_time >= "2025-01-02T15:04:05Z07:00"
-   * environment == "environments/test"
    *
    * @generated from field: string filter = 4;
    */

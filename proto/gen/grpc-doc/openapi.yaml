@@ -3984,10 +3984,6 @@ paths:
                      - status: the issue status, support "==" and "in" operator, check the IssueStatus enum for the values.
                      - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
                      - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
-                     - task_type: support "==" operator, the value can be "DDL", "DML" or "DATA_EXPORT"
-                     - instance: the instance full name in the "instances/{id}" format, support "==" operator.
-                     - database: the database full name in the "instances/{id}/databases/{name}" format, support "==" operator.
-                     - environment: the database full name in the "environments/{name}" format, support "==" operator.
                      - labels: the issue labels, support "==" and "in" operator.
                      - approval_status: issue approval status, support "==" operator.
                      - current_approver: the issue approver, should in "users/{email} format", support "==" operator.
@@ -3995,9 +3991,8 @@ paths:
                      For example:
                      creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
                      status == "CANCELED" && type == "DATABASE_CHANGE"
-                     instance == "instances/sample" && labels in ["label1", "label2"]
+                     labels in ["label1", "label2"]
                      create_time >= "2025-01-02T15:04:05Z07:00"
-                     environment == "environments/test"
                   schema:
                     type: string
                 - name: query
@@ -12868,8 +12863,6 @@ components:
                     format: enum
             description: Role defines a set of permissions that can be assigned to users.
         Rollout:
-            required:
-                - plan
             type: object
             properties:
                 name:
@@ -12877,11 +12870,6 @@ components:
                     description: |-
                         The resource name of the rollout.
                          Format: projects/{project}/plans/{plan}/rollout
-                plan:
-                    type: string
-                    description: |-
-                        The plan that this rollout is based on.
-                         Format: projects/{project}/plans/{plan}
                 title:
                     readOnly: true
                     type: string
@@ -12894,10 +12882,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Stage'
                     description: Stages and thus tasks of the rollout.
-                creator:
-                    readOnly: true
-                    type: string
-                    description: 'Format: users/hello@world.com'
                 createTime:
                     readOnly: true
                     type: string
@@ -12906,12 +12890,6 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
-                issue:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The issue associated with the rollout. Could be empty.
-                         Format: projects/{project}/issues/{issue}
         RolloutPolicy:
             type: object
             properties:

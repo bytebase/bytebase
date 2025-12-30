@@ -992,10 +992,6 @@
           "title": "Ambiente",
           "description": "Filtrar por entorno"
         },
-        "database": {
-          "title": "Base de datos",
-          "description": "Filtrar por base de datos"
-        },
         "creator": {
           "title": "Creador",
           "description": "Búsqueda por creador"

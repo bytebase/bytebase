@@ -373,7 +373,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found slack setting"))
 				}
 				if err := slack.ValidateToken(ctx, slackSetting.GetSlack().GetToken()); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
 				}
 
 			case "value.app_im.feishu":
@@ -382,7 +382,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found feishu setting"))
 				}
 				if err := feishu.Validate(ctx, feishuSetting.GetFeishu().GetAppId(), feishuSetting.GetFeishu().GetAppSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
 				}
 
 			case "value.app_im.wecom":
@@ -391,7 +391,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found wecom setting"))
 				}
 				if err := wecom.Validate(ctx, wecomSetting.GetWecom().GetCorpId(), wecomSetting.GetWecom().GetAgentId(), wecomSetting.GetWecom().GetSecret()); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
 				}
 
 			case "value.app_im.lark":
@@ -400,7 +400,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found lark setting"))
 				}
 				if err := lark.Validate(ctx, larkSetting.GetLark().GetAppId(), larkSetting.GetLark().GetAppSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
 				}
 
 			case "value.app_im.dingtalk":
@@ -409,7 +409,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found dingtalk setting"))
 				}
 				if err := dingtalk.Validate(ctx, dingtalkSetting.GetDingtalk().GetClientId(), dingtalkSetting.GetDingtalk().GetClientSecret(), dingtalkSetting.GetDingtalk().GetRobotCode(), user.Phone); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
 				}
 
 			case "value.app_im_setting_value.teams":
@@ -418,7 +418,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found teams setting"))
 				}
 				if err := teams.Validate(ctx, teamsSetting.GetTeams().GetTenantId(), teamsSetting.GetTeams().GetClientId(), teamsSetting.GetTeams().GetClientSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("validation failed, error: %v", err))
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
 				}
 
 			default:

@@ -11574,10 +11574,6 @@ components:
              - status: the issue status, support "==" and "in" operator, check the IssueStatus enum for the values.
              - create_time: issue create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
              - type: the issue type, support "==" and "in" operator, check the Type enum in the Issue message for the values.
-             - task_type: support "==" operator, the value can be "DDL", "DML" or "DATA_EXPORT"
-             - instance: the instance full name in the "instances/{id}" format, support "==" operator.
-             - database: the database full name in the "instances/{id}/databases/{name}" format, support "==" operator.
-             - environment: the database full name in the "environments/{name}" format, support "==" operator.
              - labels: the issue labels, support "==" and "in" operator.
              - approval_status: issue approval status, support "==" operator.
              - current_approver: the issue approver, should in "users/{email} format", support "==" operator.
@@ -11585,9 +11581,8 @@ components:
              For example:
              creator == "users/ed@bytebase.com" && status in ["OPEN", "DONE"]
              status == "CANCELED" && type == "DATABASE_CHANGE"
-             instance == "instances/sample" && labels in ["label1", "label2"]
+             labels in ["label1", "label2"]
              create_time >= "2025-01-02T15:04:05Z07:00"
-             environment == "environments/test"
         query:
           type: string
           title: query
@@ -12964,7 +12959,7 @@ components:
         - FEATURE_DATA_CLASSIFICATION
         - FEATURE_SCIM
         - FEATURE_DIRECTORY_SYNC
-        - FEATURE_SIGN_IN_FREQUENCY_CONTROL
+        - FEATURE_TOKEN_DURATION_CONTROL
         - FEATURE_EXTERNAL_SECRET_MANAGER
         - FEATURE_USER_EMAIL_DOMAIN_RESTRICTION
         - FEATURE_PROJECT_MANAGEMENT
@@ -14090,12 +14085,6 @@ components:
           description: |-
             The resource name of the rollout.
              Format: projects/{project}/plans/{plan}/rollout
-        plan:
-          type: string
-          title: plan
-          description: |-
-            The plan that this rollout is based on.
-             Format: projects/{project}/plans/{plan}
         title:
           type: string
           title: title
@@ -14108,22 +14097,12 @@ components:
             $ref: '#/components/schemas/bytebase.v1.Stage'
           title: stages
           description: Stages and thus tasks of the rollout.
-        creator:
-          type: string
-          title: creator
-          description: 'Format: users/hello@world.com'
         createTime:
           title: create_time
           $ref: '#/components/schemas/google.protobuf.Timestamp'
         updateTime:
           title: update_time
           $ref: '#/components/schemas/google.protobuf.Timestamp'
-        issue:
-          type: string
-          title: issue
-          description: |-
-            The issue associated with the rollout. Could be empty.
-             Format: projects/{project}/issues/{issue}
       title: Rollout
       additionalProperties: false
     bytebase.v1.RolloutPolicy:

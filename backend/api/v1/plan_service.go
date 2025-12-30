@@ -50,14 +50,14 @@ func (s *PlanService) GetPlan(ctx context.Context, request *connect.Request[v1pb
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 	}
 	if plan == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan %d not found in project %s", planID, projectID))
 	}
 	convertedPlan, err := convertToPlan(ctx, s.store, plan)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to plan"))
 	}
 	return connect.NewResponse(convertedPlan), nil
 }
@@ -96,21 +96,21 @@ func (s *PlanService) ListPlans(ctx context.Context, request *connect.Request[v1
 
 	plans, err := s.store.ListPlans(ctx, find)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list plans, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list plans"))
 	}
 
 	var nextPageToken string
 	// has more pages
 	if len(plans) == limitPlusOne {
 		if nextPageToken, err = offset.getNextPageToken(); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get next page token, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
 		}
 		plans = plans[:offset.limit]
 	}
 
 	convertedPlans, err := convertToPlans(ctx, s.store, plans)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to plans, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to plans"))
 	}
 
 	return connect.NewResponse(&v1pb.ListPlansResponse{
@@ -160,7 +160,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
@@ -169,7 +169,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 	// Validate plan specs
 	databaseGroup, err := validateSpecs(ctx, s.store, projectID, req.Plan.Specs)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate plan specs"))
 	}
 
 	planMessage := &store.PlanMessage{
@@ -181,16 +181,16 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 
 	plan, err := s.store.CreatePlan(ctx, planMessage, user.Email)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan"))
 	}
 
 	planCheckRun, err := getPlanCheckRunFromPlan(project, plan, databaseGroup)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run for plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
 	}
 	if planCheckRun != nil {
 		if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check run, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
 		}
 	}
 	// Tickle plan check scheduler.
@@ -198,7 +198,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 
 	convertedPlan, err := convertToPlan(ctx, s.store, plan)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to plan"))
 	}
 	return connect.NewResponse(convertedPlan), nil
 }
@@ -259,7 +259,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		return s.iamManager.CheckPermission(ctx, iam.PermissionPlansUpdate, user, oldPlan.ProjectID)
 	}()
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
 	}
 	if !ok {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied to update plan"))
@@ -293,7 +293,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 			// Validate the new specs.
 			dg, err := validateSpecs(ctx, s.store, oldPlan.ProjectID, req.Plan.Specs)
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to validate plan specs, error: %v", err))
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to validate plan specs"))
 			}
 			databaseGroup = dg
 
@@ -337,11 +337,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	if planCheckRunsTrigger {
 		planCheckRun, err := getPlanCheckRunFromPlan(project, updatedPlan, databaseGroup)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run for plan, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
 		}
 		if planCheckRun != nil {
 			if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check run, error: %v", err))
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
 			}
 		}
 		// Tickle plan check scheduler.
@@ -350,7 +350,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 	convertedPlan, err := convertToPlan(ctx, s.store, updatedPlan)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert to plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to plan"))
 	}
 	return connect.NewResponse(convertedPlan), nil
 }
@@ -365,7 +365,7 @@ func (s *PlanService) GetPlanCheckRun(ctx context.Context, request *connect.Requ
 
 	planCheckRun, err := s.store.GetPlanCheckRun(ctx, planUID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run"))
 	}
 	if planCheckRun == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run not found for plan %d", planUID))
@@ -386,7 +386,7 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get project, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project"))
 	}
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project not found for id: %v", projectID))
@@ -396,7 +396,7 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 		ProjectID: &projectID,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan"))
 	}
 	if plan == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan not found"))
@@ -424,11 +424,11 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 	}
 	planCheckRun, err := getPlanCheckRunFromPlan(project, plan, databaseGroup)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run for plan, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))
 	}
 	if planCheckRun != nil {
 		if err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create plan check run, error: %v", err))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
 		}
 	}
 
@@ -450,7 +450,7 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find project, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project"))
 	}
 	if project == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %v not found", projectID))
@@ -458,7 +458,7 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 
 	planCheckRun, err := s.store.GetPlanCheckRun(ctx, planUID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get plan check run, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run"))
 	}
 	if planCheckRun == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("plan check run not found for plan %d", planUID))
@@ -475,7 +475,7 @@ func (s *PlanService) CancelPlanCheckRun(ctx context.Context, request *connect.R
 
 	// Update the status to canceled.
 	if err := s.store.BatchCancelPlanCheckRuns(ctx, []int{planCheckRun.UID}); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to cancel plan check run, error: %v", err))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to cancel plan check run"))
 	}
 
 	return connect.NewResponse(&v1pb.CancelPlanCheckRunResponse{}), nil

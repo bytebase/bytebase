@@ -1222,9 +1222,9 @@ When paginating, all other parameters provided to `ListIssueComments` must match
 When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter issues returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filters: - creator: issue creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - status: the issue status, support &#34;==&#34; and &#34;in&#34; operator, check the IssueStatus enum for the values. - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - type: the issue type, support &#34;==&#34; and &#34;in&#34; operator, check the Type enum in the Issue message for the values. - task_type: support &#34;==&#34; operator, the value can be &#34;DDL&#34;, &#34;DML&#34; or &#34;DATA_EXPORT&#34; - instance: the instance full name in the &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - database: the database full name in the &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator. - environment: the database full name in the &#34;environments/{name}&#34; format, support &#34;==&#34; operator. - labels: the issue labels, support &#34;==&#34; and &#34;in&#34; operator. - approval_status: issue approval status, support &#34;==&#34; operator. - current_approver: the issue approver, should in &#34;users/{email} format&#34;, support &#34;==&#34; operator.
+Supported filters: - creator: issue creator full name in &#34;users/{email or id}&#34; format, support &#34;==&#34; operator. - status: the issue status, support &#34;==&#34; and &#34;in&#34; operator, check the IssueStatus enum for the values. - create_time: issue create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator. - type: the issue type, support &#34;==&#34; and &#34;in&#34; operator, check the Type enum in the Issue message for the values. - labels: the issue labels, support &#34;==&#34; and &#34;in&#34; operator. - approval_status: issue approval status, support &#34;==&#34; operator. - current_approver: the issue approver, should in &#34;users/{email} format&#34;, support &#34;==&#34; operator.
 
-For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#34;OPEN&#34;, &#34;DONE&#34;] status == &#34;CANCELED&#34; &amp;&amp; type == &#34;DATABASE_CHANGE&#34; instance == &#34;instances/sample&#34; &amp;&amp; labels in [&#34;label1&#34;, &#34;label2&#34;] create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; environment == &#34;environments/test&#34; |
+For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#34;OPEN&#34;, &#34;DONE&#34;] status == &#34;CANCELED&#34; &amp;&amp; type == &#34;DATABASE_CHANGE&#34; labels in [&#34;label1&#34;, &#34;label2&#34;] create_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; |
 | query | [string](#string) |  | Query is the query statement. |
 
 
@@ -9584,13 +9584,10 @@ For example: update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type in 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The resource name of the rollout. Format: projects/{project}/plans/{plan}/rollout |
-| plan | [string](#string) |  | The plan that this rollout is based on. Format: projects/{project}/plans/{plan} |
 | title | [string](#string) |  | The title of the rollout, inherited from the associated plan. This field is output only and cannot be directly set. |
 | stages | [Stage](#bytebase-v1-Stage) | repeated | Stages and thus tasks of the rollout. |
-| creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| issue | [string](#string) |  | The issue associated with the rollout. Could be empty. Format: projects/{project}/issues/{issue} |
 
 
 
@@ -10473,7 +10470,7 @@ PlanFeature represents the available features in Bytebase
 | FEATURE_DATA_CLASSIFICATION | 50 |  |
 | FEATURE_SCIM | 51 |  |
 | FEATURE_DIRECTORY_SYNC | 52 |  |
-| FEATURE_SIGN_IN_FREQUENCY_CONTROL | 53 |  |
+| FEATURE_TOKEN_DURATION_CONTROL | 53 |  |
 | FEATURE_EXTERNAL_SECRET_MANAGER | 54 |  |
 | FEATURE_USER_EMAIL_DOMAIN_RESTRICTION | 55 |  |
 | FEATURE_PROJECT_MANAGEMENT | 56 | Administration &amp; Support |
