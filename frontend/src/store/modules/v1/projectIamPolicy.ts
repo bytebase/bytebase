@@ -45,12 +45,10 @@ export const composePolicyBindings = async (
   }
 
   const requests: Promise<unknown>[] = [
-    useGroupStore().batchGetOrFetchGroups(groups)
-  ]
+    useGroupStore().batchGetOrFetchGroups(groups),
+  ];
   if (!skipFetchUsers) {
-    requests.push(
-      useUserStore().batchGetOrFetchUsers(users)
-    )
+    requests.push(useUserStore().batchGetOrFetchUsers(users));
   }
   await Promise.allSettled(requests);
 };
