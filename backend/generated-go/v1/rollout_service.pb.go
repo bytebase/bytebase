@@ -179,6 +179,8 @@ const (
 	TaskRun_FAILED TaskRun_Status = 4
 	// Task run execution was canceled by a user.
 	TaskRun_CANCELED TaskRun_Status = 5
+	// Task run is ready for immediate execution.
+	TaskRun_AVAILABLE TaskRun_Status = 6
 )
 
 // Enum value maps for TaskRun_Status.
@@ -190,6 +192,7 @@ var (
 		3: "DONE",
 		4: "FAILED",
 		5: "CANCELED",
+		6: "AVAILABLE",
 	}
 	TaskRun_Status_value = map[string]int32{
 		"STATUS_UNSPECIFIED": 0,
@@ -198,6 +201,7 @@ var (
 		"DONE":               3,
 		"FAILED":             4,
 		"CANCELED":           5,
+		"AVAILABLE":          6,
 	}
 )
 
@@ -3645,7 +3649,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x11bytebase.com/Task\x12Cprojects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}B\t\n" +
 	"\apayloadB\x0e\n" +
 	"\f_update_timeB\v\n" +
-	"\t_run_time\"\x8c\x0f\n" +
+	"\t_run_time\"\x9b\x0f\n" +
 	"\aTaskRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\acreator\x18\x02 \x01(\tR\acreator\x12@\n" +
@@ -3686,7 +3690,7 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x14parallel_tasks_limit\x18\x03 \x01(\bH\x00R\x12parallelTasksLimit\x1a\x1a\n" +
 	"\x04Task\x12\x12\n" +
 	"\x04task\x18\x01 \x01(\tR\x04taskB\a\n" +
-	"\x05cause\"^\n" +
+	"\x05cause\"m\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\v\n" +
 	"\aPENDING\x10\x01\x12\v\n" +
@@ -3694,7 +3698,8 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x04DONE\x10\x03\x12\n" +
 	"\n" +
 	"\x06FAILED\x10\x04\x12\f\n" +
-	"\bCANCELED\x10\x05\"U\n" +
+	"\bCANCELED\x10\x05\x12\r\n" +
+	"\tAVAILABLE\x10\x06\"U\n" +
 	"\x13ExportArchiveStatus\x12%\n" +
 	"!EXPORT_ARCHIVE_STATUS_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05READY\x10\x01\x12\f\n" +

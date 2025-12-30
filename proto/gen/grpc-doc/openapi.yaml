@@ -14267,6 +14267,7 @@ components:
                         - DONE
                         - FAILED
                         - CANCELED
+                        - AVAILABLE
                     type: string
                     description: The current execution status of the task run.
                     format: enum

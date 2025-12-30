@@ -10128,6 +10128,7 @@ PostgreSQL session information read from `pg_stat_activity`.
 | DONE | 3 | Task run completed successfully. |
 | FAILED | 4 | Task run execution failed with errors. |
 | CANCELED | 5 | Task run execution was canceled by a user. |
+| AVAILABLE | 6 | Task run is ready for immediate execution. |
 
 
 

@@ -16185,6 +16185,7 @@ components:
         - DONE
         - FAILED
         - CANCELED
+        - AVAILABLE
     bytebase.v1.TaskRunLog:
       type: object
       properties:
