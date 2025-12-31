@@ -254,7 +254,7 @@ CREATE TABLE task_run (
     task_id integer NOT NULL REFERENCES task(id),
     sheet_sha256 bytea REFERENCES sheet_blob(sha256),
     attempt integer NOT NULL,
-    status text NOT NULL CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
+    status text NOT NULL CHECK (status IN ('PENDING', 'AVAILABLE', 'RUNNING', 'DONE', 'FAILED', 'CANCELED')),
     started_at timestamptz NULL,
     run_at timestamptz,
     code integer NOT NULL DEFAULT 0,
@@ -270,7 +270,7 @@ CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON task_run (task_id, attempt);
 -- Partial index for active task runs. Most task runs are in terminal states (DONE, FAILED, CANCELED)
 -- that never change. Queries frequently filter for active statuses (PENDING, RUNNING), so a partial
 -- index is more efficient than a full index on status - smaller size, faster maintenance, better cache efficiency.
-CREATE INDEX idx_task_run_active_status_id ON task_run(status, id) WHERE status IN ('PENDING', 'RUNNING');
+CREATE INDEX idx_task_run_active_status_id ON task_run(status, id) WHERE status IN ('PENDING', 'AVAILABLE', 'RUNNING');
 
 ALTER SEQUENCE task_run_id_seq RESTART WITH 101;
 

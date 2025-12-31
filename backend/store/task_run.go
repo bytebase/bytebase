@@ -221,6 +221,33 @@ func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPat
 	return taskRun, nil
 }
 
+// ClaimAvailableTaskRun attempts to atomically claim an AVAILABLE task run by updating it to RUNNING.
+// Returns true if the claim succeeded, false if another process claimed it first.
+func (s *Store) ClaimAvailableTaskRun(ctx context.Context, taskRunID int) (bool, error) {
+	q := qb.Q().Space(`
+		UPDATE task_run
+		SET status = ?, updated_at = now()
+		WHERE id = ? AND status = ?
+	`, storepb.TaskRun_RUNNING.String(), taskRunID, storepb.TaskRun_AVAILABLE.String())
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to build sql")
+	}
+
+	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to claim task run")
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get rows affected")
+	}
+
+	return rowsAffected == 1, nil
+}
+
 func (s *Store) UpdateTaskRunStartAt(ctx context.Context, taskRunID int) error {
 	// Get the pipeline ID for cache invalidation
 	q := qb.Q().Space(`
@@ -297,11 +324,11 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		WHERE NOT EXISTS (
 			SELECT 1 FROM task_run
 			WHERE task_run.task_id = tasks.task_id
-			AND task_run.status IN (?, ?, ?)
+			AND task_run.status IN (?, ?, ?, ?)
 		)
 		ON CONFLICT (task_id, attempt) DO NOTHING
 	`, creator, storepb.TaskRun_PENDING.String(), taskUIDs, sheetSha256s, runAts,
-		storepb.TaskRun_PENDING.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
+		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
 
 	query, args, err := q.ToSQL()
 	if err != nil {

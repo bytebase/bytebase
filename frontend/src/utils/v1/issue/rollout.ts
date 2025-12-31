@@ -236,6 +236,8 @@ export const stringifyTaskStatus = (
       return t("task.status.canceled");
     case Task_Status.SKIPPED:
       return t("task.status.skipped");
+    case TaskRun_Status.AVAILABLE:
+      return t("task.status.available");
     default:
       return Task_Status[status] || String(status);
   }

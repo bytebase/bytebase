@@ -1131,6 +1131,13 @@ export enum TaskRun_Status {
    * @generated from enum value: CANCELED = 5;
    */
   CANCELED = 5,
+
+  /**
+   * Task run is ready for immediate execution.
+   *
+   * @generated from enum value: AVAILABLE = 6;
+   */
+  AVAILABLE = 6,
 }
 
 /**

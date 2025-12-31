@@ -470,6 +470,8 @@ message TaskRun {
     FAILED = 4;
     // Task run execution was canceled by a user.
     CANCELED = 5;
+    // Task run is ready for immediate execution.
+    AVAILABLE = 6;
   }
   // The current execution status of the task run.
   Status status = 5;

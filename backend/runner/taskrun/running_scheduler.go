@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -47,83 +45,62 @@ func (s *Scheduler) runRunningTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 }
 
 func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
-	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
+	// Query AVAILABLE tasks (ready for execution)
+	availableTaskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
+		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_AVAILABLE},
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to list available task runs")
+	}
+
+	for _, taskRun := range availableTaskRuns {
+		if err := s.claimAndExecuteTaskRun(ctx, taskRun); err != nil {
+			slog.Error("failed to claim and execute task run", log.BBError(err))
+		}
+	}
+
+	// Also re-execute orphaned RUNNING tasks (for restart recovery)
+	runningTaskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 		Status: &[]storepb.TaskRun_Status{storepb.TaskRun_RUNNING},
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to list pending tasks")
+		return errors.Wrapf(err, "failed to list running task runs")
 	}
 
-	// Find the minimum task ID for each database.
-	// We only run the first (i.e. which has the minimum task ID) task for each database.
-	// 1. For ddl tasks, we run them one by one to get a sane schema dump and thus diff.
-	// 2. For versioned tasks, this is our last resort to determine the order for tasks with the same version. We don't want to run them in parallel.
-	// 2.1. Rollout 1 tasks will be run before rollout 2 tasks. Where, rollout 1 tasks are created before rollout 2 tasks.
-	minTaskIDForDatabase := map[string]int{}
-	for _, taskRun := range taskRuns {
-		task, err := s.store.GetTaskByID(ctx, taskRun.TaskUID)
-		if err != nil {
-			slog.Error("failed to get task", slog.Int("task id", taskRun.TaskUID), log.BBError(err))
+	for _, taskRun := range runningTaskRuns {
+		// Skip if already executing in this instance
+		if _, ok := s.stateCfg.RunningTaskRuns.Load(taskRun.ID); ok {
 			continue
 		}
-		if task.DatabaseName == nil {
-			continue
-		}
-
-		databaseKey := getDatabaseKey(task.InstanceID, *task.DatabaseName)
-		if isSequentialTask(task) {
-			if _, ok := minTaskIDForDatabase[databaseKey]; !ok {
-				minTaskIDForDatabase[databaseKey] = task.ID
-			} else if minTaskIDForDatabase[databaseKey] > task.ID {
-				minTaskIDForDatabase[databaseKey] = task.ID
-			}
-		}
-	}
-
-	for _, taskRun := range taskRuns {
-		if err := s.scheduleRunningTaskRun(ctx, taskRun, minTaskIDForDatabase); err != nil {
-			slog.Error("failed to schedule running task run", log.BBError(err))
+		// Re-execute orphaned RUNNING task
+		if err := s.executeTaskRun(ctx, taskRun); err != nil {
+			slog.Error("failed to re-execute orphaned task run", log.BBError(err))
 		}
 	}
 
 	return nil
 }
 
-func (s *Scheduler) scheduleRunningTaskRun(ctx context.Context, taskRun *store.TaskRunMessage, minTaskIDForDatabase map[string]int) error {
-	// Skip the task run if it is already executing.
-	if _, ok := s.stateCfg.RunningTaskRuns.Load(taskRun.ID); ok {
+// claimAndExecuteTaskRun attempts to atomically claim an AVAILABLE task and execute it.
+func (s *Scheduler) claimAndExecuteTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
+	// Optimistic locking: attempt to claim by updating AVAILABLE -> RUNNING
+	claimed, err := s.store.ClaimAvailableTaskRun(ctx, taskRun.ID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to claim task run")
+	}
+	if !claimed {
+		// Another instance claimed it
 		return nil
 	}
+
+	return s.executeTaskRun(ctx, taskRun)
+}
+
+// executeTaskRun executes a task run that is already in RUNNING status.
+func (s *Scheduler) executeTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
 	task, err := s.store.GetTaskByID(ctx, taskRun.TaskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
-	}
-	if task.DatabaseName != nil && isSequentialTask(task) {
-		// Skip the task run if there is an ongoing migration on the database.
-		if taskUIDAny, ok := s.stateCfg.RunningDatabaseMigration.Load(getDatabaseKey(task.InstanceID, *task.DatabaseName)); ok {
-			if taskUID, ok := taskUIDAny.(int); ok {
-				s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
-					ReportTime: timestamppb.Now(),
-					WaitingCause: &storepb.SchedulerInfo_WaitingCause{
-						Cause: &storepb.SchedulerInfo_WaitingCause_TaskUid{
-							TaskUid: int32(taskUID),
-						},
-					},
-				})
-			}
-			return nil
-		}
-		if taskUID := minTaskIDForDatabase[getDatabaseKey(task.InstanceID, *task.DatabaseName)]; taskUID != task.ID {
-			s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
-				ReportTime: timestamppb.Now(),
-				WaitingCause: &storepb.SchedulerInfo_WaitingCause{
-					Cause: &storepb.SchedulerInfo_WaitingCause_TaskUid{
-						TaskUid: int32(taskUID),
-					},
-				},
-			})
-			return nil
-		}
 	}
 
 	instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
@@ -136,66 +113,19 @@ func (s *Scheduler) scheduleRunningTaskRun(ctx context.Context, taskRun *store.T
 	if instance.Deleted {
 		return errors.Errorf("instance %v is deleted", task.InstanceID)
 	}
+
 	executor, ok := s.executorMap[task.Type]
 	if !ok {
 		return errors.Errorf("executor not found for task type: %v", task.Type)
 	}
 
-	// Check max running task runs per rollout.
-	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &task.PlanID})
-	if err != nil {
-		return errors.Wrapf(err, "failed to get plan")
-	}
-	if plan == nil {
-		return errors.Errorf("plan %v not found", task.PlanID)
-	}
-
-	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
-	if err != nil {
-		return errors.Wrapf(err, "failed to get project")
-	}
-	if project == nil {
-		return errors.Errorf("project %v not found", plan.ProjectID)
-	}
-
-	planID := strconv.FormatInt(plan.UID, 10)
-	maxRunningTaskRunsPerRollout := int(project.Setting.GetParallelTasksPerRollout())
-	if maxRunningTaskRunsPerRollout <= 0 {
-		maxRunningTaskRunsPerRollout = defaultRolloutMaxRunningTaskRuns
-	}
-	if s.stateCfg.RolloutOutstandingTasks.Increment(planID+"/"+task.InstanceID, maxRunningTaskRunsPerRollout) {
-		s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
-			ReportTime: timestamppb.Now(),
-			WaitingCause: &storepb.SchedulerInfo_WaitingCause{
-				Cause: &storepb.SchedulerInfo_WaitingCause_ParallelTasksLimit{
-					ParallelTasksLimit: true,
-				},
-			},
-		})
-		return nil
-	}
-
-	// decrement the connection count if we return below.
-	revertRolloutConnectionsIncrement := true
-	defer func() {
-		if revertRolloutConnectionsIncrement {
-			s.stateCfg.RolloutOutstandingTasks.Decrement(planID + "/" + task.InstanceID)
-		}
-	}()
-
-	// Set taskrun StartAt when it's about to run.
-	// So that the waiting time is not taken into account of the actual execution time.
+	// Update started_at
 	if err := s.store.UpdateTaskRunStartAt(ctx, taskRun.ID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
 
-	// We MUST NOT return early below this line.
-	// If we do want to return early, we must revert related states.
-	s.stateCfg.TaskRunSchedulerInfo.Delete(taskRun.ID)
+	// Register as running
 	s.stateCfg.RunningTaskRuns.Store(taskRun.ID, true)
-	if task.DatabaseName != nil {
-		s.stateCfg.RunningDatabaseMigration.Store(getDatabaseKey(task.InstanceID, *task.DatabaseName), task.ID)
-	}
 
 	s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), s.profile.DeployID, &storepb.TaskRunLog{
 		Type: storepb.TaskRunLog_TASK_RUN_STATUS_UPDATE,
@@ -204,9 +134,6 @@ func (s *Scheduler) scheduleRunningTaskRun(ctx context.Context, taskRun *store.T
 		},
 	})
 
-	// We are sure that we will run the task.
-	// The executor will decrement them.
-	revertRolloutConnectionsIncrement = false
 	go s.runTaskRunOnce(ctx, taskRun, task, executor)
 	return nil
 }
@@ -222,12 +149,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMe
 		}
 	}()
 	defer func() {
-		// We don't need to do s.stateCfg.RunningTaskRuns.Delete(taskRun.ID) to avoid race condition.
 		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRun.ID)
-		if task.DatabaseName != nil {
-			s.stateCfg.RunningDatabaseMigration.Delete(getDatabaseKey(task.InstanceID, *task.DatabaseName))
-		}
-		s.stateCfg.RolloutOutstandingTasks.Decrement(strconv.FormatInt(task.PlanID, 10) + "/" + task.InstanceID)
 	}()
 
 	driverCtx, cancel := context.WithCancel(ctx)

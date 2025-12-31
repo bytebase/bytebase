@@ -283,6 +283,7 @@
     "view-change": "查看变更",
     "status": {
       "running": "运行中",
+      "available": "就绪",
       "failed": "失败",
       "canceled": "取消",
       "skipped": "已跳过",
