@@ -365,22 +365,58 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("require issue labels"))
 	}
 
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+
+	var issue *store.IssueMessage
 	switch req.Msg.Issue.Type {
 	case v1pb.Issue_GRANT_REQUEST:
 		if req.Msg.Issue.Title == "" {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue title is required"))
 		}
-		return s.createIssueGrantRequest(ctx, project, req.Msg)
+		issue, err = s.createIssueGrantRequest(ctx, project, req.Msg)
 	case v1pb.Issue_DATABASE_CHANGE:
-		return s.createIssueDatabaseChange(ctx, project, req.Msg)
+		issue, err = s.createIssueDatabaseChange(ctx, project, req.Msg)
 	case v1pb.Issue_DATABASE_EXPORT:
-		return s.createIssueDatabaseDataExport(ctx, project, req.Msg)
+		issue, err = s.createIssueDatabaseDataExport(ctx, project, req.Msg)
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown issue type %q", req.Msg.Issue.Type))
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Trigger ISSUE_CREATED webhook
+	s.webhookManager.CreateEvent(ctx, &webhook.Event{
+		Type:    storepb.Activity_ISSUE_CREATED,
+		Project: webhook.NewProject(project),
+		IssueCreated: &webhook.EventIssueCreated{
+			Creator: &webhook.User{
+				Name:  user.Name,
+				Email: user.Email,
+			},
+			Issue: webhook.NewIssue(issue),
+		},
+	})
+
+	// Trigger approval finding based on issue type
+	// DATABASE_CHANGE: Approval depends on plan check completion (wait for plan check to complete)
+	// Other types (GRANT_REQUEST, DATABASE_EXPORT): Approval depends on issue itself (trigger immediately)
+	if issue.Type != storepb.Issue_DATABASE_CHANGE {
+		s.stateCfg.ApprovalCheckChan <- int64(issue.UID)
+	}
+
+	converted, err := s.convertToIssue(issue)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
+	}
+
+	return connect.NewResponse(converted), nil
 }
 
-func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
+func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
@@ -427,28 +463,10 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 
-	// Trigger ISSUE_CREATED webhook
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Type:    storepb.Activity_ISSUE_CREATED,
-		Project: webhook.NewProject(project),
-		IssueCreated: &webhook.EventIssueCreated{
-			Creator: &webhook.User{
-				Name:  user.Name,
-				Email: user.Email,
-			},
-			Issue: webhook.NewIssue(issue),
-		},
-	})
-
-	converted, err := s.convertToIssue(issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
-	}
-
-	return connect.NewResponse(converted), nil
+	return issue, nil
 }
 
-func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
+func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
 	// Check if grant request feature is enabled.
 	// Grant requests are only available in Enterprise plan.
 	if err := s.licenseService.IsFeatureEnabled(v1pb.PlanFeature_FEATURE_REQUEST_ROLE_WORKFLOW); err != nil {
@@ -506,28 +524,10 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 
-	// Trigger ISSUE_CREATED webhook
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Type:    storepb.Activity_ISSUE_CREATED,
-		Project: webhook.NewProject(project),
-		IssueCreated: &webhook.EventIssueCreated{
-			Creator: &webhook.User{
-				Name:  user.Name,
-				Email: user.Email,
-			},
-			Issue: webhook.NewIssue(issue),
-		},
-	})
-
-	converted, err := s.convertToIssue(issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
-	}
-
-	return connect.NewResponse(converted), nil
+	return issue, nil
 }
 
-func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*connect.Response[v1pb.Issue], error) {
+func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, project *store.ProjectMessage, request *v1pb.CreateIssueRequest) (*store.IssueMessage, error) {
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
@@ -574,25 +574,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
 
-	// Trigger ISSUE_CREATED webhook
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Type:    storepb.Activity_ISSUE_CREATED,
-		Project: webhook.NewProject(project),
-		IssueCreated: &webhook.EventIssueCreated{
-			Creator: &webhook.User{
-				Name:  user.Name,
-				Email: user.Email,
-			},
-			Issue: webhook.NewIssue(issue),
-		},
-	})
-
-	converted, err := s.convertToIssue(issue)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
-	}
-
-	return connect.NewResponse(converted), nil
+	return issue, nil
 }
 
 // ApproveIssue approves the approval flow of the issue.
