@@ -89,20 +89,6 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 
 	for {
 		select {
-		case taskUID := <-s.stateCfg.TaskSkippedOrDoneChan:
-			if err := func() error {
-				task, err := s.store.GetTaskByID(ctx, taskUID)
-				if err != nil {
-					return errors.Wrapf(err, "failed to get task")
-				}
-
-				// Check if entire plan is complete and handle webhooks
-				s.checkPlanCompletion(ctx, task.PlanID)
-
-				return nil
-			}(); err != nil {
-				slog.Error("failed to handle task completion", log.BBError(err))
-			}
 		case <-ctx.Done():
 			return
 		}

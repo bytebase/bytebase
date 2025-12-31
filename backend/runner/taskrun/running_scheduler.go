@@ -230,7 +230,6 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 			return
 		}
 		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_DONE, "")
-		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 		return
 	default:
 		// This case should not happen in normal flow, but adding for completeness

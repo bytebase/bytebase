@@ -840,10 +840,6 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to skip tasks"))
 	}
 
-	for _, task := range tasksToSkip {
-		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
-	}
-
 	return connect.NewResponse(&v1pb.BatchSkipTasksResponse{}), nil
 }
 
