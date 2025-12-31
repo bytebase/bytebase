@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -24,10 +24,10 @@ func formatEnvironmentFromStageID(stageID string) string {
 	return stageID
 }
 
-func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.State, taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
+func convertToTaskRuns(ctx context.Context, s *store.Store, bus *bus.Bus, taskRuns []*store.TaskRunMessage) ([]*v1pb.TaskRun, error) {
 	var taskRunsV1 []*v1pb.TaskRun
 	for _, taskRun := range taskRuns {
-		taskRunV1, err := convertToTaskRun(ctx, s, stateCfg, taskRun)
+		taskRunV1, err := convertToTaskRun(ctx, s, bus, taskRun)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert task run")
 		}
@@ -36,7 +36,7 @@ func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.Stat
 	return taskRunsV1, nil
 }
 
-func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
+func convertToTaskRun(ctx context.Context, s *store.Store, bus *bus.Bus, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
 	stageID := common.FormatStageID(taskRun.Environment)
 	t := &v1pb.TaskRun{
 		Name:          common.FormatTaskRun(taskRun.ProjectID, taskRun.PlanUID, stageID, taskRun.TaskUID, taskRun.ID),
@@ -60,7 +60,7 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 		t.Sheet = common.FormatSheet(taskRun.ProjectID, *taskRun.SheetSha256)
 	}
 
-	if v, ok := stateCfg.TaskRunSchedulerInfo.Load(taskRun.ID); ok {
+	if v, ok := bus.TaskRunSchedulerInfo.Load(taskRun.ID); ok {
 		if info, ok := v.(*storepb.SchedulerInfo); ok {
 			si, err := convertToSchedulerInfo(ctx, s, info)
 			if err != nil {

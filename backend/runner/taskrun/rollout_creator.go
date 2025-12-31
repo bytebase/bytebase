@@ -7,7 +7,7 @@ import (
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/state"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -18,15 +18,15 @@ import (
 // nolint:revive
 type RolloutCreator struct {
 	store          *store.Store
-	stateCfg       *state.State
+	bus            *bus.Bus
 	webhookManager *webhook.Manager
 }
 
 // NewRolloutCreator creates a new rollout creator.
-func NewRolloutCreator(store *store.Store, stateCfg *state.State, webhookManager *webhook.Manager) *RolloutCreator {
+func NewRolloutCreator(store *store.Store, bus *bus.Bus, webhookManager *webhook.Manager) *RolloutCreator {
 	return &RolloutCreator{
 		store:          store,
-		stateCfg:       stateCfg,
+		bus:            bus,
 		webhookManager: webhookManager,
 	}
 }
@@ -149,7 +149,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, planID int64) {
 	}
 
 	// Tickle task run scheduler
-	rc.stateCfg.TaskRunTickleChan <- 0
+	rc.bus.TaskRunTickleChan <- 0
 
 	slog.Info("successfully auto-created rollout", slog.Int("plan_id", int(planID)))
 }

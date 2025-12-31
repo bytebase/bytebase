@@ -19,8 +19,8 @@ import (
 	errs "github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -54,7 +54,7 @@ type APIAuthInterceptor struct {
 	store          *store.Store
 	secret         string
 	licenseService *enterprise.LicenseService
-	stateCfg       *state.State
+	bus            *bus.Bus
 	profile        *config.Profile
 }
 
@@ -63,14 +63,14 @@ func New(
 	store *store.Store,
 	secret string,
 	licenseService *enterprise.LicenseService,
-	stateCfg *state.State,
+	bus *bus.Bus,
 	profile *config.Profile,
 ) *APIAuthInterceptor {
 	return &APIAuthInterceptor{
 		store:          store,
 		secret:         secret,
 		licenseService: licenseService,
-		stateCfg:       stateCfg,
+		bus:            bus,
 		profile:        profile,
 	}
 }

@@ -17,9 +17,9 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -35,17 +35,17 @@ type RolloutService struct {
 	v1connect.UnimplementedRolloutServiceHandler
 	store          *store.Store
 	dbFactory      *dbfactory.DBFactory
-	stateCfg       *state.State
+	bus            *bus.Bus
 	webhookManager *webhook.Manager
 	iamManager     *iam.Manager
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, iamManager *iam.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, dbFactory *dbfactory.DBFactory, bus *bus.Bus, webhookManager *webhook.Manager, iamManager *iam.Manager) *RolloutService {
 	return &RolloutService{
 		store:          store,
 		dbFactory:      dbFactory,
-		stateCfg:       stateCfg,
+		bus:            bus,
 		webhookManager: webhookManager,
 		iamManager:     iamManager,
 	}
@@ -280,7 +280,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	}
 
 	// Tickle task run scheduler.
-	s.stateCfg.TaskRunTickleChan <- 0
+	s.bus.TaskRunTickleChan <- 0
 
 	return connect.NewResponse(rolloutV1), nil
 }
@@ -322,7 +322,7 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list task runs"))
 	}
 
-	taskRunsV1, err := convertToTaskRuns(ctx, s.store, s.stateCfg, taskRuns)
+	taskRunsV1, err := convertToTaskRuns(ctx, s.store, s.bus, taskRuns)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to task runs"))
 	}
@@ -470,7 +470,7 @@ func (s *RolloutService) GetTaskRun(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %d not found in rollout %d", taskRunUID, planID))
 	}
 
-	taskRunV1, err := convertToTaskRun(ctx, s.store, s.stateCfg, taskRun)
+	taskRunV1, err := convertToTaskRun(ctx, s.store, s.bus, taskRun)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to task run"))
 	}
@@ -754,7 +754,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	// Tickle task run scheduler.
-	s.stateCfg.TaskRunTickleChan <- 0
+	s.bus.TaskRunTickleChan <- 0
 
 	return connect.NewResponse(&v1pb.BatchRunTasksResponse{}), nil
 }
@@ -839,7 +839,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	}
 
 	// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED)
-	s.stateCfg.PlanCompletionCheckChan <- planID
+	s.bus.PlanCompletionCheckChan <- planID
 
 	return connect.NewResponse(&v1pb.BatchSkipTasksResponse{}), nil
 }
@@ -937,7 +937,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 
 	for _, taskRun := range taskRuns {
 		if taskRun.Status == storepb.TaskRun_RUNNING {
-			if cancelFunc, ok := s.stateCfg.RunningTaskRunsCancelFunc.Load(taskRun.ID); ok {
+			if cancelFunc, ok := s.bus.RunningTaskRunsCancelFunc.Load(taskRun.ID); ok {
 				cancelFunc.(context.CancelFunc)()
 			}
 		}

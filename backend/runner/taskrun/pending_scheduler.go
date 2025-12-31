@@ -28,7 +28,7 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 			if err := s.schedulePendingTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule pending task runs", log.BBError(err))
 			}
-		case <-s.stateCfg.TaskRunTickleChan:
+		case <-s.bus.TaskRunTickleChan:
 			if err := s.schedulePendingTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule pending task runs", log.BBError(err))
 			}
@@ -115,7 +115,7 @@ func (s *Scheduler) schedulePendingTaskRun(ctx context.Context, taskRun *store.T
 }
 
 func (s *Scheduler) storeWaitingCause(taskRunID int, blockingTaskID int) {
-	s.stateCfg.TaskRunSchedulerInfo.Store(taskRunID, &storepb.SchedulerInfo{
+	s.bus.TaskRunSchedulerInfo.Store(taskRunID, &storepb.SchedulerInfo{
 		ReportTime: timestamppb.Now(),
 		WaitingCause: &storepb.SchedulerInfo_WaitingCause{
 			Cause: &storepb.SchedulerInfo_WaitingCause_TaskUid{
@@ -126,7 +126,7 @@ func (s *Scheduler) storeWaitingCause(taskRunID int, blockingTaskID int) {
 }
 
 func (s *Scheduler) storeParallelLimitCause(taskRunID int) {
-	s.stateCfg.TaskRunSchedulerInfo.Store(taskRunID, &storepb.SchedulerInfo{
+	s.bus.TaskRunSchedulerInfo.Store(taskRunID, &storepb.SchedulerInfo{
 		ReportTime: timestamppb.Now(),
 		WaitingCause: &storepb.SchedulerInfo_WaitingCause{
 			Cause: &storepb.SchedulerInfo_WaitingCause_ParallelTasksLimit{
@@ -157,7 +157,7 @@ func (s *Scheduler) getMaxParallelForTask(ctx context.Context, task *store.TaskM
 }
 
 func (s *Scheduler) promoteTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
-	s.stateCfg.TaskRunSchedulerInfo.Delete(taskRun.ID)
+	s.bus.TaskRunSchedulerInfo.Delete(taskRun.ID)
 
 	if _, err := s.store.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
 		ID:      taskRun.ID,
@@ -175,7 +175,7 @@ func (s *Scheduler) promoteTaskRun(ctx context.Context, taskRun *store.TaskRunMe
 	})
 
 	select {
-	case s.stateCfg.TaskRunTickleChan <- 0:
+	case s.bus.TaskRunTickleChan <- 0:
 	default:
 	}
 

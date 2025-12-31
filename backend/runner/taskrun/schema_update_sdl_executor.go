@@ -6,9 +6,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/component/state"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -18,11 +18,11 @@ import (
 )
 
 // NewSchemaDeclareExecutor creates a schema declare (SDL) task executor.
-func NewSchemaDeclareExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
+func NewSchemaDeclareExecutor(store *store.Store, dbFactory *dbfactory.DBFactory, bus *bus.Bus, schemaSyncer *schemasync.Syncer, profile *config.Profile) Executor {
 	return &SchemaDeclareExecutor{
 		store:        store,
 		dbFactory:    dbFactory,
-		stateCfg:     stateCfg,
+		bus:          bus,
 		schemaSyncer: schemaSyncer,
 		profile:      profile,
 	}
@@ -32,7 +32,7 @@ func NewSchemaDeclareExecutor(store *store.Store, dbFactory *dbfactory.DBFactory
 type SchemaDeclareExecutor struct {
 	store        *store.Store
 	dbFactory    *dbfactory.DBFactory
-	stateCfg     *state.State
+	bus          *bus.Bus
 	schemaSyncer *schemasync.Syncer
 	profile      *config.Profile
 }

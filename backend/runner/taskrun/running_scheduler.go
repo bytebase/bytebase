@@ -34,7 +34,7 @@ func (s *Scheduler) runRunningTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 			if err := s.scheduleRunningTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule running task runs", log.BBError(err))
 			}
-		case <-s.stateCfg.TaskRunTickleChan:
+		case <-s.bus.TaskRunTickleChan:
 			if err := s.scheduleRunningTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule running task runs", log.BBError(err))
 			}
@@ -102,12 +102,12 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 		}
 	}()
 	defer func() {
-		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRunUID)
+		s.bus.RunningTaskRunsCancelFunc.Delete(taskRunUID)
 	}()
 
 	driverCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	s.stateCfg.RunningTaskRunsCancelFunc.Store(taskRunUID, cancel)
+	s.bus.RunningTaskRunsCancelFunc.Store(taskRunUID, cancel)
 
 	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRunUID)
 
@@ -256,7 +256,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 		s.createActivityForTaskRunStatusUpdate(ctx, task, storepb.TaskRun_DONE, "")
 
 		// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED)
-		s.stateCfg.PlanCompletionCheckChan <- task.PlanID
+		s.bus.PlanCompletionCheckChan <- task.PlanID
 		return
 	default:
 		// This case should not happen in normal flow, but adding for completeness
