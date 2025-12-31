@@ -11,9 +11,6 @@ type State struct {
 	// Triggered by plan check completion, issue creation (if checks already done).
 	ApprovalCheckChan chan int64 // issue UID
 
-	// ApprovalFinding is the set of issues for finding the approval template.
-	ApprovalFinding sync.Map // map[issue.ID]*store.IssueMessage
-
 	TaskRunSchedulerInfo sync.Map // map[taskRunID]*storepb.SchedulerInfo
 
 	// RunningTaskRunsCancelFunc is the cancelFunc of running taskruns.

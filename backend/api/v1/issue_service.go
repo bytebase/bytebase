@@ -60,6 +60,26 @@ func NewIssueService(
 	}
 }
 
+// tryTriggerApprovalCheck checks if plan check is already done and triggers approval finding.
+// Called after issue creation to handle the case where plan checks completed before issue was created.
+func (s *IssueService) tryTriggerApprovalCheck(ctx context.Context, issue *store.IssueMessage) {
+	if issue.PlanUID == nil {
+		return
+	}
+
+	planCheckRun, err := s.store.GetPlanCheckRun(ctx, *issue.PlanUID)
+	if err != nil {
+		slog.Debug("failed to get plan check run for approval trigger check",
+			slog.Int("plan_uid", int(*issue.PlanUID)), log.BBError(err))
+		return
+	}
+
+	// If plan check is already DONE, trigger approval finding
+	if planCheckRun != nil && planCheckRun.Status == store.PlanCheckRunStatusDone {
+		s.stateCfg.ApprovalCheckChan <- int64(issue.UID)
+	}
+}
+
 // GetIssue gets a issue.
 func (s *IssueService) GetIssue(ctx context.Context, req *connect.Request[v1pb.GetIssueRequest]) (*connect.Response[v1pb.Issue], error) {
 	issue, err := s.getIssueMessage(ctx, req.Msg.Name)
@@ -426,7 +446,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, project *s
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
-	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+	s.tryTriggerApprovalCheck(ctx, issue)
 
 	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
@@ -506,7 +526,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, project *sto
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
-	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+	s.tryTriggerApprovalCheck(ctx, issue)
 
 	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
@@ -575,7 +595,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, projec
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create issue"))
 	}
-	s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
+	s.tryTriggerApprovalCheck(ctx, issue)
 
 	// Trigger ISSUE_CREATED webhook
 	s.webhookManager.CreateEvent(ctx, &webhook.Event{
@@ -1040,24 +1060,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	for _, path := range req.Msg.UpdateMask.Paths {
 		updateMasks[path] = true
 		switch path {
-		case "approval_status":
-			if req.Msg.Issue.ApprovalStatus != v1pb.Issue_CHECKING {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("can only set approval_status to CHECKING to trigger re-finding approval templates"))
-			}
-			payload := issue.Payload
-			if payload.Approval == nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("issue payload approval is nil"))
-			}
-			if !payload.Approval.ApprovalFindingDone {
-				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("approval template finding is not done"))
-			}
-
-			if patch.PayloadUpsert == nil {
-				patch.PayloadUpsert = &storepb.Issue{}
-			}
-			patch.PayloadUpsert.Approval = &storepb.IssuePayloadApproval{
-				ApprovalFindingDone: false,
-			}
 		case "title":
 			// Prevent updating title if plan exists.
 			if issue.PlanUID != nil {
@@ -1129,10 +1131,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 	issue, err = s.store.UpdateIssue(ctx, issue.UID, patch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update issue"))
-	}
-
-	if updateMasks["approval_finding_done"] {
-		s.stateCfg.ApprovalFinding.Store(issue.UID, issue)
 	}
 
 	if _, err := s.store.CreateIssueComments(ctx, user.Email, issueCommentCreates...); err != nil {
