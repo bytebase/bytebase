@@ -106,10 +106,7 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 		return
 	}
 
-	// Check if all tasks are complete (DONE or SKIPPED) without failures
-	allComplete := true
-	hasFailures := false
-
+	// Check if all tasks are complete (DONE or SKIPPED)
 	for _, task := range tasks {
 		status := task.LatestTaskRunStatus
 
@@ -120,18 +117,9 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 			task.Payload.GetSkipped()
 
 		if !isComplete {
-			// Check if task has a failure
-			if status == storepb.TaskRun_FAILED && !task.Payload.GetSkipped() {
-				hasFailures = true
-			}
-			allComplete = false
-			break
+			// Not all tasks complete - no webhook
+			return
 		}
-	}
-
-	// Not all tasks complete yet, or some failed - no completion webhook
-	if !allComplete || hasFailures {
-		return
 	}
 
 	// All tasks complete and successful - try to claim completion notification
