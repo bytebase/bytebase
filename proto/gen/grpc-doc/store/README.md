@@ -624,7 +624,6 @@ IssuePayloadApproval records the approval template used and approval history for
 | approval_template | [ApprovalTemplate](#bytebase-store-ApprovalTemplate) |  | The approval template being used for this issue. |
 | approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated | List of approvers and their current status. |
 | approval_finding_done | [bool](#bool) |  | Whether the system has finished finding a matching approval template. False means the backend is still searching for matching templates. |
-| approval_finding_error | [string](#string) |  | Error message if approval template finding failed. |
 
 
 
