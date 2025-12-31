@@ -214,19 +214,14 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int, task *st
 				if err != nil || project == nil {
 					slog.Error("failed to get project for failure webhook", log.BBError(err))
 				} else {
-					// Get all failed tasks
-					failures := s.getFailedTaskRuns(ctx, task.PlanID)
-					if len(failures) > 0 {
-						// Send PIPELINE_FAILED webhook
-						s.webhookManager.CreateEvent(ctx, &webhook.Event{
-							Type:    storepb.Activity_PIPELINE_FAILED,
-							Project: webhook.NewProject(project),
-							RolloutFailed: &webhook.EventRolloutFailed{
-								Rollout:     webhook.NewRollout(plan),
-								FailedTasks: failures,
-							},
-						})
-					}
+					// Send PIPELINE_FAILED webhook
+					s.webhookManager.CreateEvent(ctx, &webhook.Event{
+						Type:    storepb.Activity_PIPELINE_FAILED,
+						Project: webhook.NewProject(project),
+						RolloutFailed: &webhook.EventRolloutFailed{
+							Rollout: webhook.NewRollout(plan),
+						},
+					})
 				}
 			}
 		}

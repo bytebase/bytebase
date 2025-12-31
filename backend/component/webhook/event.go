@@ -1,8 +1,6 @@
 package webhook
 
 import (
-	"time"
-
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -87,17 +85,7 @@ type EventIssueSentBack struct {
 }
 
 type EventRolloutFailed struct {
-	Rollout     *Rollout
-	FailedTasks []FailedTask
-}
-
-type FailedTask struct {
-	TaskID       int64
-	TaskName     string
-	DatabaseName string
-	InstanceName string
-	ErrorMessage string
-	FailedAt     time.Time
+	Rollout *Rollout
 }
 
 type EventRolloutCompleted struct {

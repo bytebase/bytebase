@@ -133,18 +133,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, even
 		if e.RolloutFailed != nil {
 			rollout = e.RolloutFailed.Rollout
 			link = fmt.Sprintf("%s/projects/%s/plans/%d/rollout", externalURL, e.Project.ResourceID, rollout.UID)
-			failedTasks := make([]webhook.FailedTaskInfo, 0, len(e.RolloutFailed.FailedTasks))
-			for _, task := range e.RolloutFailed.FailedTasks {
-				failedTasks = append(failedTasks, webhook.FailedTaskInfo{
-					Name:         task.TaskName,
-					Instance:     task.InstanceName,
-					Database:     task.DatabaseName,
-					ErrorMessage: task.ErrorMessage,
-					FailedAt:     task.FailedAt.Format(time.RFC3339),
-				})
-			}
-			webhookCtx.FailedTasks = failedTasks
-			webhookCtx.Description = fmt.Sprintf("%d task(s) failed", len(failedTasks))
+			webhookCtx.Description = "Rollout failed"
 		}
 
 	case storepb.Activity_PIPELINE_COMPLETED:
