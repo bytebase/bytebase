@@ -401,12 +401,9 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		},
 	})
 
-	// Trigger approval finding based on issue type
-	// DATABASE_CHANGE: Approval depends on plan check completion (wait for plan check to complete)
-	// Other types (GRANT_REQUEST, DATABASE_EXPORT): Approval depends on issue itself (trigger immediately)
-	if issue.Type != storepb.Issue_DATABASE_CHANGE {
-		s.stateCfg.ApprovalCheckChan <- int64(issue.UID)
-	}
+	// Trigger approval finding for all issue types
+	// The approval runner will check if prerequisites are met (e.g., plan check completion for DATABASE_CHANGE)
+	s.stateCfg.ApprovalCheckChan <- int64(issue.UID)
 
 	converted, err := s.convertToIssue(issue)
 	if err != nil {
@@ -1154,6 +1151,17 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch update issues, err: %v", err))
+	}
+
+	// Trigger approval finding for issues reopened to OPEN status
+	if newStatus == storepb.Issue_OPEN {
+		for _, issueUID := range issueUIDs {
+			oldStatus := oldIssueStatuses[issueUID]
+			if oldStatus != storepb.Issue_OPEN {
+				// Status changed to OPEN (reopened), trigger approval finding
+				s.stateCfg.ApprovalCheckChan <- int64(issueUID)
+			}
+		}
 	}
 
 	// Batch create issue comments.
