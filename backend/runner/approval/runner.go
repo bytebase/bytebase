@@ -71,24 +71,6 @@ func (r *Runner) processIssue(ctx context.Context, issueUID int64) {
 		return // Issue deleted, nothing to do
 	}
 
-	// For DATABASE_CHANGE issues, check if plan check is ready
-	// Skip if plan check is not done yet - we'll get another signal when it completes
-	if issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
-		planCheckRun, err := r.store.GetPlanCheckRun(ctx, *issue.PlanUID)
-		if err != nil {
-			slog.Debug("failed to get plan check run for approval finding",
-				slog.Int64("issue_uid", issueUID),
-				slog.Int("plan_uid", int(*issue.PlanUID)),
-				log.BBError(err))
-			return
-		}
-		if planCheckRun == nil || planCheckRun.Status != store.PlanCheckRunStatusDone {
-			// Plan check not ready yet, skip for now
-			// We'll get another signal when plan check completes
-			return
-		}
-	}
-
 	approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
 	if err != nil {
 		slog.Error("failed to get workspace approval setting", log.BBError(err))

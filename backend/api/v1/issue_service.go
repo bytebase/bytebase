@@ -401,8 +401,9 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		},
 	})
 
-	// Trigger approval finding for all issue types
-	// The approval runner will check if prerequisites are met (e.g., plan check completion for DATABASE_CHANGE)
+	// Trigger approval finding for all issues
+	// For DATABASE_CHANGE: Will return early if plan check not ready, then retry when plan check completes
+	// For other types: Processes immediately
 	s.stateCfg.ApprovalCheckChan <- int64(issue.UID)
 
 	converted, err := s.convertToIssue(issue)
