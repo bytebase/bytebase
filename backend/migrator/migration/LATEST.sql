@@ -229,6 +229,18 @@ CREATE INDEX idx_plan_check_run_active_status ON plan_check_run(status, id) WHER
 
 ALTER SEQUENCE plan_check_run_id_seq RESTART WITH 101;
 
+-- Tracks webhook delivery for pipeline events (PIPELINE_FAILED or PIPELINE_COMPLETED).
+-- One row per plan at any time - mutually exclusive events.
+-- Row is deleted when user clicks BatchRunTasks to reset notification state.
+CREATE TABLE plan_webhook_delivery (
+    plan_id BIGINT PRIMARY KEY REFERENCES plan(id),
+    -- Event type: 'PIPELINE_FAILED' or 'PIPELINE_COMPLETED'
+    event_type TEXT NOT NULL,
+    delivered_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER SEQUENCE plan_webhook_delivery_plan_id_seq RESTART WITH 101;
+
 -- task table stores the task for a plan
 CREATE TABLE task (
     id serial PRIMARY KEY,
