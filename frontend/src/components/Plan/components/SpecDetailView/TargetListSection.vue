@@ -1,67 +1,45 @@
 <template>
-  <div class="flex flex-col gap-y-2 py-3">
-    <div class="flex items-center justify-between gap-2">
+  <div class="flex flex-col gap-y-1">
+    <div class="flex items-center justify-between">
       <div class="flex items-center gap-1">
-        <h3 class="text-base">{{ $t("plan.targets.title") }}</h3>
-        <span class="text-control-light" v-if="targets.length > 1"
+        <span class="text-base">{{ $t("plan.targets.title") }}</span>
+        <span class="text-sm text-control-light" v-if="targets.length > 1"
           >({{ targets.length }})</span
         >
       </div>
-      <div class="flex items-center gap-1">
-        <NButton
-          v-if="allowEdit"
-          size="small"
-          @click="showTargetsSelector = true"
-        >
-          {{ $t("common.edit") }}
-        </NButton>
-      </div>
+      <NButton
+        v-if="allowEdit"
+        size="small"
+        @click="showTargetsSelector = true"
+      >
+        {{ $t("common.edit") }}
+      </NButton>
     </div>
 
-    <div class="relative w-full flex-1">
+    <div v-if="isLoadingTargets" class="flex items-center justify-center py-2">
+      <BBSpin />
+    </div>
+    <div v-else-if="targets.length > 0" class="flex flex-wrap gap-1.5">
       <div
-        v-if="isLoadingTargets"
-        class="flex items-center justify-center py-8"
+        v-for="target in visibleTargets"
+        :key="target"
+        class="inline-flex items-center px-3 py-2 border rounded text-sm"
       >
-        <BBSpin />
+        <DatabaseDisplay v-if="isValidDatabaseName(target)" :database="target" show-environment />
+        <DatabaseGroupTargetDisplay v-else-if="isValidDatabaseGroupName(target)" :target="target" />
+        <span v-else>{{ target }}</span>
       </div>
-      <div
-        v-else-if="targets.length > 0"
-        class="w-full flex flex-wrap gap-2 overflow-y-auto"
+      <NButton
+        v-if="targets.length > DEFAULT_VISIBLE_TARGETS"
+        size="small"
+        quaternary
+        @click="showAllTargetsDrawer = true"
       >
-        <div
-          v-for="target in visibleTargets"
-          :key="target"
-          class="inline-flex items-center gap-x-1 px-2 py-1 border rounded-lg transition-all cursor-default"
-        >
-          <template v-if="isValidDatabaseName(target)">
-            <DatabaseDisplay :database="target" show-environment />
-          </template>
-          <template v-else-if="isValidDatabaseGroupName(target)">
-            <DatabaseGroupTargetDisplay :target="target" class="px-1 py-1" />
-          </template>
-          <template v-else>
-            <!-- Unknown resource -->
-            <span class="text-sm">{{ target }}</span>
-          </template>
-        </div>
-
-        <NButton
-          v-if="targets.length > DEFAULT_VISIBLE_TARGETS"
-          size="small"
-          quaternary
-          @click="showAllTargetsDrawer = true"
-        >
-          {{
-            $t("plan.targets.view-all", {
-              count: targets.length,
-            })
-          }}
-        </NButton>
-      </div>
-      <div v-else class="text-center text-control-light py-8">
-        {{ $t("plan.targets.no-targets-found") }}
-      </div>
+        {{ $t("plan.targets.view-all", { count: targets.length }) }}
+      </NButton>
+    </div>
+    <div v-else class="text-sm text-control-light py-1">
+      {{ $t("plan.targets.no-targets-found") }}
     </div>
 
     <TargetsSelectorDrawer

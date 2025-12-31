@@ -173,7 +173,7 @@ export const provideResourcePoller = () => {
     if (includes(planRoutes, routeName)) return ["plan"];
     if (includes([PROJECT_V1_ROUTE_ISSUE_DETAIL_V1], routeName)) {
       if (planType.value === "CHANGE_DATABASE") {
-        return ["issue"];
+        return ["plan", "issue"];
       } else {
         // For CREATE_DATABASE and EXPORT_DATA plans, we use the issue page to show the rollout and task runs.
         return ["plan", "issue", "rollout", "taskRuns"];
