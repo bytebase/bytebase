@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -652,6 +654,12 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 	if plan == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout (plan) %v not found", planID))
+	}
+
+	// Reset notification state so user gets fresh feedback on retry
+	if err := s.store.ResetPlanWebhookDelivery(ctx, planID); err != nil {
+		slog.Error("failed to reset plan webhook delivery", log.BBError(err))
+		// Don't fail the request - notification is non-critical
 	}
 
 	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
