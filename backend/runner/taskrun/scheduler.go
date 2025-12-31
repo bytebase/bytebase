@@ -201,7 +201,6 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 }
 
 // getFailedTaskRuns returns all failed task runs for a plan to include in webhook payload.
-// nolint:unused // Will be used in Task 5 for PIPELINE_FAILED webhook
 func (s *Scheduler) getFailedTaskRuns(ctx context.Context, planID int64) []webhook.FailedTask {
 	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
 	if err != nil {
