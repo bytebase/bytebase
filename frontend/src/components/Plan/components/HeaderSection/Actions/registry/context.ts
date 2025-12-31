@@ -221,22 +221,6 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
     issue?.approvalStatus === Issue_ApprovalStatus.APPROVED ||
     issue?.approvalStatus === Issue_ApprovalStatus.SKIPPED;
 
-  // Compute rollout creation warnings
-  // These flags indicate when ROLLOUT_CREATE should show in dropdown with warnings
-  // Warnings only apply when require_*=false; when require_*=true, button is hidden instead
-  const warnApprovalNotReady = !project.requireIssueApproval && !issueApproved;
-  const warnPlanChecksRunning = hasRunningPlanChecks;
-  const warnPlanChecksFailed =
-    !project.requirePlanCheckNoError && planCheckStatus === Advice_Level.ERROR;
-
-  const rolloutCreationWarnings = {
-    approvalNotReady: warnApprovalNotReady,
-    planChecksRunning: warnPlanChecksRunning,
-    planChecksFailed: warnPlanChecksFailed,
-    hasAny:
-      warnApprovalNotReady || warnPlanChecksRunning || warnPlanChecksFailed,
-  };
-
   return {
     plan,
     issue,
@@ -263,7 +247,6 @@ export function buildActionContext(input: ContextBuilderInput): ActionContext {
     hasDatabaseCreateOrExportTasks,
     hasStartableTasks,
     hasRunningTasks,
-    rolloutCreationWarnings,
 
     permissions,
     validation,

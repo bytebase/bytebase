@@ -3,34 +3,33 @@
     :show="show"
     :title="$t('issue.create-rollout')"
     :loading="loading"
-    @show="resetState"
+    @show="bypassWarnings = false"
     @close="$emit('close')"
   >
     <template #default>
       <div class="flex flex-col gap-y-4 h-full px-1">
-        <!-- Warning alert with messages -->
-        <NAlert
-          v-if="warningMessages.length > 0"
-          type="warning"
-          :title="$t('common.notices')"
-        >
-          <ul class="list-disc list-inside flex flex-col gap-y-1">
-            <li
-              v-for="(warning, index) in warningMessages"
-              :key="index"
-              class="text-sm"
-            >
-              {{ warning }}
-            </li>
+        <!-- Error alert (blocking) -->
+        <NAlert v-if="errorMessages.length > 0" type="error" :title="$t('common.error')">
+          <ul class="list-disc list-inside text-sm">
+            <li v-for="msg in errorMessages" :key="msg">{{ msg }}</li>
           </ul>
         </NAlert>
 
-        <!-- Approval Flow Section -->
+        <!-- Warning alert (bypassable) -->
+        <NAlert
+          v-else-if="warningMessages.length > 0"
+          type="warning"
+          :title="$t('common.notices')"
+        >
+          <ul class="list-disc list-inside text-sm">
+            <li v-for="msg in warningMessages" :key="msg">{{ msg }}</li>
+          </ul>
+        </NAlert>
+
         <ApprovalFlowSection v-if="issue" :issue="issue" />
 
-        <!-- Plan Check Status -->
         <div class="w-full flex flex-col gap-2">
-          <span class="font-medium text-control shrink-0">{{
+          <span class="font-medium text-control">{{
             $t("plan.navigator.checks")
           }}</span>
           <PlanCheckStatusCount :plan="plan" />
@@ -38,27 +37,27 @@
       </div>
     </template>
     <template #footer>
-      <div class="w-full flex flex-row justify-between items-center gap-x-2">
-        <!-- Bypass checkbox -->
-        <div v-if="hasWarnings" class="flex items-center">
-          <NCheckbox v-model:checked="bypassWarnings" :disabled="loading">
-            {{ $t("rollout.bypass-stage-requirements") }}
-          </NCheckbox>
-        </div>
+      <div class="w-full flex justify-between items-center gap-x-2">
+        <NCheckbox
+          v-if="warningMessages.length > 0 && errorMessages.length === 0"
+          v-model:checked="bypassWarnings"
+          :disabled="loading"
+        >
+          {{ $t("rollout.bypass-stage-requirements") }}
+        </NCheckbox>
         <div v-else />
 
-        <div class="flex justify-end gap-x-2">
+        <div class="flex gap-x-2">
           <NButton quaternary @click="$emit('close')">
-            {{ $t("common.close") }}
+            {{ $t("common.cancel") }}
           </NButton>
-
           <NButton
-            :disabled="hasWarnings && !bypassWarnings"
             type="primary"
+            :disabled="errorMessages.length > 0 || (warningMessages.length > 0 && !bypassWarnings)"
             :loading="loading"
             @click="handleConfirm"
           >
-            {{ $t("issue.create-rollout") }}
+            {{ $t("common.confirm") }}
           </NButton>
         </div>
       </div>
@@ -100,58 +99,69 @@ const { t } = useI18n();
 const router = useRouter();
 const { events } = usePlanContext();
 
-// Use context from props for consistency
 const plan = computed(() => props.context.plan);
 const issue = computed(() => props.context.issue);
 const project = computed(() => props.context.project);
-const warnings = computed(() => props.context.rolloutCreationWarnings);
 
 const loading = ref(false);
 const bypassWarnings = ref(false);
 
-// Build warning messages based on current state
-const warningMessages = computed(() => {
-  const messages: string[] = [];
-
-  if (warnings.value.approvalNotReady) {
-    messages.push(
+// Errors: require_*=true and condition not met (blocking)
+const errorMessages = computed(() => {
+  const msgs: string[] = [];
+  if (project.value.requireIssueApproval && !props.context.issueApproved) {
+    msgs.push(
       t("project.settings.issue-related.require-issue-approval.description")
     );
   }
-
-  if (warnings.value.planChecksRunning) {
-    messages.push(
-      t(
-        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
-      )
-    );
-  } else if (warnings.value.planChecksFailed) {
-    messages.push(
+  if (
+    project.value.requirePlanCheckNoError &&
+    props.context.validation.planChecksFailed
+  ) {
+    msgs.push(
       t(
         "project.settings.issue-related.require-plan-check-no-error.description"
       )
     );
   }
-
-  return messages;
+  return msgs;
 });
 
-const hasWarnings = computed(() => warnings.value.hasAny);
-
-const resetState = () => {
-  bypassWarnings.value = false;
-};
+// Warnings: require_*=false and condition not met (bypassable)
+const warningMessages = computed(() => {
+  const msgs: string[] = [];
+  if (!project.value.requireIssueApproval && !props.context.issueApproved) {
+    msgs.push(
+      t("project.settings.issue-related.require-issue-approval.description")
+    );
+  }
+  if (props.context.validation.planChecksRunning) {
+    msgs.push(
+      t(
+        "custom-approval.issue-review.disallow-approve-reason.some-task-checks-are-still-running"
+      )
+    );
+  } else if (
+    !project.value.requirePlanCheckNoError &&
+    props.context.validation.planChecksFailed
+  ) {
+    msgs.push(
+      t(
+        "project.settings.issue-related.require-plan-check-no-error.description"
+      )
+    );
+  }
+  return msgs;
+});
 
 const handleConfirm = async () => {
   if (loading.value) return;
-
   loading.value = true;
+
   try {
-    const request = create(CreateRolloutRequestSchema, {
-      parent: plan.value.name,
-    });
-    const createdRollout =
-      await rolloutServiceClientConnect.createRollout(request);
+    const createdRollout = await rolloutServiceClientConnect.createRollout(
+      create(CreateRolloutRequestSchema, { parent: plan.value.name })
+    );
 
     pushNotification({
       module: "bytebase",

@@ -106,34 +106,8 @@ const shouldShowEditButton = computed(() => {
   if (state.isEditing) {
     return false;
   }
-
-  // Check if any export tasks are running or completed
-  if (plan.value.hasRollout && rollout?.value) {
-    const exportDataSpec = plan.value.specs.find(
-      (spec) => spec.config?.case === "exportDataConfig"
-    );
-
-    if (exportDataSpec) {
-      const tasks = rollout.value.stages
-        .flatMap((stage) => stage.tasks)
-        .filter((task) => task.specId === exportDataSpec.id);
-
-      if (
-        tasks.some((task) =>
-          includes(
-            [
-              Task_Status.RUNNING,
-              Task_Status.PENDING,
-              Task_Status.DONE,
-              Task_Status.SKIPPED,
-            ],
-            task.status
-          )
-        )
-      ) {
-        return false;
-      }
-    }
+  if (plan.value.hasRollout) {
+    return false;
   }
   return true;
 });
