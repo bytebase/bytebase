@@ -210,6 +210,7 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 }
 
 // getFailedTaskRuns returns all failed task runs for a plan to include in webhook payload.
+// nolint:unused // Will be used in Task 5 for PIPELINE_FAILED webhook
 func (s *Scheduler) getFailedTaskRuns(ctx context.Context, planID int64) []webhook.FailedTask {
 	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
 	if err != nil {
@@ -249,22 +250,27 @@ func (s *Scheduler) getFailedTaskRuns(ctx context.Context, planID int64) []webho
 			errorMsg = latestFailed.ResultProto.Detail
 		}
 
-		// Construct task name from type and database
+		// Construct task name from type
 		taskName := task.Type.String()
-		if task.DatabaseName != nil && *task.DatabaseName != "" {
-			taskName = taskName + " - " + *task.DatabaseName
-		}
 
-		dbName := ""
-		if task.DatabaseName != nil {
-			dbName = *task.DatabaseName
+		dbName := task.GetDatabaseName()
+
+		// Fetch instance to get human-readable title
+		instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{ResourceID: &task.InstanceID})
+		if err != nil {
+			slog.Error("failed to get instance for failed webhook", log.BBError(err))
+			continue
+		}
+		if instance == nil {
+			slog.Warn("instance not found for failed task", slog.String("instance_id", task.InstanceID))
+			continue
 		}
 
 		failures = append(failures, webhook.FailedTask{
 			TaskID:       int64(task.ID),
 			TaskName:     taskName,
 			DatabaseName: dbName,
-			InstanceName: task.InstanceID,
+			InstanceName: instance.Metadata.Title,
 			ErrorMessage: errorMsg,
 			FailedAt:     latestFailed.UpdatedAt,
 		})
