@@ -134,11 +134,6 @@ const globalDisabledReason = computed(() => {
 const pendingRolloutAction = ref<RolloutAction | undefined>(undefined);
 const showRolloutCreatePanel = ref(false);
 
-// Helper to check if rollout creation has warnings
-const hasRolloutCreationWarnings = computed(
-  () => context.value.rolloutCreationWarnings.hasAny
-);
-
 // Get the first stage for database creation/export rollouts
 // (the panel handles all stages internally for these task types)
 const rolloutStage = computed(() => rollout.value?.stages[0]);
@@ -157,12 +152,7 @@ const handlePerformAction = async (action: UnifiedAction) => {
       await handlePlanStateChange("PLAN_REOPEN");
       break;
     case "ROLLOUT_CREATE":
-      // Show panel if there are warnings; otherwise create immediately
-      if (hasRolloutCreationWarnings.value) {
-        showRolloutCreatePanel.value = true;
-      } else {
-        await handleCreateRollout();
-      }
+      showRolloutCreatePanel.value = true;
       break;
     case "ROLLOUT_START":
       // For deferred rollout plans without rollout, create and run all tasks

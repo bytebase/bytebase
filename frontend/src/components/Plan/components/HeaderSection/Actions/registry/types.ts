@@ -88,15 +88,6 @@ export interface ActionContext {
   hasStartableTasks: boolean;
   hasRunningTasks: boolean;
 
-  // Warning flags for rollout creation (button moves to dropdown when hasAny=true)
-  // Note: When require_*=true and condition not met, button is HIDDEN (not a warning)
-  rolloutCreationWarnings: {
-    approvalNotReady: boolean; // require_issue_approval=false AND not approved
-    planChecksRunning: boolean; // plan checks currently running
-    planChecksFailed: boolean; // require_plan_check_no_error=false AND checks failed
-    hasAny: boolean; // convenience: true if any warning is active
-  };
-
   // Grouped
   permissions: ActionPermissions;
   validation: ActionValidation;

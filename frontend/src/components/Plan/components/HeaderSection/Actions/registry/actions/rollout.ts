@@ -5,9 +5,7 @@ export const ROLLOUT_CREATE: ActionDefinition = {
   id: "ROLLOUT_CREATE",
   label: () => t("issue.create-rollout"),
   buttonType: "default",
-  // Primary when ready, secondary (dropdown) when warnings exist
-  category: (ctx) =>
-    ctx.rolloutCreationWarnings.hasAny ? "secondary" : "primary",
+  category: "primary",
   priority: 55,
 
   isVisible: (ctx) => {
@@ -18,11 +16,7 @@ export const ROLLOUT_CREATE: ActionDefinition = {
     if (!ctx.issue) return false;
     if (!ctx.permissions.createRollout) return false;
 
-    // Hide when require_*=true and condition not met
-    if (!ctx.issueApproved && ctx.project.requireIssueApproval) return false;
-    if (ctx.validation.planChecksFailed && ctx.project.requirePlanCheckNoError)
-      return false;
-
+    // Project setting validations are handled in RolloutCreatePanel
     return true;
   },
 
