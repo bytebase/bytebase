@@ -168,6 +168,16 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 		return
 	}
 
+	// Try to claim completion notification (HA-safe)
+	claimed, err := s.store.ClaimPipelineCompletionNotification(ctx, planID)
+	if err != nil {
+		slog.Error("failed to claim pipeline completion notification", log.BBError(err))
+		return
+	}
+	if !claimed {
+		return // Already sent
+	}
+
 	// Get plan, project and issue for webhook
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
