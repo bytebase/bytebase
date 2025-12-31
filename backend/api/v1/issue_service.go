@@ -1153,17 +1153,6 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to batch update issues, err: %v", err))
 	}
 
-	// Trigger approval finding for issues reopened to OPEN status
-	if newStatus == storepb.Issue_OPEN {
-		for _, issueUID := range issueUIDs {
-			oldStatus := oldIssueStatuses[issueUID]
-			if oldStatus != storepb.Issue_OPEN {
-				// Status changed to OPEN (reopened), trigger approval finding
-				s.stateCfg.ApprovalCheckChan <- int64(issueUID)
-			}
-		}
-	}
-
 	// Batch create issue comments.
 	issueComments := make([]*store.IssueCommentMessage, 0, len(issueUIDs))
 	for _, issueUID := range issueUIDs {
