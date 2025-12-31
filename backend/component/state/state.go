@@ -7,6 +7,10 @@ import (
 
 // State is the state for all in-memory states within the server.
 type State struct {
+	// ApprovalCheckChan signals when an issue needs approval template finding.
+	// Triggered by plan check completion, issue creation (if checks already done).
+	ApprovalCheckChan chan int64 // issue UID
+
 	// ApprovalFinding is the set of issues for finding the approval template.
 	ApprovalFinding sync.Map // map[issue.ID]*store.IssueMessage
 
@@ -34,6 +38,7 @@ type State struct {
 
 func New() (*State, error) {
 	return &State{
+		ApprovalCheckChan:       make(chan int64, 1000),
 		PlanCheckTickleChan:     make(chan int, 1000),
 		TaskRunTickleChan:       make(chan int, 1000),
 		RolloutCreationChan:     make(chan int64, 100),
