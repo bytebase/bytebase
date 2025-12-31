@@ -5,22 +5,6 @@
         <div class="h-full flex flex-col">
           <HeaderSection />
 
-          <NTabs
-            v-if="shouldShowNavigation"
-            type="line"
-            :value="tabKey"
-            tab-class="first:ml-4"
-            @update-value="handleTabChange"
-          >
-            <NTab
-              v-for="tab in availableTabs"
-              class="select-none"
-              :key="tab"
-              :name="tab"
-              :tab="tabRender(tab)"
-            />
-          </NTabs>
-
           <div class="flex-1 flex">
             <router-view v-slot="{ Component }">
               <keep-alive :max="3">
@@ -39,15 +23,10 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
-import { NSpin, NTab, NTabs } from "naive-ui";
+import { NSpin } from "naive-ui";
 import { computed, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  onBeforeRouteLeave,
-  onBeforeRouteUpdate,
-  useRoute,
-  useRouter,
-} from "vue-router";
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from "vue-router";
 import {
   providePlanContext,
   useBasePlanContext,
@@ -55,10 +34,8 @@ import {
 } from "@/components/Plan";
 import { HeaderSection } from "@/components/Plan/components";
 import { provideSidebarContext } from "@/components/Plan/logic/sidebar";
-import { useIssueTabNavigation } from "@/components/Plan/logic/useIssueTabNavigation.tsx";
 import { useNavigationGuard } from "@/components/Plan/logic/useNavigationGuard";
 import PollerProvider from "@/components/Plan/PollerProvider.vue";
-import { useIssueLayoutVersion } from "@/composables/useIssueLayoutVersion";
 import { useBodyLayoutContext } from "@/layouts/common";
 
 const props = defineProps<{
@@ -86,7 +63,6 @@ const planBaseContext = useBasePlanContext({
   plan,
   issue,
 });
-const { enabledNewLayout } = useIssueLayoutVersion();
 const containerRef = ref<HTMLElement>();
 
 const ready = computed(() => {
@@ -94,22 +70,6 @@ const ready = computed(() => {
   return (!!issue.value || !!plan.value) && !isInitializing.value;
 });
 
-const shouldShowNavigation = computed(() => {
-  // Show navigation if we have a valid plan with supported specs and an issue
-  if (!plan.value) {
-    return false;
-  }
-  return (
-    !isCreating.value &&
-    plan.value.specs.some(
-      (spec) => spec.config.case === "changeDatabaseConfig"
-    ) &&
-    plan.value.issue
-  );
-});
-
-const route = useRoute();
-const router = useRouter();
 const { confirmNavigation } = useNavigationGuard();
 
 providePlanContext({
@@ -123,18 +83,6 @@ providePlanContext({
 });
 
 provideSidebarContext(containerRef);
-
-// Tab navigation
-const { tabKey, availableTabs, tabRender, handleTabChange } =
-  useIssueTabNavigation({
-    route,
-    router,
-    plan,
-    issue,
-    isCreating,
-    enabledNewLayout,
-    t,
-  });
 
 const { overrideMainContainerClass } = useBodyLayoutContext();
 

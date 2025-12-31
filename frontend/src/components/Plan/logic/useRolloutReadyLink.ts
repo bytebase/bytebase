@@ -30,10 +30,10 @@ const ACTIONABLE_TASK_STATUSES = new Set([
 /**
  * Composable that determines whether the "Ready for Rollout" link should be shown.
  * This link appears when:
- * - Issue is open and approved
  * - Issue is a database change (not export/create)
  * - User is not already on the rollout tab
- * - There are actionable tasks in the rollout
+ * - Rollout exists
+ * - Issue is DONE, OR issue is OPEN and approved with actionable tasks
  */
 export const useRolloutReadyLink = () => {
   const route = useRoute();
@@ -44,21 +44,12 @@ export const useRolloutReadyLink = () => {
   });
 
   const shouldShow = computed(() => {
-    // Only show for OPEN issues
-    if (!issue.value || issue.value.status !== IssueStatus.OPEN) {
+    if (!issue.value) {
       return false;
     }
 
     // Only show for database change issues
     if (issue.value.type !== Issue_Type.DATABASE_CHANGE) {
-      return false;
-    }
-
-    // Check if issue is approved
-    if (
-      issue.value.approvalStatus !== Issue_ApprovalStatus.APPROVED &&
-      issue.value.approvalStatus !== Issue_ApprovalStatus.SKIPPED
-    ) {
       return false;
     }
 
@@ -83,9 +74,27 @@ export const useRolloutReadyLink = () => {
       return false;
     }
 
-    // Check if there's any task that needs action
-    const allTasks = rollout.value.stages.flatMap((stage) => stage.tasks);
-    return allTasks.some((task) => ACTIONABLE_TASK_STATUSES.has(task.status));
+    // For DONE issues with rollout, always show link for navigation
+    if (issue.value.status === IssueStatus.DONE) {
+      return true;
+    }
+
+    // For OPEN issues, check if approved and has actionable tasks
+    if (issue.value.status === IssueStatus.OPEN) {
+      // Check if issue is approved
+      if (
+        issue.value.approvalStatus !== Issue_ApprovalStatus.APPROVED &&
+        issue.value.approvalStatus !== Issue_ApprovalStatus.SKIPPED
+      ) {
+        return false;
+      }
+
+      // Check if there's any task that needs action
+      const allTasks = rollout.value.stages.flatMap((stage) => stage.tasks);
+      return allTasks.some((task) => ACTIONABLE_TASK_STATUSES.has(task.status));
+    }
+
+    return false;
   });
 
   return {

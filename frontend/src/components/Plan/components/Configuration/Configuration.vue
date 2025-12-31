@@ -1,5 +1,5 @@
 <template>
-  <div class="py-3 flex flex-col gap-y-3">
+  <div class="flex flex-col gap-y-3 py-3">
     <h3 class="text-base">{{ $t("plan.options.self") }}</h3>
     <div v-if="shouldShow" class="flex flex-col gap-y-3">
       <InstanceRoleSection v-if="shouldShowInstanceRoleSection" />
@@ -34,99 +34,38 @@ const { project } = useCurrentProjectV1();
 const { isCreating, plan, events, issue, readonly } = usePlanContext();
 const { selectedSpec } = useSelectedSpec();
 
-const {
-  shouldShow: shouldShowTransactionModeSection,
-  events: transactionModeEvents,
-} = provideTransactionModeSettingContext({
+const providerArgs = {
   project,
   plan,
   selectedSpec,
   isCreating,
   issue,
   readonly,
-});
+};
 
-const {
-  shouldShow: shouldShowInstanceRoleSection,
-  events: instanceRoleEvents,
-} = provideInstanceRoleSettingContext({
-  project,
-  plan,
-  selectedSpec,
-  isCreating,
-  issue,
-  readonly,
-});
-
-const {
-  shouldShow: shouldShowIsolationLevelSection,
-  events: isolationLevelEvents,
-} = provideIsolationLevelSettingContext({
-  project,
-  plan,
-  selectedSpec,
-  isCreating,
-  issue,
-  readonly,
-});
-
+const { shouldShow: shouldShowTransactionModeSection, events: txEvents } =
+  provideTransactionModeSettingContext(providerArgs);
+const { shouldShow: shouldShowInstanceRoleSection, events: roleEvents } =
+  provideInstanceRoleSettingContext(providerArgs);
+const { shouldShow: shouldShowIsolationLevelSection, events: isoEvents } =
+  provideIsolationLevelSettingContext(providerArgs);
 const { shouldShow: shouldShowGhostSection, events: ghostEvents } =
-  provideGhostSettingContext({
-    project,
-    plan,
-    selectedSpec,
-    isCreating,
-    issue,
-    readonly,
-  });
+  provideGhostSettingContext(providerArgs);
+const { shouldShow: shouldShowPreBackupSection, events: backupEvents } =
+  providePreBackupSettingContext(providerArgs);
 
-const { shouldShow: shouldShowPreBackupSection, events: preBackupEvents } =
-  providePreBackupSettingContext({
-    project,
-    plan,
-    selectedSpec,
-    isCreating,
-    issue,
-    readonly,
-  });
-
-const shouldShow = computed(() => {
-  return (
+const shouldShow = computed(
+  () =>
     shouldShowTransactionModeSection.value ||
     shouldShowIsolationLevelSection.value ||
     shouldShowInstanceRoleSection.value ||
     shouldShowGhostSection.value ||
     shouldShowPreBackupSection.value
-  );
-});
+);
 
-transactionModeEvents.on("update", () => {
-  events.emit("status-changed", {
-    eager: true,
-  });
-});
-
-instanceRoleEvents.on("update", () => {
-  events.emit("status-changed", {
-    eager: true,
-  });
-});
-
-isolationLevelEvents.on("update", () => {
-  events.emit("status-changed", {
-    eager: true,
-  });
-});
-
-preBackupEvents.on("update", () => {
-  events.emit("status-changed", {
-    eager: true,
-  });
-});
-
-ghostEvents.on("update", () => {
-  events.emit("status-changed", {
-    eager: true,
-  });
-});
+// Forward all setting updates to plan context
+const emitStatusChanged = () => events.emit("status-changed", { eager: true });
+[txEvents, roleEvents, isoEvents, ghostEvents, backupEvents].forEach((e) =>
+  e.on("update", emitStatusChanged)
+);
 </script>

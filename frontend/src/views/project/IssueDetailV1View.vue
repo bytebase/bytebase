@@ -11,6 +11,9 @@
 
     <!-- Grant Request View -->
     <GrantRequestView v-else-if="issueType === IssueType.GRANT_REQUEST" />
+
+    <!-- Database Change View -->
+    <DatabaseChangeView v-else-if="issueType === IssueType.DATABASE_CHANGE" />
   </IssueBaseLayout>
 </template>
 
@@ -19,6 +22,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import { usePlanContextWithIssue } from "@/components/Plan";
+import { DatabaseChangeView } from "@/components/Plan/components/IssueReviewView/DatabaseChangeView";
 import DatabaseCreateView from "@/components/Plan/components/IssueReviewView/DatabaseCreateView.vue";
 import DatabaseExportView from "@/components/Plan/components/IssueReviewView/DatabaseExportView.vue";
 import GrantRequestView from "@/components/Plan/components/IssueReviewView/GrantRequestView.vue";
@@ -32,6 +36,7 @@ enum IssueType {
   CREATE_DATABASE = "CREATE_DATABASE",
   EXPORT_DATA = "EXPORT_DATA",
   GRANT_REQUEST = "GRANT_REQUEST",
+  DATABASE_CHANGE = "DATABASE_CHANGE",
 }
 
 const props = defineProps<{
@@ -46,49 +51,35 @@ const { enabledNewLayout } = useIssueLayoutVersion();
 const isLoading = ref(true);
 
 const issueType = computed(() => {
-  // Check issue type first for grant requests
-  if (issue.value.type === Issue_Type.GRANT_REQUEST) {
+  if (issue.value.type === Issue_Type.GRANT_REQUEST)
     return IssueType.GRANT_REQUEST;
-  }
 
-  if (
-    plan.value.specs.every(
-      (spec) => spec.config.case === "createDatabaseConfig"
-    )
-  ) {
+  const specs = plan.value.specs;
+  if (specs.every((s) => s.config.case === "createDatabaseConfig"))
     return IssueType.CREATE_DATABASE;
-  } else if (
-    plan.value.specs.every((spec) => spec.config.case === "exportDataConfig")
-  ) {
+  if (specs.every((s) => s.config.case === "exportDataConfig"))
     return IssueType.EXPORT_DATA;
-  }
+  if (specs.some((s) => s.config.case === "changeDatabaseConfig"))
+    return IssueType.DATABASE_CHANGE;
   return undefined;
 });
 
 onMounted(() => {
-  const isCreatingDatabasePlan = plan.value.specs.every(
-    (spec) => spec.config.case === "createDatabaseConfig"
-  );
-  const isExportDataPlan = plan.value.specs.every(
-    (spec) => spec.config.case === "exportDataConfig"
-  );
-  const isGrantRequest = issue.value.type === Issue_Type.GRANT_REQUEST;
-  // Redirect to legacy layout if new layout is disabled and the plan is not a database creation, export data plan, or grant request.
-  if (
-    !enabledNewLayout.value &&
-    !isCreatingDatabasePlan &&
-    !isExportDataPlan &&
-    !isGrantRequest
-  ) {
-    const legacyIssueSlug = issueV1Slug(
-      `projects/${props.projectId}/issues/${props.issueId}`,
-      "issue"
-    );
+  // Redirect to legacy layout for database change issues when new layout is disabled
+  const usesNewLayoutOnly =
+    issueType.value === IssueType.CREATE_DATABASE ||
+    issueType.value === IssueType.EXPORT_DATA ||
+    issueType.value === IssueType.GRANT_REQUEST;
+
+  if (!enabledNewLayout.value && !usesNewLayoutOnly) {
     router.replace({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: props.projectId,
-        issueSlug: legacyIssueSlug,
+        issueSlug: issueV1Slug(
+          `projects/${props.projectId}/issues/${props.issueId}`,
+          "issue"
+        ),
       },
       query: route.query,
     });

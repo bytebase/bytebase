@@ -5,7 +5,7 @@
       class="w-full flex-1 flex flex-col lg:flex-row px-4 gap-4 overflow-hidden"
     >
       <!-- Left: Targets + Statement -->
-      <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <div class="flex-1 flex flex-col min-w-0 overflow-y-auto py-3">
         <TargetListSection />
         <DataExportOptionsSection v-if="isDataExportPlan" />
         <FailedTaskRunsSection v-if="!isCreating && rollout" />

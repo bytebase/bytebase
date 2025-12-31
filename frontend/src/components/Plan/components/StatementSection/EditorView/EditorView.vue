@@ -1,16 +1,14 @@
 <template>
-  <div class="h-full flex flex-col gap-y-2">
+  <div class="h-full flex flex-col gap-y-1">
     <div class="flex items-center justify-between">
-      <div class="flex items-center gap-x-4">
-        <div class="flex items-center gap-x-1 text-sm">
-          <span
-            class="text-base"
-            :class="isEmpty(state.statement) ? 'text-red-600' : ''"
-          >
-            {{ statementTitle }}
-          </span>
-          <RequiredStar v-if="isEmpty(state.statement)" />
-        </div>
+      <div class="flex items-center gap-x-1">
+        <span
+          class="text-base"
+          :class="isEmpty(state.statement) ? 'text-red-600' : ''"
+        >
+          {{ statementTitle }}
+        </span>
+        <RequiredStar v-if="isEmpty(state.statement)" />
       </div>
       <div class="flex items-center justify-end gap-x-2">
         <template v-if="isCreating">
@@ -113,9 +111,9 @@
       </template>
     </BBAttention>
 
-    <div class="relative flex-1 min-h-64">
+    <div class="relative flex-1">
       <MonacoEditor
-        class="w-full h-full min-h-[200px] border rounded-sm overflow-hidden"
+        class="w-full h-full border rounded-sm overflow-hidden"
         :filename="filename"
         :content="state.statement"
         :language="language"
