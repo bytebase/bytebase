@@ -76,7 +76,11 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	if err != nil {
 		return nil, err
 	}
-	pgxConnConfig.RuntimeParams["application_name"] = "bytebase"
+	appName := "bytebase"
+	if config.ConnectionContext.TaskRunUID != nil {
+		appName = fmt.Sprintf("bytebase-taskrun-%d", *config.ConnectionContext.TaskRunUID)
+	}
+	pgxConnConfig.RuntimeParams["application_name"] = appName
 	if config.ConnectionContext.ReadOnly {
 		pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
 	}
@@ -489,18 +493,6 @@ func (d *Driver) executeInTransactionMode(
 	}
 	defer conn.Close()
 
-	if opts.SetConnectionID != nil {
-		var pid string
-		if err := conn.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&pid); err != nil {
-			return 0, errors.Wrapf(err, "failed to get connection id")
-		}
-		opts.SetConnectionID(pid)
-
-		if opts.DeleteConnectionID != nil {
-			defer opts.DeleteConnectionID()
-		}
-	}
-
 	if isPlsql {
 		if d.connectionCtx.TenantMode {
 			// USE SET SESSION ROLE to set the role for the current session.
@@ -633,18 +625,6 @@ func (d *Driver) executeInAutoCommitMode(
 		return 0, errors.Wrapf(err, "failed to get connection")
 	}
 	defer conn.Close()
-
-	if opts.SetConnectionID != nil {
-		var pid string
-		if err := conn.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&pid); err != nil {
-			return 0, errors.Wrapf(err, "failed to get connection id")
-		}
-		opts.SetConnectionID(pid)
-
-		if opts.DeleteConnectionID != nil {
-			defer opts.DeleteConnectionID()
-		}
-	}
 
 	if d.connectionCtx.TenantMode {
 		// USE SET SESSION ROLE to set the role for the current session.

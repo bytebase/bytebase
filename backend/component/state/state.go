@@ -12,9 +12,6 @@ type State struct {
 
 	TaskRunSchedulerInfo sync.Map // map[taskRunID]*storepb.SchedulerInfo
 
-	// TaskRunConnectionID is the map from task run ID to the connection id of the connection to the database.
-	TaskRunConnectionID sync.Map // map[taskRunID]string
-
 	// RunningTaskRunsCancelFunc is the cancelFunc of running taskruns.
 	RunningTaskRunsCancelFunc sync.Map // map[taskRunID]context.CancelFunc
 

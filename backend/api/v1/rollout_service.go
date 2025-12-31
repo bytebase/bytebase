@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -493,14 +494,6 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to get task run uid"))
 	}
-	connIDAny, ok := s.stateCfg.TaskRunConnectionID.Load(taskRunUID)
-	if !ok {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("connection id not found for task run %d", taskRunUID))
-	}
-	connID, ok := connIDAny.(string)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("expect connection id to be of type string but found %T", connIDAny))
-	}
 
 	task, err := s.store.GetTaskByID(ctx, taskUID)
 	if err != nil {
@@ -518,7 +511,8 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 	}
 	defer driver.Close(ctx)
 
-	session, err := getSession(ctx, instance.Metadata.GetEngine(), driver.GetDB(), connID)
+	appName := fmt.Sprintf("bytebase-taskrun-%d", taskRunUID)
+	session, err := getSession(ctx, instance.Metadata.GetEngine(), driver.GetDB(), appName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get session"))
 	}
@@ -528,33 +522,36 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 	return connect.NewResponse(session), nil
 }
 
-func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID string) (*v1pb.TaskRunSession, error) {
+func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, appName string) (*v1pb.TaskRunSession, error) {
 	switch engine {
-	case storepb.Engine_POSTGRES:
+	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB:
 		query := `
+			WITH target_session AS (
+				SELECT pid FROM pg_catalog.pg_stat_activity WHERE application_name = $1 LIMIT 1
+			)
 			SELECT
-				pid,
-				pg_blocking_pids(pid) AS blocked_by_pids,
-				query,
-				state,
-				wait_event_type,
-				wait_event,
-				datname,
-				usename,
-				application_name,
-				client_addr,
-				client_port,
-				backend_start,
-				xact_start,
-				query_start
+				a.pid,
+				pg_blocking_pids(a.pid) AS blocked_by_pids,
+				a.query,
+				a.state,
+				a.wait_event_type,
+				a.wait_event,
+				a.datname,
+				a.usename,
+				a.application_name,
+				a.client_addr,
+				a.client_port,
+				a.backend_start,
+				a.xact_start,
+				a.query_start
 			FROM
-				pg_catalog.pg_stat_activity
-			WHERE pid = $1
-			OR pid = ANY(pg_blocking_pids($1))
-			OR $1 = ANY(pg_blocking_pids(pid))
-			ORDER BY pid
+				pg_catalog.pg_stat_activity a
+			WHERE a.application_name = $1
+			   OR (SELECT pid FROM target_session) = ANY(pg_blocking_pids(a.pid))
+			   OR a.pid = ANY(pg_blocking_pids((SELECT pid FROM target_session)))
+			ORDER BY a.pid
 		`
-		rows, err := db.QueryContext(ctx, query, connID)
+		rows, err := db.QueryContext(ctx, query, appName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to query rows")
 		}
@@ -599,12 +596,16 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 				s.QueryStart = timestamppb.New(*qs)
 			}
 
-			if s.Pid == connID {
+			if s.ApplicationName == appName {
 				ss.Session = &s
-			} else if slices.Contains(s.BlockedByPids, connID) {
-				ss.BlockedSessions = append(ss.BlockedSessions, &s)
-			} else {
-				ss.BlockingSessions = append(ss.BlockingSessions, &s)
+			} else if ss.Session != nil {
+				// For blocking/blocked sessions, we need to check if they're related to our main session
+				// We stored the main session, so check relationships with it
+				if slices.Contains(s.BlockedByPids, ss.Session.Pid) {
+					ss.BlockedSessions = append(ss.BlockedSessions, &s)
+				} else if slices.Contains(ss.Session.BlockedByPids, s.Pid) {
+					ss.BlockingSessions = append(ss.BlockingSessions, &s)
+				}
 			}
 		}
 
@@ -618,7 +619,7 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, connID s
 			},
 		}, nil
 	default:
-		return nil, errors.Errorf("unsupported engine type %v", engine.String())
+		return nil, errors.Errorf("session monitoring is only supported for PostgreSQL and CockroachDB")
 	}
 }
 

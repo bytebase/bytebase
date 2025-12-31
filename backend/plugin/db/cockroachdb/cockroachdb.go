@@ -159,9 +159,13 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 	if tlscfg != nil {
 		connConfig.TLSConfig = tlscfg
 	}
+	appName := "bytebase"
+	if config.ConnectionContext.TaskRunUID != nil {
+		appName = fmt.Sprintf("bytebase-taskrun-%d", *config.ConnectionContext.TaskRunUID)
+	}
+	connConfig.RuntimeParams["application_name"] = appName
 	if config.ConnectionContext.ReadOnly {
 		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
-		connConfig.RuntimeParams["application_name"] = "bytebase"
 	}
 
 	return connConfig, nil
@@ -317,18 +321,6 @@ func (d *Driver) executeInTransactionMode(
 	}
 	defer conn.Close()
 
-	if opts.SetConnectionID != nil {
-		var pid string
-		if err := conn.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&pid); err != nil {
-			return 0, errors.Wrapf(err, "failed to get connection id")
-		}
-		opts.SetConnectionID(pid)
-
-		if opts.DeleteConnectionID != nil {
-			defer opts.DeleteConnectionID()
-		}
-	}
-
 	if isPlsql {
 		// USE SET SESSION ROLE to set the role for the current session.
 		if err := crdb.Execute(func() error {
@@ -462,18 +454,6 @@ func (d *Driver) executeInAutoCommitMode(
 		return 0, errors.Wrapf(err, "failed to get connection")
 	}
 	defer conn.Close()
-
-	if opts.SetConnectionID != nil {
-		var pid string
-		if err := conn.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&pid); err != nil {
-			return 0, errors.Wrapf(err, "failed to get connection id")
-		}
-		opts.SetConnectionID(pid)
-
-		if opts.DeleteConnectionID != nil {
-			defer opts.DeleteConnectionID()
-		}
-	}
 
 	if isPlsql {
 		// USE SET SESSION ROLE to set the role for the current session.

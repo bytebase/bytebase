@@ -12,7 +12,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/component/state"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -96,8 +95,8 @@ func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, pr
 	}
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, schemaVersion string) (terminated bool, result *storepb.TaskRunResult, err error) {
-	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, stateCfg, syncer, profile, task, taskRunUID, sheet, schemaVersion, nil /* default */)
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, sheet *store.SheetMessage, schemaVersion string) (terminated bool, result *storepb.TaskRunResult, err error) {
+	return runMigrationWithFunc(ctx, driverCtx, store, dbFactory, syncer, profile, task, taskRunUID, sheet, schemaVersion, nil /* default */)
 }
 
 func runMigrationWithFunc(
@@ -105,7 +104,6 @@ func runMigrationWithFunc(
 	driverCtx context.Context,
 	store *store.Store,
 	dbFactory *dbfactory.DBFactory,
-	stateCfg *state.State,
 	syncer *schemasync.Syncer,
 	profile *config.Profile,
 	task *store.TaskMessage,
@@ -123,7 +121,7 @@ func runMigrationWithFunc(
 	// Skip dump for pure DML statements (INSERT, UPDATE, DELETE) as they don't change schema.
 	mc.needDump = computeNeedDump(task.Type, mc.database.Engine, sheet.Statement)
 
-	skipped, err := doMigrationWithFunc(ctx, driverCtx, store, stateCfg, profile, sheet.Statement, mc, execFunc)
+	skipped, err := doMigrationWithFunc(ctx, driverCtx, store, profile, sheet.Statement, mc, execFunc)
 	if err != nil {
 		return true, nil, err
 	}
@@ -194,7 +192,6 @@ func doMigrationWithFunc(
 	ctx context.Context,
 	driverCtx context.Context,
 	stores *store.Store,
-	stateCfg *state.State,
 	profile *config.Profile,
 	statement string,
 	mc *migrateContext,
@@ -209,6 +206,7 @@ func doMigrationWithFunc(
 	}
 	driver, err := mc.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
 		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
+		TaskRunUID: &mc.taskRunUID,
 	})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
@@ -229,12 +227,6 @@ func doMigrationWithFunc(
 		opts.MaximumRetries = int(project.Setting.GetExecutionRetryPolicy().GetMaximumRetries())
 	}
 
-	opts.SetConnectionID = func(id string) {
-		stateCfg.TaskRunConnectionID.Store(mc.taskRunUID, id)
-	}
-	opts.DeleteConnectionID = func() {
-		stateCfg.TaskRunConnectionID.Delete(mc.taskRunUID)
-	}
 	opts.CreateTaskRunLog = getCreateTaskRunLog(ctx, mc.taskRunUID, stores, profile)
 
 	if execFunc == nil {
