@@ -83,7 +83,7 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 			slog.Error("runTaskCompletionListener PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
 		}
 	}()
-	slog.Info("Task completion listener started")
+	slog.Info("Plan completion checker started")
 
 	for {
 		select {
@@ -95,6 +95,9 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 	}
 }
 
+// checkPlanCompletion checks if all tasks in a plan are complete and successful.
+// If so, sends PIPELINE_COMPLETED webhook.
+// Called when tasks are marked DONE/SKIPPED, or when tasks are skipped/canceled via API.
 func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 	// Get all tasks for this plan
 	tasks, err := s.store.ListTasks(ctx, &store.TaskFind{PlanID: &planID})
@@ -103,10 +106,9 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 		return
 	}
 
-	// Check if all tasks are in terminal state
+	// Check if all tasks are in terminal state (DONE/SKIPPED/CANCELED) without failures
 	allComplete := true
 	hasFailures := false
-	var earliestStart, latestEnd *time.Time
 
 	for _, task := range tasks {
 		status := task.LatestTaskRunStatus
@@ -123,35 +125,18 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 			break
 		}
 
-		// Track failures (excluding skipped tasks)
+		// Track failures (excluding skipped/canceled tasks)
 		if status == storepb.TaskRun_FAILED && !task.Payload.GetSkipped() {
 			hasFailures = true
 		}
-
-		// Track start/end times for metrics
-		if task.RunAt != nil {
-			if earliestStart == nil || task.RunAt.Before(*earliestStart) {
-				earliestStart = task.RunAt
-			}
-		}
-		if task.UpdatedAt != nil {
-			if latestEnd == nil || task.UpdatedAt.After(*latestEnd) {
-				latestEnd = task.UpdatedAt
-			}
-		}
 	}
 
-	// Not all tasks complete yet
-	if !allComplete {
+	// Not all tasks complete yet, or some failed - no completion webhook
+	if !allComplete || hasFailures {
 		return
 	}
 
-	// Only send completion webhook if there were no failures
-	if hasFailures {
-		return
-	}
-
-	// Try to claim completion notification (HA-safe)
+	// All tasks complete and successful - try to claim completion notification
 	claimed, err := s.store.ClaimPipelineCompletionNotification(ctx, planID)
 	if err != nil {
 		slog.Error("failed to claim pipeline completion notification", log.BBError(err))
@@ -161,34 +146,16 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, planID int64) {
 		return // Already sent
 	}
 
-	// Get plan, project and issue for webhook
+	// Get plan and project for webhook
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
-	if err != nil {
+	if err != nil || plan == nil {
 		slog.Error("failed to get plan for completion webhook", log.BBError(err))
-		return
-	}
-	if plan == nil {
-		slog.Error("plan not found for completion webhook", slog.Int64("plan_id", planID))
 		return
 	}
 
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{ResourceID: &plan.ProjectID})
-	if err != nil {
+	if err != nil || project == nil {
 		slog.Error("failed to get project for completion webhook", log.BBError(err))
-		return
-	}
-	if project == nil {
-		slog.Error("project not found for completion webhook", slog.String("project_id", plan.ProjectID))
-		return
-	}
-
-	issueN, err := s.store.GetIssue(ctx, &store.FindIssueMessage{PlanUID: &planID})
-	if err != nil {
-		slog.Error("failed to get issue for completion webhook", log.BBError(err))
-		return
-	}
-	if issueN == nil {
-		slog.Error("issue not found for completion webhook", slog.Int64("plan_id", planID))
 		return
 	}
 
